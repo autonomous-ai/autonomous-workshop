@@ -2,6 +2,7 @@
 
 import hashlib
 import importlib.util
+import re
 import subprocess
 import sys
 import tempfile
@@ -190,6 +191,37 @@ class PrintDetailsSkillTest(unittest.TestCase):
                        "a chamfer or taper that leaves an edge thinner than that"):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, reviewer)
+
+    def test_design_a_toy_takes_its_minimums_from_the_library(self):
+        # Issue #87: one source for the print minimums, at design time too.
+        design = (REPOSITORY / ".claude/skills/design-a-toy/SKILL.md").read_text(encoding="utf-8")
+        stage = design[design.index("## Stage 3c"):design.index("## Stage 3d")]
+        rows = re.findall(r"^\|[^|\n]+\| [^|\n]*?([0-9.]+) mm[^|\n]*\| `(\w+)` \|$", stage, re.MULTILINE)
+        fine = self.module.limits(0.4)
+        self.assertEqual({name for _value, name in rows},
+                         {"min_wall", "min_feature", "min_relief_width", "min_relief_height",
+                          "min_cut_width", "min_cut_depth", "min_web"})
+        for value, name in rows:
+            with self.subTest(limit=name):
+                self.assertAlmostEqual(float(value), fine[name][0])
+        flat = " ".join(design.split())
+        for phrase in ("print_details.py --limits --nozzle N",
+                       "A drawn detail under the print minimums is enlarged to the minimum; when the "
+                       "enlarged detail does not fit its spot, it is left out, and this contract names it.",
+                       "The host is at least the detail's size plus 0.5 mm on each side",
+                       "keeps at least 0.5 mm above it",
+                       "Copies in a row keep a 0.5 mm gap",
+                       "a bigger toy, then a bigger host, then the detail left out",
+                       "Worked example: Broken God's crest helm",
+                       "The brow band is a plain raised band and carries no rivets"):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, flat)
+        self.assertNotIn("rivet, boss, ridge or groove | 1.0 mm", stage)
+        contract_format = " ".join((REPOSITORY / ".claude/skills/build-a-toy/CONTRACT-FORMAT.md"
+                                    ).read_text(encoding="utf-8").split())
+        self.assertIn("## Print minimums in the prose", contract_format)
+        self.assertIn("a rivet, boss or dome is at least 2.0 mm across", contract_format)
+        self.assertIn("it is left out, and this contract names it.", contract_format)
 
     def test_workers_and_the_make_reference_name_the_library(self):
         worker = " ".join(

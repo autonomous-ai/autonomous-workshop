@@ -129,7 +129,23 @@ changes only with the nozzle: a contract for a larger nozzle states that
 nozzle's print minimum instead. It never takes a geometry's `wall_min_mm`,
 which sizes load-bearing sections, not lands. A requirement row that names a
 sharp form says so too: "each wing ends in a chisel tip with a 0.8 mm land",
-never "a sharp chisel tip". Check the block against the prose line by line,
+never "a sharp chisel tip".
+
+The same section carries the detail rule, word for word: "A drawn detail
+under the print minimums is enlarged to the minimum; when the enlarged detail
+does not fit its spot, it is left out, and this contract names it." The print
+minimums are the print-details library's, at the contract's nozzle (Stage
+3c's table); a contract never states its own. Stage 3c decides, detail by
+detail, which one is enlarged and which one is left out, and the contract
+names every one left out where the Component Reviewer reads it: in a
+requirement row of that Component, which is all of the contract the
+reviewer sees besides its geometry row and Interface text ("The brow band
+is a plain raised band and carries no rivets"). Fold it into the row that
+already describes the host, so it costs no row of its own. Never write "never left
+out": a reviewer holding that rule and an image of a detail that cannot fit
+asks for exactly that detail, round after round.
+
+Check the block against the prose line by line,
 not just against itself: a block that leaves out a decided number or feature
 lets the run drift, and nobody downstream reads the prose closely enough to
 notice. Name each
@@ -344,14 +360,74 @@ and a simplified part looks crude next to its picture. Workshop prints with a
 
 Scale each image to its contract size after Stage 3b. Measure the smallest
 features it shows, and check the contract's own numbers against the same
-limits:
+limits.
 
-| Feature | Minimum |
-|---|---|
-| A solid thin member: a bar, rib, claw, shaft, blade edge or wall | 0.8 mm across |
-| The end of a point, chisel, keel, crest, ridge or V underside | a flat land 0.8 mm across |
-| A gap, slot, slit or opening meant to stay open | 0.5 mm |
-| Raised or sunk decoration: a rivet, boss, ridge or groove | 1.0 mm across |
+The minimums are the print-details library's `limits()`, the ones Make
+builds detail with and the Component Reviewer judges by; where this table
+and the library ever disagree, the library wins. Print them for
+the contract's nozzle with
+`python src/workshop/make/skills/print-details/scripts/print_details.py --limits --nozzle N`;
+at Workshop's 0.4 mm nozzle they are:
+
+| Feature | Minimum at 0.4 mm | `limits()` name |
+|---|---|---|
+| A solid thin member: a bar, rib, claw, shaft, blade edge or wall | 0.8 mm across | `min_wall` |
+| The end of a point, chisel, keel, crest, ridge or V underside | a flat land 0.8 mm across | `min_wall` |
+| A rivet, boss or dome | 2.0 mm across | `min_feature` |
+| A raised band, rim or rib | 0.9 mm across | `min_relief_width` |
+| Any raised detail | 0.5 mm high | `min_relief_height` |
+| A groove, slit, slot, gap or opening meant to stay open | 0.5 mm across | `min_cut_width` |
+| An engraved or inset cut | 0.5 mm deep | `min_cut_depth` |
+| Material between two cut copies: slits or windows side by side | 1.6 mm | `min_web` |
+
+Then check every **stacked or curved placement**: each detail the images draw
+on another detail (rivets on a band, a boss on a rim) or on a curved host (a
+band round a helm, rivets round a chin). Size each detail at its minimum, or
+at its contract size when that is larger, and check:
+
+- **The host holds it.** The host is at least the detail's size plus 0.5 mm
+  on each side: a 2.0 mm rivet needs a band or ridge at least 3.0 mm wide.
+- **It stands clear of a concave host.** A raised detail on a concave surface
+  keeps at least 0.5 mm above it everywhere, across the curve, not only at
+  its centre.
+- **Copies keep apart.** Copies in a row keep a 0.5 mm gap between them, so a
+  row of 2.0 mm rivets has a pitch of at least 2.5 mm; count how many fit
+  the host's length at that pitch.
+
+A detail that fails is resolved with the list below, in its order: a bigger
+toy, then a bigger host, then the detail left out. A detail left out is
+named in the Component's requirement row (Stage 2), never silently dropped,
+and the images are edited to match whichever way it went.
+
+Worked example: Broken God's crest helm (`ref-07`, attempt 14). Its face is
+about 20 mm wide at contract scale, and the image draws a riveted brow band, a
+riveted nose bar and rivets round the chin. The band measures about 1 mm
+wide, and its rivets are smaller than the band.
+
+| Detail | At contract scale | Minimum | Stacked check | Verdict |
+|---|---|---|---|---|
+| Brow band | 1.0 mm wide | 0.9 mm across (`min_relief_width`) | none | passes |
+| Rivets on the band | under 1.0 mm across | 2.0 mm across (`min_feature`) | band at least 2.0 + 2 x 0.5 = 3.0 mm wide; it is 1.0 mm | fails |
+
+The contract said "every rivet at least 1.0 mm across" and "never left out",
+so nothing caught this before the run. Enlarged to 2.0 mm, a rivet covers
+twice the band's width and hangs over both its edges, and the Component
+Reviewer, holding the image and that rule, asked for a band and rivets that
+could not print together; the worker spent 18 rounds on the refusals. In
+Stage 3c's order:
+
+1. **Bigger toy.** A 3.0 mm band needs the helm three times larger; the rest
+   of the toy cannot grow with it. Rejected.
+2. **Bigger host.** A 3.0 mm brow band is 15% of a 20 mm face: a visor, not a
+   band. Rejected, because it changes the read.
+3. **Leave the rivets out.** The band stays, as a plain raised band at its
+   own size; the rivets go. The helm's requirement row names it: "The brow
+   band is a plain raised band and carries no rivets." The image is edited to
+   a plain band, and Stage 3b runs again on it.
+
+The nose bar and the chin rivets get the same check, each against its own
+host: rivets on the nose bar need a bar at least 3.0 mm wide, and the chin
+holds only as many 2.0 mm rivets as its length allows at a 2.5 mm pitch.
 
 Then check support. Name each geometry's print stance. In that stance, find
 every form the image shows that would print over air: an underside flatter
@@ -368,7 +444,8 @@ Resolve each problem yourself, in this order of preference, and keep the look:
 4. **Reshape the underside**: a 45 degree chamfer, a teardrop hole or a
    pointed arch. Keep the silhouette the image shows. Never flatten an organic
    form into a box to pass the gate.
-5. **Drop the detail**, only when nothing above works.
+5. **Leave the detail out**, only when nothing above works, and name it in
+   the Component's requirement row.
 
 Any change to size, shape or stance amends the contract. When an image no
 longer shows what the contract says, fix the image by AI editing. Then redo
@@ -396,7 +473,8 @@ check reliably by hand.
 Record every check in the working notes as a table: image or joint, feature,
 size at contract scale, minimum, verdict, resolution.
 
-Done when: every feature the images show meets its minimum, every form and
+Done when: every feature the images show meets its minimum, every stacked or
+curved detail fits its host or is left out and named, every form and
 every hidden joint has a support-free stance, and every change is in both the
 contract and the images.
 
@@ -483,8 +561,9 @@ measurement table or millimetre lists unless the human asks.
 
 Also say, in plain words, anything the build will not match exactly, from
 Stage 3b or from the generation notes. List each Stage 3c change the same way:
-what grew, what was reshaped for printing, and what was dropped ("the rivets
-are drawn at 0.7 mm and will print as 1 mm bumps"). A Stage 3d change hidden
+what grew, what was reshaped for printing, and what was left out ("the chin
+rivets print as six 2 mm bumps, not ten small ones"; "the brow band prints
+plain, without rivets"). A Stage 3d change hidden
 inside the body gets one line ("the heart gear sits in front of the wing
 gears so the train cannot jam; hidden in the back").
 
