@@ -43,3 +43,11 @@ H3 planter (frog), H4 petbed (rabbit), H5 terrarium (ghost), H6 zenstone
 (penguin). The H4 and H6 renders show a raised rim around the screen, which must be
 lowered on the front and sides for edge swipes. The H6 penguin resembles Linux's
 Tux and must be redrawn. D1, D6 and D8 are tied to the sea and the octopus.
+
+## Retro desk concepts (RT1–RT7), 2026-10-02
+
+Retro computer forms with the screen near flat (≤ 30°), fixed shell, desk only, creature-neutral. Images in `retro-desk/`, page `RETRO_DESK_CONCEPTS.html` (artifact https://claude.ai/artifact/Rh8jjehWanFWMcvM8jaPD4).
+
+- All images are AI-generated with `openai/gpt-5.4-image-2` from text prompts only. No web image was used as input. Pinterest search pages need a login and returned no pins, so inspiration came from named historical devices (1950s radar console, Atari VCS, cocktail arcade table, Commodore 64, Tandy Model 100, Tektronix-style bench instrument, early Macintosh).
+- Regenerated once: breadbin (first pair was too steep, `_c`/`_d` kept), reclined mac (still about 45° after the retry, flagged), turntable (Tux-like penguin). Turntable was then dropped as a repeat of D5.
+- Flags: RT3 cocktail draws a raised rim around the screen; RT5 Model 100 and RT6 lab instrument draw the screen steeper than 25°; RT6 corner bumpers and RT2 rear ribs must sit below the glass; RT4 rainbow badge and RT7 silhouette recall Apple/Commodore trade dress.
