@@ -142,6 +142,73 @@ class GateRefusalTest(unittest.TestCase):
                 self.assertIn("face 4 (bspline, 1.50 mm2) centred at (1.0, 2.0, 3.0)", report)
 
 
+class MeshGateAgreementTest(unittest.TestCase):
+    """`check_mesh`, which final verification runs first, reads the same
+    `printed_mesh` as the two gates a component round runs: a part that passes
+    its rounds is not refused at the end for a tessellation they retried."""
+
+    def run_gate(self, gate, record):
+        module = runpy.run_path(str(SCRIPTS / gate))
+        main = module["main"]
+        with tempfile.TemporaryDirectory() as tmp:
+            entry = Path(tmp) / "part_fixture.step.py"
+            argv = [gate, str(entry)]
+            if gate != "check_mesh":
+                argv += ["--report", str(Path(tmp) / "report.md")]
+            patches = {
+                "resolve_single_entry": lambda _: entry,
+                "entry_role": lambda _: "fixture",
+                "entry_shape": lambda *_: None,
+                "printed_mesh": lambda _shape: record,
+            }
+            out = io.StringIO()
+            with mock.patch.dict(main.__globals__, patches), \
+                    mock.patch.object(sys, "argv", argv), contextlib.redirect_stdout(out):
+                code = main()
+            return code, out.getvalue()
+
+    def retried_box(self):
+        lib = printlib()
+        return lib.printed_mesh(
+            object(), mesh=lambda _shape, deviation, _angular:
+            box_soup(open_top=deviation == lib.MESH_DEVIATION))
+
+    def test_a_mesh_closed_by_the_finer_retry_passes_check_mesh_as_it_passes_the_gates(self):
+        lib = printlib()
+        lib.invalid_faces, saved = (lambda _shape: None), lib.invalid_faces
+        try:
+            record = self.retried_box()
+        finally:
+            lib.invalid_faces = saved
+        self.assertTrue(record["retessellated"])
+        for gate in ("check_mesh", "check_thickness", "check_overhang"):
+            with self.subTest(gate=gate):
+                code, stdout = self.run_gate(gate, record)
+                self.assertEqual(code, 0, stdout)
+        _, stdout = self.run_gate("check_mesh", record)
+        self.assertIn("PASS  watertight (no open edges)", stdout)
+        self.assertIn("closed only at the finer", stdout)
+        self.assertIn("RESULT: printable", stdout)
+
+    def test_check_mesh_gives_the_same_verdict_as_the_gates_on_an_unmeasured_mesh(self):
+        records = {
+            4: {"status": "unmeasurable", "open_edges": 6, "invalid_faces": None},
+            1: {"status": "invalid", "open_edges": 3, "invalid_faces": [
+                {"index": 4, "type": "bspline", "area": 1.5, "centre": (1.0, 2.0, 3.0)}]},
+        }
+        for expected, record in records.items():
+            for gate in ("check_mesh", "check_thickness", "check_overhang"):
+                with self.subTest(gate=gate, status=record["status"]):
+                    code, _ = self.run_gate(gate, record)
+                    self.assertEqual(code, expected)
+        _, stdout = self.run_gate("check_mesh", records[4])
+        self.assertIn("RESULT: UNMEASURABLE MESH", stdout)
+        self.assertNotIn("FAIL", stdout)
+        _, stdout = self.run_gate("check_mesh", records[1])
+        self.assertIn("RESULT: INVALID SOLID", stdout)
+        self.assertIn("face 4 (bspline, 1.50 mm2) centred at (1.0, 2.0, 3.0)", stdout)
+
+
 ENTRY_HEAD = "from build123d import *\nfrom features import print_details\nPRINTABLE = True\n"
 
 

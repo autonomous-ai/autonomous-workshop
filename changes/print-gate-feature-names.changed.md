@@ -10,7 +10,10 @@
   a valid one is re-tessellated once at a quarter of the deviation and
   measured if that closes it; one that stays open is `UNMEASURABLE MESH`
   (exit 4), a separate verdict that is not a print failure and never passes
-  a round.
+  a round. `check_mesh`, which final verification runs before the other two,
+  reads the same mesh, so a part a component round measured after the finer
+  retry is not refused at the end; `verify_project` still counts any nonzero
+  exit, `UNMEASURABLE MESH` included, as a failed mesh gate.
 - print-details tags every feature it makes in `PRINT_DETAIL_TAGS` and gains
   `bore` (a teardrop bore through a wall, vault or pointed roof),
   `blunt_tip` (a point, chisel, keel or ridge cut back to a land one minimum
