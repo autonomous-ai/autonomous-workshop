@@ -37,7 +37,8 @@ class PrintDetailsSkillTest(unittest.TestCase):
         self.assertTrue(text.startswith("---\nname: print-details\n"))
         for call in ("boss(", "rivet(", "rivets(", "dome(", "band(", "rim(", "pipe(",
                      "panel(", "window(", "slit(", "slits(", "bore(", "blunt_tip(", "rib_end(",
-                     "flat land at least one minimum wall across", "--install", "--self-check",
+                     "flat land at least one print minimum across",
+                     "never from\na geometry's `wall_min_mm`", "--install", "--self-check",
                      "--limits", "features/print_details.py"):
             self.assertIn(call, text)
         self.assertTrue(SCRIPT.is_file())
@@ -184,7 +185,7 @@ class PrintDetailsSkillTest(unittest.TestCase):
             (REPOSITORY / "src/workshop/make/agents/component-reviewer.toml").read_text(encoding="utf-8").split())
         for phrase in ("0.8 mm", "at least 2 mm across", "at least 0.9 mm wide",
                        "at least 0.5 mm wide", "0.5 mm high", "0.5 mm deep", "1.6 mm",
-                       "45 degrees", "print-details", "ends in a flat land at least one minimum wall",
+                       "45 degrees", "print-details", "ends in a flat land at least one print minimum", "never the geometry's wall_min_mm",
                        "Never ask for a sharp tip, a knife edge",
                        "a chamfer or taper that leaves an edge thinner than that"):
             with self.subTest(phrase=phrase):

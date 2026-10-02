@@ -160,7 +160,7 @@ are separate. Frozen older runs retain their materialized rules and tools.
    project; workers build rivets, bosses, low domes, bands, rims, pipe ribs,
    inset panels, lancet windows, grille slits and teardrop bores with it
    instead of by hand, and blunt every point, chisel, keel and rib end to a
-   land one minimum wall across with its `blunt_tip` and `rib_end`:
+   land one print minimum across (0.8 mm at a 0.4 mm nozzle) with its `blunt_tip` and `rib_end`:
 
    ```bash
    "$WORKSHOP_PYTHON" .agents/skills/print-details/scripts/print_details.py --install <cad-project>

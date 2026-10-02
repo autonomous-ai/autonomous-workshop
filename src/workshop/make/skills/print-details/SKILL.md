@@ -1,6 +1,6 @@
 ---
 name: print-details
-description: Add printable decorative detail to a Component - rivets, round bosses, low domes, raised bands and rims, half-round pipe ribs, inset panels, lancet windows, grille slits and teardrop bores - and blunt its points, chisels, keels and rib ends to a land one minimum wall across, from a library whose every feature refuses a size below the wiki's print limits for the run's nozzle and prints without support in its declared print direction. Use it instead of modelling surface detail or a sharp edge by hand.
+description: Add printable decorative detail to a Component - rivets, round bosses, low domes, raised bands and rims, half-round pipe ribs, inset panels, lancet windows, grille slits and teardrop bores - and blunt its points, chisels, keels and rib ends to a land one print minimum across, from a library whose every feature refuses a size below the wiki's print limits for the run's nozzle and prints without support in its declared print direction. Use it instead of modelling surface detail or a sharp edge by hand.
 ---
 
 # Printable detail
@@ -61,7 +61,7 @@ normal. `up` is the print direction in your generator's coordinates: +Z when
 | `window(host, at, width, height, depth, arch)` | a window through a wall `depth` thick, `lancet`, `gable` or `flat` | 4, 10, 2 |
 | `slit(host, at, width, length, depth, through)` / `slits(...)` | a grille slit running uphill; `at` may be a list | 1.2, 8, 1 |
 | `bore(host, at, d, depth, through)` | a round bore with a pointed (teardrop) roof, through a wall, a vault or a pointed roof | 3, 2 |
-| `blunt_tip(host, tip, toward, reach, back)` | a point, chisel, keel or ridge cut back to a flat land one minimum wall across | 6, 12 |
+| `blunt_tip(host, tip, toward, reach, back)` | a point, chisel, keel or ridge cut back to a flat land one print minimum across | 6, 12 |
 | `rib_end(rib, end, toward, reach)` | a rib you built cut square at `end` (ramped if it would look down), before you fuse it | whole rib |
 
 Paths and patterns: `pd.segment(start, end)` (a straight run on one face),
@@ -90,8 +90,9 @@ What each feature does where the print would hang:
 tip, the ridge of a pointed vault, a keel, a feather tapered to nothing or an
 offset rib that runs out in a sliver fails the round however the numbers are
 tuned. The rule, which every Design Contract carries: **every point, chisel,
-keel and V underside ends in a flat land at least one minimum wall across**
-(0.8 mm at a 0.4 nozzle).
+keel and V underside ends in a flat land at least one print minimum across**
+(0.8 mm at a 0.4 nozzle). The print minimum comes from the nozzle, never from
+a geometry's `wall_min_mm`, which sizes load-bearing sections.
 
 - `pd.blunt_tip(host, tip, toward)` finds where the host first spans one
   minimum wall across, back from `tip` along `-toward`, and cuts it square

@@ -550,8 +550,9 @@ class Details:
     # -- blunt free edges ------------------------------------------------------
 
     def blunt_tip(self, host, tip, toward, reach: float = 6.0, back: float = 12.0):
-        """End a point, chisel, keel or V underside in a flat land one minimum
-        wall across (0.8 mm at a 0.4 nozzle), which is what `check_thickness`
+        """End a point, chisel, keel or V underside in a flat land one print
+        minimum across (the nozzle's `min_wall` limit, 0.8 mm at a 0.4 nozzle;
+        never a geometry's `wall_min_mm`), which is what `check_thickness`
         needs: it counts every straight knife edge as a wall.
 
         `tip` is the sharpest point of the host (a point, or one point on a

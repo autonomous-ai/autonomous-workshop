@@ -66,8 +66,10 @@ Drive to a written spec containing:
 - **Envelope, wall thickness, print stance.** Name each geometry's print
   stance by the face that lies on the bed.
 - **Blunt free edges.** Every point, chisel, keel and V underside ends in a
-  flat land at least one minimum wall across: 0.8 mm at Workshop's 0.4 mm
-  nozzle. A wing tip, a horn, a crest feather or a vault ridge is drawn and
+  flat land at least one print minimum across: 0.8 mm at Workshop's 0.4 mm
+  nozzle. The land is sized by the printer, never by a geometry's
+  `wall_min_mm`, which is a strength floor for load-bearing sections: a
+  3.0 mm land would turn a 3.5 mm claw into a stub. A wing tip, a horn, a crest feather or a vault ridge is drawn and
   specified with that land, never as a knife edge. The print gate fails every
   straight knife edge as a thin wall, however its angle is tuned.
 - **Every joint, pinned.** For each pair of Components that join: the joint
@@ -122,8 +124,10 @@ visible feature.
 
 Every contract's prose carries the blunt-edge rule, word for word, in its
 print section: "Every point, chisel, keel and V underside ends in a flat land
-at least 0.8 mm across (one minimum wall at a 0.4 mm nozzle)." Use the
-contract's own minimum wall when it is larger. A requirement row that names a
+at least 0.8 mm across (one print minimum at a 0.4 mm nozzle)." The 0.8 mm
+changes only with the nozzle: a contract for a larger nozzle states that
+nozzle's print minimum instead. It never takes a geometry's `wall_min_mm`,
+which sizes load-bearing sections, not lands. A requirement row that names a
 sharp form says so too: "each wing ends in a chisel tip with a 0.8 mm land",
 never "a sharp chisel tip". Check the block against the prose line by line,
 not just against itself: a block that leaves out a decided number or feature
