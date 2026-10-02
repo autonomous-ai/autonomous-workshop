@@ -146,6 +146,7 @@ class MakeRoundTest(unittest.TestCase):
         *,
         render_fails=False,
         build_fails=False,
+        build_stderr="ValueError: wall must be positive\n",
         wall_fails=False,
         overhang_fails=False,
         overhang_unverified=False,
@@ -190,7 +191,7 @@ class MakeRoundTest(unittest.TestCase):
                 return subprocess.CompletedProcess(command, code, stdout, "")
             failed = (render_fails and tool == "render_review") or (build_fails and tool == "gen")
             return subprocess.CompletedProcess(command, 1 if failed else 0,
-                                               '{"ok":true}\n', "ValueError: wall must be positive\n" if failed else "")
+                                               '{"ok":true}\n', build_stderr if failed else "")
         with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(module, "skills_root", return_value=project), mock.patch.object(module, "run", side_effect=fake_run):
             self.assertEqual(module.main(argv or [str(project)]), 1)
         summary = json.loads((project / "measure/rounds" / round_name / "summary.json").read_text())
@@ -255,6 +256,44 @@ class MakeRoundTest(unittest.TestCase):
             _, third = self._round(project, wall_fails=True, wall_feature="plane@(1,2,3)",
                                    round_name="r0003")
             self.assertEqual(third["repeated_print_defects"], {})
+
+    def test_every_detail_refusal_of_a_build_is_in_the_summary(self):
+        # Issue #86: the worker reads every refusal, with what would pass,
+        # from the summary; a detail refused at the same site again is flagged.
+        refused = (
+            "[scripts/gen] FAILED: DetailRefusals: 2 Detail Refusals in this build; each detail was "
+            "left out of this build, which fails until every one passes:\n"
+            'detail-refusal {"feature": "rivet", "passes": "h >= 0.85 mm or d <= 1.90 mm at this spot", '
+            '"reason": "rivet: the host falls 0.80 mm away under its edge, more than its 0.60 mm height", '
+            '"site": "part_wheel.step.py:9"}\n'
+            'detail-refusal {"feature": "band", "passes": "width >= 0.90 mm", '
+            '"reason": "band: width 0.60 mm is below the min relief width of 0.90 mm", '
+            '"site": "part_wheel.step.py:10"}\n'
+            "[scripts/gen]   raised in .../generation_runner.py:406\n"
+            "[scripts/gen] re-run with --verbose for the full traceback\n")
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module, first = self._round(project, build_fails=True, build_stderr=refused)
+            build = first["build"]["wheel"]
+            self.assertEqual(build["verdict"], "FAIL")
+            self.assertEqual([item["feature"] for item in build["detail_refusals"]], ["rivet", "band"])
+            self.assertEqual(build["detail_refusals"][0]["site"], "part_wheel.step.py:9")
+            self.assertEqual(build["detail_refusals"][0]["passes"], "h >= 0.85 mm or d <= 1.90 mm at this spot")
+            self.assertEqual(first["repeated_detail_refusals"], {})
+            text = module.render_summary(first)
+            self.assertIn("refuse rivet at part_wheel.step.py:9: rivet: the host falls 0.80 mm", text)
+            self.assertIn("passes with h >= 0.85 mm or d <= 1.90 mm at this spot", text)
+            self.assertIn("refuse band at part_wheel.step.py:10", text)
+            _, second = self._round(project, build_fails=True, build_stderr=refused, round_name="r0002")
+            self.assertEqual(second["repeated_detail_refusals"],
+                             {"wheel": ["rivet@part_wheel.step.py:9", "band@part_wheel.step.py:10"]})
+            self.assertEqual(second["repeated_print_defects"], {})
+            self.assertIn("again REFUSE rivet@part_wheel.step.py:9", module.render_summary(second))
+            self.assertIn("leave it out and name it in your report", module.render_summary(second))
+            # A round that builds clears them: a later refusal is new.
+            self._round(project, round_name="r0003")
+            _, fourth = self._round(project, build_fails=True, build_stderr=refused, round_name="r0004")
+            self.assertEqual(fourth["repeated_detail_refusals"], {})
 
     def test_print_defects_are_the_failing_regions_named_features(self):
         module = load_module()

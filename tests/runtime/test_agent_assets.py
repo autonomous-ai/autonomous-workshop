@@ -389,6 +389,37 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         self.assertIn('"schema_version": 4', contract_format)
         self.assertIn("`text` (schema 4, required and non-empty, no length limit)", contract_format)
 
+    def test_workers_drop_a_twice_refused_detail_and_reviewers_ask_for_placeable_detail(self):
+        # Issue #86: a Detail Refusal is repaired from the summary, a detail
+        # refused twice at one spot is left out, and the reviewer's limits
+        # cover placement as well as size.
+        def text(*parts):
+            return " ".join(REPOSITORY.joinpath(*parts).read_text(encoding="utf-8").split())
+
+        worker = text("src/workshop/make/agents/component-worker.toml")
+        for required in (
+            "the build fails once with every refusal",
+            "lists each on a `refuse` line",
+            "what passes there",
+            "Repair every one in the same edit",
+            "Two refusals are the limit: when a detail at the same spot is refused in two rounds",
+            "leave it out of your code and name it, with its passing value, in your report",
+            "Never model it by hand instead",
+            "each detail you left out after two refusals",
+        ):
+            with self.subTest(worker=required):
+                self.assertIn(required, worker)
+        reviewer = text("src/workshop/make/agents/component-reviewer.toml")
+        for required in (
+            "a detail on another detail (a rivet on a band or a rim) needs a host wider than the "
+            "detail plus 0.5 mm on each side",
+            "no raised detail on a concave surface deeper than the detail's height",
+            "copies in a row keep a gap of at least 0.5 mm (the min cut width)",
+            "A repair that breaks a placement rule is not a difference either",
+        ):
+            with self.subTest(reviewer=required):
+                self.assertIn(required, reviewer)
+
     def test_installed_lookup_reads_exact_packaged_snapshot(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

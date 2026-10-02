@@ -16,9 +16,18 @@ modelling it by hand. Every feature
   pointed top on a window (the overhangs page's 52 deg rule, 7 deg inside the
   45 deg gate), and checks every new face of its own tessellation for it;
 - ends in a step or a chamfer whose flat stays at least one minimum wall wide;
-- returns one valid solid, or raises `PrintLimitError`;
+- returns one valid solid, or raises `PrintLimitError` naming a value that
+  would pass at that spot (its `passing`);
 - tags what it made in `PRINT_DETAIL_TAGS`, so a print gate that fails a
   region on or beside it names the feature and the line that made it.
+
+Inside a build (`gen` and the print gates set `WORKSHOP_PRINT_DETAILS_BUILD`
+while `gen_step()` runs) a refused feature returns its host unchanged and its
+Detail Refusal is recorded in `DETAIL_REFUSALS`, so the rest of the build
+still runs. The build then fails once, with `DetailRefusals` listing every
+refusal: its feature, call site, reason and passing value (issue #86). A
+detail is never left out silently; outside a build every refusal raises at
+once.
 
 A part entry uses it after the Workshop Manager has copied it into the CAD
 project (`print_details.py --install <cad-project>` writes
@@ -46,10 +55,14 @@ and `check_overhang` on each. It exits non-zero on any failure.
 
 from __future__ import annotations
 
+import functools
+import json
 import math
+import os
 from dataclasses import dataclass
 
-__all__ = ["Details", "PrintLimitError", "Ring", "Segment", "limits", "PRINT_DETAIL_TAGS"]
+__all__ = ["Details", "DetailRefusals", "PrintLimitError", "Ring", "Segment", "limits",
+           "PRINT_DETAIL_TAGS", "DETAIL_REFUSALS"]
 
 # Every feature this library made in this process, oldest first: `kind`,
 # `name` (`rivet-2`), `site` (`part_x.step.py:42`, the line that asked for it)
@@ -57,6 +70,14 @@ __all__ = ["Details", "PrintLimitError", "Ring", "Segment", "limits", "PRINT_DET
 # coordinates). `check_thickness` and `check_overhang` read it after building
 # the entry and name the feature nearest each failing region (issue #82).
 PRINT_DETAIL_TAGS: list = []
+
+# Every Detail Refusal of the build in progress (issue #86): `feature`,
+# `site`, `reason` and `passes`, the value that would pass at that spot. The
+# build boundary reads it after `gen_step()` and raises `refusal_error()`.
+DETAIL_REFUSALS: list = []
+BUILD_ENV = "WORKSHOP_PRINT_DETAILS_BUILD"
+# The marker a refusal line carries in the build's error, for make_round.
+REFUSAL_LINE = "detail-refusal "
 
 WIKI = ".agents/skills/wiki/pages/"
 WALL_PAGE = "printing/wall-thickness-and-hollowing.md"
@@ -82,7 +103,83 @@ _LIFT = 0.3                    # how far a cut starts outside the surface
 
 
 class PrintLimitError(ValueError):
-    """A detail that cannot print at this nozzle, or cannot print here."""
+    """A detail that cannot print at this nozzle, or cannot print here.
+
+    `passing` names what would pass at that spot: a size (`d <= 1.90 mm`), a
+    spacing, or the kind of spot.
+    """
+
+    def __init__(self, message: str, passing: str | None = None):
+        super().__init__(message)
+        self.passing = passing
+
+
+class DetailRefusals(PrintLimitError):
+    """Every Detail Refusal of one build, raised once when it ends.
+
+    `refusals` holds each one's `feature`, `site`, `reason` and `passes`;
+    `after` is the error that stopped the build early, if one did.
+    """
+
+    def __init__(self, refusals: list, after: BaseException | None = None):
+        self.refusals = [dict(item) for item in refusals]
+        self.after = after
+        count = len(self.refusals)
+        lines = [f"{count} Detail Refusal{'s' if count != 1 else ''} in this build; each detail was "
+                 f"left out of this build, which fails until every one passes:"]
+        lines += [REFUSAL_LINE + json.dumps(item, sort_keys=True) for item in self.refusals]
+        if after is not None:
+            lines.append(f"then the build stopped: {type(after).__name__}: {after} (it may stand "
+                         f"on a detail refused above)")
+        super().__init__("\n".join(lines))
+
+
+def building() -> bool:
+    """True while a build boundary collects Detail Refusals."""
+    return os.environ.get(BUILD_ENV) == "1"
+
+
+def refusal_error(after: BaseException | None = None) -> DetailRefusals | None:
+    """The build's `DetailRefusals`, emptying the registry; None if there
+    were none. The build boundary raises it."""
+    if not DETAIL_REFUSALS:
+        return None
+    error = DetailRefusals(DETAIL_REFUSALS, after)
+    DETAIL_REFUSALS.clear()
+    return error
+
+
+def _collecting(method):
+    """Inside a build, record a feature's refusal and return its host
+    unchanged, so the build goes on to the next detail; outside one, raise."""
+    @functools.wraps(method)
+    def call(self, *args, **kwargs):
+        outer = not self._depth
+        self._depth += 1
+        try:
+            return method(self, *args, **kwargs)
+        except PrintLimitError as error:
+            if not outer or not building():
+                raise
+            # the solid the feature was made on: `host`, or `rib` for rib_end
+            host = args[0] if args else kwargs.get("host", kwargs.get("rib"))
+            DETAIL_REFUSALS.append({
+                "feature": method.__name__.replace("_", " "), "site": _call_site(),
+                "reason": str(error), "passes": error.passing or "no size: another spot"})
+            return host
+        finally:
+            self._depth -= 1
+    return call
+
+
+def _up(value: float) -> float:
+    """Rounded up to 0.01 mm: a minimum that still passes when printed."""
+    return math.ceil(value * 100 - 1e-6) / 100
+
+
+def _down(value: float) -> float:
+    """Rounded down to 0.01 mm: a maximum that still passes."""
+    return math.floor(value * 100 + 1e-6) / 100
 
 
 def _call_site() -> str:
@@ -141,11 +238,14 @@ def limits(nozzle: float = 0.4, overhang_angle: float = 45.0) -> dict:
     }
 
 
-def _refuse(feature: str, what: str, value: float, name: str, table: dict) -> None:
+def _refuse(feature: str, what: str, value: float, name: str, table: dict,
+            passing: str | None = None) -> None:
+    """Refuse a value below a limit; `passing` defaults to the limit itself."""
     limit, unit, page, why = table[name]
     raise PrintLimitError(
         f"{feature}: {what} {value:.2f} {unit} is below the {name.replace('_', ' ')} "
-        f"of {limit:.2f} {unit} ({why}; {WIKI}{page})")
+        f"of {limit:.2f} {unit} ({why}; {WIKI}{page})",
+        passing or f"{what} >= {_up(limit):.2f} {unit}")
 
 
 @dataclass(frozen=True)
@@ -322,13 +422,15 @@ class Details:
         self.overhang_angle = float(overhang_angle)
         self.design = self.overhang_angle - _DESIGN_MARGIN
         self.table = limits(self.nozzle, self.overhang_angle)
+        self._depth = 0            # a feature calling another records once
 
     def limit(self, name: str) -> float:
         return self.table[name][0]
 
-    def _at_least(self, feature, what, value, name):
+    def _at_least(self, feature, what, value, name, arg):
+        """Refuse `arg` (the keyword the caller passed) below a limit."""
         if value < self.limit(name) - 1e-9:
-            _refuse(feature, what, value, name, self.table)
+            _refuse(feature, what, value, name, self.table, f"{arg} >= {_up(self.limit(name)):.2f} mm")
 
     # -- placement ------------------------------------------------------------
 
@@ -391,10 +493,12 @@ class Details:
 
     # -- point features, revolved about the surface normal --------------------
 
+    @_collecting
     def boss(self, host, at, d: float = 4.0, h: float = 1.5):
         """A round boss ending in a step: a flat top. `at` may be a list."""
         return self._relief_points(host, at, "boss", d, h, chamfer=0.0)
 
+    @_collecting
     def rivet(self, host, at, d: float = 3.0, h: float = 1.0):
         """A rivet: a round boss with its top edge chamfered. `at` may be a
         list of points (a ring, a row), placed in one operation."""
@@ -402,15 +506,17 @@ class Details:
 
     rivets = rivet
 
+    @_collecting
     def dome(self, host, at, d: float = 8.0, h: float = 1.2):
         """A low dome: a spherical cap `d` across and `h` high. Off a top face
         its rim must meet the surface within the design angle, so it is lower
         there; the error names the height that fits."""
         name = "dome"
-        self._at_least(name, "diameter", d, "min_feature")
-        self._at_least(name, "height", h, "min_relief_height")
+        self._at_least(name, "diameter", d, "min_feature", "d")
+        self._at_least(name, "height", h, "min_relief_height", "h")
         if h > d / 2:
-            raise PrintLimitError(f"{name}: height {h:.2f} mm is more than a hemisphere {d:.2f} mm across")
+            raise PrintLimitError(f"{name}: height {h:.2f} mm is more than a hemisphere {d:.2f} mm across",
+                                  f"h <= {_down(d / 2):.2f} mm, or d >= {_up(2 * h):.2f} mm")
 
         def build(elevation, root, buttress):
             half, alpha = _half_dome(d / 2, h, root)
@@ -421,7 +527,9 @@ class Details:
                     f"{name}: its rim meets the surface at {alpha:.1f} deg, more than the "
                     f"{allowed:.1f} deg this face allows before its lower edge looks down past "
                     f"{self.design:.0f} deg; make it at most {lower:.2f} mm high here "
-                    f"({WIKI}{OVERHANG_PAGE})")
+                    f"({WIKI}{OVERHANG_PAGE})",
+                    f"h <= {_down(lower):.2f} mm here" if lower >= self.limit("min_relief_height")
+                    else "no height here: a face nearer level")
             return _revolved(half)
         return self._place_points(host, at, name, build, d, h, buttressed=False)
 
@@ -433,18 +541,20 @@ class Details:
         return chamfer if chamfer >= 0.05 else 0.0
 
     def _relief_points(self, host, at, name, d, h, chamfer):
-        self._at_least(name, "diameter", d, "min_feature")
-        self._at_least(name, "height", h, "min_relief_height")
+        self._at_least(name, "diameter", d, "min_feature", "d")
+        self._at_least(name, "height", h, "min_relief_height", "h")
         _, top = _half_flat(d / 2, h, 0.0, chamfer, _ROOT)
         if 2 * top < self.limit("min_wall") - 1e-9:
-            _refuse(name, "top flat", 2 * top, "min_wall", self.table)
+            _refuse(name, "top flat", 2 * top, "min_wall", self.table,
+                    f"d >= {_up(d + self.limit('min_wall') - 2 * top):.2f} mm")
 
         def build(elevation, root, buttress):
             body = _revolved(_half_flat(d / 2, h, 0.0, chamfer, root)[0])
             if buttress is not None:
                 supported = body + self._support(d / 2, h - chamfer, root, buttress)
                 if len(supported.solids()) != 1 or supported.volume < body.volume + 1e-3:
-                    raise PrintLimitError(f"{name}: its support did not join it")
+                    raise PrintLimitError(f"{name}: its support did not join it",
+                                          "a spot on a face nearer vertical or nearer level")
                 body = supported
             return body
         return self._place_points(host, at, name, build, d, h, buttressed=True)
@@ -471,84 +581,105 @@ class Details:
 
     # -- path features --------------------------------------------------------
 
+    @_collecting
     def band(self, host, path, width: float = 2.0, height: float = 1.0):
         """A raised band, chamfered on top, along a `Segment` or round a `Ring`."""
         name = "band"
-        self._at_least(name, "width", width, "min_relief_width")
-        self._at_least(name, "height", height, "min_relief_height")
+        self._at_least(name, "width", width, "min_relief_width", "width")
+        self._at_least(name, "height", height, "min_relief_height", "height")
         chamfer = self._chamfer(width, min(height * 0.4, width * 0.15))
+
+        def top_flat(w, beta):
+            c = self._chamfer(w, min(height * 0.4, w * 0.15))
+            return 2 * _half_flat(w / 2, height, beta, c, 0.0)[1]
 
         def half(beta, root):
             items, top = _half_flat(width / 2, height, beta, chamfer, root)
             if 2 * top < self.limit("min_wall") - 1e-9:
-                _refuse(name, "top flat after its draft on this face", 2 * top, "min_wall", self.table)
+                wider = next((width + i / 100 for i in range(1, 2001)
+                              if top_flat(width + i / 100, beta) >= self.limit("min_wall")), None)
+                _refuse(name, "top flat after its draft on this face", 2 * top, "min_wall", self.table,
+                        f"width >= {wider:.2f} mm on this face" if wider else "a face nearer level")
             return items, top
-        return self._place_path(host, path, name, half, width / 2, height)
+        return self._place_path(host, path, name, half, width / 2, height,
+                                ("width", width, self.limit("min_relief_width"), lambda w: w / 2,
+                                 lambda w: height), taller="height")
 
+    @_collecting
     def rim(self, host, axis, radius: float, width: float = 2.0, height: float = 1.0):
         """A raised rim standing on the face across `axis`: a band on an
         axial `Ring`."""
         return self.band(host, Ring(axis, radius, "axial"), width, height)
 
+    @_collecting
     def pipe(self, host, path, d: float = 1.5):
         """A half-round pipe rib `d` across along a `Segment` or round a
         `Ring`. Where its underside would look down it continues as a drafted
         flank instead, so it is wider at its foot on that side."""
         name = "pipe"
-        self._at_least(name, "diameter", d, "min_relief_width")
-        self._at_least(name, "height", d / 2, "min_relief_height")
+        self._at_least(name, "diameter", d, "min_relief_width", "d")
+        if d / 2 < self.limit("min_relief_height") - 1e-9:
+            _refuse(name, "height", d / 2, "min_relief_height", self.table,
+                    f"d >= {_up(2 * self.limit('min_relief_height')):.2f} mm")
 
         def half(beta, root):
             return _half_round(d / 2, beta, root)
-        return self._place_path(host, path, name, half, d / 2, d / 2)
+        least = max(self.limit("min_relief_width"), 2 * self.limit("min_relief_height"))
+        return self._place_path(host, path, name, half, d / 2, d / 2,
+                                ("d", d, least, lambda v: v / 2, lambda v: v / 2))
 
     # -- cut features: an outline cut into the host ---------------------------
 
+    @_collecting
     def panel(self, host, at, width: float = 8.0, height: float = 12.0,
               depth: float = 0.8, arch: str = "flat", angle: float = 0.0):
         """An inset panel: a blind recess, `flat` or `lancet` (pointed arch)
         topped. On a wall its roof rises outward at 52 deg."""
         name = "panel"
-        self._at_least(name, "width", width, "min_cut_width")
-        self._at_least(name, "depth", depth, "min_cut_depth")
+        self._at_least(name, "width", width, "min_cut_width", "width")
+        self._at_least(name, "depth", depth, "min_cut_depth", "depth")
         return self._place_cuts(host, at, name, (width, height, arch), depth, False, angle)
 
+    @_collecting
     def window(self, host, at, width: float = 4.0, height: float = 10.0,
                depth: float = 2.0, arch: str = "lancet", angle: float = 0.0):
         """A window through a wall `depth` thick, `lancet`, `gable` or `flat`
         topped. Off a top face only a pointed top prints: a flat one roofs it."""
         name = "window"
-        self._at_least(name, "width", width, "min_cut_width")
+        self._at_least(name, "width", width, "min_cut_width", "width")
         return self._place_cuts(host, at, name, (width, height, arch), depth, True, angle)
 
+    @_collecting
     def slit(self, host, at, width: float = 1.2, length: float = 8.0,
              depth: float = 1.0, through: bool = False, angle: float = 0.0):
         """A grille slit `length` long running uphill (turn it with `angle`).
         A blind slit's upper end is roofed at 52 deg; a through slit has
         pointed ends. `at` may be a list of points: a grille in one operation."""
         name = "slit"
-        self._at_least(name, "width", width, "min_cut_width")
+        self._at_least(name, "width", width, "min_cut_width", "width")
         if not through:
-            self._at_least(name, "depth", depth, "min_cut_depth")
+            self._at_least(name, "depth", depth, "min_cut_depth", "depth")
         shape = (width, length, "pointed" if through else "flat")
         return self._place_cuts(host, at, name, shape, depth, through, angle)
 
     slits = slit
 
+    @_collecting
     def bore(self, host, at, d: float = 3.0, depth: float = 2.0, through: bool = True):
         """A round bore `d` across into the host at `at`, `depth` deep (the
         wall's thickness when `through`). On a wall its roof runs straight to a
         point at 52 deg where the circle would look down (a teardrop), so a
         bore through a wall, a vault or a pointed roof needs no support."""
         name = "bore"
-        self._at_least(name, "diameter", d, "min_cut_width")
+        self._at_least(name, "diameter", d, "min_cut_width", "d")
         if not through:
-            self._at_least(name, "depth", depth, "min_cut_depth")
+            self._at_least(name, "depth", depth, "min_cut_depth", "depth")
         rise = d / 2 * (1 + 1 / math.cos(math.radians(90.0 - self.design)))
         return self._place_cuts(host, at, name, (d, rise, "teardrop"), depth, through, 0.0)
 
     # -- blunt free edges ------------------------------------------------------
 
+    @_collecting
     def blunt_tip(self, host, tip, toward, reach: float = 6.0, back: float = 12.0):
         """End a point, chisel, keel or V underside in a flat land one print
         minimum across (the nozzle's `min_wall` limit, 0.8 mm at a 0.4 nozzle;
@@ -578,7 +709,8 @@ class Details:
             if depth > back:
                 raise PrintLimitError(
                     f"{name}: the host never spans {land:.2f} mm across within {back:.1f} mm of "
-                    f"the tip; give it a fuller tip or a larger `back` ({WIKI}{WALL_PAGE})")
+                    f"the tip; give it a fuller tip or a larger `back` ({WIKI}{WALL_PAGE})",
+                    f"back > {back:.1f} mm, or a tip {land:.2f} mm across within {back:.1f} mm")
         low, high = max(0.0, depth - step), depth
         for _ in range(6):
             middle = (low + high) / 2
@@ -589,6 +721,7 @@ class Details:
         _tag("blunt-tip", [self._section(result, origin, axis, reach + 1.0)])
         return result
 
+    @_collecting
     def rib_end(self, rib, end, toward, reach: float | None = None):
         """End a rib, fin or offset layer you built yourself cleanly at `end`,
         before you fuse it: everything of `rib` past the plane through `end`
@@ -615,7 +748,8 @@ class Details:
             raise ValueError(f"{name}: the plane through {tuple(round(c, 3) for c in p)} misses the rib")
         across = min(self._min_width(face, p, axis) for face in section.faces())
         if across < self.limit("min_wall") - 1e-9:
-            _refuse(name, "end face across", across, "min_wall", self.table)
+            _refuse(name, "end face across", across, "min_wall", self.table,
+                    f"a rib at least {_up(self.limit('min_wall')):.2f} mm across at `end`")
         result = self._trim(rib, p, axis, reach, name)
         _tag("rib-end", [section])
         return result
@@ -632,7 +766,8 @@ class Details:
             raise PrintLimitError(
                 f"{name}: its land would face down {origin.dot(self.up) - bed:.2f} mm above "
                 f"the bed, a flat ceiling with nothing under it; print the part so the tip rests on "
-                f"the bed or points up or sideways ({WIKI}{OVERHANG_PAGE})")
+                f"the bed or points up or sideways ({WIKI}{OVERHANG_PAGE})",
+                "a print stance with the tip on the bed, or pointing up or sideways")
 
     def _cutter(self, origin, axis, reach):
         """The half-space past the plane through `origin` square to `axis`,
@@ -698,13 +833,15 @@ class Details:
         if roofed and (not quarter or (arch != "flat" and round(angle / 90.0) % 4)):
             raise PrintLimitError(
                 f"{name}: on a wall a recess is roofed at 52 deg uphill, so only a flat outline turns, "
-                f"in quarter turns, and an arch points up ({WIKI}{OVERHANG_PAGE})")
+                f"in quarter turns, and an arch points up ({WIKI}{OVERHANG_PAGE})",
+                "arch='flat' with angle a multiple of 90, or an arch at angle=0")
         if arch == "flat" and quarter and round(angle / 90.0) % 2:
             width, height, angle = height, width, 0.0
         elif quarter and arch == "flat":
             angle = 0.0
         if height < self.limit("min_cut_width") - 1e-9:
-            _refuse(name, "height", height, "min_cut_width", self.table)
+            _refuse(name, "height", height, "min_cut_width", self.table,
+                    f"{'length' if name == 'slit' else 'height'} >= {_up(self.limit('min_cut_width')):.2f} mm")
         face = self._shape(name, width, height + stretch, arch, roofed)
         face = face.moved(b.Location((0, stretch / 2, 0)))
         return face.rotate(b.Axis.Z, angle) if angle else face
@@ -724,7 +861,8 @@ class Details:
             rise = arc_rise + x_end * math.tan(math.pi / 2 - lean)
             if height < rise or (jambs and height - rise < 0.05):
                 raise PrintLimitError(
-                    f"{name}: a {width:.2f} mm lancet needs more than {rise:.2f} mm of height for its arch")
+                    f"{name}: a {width:.2f} mm lancet needs more than {rise:.2f} mm of height for its arch",
+                    f"height >= {_up(rise + (0.06 if jambs else 0.0)):.2f} mm")
             ys = y1 - rise
             half = lean / 2
             mid_x = w2 - width * (1 - math.cos(half))
@@ -761,7 +899,9 @@ class Details:
             low = rise if arch == "pointed" else 0.0
             if height < rise + low or (jambs and height - rise - low < 0.05):
                 raise PrintLimitError(
-                    f"{name}: a {width:.2f} mm pointed end needs more than {rise + low:.2f} mm of length")
+                    f"{name}: a {width:.2f} mm pointed end needs more than {rise + low:.2f} mm of length",
+                    f"{'length' if name == 'slit' else 'height'} >= "
+                    f"{_up(rise + low + (0.06 if jambs else 0.0)):.2f} mm")
             bottom = [(0, y0)] if low else [(-w2, y0), (w2, y0)]
             points = [*bottom, (w2, y0 + low), (w2, y1 - rise), (0, y1), (-w2, y1 - rise), (-w2, y0 + low)]
             unique = []
@@ -785,7 +925,8 @@ class Details:
         if elevation < _MIN_ELEVATION:
             raise PrintLimitError(
                 f"{name}: this face looks {-elevation:.0f} deg down in the print direction; "
-                f"detail on it hangs over the bed ({WIKI}{OVERHANG_PAGE})")
+                f"detail on it hangs over the bed ({WIKI}{OVERHANG_PAGE})",
+                f"a spot whose face looks at most {-_MIN_ELEVATION:.0f} deg down")
 
     def _sag(self, host, plane, offsets):
         """(below, above): how far the host's surface falls below the tangent
@@ -802,31 +943,85 @@ class Details:
                 below = max(below, distance)
         return below, above
 
-    def _relief_root(self, name, below, above, height):
-        """The root depth that reaches the host everywhere under a relief."""
-        if height - above < self.limit("min_relief_height") - 1e-9:
+    def _relief_root(self, name, below, above, height, taller=None, smaller=None):
+        """The root depth that reaches the host everywhere under a relief.
+
+        A refusal's passing value is the least height that clears this spot,
+        from `taller`: (the caller's height keyword, and the sag at a height
+        when the footprint grows with it, else None), and the largest size
+        that does, from `smaller(fits)`: text, or None when no size fits.
+        """
+        least = self.limit("min_relief_height")
+
+        def fits(sag, h):
+            return sag[1] <= h - least + 1e-9 and sag[0] <= h
+
+        def tallest_needed():
+            keyword, sag_at = taller
+            sag = (below, above)
+            for _ in range(6):
+                h = _up(max(sag[1] + least, sag[0] + 0.01))
+                if sag_at is None:
+                    return h
+                sag = sag_at(h)
+                if fits(sag, h):
+                    return h
+            return None
+
+        def passing():
+            options = []
+            needed = tallest_needed() if taller else None
+            if needed is not None:
+                options.append(f"{taller[0]} >= {needed:.2f} mm")
+            found = smaller(fits) if smaller else None
+            if found:
+                options.append(found)
+            return (" or ".join(options) + " at this spot") if options else "a flatter spot"
+        if height - above < least - 1e-9:
             _refuse(name, "height left above this concave surface", height - above,
-                    "min_relief_height", self.table)
+                    "min_relief_height", self.table, passing())
         if below > height:
             raise PrintLimitError(
                 f"{name}: the host falls {below:.2f} mm away under its edge, more than its "
                 f"{height:.2f} mm height; place it on a flatter spot or make it smaller "
-                f"({WIKI}{WALL_PAGE}, 'A groove through a rounded rim leaves a sliver')")
+                f"({WIKI}{WALL_PAGE}, 'A groove through a rounded rim leaves a sliver')", passing())
         return max(_ROOT, below + 0.1)
 
-    def _spacing(self, name, spots, extent, raised):
-        """The gap (raised) or web (cut) between neighbouring copies."""
+    @staticmethod
+    def _largest(low, high, ok):
+        """The largest size in [low, high] that is `ok`, assuming a smaller
+        one fits wherever a larger one does; None when even `low` fails."""
+        if high < low or not ok(low):
+            return None
+        good, bad = low, high
+        for _ in range(10):
+            middle = (good + bad) / 2
+            good, bad = (middle, bad) if ok(middle) else (good, middle)
+        return good
+
+    def _spacing(self, name, spots, extent, raised, size=None):
+        """The gap (raised) or web (cut) between neighbouring copies.
+
+        A refusal passes with the closest pair moved apart by what is
+        missing, or, for `size` (keyword, value, minimum), copies that much
+        smaller where that stays above the minimum.
+        """
         if len(spots) < 2:
             return
-        between = min(
-            (a.point - c.point).length - extent(a, _unit(c.point - a.point)) / 2
-            - extent(c, _unit(a.point - c.point)) / 2
+        between, pitch = min(
+            ((a.point - c.point).length - extent(a, _unit(c.point - a.point)) / 2
+             - extent(c, _unit(a.point - c.point)) / 2, (a.point - c.point).length)
             for i, a in enumerate(spots) for c in spots[i + 1:])
-        if raised:
-            if between < self.limit("min_cut_width") - 1e-9:
-                _refuse(name, "gap between copies", between, "min_cut_width", self.table)
-        elif between < self.limit("min_web") - 1e-9:
-            _refuse(name, "web between copies", between, "min_web", self.table)
+        limit, what = (("min_cut_width", "gap between copies") if raised
+                       else ("min_web", "web between copies"))
+        missing = self.limit(limit) - between
+        if missing <= 1e-9:
+            return
+        options = [f"copies at least {_up(pitch + missing):.2f} mm apart, centre to centre "
+                   f"(now {pitch:.2f} mm)"]
+        if size is not None and size[1] - missing >= size[2] - 1e-9:
+            options.append(f"{size[0]} <= {_down(size[1] - missing):.2f} mm")
+        _refuse(name, what, between, limit, self.table, " or ".join(options))
 
     def _place_points(self, host, at, name, build, d, h, buttressed):
         spots = [self.spot(host, p) for p in self._points(at)]
@@ -836,14 +1031,28 @@ class Details:
             elevation = _elevation(spot.normal, self.up)
             self._face_allows(name, elevation)
             gamma = self._gamma(elevation) if buttressed else None
-            footprint = [(d / 2 * math.cos(t), d / 2 * math.sin(t)) for t in (math.pi * k / 4 for k in range(8))]
             if gamma is not None:
                 reach = (h + 1.0) / math.tan(math.radians(gamma))
-                footprint += [(0.0, -d / 2 - reach * f) for f in (0.5, 1.0)]
-            root = self._relief_root(name, *self._sag(host, spot.plane(), footprint), h)
+
+            def footprint(size, height, gamma=gamma):
+                points = [(size / 2 * math.cos(t), size / 2 * math.sin(t))
+                          for t in (math.pi * k / 4 for k in range(8))]
+                if gamma is not None:
+                    span = (height + 1.0) / math.tan(math.radians(gamma))
+                    points += [(0.0, -size / 2 - span * f) for f in (0.5, 1.0)]
+                return points
+
+            def smaller(fits, spot=spot, footprint=footprint):
+                found = self._largest(self.limit("min_feature"), d - 0.01, lambda size: fits(
+                    self._sag(host, spot.plane(), footprint(size, h)), h))
+                return None if found is None else f"d <= {_down(found):.2f} mm"
+            root = self._relief_root(
+                name, *self._sag(host, spot.plane(), footprint(d, h)), h,
+                taller=("h", lambda height, spot=spot, footprint=footprint:
+                        self._sag(host, spot.plane(), footprint(d, height))), smaller=smaller)
             solids.append(spot.plane().location * build(elevation, root, gamma))
         self._spacing(name, spots, lambda s, direction: d + reach * abs(direction.dot(
-            _unit(s.normal.cross(s.x)))), raised=True)
+            _unit(s.normal.cross(s.x)))), raised=True, size=("d", d, self.limit("min_feature")))
         result = self._fuse(host, solids, name)
         _tag(name, solids)
         return result
@@ -870,7 +1079,8 @@ class Details:
             else:
                 if depth - below < self.limit("min_cut_depth") - 1e-9:
                     _refuse(name, "depth left where the host curves away", depth - below,
-                            "min_cut_depth", self.table)
+                            "min_cut_depth", self.table,
+                            f"depth >= {_up(below + self.limit('min_cut_depth')):.2f} mm here")
                 if gamma is None:
                     tool = b.Pos(0, 0, -depth) * b.extrude(outline, depth + lift)
                 else:
@@ -904,8 +1114,16 @@ class Details:
                 betas[index] = max(betas[index], beta)
         return betas
 
-    def _place_path(self, host, path, name, half_for, a0, height):
+    def _place_path(self, host, path, name, half_for, a0, height, size, taller=None):
+        """`size` is (keyword, value, minimum, half-width of, height of): what
+        a refusal's search shrinks to find the largest that fits here."""
         b = _b3d()
+        keyword, value, minimum, a0_of, height_of = size
+
+        def smaller(fits, plane, footprint_of):
+            found = self._largest(minimum, value - 0.01, lambda v: fits(
+                self._sag(host, plane, footprint_of(a0_of(v), height_of(v))), height_of(v)))
+            return None if found is None else f"{keyword} <= {_down(found):.2f} mm"
         if isinstance(path, Segment):
             start, end = _vec(path.start), _vec(path.end)
             mid = (start + end) * 0.5
@@ -923,10 +1141,14 @@ class Details:
             betas = self._flank_betas([(x, n)])
             ends = [_side_beta(sign * s.dot(self.up), n.dot(self.up), self.design) for sign in (1.0, -1.0)]
             if betas is None or None in ends:
-                raise PrintLimitError(f"{name}: this face leans too far over the bed ({WIKI}{OVERHANG_PAGE})")
-            reach = max(a0 + height * math.tan(math.radians(beta)) for beta in betas)
-            footprint = [(u, v) for u in (-reach, reach) for v in (-length / 2, 0, length / 2)]
-            root = self._relief_root(name, *self._sag(host, plane, footprint), height)
+                raise PrintLimitError(f"{name}: this face leans too far over the bed ({WIKI}{OVERHANG_PAGE})",
+                                      "a path on a face nearer vertical or nearer level")
+            def footprint(a, h):
+                reach = max(a + h * math.tan(math.radians(beta)) for beta in betas)
+                return [(u, v) for u in (-reach, reach) for v in (-length / 2, 0, length / 2)]
+            root = self._relief_root(name, *self._sag(host, plane, footprint(a0, height)), height,
+                                     taller and (taller, lambda h: self._sag(host, plane, footprint(a0, h))),
+                                     lambda fits: smaller(fits, plane, footprint))
             (right, _), (left, _) = half_for(betas[0], root), half_for(betas[1], root)
             extra = height + root + 1.0
             body = b.extrude(_profile_face(_join(right, left)), length / 2 + extra, dir=(0, 1, 0), both=True)
@@ -956,10 +1178,15 @@ class Details:
             self._face_allows(name, elevation)
             betas = self._flank_betas(frames)
             if betas is None:
-                raise PrintLimitError(f"{name}: this ring leans too far over the bed ({WIKI}{OVERHANG_PAGE})")
+                raise PrintLimitError(f"{name}: this ring leans too far over the bed ({WIKI}{OVERHANG_PAGE})",
+                                      "a ring on a face nearer vertical or nearer level")
             plane = b.Plane(origin=p0, x_dir=u0, z_dir=n0)
-            reach = [a0 + height * math.tan(math.radians(beta)) for beta in betas]
-            root = self._relief_root(name, *self._sag(host, plane, [(reach[0], 0), (-reach[1], 0)]), height)
+            def footprint(a, h):
+                reach = [a + h * math.tan(math.radians(beta)) for beta in betas]
+                return [(reach[0], 0), (-reach[1], 0)]
+            root = self._relief_root(name, *self._sag(host, plane, footprint(a0, height)), height,
+                                     taller and (taller, lambda h: self._sag(host, plane, footprint(a0, h))),
+                                     lambda fits: smaller(fits, plane, footprint))
             (right, _), (left, _) = half_for(betas[0], root), half_for(betas[1], root)
             face = plane.location * _profile_face(_join(right, left))
             solid = b.revolve(face, b.Axis(tuple(origin), tuple(d)), 360)
@@ -979,7 +1206,8 @@ class Details:
         if len(solids) != 1 or not solids[0].is_valid:
             raise PrintLimitError(
                 f"{name}: the result is {len(solids)} solid(s); a detail must join its host as "
-                f"one valid solid (a detached or overlapping feature)")
+                f"one valid solid (a detached or overlapping feature)",
+                "a spot where its whole footprint sits on the host, clear of other detail")
         return solids[0]
 
     def _check_overhang(self, name, shapes, host, cut):
@@ -1023,7 +1251,8 @@ class Details:
                 f"{name}: {steep_area:.2f} mm2 of it would look down as far as {worst:.1f} deg in the "
                 f"print direction, past the {limit:.0f} deg allowed under the {self.overhang_angle:.0f} "
                 f"deg gate; place it on a face nearer the print direction or choose a pointed shape "
-                f"({WIKI}{OVERHANG_PAGE})")
+                f"({WIKI}{OVERHANG_PAGE})",
+                "a spot on a face nearer the print direction, or a pointed shape")
 
 
 # -------------------------------------------------------------- self-check ---
@@ -1139,8 +1368,32 @@ def gen_step():
 """
 
 
+def _build_mode(on: bool):
+    """Set or clear the build flag for a self-check probe; returns a restore."""
+    previous = os.environ.get(BUILD_ENV)
+    if on:
+        os.environ[BUILD_ENV] = "1"
+    else:
+        os.environ.pop(BUILD_ENV, None)
+
+    def restore():
+        if previous is None:
+            os.environ.pop(BUILD_ENV, None)
+        else:
+            os.environ[BUILD_ENV] = previous
+    return restore
+
+
 def _refusals(pd):
     """Every size below a limit is refused, naming the limit and its page."""
+    restore = _build_mode(False)
+    try:
+        return _probe(pd) + _collected(pd)
+    finally:
+        restore()
+
+
+def _probe(pd):
     b = _b3d()
     host = b.Pos(0, 0, 6) * b.Box(24, 24, 12)
     top = (0, 0, 12)
@@ -1172,8 +1425,36 @@ def _refusals(pd):
         except PrintLimitError as error:
             if limit not in str(error) or page not in str(error):
                 failures.append(f"{name}: refused without naming {limit} and {page}: {error}")
+            if not error.passing:
+                failures.append(f"{name}: refused without a passing value: {error}")
         else:
             failures.append(f"{name}: a size below its {limit} was accepted")
+    return failures
+
+
+def _collected(pd):
+    """Inside a build three bad details are refused once, together, each with
+    a passing value, and the good detail between them is still made."""
+    b = _b3d()
+    host = b.Pos(0, 0, 6) * b.Box(24, 24, 12)
+    restore = _build_mode(True)
+    DETAIL_REFUSALS.clear()
+    try:
+        body = pd.rivet(host, (0, 0, 12), d=pd.limit("min_feature") - 0.5)
+        body = pd.band(body, pd.segment((-5, 6, 12), (5, 6, 12)), width=pd.limit("min_relief_width") - 0.2)
+        body = pd.boss(body, (6, -6, 12))
+        body = pd.rivets(body, pd.along((-2, -6, 12), (2, -6, 12), 3), d=2.0, h=0.6)
+        error = refusal_error()
+    finally:
+        restore()
+    if not isinstance(error, DetailRefusals) or len(error.refusals) != 3:
+        return [f"collected: a build with three refused details did not fail once with all three: {error!r}"]
+    failures = [f"collected: {item['feature']} refused without a passing value"
+                for item in error.refusals if not item.get("passes")]
+    if [item["feature"] for item in error.refusals] != ["rivet", "band", "rivet"]:
+        failures.append(f"collected: refused {[item['feature'] for item in error.refusals]}")
+    if not body.volume > host.volume + 1.0 or DETAIL_REFUSALS:
+        failures.append("collected: the good boss was not made, or the registry was not emptied")
     return failures
 
 

@@ -134,15 +134,41 @@ print defect; read the report row before changing numbers again.
 | material between two cut copies | 1.60 mm | `printing/wall-thickness-and-hollowing.md` |
 | steepest face looking down | 45 deg gate, designed to 38 | `printing/overhangs-and-print-orientation.md` |
 
-The Component Reviewer asks for detail within the same limits. A detail the
-reviewer wants smaller than these cannot print: leave it out and say so in
-your report rather than modelling it by hand.
+The Component Reviewer asks for detail within the same limits, and places
+it by three rules a size alone does not show: a detail on another detail (a
+rivet on a band or a rim) needs a host wider than the detail plus 0.5 mm on
+each side; no raised detail on a concave surface deeper than its height;
+copies in a row keep the min cut width between them. A detail the reviewer
+wants smaller than these cannot print: leave it out and say so in your
+report rather than modelling it by hand.
+
+## Detail Refusals
+
+A feature that refuses a size or a spot makes a **Detail Refusal**. It is
+not a print defect: it happens while the Component builds, before any print
+gate. During a build (`gen`, the print gates) a refused feature returns its
+host unchanged and the build goes on, so every refusal of the part is found
+in one round; then the build fails once with `DetailRefusals`, listing each:
+
+```
+detail-refusal {"feature": "rivet", "site": "part_helm.step.py:42", "reason": "rivet: the host falls 0.80 mm away under its edge, more than its 0.60 mm height; ...", "passes": "h >= 0.85 mm or d <= 1.90 mm at this spot"}
+```
+
+`passes` is what would pass at that spot: the smallest `d`, `h`, `width` or
+`depth` a limit allows, the largest `d` or `width` the surface there takes,
+the least height that clears it, the spacing that leaves the minimum gap, or
+the kind of spot when no size fits. `make_round` copies each refusal into the
+round summary as a `refuse` line, and marks a detail refused at the same line
+in the part's previous round with `again REFUSE`. Outside a build, a call
+raises its `PrintLimitError` at once, with the same value as `passing`.
 
 ## Rules
 
-- A `PrintLimitError` is the repair: read the limit it names and change the
-  size, the spot or the shape. Do not rebuild the refused feature by hand;
-  the gates would fail it in the round instead.
+- A Detail Refusal is the repair: change the size, the spot or the shape to
+  what its `passes` names, for every refusal of the round at once. Do not
+  rebuild the refused feature by hand; the gates would fail it in the round
+  instead. A detail refused at the same spot in two rounds is left out and
+  named in the worker's report.
 - Put detail on the Component's own faces, clear of its edges. A feature
   whose footprint runs off the face, or where the host curves away more than
   its height, is refused.
