@@ -17,7 +17,7 @@ FINALIZER = ROOT / ".agents/product-run/.agents/skills/autonomous-workshop/scrip
 def test_measured_reports_agree_with_exit_status_and_finalizer(tmp_path, monkeypatch, failure_gate):
     monkeypatch.syspath_prepend(str(SCRIPTS))
     overhang = runpy.run_path(str(SCRIPTS / "check_overhang"))
-    box = overhang["_box"]
+    box, weld = overhang["_box"], overhang["weld"]
     project = tmp_path / "cad"
     (project / "measure").mkdir(parents=True)
     bindings = {}
@@ -32,7 +32,10 @@ def test_measured_reports_agree_with_exit_status_and_finalizer(tmp_path, monkeyp
         # report serialization remain exercised on deterministic closed shapes.
         monkeypatch.setitem(main.__globals__, "resolve_single_entry", lambda _: project / "part_fixture.step.py")
         monkeypatch.setitem(main.__globals__, "entry_role", lambda _: "fixture")
-        monkeypatch.setitem(main.__globals__, "entry_mesh", lambda *_: np.asarray(geometry, dtype=float))
+        monkeypatch.setitem(main.__globals__, "entry_shape", lambda *_: None)
+        verts, faces = weld(np.asarray(geometry, dtype=float))
+        monkeypatch.setitem(main.__globals__, "printed_mesh", lambda _shape, verts=verts, faces=faces: {
+            "status": "closed", "verts": verts, "faces": faces})
         relative = f"measure/{gate}-fixture.md"
         report = project / relative
         monkeypatch.setattr(sys, "argv", ["check_" + gate, "part_fixture.step.py", "--report", str(report)])

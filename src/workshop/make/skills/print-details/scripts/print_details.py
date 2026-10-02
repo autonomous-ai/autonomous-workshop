@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Printable decorative detail: rivets, bosses, low domes, bands, rims, pipe
-ribs, inset panels, lancet windows and grille slits.
+ribs, inset panels, lancet windows, grille slits and teardrop bores -- and the
+blunt free edge every point, chisel, keel or rib end needs.
 
 A Component Worker adds requested surface detail with these instead of
 modelling it by hand. Every feature
@@ -15,7 +16,9 @@ modelling it by hand. Every feature
   pointed top on a window (the overhangs page's 52 deg rule, 7 deg inside the
   45 deg gate), and checks every new face of its own tessellation for it;
 - ends in a step or a chamfer whose flat stays at least one minimum wall wide;
-- returns one valid solid, or raises `PrintLimitError`.
+- returns one valid solid, or raises `PrintLimitError`;
+- tags what it made in `PRINT_DETAIL_TAGS`, so a print gate that fails a
+  region on or beside it names the feature and the line that made it.
 
 A part entry uses it after the Workshop Manager has copied it into the CAD
 project (`print_details.py --install <cad-project>` writes
@@ -46,7 +49,14 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-__all__ = ["Details", "PrintLimitError", "Ring", "Segment", "limits"]
+__all__ = ["Details", "PrintLimitError", "Ring", "Segment", "limits", "PRINT_DETAIL_TAGS"]
+
+# Every feature this library made in this process, oldest first: `kind`,
+# `name` (`rivet-2`), `site` (`part_x.step.py:42`, the line that asked for it)
+# and `shape` (what it added, cut, or the land it left, in the generator's
+# coordinates). `check_thickness` and `check_overhang` read it after building
+# the entry and name the feature nearest each failing region (issue #82).
+PRINT_DETAIL_TAGS: list = []
 
 WIKI = ".agents/skills/wiki/pages/"
 WALL_PAGE = "printing/wall-thickness-and-hollowing.md"
@@ -73,6 +83,31 @@ _LIFT = 0.3                    # how far a cut starts outside the surface
 
 class PrintLimitError(ValueError):
     """A detail that cannot print at this nozzle, or cannot print here."""
+
+
+def _call_site() -> str:
+    """`file.py:line` of the first caller outside this library."""
+    import os
+    import sys
+    here = os.path.normcase(os.path.abspath(__file__))
+    frame = sys._getframe(1)
+    while frame is not None and os.path.normcase(os.path.abspath(frame.f_code.co_filename)) == here:
+        frame = frame.f_back
+    if frame is None:
+        return "unknown"
+    return f"{os.path.basename(frame.f_code.co_filename)}:{frame.f_lineno}"
+
+
+def _tag(kind: str, shapes) -> None:
+    """Record one feature for the print gates; see PRINT_DETAIL_TAGS."""
+    b = _b3d()
+    shapes = [shape for shape in shapes if shape is not None]
+    if not shapes:
+        return
+    shape = shapes[0] if len(shapes) == 1 else b.Compound(children=shapes)
+    number = 1 + sum(1 for tag in PRINT_DETAIL_TAGS if tag["kind"] == kind)
+    PRINT_DETAIL_TAGS.append({"kind": kind, "name": f"{kind}-{number}", "site": _call_site(),
+                              "shape": shape})
 
 
 def _line(nozzle: float) -> float:
@@ -500,6 +535,156 @@ class Details:
 
     slits = slit
 
+    def bore(self, host, at, d: float = 3.0, depth: float = 2.0, through: bool = True):
+        """A round bore `d` across into the host at `at`, `depth` deep (the
+        wall's thickness when `through`). On a wall its roof runs straight to a
+        point at 52 deg where the circle would look down (a teardrop), so a
+        bore through a wall, a vault or a pointed roof needs no support."""
+        name = "bore"
+        self._at_least(name, "diameter", d, "min_cut_width")
+        if not through:
+            self._at_least(name, "depth", depth, "min_cut_depth")
+        rise = d / 2 * (1 + 1 / math.cos(math.radians(90.0 - self.design)))
+        return self._place_cuts(host, at, name, (d, rise, "teardrop"), depth, through, 0.0)
+
+    # -- blunt free edges ------------------------------------------------------
+
+    def blunt_tip(self, host, tip, toward, reach: float = 6.0, back: float = 12.0):
+        """End a point, chisel, keel or V underside in a flat land one minimum
+        wall across (0.8 mm at a 0.4 nozzle), which is what `check_thickness`
+        needs: it counts every straight knife edge as a wall.
+
+        `tip` is the sharpest point of the host (a point, or one point on a
+        chisel edge or ridge), `toward` the direction it points, out of the
+        material. The host is cut square to `toward` where its section within
+        `reach` of the tip first spans a minimum wall in every direction, at
+        most `back` behind the tip; only material within `reach` of the tip,
+        sideways, is removed. A land that
+        faces down must rest on the bed: a flat underside in the air is an
+        overhang."""
+        b = _b3d()
+        name = "blunt tip"
+        p, axis = _vec(tip), _unit(_vec(toward))
+        if host.distance_to(b.Vertex(p)) > 0.05:
+            raise ValueError(f"{name}: {tuple(round(c, 3) for c in p)} is not on the host")
+        land = self.limit("min_wall")
+
+        def width(depth):
+            return self._section_width(host, p - axis * depth, axis, reach)
+        step, depth = 0.05, 0.0
+        while width(depth) < land:
+            depth += step
+            if depth > back:
+                raise PrintLimitError(
+                    f"{name}: the host never spans {land:.2f} mm across within {back:.1f} mm of "
+                    f"the tip; give it a fuller tip or a larger `back` ({WIKI}{WALL_PAGE})")
+        low, high = max(0.0, depth - step), depth
+        for _ in range(6):
+            middle = (low + high) / 2
+            low, high = (middle, high) if width(middle) < land else (low, middle)
+        origin = p - axis * high
+        self._land_faces_down(name, host, origin, axis)
+        result = self._trim(host, origin, axis, reach, name)
+        _tag("blunt-tip", [self._section(result, origin, axis, reach + 1.0)])
+        return result
+
+    def rib_end(self, rib, end, toward, reach: float | None = None):
+        """End a rib, fin or offset layer you built yourself cleanly at `end`,
+        before you fuse it: everything of `rib` past the plane through `end`
+        square to `toward` (the direction the rib runs out) is cut away, so
+        no sliver is left where an offset or a trim ran out. The end face must
+        span a minimum wall in every direction. An end that would look down
+        past 52 deg is ramped back instead, like a band's downhill end.
+
+        `reach` bounds the cut sideways (default: the whole rib); do not pass
+        the fused host, or the cut takes the host with it."""
+        name = "rib end"
+        p, axis = _vec(end), _unit(_vec(toward))
+        if reach is None:
+            reach = rib.bounding_box().diagonal
+        if -axis.dot(self.up) > math.sin(math.radians(self.design)) + 1e-9:
+            # turn the end face up until it looks down only the design angle:
+            # a ramp, not a ceiling. Straight down, any level direction will do.
+            level = axis - self.up * axis.dot(self.up)
+            level = _unit(level) if level.length > 1e-9 else self._across(self.up)[0]
+            lean = math.radians(self.design)
+            axis = _unit(level * math.cos(lean) - self.up * math.sin(lean))
+        section = self._section(rib, p, axis, reach)
+        if section is None:
+            raise ValueError(f"{name}: the plane through {tuple(round(c, 3) for c in p)} misses the rib")
+        across = min(self._min_width(face, p, axis) for face in section.faces())
+        if across < self.limit("min_wall") - 1e-9:
+            _refuse(name, "end face across", across, "min_wall", self.table)
+        result = self._trim(rib, p, axis, reach, name)
+        _tag("rib-end", [section])
+        return result
+
+    def _land_faces_down(self, name, host, origin, axis):
+        """Refuse a land that looks down past the design angle off the bed."""
+        if -axis.dot(self.up) <= math.sin(math.radians(self.design)) + 1e-9:
+            return
+        box = host.bounding_box()
+        bed = min(corner.dot(self.up) for corner in (
+            _vec((x, y, z)) for x in (box.min.X, box.max.X)
+            for y in (box.min.Y, box.max.Y) for z in (box.min.Z, box.max.Z)))
+        if origin.dot(self.up) - bed > 0.2 + 1e-9:
+            raise PrintLimitError(
+                f"{name}: its land would face down {origin.dot(self.up) - bed:.2f} mm above "
+                f"the bed, a flat ceiling with nothing under it; print the part so the tip rests on "
+                f"the bed or points up or sideways ({WIKI}{OVERHANG_PAGE})")
+
+    def _cutter(self, origin, axis, reach):
+        """The half-space past the plane through `origin` square to `axis`,
+        `reach` either side of it."""
+        b = _b3d()
+        plane = b.Plane(origin=origin, z_dir=axis)
+        return plane.location * b.Box(2 * reach, 2 * reach, 4 * reach,
+                                      align=(b.Align.CENTER, b.Align.CENTER, b.Align.MIN))
+
+    def _trim(self, solid, origin, axis, reach, name):
+        return self._one_solid(solid.cut(self._cutter(origin, axis, reach)), name)
+
+    @staticmethod
+    def _section(solid, origin, axis, reach):
+        """The faces where the plane through `origin` square to `axis` cuts
+        `solid` within `reach` of `origin`, or None."""
+        b = _b3d()
+        plane = b.Plane(origin=origin, z_dir=axis)
+        window = plane.location * b.Face(b.Wire.make_rect(2 * reach, 2 * reach))
+        try:
+            cut = solid & window
+        except Exception:
+            return None
+        faces = cut.faces() if cut is not None else []
+        if not faces:
+            return None
+        return faces[0] if len(faces) == 1 else b.Compound(children=faces)
+
+    def _section_width(self, solid, origin, axis, reach):
+        """The narrowest the section through `origin` spans, in any direction
+        across `axis`: 0 where the plane misses the solid."""
+        section = self._section(solid, origin, axis, reach)
+        if section is None:
+            return 0.0
+        return min(self._min_width(face, origin, axis) for face in section.faces())
+
+    @staticmethod
+    def _min_width(face, origin, axis):
+        """A planar face's least caliper width: the narrowest gap between two
+        parallel lines that hold it, over every direction in its plane."""
+        import numpy as np
+        b = _b3d()
+        vertices, _ = face.tessellate(0.005, 0.05)
+        points = [tuple(v) for v in vertices] + [tuple(v.center()) for v in face.vertices()]
+        if len(points) < 3:
+            return 0.0
+        plane = b.Plane(origin=origin, z_dir=axis)
+        local = np.array([tuple(plane.to_local_coords(b.Vector(*q)))[:2] for q in points])
+        angles = np.radians(np.arange(0.0, 180.0, 0.5))
+        directions = np.stack([np.cos(angles), np.sin(angles)], axis=1)
+        spans = local @ directions.T
+        return float((spans.max(axis=0) - spans.min(axis=0)).min())
+
     def _outline(self, name, width, height, arch, angle=0.0, stretch=0.0, roofed=False):
         """The outline face in the local XY plane, centred, +Y uphill, turned
         `angle` about the normal, its top raised `stretch` with its bottom kept.
@@ -555,6 +740,21 @@ class Details:
             if ys - y0 > 1e-6:
                 edges.append(b.Edge.make_line((-w2, ys, 0), (-w2, y0, 0)))
             return b.Face(b.Wire(edges))
+        if arch == "teardrop":
+            # a round bore whose roof runs straight to a point once the circle
+            # looks down past the design angle: the classic printable hole
+            r = w2
+            phi = math.radians(90.0 - self.design)       # tangent point from the top
+            tx, ty = r * math.sin(phi), r * math.cos(phi)
+            apex = r / math.cos(phi)
+            cy = -height / 2 + r                         # the circle's centre
+            # counter-clockwise, so the face's normal is the local +Z a cut extrudes along
+            return b.Face(b.Wire([
+                b.Edge.make_line((0, cy + apex, 0), (-tx, cy + ty, 0)),
+                b.Edge.make_three_point_arc((-tx, cy + ty, 0), (-r, cy, 0), (0, cy - r, 0)),
+                b.Edge.make_three_point_arc((0, cy - r, 0), (r, cy, 0), (tx, cy + ty, 0)),
+                b.Edge.make_line((tx, cy + ty, 0), (0, cy + apex, 0)),
+            ]))
         if arch in ("gable", "pointed"):
             rise = w2 * math.tan(math.radians(60))
             low = rise if arch == "pointed" else 0.0
@@ -570,7 +770,7 @@ class Details:
             if math.dist(unique[0], unique[-1]) < 1e-9:
                 unique.pop()
             return _as_face(b.Polygon(*unique, align=None))
-        raise ValueError("arch is 'flat', 'lancet' or 'gable'")
+        raise ValueError("arch is 'flat', 'lancet', 'gable' or 'teardrop'")
 
     # -- engines --------------------------------------------------------------
 
@@ -643,7 +843,9 @@ class Details:
             solids.append(spot.plane().location * build(elevation, root, gamma))
         self._spacing(name, spots, lambda s, direction: d + reach * abs(direction.dot(
             _unit(s.normal.cross(s.x)))), raised=True)
-        return self._fuse(host, solids, name)
+        result = self._fuse(host, solids, name)
+        _tag(name, solids)
+        return result
 
     def _place_cuts(self, host, at, name, shape, depth, through, angle):
         b = _b3d()
@@ -654,7 +856,8 @@ class Details:
         for spot in spots:
             elevation = _elevation(spot.normal, self.up)
             self._face_allows(name, elevation)
-            gamma = None if through else self._gamma(elevation)
+            # a teardrop's roof is already pointed: it needs no sloped roof
+            gamma = None if through or shape[2] == "teardrop" else self._gamma(elevation)
             outline = self._outline(name, *shape, angle=angle, roofed=gamma is not None)
             box = outline.bounding_box()
             corners = [(box.min.X, box.min.Y), (box.max.X, box.min.Y), (box.max.X, box.max.Y),
@@ -685,7 +888,9 @@ class Details:
             return abs(direction.dot(spot.x)) * box.size.X + abs(direction.dot(y)) * (box.size.Y + roof)
         self._spacing(name, spots, extent, raised=False)
         self._check_overhang(name, tools, host, cut=True)
-        return self._one_solid(host.cut(*tools), name)
+        result = self._one_solid(host.cut(*tools), name)
+        _tag(name, tools)
+        return result
 
     def _flank_betas(self, frames):
         """(+u, -u) leans for a profile whose (u, n) frames are `frames`."""
@@ -759,7 +964,9 @@ class Details:
             solid = b.revolve(face, b.Axis(tuple(origin), tuple(d)), 360)
         else:
             raise TypeError(f"{name}: a path is a Segment or a Ring")
-        return self._fuse(host, [solid], name)
+        result = self._fuse(host, [solid], name)
+        _tag(name, [solid])
+        return result
 
     def _fuse(self, host, solids, name):
         self._check_overhang(name, solids, host, cut=False)
@@ -851,6 +1058,12 @@ _HOSTS = {
     "block": "Pos(0, 0, 6) * Box(24, 24, 12)",
     "drum": "Pos(0, 0, 8) * Cylinder(10, 16)",
     "tray": "Pos(0, 0, 7) * Box(24, 24, 14) - Pos(0, 0, 9) * Box(20, 20, 14)",
+    # a wing tip printed flat: a 30 mm chisel whose knife edge lies on the bed
+    "chisel": "extrude(Plane.XZ * Polygon((0, 0), (30, 0), (30, 3), align=None), 10, both=True)",
+    # a spike on a post, pointing up
+    "spike": "Pos(0, 0, 2) * Cylinder(4, 4) + Pos(0, 0, 10) * Cone(4, 0, 12)",
+    # a pointed vault: 50 deg flanks to a knife ridge at VAULT
+    "vault": "extrude(Plane.XZ * Polygon((-5, 0), (5, 0), (5, 4), (0, VAULT), (-5, 4), align=None), 10, both=True)",
 }
 _TOP, _WALL = "(0, 0, 12)", "(0, -12, 6)"
 _CASES = (
@@ -889,16 +1102,33 @@ _CASES = (
      {"min": "width=MCW, length=4 * MCW, depth=MCD", "default": ""}),
     ("slit-through-wall", "tray", "pd.slit(host, (0, -12, 8), through=True, depth=2.0, **S)",
      {"min": "width=MCW, length=4 * MCW", "default": ""}),
+    ("bore-wall", "tray", "pd.bore(host, (0, -12, 8), **S)", {"min": "d=MCW", "default": ""}),
+    ("bore-blind-wall", "block", "pd.bore(host, %s, depth=3, through=False, **S)" % _WALL,
+     {"min": "d=MCW", "default": ""}),
+    ("blunt-chisel", "chisel", "pd.blunt_tip(host, (0, 0, 0), (-1, 0, 0), reach=12)", {"default": ""}),
+    ("blunt-spike", "spike", "pd.blunt_tip(host, (0, 0, 16), (0, 0, 1))", {"default": ""}),
+    ("blunt-vault", "vault", "pd.blunt_tip(host, (0, 0, VAULT), (0, 0, 1), reach=12)", {"default": ""}),
+    ("bore-vault", "vault",
+     "pd.bore(pd.blunt_tip(host, (0, 0, VAULT), (0, 0, 1), reach=12), (0, -10, 3.5), depth=20, **S)",
+     {"min": "d=MCW", "default": ""}),
+    # an offset rib whose trim ran out in a sliver, ended square and ramped
+    # where it runs down a wall
+    ("rib-end-wall", "block",
+     "host + pd.rib_end(Pos(0, -12.6, 6) * Box(2, 1.2, 10) - Pos(0, -12.6, 1) * Rot(30, 0, 0) * Box(4, 6, 2), "
+     "(0, -12.6, 3), (0, 0, -1))", {"default": ""}),
 )
 
 
 def _entry(nozzle, overhang_angle, host, call, sizes):
-    return f"""from build123d import *
+    return f"""import math
+
+from build123d import *
 from features import print_details
 
 pd = print_details.Details(nozzle={nozzle!r}, overhang_angle={overhang_angle!r})
 MF, MH = pd.limit("min_feature"), pd.limit("min_relief_height")
 MRW, MCW, MCD = pd.limit("min_relief_width"), pd.limit("min_cut_width"), pd.limit("min_cut_depth")
+VAULT = 4 + 5 * math.tan(math.radians(50))
 
 
 def gen_step():
@@ -928,6 +1158,11 @@ def _refusals(pd):
          "min web", WALL_PAGE),
         ("rivets", lambda: pd.rivets(host, pd.along((-2, 0, 12), (2, 0, 12), 3), d=2.0, h=0.6),
          "min cut width", FEATURE_PAGE),
+        ("bore", lambda: pd.bore(host, top, d=pd.limit("min_cut_width") - eps), "min cut width", FEATURE_PAGE),
+        ("rib end", lambda: pd.rib_end(b.Box(10, pd.limit("min_wall") - eps, 2), (3, 0, 0), (1, 0, 0)),
+         "min wall", WALL_PAGE),
+        ("hanging tip", lambda: pd.blunt_tip(host + b.Pos(0, 0, 30) * b.Cone(0, 3, 8), (0, 0, 26), (0, 0, -1)),
+         "face down", OVERHANG_PAGE),
     )
     failures = []
     for name, probe, limit, page in probes:
@@ -983,7 +1218,7 @@ def self_check(nozzle=0.4, overhang_angle=45.0, jobs=None, keep=None, only=None)
         return f"{name}-{size}", results
 
     work = [(case, size) for case in _CASES for size in ("min", "default")
-            if not only or case[0] in only]
+            if size in case[3] and (not only or case[0] in only)]
     try:
         with ThreadPoolExecutor(max_workers=jobs) as pool:
             for label, results in pool.map(lambda item: one(*item), work):

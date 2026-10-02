@@ -36,7 +36,8 @@ class PrintDetailsSkillTest(unittest.TestCase):
         text = (ROOT / "SKILL.md").read_text(encoding="utf-8")
         self.assertTrue(text.startswith("---\nname: print-details\n"))
         for call in ("boss(", "rivet(", "rivets(", "dome(", "band(", "rim(", "pipe(",
-                     "panel(", "window(", "slit(", "slits(", "--install", "--self-check",
+                     "panel(", "window(", "slit(", "slits(", "bore(", "blunt_tip(", "rib_end(",
+                     "flat land at least one minimum wall across", "--install", "--self-check",
                      "--limits", "features/print_details.py"):
             self.assertIn(call, text)
         self.assertTrue(SCRIPT.is_file())
@@ -93,6 +94,65 @@ class PrintDetailsSkillTest(unittest.TestCase):
                     self.assertTrue(result.is_valid)
                     self.assertNotAlmostEqual(result.volume, self.block.volume, places=3)
 
+    def test_every_feature_is_tagged_with_the_line_that_made_it(self):
+        from build123d import Box, Pos
+        pd = self.module.Details()
+        self.module.PRINT_DETAIL_TAGS.clear()
+        body = pd.rivet(self.block, (0, 0, 12))
+        body = pd.band(body, pd.segment((-8, -12, 6), (8, -12, 6)))
+        body = pd.panel(body, (6, 6, 12), width=4, height=4)
+        body = pd.bore(body, (0, 12, 6), d=3, depth=3, through=False)
+        rib = pd.rib_end(Pos(0, -12.6, 6) * Box(2, 1.2, 10), (0, -12.6, 3), (0, 0, -1))
+        tags = list(self.module.PRINT_DETAIL_TAGS)
+        self.assertEqual([tag["kind"] for tag in tags], ["rivet", "band", "panel", "bore", "rib-end"])
+        self.assertEqual([tag["name"] for tag in tags], ["rivet-1", "band-1", "panel-1", "bore-1", "rib-end-1"])
+        for tag in tags:
+            with self.subTest(tag=tag["name"]):
+                self.assertTrue(tag["site"].startswith("test_print_details.py:"), tag["site"])
+                self.assertGreater(len(tag["shape"].faces()), 0)
+        self.assertTrue(body.is_valid)
+        self.assertTrue(rib.is_valid)
+        # A refused feature leaves no tag.
+        with self.assertRaises(self.module.PrintLimitError):
+            pd.rivet(self.block, (0, 0, 12), d=1.0)
+        self.assertEqual(len(self.module.PRINT_DETAIL_TAGS), len(tags))
+
+    def test_a_blunt_tip_leaves_a_land_one_minimum_wall_across(self):
+        import math
+        from build123d import Plane, Polygon, extrude
+        pd = self.module.Details(nozzle=0.4)
+        chisel = extrude(Plane.XZ * Polygon((0, 0), (30, 0), (30, 3), align=None), 10, both=True)
+        blunt = pd.blunt_tip(chisel, (0, 0, 0), (-1, 0, 0), reach=12)
+        self.assertTrue(blunt.is_valid)
+        box = blunt.bounding_box()
+        # The 1:10 chisel is 0.8 mm high 8 mm back from its edge.
+        self.assertAlmostEqual(box.min.X, 8.0, delta=0.05)
+        self.assertEqual((box.min.Y, box.max.Y), (-10.0, 10.0))
+        land = pd._section_width(blunt, self.module._vec((box.min.X + 1e-3, 0, 0)), self.module._vec((-1, 0, 0)), 12)
+        self.assertGreaterEqual(land, 0.8 - 0.01)
+        vault = 4 + 5 * math.tan(math.radians(50))
+        roof = extrude(Plane.XZ * Polygon((-5, 0), (5, 0), (5, 4), (0, vault), (-5, 4), align=None), 10, both=True)
+        ridge = pd.blunt_tip(roof, (0, 0, vault), (0, 0, 1), reach=12).bounding_box()
+        self.assertLess(ridge.max.Z, vault - 0.3)
+
+    def test_rib_end_and_a_hanging_land_are_refused_below_the_limits(self):
+        from build123d import Box, Cone, Pos
+        pd = self.module.Details(nozzle=0.4)
+        with self.assertRaises(self.module.PrintLimitError) as raised:
+            pd.rib_end(Box(10, 0.6, 2), (3, 0, 0), (1, 0, 0))
+        self.assertIn("min wall", str(raised.exception))
+        with self.assertRaises(self.module.PrintLimitError) as raised:
+            pd.blunt_tip(self.block + Pos(0, 0, 30) * Cone(0, 3, 8), (0, 0, 26), (0, 0, -1))
+        self.assertIn("face down", str(raised.exception))
+        # A rib end that would look straight down is ramped back instead: its
+        # end face rises at 52 deg across the rib's 2 mm, through `end`.
+        import math
+        ramped = pd.rib_end(Pos(0, 0, 5) * Box(2, 1.2, 10), (0, 0, 3), (0, 0, -1))
+        self.assertTrue(ramped.is_valid)
+        box = ramped.bounding_box()
+        self.assertAlmostEqual(box.min.Z, 3 - math.tan(math.radians(52)), delta=0.02)
+        self.assertEqual(round(box.max.Z, 6), 10.0)
+
     def test_limits_follow_the_nozzle(self):
         fine, coarse = self.module.limits(0.4), self.module.limits(0.6)
         self.assertEqual(fine["min_wall"][0], 0.8)
@@ -124,7 +184,9 @@ class PrintDetailsSkillTest(unittest.TestCase):
             (REPOSITORY / "src/workshop/make/agents/component-reviewer.toml").read_text(encoding="utf-8").split())
         for phrase in ("0.8 mm", "at least 2 mm across", "at least 0.9 mm wide",
                        "at least 0.5 mm wide", "0.5 mm high", "0.5 mm deep", "1.6 mm",
-                       "45 degrees", "print-details"):
+                       "45 degrees", "print-details", "ends in a flat land at least one minimum wall",
+                       "Never ask for a sharp tip, a knife edge",
+                       "a chamfer or taper that leaves an edge thinner than that"):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, reviewer)
 
@@ -134,6 +196,8 @@ class PrintDetailsSkillTest(unittest.TestCase):
         make = " ".join((REPOSITORY / ".agents/product-run/.agents/skills/autonomous-workshop/references/make.md"
                          ).read_text(encoding="utf-8").split())
         self.assertIn("from features import print_details", worker)
+        self.assertIn("pd.blunt_tip(body, tip, toward)", worker)
+        self.assertIn("An `again` line means the same feature failed", worker)
         self.assertIn(".agents/skills/print-details/scripts/print_details.py --install", make)
 
 

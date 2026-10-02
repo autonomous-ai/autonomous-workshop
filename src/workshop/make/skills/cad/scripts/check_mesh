@@ -27,6 +27,14 @@ Three defect classes are entangled and are reported so you can tell them apart:
     non-manifold   edges >2 faces, and the pinched vertices left behind after
                    the edges are split apart
 
+The tessellation is `printlib.printed_mesh`, the one `check_thickness` and
+`check_overhang` measure (issue #82), so all three gates agree on whether a
+part is closed. An open default mesh is not failed on sight: an invalid B-rep
+FAILS with its bad faces listed, a valid one is re-tessellated once finer and
+checked on that mesh, and one that stays open is UNMEASURABLE MESH (exit 4).
+`verify_project` treats any nonzero exit as a failed mesh gate, so an
+unmeasurable part still never passes final verification.
+
 `scripts/repair_mesh` diagnoses all three and writes a repaired mesh into the
 project's `__cadgen__/` working area so you can see what the defect was; that
 mesh is a diagnostic, never a deliverable. The source fixes that actually stop
@@ -42,9 +50,25 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from meshlib import SLIVER_HEIGHT, summarize, weld  # noqa: E402
+from meshlib import SLIVER_HEIGHT, summarize  # noqa: E402
 import progresslib
-from printlib import entry_mesh, entry_role, resolve_single_entry  # noqa: E402
+from printlib import (  # noqa: E402
+    FINE_DEVIATION, entry_role, entry_shape, mesh_refusal, printed_mesh, resolve_single_entry,
+)
+
+UNMEASURABLE = 4  # exit status: a valid solid whose mesh stays open, as in check_thickness
+
+
+def refuse_mesh(entry, meshed):
+    """An entry with no closed mesh: an invalid solid FAILS, a valid one whose
+    mesh stays open is UNMEASURABLE -- the verdicts the two measuring gates give."""
+    invalid = meshed["status"] == "invalid"
+    if invalid:
+        progresslib.record_geometry_failure()
+    for line in mesh_refusal(entry.name, meshed):
+        print(line)
+    print("RESULT:", "INVALID SOLID" if invalid else "UNMEASURABLE MESH")
+    return 1 if invalid else UNMEASURABLE
 
 
 def main():
@@ -64,7 +88,10 @@ def main():
     args = ap.parse_args()
 
     entry = resolve_single_entry(args.entry)
-    verts, faces = weld(entry_mesh(entry, entry_role(entry)))
+    meshed = printed_mesh(entry_shape(entry, entry_role(entry)))
+    if meshed["status"] != "closed":
+        return refuse_mesh(entry, meshed)
+    verts, faces = meshed["verts"], meshed["faces"]
     m = summarize(verts, faces, sliver_height=args.sliver_height)
 
     checks = []          # (status, label, detail); status in {PASS, WARN, FAIL}
@@ -91,8 +118,10 @@ def main():
     if m["boundary"] != m["boundary_with_slivers"]:
         blame = (f"; {m['boundary_with_slivers']} with the slivers kept, so "
                  f"{m['boundary'] - m['boundary_with_slivers']} of these are the drop")
+    retry = (f"; closed only at the finer {FINE_DEVIATION:g} mm retry"
+             if meshed["retessellated"] else "")
     check("PASS" if m["boundary"] == 0 else "FAIL", "watertight (no open edges)",
-          f"{m['boundary']} boundary edges{where}{blame}")
+          f"{m['boundary']} boundary edges{where}{blame}{retry}")
 
     # --- manifold --------------------------------------------------------------
     detail = f"{m['nonmanifold_edges']} edges shared by >2 faces"

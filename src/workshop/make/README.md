@@ -20,10 +20,12 @@ upstream tree.
 `make-round` and `print-details` are authored in this repository and locked
 under its URL. `print-details` is a library of printable decorative detail
 (rivets, bosses, low domes, bands, rims, pipe ribs, inset panels, lancet
-windows, grille slits) whose features refuse sizes below the wiki's print
-limits; its `--self-check` runs the real `check_thickness` and
-`check_overhang` on every feature. It leaves the vendored `cad` and `wiki`
-trees untouched, so an upstream resync does not reach it.
+windows, grille slits, teardrop bores) and blunt free edges (`blunt_tip`,
+`rib_end`) whose features refuse sizes below the wiki's print limits; its
+`--self-check` runs the real `check_thickness` and `check_overhang` on every
+feature. It tags each feature it makes, and the two gates name the tagged
+feature nearest each failing region (issue #82, a Workshop-local change to
+the vendored `cad` tree recorded in `PROVENANCE.md`).
 
 The locked MVP geometry vocabulary is 2–12 printable boxes or vertical
 cylinders. Every part declares `top_grooves_mm`; cylinders leave it empty, while

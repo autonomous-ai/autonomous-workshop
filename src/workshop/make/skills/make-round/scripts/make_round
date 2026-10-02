@@ -758,6 +758,45 @@ def parse_identity(stdout: str) -> str | None:
     return None
 
 
+# A region row of either print gate, `N. [kind] ...`, and the line under it
+# naming its feature: `at feature <key> -- ...` or `at face <key> -- ...`.
+REGION_ROW = re.compile(r"\d+\.\s+\[([a-z ]+)\]")
+REGION_FEATURE = re.compile(r"at (feature|face) (\S+) -- ")
+
+
+def print_defects(stdout: str, failing: str) -> list[str]:
+    """The keys of the regions of kind `failing` (wall, overhang), in order.
+
+    A key is the print-details feature the gate named (`band@part_x.step.py:42`)
+    or the nearest B-rep face (`plane@(12,-4,30)`). A region whose gate named
+    nothing has no key and is not listed.
+    """
+    keys, kind = [], None
+    for line in stdout.splitlines():
+        stripped = line.strip()
+        row = REGION_ROW.match(stripped)
+        if row:
+            kind = row.group(1).strip()
+            continue
+        named = REGION_FEATURE.match(stripped)
+        if named and kind == failing and named.group(2) not in keys:
+            keys.append(named.group(2))
+        kind = None if named else kind
+    return keys
+
+
+def repeated_defects(previous: dict | None, current: dict) -> list[str]:
+    """A Repeated Print Defect: a feature failing this round that also failed
+    the same part's previous round (issue #82). Run comparisons count these,
+    not the failure rate: repeats are blind repair."""
+    if not isinstance(previous, dict) or previous.get("verdict") != "FAIL":
+        return []
+    before = {key for gate in ("thickness", "overhang")
+              for key in ((previous.get(gate) or {}).get("defects") or [])}
+    return [key for gate in ("thickness", "overhang")
+            for key in ((current.get(gate) or {}).get("defects") or []) if key in before]
+
+
 def parse_thickness(stdout: str) -> dict:
     """The verdict and the thinnest region from a check_thickness run."""
     verdict = "PASS" if "RESULT: printable at this wall" in stdout else "FAIL"
@@ -781,7 +820,8 @@ def parse_thickness(stdout: str) -> dict:
         verdict = "PASS"
     if verdict == "FAIL" and not fails:
         fails.append("no passing wall result" if "RESULT: WALL BELOW MINIMUM" not in stdout else "wall below minimum")
-    return {"verdict": verdict, "thinnest_mm": thinnest, "failures": fails[:4]}
+    return {"verdict": verdict, "thinnest_mm": thinnest, "failures": fails[:4],
+            "defects": print_defects(stdout, "wall")}
 
 
 def parse_overhang(stdout: str) -> dict:
@@ -807,7 +847,23 @@ def parse_overhang(stdout: str) -> dict:
         verdict = "FAIL"
     if verdict == "FAIL" and not fails:
         fails.append("needs support" if "RESULT: NEEDS SUPPORT" in stdout else "no overhang result")
-    return {"verdict": verdict, "overhang_mm2": largest, "failures": fails[:4]}
+    return {"verdict": verdict, "overhang_mm2": largest, "failures": fails[:4],
+            "defects": print_defects(stdout, "overhang")}
+
+
+# A print gate's exit status when the B-rep is valid but its mesh stays open
+# after the finer retry (printlib.printed_mesh): nothing was measured, and it
+# is not a print failure. It still never passes a round.
+GATE_UNMEASURABLE = 4
+
+
+def unmeasurable(parsed: dict, stdout: str) -> dict:
+    """A gate result that could not measure an open mesh on a valid solid."""
+    reason = next((line.strip() for line in stdout.splitlines() if "tessellation stays open" in line), "")
+    parsed.update(verdict="UNMEASURABLE", defects=[],
+                  failures=["unmeasurable mesh: " + (reason.split(": ", 1)[-1][:120] if reason
+                                                     else "the mesh stays open on a valid solid")])
+    return parsed
 
 
 def print_context(cad: Path, nozzle: float, angle: float) -> dict | None:
@@ -939,6 +995,13 @@ def parse_refs(values, spec_paths) -> list[tuple[str, str]]:
     return refs
 
 
+def at_features(gate: dict) -> str:
+    defects = gate.get("defects") or []
+    if not defects:
+        return ""
+    return "  at " + ", ".join(defects[:4]) + (" ..." if len(defects) > 4 else "")
+
+
 def render_summary(summary: dict) -> str:
     lines = [
         "make_round r%04d  %s  %s  changed %d/%d part(s)"
@@ -953,12 +1016,16 @@ def render_summary(summary: dict) -> str:
             continue
         wall = gates["thickness"]
         thin = "" if wall.get("thinnest_mm") is None else "  thinnest %.2f mm" % wall["thinnest_mm"]
-        why = ("  " + "; ".join(wall["failures"])) if wall["verdict"] == "FAIL" and wall["failures"] else ""
-        lines.append("  wall  %-4s %-28s%s%s" % (wall["verdict"], role, thin, why))
+        failing = ("FAIL", "UNMEASURABLE")
+        why = ("  " + "; ".join(wall["failures"])) if wall["verdict"] in failing and wall["failures"] else ""
+        lines.append("  wall  %-4s %-28s%s%s%s" % (wall["verdict"], role, thin, why, at_features(wall)))
         over = gates["overhang"]
         area = "" if over.get("overhang_mm2") is None else "  largest %.0f mm2" % over["overhang_mm2"]
-        why = ("  " + "; ".join(over["failures"])) if over["verdict"] == "FAIL" and over["failures"] else ""
-        lines.append("  over  %-4s %-28s%s%s" % (over["verdict"], role, area, why))
+        why = ("  " + "; ".join(over["failures"])) if over["verdict"] in failing and over["failures"] else ""
+        lines.append("  over  %-4s %-28s%s%s%s" % (over["verdict"], role, area, why, at_features(over)))
+    for role, keys in sorted((summary.get("repeated_print_defects") or {}).items()):
+        lines.append("  again FAIL %-28s  failed last round too: %s; repair from the report's feature column"
+                     % (role, ", ".join(keys[:4])))
     unchecked = [r for r in summary["parts"] if r not in summary["checked"]]
     if unchecked:
         lines.append("  build skip %d unchanged part(s): %s" % (len(unchecked), ", ".join(unchecked[:6]) + (" ..." if len(unchecked) > 6 else "")))
@@ -2068,7 +2135,9 @@ def shared_helper_check(project: Path, args, cad: Path) -> int:
                         "--report", str(out / ("%s-%s.md" % (gate, name)))],
                        cwd=project, log=out / ("%s-%s.log" % (gate, name)), extra_env=path_env)
             parsed = (parse_thickness if gate == "thickness" else parse_overhang)(done.stdout)
-            if done.returncode not in (0, 1):
+            if done.returncode == GATE_UNMEASURABLE:
+                unmeasurable(parsed, done.stdout)
+            elif done.returncode not in (0, 1):
                 # A gate that could not measure never passes a sample.
                 parsed["verdict"] = "FAIL"
                 parsed["failures"] = (["check_%s exit %d" % (gate, done.returncode)] + parsed["failures"])[:4]
@@ -2723,6 +2792,8 @@ def make_round(args) -> int:
             if done.returncode == 3:
                 parsed["verdict"] = "UNVERIFIED"
                 parsed["failures"] = ["geometry analysis cancelled or its time allowance exhausted"]
+            elif done.returncode == GATE_UNMEASURABLE:
+                unmeasurable(parsed, done.stdout)
             elif done.returncode not in (0, 1):
                 # 0 pass, 1 measured-and-failed; anything else is the tool
                 # failing to measure, which is never a printability verdict.
@@ -2734,14 +2805,18 @@ def make_round(args) -> int:
             gates[gate] = parsed
             if log.is_file():
                 logs[str(log.resolve())] = hashlib.sha256(log.read_bytes()).hexdigest()
+        verdicts = {g["verdict"] for g in gates.values()}
         printing[role] = {
-            "verdict": "FAIL" if any(g["verdict"] == "FAIL" for g in gates.values()) else "UNVERIFIED" if any(g["verdict"] == "UNVERIFIED" for g in gates.values()) else "PASS",
+            "verdict": next((v for v in ("FAIL", "UNMEASURABLE", "UNVERIFIED") if v in verdicts), "PASS"),
             "thickness": gates["thickness"],
             "overhang": gates["overhang"],
             "measured_round": round_index,
             "logs": logs,
         }
-        if printing[role]["verdict"] == "FAIL" and role not in changed:
+        repeated = repeated_defects(prior, printing[role])
+        if repeated:
+            printing[role]["repeated_defects"] = repeated
+        if printing[role]["verdict"] in ("FAIL", "UNMEASURABLE") and role not in changed:
             changed.append(role)
     for role in build_failures:
         # A part that did not build has no solid to measure. Say that, rather
@@ -2826,6 +2901,9 @@ def make_round(args) -> int:
         "checked": sorted(build),
         "build": build,
         "print": printing,
+        # Repeated Print Defects (issue #82): what run comparisons count.
+        "repeated_print_defects": {role: item["repeated_defects"] for role, item in printing.items()
+                                   if item.get("repeated_defects")},
         "reused": sorted(role for role in printing if printing[role].get("measured_round") != round_index),
         "nozzle": args.nozzle,
         "overhang_angle": args.overhang_angle,

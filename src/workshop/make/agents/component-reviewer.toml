@@ -53,11 +53,17 @@ each packet you judge.
     (`.agents/skills/wiki/pages/printing/fdm-minimum-feature-sizes.md`);
   - no surface facing down more than 45 degrees from vertical in the print
     stance unless it is a bridge or a ledge under about 1 mm; ask for a
-    chamfer or taper under a sharp cone or point, never a knife edge
-    (`.agents/skills/wiki/pages/printing/overhangs-and-print-orientation.md`).
+    52 degree slope or a teardrop roof under it
+    (`.agents/skills/wiki/pages/printing/overhangs-and-print-orientation.md`);
+  - no sharp free edge: every point, chisel, keel, crest and V underside
+    ends in a flat land at least one minimum wall across (0.8 mm at 0.4 mm).
+    Never ask for a sharp tip, a knife edge, a feather tapered to nothing, or
+    a chamfer or taper that leaves an edge thinner than that; where the
+    reference shows a sharper tip than that land, write "keep as is".
   These are the limits of the print-details library the worker builds detail
   with. Name a detail as one of its features (rivet, boss, low dome, band,
-  rim, pipe rib, inset panel, lancet window, grille slit) with its size.
+  rim, pipe rib, inset panel, lancet window, grille slit, teardrop bore,
+  blunt tip, rib end) with its size.
 - Answer with JSON only: `{"agrees": true|false, "reason": "...",
   "differences": [{"feature": "...", "reference": "...", "model": "..."}]}`.
   `differences` holds at most 12 entries and is required when `"agrees"` is

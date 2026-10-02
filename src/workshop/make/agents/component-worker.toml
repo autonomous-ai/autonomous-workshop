@@ -37,13 +37,26 @@ one section a failure you cannot place requires.
   envelope, both in one round when your instances are on both sides.
 - Build decorative detail your rows or a review ask for (rivets, bosses,
   low domes, bands, rims, pipe ribs, inset panels, lancet windows, grille
-  slits) with the Manager's copy of the print-details library:
+  slits, teardrop bores) with the Manager's copy of the print-details library:
   `from features import print_details`, `pd = print_details.Details(
   nozzle=<nozzle>)`, then `body = pd.rivets(body, ...)` and so on, as
   `.agents/skills/print-details/SKILL.md` lists. Do not model such detail by
   hand. A `PrintLimitError` names the limit and its wiki page: change the
   size, spot or shape it names, or leave out a detail below the limits and
   say so in your report.
+- End every point, chisel, keel, crest and V underside in a flat land at
+  least one minimum wall across (0.8 mm at a 0.4 mm nozzle):
+  `pd.blunt_tip(body, tip, toward)` cuts one, and `pd.rib_end(rib, end,
+  toward)` ends a rib or offset layer of your own before you fuse it. Never
+  chamfer an edge thinner than that, even when a review asks for a sharper
+  tip.
+- A failing print gate names the feature at each failing region (`at
+  feature band@part_<id>.step.py:42`, else `at face ...`) and how far it is
+  past the limit. Repair that feature. An `again` line means the same
+  feature failed your previous round too: read its row in the gate report
+  under the round before you change numbers again. An `UNMEASURABLE`
+  verdict is an open mesh on a valid solid, not a print failure: simplify
+  the faces it names.
 - View your own sealed `geometry:<id>` reference image once, when you start,
   and keep what you saw in mind for the rest of your work. Do not view it
   again.
