@@ -348,6 +348,42 @@ class ValidityCache:
 
 
 _VALIDATION = ContextVar('motion_validation', default=None)
+_MATERIAL = ContextVar('motion_material', default=None)
+_MAX_MATERIAL_CACHE_ENTRIES = 256
+
+
+class MaterialCache:
+    """Bounded preparation reuse for exact immutable placed operands.
+
+    Unlike validity, material and bounding boxes depend on placement. Keep the
+    complete OCCT identity (including orientation and location) and strong
+    references; neither Python ids nor a hash alone establish equality.
+    """
+
+    def __init__(self):
+        self.buckets = {}
+        self.entries = 0
+        self.hits = 0
+        self.checks = 0
+        self.clears = 0
+
+    def prepare(self, shape):
+        wrapped = shape.wrapped
+        key = hash(wrapped)
+        for previous, prepared in self.buckets.get(key, ()):
+            if previous.IsEqual(wrapped):
+                self.hits += 1
+                return prepared
+        material, volume = _material(shape)
+        prepared = (material, volume, material.bounding_box(), list(material.solids()))
+        self.checks += 1
+        if self.entries >= _MAX_MATERIAL_CACHE_ENTRIES:
+            self.buckets.clear()
+            self.entries = 0
+            self.clears += 1
+        self.buckets.setdefault(key, []).append((wrapped, prepared))
+        self.entries += 1
+        return prepared
 # The collision threshold of the condition being measured, so a pose whose
 # Boolean volumes disagree can still be judged when every formulation gives the
 # same threshold verdict. Absent outside a condition.
@@ -373,9 +409,11 @@ def validation_scope():
         return
     cache = ValidityCache()
     token = _VALIDATION.set(cache)
+    material_token = _MATERIAL.set(MaterialCache())
     try:
         yield cache
     finally:
+        _MATERIAL.reset(material_token)
         _VALIDATION.reset(token)
 
 
@@ -448,14 +486,19 @@ def overlap_volume(a, b):
     from OCP.BRepAlgoAPI import BRepAlgoAPI_Common, BRepAlgoAPI_Cut, BRepAlgoAPI_Fuse
 
     # Resolve actual placed solids for both plain and assembly compounds.
-    a, va = _material(a)
-    b, vb = _material(b)
-    ba, bb = a.bounding_box(), b.bounding_box()
+    cache = _MATERIAL.get()
+    if cache is None:
+        a, va = _material(a)
+        b, vb = _material(b)
+        ba, bb = a.bounding_box(), b.bounding_box()
+        a_solids, b_solids = list(a.solids()), list(b.solids())
+    else:
+        a, va, ba, a_solids = cache.prepare(a)
+        b, vb, bb, b_solids = cache.prepare(b)
     if (ba.min.X > bb.max.X or ba.max.X < bb.min.X or
             ba.min.Y > bb.max.Y or ba.max.Y < bb.min.Y or
             ba.min.Z > bb.max.Z or ba.max.Z < bb.min.Z):
         return 0.0
-    a_solids, b_solids = list(a.solids()), list(b.solids())
     common = solid_volume(_boolean_shape(BRepAlgoAPI_Common, a_solids, b_solids))
     tolerance = consistency_tolerance(va, vb)
     if common > min(va, vb) + tolerance:
@@ -964,6 +1007,32 @@ def check_coupled(inputs: dict, thresholds: dict, parts: dict) -> dict:
         """First collision in the declared nominal poses, or None."""
         first = 1 if allow_seated else 0
         reporter = progresslib.Progress("coupled sweep", steps + 1 - first)
+        try:
+            workers = int(os.environ.get("WORKSHOP_MOTION_WORKERS", "1"))
+        except ValueError:
+            raise ManifestError("WORKSHOP_MOTION_WORKERS must be an integer in [1, 32]") from None
+        if not 1 <= workers <= 32:
+            raise ManifestError("WORKSHOP_MOTION_WORKERS must be an integer in [1, 32]")
+        if workers > 1 and steps + 1 - first >= workers * 2:
+            from motion_parallel import GeometryError, sweep
+
+            deadline = _DEADLINE.get()
+            progresslib.write(f"coupled sweep: {workers} process workers; ordered complete pose coverage")
+            try:
+                hit = sweep(
+                    str(Path(__file__).resolve()),
+                    [(name, shape, spec) for (name, shape, _place, _driven), spec
+                     in zip(placed, movers)], obstacles, steps, first, tol, workers,
+                    deadline.expires if deadline is not None else None, reporter.advance,
+                )
+            except TimeoutError as error:
+                raise DeadlineReached(str(error)) from error
+            except GeometryError as error:
+                detail = error.detail if error.kind == "ManifestError" else str(error)
+                raise ManifestError(detail) from error
+            if hit is not None:
+                reporter.finish(f"- collision at step {hit['step']}")
+            return hit
         for step in range(first, steps + 1):
             posed = [
                 (name, place(shape, step))
