@@ -4,9 +4,12 @@ The parent consumes results in manifest pose order, including errors. Workers
 perform geometry only; they never launch another sweep or evaluate drive proof.
 """
 from concurrent.futures import ProcessPoolExecutor
+from contextlib import contextmanager
 import multiprocessing
 from pathlib import Path
 import runpy
+import shutil
+import sys
 import tempfile
 import time
 
@@ -19,6 +22,25 @@ class GeometryError(ValueError):
 
 
 _STATE = None
+
+
+@contextmanager
+def _scratch_directory():
+    """Cleanup is housekeeping, never a replacement geometry verdict.
+
+    Native sandboxes may permit writing files but refuse directory removal.
+    Preserve the measured result/exception and leave the owned scratch path
+    for later cleanup; do not retry with changed permissions or escalate.
+    """
+    directory = tempfile.mkdtemp(prefix='motion-brep-')
+    try:
+        yield directory
+    finally:
+        try:
+            shutil.rmtree(directory)
+        except OSError as error:
+            print(f'check_motion: scratch cleanup deferred: {directory}: '
+                  f'{type(error).__name__}: {error}', file=sys.stderr, flush=True)
 
 
 def _write_shape(shape, path):
@@ -89,7 +111,7 @@ def sweep(tool_path, placed_shapes_specs, obstacles, steps, first, tol,
         return left
 
     remaining()
-    with tempfile.TemporaryDirectory(prefix='motion-brep-') as directory:
+    with _scratch_directory() as directory:
         root = Path(directory)
         movers = []
         fixed = []
@@ -131,17 +153,28 @@ def sweep(tool_path, placed_shapes_specs, obstacles, steps, first, tol,
                 # A normal executor context waits for outstanding CAD operations
                 # even after a collision/deadline. Terminate them explicitly.
                 processes = list((getattr(executor, '_processes', None) or {}).values())
+                manager = getattr(executor, '_executor_manager_thread', None)
                 executor.terminate_workers()
-                # terminate_workers intentionally uses shutdown(wait=False).
-                # Reap before deleting files an initializing worker might read.
-                for process in processes:
-                    try:
+                # The manager owns waitpid/reaping. Joining the same Process
+                # concurrently can race its poll state and falsely report a
+                # surviving worker. Wait for the owner, escalating signals only
+                # if a native operation refuses termination.
+                if manager is not None:
+                    manager.join(timeout=2)
+                    if manager.is_alive():
+                        for process in processes:
+                            try:
+                                process.kill()
+                            except (ValueError, ProcessLookupError):
+                                pass
+                        manager.join(timeout=2)
+                    if manager.is_alive():
+                        raise RuntimeError('motion worker manager did not terminate')
+                else:
+                    for process in processes:
                         process.join(timeout=2)
                         if process.is_alive():
                             process.kill()
                             process.join(timeout=2)
                         if process.is_alive():
                             raise RuntimeError('motion worker did not terminate')
-                    except ValueError:
-                        # The executor management thread already reaped/closed it.
-                        pass
