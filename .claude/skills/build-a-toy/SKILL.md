@@ -77,6 +77,16 @@ Poll `uv run workshop status <wish-id> --json`. Its `status` is `active`,
 `waiting`, `failed` or `complete`.
 
 - `complete`: go to Step 4.
+- `waiting` with a receipt `needs` entry naming a **Reference Camera
+  mismatch** (schema 3 contracts, ADR 0083): the Component Reviewer saw the
+  model from a different side than the reference shows. Answer it yourself;
+  do not ask the person. Open the named reference image, check the landmarks
+  the need names against it, and estimate the camera again by eye in the
+  Display Pose frame, rounded to 15 degrees. Then resume with
+  `uv run workshop resume <wish-id> --reference-camera <file>=AZ,EL --turn-minutes 360 --json`,
+  adding `--check-motion true` whenever the run was started with it. This changes only that
+  reference's camera: never edit the image, a requirement or the contract
+  file to answer it. Record the old and new camera and the cue in the ledger.
 - Anything else means the run is **incomplete**, which is not a design
   result. Read the receipt's `stop_category` (present whenever `status` is
   not `complete`) to decide what to do next, rather than guessing from
