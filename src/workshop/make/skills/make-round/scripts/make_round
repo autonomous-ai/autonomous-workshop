@@ -35,6 +35,7 @@ import argparse
 import hashlib
 from importlib.metadata import PackageNotFoundError, version as package_version
 import json
+import math
 import os
 import re
 import signal
@@ -732,8 +733,14 @@ def run(command, *, cwd, log: Path, timeout=TOOL_TIMEOUT_SECONDS) -> subprocess.
         budget = float(environment.get("WORKSHOP_GEOMETRY_TIMEOUT", "600"))
         if not 0 < budget <= 86400:
             raise ValueError("WORKSHOP_GEOMETRY_TIMEOUT must be in (0, 86400]")
+        # An explicitly selected analysis allowance must not be silently
+        # capped by the generic 900-second command timeout. Keep the old
+        # command default when no operation override was requested.
+        operation_timeout = float(environment.get("WORKSHOP_GEOMETRY_OPERATION_TIMEOUT", timeout))
+        if not math.isfinite(operation_timeout) or not 0 < operation_timeout <= 86400:
+            raise ValueError("WORKSHOP_GEOMETRY_OPERATION_TIMEOUT must be finite and in (0, 86400]")
         deadline = _GEOMETRY_DEADLINES.setdefault(str(cwd), time.monotonic() + budget)
-        timeout = min(timeout, max(0, deadline - time.monotonic()))
+        timeout = min(operation_timeout, max(0, deadline - time.monotonic()))
     with tempfile.TemporaryFile() as failures:
         environment["WORKSHOP_GEOMETRY_FAILURE_FD"] = str(failures.fileno())
         if timeout == 0:

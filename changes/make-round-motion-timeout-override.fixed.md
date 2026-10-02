@@ -1,0 +1,1 @@
+Make rounds honor an explicit `WORKSHOP_GEOMETRY_OPERATION_TIMEOUT` for geometry commands instead of silently cutting a long motion sweep off at 900 seconds. The shared geometry deadline still bounds all checks, default command limits are unchanged, and interrupted checks remain unverified unless an earlier measured failure must be retained.
