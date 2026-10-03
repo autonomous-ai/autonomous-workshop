@@ -1082,6 +1082,21 @@ with its exact bytes, or differs from the Component's earlier reviewer.
 Codex runs keep the free-text reviewer until Codex exposes equivalent
 subagent and read evidence.
 
+A new run may also amend its own Design Contract inside Make (ADR 0085), but
+only for a Contract Contradiction whose smallest fix no sealed reference
+image shows. The root proposes it with `make_round --propose-amendment`, a
+fresh `contract-reviewer` (the third fixed Make role agent) confirms that the
+rows cannot both hold, that the change is the smallest and that no reference
+shows it, and `--record-amendment-review` records the verdict in the CAD
+project's `measure/contract-amendments.jsonl`. Only requirement and
+Interface text change; `WISH.json` and the images keep their bytes, and
+`make_round` reads the sealed contract with every applied amendment. At Make
+acceptance the host replays that ledger against the sealed contract by
+hash, derives each status from the verdict, and on Claude Code also requires
+a `contract-reviewer` the guard saw start and read every sealed reference.
+The Make gate receipt seals every amendment, and the run receipt lists every
+amendment of every attempt from the ledgers.
+
 A new run whose sealed Design Contract has an Interfaces section (ADR 0082)
 also proves the meetings between Components before assembly. The Workshop
 Manager builds samples of the Shared Helpers under `samples/` and runs

@@ -85,7 +85,16 @@ from workshop.release.renders import (
 )
 from workshop.make.native import NativeMade, validate_build_groups
 from workshop.make.role_agents import make_role_agent_files
+from workshop.make.blocked_reports import (
+    run_blocked_reports,
+    verify_no_open_blocked_reports,
+)
+from workshop.make.contract_amendments import (
+    run_contract_amendments,
+    verify_contract_amendments,
+)
 from workshop.make.role_guard import (
+    contract_reviewer_check,
     MAKE_ROUND_GUARD_MANAGER_IDS,
     verify_component_round_nonces,
     verify_make_round_guard,
@@ -2898,6 +2907,40 @@ def _contract_amendment_history(host_state_root: Path) -> list[dict[str, Any]]:
                 and record.get("correction") == "reference-camera-amendment"):
             amendments.append({key: record.get(key) for key in ("file", "shows", "from", "to", "sealed")})
     return amendments
+
+
+def _sealed_contract_inputs(
+    run_root: Path, wish_sha256: str
+) -> tuple[Optional[dict[str, Any]], dict[str, tuple[Path, str]]]:
+    """The Design Contract ``WISH.json`` sealed, or None, and each sealed
+    reference file -> its run path and sealed sha256 (ADR 0085)."""
+
+    content = (Path(run_root) / "WISH.json").read_bytes()
+    if _sha256(content) != wish_sha256:
+        raise StateConflict("materialized Wish differs from the run binding")
+    document = _strict_json_bytes(content, label="materialized Wish")
+    context = document.get("context") if isinstance(document, dict) else None
+    contract = context.get("design_contract") if isinstance(context, dict) else None
+    references = {
+        item["name"]: (Path(run_root) / "wish-references" / item["name"], item["sha256"])
+        for item in document.get("references") or ()
+        if isinstance(item, dict) and isinstance(item.get("name"), str)
+        and isinstance(item.get("sha256"), str)
+    }
+    return (contract if isinstance(contract, dict) else None), references
+
+
+def _run_contract_amendments(paths: NativeRunPaths, wish_sha256: str) -> list[dict[str, Any]]:
+    """Every in-run Contract Amendment of the run (ADR 0085), read from its
+    ledgers so a run that stopped before Make acceptance still lists them."""
+
+    try:
+        contract, _references = _sealed_contract_inputs(paths.workspace, wish_sha256)
+    except (OSError, StateConflict, WorkshopError):
+        return []
+    if contract is None:
+        return []
+    return run_contract_amendments(paths.workspace, contract=contract, wish_sha256=wish_sha256)
 
 
 def _interface_history(host_state_root: Path) -> list[dict[str, Any]]:
@@ -7699,6 +7742,33 @@ def _evaluate_make_stage(
             require_every_component=checkpoint.effort == "spark",
             bind_reviewers=checkpoint.component_reviewer_binding,
         )
+        cad_project = (
+            run.run_root
+            .joinpath(*PurePosixPath(made.product_root).parts)
+            .joinpath(*PurePosixPath(made.cad_project_path).parts)
+        )
+        # Issue #88: no Make acceptance while a Blocked Report is open.
+        blocked_reports = verify_no_open_blocked_reports(
+            cad_project, wish_sha256=checkpoint.wish_sha256,
+        )
+        # ADR 0085: every in-run Contract Amendment replays against the
+        # sealed contract and carries its independent review.
+        sealed_contract, sealed_references = _sealed_contract_inputs(
+            run.run_root, checkpoint.wish_sha256
+        )
+        contract_amendments = verify_contract_amendments(
+            cad_project,
+            contract=sealed_contract,
+            wish_sha256=checkpoint.wish_sha256,
+            references=sealed_references,
+            blocked_reports=blocked_reports,
+            reviewer_check=(
+                contract_reviewer_check(run.host_state_root)
+                if checkpoint.component_reviewer_binding
+                and checkpoint.make_round_guard_sha256 is not None
+                else None
+            ),
+        )
         # Spark consumes Make's accepted output, not another engineering
         # acceptance pass. Keep only exact-byte and upstream identity checks.
         product_checks = {}
@@ -7724,6 +7794,10 @@ def _evaluate_make_stage(
         reference_conflicts = _made_reference_conflicts(made.product)
         if reference_conflicts:
             product_checks["reference_conflicts"] = reference_conflicts
+        if blocked_reports:
+            product_checks["blocked_reports"] = blocked_reports
+        if contract_amendments:
+            product_checks["contract_amendments"] = contract_amendments
         additional = _manifest_agent_artifacts(
             made.product_root, made.product_manifest
         )
@@ -10366,6 +10440,14 @@ def _native_receipt(
     contract_amendments = (
         _contract_amendment_history(paths.host_state) if paths is not None else []
     )
+    # ADR 0085: the in-run Contract Amendments follow the camera amendments.
+    if paths is not None:
+        contract_amendments = contract_amendments + _run_contract_amendments(
+            paths, checkpoint.wish_sha256
+        )
+    # Issue #88: every Blocked Report, read from the run's own ledgers so a
+    # run that stopped before Make acceptance still lists them.
+    blocked_reports = run_blocked_reports(paths.workspace) if paths is not None else []
     local_release_run = False
     if paths is not None:
         try:
@@ -10586,6 +10668,7 @@ def _native_receipt(
         "interfaces": interfaces,
         "reference_conflicts": reference_conflicts,
         "contract_amendments": contract_amendments,
+        "blocked_reports": blocked_reports,
         "product_id": checkpoint.product_id,
         "status": visible_status,
         "stage": visible_stage,

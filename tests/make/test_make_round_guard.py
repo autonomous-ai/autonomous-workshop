@@ -8,13 +8,16 @@ from pathlib import Path
 
 from workshop.make import make_round_guard
 from workshop.make.make_round_guard import (
+    BLOCKED_REPORTS_NAME,
     NONCE_TABLE_NAME,
     READ_LOG_NAME,
     SUBAGENT_LOG_NAME,
+    blocked_reports,
     decide,
     make_round_calls,
     reviewer_read,
     subagent_record,
+    turn_end,
 )
 
 SCRIPT = '"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round'
@@ -220,6 +223,128 @@ class ReviewerEvidenceTest(unittest.TestCase):
         self.assertIsNone(subagent_record(_event("ls")))
 
 
+WISH = "a" * 64
+
+
+def _report(number=1, component="spine-housing", **changes):
+    return {"event": "report", "report": number, "component": component, "round": 4,
+            "rows": ["prints on its front face", "wing hinge seats at Y 17.5"],
+            "reason": "nothing stands under the seats", "at": "2026-10-03T02:16:00Z",
+            "wish_sha256": WISH, **changes}
+
+
+def _answer(kind, number=1, **changes):
+    event = {"event": kind, "report": number, "at": "2026-10-03T02:20:00Z", "wish_sha256": WISH}
+    if kind == "decision":
+        event.update(ruling="add a 50 degree vault", waits_on=None, waits_on_round=None)
+    else:
+        event.update(need="'prints on its front face' contradicts 'wing hinge seats at Y 17.5'")
+    event.update(changes)
+    return event
+
+
+def _ledger(*events):
+    return "".join(json.dumps(event) + "\n" for event in events)
+
+
+class BlockedReportRolesTest(unittest.TestCase):
+    REPORT = COMPONENT + " --report-blocked blocked.json"
+    CLEAR = SCRIPT + " cad --clear-blocked answer.json"
+    STATUS = SCRIPT + " cad --blocked-reports"
+
+    def test_only_a_worker_reports_blocked_and_it_takes_no_nonce(self):
+        issuer = _Issuer()
+        self.assertIsNone(decide(_event(self.REPORT, "component-worker"), issue=issuer))
+        self.assertEqual(issuer.issued, [])
+        for agent_type in (None, "component-reviewer", "rowan-vale"):
+            output = decide(_event(self.REPORT, agent_type), issue=_Issuer())
+            self.assertEqual(_decision(output), "deny", agent_type)
+            self.assertIn("--clear-blocked", output["hookSpecificOutput"]["permissionDecisionReason"])
+
+    def test_only_the_root_clears_and_anyone_reads(self):
+        self.assertIsNone(decide(_event(self.CLEAR), issue=_Issuer()))
+        for agent_type in ("component-worker", "component-reviewer"):
+            output = decide(_event(self.CLEAR, agent_type), issue=_Issuer())
+            self.assertEqual(_decision(output), "deny")
+            self.assertIn("clears a Blocked Report", output["hookSpecificOutput"]["permissionDecisionReason"])
+        for agent_type in (None, "component-worker"):
+            self.assertIsNone(decide(_event(self.STATUS, agent_type), issue=_Issuer()))
+
+
+class BlockedReportLedgerTest(unittest.TestCase):
+    def test_a_report_is_open_until_a_decision_or_a_need(self):
+        self.assertEqual(blocked_reports(_ledger(_report()))[1]["status"], "open")
+        decided = blocked_reports(_ledger(_report(), _answer("decision")))[1]
+        self.assertEqual((decided["status"], decided["answers"][0]["kind"]), ("decided", "decision"))
+        waiting = blocked_reports(_ledger(
+            _report(), _answer("decision", waits_on="wing", waits_on_round=3)))[1]
+        self.assertEqual(waiting["status"], "waiting")
+        self.assertEqual(blocked_reports(_ledger(_report(), _answer("need")))[1]["status"], "need")
+        # A waiting report is answered again when its worker is woken.
+        woken = blocked_reports(_ledger(
+            _report(), _answer("decision", waits_on="wing", waits_on_round=3), _answer("decision")))[1]
+        self.assertEqual((woken["status"], len(woken["answers"])), ("decided", 2))
+
+    def test_an_invalid_ledger_is_refused(self):
+        for events in (
+            [_report(number=2)],
+            [_report(rows=[])],
+            [_report(rows=["x"] * 9)],
+            [_report(round=0)],
+            [_report(wish_sha256="nope")],
+            [_answer("decision")],
+            [_report(), _answer("decision"), _answer("decision")],
+            [_report(), _answer("need", wish_sha256="b" * 64)],
+            [_report(), _answer("decision", waits_on="spine-housing", waits_on_round=1)],
+            [_report(), _answer("decision", waits_on="wing", waits_on_round=None)],
+            [_report(), _answer("need", need="")],
+            [_report(), _answer("withdraw")],
+        ):
+            with self.subTest(events=events):
+                with self.assertRaises(ValueError):
+                    blocked_reports(_ledger(*events))
+
+
+class TurnEndTest(unittest.TestCase):
+    def _run(self, directory, *events, stage="make", outcome=None):
+        root = Path(directory)
+        (root / "STAGE.json").write_text(json.dumps({"stage": stage, "round": 2}))
+        measure = root / "artifacts/make/r0002/product/cad/measure"
+        measure.mkdir(parents=True)
+        (measure / BLOCKED_REPORTS_NAME).write_text(_ledger(*events))
+        if outcome is not None:
+            (root / "agent-outcome.json").write_text(json.dumps({"outcome": outcome}))
+        return {"hook_event_name": "Stop", "session_id": "s-1", "cwd": str(root),
+                "stop_hook_active": False}
+
+    def test_the_root_may_not_end_its_turn_on_an_open_report(self):
+        for events in ([_report()], [_report(), _answer("decision", waits_on="wing", waits_on_round=3)]):
+            with tempfile.TemporaryDirectory() as directory:
+                output = turn_end(self._run(directory, *events))
+                self.assertEqual(output["decision"], "block")
+                self.assertIn("Blocked Report 1 (spine-housing", output["reason"])
+                self.assertIn("--clear-blocked", output["reason"])
+
+    def test_an_answered_report_a_recorded_need_or_another_stage_lets_it_end(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertIsNone(turn_end(self._run(directory, _report(), _answer("decision"))))
+        with tempfile.TemporaryDirectory() as directory:
+            need = {"status": "waiting", "needs": ["budget"]}
+            self.assertIsNone(turn_end(self._run(directory, _report(), outcome=need)))
+        with tempfile.TemporaryDirectory() as directory:
+            ready = {"status": "ready", "needs": []}
+            self.assertEqual(turn_end(self._run(directory, _report(), outcome=ready))["decision"], "block")
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertIsNone(turn_end(self._run(directory, _report(), stage="playtest")))
+
+    def test_a_subagent_stop_or_another_event_is_not_held(self):
+        with tempfile.TemporaryDirectory() as directory:
+            event = self._run(directory, _report())
+            self.assertIsNone(turn_end({**event, "agent_id": "a7ef2937256984611",
+                                        "agent_type": "component-worker"}))
+            self.assertIsNone(turn_end({**event, "hook_event_name": "SubagentStop"}))
+
+
 class HookProcessTest(unittest.TestCase):
     def test_script_appends_the_issued_nonce_beside_itself(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -269,6 +394,18 @@ class HookProcessTest(unittest.TestCase):
             starts = [json.loads(line) for line in (Path(host) / SUBAGENT_LOG_NAME).read_text().splitlines()]
             self.assertEqual([r["agent_id"] for r in starts], ["a1f355b61d99918ed"])
             self.assertEqual(sorted(p.name for p in Path(workspace).iterdir()), ["front.png"])
+
+    def test_script_blocks_the_root_stop_on_an_open_report_and_records_nothing(self):
+        with tempfile.TemporaryDirectory() as host, tempfile.TemporaryDirectory() as workspace:
+            script = Path(host) / "make_round_guard.py"
+            script.write_bytes(Path(make_round_guard.__file__).read_bytes())
+            event = TurnEndTest()._run(workspace, _report())
+            completed = subprocess.run(
+                [sys.executable, str(script)], input=json.dumps(event),
+                capture_output=True, text=True, check=True, cwd=workspace,
+            )
+            self.assertEqual(json.loads(completed.stdout)["decision"], "block")
+            self.assertEqual(sorted(p.name for p in Path(host).iterdir()), ["make_round_guard.py"])
 
     def test_script_denies_when_the_input_is_not_json(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -2306,7 +2306,11 @@ def _validate_signature_review(
         "Make signature review",
         maximum=MAX_SIGNATURE_REVIEW_BYTES,
     )
-    design_contract = _sealed_design_contract(run_root, wish_sha256)
+    design_contract = _current_design_contract(
+        run_root,
+        wish_sha256,
+        run_root.joinpath(*(PurePosixPath(product_root_value) / cad_project_path).parts),
+    )
     sealed_geometry_rows = (
         _sealed_geometry_requirement_rows(design_contract)
         if design_contract is not None
@@ -2819,6 +2823,152 @@ def _passing_final_result(current_record: str) -> bool:
     return "- Result: **PASS** (exit 0)\n" in current_record
 
 
+# Blocked Reports (issue #88): kept in step with ``blocked_reports`` in
+# workshop/make/make_round_guard.py; this finalizer is standalone.
+BLOCKED_REPORTS_NAME = "blocked-reports.jsonl"
+MAX_BLOCKED_LEDGER_BYTES = 1024 * 1024
+OPEN_BLOCKED = frozenset({"open", "waiting"})
+
+
+def _blocked_text(value: Any, maximum: int) -> bool:
+    return isinstance(value, str) and 1 <= len(value.strip()) <= maximum
+
+
+def _blocked_reports(content: str) -> dict[int, dict[str, Any]]:
+    reports: dict[int, dict[str, Any]] = {}
+    for line in content.splitlines():
+        event = json.loads(line)
+        if not isinstance(event, dict):
+            raise ValueError("a Blocked Report event is not an object")
+        kind, number = event.get("event"), event.get("report")
+        if type(number) is not int or not _blocked_text(event.get("at"), 64):
+            raise ValueError("a Blocked Report event has no number or time")
+        wish = event.get("wish_sha256")
+        if wish is not None and not (isinstance(wish, str) and re.fullmatch(r"[0-9a-f]{64}", wish)):
+            raise ValueError("a Blocked Report event has an invalid Wish binding")
+        if kind == "report":
+            rows, round_value = event.get("rows"), event.get("round")
+            if (
+                number != len(reports) + 1
+                or not _blocked_text(event.get("component"), 200)
+                or not (round_value is None or (type(round_value) is int and round_value >= 1))
+                or not isinstance(rows, list) or not 1 <= len(rows) <= 8
+                or not all(_blocked_text(row, 4000) for row in rows)
+                or not _blocked_text(event.get("reason"), 4000)
+            ):
+                raise ValueError("Blocked Report %s is invalid" % number)
+            reports[number] = {"component": event["component"], "wish_sha256": wish, "status": "open"}
+            continue
+        report = reports.get(number)
+        if report is None or report["status"] not in OPEN_BLOCKED:
+            raise ValueError("Blocked Report %s is not open to answer" % number)
+        if wish != report["wish_sha256"]:
+            raise ValueError("Blocked Report %s is answered from another run" % number)
+        if kind == "decision":
+            waits_on, waits_round = event.get("waits_on"), event.get("waits_on_round")
+            if not _blocked_text(event.get("ruling"), 4000) or not (
+                (waits_on is None and waits_round is None)
+                or (_blocked_text(waits_on, 200) and waits_on != report["component"]
+                    and type(waits_round) is int and waits_round >= 0)
+            ):
+                raise ValueError("the decision on Blocked Report %s is invalid" % number)
+            report["status"] = "waiting" if waits_on is not None else "decided"
+        elif kind == "need":
+            if not _blocked_text(event.get("need"), 1024):
+                raise ValueError("the need on Blocked Report %s is invalid" % number)
+            report["status"] = "need"
+        elif kind == "amendment":
+            # ADR 0085: an applied Contract Amendment removed the contradiction.
+            amendment, amended = event.get("amendment"), event.get("amended_sha256")
+            if type(amendment) is not int or amendment < 1 or not (
+                isinstance(amended, str) and re.fullmatch(r"[0-9a-f]{64}", amended)
+            ):
+                raise ValueError("the amendment answering Blocked Report %s is invalid" % number)
+            report["status"] = "amended"
+        else:
+            raise ValueError("unknown Blocked Report event %r" % kind)
+    return reports
+
+
+# ADR 0085: kept in step with AMENDMENT_LEDGER_NAME in make_round.
+CONTRACT_AMENDMENTS_NAME = "contract-amendments.jsonl"
+
+
+def _make_round_tool(run_root: Path) -> dict[str, Any]:
+    script = run_root / ".agents/skills/make-round/scripts/make_round"
+    try:
+        return runpy.run_path(str(script))
+    except OSError as exc:
+        raise ProposalError("Make round tool is unavailable: %s" % exc) from exc
+
+
+def _refuse_unreviewed_contract_amendments(run_root: Path, project: Path) -> None:
+    """Refuse the Make proposal while a Contract Amendment awaits its review,
+    or when its ledger does not replay against the sealed contract (ADR
+    0085). The run's own make_round replays it; a frozen make_round without
+    amendments has nothing to replay."""
+
+    ledger = project / "measure" / CONTRACT_AMENDMENTS_NAME
+    if not ledger.exists() and not ledger.is_symlink():
+        return
+    tool = _make_round_tool(run_root)
+    if "read_contract_amendments" not in tool:
+        return
+    try:
+        amendments = tool["read_contract_amendments"](project)
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise ProposalError("the Contract Amendment ledger is invalid: %s" % exc) from exc
+    held = [str(number) for number, item in sorted(amendments.items()) if item["status"] == "proposed"]
+    if held:
+        raise ProposalError(
+            "Contract Amendment %s awaits its review; record the contract-reviewer's verdict "
+            "with make_round --record-amendment-review before proposing Make" % ", ".join(held)
+        )
+
+
+def _current_design_contract(
+    run_root: Path, wish_sha256: str, project: Path
+) -> Optional[Mapping[str, Any]]:
+    """The sealed Design Contract with every applied Contract Amendment (ADR
+    0085): what the signature review's requirement rows must match."""
+
+    sealed = _sealed_design_contract(run_root, wish_sha256)
+    ledger = project / "measure" / CONTRACT_AMENDMENTS_NAME
+    if sealed is None or (not ledger.exists() and not ledger.is_symlink()):
+        return sealed
+    tool = _make_round_tool(run_root)
+    if "current_contract" not in tool:
+        return sealed
+    current = tool["current_contract"](project)
+    return current if isinstance(current, dict) else sealed
+
+
+def _refuse_open_blocked_reports(project: Path) -> None:
+    """Refuse the Make proposal while a Blocked Report is open (issue #88)."""
+
+    ledger = project / "measure" / BLOCKED_REPORTS_NAME
+    if not ledger.exists() and not ledger.is_symlink():
+        return
+    try:
+        identity = ledger.lstat()
+        if not stat.S_ISREG(identity.st_mode) or identity.st_size > MAX_BLOCKED_LEDGER_BYTES:
+            raise ValueError("not a bounded regular file")
+        reports = _blocked_reports(ledger.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise ProposalError("the Blocked Report ledger is invalid: %s" % exc) from exc
+    held = [
+        "%d (%s, %s)" % (number, report["component"], report["status"])
+        for number, report in sorted(reports.items())
+        if report["status"] in OPEN_BLOCKED
+    ]
+    if held:
+        raise ProposalError(
+            "Blocked Report %s is open; answer each with make_round --clear-blocked "
+            "(a decision, or a need quoting its rows) before proposing Make"
+            % ", ".join(held)
+        )
+
+
 def _make_contract(
     run_root: Path,
     stage: Mapping[str, Any],
@@ -2866,6 +3016,8 @@ def _make_contract(
     ):
         raise ProposalError("CAD project path must be a real in-product directory")
     _prune_derived_cad_caches(project, "Make CAD project")
+    _refuse_open_blocked_reports(project)
+    _refuse_unreviewed_contract_amendments(run_root, project)
     combined_entries = sorted(
         path.name
         for path in project.glob("*.step.py")

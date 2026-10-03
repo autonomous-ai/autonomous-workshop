@@ -91,8 +91,9 @@ All implementation and product-run work must preserve these boundaries:
 - The host materializes every eligible Inventor as an official project-scoped
   Codex custom agent under `.codex/agents/`, bound to its exact identity, Taste,
   and skill bytes. That directory is the sole Inventor roster in a run; in new
-  runs it also holds the two fixed Make role agents, `component-worker` and
-  `component-reviewer`, which are not Inventors (ADR 0077). Codex
+  runs it also holds the fixed Make role agents, `component-worker` and
+  `component-reviewer` (ADR 0077) and `contract-reviewer` (ADR 0085), which
+  are not Inventors. Codex
   owns native spawning, routing, and synthesis. The root session alone receives
   host stage authority and submits a stage proposal; child agents cannot
   advance gates or perform external effects.
@@ -142,7 +143,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0081-shape-rounds-follow-component-reviews.md`, and
 `docs/adr/0082-interfaces-between-components.md`, and
 `docs/adr/0083-compare-in-the-display-pose-at-the-reference-camera.md`, and
-`docs/adr/0084-interface-text-and-reference-conflicts.md` before changing the CLI, runtime,
+`docs/adr/0084-interface-text-and-reference-conflicts.md`, and
+`docs/adr/0085-in-run-contract-amendments-for-invisible-fixes.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -277,6 +279,20 @@ reviewer lists a Reference Conflict, not a difference: the contract wins, it
 costs no Shape Round, never reaches the worker, and the final receipt and
 `workshop status --json` report it. A difference below the print limits is
 not listed. Schema 1 to 3 contracts and frozen runs keep the earlier review.
+ADR 0085 amends ADR 0080 and ADR 0083 for new runs: where a Contract
+Contradiction's smallest fix changes nothing a sealed reference shows, the
+Manager may propose a Contract Amendment with `make_round
+--propose-amendment` instead of a need. A fresh `contract-reviewer`, a third
+fixed Make role agent, confirms that the quoted rows cannot both hold, that
+the change is the smallest and that no reference shows it; otherwise the run
+stops on the need. Only requirement and Interface text change; WISH.json and
+the images keep their bytes. Rounds read the amended rows and a Component
+whose rows changed unlocks; `--clear-blocked` may answer a Blocked Report
+with the applied amendment. The host replays the ledger against the sealed
+contract by hash before Make acceptance, refusing a missing review, a
+disagreement or visible change counted as applied, or a changed contract
+hash, and the receipt lists every amendment. `build-a-toy` folds each
+applied amendment into the toy's contract and ledger.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

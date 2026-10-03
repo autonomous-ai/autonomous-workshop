@@ -20,10 +20,23 @@ and subagents alike. The runtime names the calling subagent in the hook input
 On Claude Code the same script also keeps the evidence that binds a Component
 Review to its reviewer (ADR 0081, issue #77). It is registered for ``Read``
 and ``SubagentStart`` as well: every subagent the runtime starts is appended
-to the subagent log, and every ``Read`` by a ``component-reviewer`` is
-appended to the reviewer read log with the agent id, the resolved path and
-the sha256 of the bytes it read. A ``Read`` is never denied. The host checks
-each recorded review against both logs.
+to the subagent log, and every ``Read`` by a ``component-reviewer`` or a
+``contract-reviewer`` (ADR 0085) is appended to the reviewer read log with
+the agent id, the resolved path and the sha256 of the bytes it read. A
+``Read`` is never denied. The host checks each recorded review against both
+logs.
+
+Contract Amendments (ADR 0085): ``--propose-amendment`` and
+``--record-amendment-review`` are the root's; ``--contract-amendments`` only
+lists them, for anyone.
+
+Blocked Reports (issue #88): ``--report-blocked`` runs only from a
+``component-worker`` and receives no nonce, since it builds nothing;
+``--clear-blocked`` is the root's. Both work without this hook; the hook only
+keeps each to its role. On Claude Code the script is also registered for the
+root's ``Stop`` event and refuses the turn end while the current Make
+attempt holds an open Blocked Report, unless the turn ends on a recorded
+need. ``blocked_reports`` reads the ledger; the host imports it from here.
 
 The hook decides who may run make_round, not who may spawn whom. It runs as a
 standalone script with the standard library only; it makes no model call.
@@ -45,6 +58,9 @@ NONCE_TABLE_NAME = "worker-nonces.jsonl"
 READ_LOG_NAME = "reviewer-reads.jsonl"
 SUBAGENT_LOG_NAME = "subagents.jsonl"
 COMPONENT_REVIEWER = "component-reviewer"
+# ADR 0085: the fresh reader who confirms a Contract Amendment.
+CONTRACT_REVIEWER = "contract-reviewer"
+_LOGGED_READERS = frozenset({COMPONENT_REVIEWER, CONTRACT_REVIEWER})
 # A file larger than any packet image is logged without a hash.
 MAX_HASHED_READ_BYTES = 64 * 1024 * 1024
 NONCE_FLAG = "--worker-nonce"
@@ -63,6 +79,13 @@ _SCRIPT_TOKEN = re.compile(r"make_round(?=[\s;&|)\"']|$)")
 # A record about a Component that builds nothing, or a check that spans
 # Components (ADR 0082); only the root makes one.
 _ROOT_RECORDS = ("--record-review", "--record-unlock", "--shared-helpers", "--interface")
+# Blocked Reports (issue #88): the worker's report, and the status anyone reads.
+REPORT_BLOCKED = "--report-blocked"
+BLOCKED_STATUS = "--blocked-reports"
+AMENDMENT_STATUS = "--contract-amendments"
+BLOCKED_REPORTS_NAME = "blocked-reports.jsonl"
+MAX_BLOCKED_LEDGER_BYTES = 1024 * 1024
+OPEN_BLOCKED = frozenset({"open", "waiting"})
 
 Issuer = Callable[[Mapping[str, Any], str], str]
 
@@ -157,6 +180,10 @@ def _option(arguments: list[str], name: str) -> Optional[str]:
     return None
 
 
+def _flag(arguments: list[str], name: str) -> bool:
+    return any(argument == name or argument.startswith(name + "=") for argument in arguments)
+
+
 def _deny(reason: str) -> dict[str, Any]:
     return {
         "hookSpecificOutput": {
@@ -189,11 +216,20 @@ def decide(event: Mapping[str, Any], *, issue: Issuer) -> Optional[dict[str, Any
     arguments = calls[0]
     if any(argument == NONCE_FLAG or argument.startswith(NONCE_FLAG + "=") for argument in arguments):
         return _deny("%s is issued by Workshop; never pass one" % NONCE_FLAG)
-    if any(argument in ("--self-check", "-h", "--help") for argument in arguments):
+    if any(argument in ("--self-check", "-h", "--help", BLOCKED_STATUS, AMENDMENT_STATUS)
+           for argument in arguments):
         return None
     agent_type = event.get("agent_type")
     is_root = not agent_type and not event.get("agent_id")
     component = _option(arguments, "--component")
+    if _flag(arguments, REPORT_BLOCKED):
+        # A Blocked Report builds nothing, so it takes no nonce (issue #88).
+        if agent_type != COMPONENT_WORKER:
+            return _deny(
+                "only a component-worker reports its Component blocked; answer a "
+                "Blocked Report with --clear-blocked"
+            )
+        return None
     if component is not None and not any(
         argument == flag or argument.startswith(flag + "=")
         for argument in arguments
@@ -226,19 +262,21 @@ def decide(event: Mapping[str, Any], *, issue: Issuer) -> Optional[dict[str, Any
         return _deny(
             "only the Workshop Manager records a Component Review or an "
             "assembly unlock, runs an assembly round, the Shared Helper check or "
-            "an Interface check, or records assembly feedback"
+            "an Interface check, records assembly feedback, clears a Blocked Report, "
+            "or proposes or records a Contract Amendment"
         )
     return None
 
 
 def reviewer_read(event: Mapping[str, Any]) -> Optional[dict[str, Any]]:
-    """The read-log record for a ``Read`` by a Component Reviewer, or ``None``.
+    """The read-log record for a ``Read`` by a Component Reviewer or a
+    Contract Reviewer (ADR 0085), or ``None``.
 
     The path is resolved and the file hashed when the hook runs, just before
     the runtime reads it, so the record names the exact bytes the reviewer saw.
     """
 
-    if event.get("tool_name") != "Read" or event.get("agent_type") != COMPONENT_REVIEWER:
+    if event.get("tool_name") != "Read" or event.get("agent_type") not in _LOGGED_READERS:
         return None
     agent_id = event.get("agent_id")
     tool_input = event.get("tool_input")
@@ -283,6 +321,160 @@ def subagent_record(event: Mapping[str, Any]) -> Optional[dict[str, Any]]:
     }
 
 
+def _text(value: Any, maximum: int) -> bool:
+    return isinstance(value, str) and 1 <= len(value.strip()) <= maximum
+
+
+def blocked_reports(content: str) -> dict[int, dict[str, Any]]:
+    """Every Blocked Report in one ledger, by number (issue #88).
+
+    The ledger is ``measure/blocked-reports.jsonl`` in the CAD project, one
+    event per line: a worker's ``report``, then the Manager's ``decision``
+    (``waits_on`` a Component, or not), ``need`` or ``amendment`` (an
+    applied Contract Amendment, ADR 0085). A report's ``status`` is ``open``
+    until answered, ``waiting`` after a decision that waits on a Component,
+    ``decided`` after any other decision, ``need`` after a need and
+    ``amended`` after an amendment; ``open`` and ``waiting`` both hold the gates. Raises ``ValueError``
+    for a ledger that is not a sequence of such events. Kept in step with
+    ``blocked_reports`` in make_round and stage_proposal.py, which are
+    standalone and cannot import it.
+    """
+
+    reports: dict[int, dict[str, Any]] = {}
+    for line in content.splitlines():
+        event = json.loads(line)
+        if not isinstance(event, dict):
+            raise ValueError("a Blocked Report event is not an object")
+        kind, number = event.get("event"), event.get("report")
+        if type(number) is not int or not _text(event.get("at"), 64):
+            raise ValueError("a Blocked Report event has no number or time")
+        wish = event.get("wish_sha256")
+        if wish is not None and not (isinstance(wish, str) and re.fullmatch(r"[0-9a-f]{64}", wish)):
+            raise ValueError("a Blocked Report event has an invalid Wish binding")
+        if kind == "report":
+            rows, round_value = event.get("rows"), event.get("round")
+            if (
+                number != len(reports) + 1
+                or not _text(event.get("component"), 200)
+                or not (round_value is None or (type(round_value) is int and round_value >= 1))
+                or not isinstance(rows, list) or not 1 <= len(rows) <= 8
+                or not all(_text(row, 4000) for row in rows)
+                or not _text(event.get("reason"), 4000)
+            ):
+                raise ValueError("Blocked Report %s is invalid" % number)
+            reports[number] = {
+                "report": number, "component": event["component"], "round": round_value,
+                "rows": list(rows), "reason": event["reason"], "opened_at": event["at"],
+                "wish_sha256": wish, "status": "open", "answers": [],
+            }
+            continue
+        report = reports.get(number)
+        if report is None or report["status"] not in OPEN_BLOCKED:
+            raise ValueError("Blocked Report %s is not open to answer" % number)
+        if wish != report["wish_sha256"]:
+            raise ValueError("Blocked Report %s is answered from another run" % number)
+        if kind == "decision":
+            waits_on, waits_round = event.get("waits_on"), event.get("waits_on_round")
+            if not _text(event.get("ruling"), 4000) or not (
+                (waits_on is None and waits_round is None)
+                or (_text(waits_on, 200) and waits_on != report["component"]
+                    and type(waits_round) is int and waits_round >= 0)
+            ):
+                raise ValueError("the decision on Blocked Report %s is invalid" % number)
+            answer = {"kind": "decision", "ruling": event["ruling"], "waits_on": waits_on,
+                      "waits_on_round": waits_round, "at": event["at"]}
+            report["status"] = "waiting" if waits_on is not None else "decided"
+        elif kind == "need":
+            if not _text(event.get("need"), 1024):
+                raise ValueError("the need on Blocked Report %s is invalid" % number)
+            answer = {"kind": "need", "need": event["need"], "at": event["at"]}
+            report["status"] = "need"
+        elif kind == "amendment":
+            # ADR 0085: an applied Contract Amendment removed the contradiction.
+            amendment, amended = event.get("amendment"), event.get("amended_sha256")
+            if type(amendment) is not int or amendment < 1 or not (
+                isinstance(amended, str) and re.fullmatch(r"[0-9a-f]{64}", amended)
+            ):
+                raise ValueError("the amendment answering Blocked Report %s is invalid" % number)
+            answer = {"kind": "amendment", "amendment": amendment, "amended_sha256": amended,
+                      "at": event["at"]}
+            report["status"] = "amended"
+        else:
+            raise ValueError("unknown Blocked Report event %r" % kind)
+        report["answers"].append(answer)
+    return reports
+
+
+def _current_ledgers(run_root: Path) -> list[Path]:
+    """The Blocked Report ledgers of the run's current Make attempt."""
+
+    try:
+        stage = json.loads((run_root / "STAGE.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(stage, dict) or stage.get("stage") != "make" or type(stage.get("round")) is not int:
+        return []
+    product = run_root / "artifacts" / "make" / ("r%04d" % stage["round"]) / "product"
+    if not product.is_dir():
+        return []
+    return sorted(
+        path for path in product.rglob(BLOCKED_REPORTS_NAME)
+        if path.parent.name == "measure" and path.is_file() and not path.is_symlink()
+    )
+
+
+def _ends_on_need(run_root: Path) -> bool:
+    try:
+        proposal = json.loads((run_root / "agent-outcome.json").read_text(encoding="utf-8"))
+        outcome = proposal["outcome"]
+        return outcome["status"] in ("waiting", "failed") and bool(outcome["needs"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
+
+
+def turn_end(event: Mapping[str, Any]) -> Optional[dict[str, Any]]:
+    """The ``Stop`` hook output refusing the root's turn end, or ``None``.
+
+    The root may not end its turn while the current Make attempt holds an
+    open Blocked Report, unless the turn ends on a recorded need (issue #88).
+    A subagent's stop, or an unreadable ledger, is never refused here: the
+    host's Make gates still refuse it.
+    """
+
+    if event.get("hook_event_name") != "Stop" or event.get("agent_type") or event.get("agent_id"):
+        return None
+    cwd = event.get("cwd")
+    if not isinstance(cwd, str) or not cwd:
+        return None
+    run_root = Path(cwd)
+    held = []
+    for ledger in _current_ledgers(run_root):
+        try:
+            if ledger.stat().st_size > MAX_BLOCKED_LEDGER_BYTES:
+                continue
+            reports = blocked_reports(ledger.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, ValueError):
+            continue
+        held.extend(
+            "%d (%s, %s)" % (number, report["component"], report["status"])
+            for number, report in sorted(reports.items())
+            if report["status"] in OPEN_BLOCKED
+        )
+    if not held or _ends_on_need(run_root):
+        return None
+    return {
+        "decision": "block",
+        "reason": (
+            "Workshop (issue #88): Blocked Report %s is still open. Do not end your "
+            "turn. Answer each with make_round --clear-blocked: a decision the "
+            "worker can follow, a decision waiting on a Component (then wait for "
+            "that Component and wake the worker again), or a need quoting its "
+            "rows, then seal that need with stage_proposal.py need. Run make_round "
+            "<cad-project> --blocked-reports to see them."
+        ) % ", ".join(held),
+    }
+
+
 def _append(table: Path, record: Mapping[str, Any]) -> None:
     line = (json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
     descriptor = os.open(str(table), os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
@@ -319,6 +511,10 @@ def main() -> int:
         print(json.dumps(_deny("the hook input is not a JSON object")))
         return 0
     directory = Path(__file__).resolve().parent
+    stop = turn_end(event)
+    if stop is not None:
+        print(json.dumps(stop))
+        return 0
     # Evidence only: a spawn or a read is never refused, and a record that
     # cannot be written is missing at the host's check instead.
     evidence = subagent_record(event)

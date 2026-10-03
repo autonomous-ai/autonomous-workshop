@@ -2951,7 +2951,7 @@ class NativeHostTest(unittest.TestCase):
             # role agents (ADR 0077) sit beside it and are not Inventors.
             self.assertEqual(
                 sorted(path.name for path in (workspace / ".codex/agents").iterdir()),
-                ["component-reviewer.toml", "component-worker.toml", "soren-voss.toml"],
+                ["component-reviewer.toml", "component-worker.toml", "contract-reviewer.toml", "soren-voss.toml"],
             )
             for name, content in make_role_agent_files().items():
                 self.assertEqual(
@@ -4748,6 +4748,53 @@ class ReferenceCameraAmendmentTest(unittest.TestCase):
         started = start_native_run(wish, effort="spark")
         return product_id, started, seen
 
+    def test_a_stopped_run_lists_its_blocked_reports(self):
+        # Issue #88: read from the run's own ledger, before any Make receipt.
+        product_id, started, _seen = self._run()
+        paths = native_run_paths(product_id)
+        measure = paths.workspace / ("artifacts/make/r%04d/product/cad/measure" % started["round"])
+        measure.mkdir(parents=True)
+        (measure / "blocked-reports.jsonl").write_text(json.dumps({
+            "event": "report", "report": 1, "component": "spine-housing", "round": 4,
+            "rows": ["prints on its front face"], "reason": "no support",
+            "at": "2026-10-03T02:16:00Z", "wish_sha256": started["wish_sha256"],
+        }) + "\n")
+        [listed] = native_run_status(product_id)["blocked_reports"]
+        self.assertEqual((listed["report"], listed["component"], listed["status"], listed["cleared_by"]),
+                         (1, "spine-housing", "open", None))
+        self.assertIsInstance(listed["open_seconds"], int)
+
+    def test_a_stopped_run_lists_its_in_run_contract_amendments(self):
+        # ADR 0085: read from the run's own ledger, after the camera
+        # amendments, so a run that stopped before Make acceptance still
+        # lists them for the outer loop to fold back.
+        from workshop.make.contract_amendments import contract_digest
+
+        product_id, started, _seen = self._run()
+        paths = native_run_paths(product_id)
+        contract = json.loads((paths.workspace / "WISH.json").read_text())["context"]["design_contract"]
+        amended = json.loads(json.dumps(contract))
+        amended["requirements"][0]["text"] = "Stands on its base."
+        measure = paths.workspace / ("artifacts/make/r%04d/product/cad/measure" % started["round"])
+        measure.mkdir(parents=True)
+        events = [
+            {"event": "proposal", "amendment": 1, "rows": ["Stands.", "Body"],
+             "changes": [{"row": "R01", "scope": "assembly", "from": "Stands.", "to": "Stands on its base."}],
+             "reason": "x", "report": None, "affects": ["body"], "packet": "/p", "packet_sha256": "0" * 64,
+             "contract_sha256": contract_digest(contract), "amended_sha256": contract_digest(amended),
+             "at": "2026-10-03T02:16:00Z", "wish_sha256": started["wish_sha256"]},
+            {"event": "review", "amendment": 1, "reviewer": "fresh",
+             "verdict": {"contradiction": True, "smallest": True, "visible_in": [],
+                         "references_checked": ["ref-01-whole.png", "ref-02-body.png"], "reason": "ok"},
+             "at": "2026-10-03T02:20:00Z", "wish_sha256": started["wish_sha256"]},
+        ]
+        (measure / "contract-amendments.jsonl").write_text("".join(json.dumps(e) + "\n" for e in events))
+        [listed] = native_run_status(product_id)["contract_amendments"]
+        self.assertEqual((listed["kind"], listed["amendment"], listed["status"]),
+                         ("contract-amendment", 1, "applied"))
+        self.assertEqual(listed["changes"], [{"row": "R01", "from": "Stands.", "to": "Stands on its base."}])
+        self.assertEqual(listed["review"]["reviewer"], "fresh")
+
     def test_an_amendment_changes_only_that_reference_camera(self):
         product_id, started, seen = self._run()
         self.assertEqual((started["status"], started["stage"]), ("waiting", "make"))
@@ -4771,6 +4818,8 @@ class ReferenceCameraAmendmentTest(unittest.TestCase):
              "sealed": [90, 15]}])
         # ADR 0084: a receipt with no Reference Conflict reports an empty list.
         self.assertEqual(resumed["reference_conflicts"], [])
+        # Issue #88: a run without a Blocked Report lists none.
+        self.assertEqual(resumed["blocked_reports"], [])
         records = [json.loads(line) for line in
                    (paths.host_state / "host-corrections.jsonl").read_text().splitlines()]
         amendment = [r for r in records if r["correction"] == "reference-camera-amendment"]

@@ -1836,3 +1836,40 @@ part's refusal keys in its state and reports a detail refused at the same
 line in the previous round under `repeated_detail_refusals`, apart from
 `repeated_print_defects`. This changes the `cad`, `print-details` and
 `make-round` fingerprints.
+
+## Local change: Blocked Reports a Component Worker records and the Manager clears (2026-10-03)
+
+A Workshop-local change (issue #88) to Workshop's own `make-round`.
+`make_round --component part_<id>.step.py --report-blocked BLOCKED.json`
+records a Component Worker's Blocked Report in the CAD project's
+`measure/blocked-reports.jsonl`: the Component, its latest round and the
+contract rows it names, each checked verbatim (whitespace aside) against the
+sealed Design Contract, bound to the run by the sha256 of `WISH.json`. The
+Workshop Manager answers it with `--clear-blocked ANSWER.json`: a decision, a
+decision waiting on another Component, or a need that quotes every row. A
+waiting report stays open until that Component's next round whose checks
+pass; that round's summary carries `wakes_blocked`, and `--blocked-reports`
+marks the report woken. While any report is open or waiting an assembly
+round and `--full` refuse to run. Nothing is built for a report or an answer.
+This changes the `make-round` fingerprint.
+
+## Local change: in-run Contract Amendments a fresh Contract Reviewer confirms (2026-10-03)
+
+A Workshop-local change (issue #90, ADR 0085) to Workshop's own `make-round`.
+`make_round --propose-amendment PROPOSAL.json` records the Workshop
+Manager's Contract Amendment in the CAD project's
+`measure/contract-amendments.jsonl`: two or more contract rows that cannot
+both hold, verbatim, and the whole requirement or Interface texts it
+replaces, bound to the sha256 of `WISH.json` and to the canonical-JSON hash
+of the contract it amends. It writes a packet holding every sealed
+reference by path and sha256 for a fresh `contract-reviewer`.
+`--record-amendment-review REVIEW.json` records that reviewer's verdict; the
+amendment applies only when the rows contradict, the change is the
+smallest, and no reference shows it. Rounds then read the amended rows: the
+rows a component round delivers, the rows a Blocked Report quotes, and the
+contract-rows hash its review binds, so a locked Component whose rows
+changed unlocks. `--clear-blocked {"report", "amendment"}` clears a Blocked
+Report with an applied amendment that names it. While an amendment awaits
+review an assembly round and `--full` refuse to run;
+`--contract-amendments` lists them. Nothing is built for a proposal or a
+review. This changes the `make-round` fingerprint.

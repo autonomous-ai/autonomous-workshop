@@ -34,7 +34,7 @@ from workshop.make.make_round_guard import (
     READ_LOG_NAME,
     SUBAGENT_LOG_NAME,
 )
-from workshop.make.role_agents import COMPONENT_REVIEWER, COMPONENT_WORKER
+from workshop.make.role_agents import COMPONENT_REVIEWER, COMPONENT_WORKER, CONTRACT_REVIEWER
 from workshop.runtime.make_round_hook import (
     MAKE_ROUND_GUARD_DIRECTORY,
     MAKE_ROUND_GUARD_MANAGER_IDS,
@@ -131,28 +131,30 @@ def _issued_worker_nonces(host_state_root: Path) -> dict[str, str]:
     return issued
 
 
-def _started_reviewers(host_state_root: Path) -> set[str]:
-    """Agent ids the runtime started as a ``component-reviewer``."""
+def _started_reviewers(host_state_root: Path, role: str = COMPONENT_REVIEWER) -> set[str]:
+    """Agent ids the runtime started as ``role``."""
 
     return {
         record["agent_id"]
         for record in _guard_records(
             host_state_root, SUBAGENT_LOG_NAME, MAX_EVIDENCE_LOG_BYTES, "subagent log"
         )
-        if record.get("agent_type") == COMPONENT_REVIEWER
+        if record.get("agent_type") == role
         and isinstance(record.get("agent_id"), str)
     }
 
 
-def _reviewer_reads(host_state_root: Path) -> dict[str, set[tuple[str, str]]]:
-    """Agent id -> every ``(resolved path, sha256)`` a Component Reviewer read."""
+def _reviewer_reads(
+    host_state_root: Path, role: str = COMPONENT_REVIEWER
+) -> dict[str, set[tuple[str, str]]]:
+    """Agent id -> every ``(resolved path, sha256)`` a reviewer of ``role`` read."""
 
     reads: dict[str, set[tuple[str, str]]] = {}
     for record in _guard_records(
         host_state_root, READ_LOG_NAME, MAX_EVIDENCE_LOG_BYTES, "reviewer read log"
     ):
         if (
-            record.get("agent_type") == COMPONENT_REVIEWER
+            record.get("agent_type") == role
             and isinstance(record.get("agent_id"), str)
             and isinstance(record.get("path"), str)
             and isinstance(record.get("sha256"), str)
@@ -234,6 +236,42 @@ def _verify_component_reviews(
                     "packet holds it; a review must judge the packet it names"
                     % (label, reviewer, os.path.basename(image))
                 )
+
+
+def contract_reviewer_check(host_state_root: Path):
+    """A check refusing a Contract Amendment review no proven Contract
+    Reviewer made (ADR 0085): ``(reviewer, images, label)`` -> None. The
+    reviewer must be named by native agent id, be a ``contract-reviewer``
+    the runtime started, and have read every sealed reference image with its
+    sealed bytes."""
+
+    started: Optional[set[str]] = None
+    reads: Optional[dict[str, set[tuple[str, str]]]] = None
+
+    def check(reviewer: str, images: dict[str, str], label: str) -> None:
+        nonlocal started, reads
+        if REVIEWER_ID.fullmatch(reviewer) is None:
+            raise ContractError(
+                "%s's review does not name its reviewer by native agent id; record the "
+                "contract-reviewer's id" % label
+            )
+        if started is None:
+            started = _started_reviewers(host_state_root, CONTRACT_REVIEWER)
+            reads = _reviewer_reads(host_state_root, CONTRACT_REVIEWER)
+        if reviewer not in started:
+            raise ContractError(
+                "%s's review names %s, which is not a contract-reviewer this run started"
+                % (label, reviewer)
+            )
+        seen = (reads or {}).get(reviewer, set())
+        for image, digest in sorted(images.items()):
+            if (image, digest) not in seen:
+                raise ContractError(
+                    "%s's reviewer %s did not read %s as it was sealed; a review must "
+                    "check every sealed reference" % (label, reviewer, os.path.basename(image))
+                )
+
+    return check
 
 
 def _carried_summaries(run_root: Path) -> set[str]:
@@ -339,6 +377,7 @@ __all__ = [
     "MAKE_ROUND_GUARD_MANAGER_IDS",
     "MAKE_ROUND_GUARD_SCRIPT",
     "REVIEWER_BINDING_MANAGER_IDS",
+    "contract_reviewer_check",
     "install_make_round_guard",
     "installed_make_round_guard",
     "make_round_guard_bytes",

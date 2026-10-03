@@ -799,7 +799,7 @@ class AgentRunTest(unittest.TestCase):
         claude_agents = run.run_root / ".claude" / "agents"
         self.assertEqual(
             sorted(p.name for p in claude_agents.iterdir()),
-            ["alice.md", "component-reviewer.md", "component-worker.md"],
+            ["alice.md", "component-reviewer.md", "component-worker.md", "contract-reviewer.md"],
         )
         self.assertEqual(stat.S_IMODE(claude_agents.stat().st_mode), 0o500)
         for name in ("alice", "component-reviewer", "component-worker"):
@@ -849,6 +849,29 @@ class AgentRunTest(unittest.TestCase):
                     text,
                 )
                 self.assertIn("On Claude Code", text)
+
+    def test_both_runtimes_materialize_the_blocked_report_tool_and_rules(self):
+        # Issue #88: one run-local tool, the same on Codex and Claude Code.
+        import workshop.workflow.native_run as host
+        assets = host.product_run_agent_assets()
+        for manager_id in ("codex", "claude"):
+            with self.subTest(manager_id=manager_id), tempfile.TemporaryDirectory() as temporary:
+                run = AgentRun.create(
+                    Path(temporary) / "run", host_state_root=Path(temporary) / "host",
+                    product_id=self.product_id, wish_bytes=self.wish_bytes,
+                    product_run_constitution_source=assets.constitution,
+                    skill_root=assets.skill_root,
+                    domain_skill_roots=host.product_run_domain_skill_roots(),
+                    inventor_source_root=host._product_run_inventor_source_root(assets),
+                    manager_id=manager_id,
+                )
+                inputs = run.snapshot().input_sha256s
+                tool = ".agents/skills/make-round/scripts/make_round"
+                self.assertIn(tool, inputs)
+                self.assertIn("--clear-blocked", (run.run_root / tool).read_text(encoding="utf-8"))
+                for relative in ("AGENTS.md", ".agents/skills/autonomous-workshop/references/make.md"):
+                    self.assertIn(relative, inputs)
+                    self.assertIn("--clear-blocked", (run.run_root / relative).read_text(encoding="utf-8"))
 
     def test_a_codex_run_gets_no_claude_agents(self):
         run = self.create(make_role_agents=make_role_agent_files())

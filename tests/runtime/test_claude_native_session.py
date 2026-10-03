@@ -448,6 +448,14 @@ class ClaudeNativeSessionTest(unittest.TestCase):
         for entry in (hooks["PreToolUse"][1], hooks["SubagentStart"][0]):
             self.assertIn(str(script), entry["hooks"][0]["command"])
 
+    def test_guard_settings_hold_the_root_turn_end_to_open_blocked_reports(self):
+        # Issue #88: the same guard answers the root's Stop event.
+        script = Path("/state/make-round-guard/make_round_guard.py")
+        hooks = json.loads(claude_hook_settings(script))["hooks"]
+        self.assertEqual(len(hooks["Stop"]), 1)
+        self.assertNotIn("matcher", hooks["Stop"][0])
+        self.assertIn(str(script), hooks["Stop"][0]["hooks"][0]["command"])
+
     def test_an_installed_make_round_guard_is_registered_on_every_turn(self):
         commands = []
 

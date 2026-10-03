@@ -41,3 +41,4 @@ ADR. Small factual corrections that do not change the decision are allowed.
 - [0082: Interfaces between Components](0082-interfaces-between-components.md)
 - [0083: Compare each reference in the Display Pose at its Reference Camera](0083-compare-in-the-display-pose-at-the-reference-camera.md)
 - [0084: The reviewer reads Interface text, and the Design Contract wins over its references](0084-interface-text-and-reference-conflicts.md)
+- [0085: An invisible Contract Amendment may be made inside a run, confirmed by a fresh reader](0085-in-run-contract-amendments-for-invisible-fixes.md)

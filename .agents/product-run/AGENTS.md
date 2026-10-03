@@ -207,6 +207,28 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   time.sleep(300)"`, read every notification it returns with, and repeat
   until each running agent has reported. This rule is repeated in
   `references/make.md` for the same reason as the waiting rule above.
+- A Component Worker that is blocked records a Blocked Report with
+  `make_round --report-blocked`. Clear every one at once, only with
+  `make_round <cad-project> --clear-blocked`: a decision the worker
+  follows, a decision waiting on another Component (wake the worker again
+  after that Component's next passing round), a need quoting its rows,
+  which you then seal with `stage_proposal.py ... need`, or an applied
+  Contract Amendment that names it. While one is open,
+  assembly, the Make proposal and Make acceptance are refused, and on
+  Claude Code so is your turn end unless it ends on a recorded need. After
+  a compaction run `make_round <cad-project> --blocked-reports`. The rules
+  are in `references/make.md`; this one lives here because it survives
+  compaction.
+- A Contract Contradiction whose smallest fix no sealed reference image
+  shows may become a Contract Amendment instead of a need (ADR 0085):
+  `make_round <cad-project> --propose-amendment`, then a fresh
+  `contract-reviewer` given only the packet path and hash, then
+  `--record-amendment-review` with its verdict. Never change a row any other
+  way, and never resolve a contradiction silently in shared code. A refused
+  amendment, or any change an image would show, stops the run on the need
+  the tool prints. While one awaits review, assembly and the Make proposal
+  are refused; after a compaction run `make_round <cad-project>
+  --contract-amendments`. The rules are in `references/make.md`.
 - Keep every tool subprocess attached to the Manager's dedicated POSIX process
   session. Do not daemonize, detach, call `setsid`/`start_new_session`, or leave
   a background process running after a tool returns. Host timeout recovery

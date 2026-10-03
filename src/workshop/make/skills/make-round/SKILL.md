@@ -116,7 +116,9 @@ calls were reassembling by hand.
 - In a run with the make_round guard (ADR 0080), only a `component-worker`
   runs a component round; the root Workshop Manager alone runs
   `--record-review`, `--record-unlock`, `--record-visual`, assembly rounds,
-  `--shared-helpers` and `--interface` (ADR 0082). A Workshop hook
+  `--shared-helpers`, `--interface` (ADR 0082), `--clear-blocked`,
+  `--propose-amendment` and `--record-amendment-review` (ADR 0085); only
+  a worker runs `--report-blocked` (issue #88). A Workshop hook
   refuses a call from the wrong agent and gives each worker round a one-time
   `--worker-nonce`; never pass one yourself. The host refuses a component
   round without a nonce it issued, so run `make_round` only as one plain
@@ -471,6 +473,85 @@ rules apply. Contracts without it keep the rules above unchanged.
   `--require-component-passes` refuses assembly while any Coupled Interface
   lacks a current passing check, and so does the final verifier, which lists
   every Interface with its proof in `component-acceptance.json`.
+
+### Blocked Reports (issue #88)
+
+A Component Worker that cannot proceed -- two of its contract rows cannot
+both hold, a stated print rule (stance, "no part needs support") its
+geometry cannot meet, or a choice only the Workshop Manager may make --
+records a Blocked Report, then reports blocked:
+
+```bash
+"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project> \
+    --component part_<role>.step.py --report-blocked <blocked.json>
+```
+
+`blocked.json` is `{"rows": [...], "reason": "..."}`, each row copied
+verbatim from the sealed Design Contract (whitespace aside); a row that is
+not in it is refused, and so is a second report while one of the
+Component's reports is open. The report records the Component, its latest
+round and the rows in `measure/blocked-reports.jsonl`, bound to the run by
+the sha256 of `WISH.json`. It builds nothing and takes no nonce.
+
+The Workshop Manager answers it with `--clear-blocked <answer.json>`:
+
+- `{"report": N, "decision": "..."}`: a ruling inside a freedom the
+  contract grants; the worker follows it with a new round or a new report.
+- `{"report": N, "decision": "...", "waits_on": "part_<other>.step.py"}`:
+  the report stays open, waiting, until that Component's next round whose
+  checks pass. That round's summary carries `wakes_blocked` and a `wake`
+  line, and `--blocked-reports` shows the report `WOKEN`; the Manager then
+  clears it with a new decision for the worker.
+- `{"report": N, "need": "..."}`: a Contract Contradiction, one line that
+  quotes every row; the Manager seals it with `stage_proposal.py need`.
+- `{"report": N, "amendment": M}`: Contract Amendment M, which names report
+  N, was applied (below).
+
+`--blocked-reports [--json]` lists every report and its answers, and exits
+1 while one is open, waiting or woken. While any is open or waiting an
+assembly round and `--full` refuse to run; the Make finalizer and the host
+refuse the Make proposal and Make acceptance, and on Claude Code a hook
+refuses the root's turn end unless it ends on a recorded need. The tool is
+the same on every runtime; no hook is needed to report or clear.
+
+### Contract Amendments (ADR 0085)
+
+When a Contract Contradiction's smallest fix changes nothing a sealed
+reference image shows, the Workshop Manager may amend the rows inside the
+run instead of stopping on a need:
+
+```bash
+"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project> \
+    --propose-amendment <proposal.json>
+```
+
+`proposal.json` is `{"rows": [...], "changes": [{"from": "...", "to":
+"..."}], "reason": "...", "report": N}`: two or more contract statements
+that cannot both hold, verbatim; each change replaces one whole requirement
+text or (schema 4) Interface text, and nothing else; `report` is optional.
+The tool writes `measure/contract-amendments/aNN/packet.json` (the rows, the
+changes, the reason and every sealed reference by path and sha256),
+appends the proposal to `measure/contract-amendments.jsonl` bound to the
+sha256 of `WISH.json` and to the canonical-JSON hash of the contract it
+amends, and prints the packet path and hash. A fresh `contract-reviewer`
+reads the packet and every reference and answers `contradiction`,
+`smallest`, `visible_in` and `references_checked`; the Manager records it
+with `--record-amendment-review <review.json>`, adding `amendment`,
+`packet_sha256` and `reviewer`. It applies only when both are true and
+`visible_in` is empty, and exits 1 otherwise with the need to stop on. A
+reviewer is refused when it is the Manager, a Component's reviewer, or the
+reviewer of an earlier amendment.
+
+After an amendment applies, every round reads the sealed contract with the
+amended rows: the rows a component round delivers, the rows a Blocked Report
+quotes, and the contract-rows hash its review binds. A locked Component
+whose rows changed unlocks (summary `unlock a Contract Amendment changed
+this Component's rows`), and no earlier review carries across the change.
+One amendment awaits review at a time; while it does, an assembly round and
+`--full` refuse to run and the finalizer refuses the Make proposal.
+`--contract-amendments [--json]` lists every amendment and exits 1 while
+one awaits review. The host replays the ledger against the sealed contract
+before it accepts Make.
 
 ## Record assembly visual feedback
 

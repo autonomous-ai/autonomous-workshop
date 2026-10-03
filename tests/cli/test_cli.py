@@ -954,6 +954,53 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(json.loads(stdout.getvalue())["reference_conflicts"],
                          [{"label": "geometry:heart-core", "file": "ref-06-heart.png"}])
 
+    def test_run_text_lists_each_blocked_report_how_it_cleared_and_how_long(self):
+        # Issue #88.
+        stdout = StringIO()
+        receipt = native_receipt(status="stopped", stage="make")
+        receipt["blocked_reports"] = [
+            {"attempt": "r0001", "report": 1, "component": "spine-housing", "round": 4,
+             "rows": ["prints on its front face", "hinge seats at Y 17.5"], "status": "need",
+             "cleared_by": "need", "open_seconds": 600},
+            {"attempt": "r0001", "report": 2, "component": "wing", "round": None,
+             "rows": ["hinge seats at Y 17.5"], "status": "waiting", "cleared_by": None,
+             "open_seconds": 3540},
+            {"attempt": "r0001", "ledger": "artifacts/make/r0001/product/cad/measure/blocked-reports.jsonl",
+             "status": "invalid"},
+            "not a mapping",
+        ]
+        with mock.patch("cli.main.native_run_status", return_value=receipt), redirect_stdout(stdout):
+            main(("status", "wish-one"))
+        text = stdout.getvalue()
+        self.assertIn("Blocked Report 1: spine-housing r0004 — cleared by a need after 10m "
+                      "(prints on its front face; hinge seats at Y 17.5)", text)
+        self.assertIn("Blocked Report 2: wing before its first round — waiting for 59m "
+                      "(hinge seats at Y 17.5)", text)
+        self.assertIn("Blocked Report ledger invalid: artifacts/make/r0001/product/cad/measure/"
+                      "blocked-reports.jsonl", text)
+
+    def test_run_text_lists_each_in_run_contract_amendment(self):
+        # ADR 0085: beside the camera amendments, by kind.
+        stdout = StringIO()
+        receipt = native_receipt(status="stopped", stage="make")
+        receipt["contract_amendments"] = [
+            {"file": "ref-02-body.png", "shows": "geometry:body", "from": [90, 15], "to": [0, 15]},
+            {"kind": "contract-amendment", "amendment": 1, "status": "applied",
+             "changes": [{"row": "R01", "from": "Prints on its front.", "to": "Prints on its back."}],
+             "contract_sha256": "a" * 64, "amended_sha256": "b" * 64,
+             "review": {"reviewer": "a1b2c3d4e5f6a7b8c"}},
+            {"kind": "contract-amendment", "ledger": "artifacts/make/r0001/product/cad/measure/"
+             "contract-amendments.jsonl", "status": "invalid"},
+        ]
+        with mock.patch("cli.main.native_run_status", return_value=receipt), redirect_stdout(stdout):
+            main(("status", "wish-one"))
+        text = stdout.getvalue()
+        self.assertIn("Reference Camera amended: ref-02-body.png (geometry:body) 90,15 -> 0,15", text)
+        self.assertIn("Contract Amendment 1 (applied): R01 'Prints on its front.' -> 'Prints on its back.'; "
+                      "contract aaaaaaaaaaaa -> bbbbbbbbbbbb, reviewer a1b2c3d4e5f6a7b8c", text)
+        self.assertIn("Contract Amendment ledger invalid: artifacts/make/r0001/product/cad/measure/"
+                      "contract-amendments.jsonl", text)
+
     def test_run_text_lists_each_interface_and_how_it_was_proven(self):
         stdout = StringIO()
         receipt = native_receipt(status="completed", stage="release")

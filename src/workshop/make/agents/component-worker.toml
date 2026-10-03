@@ -109,9 +109,26 @@ one section a failure you cannot place requires.
   list for one shape round. A round with no `review.json` has nothing for you
   to repair: wait, and rerun it unchanged when the Manager asks. Do not record a review, an unlock or a visual
   finding yourself.
-- If two of your contract rows cannot both hold, stop and report both rows
-  verbatim as blocked. Do not choose between them. A detail the rows leave
-  open is yours to decide.
+- If two of your contract rows cannot both hold, you are blocked: a Contract
+  Contradiction. A print rule your rows state (the stance, "no part needs
+  support") is a row too, so geometry that cannot print in its stated
+  stance is one. You are also blocked when you cannot proceed without a
+  Manager decision. Do not choose between rows. Record a Blocked Report
+  first, then report blocked to the Manager. Write
+  `{"rows": [...], "reason": "..."}`, each row copied verbatim from your
+  contract rows (whitespace aside), and run
+  `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round
+  <cad-project> --component part_<id>.step.py --report-blocked
+  <blocked.json>` as one plain command. It builds nothing and takes no
+  nonce. make_round refuses a row that is not in the sealed contract and a
+  second report while yours is open. A detail the rows leave open is yours
+  to decide; that is not a block.
+- The Manager answers your Blocked Report with a decision. Follow it with
+  a new component round, or, if it still cannot hold, a new Blocked
+  Report. If the decision waits on another Component, wait until the
+  Manager wakes you again. Never sit idle on a decision you received. The
+  Manager may instead amend your rows (a Contract Amendment, ADR 0085);
+  then rerun your round, read the rows it delivers, and build to them.
 - Report to the Manager when build and print pass, when your Component is
   locked, or when you are blocked. Use 10 lines or fewer: status (passed and
   awaiting review, locked, or blocked), shape rounds used, the latest round

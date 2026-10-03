@@ -320,6 +320,60 @@ Component Worker leaves out a detail refused at the same spot in two rounds
 and names it in its report (issue #86).
 _Avoid_: Print failure, build error
 
+**Contract Contradiction**:
+Two Design Contract statements that cannot both hold. A print rule the
+contract states (the print stance, "no part needs support") counts as a
+statement, so geometry that cannot print in its stated stance is a Contract
+Contradiction. Neither the Component Worker nor the Workshop Manager chooses
+between the statements: the Manager turns it into a `need` quoting both
+(ADR 0080, issue #88), or, when the smallest fix is invisible, proposes a
+Contract Amendment a Contract Reviewer must confirm (ADR 0085).
+_Avoid_: Conflict (a Reference Conflict is an image against the contract), impossible spec
+
+**Blocked Report**:
+A Component Worker's recorded report, made with `make_round
+--report-blocked`, that its contract rows contradict or that it cannot
+proceed without a Workshop Manager decision. It names the Component, the
+worker's latest round and the rows, verbatim. It stays open until the
+Manager answers it with a Decision, a `need` or an applied Contract
+Amendment that names it (ADR 0085); a Decision that waits on
+another Component keeps it open until that Component's next passing round,
+when the Manager wakes the worker again. While one is open the host refuses
+an assembly round, the Make proposal and Make acceptance, and on Claude Code
+the root's turn end unless it ends on a recorded need. The run report lists
+every Blocked Report, how it was cleared and how long it stayed open (issue
+#88).
+_Avoid_: Blocked message, stuck worker
+
+**Contract Amendment**:
+A change to the text of Design Contract rows made inside a run to remove a
+Contract Contradiction whose smallest fix no sealed reference image shows.
+The Workshop Manager proposes it; it applies only when a Contract Reviewer
+confirms that the rows cannot both hold, that it is the smallest change, and
+that it is invisible in every reference. The host replays every amendment
+against the sealed contract by hash before it accepts Make; `WISH.json` and
+the images keep their bytes, Components whose rows changed unlock, the run
+report lists each one, and `build-a-toy` folds it into the toy's contract for
+the next attempt (ADR 0085, issue #90). A Reference Camera amendment (ADR
+0083) is the host's own and is not one.
+_Avoid_: Contract edit, override, waiver
+
+**Contract Reviewer**:
+The fresh reader, never the Workshop Manager and never a Component's
+reviewer, who confirms or refuses one Contract Amendment after viewing every
+sealed reference image. Each amendment gets its own (ADR 0085).
+_Avoid_: Contract judge, second Manager
+
+**Visible Change**:
+A Design Contract amendment that a reference image would show, so the image
+must be redrawn. Only a Visible Change waits for the owner: the unattended
+`build-a-toy` loop batches a pass's Visible Changes on one review page and
+applies every other amendment (a clearance, a print stance, hidden geometry, a
+value no image shows) without asking, recording it in the toy's ledger (issue
+#89). Inside a run, only a change that is not a Visible Change may be a
+Contract Amendment (ADR 0085).
+_Avoid_: Cosmetic change, user-facing change
+
 **Unmeasurable Mesh**:
 A print gate's verdict on a valid B-rep whose tessellation stays open even
 after one finer retry. Inside and outside are undefined, so nothing was
