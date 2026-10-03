@@ -528,3 +528,97 @@ class _captured:
 
 if __name__ == "__main__":
     unittest.main()
+
+
+STANCE = "The spine housing prints on its front face. No part needs support."
+BACK = "The spine housing prints on its back face. No part needs support."
+CONTRACT_MD = """# Toy
+
+Prose that stays as it is.
+
+```design-contract
+{
+  "schema_version": 4,
+  "requirements": [
+    {"id": "R01", "scope": "geometry:spine-housing", "text": "The spine housing prints on its front face. No part needs support."},
+    {"id": "R02", "scope": "assembly", "text": "Wings swing \\u00b130\\u00b0."}
+  ],
+  "interfaces": [{"id": "hinge", "kind": "static", "components": ["a", "b"], "text": "A peg."}]
+}
+```
+
+Tail prose.
+"""
+
+
+def _status(*amendments):
+    return {"product_id": "wish-3", "contract_amendments": [
+        {"file": "ref-02-x.png", "from": [0, 0], "to": [90, 0]},
+        *amendments,
+    ]}
+
+
+def _amendment(number, changes, status="applied"):
+    return {"kind": "contract-amendment", "attempt": "r0001", "amendment": number, "status": status,
+            "rows": [STANCE, "The seats sit at Y 17.5."], "changes": changes,
+            "review": {"reviewer": "a1b2c3d4e5f6a7b8c"}, "contract_sha256": "a" * 64,
+            "amended_sha256": "b" * 64}
+
+
+class FoldInRunAmendmentsTest(unittest.TestCase):
+    """ADR 0085: the loop merges a run's applied amendments into the toy's
+    contract for the next attempt and records them in the ledger."""
+
+    def test_applied_amendments_are_folded_and_nothing_else_changes(self):
+        result = ledger.fold(CONTRACT_MD, _status(
+            _amendment(1, [{"row": "R01", "from": STANCE, "to": BACK}]),
+            _amendment(2, [{"row": "R02", "from": "Wings swing ±30°.", "to": "Wings swing ±25°."},
+                           {"row": "interface:hinge", "from": "A peg.", "to": "A 3 mm peg."}]),
+            _amendment(3, [{"row": "R01", "from": BACK, "to": "x"}], status="refused"),
+        ), attempt=3)
+        self.assertEqual((result["folded"], result["already"], result["refused"]),
+                         (["wish-3#1", "wish-3#2"], [], []))
+        text = result["contract"]
+        self.assertEqual(CONTRACT_MD.replace(STANCE, BACK)
+                         .replace("\\u00b130\\u00b0", "\\u00b125\\u00b0").replace('"A peg."', '"A 3 mm peg."'), text)
+        self.assertEqual([(e["attempt"], e["amendment"], e["folded"]) for e in result["entries"]],
+                         [(3, 1, True), (3, 2, True)])
+        # Folding again changes nothing.
+        again = ledger.fold(text, _status(_amendment(1, [{"row": "R01", "from": STANCE, "to": BACK}])))
+        self.assertEqual((again["contract"], again["already"]), (text, ["wish-3#1"]))
+
+    def test_a_row_that_changed_since_is_refused_for_a_hand_fold(self):
+        result = ledger.fold(CONTRACT_MD.replace(STANCE, "Prints upright."), _status(
+            _amendment(1, [{"row": "R01", "from": STANCE, "to": BACK}])))
+        self.assertEqual(len(result["refused"]), 1)
+        self.assertFalse(result["entries"][0]["folded"])
+
+    def test_the_command_line_writes_the_folded_contract(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "CONTRACT.md").write_text(CONTRACT_MD)
+            (root / "status.json").write_text(json.dumps(_status(
+                _amendment(1, [{"row": "R01", "from": STANCE, "to": BACK}]))))
+            code = ledger.main(["fold", str(root / "CONTRACT.md"), str(root / "status.json"),
+                                "--attempt", "3", "--out", str(root / "amend-c.md")])
+            self.assertEqual(code, 0)
+            self.assertIn(BACK, (root / "amend-c.md").read_text())
+            self.assertEqual((root / "CONTRACT.md").read_text(), CONTRACT_MD)
+
+    def test_the_ledger_records_each_fold_and_lists_an_unfolded_one(self):
+        data = _ledger()
+        entry = {"attempt": 2, "wish_id": "wish-2", "amendment": 1, "rows": [STANCE, "Seats."],
+                 "changes": [{"row": "R01", "from": STANCE, "to": BACK}], "reviewer": "r",
+                 "contract_sha256": "a" * 64, "amended_sha256": "b" * 64, "folded": True,
+                 "contract_version": "amend-b"}
+        data["in_run_amendments"] = [entry]
+        self.assertEqual(ledger.check(data), [])
+        data["in_run_amendments"] = [{**entry, "contract_version": None}]
+        self.assertIn("in_run_amendments[0] is folded without a contract_versions key (`contract_version`)",
+                      ledger.check(data))
+        data["in_run_amendments"] = [{**entry, "folded": False, "contract_version": None}]
+        data["loop"].update(state="fixing", wish_id="wish-2")
+        self.assertEqual(ledger.next_action(data)["pending"],
+                         ["in-run amendment wish-2#1: fold it into CONTRACT.md"])
+        data["in_run_amendments"] = [entry, dict(entry)]
+        self.assertIn("in_run_amendments[1] repeats amendment 1 of wish-2", ledger.check(data))

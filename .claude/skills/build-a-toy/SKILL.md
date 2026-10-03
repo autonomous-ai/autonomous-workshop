@@ -227,7 +227,8 @@ person is listed under "When the loop stops and asks".
 3. **Diagnose** every other stop (`loop.state: diagnosing`). Gather the
    evidence, never guess it:
    - the receipt: `uv run workshop status <wish-id> --json` (`stop_category`,
-     `needs`, `blocked_reports`, `reference_conflicts`);
+     `needs`, `blocked_reports`, `reference_conflicts`,
+     `contract_amendments`);
    - progress: `scripts/tally.py <wish-id> --json` (`locked`,
      `repeated_print_defects`) against the previous attempt's;
    - cost: `scripts/tokens.py <wish-id> --json` (`cost_units`), added to
@@ -239,9 +240,10 @@ person is listed under "When the loop stops and asks".
    Write the evidence to `build-a-toy/r00/attempt<N>-<id>/evidence.json`,
    classify it with `ledger.py classify` on that file, and record one `stops`
    entry with the class, the evidence and the progress.
-4. **Fix** by class (the table below), then set `loop.state: launch` once
+4. **Fold in-run amendments** into the contract, whatever the class (below).
+5. **Fix** by class (the table below), then set `loop.state: launch` once
    nothing is pending.
-5. **Check the stop conditions** with `ledger.py next`. It prints
+6. **Check the stop conditions** with `ledger.py next`. It prints
    `ask-owner` with every reason that holds; otherwise the next pass
    starts at 1.
 
@@ -264,7 +266,8 @@ worker blocked on two rows).
 ### Fixing a Contract Contradiction at the root
 
 Never answer it inside the run, and never pick one statement over the other
-in a brief. Fix the contract:
+in a brief. (A contradiction the run's own Contract Amendment removed is not
+one of these: fold it as above.) Fix the contract:
 
 1. **Amend the contract** with the smallest change that removes the
    contradiction, in `design-a-toy`'s resolution order (Stage 3c and 3d).
@@ -283,6 +286,33 @@ in a brief. Fix the contract:
    it in the entry's `design_check`. The swept-volume-over-ceiling check in
    Stage 3c is the first such check (attempt 15).
 4. **Apply it, or batch it for the owner**, by the approval rule below.
+
+### Folding in-run Contract Amendments back
+
+A run may amend its own contract when a Contract Contradiction's fix is
+invisible: the Workshop Manager proposes it and a fresh Contract Reviewer
+confirms it (ADR 0085). The run builds to the amended rows, but the toy's
+`CONTRACT.md` does not change, so the next attempt would meet the same
+contradiction. After every attempt, complete or not, fold each applied
+amendment back:
+
+```bash
+uv run workshop status <wish-id> --json > build-a-toy/r00/attempt<N>-<id>/status.json
+python3 .claude/skills/build-a-toy/scripts/ledger.py fold <contract-dir>/CONTRACT.md \
+  build-a-toy/r00/attempt<N>-<id>/status.json --attempt <N> --out build-a-toy/drafts/amend-<x>.md
+```
+
+It replaces each amended row's text inside the `design-contract` block and
+leaves every other byte of the contract as it is; a change already in the
+contract is skipped. Back up `CONTRACT.md`, review the draft, then copy it
+over `CONTRACT.md` and add `amend-<x>` to `contract_versions`. Append each
+printed entry to `in_run_amendments` with `contract_version: amend-<x>`. It
+needs no owner approval (the run's Contract Reviewer found it invisible) and
+no separate re-audit beyond Stage 3c and 3d on the rows it changed. A change
+`fold` refuses (the row no longer reads as the run quoted it, because an
+outer-loop amendment changed it since) is folded by hand, leaving `folded:
+false` until it is; `ledger.py next` lists it as pending. A refused
+in-run amendment is a `need` like any other and is diagnosed by class.
 
 ### Approval: only visible changes wait for the owner
 
@@ -342,6 +372,8 @@ Done when, for each pass, the ledger shows:
 - every stop of the attempt in `stops`, with a class from evidence;
 - every Contract Contradiction in `contract_contradictions` with its rows, its
   amendment, its re-audit and its `design-a-toy` check;
+- every applied in-run Contract Amendment in `in_run_amendments`, folded
+  into `CONTRACT.md`;
 - every harness issue the loop opened in `harness_issues`, merged or stopping
   the loop;
 - the attempt's cost in `cost_units`;

@@ -63,6 +63,23 @@ One entry per stop of an attempt, in order.
 | `recurrence_acknowledged` | `owner <date>` when the owner let a contradiction that came back be fixed again |
 | `design_check` | `name`, `issue` (or null when the check landed with no issue) and `status` (`proposed`, `open`, `merged`) of the `design-a-toy` check that catches the class |
 
+### `in_run_amendments[]`
+
+Every Contract Amendment a run applied inside itself (ADR 0085), folded into
+`CONTRACT.md` for the next attempt. `scripts/ledger.py fold` writes the
+entries; set `contract_version` to the version that holds the fold.
+
+| Field | What it holds |
+|---|---|
+| `attempt`, `wish_id` | the attempt and run that applied it |
+| `amendment` | the run's amendment number |
+| `rows` | the contradicting statements it removed, verbatim |
+| `changes` | each `row` with its `from` and `to` text |
+| `reviewer` | the Contract Reviewer who confirmed it |
+| `contract_sha256`, `amended_sha256` | the run's contract hash before and after |
+| `folded` | true once `CONTRACT.md` holds the `to` text |
+| `contract_version` | the `contract_versions` key of the folded contract; required once folded |
+
 ### `harness_issues[]`
 
 | Field | What it holds |

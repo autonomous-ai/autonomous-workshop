@@ -4,6 +4,8 @@
     python3 ledger.py check LEDGER.json        # schema errors, exit 1 if any
     python3 ledger.py next LEDGER.json         # the loop's next action, as JSON
     python3 ledger.py classify EVIDENCE.json   # a stop's diagnosis class, as JSON
+    python3 ledger.py fold CONTRACT.md STATUS.json --out NEW.md
+                                               # merge a run's in-run amendments
 
 The ledger is the unattended loop's only memory: a new session resumes the
 loop by running `next` on it and doing what it prints. LEDGER.md describes
@@ -19,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from typing import Any, Iterable
 
@@ -149,6 +152,30 @@ def check(ledger: dict) -> list[str]:
             errors.append(f"{where} is merged without a merge_commit")
         if issue.get("status") == "implementing" and issue.get("opened_by_loop") is False:
             errors.append(f"{where}: the loop implements only issues it opened")
+
+    folded_keys = set()
+    for index, item in enumerate(_list(ledger, "in_run_amendments", errors)):
+        where = f"in_run_amendments[{index}]"
+        if not _is_int(item.get("attempt")) or not item.get("wish_id"):
+            errors.append(f"{where} needs the attempt and wish_id that made it")
+        if not _is_int(item.get("amendment")):
+            errors.append(f"{where}.amendment is not the run's amendment number")
+        key = (item.get("wish_id"), item.get("amendment"))
+        if key in folded_keys:
+            errors.append(f"{where} repeats amendment {key[1]} of {key[0]}")
+        folded_keys.add(key)
+        if not _strings(item.get("rows")) or len(item.get("rows") or []) < 2:
+            errors.append(f"{where}.rows must quote at least two contract statements verbatim")
+        changes = item.get("changes")
+        if not isinstance(changes, list) or not changes or not all(
+            isinstance(c, dict) and all(isinstance(c.get(k), str) and c[k] for k in ("row", "from", "to"))
+            for c in changes
+        ):
+            errors.append(f"{where}.changes must list each row with its from and to text")
+        if not isinstance(item.get("folded"), bool):
+            errors.append(f"{where}.folded must be true or false")
+        if item.get("folded") is True and item.get("contract_version") not in versions:
+            errors.append(f"{where} is folded without a contract_versions key (`contract_version`)")
 
     cost = ledger.get("cost_units")
     if not isinstance(cost, dict):
@@ -331,6 +358,10 @@ def next_action(ledger: dict) -> dict:
         for item in ledger.get("contract_contradictions") or []
         if item.get("applied") is not True
     ] + [
+        f"in-run amendment {item.get('wish_id')}#{item.get('amendment')}: fold it into CONTRACT.md"
+        for item in ledger.get("in_run_amendments") or []
+        if item.get("folded") is not True
+    ] + [
         f"#{issue['number']}: {issue['status']}"
         for issue in ledger.get("harness_issues") or []
         if issue.get("opened_by_loop") and issue.get("status") in ("open", "implementing")
@@ -341,11 +372,102 @@ def next_action(ledger: dict) -> dict:
             "why": ["nothing is pending"]}
 
 
+_FENCE = re.compile(r"```design-contract\s*\n(.*?)```", re.DOTALL)
+
+
+def applied_amendments(status: dict) -> list[dict]:
+    """The applied in-run Contract Amendments (ADR 0085) a run's
+    `workshop status --json` lists, oldest first."""
+
+    return [
+        item for item in status.get("contract_amendments") or []
+        if isinstance(item, dict) and item.get("kind") == "contract-amendment" and item.get("status") == "applied"
+    ]
+
+
+def _row_text(block: dict, row: str) -> list:
+    if row.startswith("interface:"):
+        return [item for item in block.get("interfaces") or []
+                if isinstance(item, dict) and f"interface:{item.get('id')}" == row]
+    return [item for index, item in enumerate(block.get("requirements") or [])
+            if isinstance(item, dict) and (item.get("id") == row or f"requirements[{index}]" == row)]
+
+
+def fold(contract_text: str, status: dict, attempt: int | None = None) -> dict:
+    """Merge every applied in-run amendment of one run into a contract.
+
+    Each change replaces its row's text in the `design-contract` block, by
+    its exact JSON string, so the rest of the file keeps its bytes. A change
+    already in the contract is skipped; one whose row no longer reads as the
+    run quoted it is refused and left for a hand fold. Returns the new text,
+    what was folded, skipped and refused, and the ledger entries to record.
+    """
+
+    match = _FENCE.search(contract_text)
+    if match is None:
+        raise ValueError("the contract has no design-contract block")
+    raw = match.group(1)
+    folded, skipped, refused, entries = [], [], [], []
+    wish_id = status.get("product_id")
+    for item in applied_amendments(status):
+        label = f"{wish_id}#{item.get('amendment')}"
+        changed = held = False
+        for change in item.get("changes") or []:
+            block = json.loads(raw)
+            rows = _row_text(block, str(change.get("row")))
+            if len(rows) == 1 and rows[0].get("text") == change.get("to"):
+                continue
+            if len(rows) != 1 or rows[0].get("text") != change.get("from"):
+                refused.append(f"{label} {change.get('row')}: the row no longer reads as the run quoted it")
+                held = True
+                continue
+            spellings = {json.dumps(change["from"]), json.dumps(change["from"], ensure_ascii=False)}
+            found = [spelling for spelling in spellings if spelling in raw]
+            if len(found) != 1 or raw.count(found[0]) != 1:
+                refused.append(f"{label} {change.get('row')}: the text appears more than once; fold it by hand")
+                held = True
+                continue
+            ascii_only = found[0] == json.dumps(change["from"])
+            raw = raw.replace(found[0], json.dumps(change["to"], ensure_ascii=ascii_only))
+            changed = True
+        if not held:
+            (folded if changed else skipped).append(label)
+        entries.append({
+            "attempt": attempt,
+            "wish_id": wish_id,
+            "amendment": item.get("amendment"),
+            "rows": list(item.get("rows") or []),
+            "changes": [{k: c.get(k) for k in ("row", "from", "to")} for c in item.get("changes") or []],
+            "reviewer": (item.get("review") or {}).get("reviewer"),
+            "contract_sha256": item.get("contract_sha256"),
+            "amended_sha256": item.get("amended_sha256"),
+            "folded": not held,
+            "contract_version": None,
+        })
+    json.loads(raw)
+    text = contract_text[: match.start(1)] + raw + contract_text[match.end(1):]
+    return {"contract": text, "folded": folded, "already": skipped, "refused": refused, "entries": entries}
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("command", choices=("check", "next", "classify"))
+    parser.add_argument("command", choices=("check", "next", "classify", "fold"))
     parser.add_argument("path")
+    parser.add_argument("status", nargs="?", help="fold: the run's `workshop status --json`")
+    parser.add_argument("--out", help="fold: where the folded contract is written")
+    parser.add_argument("--attempt", type=int, help="fold: the attempt the run was")
     args = parser.parse_args(argv)
+    if args.command == "fold":
+        if not args.status or not args.out:
+            parser.error("fold needs CONTRACT.md, STATUS.json and --out")
+        with open(args.path, encoding="utf-8") as handle:
+            text = handle.read()
+        with open(args.status, encoding="utf-8") as handle:
+            result = fold(text, json.load(handle), args.attempt)
+        with open(args.out, "w", encoding="utf-8") as handle:
+            handle.write(result.pop("contract"))
+        print(json.dumps(result, indent=2))
+        return 1 if result["refused"] else 0
     with open(args.path, encoding="utf-8") as handle:
         data = json.load(handle)
     if args.command == "check":
