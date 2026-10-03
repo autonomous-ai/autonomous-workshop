@@ -1,8 +1,10 @@
 """Fixed Make role agents materialized beside the Inventor roster (ADR 0077).
 
-A new product run receives two declarative Codex custom agents: the
+A new product run receives three declarative Codex custom agents: the
 Component Worker, which repairs one Component's source until build and print
-pass, and the Component Reviewer, which alone views that Component's images.
+pass, the Component Reviewer, which alone views that Component's images, and
+the Contract Reviewer, the fresh reader who confirms one in-run Contract
+Amendment (ADR 0085).
 The files only declare the roles. Codex owns spawning, routing and waiting;
 the Workshop Manager decides when to use them. Nothing here schedules agents.
 """
@@ -17,7 +19,8 @@ from workshop.errors import ContractError
 
 COMPONENT_WORKER = "component-worker"
 COMPONENT_REVIEWER = "component-reviewer"
-MAKE_ROLE_AGENT_NAMES = (COMPONENT_REVIEWER, COMPONENT_WORKER)
+CONTRACT_REVIEWER = "contract-reviewer"
+MAKE_ROLE_AGENT_NAMES = (COMPONENT_REVIEWER, COMPONENT_WORKER, CONTRACT_REVIEWER)
 MAX_MAKE_ROLE_AGENT_BYTES = 64 * 1024
 
 _REQUIRED_FIELDS = frozenset({"name", "description", "developer_instructions"})

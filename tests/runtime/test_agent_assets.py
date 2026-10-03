@@ -469,6 +469,42 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         self.assertIn("**Contract Contradiction**: Two Design Contract statements that cannot both hold", context)
         self.assertIn("**Blocked Report**: A Component Worker's recorded report", context)
 
+    def test_the_root_may_amend_invisible_rows_through_a_fresh_contract_reviewer(self):
+        # ADR 0085: the same tool and rules on both runtimes.
+        def text(*parts):
+            return " ".join(REPOSITORY.joinpath(*parts).read_text(encoding="utf-8").split())
+
+        make = text(".agents/product-run/.agents/skills/autonomous-workshop/references/make.md")
+        for required in (
+            "**Contract Amendments (ADR 0085).**",
+            "--propose-amendment <proposal.json>",
+            "Spawn a **fresh** `contract-reviewer`",
+            "the packet path and its sha256, nothing else",
+            "--record-amendment-review <review.json>",
+            "On Claude Code `reviewer` is the agent id",
+            "On Codex it is the name you gave the reviewer thread",
+            "A visible change always stops the run with a need",
+            "never resolve a contradiction silently in shared code",
+            '**Contract Amendment**, `{"report": N, "amendment": M}`',
+            "--contract-amendments",
+        ):
+            with self.subTest(make=required):
+                self.assertIn(required, make)
+        constitution = text(".agents/product-run/AGENTS.md")
+        for required in ("--propose-amendment", "contract-reviewer", "--record-amendment-review",
+                         "--contract-amendments", "an applied Contract Amendment that names it"):
+            with self.subTest(constitution=required):
+                self.assertIn(required, constitution)
+        skill = text("src/workshop/make/skills/make-round/SKILL.md")
+        for required in ("### Contract Amendments (ADR 0085)", '{"report": N, "amendment": M}'):
+            with self.subTest(skill=required):
+                self.assertIn(required, skill)
+        worker = text("src/workshop/make/agents/component-worker.toml")
+        self.assertIn("The Manager may instead amend your rows", worker)
+        context = text("CONTEXT.md")
+        self.assertIn("**Contract Amendment**: A change to the text of Design Contract rows", context)
+        self.assertIn("**Contract Reviewer**: The fresh reader", context)
+
     def test_installed_lookup_reads_exact_packaged_snapshot(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

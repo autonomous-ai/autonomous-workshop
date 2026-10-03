@@ -1852,3 +1852,24 @@ pass; that round's summary carries `wakes_blocked`, and `--blocked-reports`
 marks the report woken. While any report is open or waiting an assembly
 round and `--full` refuse to run. Nothing is built for a report or an answer.
 This changes the `make-round` fingerprint.
+
+## Local change: in-run Contract Amendments a fresh Contract Reviewer confirms (2026-10-03)
+
+A Workshop-local change (issue #90, ADR 0085) to Workshop's own `make-round`.
+`make_round --propose-amendment PROPOSAL.json` records the Workshop
+Manager's Contract Amendment in the CAD project's
+`measure/contract-amendments.jsonl`: two or more contract rows that cannot
+both hold, verbatim, and the whole requirement or Interface texts it
+replaces, bound to the sha256 of `WISH.json` and to the canonical-JSON hash
+of the contract it amends. It writes a packet holding every sealed
+reference by path and sha256 for a fresh `contract-reviewer`.
+`--record-amendment-review REVIEW.json` records that reviewer's verdict; the
+amendment applies only when the rows contradict, the change is the
+smallest, and no reference shows it. Rounds then read the amended rows: the
+rows a component round delivers, the rows a Blocked Report quotes, and the
+contract-rows hash its review binds, so a locked Component whose rows
+changed unlocks. `--clear-blocked {"report", "amendment"}` clears a Blocked
+Report with an applied amendment that names it. While an amendment awaits
+review an assembly round and `--full` refuse to run;
+`--contract-amendments` lists them. Nothing is built for a proposal or a
+review. This changes the `make-round` fingerprint.

@@ -8,7 +8,9 @@
                [--record-review REVIEW.json] [--record-unlock UNLOCK.json]
                [--shared-helpers] [--interface ID]
                [--report-blocked BLOCKED.json] [--clear-blocked ANSWER.json]
-               [--blocked-reports] [--worker-nonce HEX] [--self-check]
+               [--blocked-reports] [--propose-amendment PROPOSAL.json]
+               [--record-amendment-review REVIEW.json] [--contract-amendments]
+               [--worker-nonce HEX] [--self-check]
 
 Every verdict comes from the original cad tools, run unchanged; this script
 only sequences them, remembers what changed between rounds, and prints a
@@ -82,6 +84,14 @@ or a need quoting the rows. A waiting report stays open until that Component
 passes a round; --blocked-reports then marks it woken. While any report is
 open an assembly round and --full refuse to run, and the host refuses the
 Make proposal and Make acceptance.
+Where a Contract Contradiction's smallest fix changes nothing a sealed
+reference shows, the Manager may propose a Contract Amendment instead of a
+need (--propose-amendment, ADR 0085). A fresh contract-reviewer reads its
+packet and every sealed reference; --record-amendment-review applies it only
+when the reviewer confirms the rows cannot both hold, the change is the
+smallest and no reference shows it. Rounds then read the amended rows, and a
+Component whose rows changed unlocks. While one awaits review an assembly
+round and --full refuse to run.
 This tool makes no model calls.
 
 Exit 0: all checks and the recorded (or carried) review passed. Exit 1:
@@ -607,6 +617,7 @@ def record_review(project: Path, review_path, component: str) -> dict:
     }
     policy = review_policy(component_policy(state, round_root), {
         "agrees": review["agrees"], "identity": state.get("identity"), "carry_key": summary.get("carry_key"),
+        "contract_rows": summary.get("contract_rows"),
         "imported_helpers": summary.get("imported_helpers") or {}, "review": recorded,
         **({"reference_conflicts": conflicts} if conflicts else {}),
     })
@@ -1170,6 +1181,8 @@ def render_summary(summary: dict) -> str:
         for item in summary.get("unlock") or []:
             if item.get("kind") == "shared-helper":
                 lines.append("  unlock imported Shared Helper changed: %s" % ", ".join(item["paths"]))
+            elif item.get("kind") == "contract-amendment":
+                lines.append("  unlock a Contract Amendment changed this Component's rows (ADR 0085)")
             elif item.get("kind") == "interface":
                 lines.append("  unlock interface %s r%04d: %s" % (item.get("interface"), item.get("interface_round", 0),
                                                                 item.get("reason", "")[:160]))
@@ -1497,9 +1510,10 @@ def component_contract(project: Path, role: str) -> dict | None:
     that names it (``<id>`` or ``<id>#<n>``) with that Interface's text. A
     component round writes it into its visual packet, for the reviewer, and
     its summary, for the worker. None before schema 4 and outside Contract
-    Mode, where the Workshop Manager still sends the rows."""
+    Mode, where the Workshop Manager still sends the rows. Rows an applied
+    Contract Amendment changed read as amended (ADR 0085)."""
 
-    contract = sealed_contract(project)
+    contract = current_contract(project)
     if contract is None or contract_schema(project) < INTERFACE_TEXT_SCHEMA_VERSION:
         return None
     scope = GEOMETRY_LABEL + role
@@ -1878,11 +1892,19 @@ def round_policy(previous: dict, new: dict) -> dict:
         if changed and not any(item.get("kind") == "shared-helper" and item.get("paths") == changed
                                for item in unlocks):
             unlocks.append({"kind": "shared-helper", "paths": changed})
+        # ADR 0085: an applied Contract Amendment that changed the rows the
+        # review judged unlocks the Component as a Shared Helper change does.
+        rows = new.get("contract_rows")
+        if (rows is not None and reviewed.get("contract_rows") is not None and rows != reviewed["contract_rows"]
+                and not any(item.get("kind") == "contract-amendment" and item.get("contract_rows") == rows
+                            for item in unlocks)):
+            unlocks.append({"kind": "contract-amendment", "contract_rows": rows})
         if not unlocks and identity != reviewed["identity"]:
             how = "an agreeing review" if reviewed.get("agrees") else "a Component Acceptance"
             result.update(admit=False, refusal=(
                 "the Component is locked by %s of r%04d; its geometry may change only when a Shared "
-                "Helper it imports changes or the Workshop Manager records an assembly unlock. Revert "
+                "Helper it imports changes, a Contract Amendment changes its rows, or the Workshop Manager "
+                "records an assembly unlock. Revert "
                 "your change; a rerun that leaves the geometry unchanged may run" % (how, reviewed["round"])))
     elif phase == AWAITING and identity != previous.get("identity"):
         result.update(admit=False, refusal=(
@@ -1978,11 +2000,8 @@ def contract_rows(project: Path, role: str) -> str:
     rows = None
     root = run_root(project)
     if root is not None:
-        try:
-            wish = json.loads((root / "WISH.json").read_text(encoding="utf-8"))
-            contract = ((wish.get("context") or {}).get("design_contract")) if isinstance(wish, dict) else None
-        except (OSError, ValueError, AttributeError):
-            contract = None
+        # ADR 0085: the rows as every applied Contract Amendment left them.
+        contract = current_contract(project)
         if isinstance(contract, dict):
             scope = GEOMETRY_LABEL + role
             rows = {
@@ -1996,7 +2015,25 @@ def contract_rows(project: Path, role: str) -> str:
                 rows["interfaces"] = [i for i in contract.get("interfaces") or () if isinstance(i, dict)
                                       and isinstance(i.get("components"), list)
                                       and role in reference_roles(i["components"])]
+            # An amended assembly row binds every Component (ADR 0085). The
+            # key appears only then, so a run without one keeps its hashes.
+            amended = amended_assembly_rows(project)
+            if amended:
+                rows["amended_assembly_rows"] = amended
     return hashlib.sha256(json.dumps(rows, sort_keys=True).encode()).hexdigest()
+
+
+def amended_assembly_rows(project: Path) -> list:
+    """``[amendment, row, text]`` of every applied Contract Amendment change
+    to a row scoped to no single Component."""
+
+    try:
+        amendments = read_contract_amendments(project)
+    except (OSError, UnicodeError, ValueError):
+        return []
+    return [[number, change["row"], change["to"]] for number, item in sorted(amendments.items())
+            if item["status"] == "applied" for change in item["changes"]
+            if not str(change.get("scope")).startswith((GEOMETRY_LABEL, "interface:"))]
 
 
 def carry_key(identity: str | None, refs: list, project: Path, rows: str) -> str | None:
@@ -2128,6 +2165,16 @@ def blocked_reports(content: str) -> dict:
                 raise ValueError("the need on Blocked Report %s is invalid" % number)
             answer = {"kind": "need", "need": event["need"], "at": event["at"]}
             report["status"] = "need"
+        elif kind == "amendment":
+            # ADR 0085: an applied Contract Amendment removed the contradiction.
+            amendment = event.get("amendment")
+            if type(amendment) is not int or amendment < 1 or not (
+                    isinstance(event.get("amended_sha256"), str)
+                    and re.fullmatch(r"[0-9a-f]{64}", event["amended_sha256"])):
+                raise ValueError("the amendment answering Blocked Report %s is invalid" % number)
+            answer = {"kind": "amendment", "amendment": amendment, "amended_sha256": event["amended_sha256"],
+                      "at": event["at"]}
+            report["status"] = "amended"
         else:
             raise ValueError("unknown Blocked Report event %r" % kind)
         report["answers"].append(answer)
@@ -2249,7 +2296,7 @@ def report_blocked(project: Path, report_path, component: str) -> dict:
                          % (MAX_BLOCKED_ROWS, MAX_BLOCKED_TEXT))
     if not _blocked_text(reason, MAX_BLOCKED_TEXT):
         raise ValueError("a Blocked Report needs a reason of 1 to %d characters" % MAX_BLOCKED_TEXT)
-    contract = sealed_contract(project)
+    contract = current_contract(project)
     if contract is not None:
         texts = _contract_strings(contract)
         for row in rows:
@@ -2269,13 +2316,16 @@ def report_blocked(project: Path, report_path, component: str) -> dict:
 
 def clear_blocked(project: Path, answer_path) -> dict:
     """Record the Workshop Manager's answer to one open Blocked Report:
-    ``{"report", "decision", "waits_on"?}`` or ``{"report", "need"}``."""
+    ``{"report", "decision", "waits_on"?}``, ``{"report", "need"}`` or
+    ``{"report", "amendment"}``, an applied Contract Amendment that names
+    this report (ADR 0085)."""
 
     record = json.loads(Path(answer_path).read_text(encoding="utf-8"))
     if not isinstance(record, dict) or set(record) not in (
-            {"report", "decision"}, {"report", "decision", "waits_on"}, {"report", "need"}):
+            {"report", "decision"}, {"report", "decision", "waits_on"}, {"report", "need"},
+            {"report", "amendment"}):
         raise ValueError('an answer is {"report", "decision"} with an optional "waits_on", '
-                         'or {"report", "need"}')
+                         '{"report", "need"} or {"report", "amendment"}')
     reports = read_blocked_reports(project)
     number = record["report"]
     report = reports.get(number) if type(number) is int else None
@@ -2284,7 +2334,19 @@ def clear_blocked(project: Path, answer_path) -> dict:
     if report["status"] not in OPEN_BLOCKED:
         raise ValueError("Blocked Report %d is already answered (%s)" % (number, report["status"]))
     event = {"report": number, "at": _utc_now(), "wish_sha256": report["wish_sha256"]}
-    if "need" in record:
+    if "amendment" in record:
+        amendment = record["amendment"]
+        item = read_contract_amendments(project).get(amendment) if type(amendment) is int else None
+        if item is None:
+            raise ValueError("there is no Contract Amendment %r" % (amendment,))
+        if item["report"] != number:
+            raise ValueError("Contract Amendment %d does not name Blocked Report %d; propose one that does"
+                             % (amendment, number))
+        if item["status"] != "applied":
+            raise ValueError("Contract Amendment %d is %s, not applied; answer the report with a need quoting "
+                             "its rows" % (amendment, item["status"]))
+        event.update(event="amendment", amendment=amendment, amended_sha256=item["amended_sha256"])
+    elif "need" in record:
         need = record["need"]
         if not isinstance(need, str) or not 1 <= len(need.strip()) <= MAX_NEED_CHARS or any(
                 ord(character) < 32 or ord(character) == 127 for character in need):
@@ -2323,6 +2385,8 @@ def render_blocked(views: list) -> str:
         for answer in item["answers"]:
             if answer["kind"] == "need":
                 lines.append("  need %s  %s" % (answer["at"], answer["need"]))
+            elif answer["kind"] == "amendment":
+                lines.append("  amendment %s  Contract Amendment %d applied" % (answer["at"], answer["amendment"]))
             else:
                 lines.append("  decision %s%s  %s" % (
                     answer["at"], "  waits on %s" % answer["waits_on"] if answer["waits_on"] else "",
@@ -2342,6 +2406,427 @@ def waking_reports(project: Path, role: str) -> list:
         return []
     return [{"report": item["report"], "component": item["component"]} for item in held
             if item.get("woken_by", {}).get("component") == role]
+
+
+# ---------------------------------------------------------------------------
+# Contract Amendments (ADR 0085). Where a Contract Contradiction's smallest
+# fix changes nothing a sealed reference image shows, the Workshop Manager
+# may propose an amendment instead of a need. A fresh Contract Reviewer
+# confirms that the quoted rows cannot both hold, that the amendment is the
+# smallest change that removes the contradiction and that every sealed
+# reference shows nothing of it; only then does the amendment apply. Each
+# event is bound to the run by the sha256 of WISH.json and to the contract
+# hash it was proposed against. WISH.json and the images keep their bytes:
+# make_round reads the sealed contract with every applied amendment, and the
+# host re-derives the same chain before it accepts Make. Kept in step with
+# workshop/make/contract_amendments.py, which the host uses; this script is
+# standalone and cannot import it.
+
+AMENDMENT_LEDGER_NAME = "contract-amendments.jsonl"
+AMENDMENT_PACKETS_DIR = "contract-amendments"
+CONTRACT_REVIEWER = "contract-reviewer"
+MAX_AMENDMENT_CHANGES = 4
+AMENDMENT_VERDICT = ("contradiction", "smallest", "visible_in", "references_checked")
+
+
+def amendment_ledger(project: Path) -> Path:
+    return project / "measure" / AMENDMENT_LEDGER_NAME
+
+
+def contract_digest(contract) -> str:
+    """sha256 of a Design Contract's canonical JSON: the contract hash an
+    amendment is proposed against and the one it leaves."""
+
+    return hashlib.sha256(json.dumps(contract, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+
+
+def amendable_rows(contract: dict) -> list:
+    """``(locator, scope, text)`` of every row an amendment may change: each
+    requirement's text, and each Interface's text under schema 4. A
+    reference, a geometry's name, count or dimensions and an Interface's
+    kind, envelope or poses are not rows an in-run amendment reaches."""
+
+    rows = []
+    for index, item in enumerate(contract.get("requirements") or ()):
+        if isinstance(item, dict) and isinstance(item.get("text"), str):
+            rows.append((item.get("id") if isinstance(item.get("id"), str) else "requirements[%d]" % index,
+                         item.get("scope"), item["text"]))
+    for item in contract.get("interfaces") or ():
+        if isinstance(item, dict) and isinstance(item.get("text"), str) and isinstance(item.get("id"), str):
+            rows.append(("interface:%s" % item["id"], "interface:%s" % item["id"], item["text"]))
+    return rows
+
+
+def apply_amendment(contract: dict, changes: list) -> dict:
+    """The contract with each change's row text replaced. Pure: ``changes``
+    are ``{"row", "from", "to"}`` already resolved against ``contract``."""
+
+    amended = json.loads(json.dumps(contract))
+    for change in changes:
+        row = change["row"]
+        if row.startswith("interface:"):
+            items = [item for item in amended.get("interfaces") or ()
+                     if isinstance(item, dict) and "interface:%s" % item.get("id") == row]
+        else:
+            items = [item for index, item in enumerate(amended.get("requirements") or ())
+                     if isinstance(item, dict) and (item.get("id") == row or "requirements[%d]" % index == row)]
+        scope = row if row.startswith("interface:") else (items[0].get("scope") if len(items) == 1 else None)
+        if len(items) != 1 or items[0].get("text") != change["from"] or change.get("scope", scope) != scope:
+            raise ValueError("amended row %s no longer reads as the amendment quoted it" % row)
+        items[0]["text"] = change["to"]
+    return amended
+
+
+def amendment_affects(contract: dict, changes: list) -> list:
+    """The Components an amendment's rows bind: the geometry a requirement is
+    scoped to, every Component an Interface joins, and every Component for
+    an assembly row."""
+
+    every = sorted(item["id"] for item in contract.get("geometries") or ()
+                   if isinstance(item, dict) and isinstance(item.get("id"), str))
+    affected = set()
+    for change in changes:
+        if change["row"].startswith("interface:"):
+            for item in contract.get("interfaces") or ():
+                if isinstance(item, dict) and "interface:%s" % item.get("id") == change["row"]:
+                    affected.update(reference_roles(item.get("components") or []))
+        elif isinstance(change.get("scope"), str) and change["scope"].startswith(GEOMETRY_LABEL):
+            affected.add(change["scope"][len(GEOMETRY_LABEL):])
+        else:
+            affected.update(every)
+    return sorted(affected)
+
+
+def amendment_status(verdict: dict) -> str:
+    """``applied`` only when the reviewer confirmed all three: the rows
+    contradict, the change is the smallest, and no reference shows it."""
+
+    agrees = verdict["contradiction"] is True and verdict["smallest"] is True and not verdict["visible_in"]
+    return "applied" if agrees else "refused"
+
+
+def contract_amendments(content: str, contract: dict | None) -> dict:
+    """Every Contract Amendment in one ledger, by number, replayed against the
+    sealed ``contract``: each proposal must name the contract hash the
+    applied amendments before it leave, and each change the row text as it
+    then reads. A status is derived from the review's verdict, never read."""
+
+    amendments = {}
+    current = contract
+    for line in content.splitlines():
+        event = json.loads(line)
+        if not isinstance(event, dict):
+            raise ValueError("a Contract Amendment event is not an object")
+        kind, number = event.get("event"), event.get("amendment")
+        if type(number) is not int or not _blocked_text(event.get("at"), 64):
+            raise ValueError("a Contract Amendment event has no number or time")
+        wish = event.get("wish_sha256")
+        if wish is not None and not (isinstance(wish, str) and re.fullmatch(r"[0-9a-f]{64}", wish)):
+            raise ValueError("a Contract Amendment event has an invalid Wish binding")
+        if kind == "proposal":
+            if number != len(amendments) + 1 or any(item["status"] == "proposed" for item in amendments.values()):
+                raise ValueError("Contract Amendment %s is out of order" % number)
+            if current is None:
+                raise ValueError("a Contract Amendment needs a sealed Design Contract")
+            rows, changes = event.get("rows"), event.get("changes")
+            if (not isinstance(rows, list) or not 2 <= len(rows) <= MAX_BLOCKED_ROWS
+                    or not all(_blocked_text(row, MAX_BLOCKED_TEXT) for row in rows)
+                    or not isinstance(changes, list) or not 1 <= len(changes) <= MAX_AMENDMENT_CHANGES
+                    or not all(isinstance(c, dict) and set(c) == {"row", "scope", "from", "to"}
+                               and _blocked_text(c["row"], 200) and _blocked_text(c["to"], MAX_BLOCKED_TEXT)
+                               and isinstance(c["from"], str) for c in changes)
+                    or not _blocked_text(event.get("reason"), MAX_BLOCKED_TEXT)):
+                raise ValueError("Contract Amendment %s is invalid" % number)
+            if event.get("contract_sha256") != contract_digest(current):
+                raise ValueError("Contract Amendment %s was proposed against contract %s, but the contract "
+                                 "then was %s" % (number, str(event.get("contract_sha256"))[:12],
+                                                  contract_digest(current)[:12]))
+            amended = apply_amendment(current, changes)
+            if event.get("amended_sha256") != contract_digest(amended):
+                raise ValueError("Contract Amendment %s names the wrong amended contract hash" % number)
+            amendments[number] = {
+                "amendment": number, "rows": list(rows), "changes": [dict(c) for c in changes],
+                "reason": event["reason"], "report": event.get("report"), "affects": event.get("affects"),
+                "packet": event.get("packet"), "packet_sha256": event.get("packet_sha256"),
+                "contract_sha256": event["contract_sha256"], "amended_sha256": event["amended_sha256"],
+                "proposed_at": event["at"], "wish_sha256": wish, "status": "proposed", "review": None,
+                "_amended": amended,
+            }
+            continue
+        item = amendments.get(number)
+        if kind != "review":
+            raise ValueError("unknown Contract Amendment event %r" % kind)
+        if item is None or item["status"] != "proposed":
+            raise ValueError("Contract Amendment %s is not awaiting review" % number)
+        if wish != item["wish_sha256"]:
+            raise ValueError("Contract Amendment %s is reviewed from another run" % number)
+        verdict = event.get("verdict")
+        if (not isinstance(verdict, dict) or set(verdict) != set(AMENDMENT_VERDICT) | {"reason"}
+                or type(verdict["contradiction"]) is not bool or type(verdict["smallest"]) is not bool
+                or not isinstance(verdict["visible_in"], list) or not isinstance(verdict["references_checked"], list)
+                or not _blocked_text(verdict["reason"], MAX_REASON)
+                or not _blocked_text(event.get("reviewer"), 200)):
+            raise ValueError("the review of Contract Amendment %s is invalid" % number)
+        item["review"] = {"reviewer": event["reviewer"], "verdict": verdict, "at": event["at"]}
+        item["status"] = amendment_status(verdict)
+        if item["status"] == "applied":
+            current = item["_amended"]
+    return amendments
+
+
+def read_contract_amendments(project: Path) -> dict:
+    ledger = amendment_ledger(project)
+    if not ledger.is_file():
+        return {}
+    return contract_amendments(ledger.read_text(encoding="utf-8"), sealed_contract(project))
+
+
+def current_contract(project: Path) -> dict | None:
+    """The sealed Design Contract with every applied Contract Amendment: what
+    a component round delivers and its contract rows hash. A ledger that does
+    not replay amends nothing here; --contract-amendments, the finalizer and
+    the host refuse it."""
+
+    contract = sealed_contract(project)
+    if contract is None:
+        return None
+    try:
+        amendments = read_contract_amendments(project)
+    except (OSError, UnicodeError, ValueError):
+        return contract
+    for _, item in sorted(amendments.items()):
+        if item["status"] == "applied":
+            contract = item["_amended"]
+    return contract
+
+
+def amendment_view(item: dict) -> dict:
+    return {key: value for key, value in item.items() if not key.startswith("_")}
+
+
+def amendment_refusal(project: Path) -> str:
+    """Why an assembly round or the final verifier may not run, or ''."""
+
+    try:
+        amendments = read_contract_amendments(project)
+    except (OSError, UnicodeError, ValueError) as exc:
+        return "the Contract Amendment ledger %s is invalid: %s" % (amendment_ledger(project), exc)
+    held = [number for number, item in sorted(amendments.items()) if item["status"] == "proposed"]
+    if not held:
+        return ""
+    return ("Contract Amendment %s awaits its Contract Reviewer; record the review with "
+            "--record-amendment-review before an assembly round (ADR 0085)" % ", ".join(map(str, held)))
+
+
+def propose_amendment(project: Path, proposal_path) -> dict:
+    """Record the Workshop Manager's Contract Amendment proposal and write the
+    packet its Contract Reviewer reads: the rows that contradict, each
+    changed row before and after, the reason, and every sealed reference
+    image by path and sha256."""
+
+    contract = current_contract(project)
+    if contract is None:
+        raise ValueError("a Contract Amendment needs a run sealed with a Design Contract")
+    record = json.loads(Path(proposal_path).read_text(encoding="utf-8"))
+    if not isinstance(record, dict) or set(record) not in (
+            {"rows", "changes", "reason"}, {"rows", "changes", "reason", "report"}):
+        raise ValueError('a proposal is {"rows", "changes", "reason"} with an optional "report"')
+    rows, changes, reason = record["rows"], record["changes"], record["reason"]
+    if not isinstance(rows, list) or not 2 <= len(rows) <= MAX_BLOCKED_ROWS or not all(
+            _blocked_text(row, MAX_BLOCKED_TEXT) for row in rows):
+        raise ValueError("a proposal quotes the 2 to %d contract statements that cannot both hold"
+                         % MAX_BLOCKED_ROWS)
+    texts = _contract_strings(contract)
+    for row in rows:
+        if not any(_squash(row) in text for text in texts):
+            raise ValueError("row %r is not in the Design Contract; quote each row verbatim" % row[:80])
+    if not _blocked_text(reason, MAX_BLOCKED_TEXT):
+        raise ValueError("a proposal needs a reason of 1 to %d characters" % MAX_BLOCKED_TEXT)
+    if not isinstance(changes, list) or not 1 <= len(changes) <= MAX_AMENDMENT_CHANGES:
+        raise ValueError("a proposal changes 1 to %d rows" % MAX_AMENDMENT_CHANGES)
+    candidates = amendable_rows(contract)
+    resolved = []
+    for change in changes:
+        if not isinstance(change, dict) or set(change) != {"from", "to"}:
+            raise ValueError('each change is {"from": "<the whole row, verbatim>", "to": "<its new text>"}')
+        old, new = change["from"], change["to"]
+        if not _blocked_text(old, MAX_BLOCKED_TEXT) or not _blocked_text(new, MAX_BLOCKED_TEXT):
+            raise ValueError("a change's from and to are 1 to %d characters" % MAX_BLOCKED_TEXT)
+        matches = [item for item in candidates if _squash(item[2]) == _squash(old)]
+        if len(matches) != 1:
+            if any(_squash(old) in text for text in texts):
+                raise ValueError(
+                    "%r is not one whole requirement or Interface text. A reference, a geometry's "
+                    "dimensions and an Interface's kind, envelope or poses are beyond an in-run amendment, "
+                    "and a reference image shows them: stop with a need quoting the rows" % old[:80])
+            raise ValueError("%r is not a row of the Design Contract; quote the whole row verbatim" % old[:80])
+        locator, scope, text = matches[0]
+        if _squash(new) == _squash(text):
+            raise ValueError("the change to %s leaves its text as it is" % locator)
+        if any(item["row"] == locator for item in resolved):
+            raise ValueError("%s is changed twice; write one change per row" % locator)
+        resolved.append({"row": locator, "scope": scope, "from": text, "to": new.strip()})
+    report = record.get("report")
+    if report is not None:
+        held = read_blocked_reports(project).get(report) if type(report) is int else None
+        if held is None or held["status"] not in OPEN_BLOCKED:
+            raise ValueError("Blocked Report %r is not open; a proposal names only an open report" % (report,))
+    amendments = read_contract_amendments(project)
+    pending = [number for number, item in sorted(amendments.items()) if item["status"] == "proposed"]
+    if pending:
+        raise ValueError("Contract Amendment %d still awaits its review; record it first" % pending[0])
+    sealed, error = sealed_references(project)
+    if error:
+        raise ValueError(error)
+    references = []
+    for item in sealed:
+        problem = sealed_file_error(item)
+        if problem is not None:
+            raise ValueError(problem["error"])
+        references.append({"file": item["path"].name, "label": item["label"], "path": str(item["path"]),
+                           "sha256": item["sha256"]})
+    if not references:
+        raise ValueError("a Contract Amendment needs the sealed reference images its reviewer checks")
+    number = len(amendments) + 1
+    amended = apply_amendment(contract, resolved)
+    packet = {
+        "kind": "contract-amendment-packet", "amendment": number, "rows": [row.strip() for row in rows],
+        "changes": [{key: item[key] for key in ("row", "from", "to")} for item in resolved],
+        "reason": reason.strip(), "references": references,
+        "contract_sha256": contract_digest(contract), "amended_sha256": contract_digest(amended),
+        "affects": amendment_affects(contract, resolved),
+    }
+    directory = project / "measure" / AMENDMENT_PACKETS_DIR / ("a%02d" % number)
+    directory.mkdir(parents=True, exist_ok=True)
+    packet_bytes = (json.dumps(packet, sort_keys=True, indent=1) + "\n").encode("utf-8")
+    (directory / "packet.json").write_bytes(packet_bytes)
+    event = {"event": "proposal", "amendment": number, "rows": packet["rows"], "changes": resolved,
+             "reason": packet["reason"], "report": report, "affects": packet["affects"],
+             "packet": str(directory / "packet.json"), "packet_sha256": hashlib.sha256(packet_bytes).hexdigest(),
+             "contract_sha256": packet["contract_sha256"], "amended_sha256": packet["amended_sha256"],
+             "at": _utc_now(), "wish_sha256": _wish_binding(project)}
+    ledger = amendment_ledger(project)
+    ledger.parent.mkdir(exist_ok=True)
+    with ledger.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(event, sort_keys=True) + "\n")
+    read_contract_amendments(project)
+    return event
+
+
+def _component_reviewer_ids(project: Path) -> set:
+    root = project / "measure" / COMPONENT_ROUNDS_DIR
+    ids = set()
+    for path in sorted(root.glob("*/" + STATE_NAME)) if root.is_dir() else ():
+        try:
+            value = json.loads(path.read_text(encoding="utf-8")).get("reviewer_id")
+        except (OSError, ValueError, AttributeError):
+            continue
+        if isinstance(value, str):
+            ids.add(value)
+    return ids
+
+
+def record_amendment_review(project: Path, review_path) -> dict:
+    """Record the Contract Reviewer's verdict on the pending amendment. It
+    applies only when the reviewer confirmed all three; otherwise it is
+    refused and the Workshop Manager stops the run with a need."""
+
+    record = json.loads(Path(review_path).read_text(encoding="utf-8"))
+    required = {"amendment", "packet_sha256", "reviewer", "reason", *AMENDMENT_VERDICT}
+    if not isinstance(record, dict) or set(record) != required:
+        raise ValueError("an amendment review needs amendment, packet_sha256, reviewer, contradiction, "
+                         "smallest, visible_in, references_checked and reason")
+    amendments = read_contract_amendments(project)
+    number = record["amendment"]
+    item = amendments.get(number) if type(number) is int else None
+    if item is None or item["status"] != "proposed":
+        raise ValueError("Contract Amendment %r is not awaiting a review" % (number,))
+    if record["packet_sha256"] != item["packet_sha256"]:
+        raise ValueError("the review belongs to a different amendment packet")
+    try:
+        packet_bytes = Path(item["packet"]).read_bytes()
+    except OSError:
+        packet_bytes = b""
+    if hashlib.sha256(packet_bytes).hexdigest() != item["packet_sha256"]:
+        raise ValueError("Contract Amendment %d's packet changed after it was proposed; propose it again" % number)
+    if contract_digest(current_contract(project)) != item["contract_sha256"]:
+        raise ValueError("the Design Contract changed after Contract Amendment %d was proposed" % number)
+    reviewer = record["reviewer"]
+    if not isinstance(reviewer, str) or not 1 <= len(reviewer.strip()) <= 200:
+        raise ValueError("an amendment review needs the reviewer's name")
+    reviewer = reviewer.strip()
+    if reviewer.lower() in MANAGER_NAMES:
+        raise ValueError("the Workshop Manager cannot confirm its own amendment; ask a fresh contract-reviewer")
+    runtime = os.environ.get(REVIEWER_RUNTIME_ENV)
+    if runtime in REVIEWER_ID_FORMATS:
+        pattern, shape = REVIEWER_ID_FORMATS[runtime]
+        if not pattern.fullmatch(reviewer):
+            raise ValueError("reviewer must be the contract-reviewer's native agent id (%s), exactly as the "
+                             "runtime returned it when you spawned it; got %r" % (shape, reviewer[:40]))
+    earlier = {other["review"]["reviewer"] for other in amendments.values() if other["review"] is not None}
+    if reviewer in earlier or reviewer in _component_reviewer_ids(project):
+        raise ValueError("%s has already reviewed in this run; spawn a fresh contract-reviewer for each "
+                         "amendment" % reviewer)
+    for key in ("contradiction", "smallest"):
+        if type(record[key]) is not bool:
+            raise ValueError("an amendment review's %s must be true or false" % key)
+    files = {reference["file"] for reference in json.loads(packet_bytes)["references"]}
+    for key in ("visible_in", "references_checked"):
+        value = record[key]
+        if not isinstance(value, list) or not all(isinstance(name, str) for name in value) \
+                or not set(value) <= files or len(set(value)) != len(value):
+            raise ValueError("%s lists sealed reference files from the packet: %s" % (key, ", ".join(sorted(files))))
+    if set(record["references_checked"]) != files:
+        raise ValueError("the reviewer checks every sealed reference; references_checked lacks %s"
+                         % ", ".join(sorted(files - set(record["references_checked"]))))
+    if not _blocked_text(record["reason"], MAX_REASON):
+        raise ValueError("an amendment review needs a reason of 1 to %d characters" % MAX_REASON)
+    verdict = {"contradiction": record["contradiction"], "smallest": record["smallest"],
+               "visible_in": sorted(record["visible_in"]), "references_checked": sorted(files),
+               "reason": record["reason"].strip()}
+    event = {"event": "review", "amendment": number, "reviewer": reviewer, "verdict": verdict,
+             "at": _utc_now(), "wish_sha256": item["wish_sha256"]}
+    with amendment_ledger(project).open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(event, sort_keys=True) + "\n")
+    reviewed = read_contract_amendments(project)[number]
+    return amendment_view(reviewed)
+
+
+def amendment_need(item: dict) -> str:
+    """The one-line need a refused amendment becomes, quoting every row."""
+
+    verdict = (item.get("review") or {}).get("verdict") or {}
+    if verdict.get("visible_in"):
+        why = "a Visible Change: %s would show it" % ", ".join(verdict["visible_in"])
+    elif verdict.get("contradiction") is False:
+        why = "the Contract Reviewer found the rows can both hold"
+    else:
+        why = "the Contract Reviewer found a smaller change"
+    need = "Contract Contradiction: %s. Amendment %d refused (%s)" % (
+        " vs ".join("'%s'" % _squash(row) for row in item["rows"]), item["amendment"], why)
+    return need[:MAX_NEED_CHARS]
+
+
+def render_amendments(views: list) -> str:
+    if not views:
+        return "make_round: no Contract Amendments"
+    lines = []
+    for item in views:
+        lines.append("amendment %d  %s  contract %s -> %s  affects %s" % (
+            item["amendment"], item["status"].upper(), item["contract_sha256"][:12], item["amended_sha256"][:12],
+            ", ".join(item.get("affects") or ()) or "-"))
+        for row in item["rows"]:
+            lines.append("  row  %s" % row)
+        for change in item["changes"]:
+            lines.append("  %s  %s\n    -> %s" % (change["row"], change["from"], change["to"]))
+        if item["review"]:
+            verdict = item["review"]["verdict"]
+            lines.append("  review %s  contradiction %s, smallest %s, visible in %s  %s" % (
+                item["review"]["reviewer"], verdict["contradiction"], verdict["smallest"],
+                ", ".join(verdict["visible_in"]) or "none", verdict["reason"]))
+        else:
+            lines.append("  packet %s  sha256 %s: ask a fresh contract-reviewer" % (item["packet"], item["packet_sha256"]))
+    return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
@@ -3084,6 +3569,9 @@ def make_round(args) -> int:
             print("make_round: Blocked Report %d became a need; stop the run with it now: "
                   "stage_proposal.py --run-root . need --stage make --status waiting --reason %s"
                   % (event["report"], json.dumps(event["need"])))
+        elif event["event"] == "amendment":
+            print("make_round: Blocked Report %d cleared by Contract Amendment %d; tell the worker its rows "
+                  "changed and to rerun its round" % (event["report"], event["amendment"]))
         elif event["waits_on"]:
             print("make_round: Blocked Report %d waits on %s; it stays open until %s passes a round, "
                   "then send the worker this decision again" % (event["report"], event["waits_on"], event["waits_on"]))
@@ -3091,8 +3579,54 @@ def make_round(args) -> int:
             print("make_round: Blocked Report %d decided; send the worker this ruling unchanged. It "
                   "follows it with a new component round or a new Blocked Report" % event["report"])
         return 0
+    if getattr(args, "contract_amendments", False):
+        try:
+            views = [amendment_view(item) for _, item in sorted(read_contract_amendments(project).items())]
+        except (OSError, UnicodeError, ValueError) as exc:
+            print("make_round: the Contract Amendment ledger is invalid: %s" % exc, file=sys.stderr)
+            return 2
+        print(json.dumps(views, sort_keys=True) if args.json else render_amendments(views))
+        return 1 if any(item["status"] == "proposed" for item in views) else 0
+    if getattr(args, "propose_amendment", None):
+        try:
+            event = propose_amendment(project, args.propose_amendment)
+        except (ValueError, KeyError, OSError, TypeError) as exc:
+            print("make_round: %s" % exc, file=sys.stderr)
+            return 2
+        print(json.dumps(event, sort_keys=True) if args.json else
+              "make_round: Contract Amendment %d proposed. Spawn a fresh contract-reviewer and send it only: "
+              "packet %s sha256 %s. Record its answer with --record-amendment-review"
+              % (event["amendment"], event["packet"], event["packet_sha256"]))
+        return 0
+    if getattr(args, "record_amendment_review", None):
+        try:
+            item = record_amendment_review(project, args.record_amendment_review)
+        except (ValueError, KeyError, OSError, TypeError) as exc:
+            print("make_round: %s" % exc, file=sys.stderr)
+            return 2
+        if args.json:
+            print(json.dumps(item, sort_keys=True))
+        elif item["status"] == "applied":
+            print("make_round: Contract Amendment %d applied; the contract is now %s. Rounds of %s read the "
+                  "amended rows and unlock if locked%s" % (
+                      item["amendment"], item["amended_sha256"][:12], ", ".join(item["affects"]) or "no Component",
+                      "; clear Blocked Report %d with {\"report\": %d, \"amendment\": %d}"
+                      % (item["report"], item["report"], item["amendment"]) if item["report"] else ""))
+        else:
+            need = amendment_need(item)
+            print("make_round: Contract Amendment %d refused; nothing changed. Stop the run with a need now%s: "
+                  "stage_proposal.py --run-root . need --stage make --status waiting --reason %s" % (
+                      item["amendment"],
+                      " (first clear Blocked Report %d with {\"report\": %d, \"need\": <the need>})"
+                      % (item["report"], item["report"]) if item["report"] else "", json.dumps(need)))
+        return 0 if item["status"] == "applied" else 1
     if args.component is None and not getattr(args, "shared_helpers", False) and not getattr(args, "interface", None) \
             and (args.full or not args.record_visual):
+        # ADR 0085: nor while a Contract Amendment awaits its review.
+        refusal = amendment_refusal(project)
+        if refusal:
+            print("make_round: %s" % refusal, file=sys.stderr)
+            return 2
         # Issue #88: no assembly round and no final verifier while a Blocked
         # Report is open.
         refusal = blocked_refusal(project)
@@ -3230,7 +3764,9 @@ def make_round(args) -> int:
         locked_helpers = ((policy.get("reviewed") or {}).get("imported_helpers") or {})
         current_helpers = {**helpers, **{path: file_hash(project / path) if (project / path).is_file() else None
                                          for path in locked_helpers if path not in helpers}}
-        admission = round_policy(policy, {"identity": round_identity, "helpers": current_helpers})
+        rows_digest = contract_rows(project, component)
+        admission = round_policy(policy, {"identity": round_identity, "helpers": current_helpers,
+                                          "contract_rows": rows_digest})
         if not admission["admit"]:
             shutil.rmtree(out)
             if earlier_step is not None:
@@ -3392,9 +3928,10 @@ def make_round(args) -> int:
     # earlier review carries to it, and the lock it leaves.
     outcome = None
     if component is not None:
-        key = carry_key(round_identity, refs, project, contract_rows(project, component))
+        key = carry_key(round_identity, refs, project, rows_digest)
         outcome = round_policy(policy, {"identity": round_identity, "helpers": current_helpers,
-                                        "checks_ok": ok, "carry_key": key, "round": round_index})
+                                        "checks_ok": ok, "carry_key": key, "round": round_index,
+                                        "contract_rows": rows_digest})
 
     # 5. Visual inspection is a separate evidence submission, not a model call.
     # A component round that failed its checks is not rendered: nobody reviews
@@ -3455,7 +3992,7 @@ def make_round(args) -> int:
             review=review, shape_round=outcome["shape_round"],
             shape_rounds=next_policy["shape_rounds"], shape_rounds_used=next_policy["shape_rounds"],
             shape_limit=SHAPE_REPAIR_LIMIT, phase=next_policy["phase"], locked=lock_record(next_policy),
-            unlock=outcome["unlocks"], imported_helpers=helpers, carry_key=key,
+            unlock=outcome["unlocks"], imported_helpers=helpers, carry_key=key, contract_rows=rows_digest,
             worker_nonce=getattr(args, "worker_nonce", None),
         )
         if envelopes:
@@ -3736,8 +4273,11 @@ def main(argv=None) -> int:
     parser.add_argument("--shared-helpers", action="store_true", help="Workshop Manager: build the samples under samples/, run the print gates on them, and freeze the Shared Helpers on a pass (ADR 0082)")
     parser.add_argument("--interface", metavar="ID", help="Workshop Manager: run the coupled motion check of one sealed Coupled Interface on its locked Components (ADR 0082)")
     parser.add_argument("--report-blocked", metavar="BLOCKED.json", help="Component Worker, with --component: record a Blocked Report, {rows, reason}, quoting the contract rows verbatim; builds nothing (issue #88)")
-    parser.add_argument("--clear-blocked", metavar="ANSWER.json", help="Workshop Manager: answer one open Blocked Report, {report, decision[, waits_on]} or {report, need}")
+    parser.add_argument("--clear-blocked", metavar="ANSWER.json", help="Workshop Manager: answer one open Blocked Report, {report, decision[, waits_on]}, {report, need} or {report, amendment}")
     parser.add_argument("--blocked-reports", action="store_true", help="list every Blocked Report and its answers; exit 1 while one is open")
+    parser.add_argument("--propose-amendment", metavar="PROPOSAL.json", help="Workshop Manager: propose a Contract Amendment, {rows, changes: [{from, to}], reason[, report]}, for a fresh contract-reviewer to confirm; builds nothing (ADR 0085)")
+    parser.add_argument("--record-amendment-review", metavar="REVIEW.json", help="Workshop Manager: record the contract-reviewer's verdict on the pending amendment; it applies only if the reviewer confirmed all three")
+    parser.add_argument("--contract-amendments", action="store_true", help="list every Contract Amendment and its review; exit 1 while one awaits review")
     parser.add_argument("--full", action="store_true", help="with --record-visual: run final verifier after the independent blind review")
     parser.add_argument("--out", help="round directory (default measure/rounds/rNNNN)")
     parser.add_argument("--json", action="store_true", help="print the summary as one JSON line")
@@ -3766,7 +4306,10 @@ def main(argv=None) -> int:
         parser.error("--record-unlock cannot be combined with --record-review, --record-visual or --full")
     blocked_modes = [flag for flag, value in (("--report-blocked", args.report_blocked),
                                                ("--clear-blocked", args.clear_blocked),
-                                               ("--blocked-reports", args.blocked_reports)) if value]
+                                               ("--blocked-reports", args.blocked_reports),
+                                               ("--propose-amendment", args.propose_amendment),
+                                               ("--record-amendment-review", args.record_amendment_review),
+                                               ("--contract-amendments", args.contract_amendments)) if value]
     if blocked_modes:
         if len(blocked_modes) > 1:
             parser.error("%s are separate records" % " and ".join(blocked_modes))

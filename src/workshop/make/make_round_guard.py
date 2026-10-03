@@ -20,10 +20,15 @@ and subagents alike. The runtime names the calling subagent in the hook input
 On Claude Code the same script also keeps the evidence that binds a Component
 Review to its reviewer (ADR 0081, issue #77). It is registered for ``Read``
 and ``SubagentStart`` as well: every subagent the runtime starts is appended
-to the subagent log, and every ``Read`` by a ``component-reviewer`` is
-appended to the reviewer read log with the agent id, the resolved path and
-the sha256 of the bytes it read. A ``Read`` is never denied. The host checks
-each recorded review against both logs.
+to the subagent log, and every ``Read`` by a ``component-reviewer`` or a
+``contract-reviewer`` (ADR 0085) is appended to the reviewer read log with
+the agent id, the resolved path and the sha256 of the bytes it read. A
+``Read`` is never denied. The host checks each recorded review against both
+logs.
+
+Contract Amendments (ADR 0085): ``--propose-amendment`` and
+``--record-amendment-review`` are the root's; ``--contract-amendments`` only
+lists them, for anyone.
 
 Blocked Reports (issue #88): ``--report-blocked`` runs only from a
 ``component-worker`` and receives no nonce, since it builds nothing;
@@ -53,6 +58,9 @@ NONCE_TABLE_NAME = "worker-nonces.jsonl"
 READ_LOG_NAME = "reviewer-reads.jsonl"
 SUBAGENT_LOG_NAME = "subagents.jsonl"
 COMPONENT_REVIEWER = "component-reviewer"
+# ADR 0085: the fresh reader who confirms a Contract Amendment.
+CONTRACT_REVIEWER = "contract-reviewer"
+_LOGGED_READERS = frozenset({COMPONENT_REVIEWER, CONTRACT_REVIEWER})
 # A file larger than any packet image is logged without a hash.
 MAX_HASHED_READ_BYTES = 64 * 1024 * 1024
 NONCE_FLAG = "--worker-nonce"
@@ -74,6 +82,7 @@ _ROOT_RECORDS = ("--record-review", "--record-unlock", "--shared-helpers", "--in
 # Blocked Reports (issue #88): the worker's report, and the status anyone reads.
 REPORT_BLOCKED = "--report-blocked"
 BLOCKED_STATUS = "--blocked-reports"
+AMENDMENT_STATUS = "--contract-amendments"
 BLOCKED_REPORTS_NAME = "blocked-reports.jsonl"
 MAX_BLOCKED_LEDGER_BYTES = 1024 * 1024
 OPEN_BLOCKED = frozenset({"open", "waiting"})
@@ -207,7 +216,8 @@ def decide(event: Mapping[str, Any], *, issue: Issuer) -> Optional[dict[str, Any
     arguments = calls[0]
     if any(argument == NONCE_FLAG or argument.startswith(NONCE_FLAG + "=") for argument in arguments):
         return _deny("%s is issued by Workshop; never pass one" % NONCE_FLAG)
-    if any(argument in ("--self-check", "-h", "--help", BLOCKED_STATUS) for argument in arguments):
+    if any(argument in ("--self-check", "-h", "--help", BLOCKED_STATUS, AMENDMENT_STATUS)
+           for argument in arguments):
         return None
     agent_type = event.get("agent_type")
     is_root = not agent_type and not event.get("agent_id")
@@ -252,19 +262,21 @@ def decide(event: Mapping[str, Any], *, issue: Issuer) -> Optional[dict[str, Any
         return _deny(
             "only the Workshop Manager records a Component Review or an "
             "assembly unlock, runs an assembly round, the Shared Helper check or "
-            "an Interface check, records assembly feedback, or clears a Blocked Report"
+            "an Interface check, records assembly feedback, clears a Blocked Report, "
+            "or proposes or records a Contract Amendment"
         )
     return None
 
 
 def reviewer_read(event: Mapping[str, Any]) -> Optional[dict[str, Any]]:
-    """The read-log record for a ``Read`` by a Component Reviewer, or ``None``.
+    """The read-log record for a ``Read`` by a Component Reviewer or a
+    Contract Reviewer (ADR 0085), or ``None``.
 
     The path is resolved and the file hashed when the hook runs, just before
     the runtime reads it, so the record names the exact bytes the reviewer saw.
     """
 
-    if event.get("tool_name") != "Read" or event.get("agent_type") != COMPONENT_REVIEWER:
+    if event.get("tool_name") != "Read" or event.get("agent_type") not in _LOGGED_READERS:
         return None
     agent_id = event.get("agent_id")
     tool_input = event.get("tool_input")
@@ -318,10 +330,11 @@ def blocked_reports(content: str) -> dict[int, dict[str, Any]]:
 
     The ledger is ``measure/blocked-reports.jsonl`` in the CAD project, one
     event per line: a worker's ``report``, then the Manager's ``decision``
-    (``waits_on`` a Component, or not) or ``need``. A report's ``status`` is
-    ``open`` until answered, ``waiting`` after a decision that waits on a
-    Component, ``decided`` after any other decision and ``need`` after a
-    need; ``open`` and ``waiting`` both hold the gates. Raises ``ValueError``
+    (``waits_on`` a Component, or not), ``need`` or ``amendment`` (an
+    applied Contract Amendment, ADR 0085). A report's ``status`` is ``open``
+    until answered, ``waiting`` after a decision that waits on a Component,
+    ``decided`` after any other decision, ``need`` after a need and
+    ``amended`` after an amendment; ``open`` and ``waiting`` both hold the gates. Raises ``ValueError``
     for a ledger that is not a sequence of such events. Kept in step with
     ``blocked_reports`` in make_round and stage_proposal.py, which are
     standalone and cannot import it.
@@ -376,6 +389,16 @@ def blocked_reports(content: str) -> dict[int, dict[str, Any]]:
                 raise ValueError("the need on Blocked Report %s is invalid" % number)
             answer = {"kind": "need", "need": event["need"], "at": event["at"]}
             report["status"] = "need"
+        elif kind == "amendment":
+            # ADR 0085: an applied Contract Amendment removed the contradiction.
+            amendment, amended = event.get("amendment"), event.get("amended_sha256")
+            if type(amendment) is not int or amendment < 1 or not (
+                isinstance(amended, str) and re.fullmatch(r"[0-9a-f]{64}", amended)
+            ):
+                raise ValueError("the amendment answering Blocked Report %s is invalid" % number)
+            answer = {"kind": "amendment", "amendment": amendment, "amended_sha256": amended,
+                      "at": event["at"]}
+            report["status"] = "amended"
         else:
             raise ValueError("unknown Blocked Report event %r" % kind)
         report["answers"].append(answer)

@@ -799,7 +799,7 @@ class AgentRunTest(unittest.TestCase):
         claude_agents = run.run_root / ".claude" / "agents"
         self.assertEqual(
             sorted(p.name for p in claude_agents.iterdir()),
-            ["alice.md", "component-reviewer.md", "component-worker.md"],
+            ["alice.md", "component-reviewer.md", "component-worker.md", "contract-reviewer.md"],
         )
         self.assertEqual(stat.S_IMODE(claude_agents.stat().st_mode), 0o500)
         for name in ("alice", "component-reviewer", "component-worker"):

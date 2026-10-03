@@ -369,8 +369,9 @@ are separate. Frozen older runs retain their materialized rules and tools.
 
    When two Design Contract statements cannot both hold, for example two
    Components that print on a mating face that also carries a peg, stop and
-   return a `waiting` need that quotes both statements (`SKILL.md`). Do not
-   choose between them. A print rule the contract states (the stance, "no
+   return a `waiting` need that quotes both statements (`SKILL.md`), unless
+   its smallest fix is invisible and a Contract Reviewer confirms it as a
+   Contract Amendment (below). Do not choose between them. A print rule the contract states (the stance, "no
    part needs support") is a statement too, so geometry that cannot print in
    its stated stance is such a Contract Contradiction.
    A freedom the contract explicitly grants stays yours to decide.
@@ -404,6 +405,62 @@ are separate. Frozen older runs retain their materialized rules and tools.
      prints the need command; seal it at once with `stage_proposal.py
      --run-root . need --stage make --status waiting --reason "<the
      need>"`.
+   - **Contract Amendment**, `{"report": N, "amendment": M}`: the rows
+     cannot both hold, and amendment M, proposed with `"report": N` and
+     confirmed by its Contract Reviewer (below), removed the contradiction.
+     Tell the worker its rows changed and to rerun its round; the round
+     delivers the amended rows.
+
+   **Contract Amendments (ADR 0085).** Before you turn a Contract
+   Contradiction into a need, ask whether its smallest fix changes anything
+   a sealed reference image shows. A clearance, a print stance, a hidden
+   face or a value no image shows does not; an outline, a proportion, a
+   member or a visible feature does. Only an invisible fix may be amended
+   inside the run, and only through the tool:
+
+   ```bash
+   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
+     --propose-amendment <proposal.json>
+   ```
+
+   `proposal.json` is `{"rows": ["<statement>", "<statement>"], "changes":
+   [{"from": "<the whole requirement or Interface text, verbatim>", "to":
+   "<its new text>"}], "reason": "<why the rows cannot both hold and why
+   this is the smallest fix>", "report": N}`; leave out `report` when no
+   Blocked Report names the rows. Change only requirement text and, under
+   schema 4, Interface text; the tool refuses a reference, a geometry and an
+   Interface's kind, envelope or poses. It prints the packet path and
+   sha256. Spawn a **fresh** `contract-reviewer` for this amendment (never a
+   Component Reviewer, never one that reviewed an earlier amendment) and
+   send it exactly: the packet path and its sha256, nothing else. Wait for
+   its JSON answer with the long wait, then record it unchanged with the
+   reviewer's name, the amendment number and the packet hash added:
+
+   ```bash
+   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
+     --record-amendment-review <review.json>
+   ```
+
+   `review.json` is `{"amendment": M, "packet_sha256": "<hash>",
+   "reviewer": "<id>", "contradiction": ..., "smallest": ...,
+   "visible_in": [...], "references_checked": [...], "reason": "..."}`. On
+   Claude Code `reviewer` is the agent id the runtime returned when you
+   spawned it (17 lowercase hex characters), and the host checks that this
+   agent started as a `contract-reviewer` and read every sealed reference.
+   On Codex it is the name you gave the reviewer thread. The amendment
+   applies only when the reviewer confirmed all three; the tool then names
+   the Components whose rows changed. They unlock as for a Shared Helper
+   change and their next rounds read the amended rows: tell each one's
+   worker. Otherwise nothing changed: the tool prints a need quoting the
+   rows; clear the report with it, if any, and seal it at once. A visible
+   change always stops the run with a need; the owner and the outer loop
+   handle it. Never change a row any other way and never resolve a
+   contradiction silently in shared code. While an amendment awaits its
+   review, `make_round` refuses an assembly round and `--full` and the
+   finalizer refuses the Make proposal. Run `make_round <cad-project>
+   --contract-amendments` to list them, above all after a compaction. The
+   host replays every amendment against the sealed contract before it
+   accepts Make and the run report lists each one.
 
    Do not answer a blocked worker in prose alone: an answer the tool did not
    record leaves the report open. While any Blocked Report is open or

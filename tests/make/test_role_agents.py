@@ -5,6 +5,7 @@ from workshop.errors import ContractError
 from workshop.make.role_agents import (
     COMPONENT_REVIEWER,
     COMPONENT_WORKER,
+    CONTRACT_REVIEWER,
     MAKE_ROLE_AGENT_NAMES,
     make_role_agent_files,
     parse_make_role_agent_bytes,
@@ -27,7 +28,8 @@ class MakeRoleAgentFilesTest(unittest.TestCase):
         files = make_role_agent_files()
         self.assertEqual(set(files), set(MAKE_ROLE_AGENT_NAMES))
         self.assertEqual(
-            set(MAKE_ROLE_AGENT_NAMES), {COMPONENT_WORKER, COMPONENT_REVIEWER}
+            set(MAKE_ROLE_AGENT_NAMES),
+            {COMPONENT_WORKER, COMPONENT_REVIEWER, CONTRACT_REVIEWER},
         )
         for name, content in files.items():
             self.assertEqual(parse_make_role_agent_bytes(name, content)["name"], name)
@@ -40,6 +42,26 @@ class MakeRoleAgentFilesTest(unittest.TestCase):
         self.assertEqual(reviewer["model_reasoning_effort"], "low")
         self.assertNotIn("model", worker)
         self.assertNotIn("model", reviewer)
+
+    def test_contract_reviewer_inherits_root_effort_and_checks_three_things(self):
+        reviewer = tomllib.loads(
+            make_role_agent_files()[CONTRACT_REVIEWER].decode("utf-8")
+        )
+        self.assertNotIn("model_reasoning_effort", reviewer)
+        self.assertNotIn("model", reviewer)
+        text = reviewer["developer_instructions"]
+        for phrase in (
+            "ADR 0085",
+            "packet path and its sha256",
+            "View every image under `references`",
+            "`contradiction`",
+            "`smallest`",
+            "`visible_in`",
+            "references_checked",
+            "Do not spawn",
+            "Do not advance",
+        ):
+            self.assertIn(phrase, text)
 
     def test_worker_authors_its_component_and_never_views_rendered_rounds(self):
         worker = tomllib.loads(

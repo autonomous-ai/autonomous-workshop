@@ -509,7 +509,7 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                     item.get("report", "?"),
                     item.get("component", "?"),
                     "r%04d" % item["round"] if type(item.get("round")) is int else "before its first round",
-                    "cleared by a %s after" % cleared if cleared else "%s for" % item.get("status", "open"),
+                    "cleared by %s %s after" % ("an" if cleared == "amendment" else "a", cleared) if cleared else "%s for" % item.get("status", "open"),
                     held,
                     "; ".join(str(row) for row in item.get("rows") or ()),
                 )
@@ -521,7 +521,29 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
             return ",".join("%g" % v for v in value) if isinstance(value, list) else "?"
 
         for item in amendments:
-            if isinstance(item, Mapping):
+            if isinstance(item, Mapping) and item.get("kind") == "contract-amendment":
+                # ADR 0085: an in-run amendment of invisible rows, confirmed
+                # (or refused) by a fresh Contract Reviewer.
+                if item.get("status") == "invalid":
+                    print("Contract Amendment ledger invalid: %s" % item.get("ledger", "?"))
+                    continue
+                review = item.get("review") if isinstance(item.get("review"), Mapping) else {}
+                print(
+                    "Contract Amendment %s (%s): %s; contract %s -> %s, reviewer %s"
+                    % (
+                        item.get("amendment", "?"),
+                        item.get("status", "?"),
+                        "; ".join(
+                            "%s %r -> %r" % (change.get("row"), change.get("from"), change.get("to"))
+                            for change in item.get("changes") or ()
+                            if isinstance(change, Mapping)
+                        ),
+                        str(item.get("contract_sha256", "?"))[:12],
+                        str(item.get("amended_sha256", "?"))[:12],
+                        review.get("reviewer", "none yet"),
+                    )
+                )
+            elif isinstance(item, Mapping):
                 print(
                     "Reference Camera amended: %s (%s) %s -> %s"
                     % (item.get("file", "?"), item.get("shows", "?"), camera(item.get("from")), camera(item.get("to")))
