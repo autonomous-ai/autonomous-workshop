@@ -493,6 +493,16 @@ class SnapshotTest(unittest.TestCase):
         self.assertFalse(snapshot.stopped({"status": "active", "stop_category": None}))
         self.assertTrue(snapshot.stopped({"status": "waiting"}))
 
+    def test_an_active_run_is_not_stopped_by_its_default_category(self):
+        # `workshop status` gives every run that is not complete a
+        # stop_category; a live run reads `unclassified` (#91).
+        self.assertFalse(snapshot.stopped({"status": "active", "stop_category": "unclassified"}))
+        self.assertFalse(
+            snapshot.stopped({"status": "active", "stop_category": "inspection-in-progress"})
+        )
+        self.assertTrue(snapshot.stopped({"status": "failed", "stop_category": "gate-refusal"}))
+        self.assertTrue(snapshot.stopped({"status": "complete"}))
+
     def test_open_blocked_reports_are_counted(self):
         with tempfile.TemporaryDirectory() as tmp:
             line = snapshot.snapshot(

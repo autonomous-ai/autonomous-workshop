@@ -6,8 +6,11 @@
 Reads `workshop status --json` on stdin and counts what the run's own files
 show: Component Worker spawns (from the Claude Code transcripts), Blocked
 Reports still open or waiting, Reference Camera mismatches and Reference
-Conflict entries. Exits 10 once the run has stopped (a `stop_category`, or a
-status other than `active`), so a watcher knows to diagnose it.
+Conflict entries. Exits 10 once the run has stopped (a status other than
+`active`, or an active run whose `stop_category` names a real stop such as
+`budget`), so a watcher knows to diagnose it. `workshop status` gives every
+run that is not complete a `stop_category`, so an active run's
+`unclassified` or `inspection-in-progress` is not a stop.
 """
 
 from __future__ import annotations
@@ -24,6 +27,7 @@ from runpaths import claude_project_dir, make_dir, run_workspace  # noqa: E402
 
 STOPPED = 10
 OPEN_BLOCKED = {"open", "waiting"}
+RUNNING_CATEGORIES = {None, "unclassified", "inspection-in-progress"}
 
 
 def count_files(root: Path, pattern: str, needle: str) -> int:
@@ -70,7 +74,9 @@ def snapshot(status: dict, workspace: Path, transcripts: Path) -> dict:
 
 
 def stopped(status: dict) -> bool:
-    return bool(status.get("stop_category")) or status.get("status") != "active"
+    if status.get("status") != "active":
+        return True
+    return status.get("stop_category") not in RUNNING_CATEGORIES
 
 
 def main(argv: list[str]) -> int:
