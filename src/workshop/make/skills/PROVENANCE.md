@@ -1813,3 +1813,26 @@ to `component-acceptance.json` as `reference_conflicts`. Schema 3 contracts
 keep their cameras and Display Pose comparison under schema 4. Schema 1 to 3
 packets carry no `contract`. This changes the `cad` and `make-round`
 fingerprints.
+
+## Local change: every Detail Refusal of a build at once, with a passing value (2026-10-02)
+
+A Workshop-local change (issue #86) to the vendored `cad` tree and to
+Workshop's own `print-details` and `make-round`. Every `PrintLimitError`
+of `print-details` now carries `passing`, what would pass at that spot: the
+limit for a size below it, the largest `d` or `width` the surface there
+takes and the least height that clears it (both re-measured, not
+estimated), the spacing that leaves the minimum gap between copies, or the
+kind of spot when no size fits. While `WORKSHOP_PRINT_DETAILS_BUILD` is set
+a refused feature returns its host unchanged and records its Detail Refusal
+in `DETAIL_REFUSALS`; `refusal_error()` turns them into one
+`DetailRefusals`, one `detail-refusal {json}` line each. Outside a build
+every refusal still raises at once; `limits()` is unchanged, and the
+self-check adds a collected three-refusal build. In `cad`, cadgen's
+generator runner and `printlib.build_entry` set the variable while the
+entry loads and runs, then raise the collected refusals, after any error
+that stopped the build. `make_round` parses the lines into the part's
+`build.detail_refusals`, prints a `refuse` line for each, records each
+part's refusal keys in its state and reports a detail refused at the same
+line in the previous round under `repeated_detail_refusals`, apart from
+`repeated_print_defects`. This changes the `cad`, `print-details` and
+`make-round` fingerprints.

@@ -512,15 +512,15 @@ def test_claude_budget_exists_only_for_runs_created_with_it(tmp_path):
     assert _load_lifetime_budget(paths, checkpoint).to_dict() == created.to_dict()
 
 
-def test_claude_invocations_accumulate_across_resumes_and_survive_reload(tmp_path):
+def test_fresh_claude_sessions_accumulate_and_survive_reload(tmp_path):
     paths, checkpoint = claude_context(tmp_path)
     budget = _load_lifetime_budget(paths, checkpoint, initialize=True)
     first = _claude_token_observer(paths, checkpoint, budget)
-    first(claude_counters(400), final=False)
-    first(claude_counters(600, 50), final=True)
+    first(claude_counters(400), final=False, session_id="session-a")
+    first(claude_counters(600, 50), final=True, session_id="session-a")
     budget = _load_lifetime_budget(paths, checkpoint)
     second = _claude_token_observer(paths, checkpoint, budget)
-    second(claude_counters(300, 10), final=True)
+    second(claude_counters(300, 10), final=True, session_id="session-b")
     loaded = _load_lifetime_budget(paths, checkpoint)
     value = loaded.to_dict()
     assert value["used_tokens"] == 960
@@ -529,6 +529,134 @@ def test_claude_invocations_accumulate_across_resumes_and_survive_reload(tmp_pat
         "claude-invocation-000001", "claude-invocation-000002",
     ]
     assert value["observation"]["root_thread_id"] == "claude-invocation-000001"
+    assert [(t["session_id"], t["invocations"]) for t in value["observation"]["threads"]] == [
+        ("session-a", 1), ("session-b", 1),
+    ]
+
+
+def _claude_stream_launcher(streams):
+    from tests.runtime.test_claude_native_session import _FakeProcess
+    from workshop.runtime.claude import ClaudeNativeSessionLauncher
+    remaining = [list(lines) for lines in streams]
+    return ClaudeNativeSessionLauncher(
+        binary="/bin/claude", cli_version="2.1.285",
+        popen_factory=lambda command, **kwargs: _FakeProcess(remaining.pop(0)),
+        uuid_factory=lambda: "initial-session-id",
+    )
+
+
+def _claude_turn(launcher, method, root):
+    return getattr(launcher, method)(
+        product_id="wish-one", wish_sha256="d" * 64, constitution_sha256="d" * 64,
+        run_root=root / "run", host_state_root=root / "claude", prompt="make",
+    )
+
+
+def test_a_resumed_claude_session_is_charged_once(tmp_path):
+    """Issue #84: a resume's result totals the whole session, so invocation 2
+    replaces the session's charge (N + k) instead of adding to it (2N + k)."""
+    from tests.runtime.test_claude_native_session import (
+        OPUS_TOTALS, PER_BLOCK_USAGE, SESSION, _assistant_line, _init_line, _result_line,
+    )
+    for directory in ("run", "claude", "state"):
+        (tmp_path / directory).mkdir(mode=0o700)
+    paths, checkpoint = claude_context(tmp_path / "state")
+    request = 2 + 13_227 + 10_010
+    n_cached, n_write = 16_000_000, 300_000
+    n_input = 100 + n_cached + n_write
+    first_totals = {**OPUS_TOTALS, "inputTokens": 100, "cacheReadInputTokens": n_cached,
+                    "cacheCreationInputTokens": n_write, "outputTokens": 9_000,
+                    "thinkingTokens": 0}
+    # Invocation 2 streams one request and ends with the session-wide total.
+    second_totals = {**first_totals, "inputTokens": 102,
+                     "cacheReadInputTokens": n_cached + 10_010,
+                     "cacheCreationInputTokens": n_write + 13_227,
+                     "outputTokens": 9_000 + 168}
+    launcher = _claude_stream_launcher([
+        [_init_line(), _assistant_line("msg_1", PER_BLOCK_USAGE), _assistant_line("msg_2", PER_BLOCK_USAGE),
+         _result_line({"claude-opus-5": first_totals})],
+        [_init_line(), _assistant_line("msg_3", PER_BLOCK_USAGE),
+         _result_line({"claude-opus-5": second_totals})],
+    ])
+    budget = _load_lifetime_budget(paths, checkpoint, initialize=True)
+    budget.limit = 100_000_000
+    _meter_claude_turn(paths, checkpoint, launcher, budget)
+    _claude_turn(launcher, "start", tmp_path)
+    first = _load_lifetime_budget(paths, checkpoint).to_dict()
+    n = n_input + 9_000
+    assert first["used_tokens"] == n
+    budget = _load_lifetime_budget(paths, checkpoint)
+    _meter_claude_turn(paths, checkpoint, launcher, budget)
+    _claude_turn(launcher, "resume", tmp_path)
+    value = _load_lifetime_budget(paths, checkpoint).to_dict()
+    assert value["used_tokens"] == n + request + 168
+    (thread,) = value["observation"]["threads"]
+    assert (thread["thread_id"], thread["session_id"], thread["invocations"]) == (
+        "claude-invocation-000001", SESSION, 2,
+    )
+
+
+def test_a_resumed_session_charges_streamed_requests_before_its_result(tmp_path):
+    paths, checkpoint = claude_context(tmp_path)
+    budget = _load_lifetime_budget(paths, checkpoint, initialize=True)
+    _claude_token_observer(paths, checkpoint, budget)(
+        claude_counters(1_000, 100), final=True, session_id="session-a")
+    resumed = _claude_token_observer(paths, checkpoint, budget)
+    resumed(claude_counters(40, 4), final=False, session_id="session-a",
+            streamed=claude_counters(40, 4))
+    assert budget.to_dict()["used_tokens"] == 1_144
+    resumed(claude_counters(1_050, 106), final=True, session_id="session-a",
+            streamed=claude_counters(40, 4))
+    assert budget.to_dict()["used_tokens"] == 1_156
+
+
+def test_a_resume_reporting_less_never_lowers_the_session_charge(tmp_path):
+    paths, checkpoint = claude_context(tmp_path)
+    budget = _load_lifetime_budget(paths, checkpoint, initialize=True)
+    _claude_token_observer(paths, checkpoint, budget)(
+        claude_counters(1_000, 100), final=True, session_id="session-a")
+    _claude_token_observer(paths, checkpoint, budget)(
+        claude_counters(300, 10), final=True, session_id="session-a",
+        streamed=claude_counters(0))
+    value = _load_lifetime_budget(paths, checkpoint).to_dict()
+    assert value["used_tokens"] == 1_100
+    assert value["observation"]["threads"][0]["invocations"] == 2
+
+
+def test_a_resume_of_an_earlier_session_replaces_only_that_session(tmp_path):
+    paths, checkpoint = claude_context(tmp_path)
+    budget = _load_lifetime_budget(paths, checkpoint, initialize=True)
+    _claude_token_observer(paths, checkpoint, budget)(claude_counters(1_000), final=True, session_id="a")
+    _claude_token_observer(paths, checkpoint, budget)(claude_counters(500), final=True, session_id="b")
+    _claude_token_observer(paths, checkpoint, budget)(
+        claude_counters(1_200), final=True, session_id="a", streamed=claude_counters(200))
+    threads = _load_lifetime_budget(paths, checkpoint).to_dict()["observation"]["threads"]
+    assert [(t["thread_id"], t["tokens"]["input_tokens"], t["invocations"]) for t in threads] == [
+        ("claude-invocation-000001", 1_200, 2), ("claude-invocation-000002", 500, 1),
+    ]
+
+
+def test_a_frozen_ledger_with_duplicated_threads_keeps_its_recorded_value(tmp_path):
+    """Threads recorded before sessions were named are never rewritten."""
+    paths, checkpoint = claude_context(tmp_path)
+    budget = _load_lifetime_budget(paths, checkpoint, initialize=True)
+    legacy = {"thread_id": "claude-invocation-000001", "status": "observed",
+              "tokens": claude_counters(1_000, 100)}
+    budget.observe({
+        "schema_version": 1, "source": "claude-native-stream-v1", "status": "observed",
+        "root_thread_id": "claude-invocation-000001",
+        "threads": [legacy, {**legacy, "thread_id": "claude-invocation-000002"}],
+        "tokens": claude_counters(2_000, 200), "total_tokens": 2_200,
+    })
+    _save_lifetime_budget(paths, checkpoint, budget)
+    assert _load_lifetime_budget(paths, checkpoint).to_dict()["used_tokens"] == 2_200
+    budget = _load_lifetime_budget(paths, checkpoint)
+    _claude_token_observer(paths, checkpoint, budget)(
+        claude_counters(1_010, 101), final=True, session_id="session-a",
+        streamed=claude_counters(10, 1))
+    value = _load_lifetime_budget(paths, checkpoint).to_dict()
+    assert value["used_tokens"] == 2_200 + 1_111
+    assert [t.get("session_id") for t in value["observation"]["threads"]] == [None, None, "session-a"]
 
 
 def test_claude_observer_stops_at_the_cap_and_records_why(tmp_path):

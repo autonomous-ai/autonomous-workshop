@@ -9,7 +9,7 @@ from workshop.workflow.budgets import LifetimeBudget, LifetimeTurnBudget
 TOKEN_BUDGET_CAPABILITY_PATH = ".agents/skills/autonomous-workshop/references/token-budget-v1.md"
 DEFAULT_PRODUCT_TOKENS = 30_000_000
 # Codex usage is read back from its rollout files; Claude Code usage is
-# streamed per invocation, one observed thread per ``--print`` call.
+# streamed per invocation, one observed thread per native session.
 OBSERVATION_SOURCES = ("codex-native-rollout-v1", "claude-native-stream-v1")
 MAX_PRODUCT_TOKENS = 1_000_000_000
 

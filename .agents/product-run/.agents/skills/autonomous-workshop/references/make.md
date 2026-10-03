@@ -298,6 +298,24 @@ are separate. Frozen older runs retain their materialized rules and tools.
    worker's thread until the assembly passes (ADR 0082), and send each later
    unlock to the worker that already holds that Component.
 
+   Never end your turn while a Component Worker or a Component Reviewer
+   request is still running. Wait for it with the long wait, record what it
+   returns, and end your turn only on a stage proposal, a recorded need
+   (`stage_proposal.py ... need`), or a host stop. An ended turn is not a
+   wait: the session can end before a worker reports, and that worker's
+   current round is lost. On Claude Code a background agent's result
+   arrives as a notification only after your current tool call returns, so
+   when nothing is left to do but wait, run one foreground `Bash` wait with
+   `timeout: 600000`:
+
+   ```bash
+   "$WORKSHOP_PYTHON" -c "import time; time.sleep(300)"
+   ```
+
+   Read every notification it returns with, record each answer, and repeat
+   until every running worker and reviewer has reported. This is the long
+   wait, not a poll: never run a shorter one.
+
    Workers never edit a shared file such as `params.py` or
    `features/forms.py`; they ask you. Edit it yourself, then send back
    through its worker only each Component whose summary lists that file

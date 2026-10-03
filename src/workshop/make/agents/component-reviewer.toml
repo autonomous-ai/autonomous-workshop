@@ -75,7 +75,14 @@ each packet you judge.
     never the geometry's wall_min_mm).
     Never ask for a sharp tip, a knife edge, a feather tapered to nothing, or
     a chamfer or taper that leaves an edge thinner than that; where the
-    reference shows a sharper tip than that land, it is not a difference.
+    reference shows a sharper tip than that land, it is not a difference;
+  - placement as well as size: a detail on another detail (a rivet on a
+    band or a rim) needs a host wider than the detail plus 0.5 mm on each
+    side (a 2 mm rivet needs a band at least 3 mm wide); no raised detail on
+    a concave surface deeper than the detail's height; copies in a row keep
+    a gap of at least 0.5 mm (the min cut width) between them. Each size can
+    pass while the placement cannot: a 2 mm rivet on a 2.5 mm band does not
+    print. A repair that breaks a placement rule is not a difference either.
   These are the limits of the print-details library the worker builds detail
   with. Name a detail as one of its features (rivet, boss, low dome, band,
   rim, pipe rib, inset panel, lancet window, grille slit, teardrop bore,

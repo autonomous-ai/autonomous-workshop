@@ -112,8 +112,8 @@ def print_rounds(workspace: Path) -> dict:
     gate tại chỗ.
     """
 
-    rounds = failing = repeated = 0
-    measured = False
+    rounds = failing = repeated = refused = 0
+    measured = refusals = False
     for path in sorted(workspace.rglob("measure/component-rounds/*/r[0-9]*/summary.json")):
         try:
             summary = json.loads(path.read_text(encoding="utf-8"))
@@ -126,7 +126,12 @@ def print_rounds(workspace: Path) -> dict:
         if "repeated_print_defects" in summary:
             measured = True
             repeated += bool(summary["repeated_print_defects"])
-    return {"rounds": rounds, "failing": failing, "repeated": repeated if measured else None}
+        # Từ chối chi tiết lặp lại (issue #86): đếm riêng, không phải lỗi in.
+        if "repeated_detail_refusals" in summary:
+            refusals = True
+            refused += bool(summary["repeated_detail_refusals"])
+    return {"rounds": rounds, "failing": failing, "repeated": repeated if measured else None,
+            "refused": refused if refusals else None}
 
 
 def describe(wish_id: str) -> None:
@@ -158,9 +163,10 @@ def describe(wish_id: str) -> None:
 
     counted = print_rounds(workspace)
     if counted["rounds"]:
-        print("  vòng in  : %d vòng component | lặp lỗi in %s | trượt %d (tham khảo)"
+        print("  vòng in  : %d vòng component | lặp lỗi in %s | lặp từ chối chi tiết %s | trượt %d (tham khảo)"
               % (counted["rounds"],
                  "—" if counted["repeated"] is None else counted["repeated"],
+                 "—" if counted["refused"] is None else counted["refused"],
                  counted["failing"]))
 
     path = transcript(wish_id)

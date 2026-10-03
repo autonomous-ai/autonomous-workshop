@@ -239,6 +239,14 @@ component geometry.
   Print Defect**: an `again` line names it and `summary.json` lists it under
   `repeated_print_defects`. Read the report's feature row before you change
   numbers again; a repeat means the last repair guessed.
+- A part whose print-details features refused a size or a spot did not
+  build: its **Detail Refusals** come all at once, each on a `refuse` line
+  under the part's `build` line with its feature, the line that asked for
+  it, the reason and what passes there, and in `summary.json` under the
+  part's `build.detail_refusals`. A detail refused at the same line in the
+  part's previous round too gets an `again REFUSE` line and is listed under
+  `repeated_detail_refusals`, apart from `repeated_print_defects`: leave
+  that detail out and name it.
 - A part whose tessellation is open is not measured. An invalid B-rep fails
   with its bad faces listed. A valid one is re-tessellated once, finer; if it
   stays open the gate's verdict is `UNMEASURABLE`, which is not a print

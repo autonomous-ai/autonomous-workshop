@@ -317,6 +317,35 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             "two statements of the sealed Design Contract cannot both hold", skill
         )
 
+    def test_the_root_never_ends_its_turn_while_a_worker_or_reviewer_runs(self):
+        # Issue #85: an ended turn is not a wait; the session can end before
+        # a background worker reports, losing its round.
+        make = " ".join(
+            (
+                REPOSITORY
+                / ".agents/product-run/.agents/skills/autonomous-workshop"
+                / "references/make.md"
+            ).read_text(encoding="utf-8").split()
+        )
+        constitution = " ".join(
+            (REPOSITORY / ".agents/product-run/AGENTS.md").read_text(
+                encoding="utf-8"
+            ).split()
+        )
+        for name, text in (("make", make), ("constitution", constitution)):
+            for required in (
+                "Never end your turn while a Component Worker or a Component "
+                "Reviewer request is still running",
+                "end your turn only on a stage proposal, a recorded need",
+                "or a host stop",
+                "An ended turn is not a wait",
+                "On Claude Code",
+                "`timeout: 600000`",
+                'time.sleep(300)"',
+            ):
+                with self.subTest(name=name, required=required):
+                    self.assertIn(required, text)
+
     def test_the_reviewer_reads_the_contract_from_its_packet_and_lists_reference_conflicts(self):
         # ADR 0084: the Design Contract wins over a reference image.
         def text(*parts):
@@ -359,6 +388,37 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         contract_format = text(".claude/skills/build-a-toy/CONTRACT-FORMAT.md")
         self.assertIn('"schema_version": 4', contract_format)
         self.assertIn("`text` (schema 4, required and non-empty, no length limit)", contract_format)
+
+    def test_workers_drop_a_twice_refused_detail_and_reviewers_ask_for_placeable_detail(self):
+        # Issue #86: a Detail Refusal is repaired from the summary, a detail
+        # refused twice at one spot is left out, and the reviewer's limits
+        # cover placement as well as size.
+        def text(*parts):
+            return " ".join(REPOSITORY.joinpath(*parts).read_text(encoding="utf-8").split())
+
+        worker = text("src/workshop/make/agents/component-worker.toml")
+        for required in (
+            "the build fails once with every refusal",
+            "lists each on a `refuse` line",
+            "what passes there",
+            "Repair every one in the same edit",
+            "Two refusals are the limit: when a detail at the same spot is refused in two rounds",
+            "leave it out of your code and name it, with its passing value, in your report",
+            "Never model it by hand instead",
+            "each detail you left out after two refusals",
+        ):
+            with self.subTest(worker=required):
+                self.assertIn(required, worker)
+        reviewer = text("src/workshop/make/agents/component-reviewer.toml")
+        for required in (
+            "a detail on another detail (a rivet on a band or a rim) needs a host wider than the "
+            "detail plus 0.5 mm on each side",
+            "no raised detail on a concave surface deeper than the detail's height",
+            "copies in a row keep a gap of at least 0.5 mm (the min cut width)",
+            "A repair that breaks a placement rule is not a difference either",
+        ):
+            with self.subTest(reviewer=required):
+                self.assertIn(required, reviewer)
 
     def test_installed_lookup_reads_exact_packaged_snapshot(self):
         with tempfile.TemporaryDirectory() as temporary:

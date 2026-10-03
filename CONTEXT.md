@@ -311,6 +311,15 @@ rate is context only, since a failing round costs about what a local gate run
 does (issue #82).
 _Avoid_: Failure rate, retry
 
+**Detail Refusal**:
+A Print Detail's refusal, at build and before any print gate, of a size or
+spot it cannot print. It is not a print defect: repeats of it are counted
+apart from Repeated Print Defects. A build reports every Detail Refusal at
+once, each with the value that would pass at that spot, and fails; a
+Component Worker leaves out a detail refused at the same spot in two rounds
+and names it in its report (issue #86).
+_Avoid_: Print failure, build error
+
 **Unmeasurable Mesh**:
 A print gate's verdict on a valid B-rep whose tessellation stays open even
 after one finer retry. Inside and outside are undefined, so nothing was

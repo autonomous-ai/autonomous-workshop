@@ -22,6 +22,28 @@ does not carry it, the contract is incomplete. Complete it and get it
 re-approved before any run starts. A block that leaves something out
 recreates the defect this skill exists to remove.
 
+## Print minimums in the prose
+
+The prose states no print minimum of its own. Every minimum is the
+print-details library's `limits()` at the contract's nozzle, the numbers Make
+builds detail with and the Component Reviewer judges by: at a 0.4 mm nozzle a
+rivet, boss or dome is at least 2.0 mm across, a raised band, rim or rib
+0.9 mm, a wall or land 0.8 mm, a groove or gap 0.5 mm. `design-a-toy` Stage
+3c lists them all. The print section carries two rules, word for word:
+
+- "Every point, chisel, keel and V underside ends in a flat land at least
+  0.8 mm across (one print minimum at a 0.4 mm nozzle)." The 0.8 mm is the
+  nozzle's print minimum, never a geometry's `wall_min_mm`.
+- "A drawn detail under the print minimums is enlarged to the minimum; when
+  the enlarged detail does not fit its spot, it is left out, and this
+  contract names it."
+
+Every detail left out is named in a `requirements[]` row of its Component
+("The brow band is a plain raised band and carries no rivets"): the
+Component Reviewer reads that Component's rows and Interface text, not the
+prose. Never write that a detail is "never left out", and never state a
+smaller minimum, such as "every rivet at least 1.0 mm across".
+
 ## The block
 
 ````markdown
@@ -166,6 +188,8 @@ A contract is ready only when all of these hold. Report every failure at once.
   with `n` in 1..`count`.
 - Every Unique Geometry has at least one reference whose `shows` names it.
 - Every reference file exists beside `CONTRACT.md` and meets the image rules.
+- The prose carries the blunt-edge and detail rules above, states no
+  minimum below the library's, and every detail left out has its row.
 - **At most 16 assembly-scoped requirements, and at most 4 per Unique
   Geometry** (ADR 0072). Both limits are input guards whose provenance the ADR
   records, not judgements about the toy. A contract that exceeds either one is

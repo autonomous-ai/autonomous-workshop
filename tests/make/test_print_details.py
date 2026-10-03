@@ -2,6 +2,9 @@
 
 import hashlib
 import importlib.util
+import json
+import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -14,12 +17,20 @@ from workshop.runtime.package_data import product_run_domain_skill_roots
 REPOSITORY = Path(__file__).resolve().parents[2]
 ROOT = product_run_domain_skill_roots()["print-details"]
 SCRIPT = ROOT / "scripts" / "print_details.py"
+CAD = product_run_domain_skill_roots()["cad"] / "scripts"
 
 
 def load_module():
     spec = importlib.util.spec_from_file_location("workshop_test_print_details", SCRIPT)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_printlib():
+    spec = importlib.util.spec_from_file_location("workshop_test_printlib", CAD / "printlib.py")
+    module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
@@ -154,6 +165,117 @@ class PrintDetailsSkillTest(unittest.TestCase):
         self.assertAlmostEqual(box.min.Z, 3 - math.tan(math.radians(52)), delta=0.02)
         self.assertEqual(round(box.max.Z, 6), 10.0)
 
+    def _build(self, steps):
+        """Run `steps(pd)` as a build: refusals are collected, then returned."""
+        previous = os.environ.get(self.module.BUILD_ENV)
+        os.environ[self.module.BUILD_ENV] = "1"
+        self.module.DETAIL_REFUSALS.clear()
+        try:
+            body = steps(self.module.Details(nozzle=0.4))
+            return body, self.module.refusal_error()
+        finally:
+            if previous is None:
+                os.environ.pop(self.module.BUILD_ENV, None)
+            else:
+                os.environ[self.module.BUILD_ENV] = previous
+
+    def test_a_build_reports_every_detail_refusal_at_once_with_a_passing_value(self):
+        # Issue #86: three bad details fail the build once, all three named.
+        def steps(pd):
+            body = pd.rivet(self.block, (0, 0, 12), d=1.5)
+            body = pd.band(body, pd.segment((-5, 6, 12), (5, 6, 12)), width=0.6)
+            body = pd.boss(body, (6, -6, 12))
+            return pd.rivets(body, pd.along((-2, -6, 12), (2, -6, 12), 3), d=2.0, h=0.6)
+        body, error = self._build(steps)
+        self.assertIsInstance(error, self.module.DetailRefusals)
+        self.assertIsInstance(error, self.module.PrintLimitError)
+        refusals = error.refusals
+        self.assertEqual([item["feature"] for item in refusals], ["rivet", "band", "rivet"])
+        for item in refusals:
+            with self.subTest(refusal=item["site"]):
+                self.assertTrue(item["site"].startswith("test_print_details.py:"), item["site"])
+                self.assertTrue(item["passes"])
+        self.assertEqual(refusals[0]["passes"], "d >= 2.00 mm")
+        self.assertIn("min feature", refusals[0]["reason"])
+        self.assertEqual(refusals[1]["passes"], "width >= 0.90 mm")
+        self.assertEqual(refusals[2]["passes"], "copies at least 2.50 mm apart, centre to centre (now 2.00 mm)")
+        self.assertIn("gap between copies", refusals[2]["reason"])
+        # Each refusal is one parseable line of the error, for make_round.
+        lines = [line for line in str(error).splitlines() if line.startswith(self.module.REFUSAL_LINE)]
+        self.assertEqual(len(lines), 3)
+        self.assertEqual(self.module.DETAIL_REFUSALS, [])
+        # The good boss between them was still made; nothing else was.
+        boss = self.module.Details().boss(self.block, (6, -6, 12))
+        self.assertAlmostEqual(body.volume, boss.volume, places=3)
+
+    def test_a_passing_value_passes_at_that_spot(self):
+        from build123d import Cylinder, Pos
+        drum = Pos(0, 0, 8) * Cylinder(3, 16)
+        _, error = self._build(lambda pd: pd.rivet(drum, (0, -3, 8), d=4.0, h=0.6))
+        (refusal,) = error.refusals
+        self.assertIn("the host falls", refusal["reason"])
+        taller, smaller = re.fullmatch(r"h >= ([0-9.]+) mm or d <= ([0-9.]+) mm at this spot",
+                                       refusal["passes"]).groups()
+        pd = self.module.Details(nozzle=0.4)
+        self.assertTrue(pd.rivet(drum, (0, -3, 8), d=4.0, h=float(taller)).is_valid)
+        self.assertTrue(pd.rivet(drum, (0, -3, 8), d=float(smaller), h=0.6).is_valid)
+        helm = Pos(0, 0, 8) * Cylinder(4, 16)
+        path = ((0, -4, 2), (0, -4, 10))
+        _, error = self._build(lambda pd: pd.band(helm, pd.segment(*path), width=6.5, height=0.8))
+        taller, smaller = re.fullmatch(r"height >= ([0-9.]+) mm or width <= ([0-9.]+) mm at this spot",
+                                       error.refusals[0]["passes"]).groups()
+        self.assertTrue(pd.band(helm, pd.segment(*path), width=6.5, height=float(taller)).is_valid)
+        self.assertTrue(pd.band(helm, pd.segment(*path), width=float(smaller), height=0.8).is_valid)
+
+    def test_outside_a_build_a_refusal_raises_at_once_with_its_passing_value(self):
+        self.assertNotEqual(os.environ.get(self.module.BUILD_ENV), "1")
+        pd = self.module.Details(nozzle=0.4)
+        with self.assertRaises(self.module.PrintLimitError) as raised:
+            pd.rivet(self.block, (0, 0, 12), d=1.5)
+        self.assertNotIsInstance(raised.exception, self.module.DetailRefusals)
+        self.assertEqual(raised.exception.passing, "d >= 2.00 mm")
+        self.assertEqual(self.module.DETAIL_REFUSALS, [])
+
+    def test_a_build_boundary_raises_the_refusals_with_the_error_that_stopped_it(self):
+        # A rivet standing on a refused band is no longer on the host: the
+        # build reports the band's refusal and then that error.
+        printlib = _load_printlib()
+
+        def steps(pd):
+            body = pd.band(self.block, pd.segment((-5, 0, 12), (5, 0, 12)), width=0.6)
+            return pd.rivet(body, (0, 0, 13.0), d=2.0)
+        with self.assertRaises(self.module.DetailRefusals) as raised:
+            with printlib.detail_build():
+                steps(self.module.Details(nozzle=0.4))
+        self.assertEqual([item["feature"] for item in raised.exception.refusals], ["band"])
+        self.assertIsInstance(raised.exception.after, ValueError)
+        self.assertIn("then the build stopped: ValueError", str(raised.exception))
+        self.assertNotEqual(os.environ.get(self.module.BUILD_ENV), "1")
+        with printlib.detail_build():
+            self.module.Details().boss(self.block, (0, 0, 12))
+
+    def test_gen_fails_once_with_every_refusal_of_the_part(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            self.module.install(project)
+            (project / "part_helm.step.py").write_text(
+                "from build123d import *\n"
+                "from features import print_details\n\n"
+                "pd = print_details.Details(nozzle=0.4)\n\n\n"
+                "def gen_step():\n"
+                "    body = Pos(0, 0, 6) * Box(24, 24, 12)\n"
+                "    body = pd.rivet(body, (0, 0, 12), d=1.5)\n"
+                "    body = pd.band(body, pd.segment((-5, 6, 12), (5, 6, 12)), width=0.6)\n"
+                "    return pd.slit(body, (6, -6, 12), width=0.3)\n", encoding="utf-8")
+            done = subprocess.run([sys.executable, str(CAD / "gen"), "part_helm.step.py", "--write", "--json"],
+                                  cwd=project, capture_output=True, text=True, timeout=600)
+            self.assertEqual(done.returncode, 1, done.stdout + done.stderr)
+            self.assertFalse((project / "part_helm.step").exists())
+            lines = [line for line in done.stderr.splitlines() if line.startswith("detail-refusal ")]
+            self.assertEqual([json.loads(line[len("detail-refusal "):])["site"] for line in lines],
+                             ["part_helm.step.py:9", "part_helm.step.py:10", "part_helm.step.py:11"])
+            self.assertIn("3 Detail Refusals in this build", done.stderr)
+
     def test_limits_follow_the_nozzle(self):
         fine, coarse = self.module.limits(0.4), self.module.limits(0.6)
         self.assertEqual(fine["min_wall"][0], 0.8)
@@ -190,6 +312,37 @@ class PrintDetailsSkillTest(unittest.TestCase):
                        "a chamfer or taper that leaves an edge thinner than that"):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, reviewer)
+
+    def test_design_a_toy_takes_its_minimums_from_the_library(self):
+        # Issue #87: one source for the print minimums, at design time too.
+        design = (REPOSITORY / ".claude/skills/design-a-toy/SKILL.md").read_text(encoding="utf-8")
+        stage = design[design.index("## Stage 3c"):design.index("## Stage 3d")]
+        rows = re.findall(r"^\|[^|\n]+\| [^|\n]*?([0-9.]+) mm[^|\n]*\| `(\w+)` \|$", stage, re.MULTILINE)
+        fine = self.module.limits(0.4)
+        self.assertEqual({name for _value, name in rows},
+                         {"min_wall", "min_feature", "min_relief_width", "min_relief_height",
+                          "min_cut_width", "min_cut_depth", "min_web"})
+        for value, name in rows:
+            with self.subTest(limit=name):
+                self.assertAlmostEqual(float(value), fine[name][0])
+        flat = " ".join(design.split())
+        for phrase in ("print_details.py --limits --nozzle N",
+                       "A drawn detail under the print minimums is enlarged to the minimum; when the "
+                       "enlarged detail does not fit its spot, it is left out, and this contract names it.",
+                       "The host is at least the detail's size plus 0.5 mm on each side",
+                       "keeps at least 0.5 mm above it",
+                       "Copies in a row keep a 0.5 mm gap",
+                       "a bigger toy, then a bigger host, then the detail left out",
+                       "Worked example: Broken God's crest helm",
+                       "The brow band is a plain raised band and carries no rivets"):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, flat)
+        self.assertNotIn("rivet, boss, ridge or groove | 1.0 mm", stage)
+        contract_format = " ".join((REPOSITORY / ".claude/skills/build-a-toy/CONTRACT-FORMAT.md"
+                                    ).read_text(encoding="utf-8").split())
+        self.assertIn("## Print minimums in the prose", contract_format)
+        self.assertIn("a rivet, boss or dome is at least 2.0 mm across", contract_format)
+        self.assertIn("it is left out, and this contract names it.", contract_format)
 
     def test_workers_and_the_make_reference_name_the_library(self):
         worker = " ".join(

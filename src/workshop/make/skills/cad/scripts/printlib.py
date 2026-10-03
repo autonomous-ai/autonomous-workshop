@@ -37,6 +37,7 @@ import contextlib
 import importlib.util
 import io
 import math
+import os
 import sys
 from pathlib import Path
 
@@ -219,6 +220,48 @@ def purge_project_modules(project: Path) -> None:
             sys.modules.pop(name, None)
 
 
+# Workshop (#86): print-details collects every Detail Refusal of a build while
+# this is set, instead of raising at the first; the build raises them at once.
+DETAIL_BUILD_ENV = "WORKSHOP_PRINT_DETAILS_BUILD"
+REFUSAL_REGISTRY = "DETAIL_REFUSALS"
+
+
+def raise_detail_refusals(after: BaseException | None = None) -> None:
+    """Raise the build's Detail Refusals from whichever loaded module holds
+    them (the project's `features/print_details.py`, under any import name)."""
+    for module in list(sys.modules.values()):
+        registry = getattr(module, REFUSAL_REGISTRY, None)
+        collect = getattr(module, "refusal_error", None)
+        if isinstance(registry, list) and registry and callable(collect):
+            error = collect(after)
+            if error is not None:
+                raise error from after
+
+
+@contextlib.contextmanager
+def detail_build():
+    """Run a generator as one build: every Detail Refusal is reported when it
+    ends, together with any error that stopped it."""
+    for module in list(sys.modules.values()):
+        registry = getattr(module, REFUSAL_REGISTRY, None)
+        if isinstance(registry, list):
+            registry.clear()          # an earlier build's, never this one's
+    previous = os.environ.get(DETAIL_BUILD_ENV)
+    os.environ[DETAIL_BUILD_ENV] = "1"
+    try:
+        try:
+            yield
+        except Exception as error:
+            raise_detail_refusals(error)
+            raise
+        raise_detail_refusals()
+    finally:
+        if previous is None:
+            os.environ.pop(DETAIL_BUILD_ENV, None)
+        else:
+            os.environ[DETAIL_BUILD_ENV] = previous
+
+
 def build_entry(path: Path, namespace: str, *, printed: bool = False):
     """Build one entry and return its shape, with generator stdout swallowed.
 
@@ -226,7 +269,7 @@ def build_entry(path: Path, namespace: str, *, printed: bool = False):
     it defines one (a multi-colour plate), otherwise `gen_step()`.
     """
     sink = io.StringIO()
-    with project_on_path(path.parent), contextlib.redirect_stdout(sink):
+    with project_on_path(path.parent), contextlib.redirect_stdout(sink), detail_build():
         module = load_entry(path, namespace)
         name = GEN_FUNC
         if printed and callable(getattr(module, PRINT_UNION_FUNC, None)):

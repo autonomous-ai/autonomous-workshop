@@ -46,9 +46,14 @@ one section a failure you cannot place requires.
   `from features import print_details`, `pd = print_details.Details(
   nozzle=<nozzle>)`, then `body = pd.rivets(body, ...)` and so on, as
   `.agents/skills/print-details/SKILL.md` lists. Do not model such detail by
-  hand. A `PrintLimitError` names the limit and its wiki page: change the
-  size, spot or shape it names, or leave out a detail below the limits and
-  say so in your report.
+  hand. A refused detail is a Detail Refusal: the build fails once with
+  every refusal, and your round summary lists each on a `refuse` line with
+  its feature, the line that asked for it, why, and what passes there (the
+  largest `d`, the smallest `h`, the spacing). Repair every one in the same
+  edit, to the passing value it names. Two refusals are the limit: when a
+  detail at the same spot is refused in two rounds (an `again REFUSE`
+  line), leave it out of your code and name it, with its passing value, in
+  your report. Never model it by hand instead.
 - End every point, chisel, keel, crest and V underside in a flat land at
   least one print minimum across (0.8 mm at a 0.4 mm nozzle; never the
   geometry's wall_min_mm, which sizes load-bearing sections):
@@ -111,7 +116,7 @@ one section a failure you cannot place requires.
   locked, or when you are blocked. Use 10 lines or fewer: status (passed and
   awaiting review, locked, or blocked), shape rounds used, the latest round
   id, its packet sha256 and B-rep identity, the review round you acted on,
-  and open issues.
+  each detail you left out after two refusals, and open issues.
   Send no logs and no images.
 - Stay available after your Component locks: until the assembly passes, an
   unlock comes back to you rather than to a new worker.

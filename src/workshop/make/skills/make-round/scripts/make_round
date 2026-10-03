@@ -788,12 +788,53 @@ def parse_build(stdout: str, stderr: str, returncode: int) -> dict:
     """
     if returncode == 0:
         return {"verdict": "PASS", "failures": []}
+    refusals = detail_refusals(stderr or stdout)
+    if refusals:
+        # Issue #86: the summary carries every Detail Refusal of the build,
+        # so the worker never needs the log.
+        return {"verdict": "FAIL", "detail_refusals": refusals,
+                "failures": ["%d Detail Refusal(s); see the refuse lines" % len(refusals)]}
     fails = []
     for line in (stderr or stdout).splitlines():
         stripped = line.strip()
         if stripped and not stripped.startswith("{"):
             fails.append(stripped[:80])
     return {"verdict": "FAIL", "failures": fails[-4:] or ["gen exit %d" % returncode]}
+
+
+# print-details marks each Detail Refusal of a failed build with this, then
+# its feature, site, reason and passing value as JSON (issue #86).
+REFUSAL_LINE = "detail-refusal "
+
+
+def detail_refusals(text: str) -> list[dict]:
+    """Every Detail Refusal a failed build reported, in order."""
+    found = []
+    for line in (text or "").splitlines():
+        at = line.find(REFUSAL_LINE + "{")
+        if at < 0:
+            continue
+        try:
+            item = json.loads(line[at + len(REFUSAL_LINE):])
+        except ValueError:
+            continue
+        if isinstance(item, dict) and {"feature", "site", "reason", "passes"} <= item.keys():
+            found.append({key: str(item[key]) for key in ("feature", "site", "reason", "passes")})
+    return found
+
+
+def refusal_keys(build: dict) -> list[str]:
+    """What a later round compares to find a refused detail again: its
+    feature and the line that asked for it."""
+    return ["%s@%s" % (item["feature"], item["site"]) for item in build.get("detail_refusals") or []]
+
+
+def repeated_refusals(previous: list | None, current: dict) -> list[str]:
+    """A detail refused this round that was refused at the same site in the
+    part's previous round. Counted apart from Repeated Print Defects: the
+    worker leaves such a detail out (issue #86)."""
+    before = set(previous or [])
+    return [key for key in refusal_keys(current) if key in before]
 
 
 def parse_identity(stdout: str) -> str | None:
@@ -1072,6 +1113,12 @@ def render_summary(summary: dict) -> str:
         item = summary["build"][role]
         extra = ("  " + "; ".join(item["failures"])) if item["verdict"] == "FAIL" and item["failures"] else ""
         lines.append("  build %-4s %-28s%s" % (item["verdict"], role, extra))
+        for refusal in item.get("detail_refusals") or []:
+            lines.append("  refuse %s at %s: %s; passes with %s" % (
+                refusal["feature"], refusal["site"], refusal["reason"], refusal["passes"]))
+        for key in item.get("repeated_refusals") or []:
+            lines.append("  again REFUSE %s  refused at the same site last round too: leave it out and "
+                         "name it in your report" % key)
         gates = (summary.get("print") or {}).get(role)
         if gates is None:
             continue
@@ -2873,6 +2920,9 @@ def make_round(args) -> int:
         build[role] = {"verdict": "PASS", "failures": []}
     for role, parsed in build_failures.items():
         build[role] = parsed
+        again = repeated_refusals((state.get("refusals") or {}).get(role), parsed)
+        if again:
+            parsed["repeated_refusals"] = again
         if role not in changed:
             changed.append(role)
 
@@ -3021,6 +3071,9 @@ def make_round(args) -> int:
         # Repeated Print Defects (issue #82): what run comparisons count.
         "repeated_print_defects": {role: item["repeated_defects"] for role, item in printing.items()
                                    if item.get("repeated_defects")},
+        # Repeated Detail Refusals (issue #86), counted apart from print defects.
+        "repeated_detail_refusals": {role: item["repeated_refusals"] for role, item in build.items()
+                                     if item.get("repeated_refusals")},
         "reused": sorted(role for role in printing if printing[role].get("measured_round") != round_index),
         "nozzle": args.nozzle,
         "overhang_angle": args.overhang_angle,
@@ -3073,6 +3126,7 @@ def make_round(args) -> int:
         "parts": digests,
         "print": printing,
         "print_context": context,
+        "refusals": {role: refusal_keys(item) for role, item in build.items() if refusal_keys(item)},
         "identity": round_identity,
         "steps": {
             role: file_hash(part.with_name(part.name[:-len(".py")]))
