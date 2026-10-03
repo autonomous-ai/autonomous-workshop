@@ -1873,3 +1873,17 @@ Report with an applied amendment that names it. While an amendment awaits
 review an assembly round and `--full` refuse to run;
 `--contract-amendments` lists them. Nothing is built for a proposal or a
 review. This changes the `make-round` fingerprint.
+
+## Local change: a motion state has no fixed byte limit (2026-10-03)
+
+A Workshop-local change (issue #93, ADR 0060 amendment) to Workshop's own
+`cad/scripts/motion_presentation.py`. `generate` no longer refuses a posed
+state whose canonical encoding exceeds 20 MiB. That cap was the on-disk
+`state-*.stl` artifact limit; since ADR 0062 the state is tessellated in
+memory and bound only by hash, validation never checked its size, and it
+fired after posing and rendering had finished, so it bounded neither memory
+nor time. It did force a detailed toy to change locked, contract-required
+rivets. Validation still rebuilds every state at the same fixed tessellation
+and refuses one whose hash differs. `references/motion-presentation.md`
+says not to simplify geometry for the animation. This changes the `cad`
+fingerprint; materialized runs keep their copied bytes.
