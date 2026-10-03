@@ -85,6 +85,10 @@ from workshop.release.renders import (
 )
 from workshop.make.native import NativeMade, validate_build_groups
 from workshop.make.role_agents import make_role_agent_files
+from workshop.make.blocked_reports import (
+    run_blocked_reports,
+    verify_no_open_blocked_reports,
+)
 from workshop.make.role_guard import (
     MAKE_ROUND_GUARD_MANAGER_IDS,
     verify_component_round_nonces,
@@ -7699,6 +7703,13 @@ def _evaluate_make_stage(
             require_every_component=checkpoint.effort == "spark",
             bind_reviewers=checkpoint.component_reviewer_binding,
         )
+        # Issue #88: no Make acceptance while a Blocked Report is open.
+        blocked_reports = verify_no_open_blocked_reports(
+            run.run_root
+            .joinpath(*PurePosixPath(made.product_root).parts)
+            .joinpath(*PurePosixPath(made.cad_project_path).parts),
+            wish_sha256=checkpoint.wish_sha256,
+        )
         # Spark consumes Make's accepted output, not another engineering
         # acceptance pass. Keep only exact-byte and upstream identity checks.
         product_checks = {}
@@ -7724,6 +7735,8 @@ def _evaluate_make_stage(
         reference_conflicts = _made_reference_conflicts(made.product)
         if reference_conflicts:
             product_checks["reference_conflicts"] = reference_conflicts
+        if blocked_reports:
+            product_checks["blocked_reports"] = blocked_reports
         additional = _manifest_agent_artifacts(
             made.product_root, made.product_manifest
         )
@@ -10366,6 +10379,9 @@ def _native_receipt(
     contract_amendments = (
         _contract_amendment_history(paths.host_state) if paths is not None else []
     )
+    # Issue #88: every Blocked Report, read from the run's own ledgers so a
+    # run that stopped before Make acceptance still lists them.
+    blocked_reports = run_blocked_reports(paths.workspace) if paths is not None else []
     local_release_run = False
     if paths is not None:
         try:
@@ -10586,6 +10602,7 @@ def _native_receipt(
         "interfaces": interfaces,
         "reference_conflicts": reference_conflicts,
         "contract_amendments": contract_amendments,
+        "blocked_reports": blocked_reports,
         "product_id": checkpoint.product_id,
         "status": visible_status,
         "stage": visible_stage,

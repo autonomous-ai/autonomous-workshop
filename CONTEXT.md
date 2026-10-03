@@ -320,6 +320,29 @@ Component Worker leaves out a detail refused at the same spot in two rounds
 and names it in its report (issue #86).
 _Avoid_: Print failure, build error
 
+**Contract Contradiction**:
+Two Design Contract statements that cannot both hold. A print rule the
+contract states (the print stance, "no part needs support") counts as a
+statement, so geometry that cannot print in its stated stance is a Contract
+Contradiction. Neither the Component Worker nor the Workshop Manager chooses
+between the statements: the Manager turns it into a `need` quoting both
+(ADR 0080, issue #88).
+_Avoid_: Conflict (a Reference Conflict is an image against the contract), impossible spec
+
+**Blocked Report**:
+A Component Worker's recorded report, made with `make_round
+--report-blocked`, that its contract rows contradict or that it cannot
+proceed without a Workshop Manager decision. It names the Component, the
+worker's latest round and the rows, verbatim. It stays open until the
+Manager answers it with a Decision or a `need`; a Decision that waits on
+another Component keeps it open until that Component's next passing round,
+when the Manager wakes the worker again. While one is open the host refuses
+an assembly round, the Make proposal and Make acceptance, and on Claude Code
+the root's turn end unless it ends on a recorded need. The run report lists
+every Blocked Report, how it was cleared and how long it stayed open (issue
+#88).
+_Avoid_: Blocked message, stuck worker
+
 **Unmeasurable Mesh**:
 A print gate's verdict on a valid B-rep whose tessellation stays open even
 after one finer retry. Inside and outside are undefined, so nothing was

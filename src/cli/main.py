@@ -490,6 +490,30 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                         item.get("contract", "?"),
                     )
                 )
+    blocked = receipt.get("blocked_reports")
+    if isinstance(blocked, (list, tuple)):
+        # Issue #88: every Blocked Report, how it was cleared and how long it
+        # stayed open.
+        for item in blocked:
+            if not isinstance(item, Mapping):
+                continue
+            if item.get("status") == "invalid":
+                print("Blocked Report ledger invalid: %s" % item.get("ledger", "?"))
+                continue
+            seconds = item.get("open_seconds")
+            held = "%dm" % (seconds // 60) if type(seconds) is int else "?"
+            cleared = item.get("cleared_by")
+            print(
+                "Blocked Report %s: %s %s — %s %s (%s)"
+                % (
+                    item.get("report", "?"),
+                    item.get("component", "?"),
+                    "r%04d" % item["round"] if type(item.get("round")) is int else "before its first round",
+                    "cleared by a %s after" % cleared if cleared else "%s for" % item.get("status", "open"),
+                    held,
+                    "; ".join(str(row) for row in item.get("rows") or ()),
+                )
+            )
     amendments = receipt.get("contract_amendments")
     if isinstance(amendments, (list, tuple)):
         # ADR 0083: a camera-only contract amendment the host recorded.

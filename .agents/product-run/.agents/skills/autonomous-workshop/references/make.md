@@ -299,7 +299,7 @@ are separate. Frozen older runs retain their materialized rules and tools.
    unlock to the worker that already holds that Component.
 
    Never end your turn while a Component Worker or a Component Reviewer
-   request is still running. Wait for it with the long wait, record what it
+   request is still running, or while a Blocked Report is open (below). Wait for it with the long wait, record what it
    returns, and end your turn only on a stage proposal, a recorded need
    (`stage_proposal.py ... need`), or a host stop. An ended turn is not a
    wait: the session can end before a worker reports, and that worker's
@@ -370,8 +370,50 @@ are separate. Frozen older runs retain their materialized rules and tools.
    When two Design Contract statements cannot both hold, for example two
    Components that print on a mating face that also carries a peg, stop and
    return a `waiting` need that quotes both statements (`SKILL.md`). Do not
-   choose between them.
+   choose between them. A print rule the contract states (the stance, "no
+   part needs support") is a statement too, so geometry that cannot print in
+   its stated stance is such a Contract Contradiction.
    A freedom the contract explicitly grants stays yours to decide.
+
+   A worker that is blocked records a Blocked Report (issue #88) before it
+   reports blocked: `make_round --component part_<id>.step.py
+   --report-blocked`, quoting its contract rows verbatim, beside its rounds
+   in `measure/blocked-reports.jsonl`. The same tool works on Codex and on
+   Claude Code. Every blocked report you receive is yours to clear, at once
+   and only through the tool:
+
+   ```bash
+   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
+     --clear-blocked <answer.json>
+   ```
+
+   - **Decision**, `{"report": N, "decision": "<ruling>"}`: a ruling inside
+     a freedom the contract grants, geometry the rows leave open. Send the
+     ruling to that worker unchanged. It answers with a new component round
+     or a new Blocked Report.
+   - **Decision waiting on a Component**, `{"report": N, "decision":
+     "<ruling>", "waits_on": "part_<other>.step.py"}`: the ruling needs
+     another Component to change first (the wing keeps below the slot
+     top). Send that Component's worker the change. The report stays open,
+     waiting, until that Component's next passing round. That round's
+     summary has a `wake` line, and `--blocked-reports` marks the report
+     `WOKEN`; then clear it with a new decision and send it to the blocked
+     worker. Never leave a woken worker idle.
+   - **Contract Contradiction**, `{"report": N, "need": "<one line quoting
+     every row of the report>"}`: the rows cannot both hold. The tool
+     prints the need command; seal it at once with `stage_proposal.py
+     --run-root . need --stage make --status waiting --reason "<the
+     need>"`.
+
+   Do not answer a blocked worker in prose alone: an answer the tool did not
+   record leaves the report open. While any Blocked Report is open or
+   waiting, `make_round` refuses an assembly round and `--full`, the
+   finalizer refuses the Make proposal, and the host refuses Make
+   acceptance. On Claude Code the host also refuses your turn end unless it
+   ends on a recorded need. Run `make_round <cad-project>
+   --blocked-reports` to list every report, its rows and its answers,
+   above all after a compaction. The run report lists every Blocked
+   Report, how you cleared it and how long it stayed open.
 
    Use explicit `--ref` only when a reference depicts that
    component by itself; motion checks belong to the assembled object. A pass

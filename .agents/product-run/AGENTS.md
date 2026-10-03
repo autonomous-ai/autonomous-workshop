@@ -207,6 +207,17 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   time.sleep(300)"`, read every notification it returns with, and repeat
   until each running agent has reported. This rule is repeated in
   `references/make.md` for the same reason as the waiting rule above.
+- A Component Worker that is blocked records a Blocked Report with
+  `make_round --report-blocked`. Clear every one at once, only with
+  `make_round <cad-project> --clear-blocked`: a decision the worker
+  follows, a decision waiting on another Component (wake the worker again
+  after that Component's next passing round), or a need quoting its rows,
+  which you then seal with `stage_proposal.py ... need`. While one is open,
+  assembly, the Make proposal and Make acceptance are refused, and on
+  Claude Code so is your turn end unless it ends on a recorded need. After
+  a compaction run `make_round <cad-project> --blocked-reports`. The rules
+  are in `references/make.md`; this one lives here because it survives
+  compaction.
 - Keep every tool subprocess attached to the Manager's dedicated POSIX process
   session. Do not daemonize, detach, call `setsid`/`start_new_session`, or leave
   a background process running after a tool returns. Host timeout recovery

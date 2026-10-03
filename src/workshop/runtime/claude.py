@@ -118,7 +118,9 @@ def claude_hook_settings(script: Path) -> str:
     ``Bash`` admits make_round calls by role. ``Read`` and ``SubagentStart``
     give the guard the evidence that binds each Component Review to the
     reviewer that read its packet (ADR 0081, issue #77); an older guard
-    ignores both events.
+    ignores both events. ``Stop`` refuses the root's turn end while the
+    current Make attempt holds an open Blocked Report, unless the turn ends
+    on a recorded need (issue #88); an older guard ignores it too.
     """
 
     hook = [
@@ -135,6 +137,7 @@ def claude_hook_settings(script: Path) -> str:
                     {"matcher": "Bash", "hooks": hook},
                     {"matcher": "Read", "hooks": hook},
                 ],
+                "Stop": [{"hooks": hook}],
                 "SubagentStart": [{"hooks": hook}],
             }
         },

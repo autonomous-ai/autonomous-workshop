@@ -7,7 +7,8 @@
                [--full] [--out DIR] [--json] [--record-visual FEEDBACK.json]
                [--record-review REVIEW.json] [--record-unlock UNLOCK.json]
                [--shared-helpers] [--interface ID]
-               [--worker-nonce HEX] [--self-check]
+               [--report-blocked BLOCKED.json] [--clear-blocked ANSWER.json]
+               [--blocked-reports] [--worker-nonce HEX] [--self-check]
 
 Every verdict comes from the original cad tools, run unchanged; this script
 only sequences them, remembers what changed between rounds, and prints a
@@ -72,6 +73,15 @@ review may list reference_conflicts beside its differences: places where the
 reference shows what the contract forbids. The Design Contract wins: a
 conflict is not a difference, costs no Shape Round, never reaches the
 worker, and is reported when the run ends.
+A Component Worker that cannot proceed -- two contract rows that cannot
+both hold, or a choice only the Workshop Manager may make -- records a
+Blocked Report (--report-blocked, issue #88) quoting the rows verbatim, in
+measure/blocked-reports.jsonl beside its rounds. The Manager answers it
+(--clear-blocked) with a decision, a decision waiting on another Component,
+or a need quoting the rows. A waiting report stays open until that Component
+passes a round; --blocked-reports then marks it woken. While any report is
+open an assembly round and --full refuse to run, and the host refuses the
+Make proposal and Make acceptance.
 This tool makes no model calls.
 
 Exit 0: all checks and the recorded (or carried) review passed. Exit 1:
@@ -97,6 +107,13 @@ import time
 from pathlib import Path
 
 STATE_NAME = "make-round-state.json"
+# Blocked Reports (issue #88).
+BLOCKED_REPORTS_NAME = "blocked-reports.jsonl"
+OPEN_BLOCKED = frozenset({"open", "waiting"})
+MAX_BLOCKED_ROWS = 8
+MAX_BLOCKED_TEXT = 4000
+# A need is one line the stage finalizer seals (MAX_AGENT_NEED_CHARS).
+MAX_NEED_CHARS = 1024
 ROUNDS_DIR = "rounds"
 COMPONENT_ROUNDS_DIR = "component-rounds"
 TOOL_TIMEOUT_SECONDS = 900
@@ -1169,6 +1186,9 @@ def render_summary(summary: dict) -> str:
         if locked:
             lines.append("  lock  LOCKED by the %s of r%04d; change the geometry only after an unlock" % (
                 locked["source"].replace("-", " "), locked["round"]))
+        for item in summary.get("wakes_blocked") or ():
+            lines.append("  wake  Blocked Report %d of %s waited on this Component; tell the Manager to wake its worker"
+                         % (item["report"], item["component"]))
     if summary.get("motion_status") == "not-run":
         lines.append("  move  SKIP motion unverified")
     if summary.get("motion") is not None:
@@ -2039,6 +2059,292 @@ def record_unlock(project: Path, unlock_path, component: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Blocked Reports (issue #88). A Component Worker that cannot proceed records
+# a Blocked Report naming its contract rows verbatim; the Workshop Manager
+# answers it with a Decision (perhaps waiting on another Component) or a
+# need. While one is open, an assembly round and the final verifier refuse
+# to run, and the host refuses the Make proposal and Make acceptance.
+
+
+def blocked_ledger(project: Path) -> Path:
+    return project / "measure" / BLOCKED_REPORTS_NAME
+
+
+def _blocked_text(value, maximum: int) -> bool:
+    return isinstance(value, str) and 1 <= len(value.strip()) <= maximum
+
+
+def blocked_reports(content: str) -> dict:
+    """Every Blocked Report in one ledger, by number. Kept in step with
+    ``blocked_reports`` in workshop/make/make_round_guard.py, which the host
+    uses; this script is standalone and cannot import it."""
+
+    reports = {}
+    for line in content.splitlines():
+        event = json.loads(line)
+        if not isinstance(event, dict):
+            raise ValueError("a Blocked Report event is not an object")
+        kind, number = event.get("event"), event.get("report")
+        if type(number) is not int or not _blocked_text(event.get("at"), 64):
+            raise ValueError("a Blocked Report event has no number or time")
+        wish = event.get("wish_sha256")
+        if wish is not None and not (isinstance(wish, str) and re.fullmatch(r"[0-9a-f]{64}", wish)):
+            raise ValueError("a Blocked Report event has an invalid Wish binding")
+        if kind == "report":
+            rows, round_value = event.get("rows"), event.get("round")
+            if (
+                number != len(reports) + 1
+                or not _blocked_text(event.get("component"), 200)
+                or not (round_value is None or (type(round_value) is int and round_value >= 1))
+                or not isinstance(rows, list) or not 1 <= len(rows) <= MAX_BLOCKED_ROWS
+                or not all(_blocked_text(row, MAX_BLOCKED_TEXT) for row in rows)
+                or not _blocked_text(event.get("reason"), MAX_BLOCKED_TEXT)
+            ):
+                raise ValueError("Blocked Report %s is invalid" % number)
+            reports[number] = {
+                "report": number, "component": event["component"], "round": round_value,
+                "rows": list(rows), "reason": event["reason"], "opened_at": event["at"],
+                "wish_sha256": wish, "status": "open", "answers": [],
+            }
+            continue
+        report = reports.get(number)
+        if report is None or report["status"] not in OPEN_BLOCKED:
+            raise ValueError("Blocked Report %s is not open to answer" % number)
+        if wish != report["wish_sha256"]:
+            raise ValueError("Blocked Report %s is answered from another run" % number)
+        if kind == "decision":
+            waits_on, waits_round = event.get("waits_on"), event.get("waits_on_round")
+            if not _blocked_text(event.get("ruling"), MAX_BLOCKED_TEXT) or not (
+                (waits_on is None and waits_round is None)
+                or (_blocked_text(waits_on, 200) and waits_on != report["component"]
+                    and type(waits_round) is int and waits_round >= 0)
+            ):
+                raise ValueError("the decision on Blocked Report %s is invalid" % number)
+            answer = {"kind": "decision", "ruling": event["ruling"], "waits_on": waits_on,
+                      "waits_on_round": waits_round, "at": event["at"]}
+            report["status"] = "waiting" if waits_on is not None else "decided"
+        elif kind == "need":
+            if not _blocked_text(event.get("need"), MAX_NEED_CHARS):
+                raise ValueError("the need on Blocked Report %s is invalid" % number)
+            answer = {"kind": "need", "need": event["need"], "at": event["at"]}
+            report["status"] = "need"
+        else:
+            raise ValueError("unknown Blocked Report event %r" % kind)
+        report["answers"].append(answer)
+    return reports
+
+
+def read_blocked_reports(project: Path) -> dict:
+    ledger = blocked_ledger(project)
+    if not ledger.is_file():
+        return {}
+    return blocked_reports(ledger.read_text(encoding="utf-8"))
+
+
+def _utc_now() -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+
+def _wish_binding(project: Path) -> str | None:
+    """sha256 of the run's WISH.json: what binds a Blocked Report to its run."""
+
+    root = run_root(project)
+    return None if root is None else file_hash(root / "WISH.json")
+
+
+def _squash(text: str) -> str:
+    return " ".join(text.split())
+
+
+def _contract_strings(value) -> list:
+    if isinstance(value, str):
+        return [_squash(value)]
+    if isinstance(value, dict):
+        return [text for item in value.values() for text in _contract_strings(item)]
+    if isinstance(value, list):
+        return [text for item in value for text in _contract_strings(item)]
+    return []
+
+
+def _append_blocked(project: Path, event: dict) -> None:
+    ledger = blocked_ledger(project)
+    ledger.parent.mkdir(exist_ok=True)
+    with ledger.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(event, sort_keys=True) + "\n")
+
+
+def latest_component_round(project: Path, role: str) -> int | None:
+    try:
+        state = json.loads((project / "measure" / COMPONENT_ROUNDS_DIR / role / STATE_NAME).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    value = state.get("round") if isinstance(state, dict) else None
+    return value if type(value) is int and value >= 1 else None
+
+
+def passing_round_after(project: Path, role: str, after: int) -> int | None:
+    """The first round of a Component after ``after`` whose build and print
+    checks passed: what wakes a Blocked Report waiting on it."""
+
+    root = project / "measure" / COMPONENT_ROUNDS_DIR / role
+    for path in sorted(root.glob("r[0-9][0-9][0-9][0-9]/summary.json")) if root.is_dir() else ():
+        number = int(path.parent.name[1:])
+        if number <= after:
+            continue
+        try:
+            summary = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(summary, dict) and summary.get("checks_ok") is True:
+            return number
+    return None
+
+
+def blocked_view(project: Path, report: dict) -> dict:
+    """One report as its readers need it: a waiting report whose Component has
+    passed a round since is ``woken``, and the Manager must wake its worker."""
+
+    view = {key: report[key] for key in ("report", "component", "round", "rows", "reason",
+                                         "opened_at", "status", "answers")}
+    if report["status"] == "waiting":
+        last = report["answers"][-1]
+        woke = passing_round_after(project, last["waits_on"], last["waits_on_round"])
+        if woke is not None:
+            view["status"] = "woken"
+            view["woken_by"] = {"component": last["waits_on"], "round": woke}
+    return view
+
+
+def open_blocked(project: Path) -> list:
+    return [blocked_view(project, report) for _, report in sorted(read_blocked_reports(project).items())
+            if report["status"] in OPEN_BLOCKED]
+
+
+def blocked_refusal(project: Path) -> str:
+    """Why an assembly round or the final verifier may not run, or ''."""
+
+    try:
+        held = open_blocked(project)
+    except (OSError, UnicodeError, ValueError) as exc:
+        return "the Blocked Report ledger %s is invalid: %s" % (blocked_ledger(project), exc)
+    if not held:
+        return ""
+    return ("Blocked Report %s is open; answer each with --clear-blocked before an assembly "
+            "round (issue #88)" % ", ".join("%d (%s, %s)" % (item["report"], item["component"], item["status"])
+                                           for item in held))
+
+
+def report_blocked(project: Path, report_path, component: str) -> dict:
+    """Record a Component Worker's Blocked Report: its Component, its latest
+    round and the contract rows it names, verbatim."""
+
+    role, _source = component_role(project, component)
+    record = json.loads(Path(report_path).read_text(encoding="utf-8"))
+    if not isinstance(record, dict) or set(record) != {"rows", "reason"}:
+        raise ValueError("a Blocked Report needs rows (the contract rows, verbatim) and reason")
+    rows, reason = record["rows"], record["reason"]
+    if not isinstance(rows, list) or not 1 <= len(rows) <= MAX_BLOCKED_ROWS or not all(
+            _blocked_text(row, MAX_BLOCKED_TEXT) for row in rows):
+        raise ValueError("a Blocked Report names 1 to %d contract rows of 1 to %d characters"
+                         % (MAX_BLOCKED_ROWS, MAX_BLOCKED_TEXT))
+    if not _blocked_text(reason, MAX_BLOCKED_TEXT):
+        raise ValueError("a Blocked Report needs a reason of 1 to %d characters" % MAX_BLOCKED_TEXT)
+    contract = sealed_contract(project)
+    if contract is not None:
+        texts = _contract_strings(contract)
+        for row in rows:
+            if not any(_squash(row) in text for text in texts):
+                raise ValueError("row %r is not in the sealed Design Contract; quote each row verbatim" % row[:80])
+    reports = read_blocked_reports(project)
+    for number, item in sorted(reports.items()):
+        if item["component"] == role and item["status"] in OPEN_BLOCKED:
+            raise ValueError("Blocked Report %d of %s is still open; wait for the Manager's answer"
+                             % (number, role))
+    event = {"event": "report", "report": len(reports) + 1, "component": role,
+             "round": latest_component_round(project, role), "rows": [row.strip() for row in rows],
+             "reason": reason.strip(), "at": _utc_now(), "wish_sha256": _wish_binding(project)}
+    _append_blocked(project, event)
+    return event
+
+
+def clear_blocked(project: Path, answer_path) -> dict:
+    """Record the Workshop Manager's answer to one open Blocked Report:
+    ``{"report", "decision", "waits_on"?}`` or ``{"report", "need"}``."""
+
+    record = json.loads(Path(answer_path).read_text(encoding="utf-8"))
+    if not isinstance(record, dict) or set(record) not in (
+            {"report", "decision"}, {"report", "decision", "waits_on"}, {"report", "need"}):
+        raise ValueError('an answer is {"report", "decision"} with an optional "waits_on", '
+                         'or {"report", "need"}')
+    reports = read_blocked_reports(project)
+    number = record["report"]
+    report = reports.get(number) if type(number) is int else None
+    if report is None:
+        raise ValueError("there is no Blocked Report %r" % (number,))
+    if report["status"] not in OPEN_BLOCKED:
+        raise ValueError("Blocked Report %d is already answered (%s)" % (number, report["status"]))
+    event = {"report": number, "at": _utc_now(), "wish_sha256": report["wish_sha256"]}
+    if "need" in record:
+        need = record["need"]
+        if not isinstance(need, str) or not 1 <= len(need.strip()) <= MAX_NEED_CHARS or any(
+                ord(character) < 32 or ord(character) == 127 for character in need):
+            raise ValueError("a need is one line of 1 to %d characters" % MAX_NEED_CHARS)
+        missing = [row for row in report["rows"] if _squash(row) not in _squash(need)]
+        if missing:
+            raise ValueError("a need quotes every row of the report verbatim; it lacks %r" % missing[0][:80])
+        event.update(event="need", need=need.strip())
+    else:
+        ruling = record["decision"]
+        if not _blocked_text(ruling, MAX_BLOCKED_TEXT):
+            raise ValueError("a decision is a ruling of 1 to %d characters" % MAX_BLOCKED_TEXT)
+        waits_on, waits_round = None, None
+        if record.get("waits_on") is not None:
+            waits_on, _ = component_role(project, record["waits_on"])
+            if waits_on == report["component"]:
+                raise ValueError("a decision waits on another Component, not the blocked one")
+            waits_round = latest_component_round(project, waits_on) or 0
+        event.update(event="decision", ruling=ruling.strip(), waits_on=waits_on, waits_on_round=waits_round)
+    _append_blocked(project, event)
+    blocked_reports(blocked_ledger(project).read_text(encoding="utf-8"))
+    return event
+
+
+def render_blocked(views: list) -> str:
+    if not views:
+        return "make_round: no Blocked Reports"
+    lines = []
+    for item in views:
+        lines.append("blocked %d  %s  %s  round %s  opened %s" % (
+            item["report"], item["component"], item["status"].upper(),
+            "r%04d" % item["round"] if item["round"] else "-", item["opened_at"]))
+        for row in item["rows"]:
+            lines.append("  row  %s" % row)
+        lines.append("  why  %s" % item["reason"])
+        for answer in item["answers"]:
+            if answer["kind"] == "need":
+                lines.append("  need %s  %s" % (answer["at"], answer["need"]))
+            else:
+                lines.append("  decision %s%s  %s" % (
+                    answer["at"], "  waits on %s" % answer["waits_on"] if answer["waits_on"] else "",
+                    answer["ruling"]))
+        if item.get("woken_by"):
+            lines.append("  WAKE %s passed r%04d: send the %s worker its decision again"
+                         % (item["woken_by"]["component"], item["woken_by"]["round"], item["component"]))
+    return "\n".join(lines)
+
+
+def waking_reports(project: Path, role: str) -> list:
+    """The waiting Blocked Reports this Component's passing round wakes."""
+
+    try:
+        held = open_blocked(project)
+    except (OSError, UnicodeError, ValueError):
+        return []
+    return [{"report": item["report"], "component": item["component"]} for item in held
+            if item.get("woken_by", {}).get("component") == role]
+
+
+# ---------------------------------------------------------------------------
 # Interfaces between Components (ADR 0082): the Shared Helper freeze, Keep-out
 # Envelopes and Coupled Interface checks. Only the round mechanics live here;
 # every verdict comes from the print gates, check_envelope and check_motion.
@@ -2748,6 +3054,51 @@ def make_round(args) -> int:
     except (OSError, ValueError) as exc:
         print("make_round: %s" % exc, file=sys.stderr)
         return 2
+    if getattr(args, "blocked_reports", False):
+        try:
+            views = [blocked_view(project, report) for _, report in sorted(read_blocked_reports(project).items())]
+        except (OSError, UnicodeError, ValueError) as exc:
+            print("make_round: the Blocked Report ledger is invalid: %s" % exc, file=sys.stderr)
+            return 2
+        print(json.dumps(views, sort_keys=True) if args.json else render_blocked(views))
+        return 1 if any(item["status"] in ("open", "waiting", "woken") for item in views) else 0
+    if getattr(args, "report_blocked", None):
+        try:
+            event = report_blocked(project, args.report_blocked, args.component)
+        except (ValueError, KeyError, OSError, TypeError) as exc:
+            print("make_round: %s" % exc, file=sys.stderr)
+            return 2
+        print(json.dumps(event, sort_keys=True) if args.json else
+              "make_round: Blocked Report %d recorded for %s; report blocked to the Manager and wait for its answer"
+              % (event["report"], event["component"]))
+        return 0
+    if getattr(args, "clear_blocked", None):
+        try:
+            event = clear_blocked(project, args.clear_blocked)
+        except (ValueError, KeyError, OSError, TypeError) as exc:
+            print("make_round: %s" % exc, file=sys.stderr)
+            return 2
+        if args.json:
+            print(json.dumps(event, sort_keys=True))
+        elif event["event"] == "need":
+            print("make_round: Blocked Report %d became a need; stop the run with it now: "
+                  "stage_proposal.py --run-root . need --stage make --status waiting --reason %s"
+                  % (event["report"], json.dumps(event["need"])))
+        elif event["waits_on"]:
+            print("make_round: Blocked Report %d waits on %s; it stays open until %s passes a round, "
+                  "then send the worker this decision again" % (event["report"], event["waits_on"], event["waits_on"]))
+        else:
+            print("make_round: Blocked Report %d decided; send the worker this ruling unchanged. It "
+                  "follows it with a new component round or a new Blocked Report" % event["report"])
+        return 0
+    if args.component is None and not getattr(args, "shared_helpers", False) and not getattr(args, "interface", None) \
+            and (args.full or not args.record_visual):
+        # Issue #88: no assembly round and no final verifier while a Blocked
+        # Report is open.
+        refusal = blocked_refusal(project)
+        if refusal:
+            print("make_round: %s" % refusal, file=sys.stderr)
+            return 2
     if args.record_visual:
         try:
             summary = record_visual(project, args.record_visual, args.full, args.component,
@@ -3116,6 +3467,11 @@ def make_round(args) -> int:
             summary["contract"] = delivered
         if freeze is not None:
             summary["helper_freeze"] = freeze_report(project, freeze, helpers)
+        if ok:
+            # Issue #88: a passing round wakes every Blocked Report waiting on it.
+            woken = waking_reports(project, component)
+            if woken:
+                summary["wakes_blocked"] = woken
     if any(item["verdict"] == "UNVERIFIED" for item in printing.values()) or (motion and motion["verdict"] == "unverified"):
         summary["geometry_status"] = "unverified"
         summary["print_ready_claim"] = False
@@ -3379,6 +3735,9 @@ def main(argv=None) -> int:
     parser.add_argument("--record-unlock", metavar="UNLOCK.json", help="with --component: record that an assembly round's recorded finding requires a change to this locked Component, as {assembly_round, finding, reason}; builds nothing")
     parser.add_argument("--shared-helpers", action="store_true", help="Workshop Manager: build the samples under samples/, run the print gates on them, and freeze the Shared Helpers on a pass (ADR 0082)")
     parser.add_argument("--interface", metavar="ID", help="Workshop Manager: run the coupled motion check of one sealed Coupled Interface on its locked Components (ADR 0082)")
+    parser.add_argument("--report-blocked", metavar="BLOCKED.json", help="Component Worker, with --component: record a Blocked Report, {rows, reason}, quoting the contract rows verbatim; builds nothing (issue #88)")
+    parser.add_argument("--clear-blocked", metavar="ANSWER.json", help="Workshop Manager: answer one open Blocked Report, {report, decision[, waits_on]} or {report, need}")
+    parser.add_argument("--blocked-reports", action="store_true", help="list every Blocked Report and its answers; exit 1 while one is open")
     parser.add_argument("--full", action="store_true", help="with --record-visual: run final verifier after the independent blind review")
     parser.add_argument("--out", help="round directory (default measure/rounds/rNNNN)")
     parser.add_argument("--json", action="store_true", help="print the summary as one JSON line")
@@ -3405,6 +3764,20 @@ def main(argv=None) -> int:
         parser.error("--record-unlock requires --component")
     if args.record_unlock and (args.record_review or args.record_visual or args.full):
         parser.error("--record-unlock cannot be combined with --record-review, --record-visual or --full")
+    blocked_modes = [flag for flag, value in (("--report-blocked", args.report_blocked),
+                                               ("--clear-blocked", args.clear_blocked),
+                                               ("--blocked-reports", args.blocked_reports)) if value]
+    if blocked_modes:
+        if len(blocked_modes) > 1:
+            parser.error("%s are separate records" % " and ".join(blocked_modes))
+        if (args.entry or args.require_component_passes or args.record_visual or args.record_review
+                or args.record_unlock or args.full or args.out or args.refs or args.shared_helpers
+                or args.interface or args.worker_nonce):
+            parser.error("%s builds nothing and takes no round options" % blocked_modes[0])
+        if args.report_blocked and not args.component:
+            parser.error("--report-blocked requires --component")
+        if not args.report_blocked and args.component:
+            parser.error("%s takes no --component" % blocked_modes[0])
     if args.shared_helpers or args.interface:
         if args.shared_helpers and args.interface:
             parser.error("--shared-helpers and --interface are separate checks")

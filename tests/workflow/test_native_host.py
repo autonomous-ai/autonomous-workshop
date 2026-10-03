@@ -4748,6 +4748,22 @@ class ReferenceCameraAmendmentTest(unittest.TestCase):
         started = start_native_run(wish, effort="spark")
         return product_id, started, seen
 
+    def test_a_stopped_run_lists_its_blocked_reports(self):
+        # Issue #88: read from the run's own ledger, before any Make receipt.
+        product_id, started, _seen = self._run()
+        paths = native_run_paths(product_id)
+        measure = paths.workspace / ("artifacts/make/r%04d/product/cad/measure" % started["round"])
+        measure.mkdir(parents=True)
+        (measure / "blocked-reports.jsonl").write_text(json.dumps({
+            "event": "report", "report": 1, "component": "spine-housing", "round": 4,
+            "rows": ["prints on its front face"], "reason": "no support",
+            "at": "2026-10-03T02:16:00Z", "wish_sha256": started["wish_sha256"],
+        }) + "\n")
+        [listed] = native_run_status(product_id)["blocked_reports"]
+        self.assertEqual((listed["report"], listed["component"], listed["status"], listed["cleared_by"]),
+                         (1, "spine-housing", "open", None))
+        self.assertIsInstance(listed["open_seconds"], int)
+
     def test_an_amendment_changes_only_that_reference_camera(self):
         product_id, started, seen = self._run()
         self.assertEqual((started["status"], started["stage"]), ("waiting", "make"))
@@ -4771,6 +4787,8 @@ class ReferenceCameraAmendmentTest(unittest.TestCase):
              "sealed": [90, 15]}])
         # ADR 0084: a receipt with no Reference Conflict reports an empty list.
         self.assertEqual(resumed["reference_conflicts"], [])
+        # Issue #88: a run without a Blocked Report lists none.
+        self.assertEqual(resumed["blocked_reports"], [])
         records = [json.loads(line) for line in
                    (paths.host_state / "host-corrections.jsonl").read_text().splitlines()]
         amendment = [r for r in records if r["correction"] == "reference-camera-amendment"]

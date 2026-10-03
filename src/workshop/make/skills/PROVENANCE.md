@@ -1836,3 +1836,19 @@ part's refusal keys in its state and reports a detail refused at the same
 line in the previous round under `repeated_detail_refusals`, apart from
 `repeated_print_defects`. This changes the `cad`, `print-details` and
 `make-round` fingerprints.
+
+## Local change: Blocked Reports a Component Worker records and the Manager clears (2026-10-03)
+
+A Workshop-local change (issue #88) to Workshop's own `make-round`.
+`make_round --component part_<id>.step.py --report-blocked BLOCKED.json`
+records a Component Worker's Blocked Report in the CAD project's
+`measure/blocked-reports.jsonl`: the Component, its latest round and the
+contract rows it names, each checked verbatim (whitespace aside) against the
+sealed Design Contract, bound to the run by the sha256 of `WISH.json`. The
+Workshop Manager answers it with `--clear-blocked ANSWER.json`: a decision, a
+decision waiting on another Component, or a need that quotes every row. A
+waiting report stays open until that Component's next round whose checks
+pass; that round's summary carries `wakes_blocked`, and `--blocked-reports`
+marks the report woken. While any report is open or waiting an assembly
+round and `--full` refuse to run. Nothing is built for a report or an answer.
+This changes the `make-round` fingerprint.

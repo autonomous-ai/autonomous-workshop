@@ -420,6 +420,55 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             with self.subTest(reviewer=required):
                 self.assertIn(required, reviewer)
 
+    def test_a_blocked_worker_records_a_blocked_report_the_root_clears_with_the_tool(self):
+        # Issue #88: reporting and clearing go through make_round on both
+        # runtimes, and the root has a rule for every way to clear one.
+        def text(*parts):
+            return " ".join(REPOSITORY.joinpath(*parts).read_text(encoding="utf-8").split())
+
+        worker = text("src/workshop/make/agents/component-worker.toml")
+        for required in (
+            "a Contract Contradiction",
+            "A print rule your rows state (the stance, \"no part needs support\") is a row too",
+            "Record a Blocked Report first, then report blocked to the Manager",
+            "--report-blocked <blocked.json>",
+            "each row copied verbatim from your contract rows",
+            "Follow it with a new component round, or, if it still cannot hold, a new Blocked Report",
+            "If the decision waits on another Component, wait until the Manager wakes you again",
+        ):
+            with self.subTest(worker=required):
+                self.assertIn(required, worker)
+        make = text(".agents/product-run/.agents/skills/autonomous-workshop/references/make.md")
+        for required in (
+            "The same tool works on Codex and on Claude Code",
+            "--clear-blocked <answer.json>",
+            '**Decision**, `{"report": N, "decision": "<ruling>"}`',
+            '"waits_on": "part_<other>.step.py"}`',
+            "until that Component's next passing round",
+            "Never leave a woken worker idle",
+            '**Contract Contradiction**, `{"report": N, "need":',
+            "Do not answer a blocked worker in prose alone",
+            "the finalizer refuses the Make proposal, and the host refuses Make acceptance",
+            "On Claude Code the host also refuses your turn end unless it ends on a recorded need",
+            "--blocked-reports",
+            "or while a Blocked Report is open",
+        ):
+            with self.subTest(make=required):
+                self.assertIn(required, make)
+        constitution = text(".agents/product-run/AGENTS.md")
+        for required in ("make_round --report-blocked", "--clear-blocked", "--blocked-reports",
+                         "it survives compaction"):
+            with self.subTest(constitution=required):
+                self.assertIn(required, constitution)
+        skill = text("src/workshop/make/skills/make-round/SKILL.md")
+        for required in ("### Blocked Reports (issue #88)", "`wakes_blocked`",
+                         "no hook is needed to report or clear"):
+            with self.subTest(skill=required):
+                self.assertIn(required, skill)
+        context = text("CONTEXT.md")
+        self.assertIn("**Contract Contradiction**: Two Design Contract statements that cannot both hold", context)
+        self.assertIn("**Blocked Report**: A Component Worker's recorded report", context)
+
     def test_installed_lookup_reads_exact_packaged_snapshot(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
