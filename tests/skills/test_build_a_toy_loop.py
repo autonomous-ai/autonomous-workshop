@@ -372,6 +372,23 @@ class ClassifyTest(unittest.TestCase):
 
         self.assertEqual(result["class"], "contract-contradiction")
 
+    def test_a_fresh_report_at_a_progressing_budget_stop_gets_the_resume(self):
+        # Broken God attempt 16: the arm-right report opened 3 minutes before
+        # the budget ran out; the root answered it within the resume (#92).
+        evidence = {
+            "stop_category": "budget",
+            "blocked_reports_open": 1,
+            "progress": {"locked": 7, "repeated_print_defects": 1},
+            "previous_progress": {"locked": 7, "repeated_print_defects": 3},
+        }
+
+        self.assertEqual(ledger.classify(evidence)["class"], "budget-progressing")
+        evidence["budget_raised"] = True
+        self.assertEqual(ledger.classify(evidence)["class"], "contract-contradiction")
+        evidence["budget_raised"] = False
+        evidence["worker_blocked"] = ["arm-right: R24 vs the lug row"]
+        self.assertEqual(ledger.classify(evidence)["class"], "contract-contradiction")
+
     def test_a_camera_need_keeps_its_path(self):
         result = ledger.classify({"status": "waiting", "needs": [{"kind": "camera", "text": "ref-02"}],
                                   "blocked_reports_open": 1})
@@ -492,6 +509,14 @@ class SnapshotTest(unittest.TestCase):
         self.assertTrue(snapshot.stopped({"status": "active", "stop_category": "budget"}))
         self.assertFalse(snapshot.stopped({"status": "active", "stop_category": None}))
         self.assertTrue(snapshot.stopped({"status": "waiting"}))
+
+    def test_a_raised_budget_is_not_a_stop(self):
+        # The host keeps token-budget-stop.json after a resume raises the cap.
+        raised = {"status": "active", "stop_category": "budget",
+                  "budget": {"used_tokens": 100_000_122, "limit_tokens": 200_000_000}}
+        self.assertFalse(snapshot.stopped(raised))
+        raised["budget"]["used_tokens"] = 200_000_001
+        self.assertTrue(snapshot.stopped(raised))
 
     def test_an_active_run_is_not_stopped_by_its_default_category(self):
         # `workshop status` gives every run that is not complete a

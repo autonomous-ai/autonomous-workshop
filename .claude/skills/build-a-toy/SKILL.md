@@ -257,7 +257,7 @@ worker blocked on two rows).
 | Class | Evidence | What the loop does |
 |---|---|---|
 | Camera need | a Reference Camera mismatch `need` | Step 3's path, unchanged |
-| `contract-contradiction` | a `need` quoting contradicting statements, a Blocked Report open or waiting, a Component Worker's report quoting rows that cannot both hold, or a repeated print defect that a contract row forces | Fix it at the root (below) |
+| `contract-contradiction` | a `need` quoting contradicting statements, a Blocked Report open or waiting (except at a progressing attempt's first budget stop with no other such evidence: the raise gives the root its turn to answer), a Component Worker's report quoting rows that cannot both hold, or a repeated print defect that a contract row forces | Fix it at the root (below) |
 | `reference-mismatch` | an image contradicts the contract or the camera beyond what a Reference Conflict absorbs | Fix the image with `design-a-toy` Stage 3b; it is a visible change |
 | `harness-defect` | Workshop itself went wrong: a false stop, a miscount, a guard or tool refusing valid work | Open an issue, fix and merge it (below) |
 | `budget-progressing` | `stop_category` `budget`, and more Components locked or fewer repeated print defects than the previous attempt, with no raise yet in this attempt | Resume once with the cap raised by 100M tokens: `uv run workshop resume <wish-id> --max-tokens <limit + 100000000> --turn-minutes 360 --json`, with `--check-motion true` when the run has it; record `budget_raised: true` |

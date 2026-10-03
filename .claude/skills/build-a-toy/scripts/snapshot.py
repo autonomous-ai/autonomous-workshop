@@ -76,7 +76,16 @@ def snapshot(status: dict, workspace: Path, transcripts: Path) -> dict:
 def stopped(status: dict) -> bool:
     if status.get("status") != "active":
         return True
-    return status.get("stop_category") not in RUNNING_CATEGORIES
+    category = status.get("stop_category")
+    if category == "budget":
+        # The host keeps its budget stop record after a resume raises the
+        # cap, so an active run reads `budget` until it runs out again.
+        budget = status.get("budget") or {}
+        used, limit = budget.get("used_tokens"), budget.get("limit_tokens")
+        if isinstance(used, (int, float)) and isinstance(limit, (int, float)):
+            return used >= limit
+        return True
+    return category not in RUNNING_CATEGORIES
 
 
 def main(argv: list[str]) -> int:

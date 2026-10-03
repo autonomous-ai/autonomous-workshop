@@ -235,12 +235,31 @@ def classify(evidence: dict) -> dict:
     why = []
     if "contract-contradiction" in kinds:
         why.append("a need quotes contradicting contract statements")
-    if evidence.get("blocked_reports_open"):
-        why.append(f"{evidence['blocked_reports_open']} Blocked Report(s) open or waiting")
     for item in evidence.get("worker_blocked") or []:
         why.append(f"a Component Worker reported contradicting rows: {item}")
     for item in evidence.get("forced_repeats") or []:
         why.append(f"a repeated print defect a contract row forces: {item}")
+    if evidence.get("blocked_reports_open"):
+        # A budget stop can land before the root has a turn to answer a fresh
+        # report (Broken God attempt 16: opened 13:38, budget 13:41, answered
+        # 13:44 after the resume). With nothing else pointing at the contract,
+        # the one raise of a progressing attempt is that turn; a report still
+        # open at the next stop is a contradiction.
+        unanswered_for_budget = (
+            not why
+            and evidence.get("stop_category") == "budget"
+            and not evidence.get("budget_raised")
+            and progressing(evidence.get("progress"), evidence.get("previous_progress"))
+        )
+        if unanswered_for_budget:
+            return {
+                "class": "budget-progressing",
+                "why": [
+                    f"{evidence['blocked_reports_open']} Blocked Report(s) open when the budget ran out "
+                    "and nothing else points at the contract: the resume gives the root its turn to answer"
+                ],
+            }
+        why.append(f"{evidence['blocked_reports_open']} Blocked Report(s) open or waiting")
     if why:
         return {"class": "contract-contradiction", "why": why}
     if evidence.get("reference_mismatches"):
