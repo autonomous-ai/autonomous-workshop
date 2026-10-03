@@ -470,13 +470,71 @@ feature from one Component to another is a visible change: redo the images it
 touches. Compute the checks with a script only when the joints are too many to
 check reliably by hand.
 
+Then check every **ceiling over a moving part**, when the toy has one. A part
+that turns or slides through the inside of another part empties the space it
+sweeps: the other part may not stand anything there, from its bed up to the
+moving part's far face plus the clearance. In that other part's print stance,
+every ceiling, overhang or bridge over the swept space prints over air. For
+every moving part, take its full travel plus the clearance, and for every
+other part it passes through:
+
+- **Clearance first.** The ceiling sits at least the clearance beyond the
+  moving part's far face.
+- **Each ceiling point is bridged or vaulted.** It has support on both sides
+  along one line within 12 mm, or the ceiling rises from the nearest support
+  at 50 degrees (1.19 mm per mm) and still fits inside the part, with its
+  minimum wall behind it.
+- **Each seat holds.** A hinge, axle or bore seat in such a ceiling sits at
+  the height its pin needs: a vault that lifts the seat shortens the pin's
+  press depth.
+
+The swept space includes everything the contract fixes on the moving part:
+every gear at its tip radius (a 24-tooth gear at pitch radius 16 is a full
+disc unless the contract trims it), every boss, the teeth the travel needs
+plus one spare at each end, and the plate and blades. Leaving a piece out can
+only hide a failure. When the moving parts turn about axes normal to the
+other part's bed, compute the check with
+`python .claude/skills/design-a-toy/scripts/swept_ceiling.py CHECK.json --map`;
+its docstring gives the input. Otherwise sample the sweep by hand in each bed
+layer.
+
+Resolve a failure with the list above: a different stance or a split, so the
+ceiling becomes a wall or a bed face, comes before reshaping. A vault that
+lifts a seat changes its pin, and an opening that lets the travel through
+changes what the images show.
+
+Worked example: Broken God's spine housing (attempt 15, amend-i). The housing
+prints on its front face, the mating plane at Y 7.3, and builds toward its
+back wall, whose front face at Y 17.5 carries both wing hinge seats (X ±16,
+Z 198.8). Each wing's 24-tooth sector gear (pitch radius 16, tip radius 17.1)
+turns 35 degrees in the layer Y 11.8 to 17.1, and the heart pinion (tip
+radius 9.25 on X 0, Z 180.9) turns in front of the housing's pillar.
+
+| Check | Value | Limit | Verdict |
+|---|---|---|---|
+| Back wall behind the sector layer | Y 17.5 | 17.1 + 0.5 = 17.6 | fails |
+| Hinge seat, nearest support | 18.0 mm (the gear is a full disc round the seat) | bridge within 12 | fails |
+| Hinge seat, vault height | Y 39.1 | 17.5, where the Ø3 × 16 dowel is pressed 6.3 | fails |
+| Pillar face over the pinion, bridge | 19.5 mm | 12 | fails |
+
+Nothing caught this before the run. Amend-e had checked the hinge seats
+against the root bosses only, not the sector layer behind them, so the worker
+spent its rounds on the back wall's overhangs and then reported itself
+blocked. Keeping the wings below Z 206.2 inside the housing, the first fix
+proposed, still fails the check (the seat's vault reaches Y 27.1, nearest
+support 8.0), and Stage 3d refutes it anyway: the teeth that mesh through the
+35 degree travel reach Z 208.6 even without a spare tooth. The fix has to
+change the stance or split the housing, so that the back wall prints as a
+wall or on its own face.
+
 Record every check in the working notes as a table: image or joint, feature,
 size at contract scale, minimum, verdict, resolution.
 
 Done when: every feature the images show meets its minimum, every stacked or
 curved detail fits its host or is left out and named, every form and
-every hidden joint has a support-free stance, and every change is in both the
-contract and the images.
+every hidden joint has a support-free stance, every ceiling over a moving
+part's sweep is bridged or vaulted with its seats held, and every change is in
+both the contract and the images.
 
 ## Stage 3d - Check that the mechanism can move
 
