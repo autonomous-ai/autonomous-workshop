@@ -1,6 +1,6 @@
 ---
 name: build-a-toy
-description: Build a toy from a Design Contract until it conforms - run `workshop wish` as round 0, detect every nonconformance against the contract, and run `workshop fix` rounds until none remain, publishing only the conforming build. Use after `design-a-toy` produces a contract, or when an existing toy drifted from its contract.
+description: Build a toy from a Design Contract until it conforms - run `workshop wish` as round 0, detect every nonconformance against the contract, and run `workshop fix` rounds until none remain, publishing only the conforming build. Can run unattended - one session launches, watches and diagnoses every attempt, fixes Contract Contradictions at the root and relaunches, resuming from the ledger alone. Use after `design-a-toy` produces a contract, when an existing toy drifted from its contract, or to run or resume a toy's unattended loop.
 ---
 
 # Build a toy to its Design Contract
@@ -38,7 +38,8 @@ requirements; you only transcribe it.
 
 Create the ledger `<contract-dir>/build-a-toy/ledger.json` or resume from it.
 It records each round's number, kind (`wish` or `fix`), wish id, run
-workspace, toy directory, final status, brief path and finding ids. Resuming
+workspace, toy directory, final status, brief path and finding ids, and, in
+the unattended mode, the loop's own fields ([LEDGER.md](LEDGER.md)). Resuming
 this skill in a later session starts from the ledger, not from memory.
 
 Done when: the contract validates with no errors, and the ledger exists.
@@ -100,7 +101,8 @@ Poll `uv run workshop status <wish-id> --json`. Its `status` is `active`,
     unlimited and never count as a round.
   - `budget`: report plainly that **the token budget, the run's only
     backstop, is exhausted**. Hand the decision to the person. A resume
-    cannot proceed past it.
+    without a new `--max-tokens` cannot proceed past it. In the unattended
+    mode the loop diagnoses it instead (see below).
   - `gate-refusal` or `unclassified`: stop and show the person the receipt.
     A host gate refusal will not be resolved by resuming unchanged, and an
     unclassified stop is not safe to guess about. Ask the person how to
@@ -184,6 +186,170 @@ actually went live. Before concluding anything, read the effect ledger in
 `<workshop-home>/state/<wish-id>/factory-effects.sqlite3` and fetch the live
 page. Rows marked `factory-publish|unknown` mean the publication went out, so
 do not publish again.
+
+## Unattended mode
+
+The person can hand a toy's whole loop to one supervising session ("run
+Broken God unattended"). That session launches each attempt, watches it,
+diagnoses every stop, fixes what it found, and launches the next attempt. It
+writes no handoff file: `build-a-toy/ledger.json` is its only memory, and
+its fields are in [LEDGER.md](LEDGER.md). A new session resumes the loop by
+reading the ledger alone:
+
+```bash
+python3 .claude/skills/build-a-toy/scripts/ledger.py next <contract-dir>/build-a-toy/ledger.json
+```
+
+It does what that prints: `launch`, `watch`, `diagnose`, `fix`,
+`resume-budget`, `ask-owner`, or `migrate` for a ledger that predates this
+mode. A `diagnose` that carries `then_ask_owner` is still done first, so the
+owner is asked once, with the diagnosis in hand. Write every decision into the ledger **before** acting on it, then run
+`ledger.py check` on it. The tools are under `scripts/`, run from the
+Workshop checkout with `uv run python`; none assumes a platform or a home
+directory.
+
+Starting the loop is the person's approval of every Step 2 command and Step 6
+brief it builds with the settled run parameters. What still waits for the
+person is listed under "When the loop stops and asks".
+
+### One loop pass
+
+1. **Launch.** Make a fresh detached worktree at `origin/main` (`git fetch
+   origin && git worktree add --detach <dir> origin/main`) and run Step 2's
+   command from it. The round's name takes the next suffix (`<title> v<NN>`).
+   Record the attempt in `rounds`, set `loop.attempt`, `loop.wish_id`,
+   `loop.source_commit` and `loop.state: watching`.
+2. **Watch.** Run `scripts/watch.sh <wish-id>`; it prints a line whenever the
+   run's state changes and exits when the run stops. Answer a Reference
+   Camera need and resume a `transport` or `inspection-in-progress` stop
+   exactly as Step 3 says, and keep watching. A `complete` run goes to Step 4
+   as usual.
+3. **Diagnose** every other stop (`loop.state: diagnosing`). Gather the
+   evidence, never guess it:
+   - the receipt: `uv run workshop status <wish-id> --json` (`stop_category`,
+     `needs`, `blocked_reports`, `reference_conflicts`);
+   - progress: `scripts/tally.py <wish-id> --json` (`locked`,
+     `repeated_print_defects`) against the previous attempt's;
+   - cost: `scripts/tokens.py <wish-id> --json` (`cost_units`), added to
+     `cost_units.by_attempt`;
+   - the Component Workers' and the root's transcripts and the component
+     rounds, for what a worker reported blocked and what a repeated print
+     defect is made of.
+
+   Write the evidence to `build-a-toy/r00/attempt<N>-<id>/evidence.json`,
+   classify it with `ledger.py classify` on that file, and record one `stops`
+   entry with the class, the evidence and the progress.
+4. **Fix** by class (the table below), then set `loop.state: launch` once
+   nothing is pending.
+5. **Check the stop conditions** with `ledger.py next`. It prints
+   `ask-owner` with every reason that holds; otherwise the next pass
+   starts at 1.
+
+### Diagnosis classes
+
+Each stop is classified from evidence into exactly one class. The order is the
+precedence: a budget stop whose evidence also shows a contradiction is a
+Contract Contradiction (Broken God attempt 15 stopped on `budget` with a
+worker blocked on two rows).
+
+| Class | Evidence | What the loop does |
+|---|---|---|
+| Camera need | a Reference Camera mismatch `need` | Step 3's path, unchanged |
+| `contract-contradiction` | a `need` quoting contradicting statements, a Blocked Report open or waiting, a Component Worker's report quoting rows that cannot both hold, or a repeated print defect that a contract row forces | Fix it at the root (below) |
+| `reference-mismatch` | an image contradicts the contract or the camera beyond what a Reference Conflict absorbs | Fix the image with `design-a-toy` Stage 3b; it is a visible change |
+| `harness-defect` | Workshop itself went wrong: a false stop, a miscount, a guard or tool refusing valid work | Open an issue, fix and merge it (below) |
+| `budget-progressing` | `stop_category` `budget`, and more Components locked or fewer repeated print defects than the previous attempt, with no raise yet in this attempt | Resume once with the cap raised by 100M tokens: `uv run workshop resume <wish-id> --max-tokens <limit + 100000000> --turn-minutes 360 --json`, with `--check-motion true` when the run has it; record `budget_raised: true` |
+| `other` | anything else, including a second budget stop in one attempt | Ask the owner |
+
+### Fixing a Contract Contradiction at the root
+
+Never answer it inside the run, and never pick one statement over the other
+in a brief. Fix the contract:
+
+1. **Amend the contract** with the smallest change that removes the
+   contradiction, in `design-a-toy`'s resolution order (Stage 3c and 3d).
+   Back up the current contract and references, write
+   `build-a-toy/drafts/amend-<x>-notes.md`, add `amend-<x>` to
+   `contract_versions`, and record a `contract_contradictions` entry: both
+   rows verbatim, a `signature` of `<check>:<component>` (the
+   `design-a-toy` check that covers this class, and the Component), and the
+   amendment.
+2. **Re-audit the whole contract** with `design-a-toy` Stages 3b (for every
+   image the amendment touches), 3c and 3d: every Component and every check,
+   not only the changed row. Record the notes' path in `reaudit`. A new
+   contradiction the re-audit finds goes into the same amendment.
+3. **Give `design-a-toy` a check that would have caught it**, when it has
+   none: open a harness issue and fix it like any harness defect, and record
+   it in the entry's `design_check`. The swept-volume-over-ceiling check in
+   Stage 3c is the first such check (attempt 15).
+4. **Apply it, or batch it for the owner**, by the approval rule below.
+
+### Approval: only visible changes wait for the owner
+
+A change is **visible** when a reference image would have to be redrawn
+because of it. A visible change waits for the owner: all of a loop pass's
+visible changes go on **one** review page,
+`toys-spec/<toy>/review-amend-<x>/index.html` in the main checkout, laid out
+as `design-a-toy` Stage 4 lays out its review (old and new image side by side,
+one plain line each). The loop then stops with `loop.state: awaiting-owner`.
+On approval, set the entry's `approved` to `owner <date>`, apply it, and set
+`applied: true`.
+
+An **invisible** change (a clearance, a print stance, hidden geometry, a value
+the images do not show) is applied without asking: set `approved` to
+`not-needed`, apply it, and set `applied: true`.
+
+### Harness defects: fixed and merged automatically
+
+1. Open the issue with `gh issue create` and record it in `harness_issues`
+   with `opened_by_loop: true`. The loop implements and merges **only** issues
+   it opened itself.
+2. Implement it in a subagent, in a fresh worktree from `origin/main`
+   (`status: implementing`), following the repository's `AGENTS.md`.
+3. Run the full test suite:
+   `PYTHONPATH=src uv run python -m unittest discover -s tests -t . -p 'test_*.py'`.
+4. `git fetch origin && git rebase origin/main`, run the suite again, and
+   push the result to `main` as a fast-forward. Never force-push. Record
+   `status: merged` and the `merge_commit`.
+5. A conflict with someone else's change on `main` (`status: conflict`), or a
+   test failure it cannot fix (`status: failed`), stops the loop.
+
+The next attempt then runs from a fresh worktree at the new `origin/main`.
+
+### When the loop stops and asks
+
+`ledger.py next` prints `ask-owner`, with every reason that holds, when:
+
+- a Contract Contradiction it already fixed comes back: a later entry has the
+  `signature` of one already applied;
+- 3 consecutive attempts made no progress: none locked more Components or had
+  fewer repeated print defects than the attempt before it;
+- the cumulative cost passed `cost_units.cap`, 100 cost units for the toy
+  unless the owner set another cap;
+- a harness fix fails tests the loop cannot fix, or meets a merge conflict;
+- a visible change awaits approval.
+
+Set `loop.state: awaiting-owner` with those reasons in `loop.awaiting`, and
+tell the owner in a few plain lines, with the review page's link when there is
+one. Record the owner's answer where it clears its reason: `approved` on the
+visible change, `recurrence_acknowledged` on the contradiction that came back,
+a new `cost_units.cap`, `loop.no_progress_cleared_through`, or the harness
+issue's new status. Then clear `loop.awaiting` and run `ledger.py next`
+again.
+
+Done when, for each pass, the ledger shows:
+
+- every stop of the attempt in `stops`, with a class from evidence;
+- every Contract Contradiction in `contract_contradictions` with its rows, its
+  amendment, its re-audit and its `design-a-toy` check;
+- every harness issue the loop opened in `harness_issues`, merged or stopping
+  the loop;
+- the attempt's cost in `cost_units`;
+- `ledger.py check` valid, and `ledger.py next` printing either the next
+  attempt's `launch` or `ask-owner` with its reasons.
+
+The loop ends when an attempt conforms and is published by Step 7 (`loop.state:
+done`), or when the owner stops it (`stopped`).
 
 ## The report
 

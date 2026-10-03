@@ -343,6 +343,15 @@ every Blocked Report, how it was cleared and how long it stayed open (issue
 #88).
 _Avoid_: Blocked message, stuck worker
 
+**Visible Change**:
+A Design Contract amendment that a reference image would show, so the image
+must be redrawn. Only a Visible Change waits for the owner: the unattended
+`build-a-toy` loop batches a pass's Visible Changes on one review page and
+applies every other amendment (a clearance, a print stance, hidden geometry, a
+value no image shows) without asking, recording it in the toy's ledger (issue
+#89).
+_Avoid_: Cosmetic change, user-facing change
+
 **Unmeasurable Mesh**:
 A print gate's verdict on a valid B-rep whose tessellation stays open even
 after one finer retry. Inside and outside are undefined, so nothing was
