@@ -99,6 +99,12 @@ Poll `uv run workshop status <wish-id> --json`. Its `status` is `active`,
     resume without it turns the motion check off. Leave
     `--max-tokens` out, because a resume keeps the saved budget. Resumes are
     unlimited and never count as a round.
+  - `usage-limit` (status `waiting`): the Claude Code or Codex account hit
+    its provider usage limit, so the session could not start or continue.
+    It is resumable, but not until the limit resets: a resume before then
+    fails the same way. Wait, then resume with the same command as
+    `transport`; if it stops at `usage-limit` again, wait an hour and retry.
+    It is not a budget stop, so leave `--max-tokens` out.
   - `budget`: report plainly that **the token budget, the run's only
     backstop, is exhausted**. Hand the decision to the person. A resume
     without a new `--max-tokens` cannot proceed past it. In the unattended
@@ -221,9 +227,9 @@ person is listed under "When the loop stops and asks".
    `loop.source_commit` and `loop.state: watching`.
 2. **Watch.** Run `scripts/watch.sh <wish-id>`; it prints a line whenever the
    run's state changes and exits when the run stops. Answer a Reference
-   Camera need and resume a `transport` or `inspection-in-progress` stop
-   exactly as Step 3 says, and keep watching. A `complete` run goes to Step 4
-   as usual.
+   Camera need, resume a `transport` or `inspection-in-progress` stop and
+   wait out a `usage-limit` stop exactly as Step 3 says, and keep watching.
+   A `complete` run goes to Step 4 as usual.
 3. **Diagnose** every other stop (`loop.state: diagnosing`). Gather the
    evidence, never guess it:
    - the receipt: `uv run workshop status <wish-id> --json` (`stop_category`,

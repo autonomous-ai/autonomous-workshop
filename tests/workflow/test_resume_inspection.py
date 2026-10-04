@@ -15,7 +15,7 @@ from io import StringIO
 from tests.invent.fake_gamevault import install_fake_gamevault
 from tests.workflow.test_native_host import _FakeLauncher
 from tests.workflow.test_token_budget import observation
-from workshop.errors import ContractError, StateConflict
+from workshop.errors import ContractError, StateConflict, WorkshopError
 import workshop.runtime.codex as runtime
 from workshop.wish import Wish
 from workshop.workflow.agent_run import AgentRun
@@ -415,3 +415,122 @@ class StopCategoryTest(ResumeInspectionTest):
                 host.native_run_status(self.product_id)["stop_category"],
                 "inspection-in-progress",
             )
+
+    # Issue #94: a session that ends without a live native process is a
+    # visible, resumable stop, and a usage limit is named as such.
+
+    def fail_next_resume(self, error):
+        def resume(**arguments):
+            self.launcher.resumes.append(dict(arguments))
+            raise error
+        self.launcher.resume = resume
+
+    def write_stale_budget_stop(self):
+        host._write_private_json(self.paths.host_state / "token-budget-stop.json", {
+            "reason": "product token limit reached", "product_id": self.product_id,
+        })
+
+    def test_usage_limit_session_failure_is_a_waiting_usage_limit_stop(self):
+        from workshop.runtime.claude import ClaudeUsageLimitError
+
+        self.start_old()
+        self.fail_next_resume(ClaudeUsageLimitError(
+            "Claude Code weekly limit reached; the native session cannot start"
+        ))
+        with self.assertRaisesRegex(WorkshopError, "did not complete"):
+            host.resume_native_run(self.product_id)
+        run = host._open_budgeted_agent_run(self.paths)
+        # The durable checkpoint is unchanged: no gate or lifecycle moved.
+        self.assertEqual(run.snapshot().status, "active")
+        receipt = host.native_run_status(self.product_id)
+        self.assertEqual(receipt["status"], "waiting")
+        self.assertEqual(receipt["stop_category"], "usage-limit")
+        self.assertIn(host._USAGE_LIMIT_NEED, receipt["needs"])
+        record = (self.paths.host_state / host._NATIVE_SESSION_STOP_NAME).read_text()
+        for text in (json.dumps(receipt), record):
+            self.assertNotIn("weekly", text)
+
+    def test_usage_limit_outranks_a_stale_budget_stop_after_a_raised_cap(self):
+        from workshop.runtime.claude import ClaudeUsageLimitError
+
+        self.start_old()
+        # Written before a resume raised the cap; 123 tokens used of 100M.
+        self.write_stale_budget_stop()
+        self.fail_next_resume(ClaudeUsageLimitError("Claude Code weekly limit reached"))
+        with self.assertRaises(WorkshopError):
+            host.resume_native_run(self.product_id)
+        receipt = host.native_run_status(self.product_id)
+        self.assertLess(receipt["budget"]["used_tokens"], receipt["budget"]["limit_tokens"])
+        self.assertEqual(receipt["status"], "waiting")
+        self.assertEqual(receipt["stop_category"], "usage-limit")
+
+    def test_stale_budget_stop_below_the_current_limit_is_not_budget(self):
+        self.start_old()
+        self.write_stale_budget_stop()
+        receipt = host.native_run_status(self.product_id)
+        self.assertEqual(receipt["budget"]["last_stop_reason"], "product token limit reached")
+        self.assertEqual(receipt["stop_category"], "unclassified")
+
+    def test_a_reached_cap_still_reports_budget_over_a_usage_limit(self):
+        checkpoint = dataclasses.replace(self.start_old().snapshot(), status="active")
+        host._write_private_json(self.paths.host_state / host._NATIVE_SESSION_STOP_NAME, {
+            "schema_version": 1, "kind": host._NATIVE_SESSION_STOP_KIND,
+            "product_id": self.product_id, "wish_sha256": checkpoint.wish_sha256,
+            "checkpoint_sha256": checkpoint.checkpoint_sha256, "cause": "usage-limit",
+        })
+        spent = {"status": "available", "scope": "product-tokens", "used_tokens": 200,
+                 "limit_tokens": 200, "last_stop_reason": "product token limit reached"}
+        raised = {**spent, "limit_tokens": 300}
+        self.assertEqual(host._native_stop_category(
+            checkpoint, paths=self.paths, action="inspected", lifetime_budget=spent), "budget")
+        self.assertEqual(host._native_stop_category(
+            checkpoint, paths=self.paths, action="inspected", lifetime_budget=raised),
+            "usage-limit")
+        # A record bound to another checkpoint is stale and ignored.
+        other = dataclasses.replace(checkpoint, checkpoint_sha256="0" * 64)
+        self.assertIsNone(host._current_native_session_stop(other, self.paths))
+
+    def test_any_failed_session_end_is_a_waiting_stop_not_active(self):
+        self.start_old()
+        self.fail_next_resume(runtime.CodexInvocationError("provider said something private"))
+        with self.assertRaises(WorkshopError):
+            host.resume_native_run(self.product_id)
+        receipt = host.native_run_status(self.product_id)
+        self.assertEqual(receipt["status"], "waiting")
+        self.assertEqual(receipt["stop_category"], "unclassified")
+        self.assertNotIn(host._USAGE_LIMIT_NEED, receipt.get("needs", []))
+        self.assertNotIn("private", json.dumps(receipt))
+
+    def test_codex_rate_limit_diagnosis_names_usage_limit_only_after_a_stop(self):
+        checkpoint = self.start_old().snapshot()
+        self.write_transport_diagnosis(checkpoint.wish_sha256)
+        diagnosis = self.paths.host_state / runtime.CODEX_FAILURE_DIAGNOSTIC_FILENAME
+        value = json.loads(diagnosis.read_text())
+        value["diagnostic"]["terminal_error"]["category"] = "rate-limit"
+        host._write_private_json(diagnosis, value)
+        # An old diagnosis alone never calls a run stopped.
+        self.assertNotEqual(
+            host.native_run_status(self.product_id)["stop_category"], "usage-limit"
+        )
+        self.fail_next_resume(runtime.CodexInvocationError("rate limited"))
+        with self.assertRaises(WorkshopError):
+            host.resume_native_run(self.product_id)
+        receipt = host.native_run_status(self.product_id)
+        self.assertEqual(receipt["status"], "waiting")
+        self.assertEqual(receipt["stop_category"], "usage-limit")
+
+    def test_a_later_resume_clears_the_stop(self):
+        from workshop.runtime.claude import ClaudeUsageLimitError
+
+        self.start_old()
+        original = self.launcher.resume
+        self.fail_next_resume(ClaudeUsageLimitError("Claude Code weekly limit reached"))
+        with self.assertRaises(WorkshopError):
+            host.resume_native_run(self.product_id)
+        self.launcher.resume = original
+        receipt = host.resume_native_run(self.product_id)
+        self.assertFalse((self.paths.host_state / host._NATIVE_SESSION_STOP_NAME).exists())
+        self.assertNotEqual(receipt.get("stop_category"), "usage-limit")
+        self.assertNotEqual(
+            host.native_run_status(self.product_id).get("stop_category"), "usage-limit"
+        )

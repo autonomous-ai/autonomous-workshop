@@ -38,6 +38,15 @@ class NativeManagerRecoverableError(NativeManagerInvocationError):
     """A typed timeout or provider disconnect that may resume the same session."""
 
 
+class NativeManagerUsageLimitError(NativeManagerInvocationError):
+    """The provider account's usage or rate limit refused the native turn.
+
+    The session is not live and cannot continue until the provider's limit
+    resets; an operator resume after that reset continues the same session.
+    It is telemetry for a visible stop (issue #94), never gate evidence.
+    """
+
+
 # One native turn's Manager-reported token usage, shared by every adapter.
 # The base counters are gross input and gross output. The detail counters are
 # disjoint subsets of those (cached and cache-write input, reasoning output)
@@ -458,6 +467,7 @@ __all__ = [
     "ManagerRuntimeSelection",
     "NativeManagerInvocationError",
     "NativeManagerRecoverableError",
+    "NativeManagerUsageLimitError",
     "NativeSessionLauncher",
     "NativeSessionOutcome",
     "NativeTokenUsage",

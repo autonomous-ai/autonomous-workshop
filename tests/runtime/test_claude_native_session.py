@@ -603,7 +603,7 @@ class ClaudeNativeSessionTest(unittest.TestCase):
             popen_factory=popen,
             uuid_factory=lambda: "initial-session-id",
         )
-        with self.assertRaisesRegex(ClaudeInvocationError, "weekly limit"):
+        with self.assertRaisesRegex(ClaudeInvocationError, "weekly limit") as caught:
             launcher.start(
                 product_id="wish-one",
                 wish_sha256=DIGEST,
@@ -612,6 +612,59 @@ class ClaudeNativeSessionTest(unittest.TestCase):
                 host_state_root=self.host_state,
                 prompt="make",
             )
+        # Typed, so the host can show a resumable usage-limit stop (#94).
+        from workshop.runtime.managers import NativeManagerUsageLimitError
+
+        self.assertIsInstance(caught.exception, NativeManagerUsageLimitError)
+
+    def _error_turn(self, text):
+        def popen(command, **kwargs):
+            del command, kwargs
+            return _FakeProcess(
+                [
+                    json.dumps(
+                        {
+                            "type": "result",
+                            "is_error": True,
+                            "result": text,
+                            "session_id": "claude-session-one",
+                        }
+                    )
+                    + "\n",
+                ],
+                returncode=1,
+            )
+
+        launcher = ClaudeNativeSessionLauncher(
+            binary="/bin/claude",
+            cli_version="2.0.0",
+            popen_factory=popen,
+            uuid_factory=lambda: "initial-session-id",
+        )
+        with self.assertRaises(ClaudeInvocationError) as caught:
+            launcher.start(
+                product_id="wish-one",
+                wish_sha256=DIGEST,
+                constitution_sha256=DIGEST,
+                run_root=self.run_root,
+                host_state_root=self.host_state,
+                prompt="make",
+            )
+        return caught.exception
+
+    def test_usage_limit_error_turn_is_a_typed_usage_limit(self):
+        from workshop.runtime.claude import ClaudeUsageLimitError
+
+        error = self._error_turn("Claude AI usage limit reached|1760000000 private")
+        self.assertIsInstance(error, ClaudeUsageLimitError)
+        self.assertIn("signature=rate-limited", str(error))
+        self.assertNotIn("private", str(error))
+
+    def test_other_error_turns_are_not_usage_limits(self):
+        from workshop.runtime.managers import NativeManagerUsageLimitError
+
+        error = self._error_turn("Not logged in · Please run /login")
+        self.assertNotIsInstance(error, NativeManagerUsageLimitError)
 
     def test_environment_keeps_the_macos_credential_account(self):
         """Without USER the CLI reports itself logged out mid-run."""

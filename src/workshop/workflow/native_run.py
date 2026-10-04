@@ -188,6 +188,7 @@ from workshop.runtime import (
 from workshop.runtime.managers import (
     MAX_NATIVE_TURN_SECONDS,
     NATIVE_TOKEN_USAGE_FIELDS,
+    NativeManagerUsageLimitError,
     NativeSessionLauncher,
 )
 from workshop.runtime.agent_assets import (
@@ -514,6 +515,10 @@ class _VerifiedRelease:
 
 class _RecoverableNativeTurn(WorkshopError):
     """Internal typed signal for a checkpoint-bound turn continuation."""
+
+
+class _NativeUsageLimitStop(WorkshopError):
+    """Internal typed signal: the provider's account usage limit refused a turn."""
 
 
 class _MakeProposalRejected(Exception):
@@ -7163,6 +7168,10 @@ def _launcher_call(
         raise _RecoverableNativeTurn(
             "native %s session did not complete: %s" % (runtime.display_name, exc)
         ) from None
+    except NativeManagerUsageLimitError as exc:
+        raise _NativeUsageLimitStop(
+            "native %s session did not complete: %s" % (runtime.display_name, exc)
+        ) from None
     except (CodexInvocationError, NativeManagerInvocationError) as exc:
         raise WorkshopError(
             "native %s session did not complete: %s" % (runtime.display_name, exc)
@@ -9831,7 +9840,117 @@ def _rebind_existing_progress(
     tracker.rebind(updated, activity=activity)
 
 
+_NATIVE_SESSION_STOP_NAME = "native-session-stop.json"
+_NATIVE_SESSION_STOP_KIND = "autonomous-workshop.native-session-stop"
+# The only causes a session stop record may name; neither carries provider text.
+_NATIVE_SESSION_STOP_CAUSES = ("usage-limit", "session-ended")
+_USAGE_LIMIT_NEED = (
+    "The native session stopped at the provider account's usage limit; resume "
+    "this run with `workshop resume` after that limit resets."
+)
+
+
+def _clear_native_session_stop(paths: NativeRunPaths) -> None:
+    try:
+        (paths.host_state / _NATIVE_SESSION_STOP_NAME).unlink()
+    except FileNotFoundError:
+        pass
+
+
+def _record_native_session_stop(
+    run: AgentRun, paths: NativeRunPaths, *, cause: str
+) -> None:
+    """Record that this invocation ended while its checkpoint is still active.
+
+    The record binds the exact current checkpoint, so any later checkpoint
+    (a resume's adoption, a stage transition) makes it stale. It is
+    telemetry for ``workshop status`` (issue #94) and never gate evidence.
+    """
+
+    if cause not in _NATIVE_SESSION_STOP_CAUSES:
+        raise ContractError("native session stop cause is not recognized")
+    checkpoint = run.snapshot()
+    if checkpoint.status != "active":
+        _clear_native_session_stop(paths)
+        return
+    _write_private_json(paths.host_state / _NATIVE_SESSION_STOP_NAME, {
+        "schema_version": 1,
+        "kind": _NATIVE_SESSION_STOP_KIND,
+        "product_id": checkpoint.product_id,
+        "wish_sha256": checkpoint.wish_sha256,
+        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+        "cause": cause,
+    })
+
+
+def _current_native_session_stop(
+    checkpoint: AgentRunCheckpoint, paths: Optional[NativeRunPaths]
+) -> Optional[str]:
+    """The recorded cause when this exact active checkpoint has no live session."""
+
+    if paths is None or checkpoint.status != "active":
+        return None
+    path = paths.host_state / _NATIVE_SESSION_STOP_NAME
+    if not path.exists():
+        return None
+    try:
+        record = _read_stable_private_json(
+            path, label="native session stop", maximum_bytes=4096
+        )
+    except WorkshopError:
+        return None
+    if not (
+        record.get("schema_version") == 1
+        and record.get("kind") == _NATIVE_SESSION_STOP_KIND
+        and record.get("product_id") == checkpoint.product_id
+        and record.get("wish_sha256") == checkpoint.wish_sha256
+        and record.get("checkpoint_sha256") == checkpoint.checkpoint_sha256
+        and record.get("cause") in _NATIVE_SESSION_STOP_CAUSES
+    ):
+        return None
+    return record["cause"]
+
+
 def _run_native_session(
+    run: AgentRun,
+    paths: NativeRunPaths,
+    *,
+    launcher: Optional[NativeSessionLauncher],
+    activity_observer: Optional[Callable[[str], None]] = None,
+    timing_observer: Optional[WishRunTimingObserver] = None,
+) -> tuple[AgentRunCheckpoint, Optional[CodexNativeSessionOutcome], int, str]:
+    """Advance native stages; record a visible stop if this invocation ends early.
+
+    The invocation holds the mutation lock, so a previous stop record is
+    cleared before any native work. When the invocation then raises while
+    the checkpoint is still ``active``, no native session remains live:
+    the host records the content-free cause so ``workshop status`` reports
+    the run as stopped instead of ``active`` (issue #94).
+    """
+
+    _clear_native_session_stop(paths)
+    try:
+        return _run_native_session_turns(
+            run,
+            paths,
+            launcher=launcher,
+            activity_observer=activity_observer,
+            timing_observer=timing_observer,
+        )
+    except BaseException as exc:
+        cause = (
+            "usage-limit"
+            if isinstance(exc, _NativeUsageLimitStop)
+            else "session-ended"
+        )
+        try:
+            _record_native_session_stop(run, paths, cause=cause)
+        except Exception:
+            pass  # Telemetry only; the original failure still propagates.
+        raise
+
+
+def _run_native_session_turns(
     run: AgentRun,
     paths: NativeRunPaths,
     *,
@@ -10338,10 +10457,10 @@ def _write_inspection_progress_snapshot(
     )
 
 
-def _diagnosed_provider_transport_failure(
+def _diagnosed_provider_failure_category(
     checkpoint: AgentRunCheckpoint, paths: NativeRunPaths
-) -> bool:
-    """Whether this run's own ADR 0050 diagnosis names a provider transport error."""
+) -> Optional[str]:
+    """The ADR 0050 diagnosis category of this run's last provider failure, if any."""
 
     try:
         diagnosis = _read_stable_private_json(
@@ -10350,20 +10469,40 @@ def _diagnosed_provider_transport_failure(
             maximum_bytes=MAX_CODEX_FAILURE_DIAGNOSTIC_BYTES,
         )
     except WorkshopError:
-        return False
+        return None
     if not (
         diagnosis.get("schema_version") == 2
         and diagnosis.get("kind") == CODEX_FAILURE_DIAGNOSTIC_KIND
         and diagnosis.get("product_id") == checkpoint.product_id
         and diagnosis.get("wish_sha256") == checkpoint.wish_sha256
     ):
-        return False
+        return None
     detail = diagnosis.get("diagnostic")
     terminal_error = detail.get("terminal_error") if isinstance(detail, Mapping) else None
-    return (
-        isinstance(terminal_error, Mapping)
-        and terminal_error.get("category") == "provider-transport"
+    category = (
+        terminal_error.get("category") if isinstance(terminal_error, Mapping) else None
     )
+    return category if isinstance(category, str) else None
+
+
+def _budget_stop_is_current(lifetime_budget: Optional[Mapping[str, Any]]) -> bool:
+    """Whether the recorded budget stop still binds after any later cap raise.
+
+    The host keeps ``token-budget-stop.json`` after a resume raises the cap,
+    so a "limit reached" record is current only while observed usage is at
+    or over the current limit (issue #94). An accounting stop, or one whose
+    usage cannot be compared, stays current.
+    """
+
+    if lifetime_budget is None or not lifetime_budget.get("last_stop_reason"):
+        return False
+    if lifetime_budget["last_stop_reason"] != "product token limit reached":
+        return True
+    used = lifetime_budget.get("used_tokens")
+    limit = lifetime_budget.get("limit_tokens")
+    if type(used) is not int or type(limit) is not int:
+        return True
+    return used >= limit
 
 
 def _native_stop_category(
@@ -10386,12 +10525,30 @@ def _native_stop_category(
         # consecutive-rejection limit, and the legacy-release upgrade and
         # final CAD guard gates in Release).
         return "gate-refusal"
-    if lifetime_budget is not None and lifetime_budget.get("last_stop_reason"):
+    budget_current = _budget_stop_is_current(lifetime_budget)
+    if (
+        budget_current
+        and lifetime_budget.get("last_stop_reason") == "product token limit reached"
+    ):
+        # A reached cap blocks every resume until it is raised, whatever
+        # else also stopped the last invocation.
+        return "budget"
+    session_stop = _current_native_session_stop(checkpoint, paths)
+    if session_stop == "usage-limit":
+        # This exact checkpoint's last invocation ended at the provider's
+        # account usage limit; that newer cause outranks an older record.
+        return "usage-limit"
+    if budget_current:
         return "budget"
     if paths is None:
         return "unclassified"
-    if _diagnosed_provider_transport_failure(checkpoint, paths):
+    diagnosed = _diagnosed_provider_failure_category(checkpoint, paths)
+    if diagnosed == "provider-transport":
         return "transport"
+    if diagnosed == "rate-limit" and session_stop is not None:
+        # Codex's ADR 0050 diagnosis survives later turns, so it names the
+        # stop only when this exact checkpoint's invocation has ended.
+        return "usage-limit"
     previous_count = _read_inspection_progress_snapshot(paths, checkpoint.product_id)
     current_count = _inspection_cache_measurement_count(paths)
     if action not in ("inspected", "inspected-terminal"):
@@ -10652,6 +10809,13 @@ def _native_receipt(
                 lifetime_budget["last_stop_reason"] = stop["reason"]
         except WorkshopError:
             lifetime_budget = {"status": "unavailable", "scope": "lifetime-native-execution"}
+    if (
+        visible_status == "active"
+        and _current_native_session_stop(checkpoint, paths) is not None
+    ):
+        # The last invocation for this exact checkpoint ended without a live
+        # native session; the run waits for an operator resume (issue #94).
+        visible_status = "waiting"
     stop_category = (
         _native_stop_category(
             checkpoint, paths=paths, action=action, lifetime_budget=lifetime_budget
@@ -10659,6 +10823,8 @@ def _native_receipt(
         if visible_status != "complete"
         else None
     )
+    if stop_category == "usage-limit" and _USAGE_LIMIT_NEED not in needs:
+        needs.append(_USAGE_LIMIT_NEED)
     receipt: dict[str, Any] = {
         "schema_version": 1,
         "kind": "native-agent-run",

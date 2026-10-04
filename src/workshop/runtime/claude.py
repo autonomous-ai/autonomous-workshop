@@ -37,6 +37,7 @@ from workshop.runtime.managers import (
     MAX_NATIVE_TOKEN_COUNT,
     MAX_NATIVE_TURN_SECONDS,
     NativeManagerInvocationError,
+    NativeManagerUsageLimitError,
     NativeManagerRecoverableError,
     NativeTokenUsage,
     SUPPORTED_REASONING_EFFORTS,
@@ -152,6 +153,10 @@ class ClaudeInvocationError(NativeManagerInvocationError):
 
 class ClaudeRecoverableInvocationError(NativeManagerRecoverableError):
     """A typed Claude timeout that may resume the same session."""
+
+
+class ClaudeUsageLimitError(ClaudeInvocationError, NativeManagerUsageLimitError):
+    """Claude Code refused the turn at the account's usage or rate limit."""
 
 
 def _parsed_version(version: str) -> Optional[tuple[int, ...]]:
@@ -913,6 +918,7 @@ class ClaudeNativeSessionLauncher:
         observed: Optional[str] = None
         stream_error: Optional[str] = None
         terminal_signature: Optional[str] = None
+        usage_limited = False
         token_usage: Optional[NativeTokenUsage] = None
         budget_observer = self.token_budget_observer
         requests: dict[str, dict[str, int]] = {}
@@ -962,12 +968,15 @@ class ClaudeNativeSessionLauncher:
                     if event.get("type") == "rate_limit_event":
                         info = event.get("rate_limit_info")
                         if isinstance(info, Mapping) and info.get("status") == "rejected":
+                            usage_limited = True
                             stream_error = (
                                 "Claude Code weekly limit reached; "
                                 "the native session cannot start"
                             )
                     elif event.get("is_error") is True:
                         terminal_signature = _terminal_failure_signature(event)
+                        if terminal_signature == "rate-limited":
+                            usage_limited = True
                         if stream_error is None:
                             stream_error = (
                                 "Claude Code reported an error turn (signature=%s)"
@@ -1017,6 +1026,10 @@ class ClaudeNativeSessionLauncher:
                         ) from None
         stderr_thread.join(timeout=1.0)
         if stream_error is not None:
+            if usage_limited:
+                # A typed, content-free cause the host can show as a
+                # resumable stop; the message stays the host's own text.
+                raise ClaudeUsageLimitError(stream_error)
             raise ClaudeInvocationError(stream_error)
         if returncode not in (0, None):
             detail = "".join(stderr_chunks).strip().replace("\n", " ")
@@ -1046,6 +1059,7 @@ __all__ = [
     "ClaudeNativeSessionLauncher",
     "ClaudeNativeSessionOutcome",
     "ClaudeRecoverableInvocationError",
+    "ClaudeUsageLimitError",
     "MINIMUM_CLAUDE_NATIVE_RUNTIME_VERSION",
     "claude_subprocess_environment",
     "claude_supports_native_workshop",

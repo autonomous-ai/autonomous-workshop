@@ -4113,7 +4113,7 @@ class NativeHostTest(unittest.TestCase):
             )
             with mock.patch.dict(os.environ, environment, clear=True):
                 status = native_run_status(product_id)
-            self.assertEqual(status["status"], "active")
+            self.assertEqual(status["status"], "waiting")  # no live session (#94)
             self.assertEqual(status["session_status"], "checkpointed")
             self.assertEqual(status["native_turns"], turns)
 
@@ -4168,7 +4168,7 @@ class NativeHostTest(unittest.TestCase):
             )
             with mock.patch.dict(os.environ, environment, clear=True):
                 status = native_run_status(product_id)
-            self.assertEqual(status["status"], "active")
+            self.assertEqual(status["status"], "waiting")  # no live session (#94)
             self.assertEqual(status["session_status"], "checkpointed")
             self.assertEqual(
                 status["native_turns"],
@@ -4194,7 +4194,7 @@ class NativeHostTest(unittest.TestCase):
                 resumed_status = native_run_status(product_id)
             self.assertEqual(len(launcher.starts), 1)
             self.assertEqual(len(launcher.resumes), 5)
-            self.assertEqual(resumed_status["status"], "active")
+            self.assertEqual(resumed_status["status"], "waiting")  # no live session (#94)
             self.assertEqual(resumed_status["session_status"], "checkpointed")
             self.assertEqual(
                 resumed_status["native_turns"],
@@ -4272,7 +4272,7 @@ class NativeHostTest(unittest.TestCase):
                 ],
             )
             self.assertEqual(status["stage"], "match")
-            self.assertEqual(status["status"], "active")
+            self.assertEqual(status["status"], "waiting")  # no live session (#94)
             self.assertEqual(
                 status["native_turns"],
                 _MAX_CONSECUTIVE_RECOVERABLE_NATIVE_TURNS,

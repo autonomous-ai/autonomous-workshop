@@ -52,3 +52,32 @@ and message size when available.
 
 Historical failures that predate schema version 2 cannot gain a more specific
 diagnosis because Workshop no longer has their raw terminal messages.
+
+## Amended: a session that ends early is a visible stop (2026-10-04, #94)
+
+`workshop status` derives a bounded `stop_category` for every run that is not
+complete. A native session that failed to start or ended without completing
+left the checkpoint `active`, so status kept reading `active`, and a budget
+stop record written before a cap-raising resume still read `budget`.
+
+When a host invocation ends with an exception while its checkpoint is still
+`active`, the host writes `native-session-stop.json`: the product, Wish and
+exact checkpoint hashes, and one cause, `usage-limit` or `session-ended`. It
+holds no provider text. The next invocation clears it before any native work,
+and any later checkpoint makes it stale. While it is current, the receipt's
+visible `status` is `waiting`; the durable checkpoint, gates and budget
+accounting are unchanged.
+
+`usage-limit` is a new bounded stop category, not `transport`: a provider
+usage limit is not an automatically recoverable transport failure, and a
+resume succeeds only after the limit resets. The Claude adapter raises a
+typed usage-limit failure for a rejected `rate_limit_event` or an error turn
+whose signature is `rate-limited`; a Codex `rate-limit` diagnosis names it
+only when a current stop record shows the invocation ended. The receipt adds
+a fixed host need saying to resume after the limit resets.
+
+A "product token limit reached" record is current only while used tokens are
+at or over the current limit. Then `budget` still wins, because no resume can
+pass it. Below the limit the record is stale and the newer cause wins.
+Like every diagnosis here, a stop category cannot advance a stage, alter a
+gate or authorize an effect.
