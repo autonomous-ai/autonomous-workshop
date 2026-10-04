@@ -505,6 +505,26 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         self.assertIn("**Contract Amendment**: A change to the text of Design Contract rows", context)
         self.assertIn("**Contract Reviewer**: The fresh reader", context)
 
+    def test_a_smaller_change_refusal_allows_one_deletion_only_retry(self):
+        # Issue #96 amends ADR 0085 on both runtimes.
+        def text(*parts):
+            return " ".join(REPOSITORY.joinpath(*parts).read_text(encoding="utf-8").split())
+
+        make = text(".agents/product-run/.agents/skills/autonomous-workshop/references/make.md")
+        for required in ("**one Smaller Retry**", "with only words deleted",
+                         "another **fresh** `contract-reviewer`, never the one who refused",
+                         "a third proposal for the same rows"):
+            with self.subTest(make=required):
+                self.assertIn(required, make)
+        self.assertIn("one Smaller Retry", text(".agents/product-run/AGENTS.md"))
+        reviewer = text("src/workshop/make/agents/contract-reviewer.toml")
+        self.assertIn("writing each changed row's whole new text exactly", reviewer)
+        self.assertIn("`retry_of`", reviewer)
+        self.assertIn("Smaller Retry", text("src/workshop/make/skills/make-round/SKILL.md"))
+        self.assertIn("**Smaller Retry**: The one further Contract Amendment", text("CONTEXT.md"))
+        self.assertIn("## Amendment: one Smaller Retry", text(
+            "docs/adr/0085-in-run-contract-amendments-for-invisible-fixes.md"))
+
     def test_installed_lookup_reads_exact_packaged_snapshot(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

@@ -2421,6 +2421,12 @@ def waking_reports(project: Path, role: str) -> list:
 # host re-derives the same chain before it accepts Make. Kept in step with
 # workshop/make/contract_amendments.py, which the host uses; this script is
 # standalone and cannot import it.
+#
+# Issue #96: a refusal whose reviewer confirmed the contradiction, found it
+# invisible and named a smaller change allows one Smaller Retry: the same
+# rows, each change the refused change's ``from`` with only deletions
+# applied, to another fresh contract-reviewer. Any other proposal quoting
+# rows an earlier amendment quoted is refused; the run stops on the need.
 
 AMENDMENT_LEDGER_NAME = "contract-amendments.jsonl"
 AMENDMENT_PACKETS_DIR = "contract-amendments"
@@ -2505,6 +2511,75 @@ def amendment_status(verdict: dict) -> str:
     return "applied" if agrees else "refused"
 
 
+def deletions_only(old: str, new: str) -> bool:
+    """``new`` is ``old`` with only deletions applied: strictly shorter, a
+    character subsequence of ``old``, and every word of ``new`` a word of
+    ``old`` in the same order, so no word is added or respelled."""
+
+    if not isinstance(old, str) or not isinstance(new, str) or len(new) >= len(old):
+        return False
+    characters = iter(old)
+    if not all(character in characters for character in new):
+        return False
+    words = iter(re.findall(r"\w+", old))
+    return all(word in words for word in re.findall(r"\w+", new))
+
+
+def smaller_change_refusal(verdict: dict) -> bool:
+    """The one refusal kind that allows a Smaller Retry (issue #96): the rows
+    contradict and no reference shows the change, but a smaller one exists."""
+
+    return (verdict.get("contradiction") is True and verdict.get("smallest") is False
+            and not verdict.get("visible_in"))
+
+
+def _row_key(rows: list) -> list:
+    return sorted(_squash(row) for row in rows)
+
+
+def retry_refusal(earlier: list, rows: list, changes: list) -> tuple:
+    """``(retry_of, refusal)`` for a proposal quoting ``rows`` after the
+    ``earlier`` amendments, oldest first (issue #96). ``retry_of`` is the
+    refused amendment a Smaller Retry follows, or None when no earlier
+    amendment quotes the same rows; ``refusal`` says why the proposal may not
+    be made, or is None. Kept in step with the host's retry_refusal."""
+
+    same = [item for item in earlier if _row_key(item["rows"]) == _row_key(rows)]
+    if not same:
+        return None, None
+    number = same[0]["amendment"]
+    if len(same) > 1:
+        return number, ("Contract Amendments %s already quote these rows; a contradiction gets one Smaller "
+                        "Retry at most, so stop the run on the need" % ", ".join(str(i["amendment"]) for i in same))
+    first = same[0]
+    if first["status"] != "refused" or not smaller_change_refusal((first.get("review") or {}).get("verdict") or {}):
+        return number, ("Contract Amendment %d already quotes these rows and was %s; only a refusal that names "
+                        "a smaller change (contradiction true, nothing visible, smallest false) allows one "
+                        "Smaller Retry" % (number, first["status"]))
+    refused = {change["row"]: change for change in first["changes"]}
+    for change in changes:
+        before = refused.get(change["row"])
+        if before is None or before["from"] != change["from"]:
+            return number, ("a Smaller Retry of Contract Amendment %d changes only rows it changed, from the same "
+                            "text; %s is not one" % (number, change["row"]))
+        if not deletions_only(change["from"], change["to"]):
+            return number, ("a Smaller Retry of Contract Amendment %d only deletes words from %s's text; %r adds "
+                            "or respells text" % (number, change["row"], change["to"][:80]))
+    if {c["row"]: c["to"] for c in changes} == {row: c["to"] for row, c in refused.items()}:
+        return number, "a Smaller Retry of Contract Amendment %d repeats the refused change" % number
+    return number, None
+
+
+def retry_open(amendments: dict, item: dict) -> bool:
+    """Whether refused ``item`` still allows its one Smaller Retry: it was a
+    smaller-change refusal and no other amendment quotes its rows."""
+
+    if item["status"] != "refused" or not smaller_change_refusal((item.get("review") or {}).get("verdict") or {}):
+        return False
+    return [other["amendment"] for _, other in sorted(amendments.items())
+            if _row_key(other["rows"]) == _row_key(item["rows"])] == [item["amendment"]]
+
+
 def contract_amendments(content: str, contract: dict | None) -> dict:
     """Every Contract Amendment in one ledger, by number, replayed against the
     sealed ``contract``: each proposal must name the contract hash the
@@ -2541,12 +2616,19 @@ def contract_amendments(content: str, contract: dict | None) -> dict:
                 raise ValueError("Contract Amendment %s was proposed against contract %s, but the contract "
                                  "then was %s" % (number, str(event.get("contract_sha256"))[:12],
                                                   contract_digest(current)[:12]))
+            retry_of, refusal = retry_refusal([amendments[n] for n in sorted(amendments)], rows, changes)
+            if refusal is not None:
+                raise ValueError("Contract Amendment %s: %s" % (number, refusal))
+            if event.get("retry_of") != retry_of:
+                raise ValueError("Contract Amendment %s names retry_of %r, but the ledger makes it %r"
+                                 % (number, event.get("retry_of"), retry_of))
             amended = apply_amendment(current, changes)
             if event.get("amended_sha256") != contract_digest(amended):
                 raise ValueError("Contract Amendment %s names the wrong amended contract hash" % number)
             amendments[number] = {
                 "amendment": number, "rows": list(rows), "changes": [dict(c) for c in changes],
                 "reason": event["reason"], "report": event.get("report"), "affects": event.get("affects"),
+                "retry_of": retry_of,
                 "packet": event.get("packet"), "packet_sha256": event.get("packet_sha256"),
                 "contract_sha256": event["contract_sha256"], "amended_sha256": event["amended_sha256"],
                 "proposed_at": event["at"], "wish_sha256": wish, "status": "proposed", "review": None,
@@ -2687,10 +2769,15 @@ def propose_amendment(project: Path, proposal_path) -> dict:
                            "sha256": item["sha256"]})
     if not references:
         raise ValueError("a Contract Amendment needs the sealed reference images its reviewer checks")
+    retry_of, refusal = retry_refusal([amendments[n] for n in sorted(amendments)],
+                                      [row.strip() for row in rows], resolved)
+    if refusal is not None:
+        raise ValueError(refusal)
     number = len(amendments) + 1
     amended = apply_amendment(contract, resolved)
     packet = {
         "kind": "contract-amendment-packet", "amendment": number, "rows": [row.strip() for row in rows],
+        "retry_of": retry_of,
         "changes": [{key: item[key] for key in ("row", "from", "to")} for item in resolved],
         "reason": reason.strip(), "references": references,
         "contract_sha256": contract_digest(contract), "amended_sha256": contract_digest(amended),
@@ -2701,7 +2788,7 @@ def propose_amendment(project: Path, proposal_path) -> dict:
     packet_bytes = (json.dumps(packet, sort_keys=True, indent=1) + "\n").encode("utf-8")
     (directory / "packet.json").write_bytes(packet_bytes)
     event = {"event": "proposal", "amendment": number, "rows": packet["rows"], "changes": resolved,
-             "reason": packet["reason"], "report": report, "affects": packet["affects"],
+             "reason": packet["reason"], "report": report, "affects": packet["affects"], "retry_of": retry_of,
              "packet": str(directory / "packet.json"), "packet_sha256": hashlib.sha256(packet_bytes).hexdigest(),
              "contract_sha256": packet["contract_sha256"], "amended_sha256": packet["amended_sha256"],
              "at": _utc_now(), "wish_sha256": _wish_binding(project)}
@@ -2815,6 +2902,8 @@ def render_amendments(views: list) -> str:
         lines.append("amendment %d  %s  contract %s -> %s  affects %s" % (
             item["amendment"], item["status"].upper(), item["contract_sha256"][:12], item["amended_sha256"][:12],
             ", ".join(item.get("affects") or ()) or "-"))
+        if item.get("retry_of"):
+            lines.append("  Smaller Retry of amendment %d" % item["retry_of"])
         for row in item["rows"]:
             lines.append("  row  %s" % row)
         for change in item["changes"]:
@@ -3612,6 +3701,17 @@ def make_round(args) -> int:
                       item["amendment"], item["amended_sha256"][:12], ", ".join(item["affects"]) or "no Component",
                       "; clear Blocked Report %d with {\"report\": %d, \"amendment\": %d}"
                       % (item["report"], item["report"], item["amendment"]) if item["report"] else ""))
+        elif retry_open(read_contract_amendments(project), item):
+            # Issue #96: one Smaller Retry before the need.
+            print("make_round: Contract Amendment %d refused; nothing changed. The reviewer found a smaller "
+                  "change: %s\nYou may propose it once with --propose-amendment: the same rows, each change's "
+                  "\"to\" the same \"from\" with only words deleted (nothing added), then ask a fresh "
+                  "contract-reviewer. If you cannot, or that retry is refused, stop the run with this need%s: "
+                  "stage_proposal.py --run-root . need --stage make --status waiting --reason %s" % (
+                      item["amendment"], item["review"]["verdict"]["reason"],
+                      " (first clear Blocked Report %d with {\"report\": %d, \"need\": <the need>})"
+                      % (item["report"], item["report"]) if item["report"] else "",
+                      json.dumps(amendment_need(item))))
         else:
             need = amendment_need(item)
             print("make_round: Contract Amendment %d refused; nothing changed. Stop the run with a need now%s: "

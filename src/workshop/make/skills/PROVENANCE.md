@@ -1887,3 +1887,20 @@ rivets. Validation still rebuilds every state at the same fixed tessellation
 and refuses one whose hash differs. `references/motion-presentation.md`
 says not to simplify geometry for the animation. This changes the `cad`
 fingerprint; materialized runs keep their copied bytes.
+
+## Local change: one Smaller Retry of a refused Contract Amendment (2026-10-04)
+
+A Workshop-local change (issue #96, amending ADR 0085) to Workshop's own
+`make-round`. When the only earlier Contract Amendment quoting the same rows
+was refused with `contradiction` true, `visible_in` empty and `smallest`
+false, `--propose-amendment` accepts one Smaller Retry: the same rows, each
+change a row the refused amendment changed, from the same text, with only
+deletions applied (strictly shorter, a character subsequence, and no word
+added or respelled). The proposal event and packet record `retry_of`. Any
+other proposal quoting rows an earlier amendment quoted is refused: a third
+one, one after a contradiction or visibility refusal, or one after an
+applied amendment; the ledger replay refuses the same. After a refusal that
+still allows a retry, `--record-amendment-review` prints the reviewer's
+reason and the retry rule beside the need, and `--contract-amendments` marks
+a retry. Nothing is built for a proposal or a review. This changes the
+`make-round` fingerprint.

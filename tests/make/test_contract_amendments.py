@@ -33,6 +33,8 @@ STANCE = "The spine housing prints on its front face, the mating plane. No part 
 SEATS = "The wing hinge seats and the back-wall ceiling sit at Y 17.5."
 CLEAR = "The wing gears keep 0.4 mm behind the back wall."
 NEW_STANCE = "The spine housing prints on its back face. No part needs support."
+# Issue #96: STANCE with only ", the mating plane" deleted.
+SMALLER_STANCE = "The spine housing prints on its front face. No part needs support."
 REFERENCES = ("ref-01-assembly.png", "ref-02-spine-housing.png")
 CONTRACT = {
     "schema_version": 4,
@@ -306,10 +308,153 @@ class ContractAmendmentTest(unittest.TestCase):
             self.clear(report=1, amendment=1)
         self.clear(report=1, need="Contract Contradiction: '%s' vs '%s'" % (STANCE, SEATS))
         self.blocked()
-        self.propose(rows=(STANCE, SEATS))
+        self.propose(rows=(STANCE, SEATS), changes=[{"from": STANCE, "to": SMALLER_STANCE}])
         self.review(self.module.read_contract_amendments(self.project)[2], reviewer="b1b2c3d4e5f6a7b8c")
         with self.assertRaisesRegex(ValueError, "does not name Blocked Report 2"):
             self.clear(report=2, amendment=2)
+
+    # -- the Smaller Retry (issue #96) -----------------------------------------
+
+    def ledger_events(self):
+        ledger = self.project / "measure/contract-amendments.jsonl"
+        return ledger, [json.loads(line) for line in ledger.read_text().splitlines()]
+
+    def write_ledger(self, events):
+        ledger = self.project / "measure/contract-amendments.jsonl"
+        ledger.write_text("".join(json.dumps(event) + "\n" for event in events))
+
+    def retry(self, to=SMALLER_STANCE, **extra):
+        return self.propose(changes=[{"from": STANCE, "to": to}], **extra)
+
+    def amendment(self, number):
+        return self.module.read_contract_amendments(self.project)[number]
+
+    def test_deletions_only_means_a_shorter_subsequence_without_new_words(self):
+        for module in (self.module, __import__("workshop.make.contract_amendments", fromlist=["x"])):
+            with self.subTest(module=module.__name__):
+                self.assertTrue(module.deletions_only(STANCE, SMALLER_STANCE))
+                self.assertFalse(module.deletions_only(STANCE, NEW_STANCE))
+                self.assertFalse(module.deletions_only(STANCE, STANCE))
+                # A character subsequence that respells a word adds a word.
+                self.assertFalse(module.deletions_only(STANCE, STANCE.replace("plane", "plan")))
+                self.assertFalse(module.deletions_only(STANCE, STANCE.replace("mating ", "mating flat ")))
+
+    def test_a_smaller_change_refusal_allows_one_deletion_only_retry_that_applies(self):
+        self.propose()
+        event = self.amendment(1)
+        path = self.write("review.json", {
+            "amendment": 1, "packet_sha256": event["packet_sha256"], "reviewer": REVIEWER,
+            "contradiction": True, "smallest": False, "visible_in": [],
+            "references_checked": list(REFERENCES),
+            "reason": "Deleting only ', the mating plane' removes the contradiction."})
+        code, stdout, _ = self.main("--record-amendment-review", str(path))
+        self.assertEqual(code, 1)
+        self.assertIn("You may propose it once", stdout)
+        self.assertIn("Deleting only ', the mating plane'", stdout)
+        retried = self.retry()
+        self.assertEqual(retried["amendment"], 2)
+        self.assertEqual(retried["retry_of"], 1)
+        self.assertEqual(json.loads(Path(retried["packet"]).read_bytes())["retry_of"], 1)
+        item = self.review(self.amendment(2), reviewer="b1b2c3d4e5f6a7b8c")
+        self.assertEqual(item["status"], "applied")
+        self.assertEqual(self.module.current_contract(self.project)["requirements"][0]["text"],
+                         SMALLER_STANCE)
+        code, stdout, _ = self.main("--contract-amendments")
+        self.assertEqual(code, 0)
+        self.assertIn("Smaller Retry of amendment 1", stdout)
+        records = self.verify()
+        self.assertEqual([(r["status"], r["retry_of"]) for r in records],
+                         [("refused", None), ("applied", 1)])
+
+    def test_a_retry_that_adds_or_respells_words_is_refused(self):
+        self.propose()
+        self.review(smallest=False)
+        for to in (NEW_STANCE, STANCE.replace("plane", "plan"),
+                   SMALLER_STANCE.replace("No part", "No printed part")):
+            with self.subTest(to=to):
+                with self.assertRaisesRegex(ValueError, "only deletes words"):
+                    self.retry(to=to)
+        with self.assertRaisesRegex(ValueError, "changes only rows it changed"):
+            self.propose(changes=[{"from": SEATS, "to": "The wing hinge seats sit at Y 17.5."}])
+        # The host refuses the same retry forged into the ledger.
+        self.retry()
+        self.review(self.amendment(2), reviewer="b1b2c3d4e5f6a7b8c")
+        _, events = self.ledger_events()
+        events[2]["changes"][0]["to"] = NEW_STANCE
+        self.write_ledger(events)
+        with self.assertRaisesRegex(ContractError, "only deletes words"):
+            self.verify()
+
+    def test_a_third_proposal_for_the_same_contradiction_is_refused(self):
+        self.propose()
+        self.review(smallest=False)
+        self.retry()
+        item = self.review(self.amendment(2), reviewer="b1b2c3d4e5f6a7b8c", smallest=False)
+        self.assertEqual(item["status"], "refused")
+        self.assertFalse(self.module.retry_open(self.module.read_contract_amendments(self.project), item))
+        shorter = "The spine housing prints on its front face."
+        with self.assertRaisesRegex(ValueError, "one Smaller Retry at most"):
+            self.retry(to=shorter)
+        # The host refuses a third proposal forged into the ledger.
+        _, events = self.ledger_events()
+        forged = dict(events[2], amendment=3)
+        forged["changes"] = [dict(events[2]["changes"][0], to=shorter)]
+        self.write_ledger(events + [forged])
+        with self.assertRaisesRegex(ContractError, "one Smaller Retry at most"):
+            self.verify()
+
+    def test_a_retry_reviewed_by_the_refusing_reviewer_is_refused(self):
+        self.propose()
+        self.review(smallest=False)
+        self.retry()
+        with self.assertRaisesRegex(ValueError, "already reviewed"):
+            self.review(self.amendment(2))
+        with self.assertRaisesRegex(ValueError, "cannot confirm its own"):
+            self.review(self.amendment(2), reviewer="workshop-manager")
+        self.review(self.amendment(2), reviewer="b1b2c3d4e5f6a7b8c")
+        _, events = self.ledger_events()
+        events[3]["reviewer"] = REVIEWER
+        self.write_ledger(events)
+        with self.assertRaisesRegex(ContractError, "already reviewed Contract Amendment 1"):
+            self.verify()
+
+    def test_a_retry_after_a_contradiction_or_visibility_refusal_is_refused(self):
+        for verdict in ({"contradiction": False, "smallest": False},
+                        {"smallest": False, "visible_in": [REFERENCES[1]]},
+                        {"contradiction": False}):
+            with self.subTest(verdict=verdict):
+                self.setUp()
+                self.propose()
+                item = self.review(**verdict)
+                self.assertEqual(item["status"], "refused")
+                self.assertFalse(self.module.retry_open(
+                    self.module.read_contract_amendments(self.project), item))
+                with self.assertRaisesRegex(ValueError, "only a refusal that names a smaller change"):
+                    self.retry()
+                # The host refuses the retry forged into the ledger.
+                _, events = self.ledger_events()
+                forged = dict(events[0], amendment=2, retry_of=1)
+                forged["changes"] = [dict(events[0]["changes"][0], to=SMALLER_STANCE)]
+                self.write_ledger(events + [forged])
+                with self.assertRaisesRegex(ContractError, "only a refusal that names a smaller change"):
+                    self.verify()
+
+    def test_after_an_applied_amendment_the_same_rows_are_not_proposed_again(self):
+        self.propose(rows=(STANCE, CLEAR), changes=[{"from": SEATS, "to": "The seats sit at Y 18.5."}])
+        self.review()
+        with self.assertRaisesRegex(ValueError, "was applied"):
+            self.propose(rows=(CLEAR, STANCE))
+
+    def test_the_host_refuses_a_retry_that_hides_its_retry_of(self):
+        self.propose()
+        self.review(smallest=False)
+        self.retry()
+        self.review(self.amendment(2), reviewer="b1b2c3d4e5f6a7b8c")
+        _, events = self.ledger_events()
+        del events[2]["retry_of"]
+        self.write_ledger(events)
+        with self.assertRaisesRegex(ContractError, "retry_of None, but the ledger makes it 1"):
+            self.verify()
 
     # -- the host --------------------------------------------------------------
 

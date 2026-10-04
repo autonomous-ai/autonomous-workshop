@@ -1095,7 +1095,12 @@ acceptance the host replays that ledger against the sealed contract by
 hash, derives each status from the verdict, and on Claude Code also requires
 a `contract-reviewer` the guard saw start and read every sealed reference.
 The Make gate receipt seals every amendment, and the run receipt lists every
-amendment of every attempt from the ledgers.
+amendment of every attempt from the ledgers. A refusal that only found a
+smaller change allows one Smaller Retry (issue #96): the same rows, each new
+text the refused `from` with only deletions applied, to another fresh
+reviewer. The tool and the replay refuse any other proposal quoting rows an
+earlier amendment quoted, and each retry names the amendment it follows as
+`retry_of`.
 
 A new run whose sealed Design Contract has an Interfaces section (ADR 0082)
 also proves the meetings between Components before assembly. The Workshop

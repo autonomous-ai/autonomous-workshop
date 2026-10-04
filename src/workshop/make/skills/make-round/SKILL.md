@@ -542,6 +542,16 @@ with `--record-amendment-review <review.json>`, adding `amendment`,
 reviewer is refused when it is the Manager, a Component's reviewer, or the
 reviewer of an earlier amendment.
 
+A refusal with `contradiction` true, `visible_in` empty and `smallest`
+false allows one Smaller Retry (issue #96): a new proposal with the same
+rows whose every change is a row the refused amendment changed, from the
+same text, with only deletions applied (shorter, a subsequence, no word
+added or respelled). The proposal and its packet record `retry_of`, and
+`--record-amendment-review` prints the reviewer's reason after a refusal
+that allows it. Any other proposal quoting rows an earlier amendment quoted
+is refused: a third one, one after a contradiction or visibility refusal,
+or one after an applied amendment.
+
 After an amendment applies, every round reads the sealed contract with the
 amended rows: the rows a component round delivers, the rows a Blocked Report
 quotes, and the contract-rows hash its review binds. A locked Component

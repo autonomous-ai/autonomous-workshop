@@ -224,9 +224,11 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   `make_round <cad-project> --propose-amendment`, then a fresh
   `contract-reviewer` given only the packet path and hash, then
   `--record-amendment-review` with its verdict. Never change a row any other
-  way, and never resolve a contradiction silently in shared code. A refused
-  amendment, or any change an image would show, stops the run on the need
-  the tool prints. While one awaits review, assembly and the Make proposal
+  way, and never resolve a contradiction silently in shared code. A refusal
+  that only names a smaller change allows one Smaller Retry (same rows,
+  words deleted only, another fresh `contract-reviewer`); any other refused
+  amendment, a refused retry, or any change an image would show stops the
+  run on the need the tool prints. While one awaits review, assembly and the Make proposal
   are refused; after a compaction run `make_round <cad-project>
   --contract-amendments`. The rules are in `references/make.md`.
 - Keep every tool subprocess attached to the Manager's dedicated POSIX process

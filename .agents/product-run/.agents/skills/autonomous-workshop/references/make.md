@@ -451,8 +451,18 @@ are separate. Frozen older runs retain their materialized rules and tools.
    applies only when the reviewer confirmed all three; the tool then names
    the Components whose rows changed. They unlock as for a Shared Helper
    change and their next rounds read the amended rows: tell each one's
-   worker. Otherwise nothing changed: the tool prints a need quoting the
-   rows; clear the report with it, if any, and seal it at once. A visible
+   worker. Otherwise nothing changed. If the reviewer confirmed the
+   contradiction and found nothing visible but answered `smallest: false`,
+   you get **one Smaller Retry**: the tool prints the reviewer's reason,
+   which names the smaller change. Propose it once with
+   `--propose-amendment`: the same `rows`, each change from the same row,
+   and each `to` that row's `from` with only words deleted (shorter, no word
+   added or respelled; never invent new wording). Send its packet to
+   another **fresh** `contract-reviewer`, never the one who refused. The
+   tool refuses a retry that adds text, a third proposal for the same rows,
+   and a retry after any other refusal. If the retry is refused too, or the
+   refusal was a contradiction or visibility refusal, the tool prints a need
+   quoting the rows; clear the report with it, if any, and seal it at once. A visible
    change always stops the run with a need; the owner and the outer loop
    handle it. Never change a row any other way and never resolve a
    contradiction silently in shared code. While an amendment awaits its

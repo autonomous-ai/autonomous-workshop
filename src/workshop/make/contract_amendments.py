@@ -20,6 +20,14 @@ that read every sealed reference image. ``WISH.json`` and the images keep
 their bytes. The Make gate receipt then records each amendment by hash: the
 old and new row text, the reviewer's record and the contract hash before and
 after. Nothing here judges an amendment or writes one.
+
+Issue #96 amends ADR 0085 with one Smaller Retry: when the only earlier
+amendment quoting the same rows was refused because the reviewer found a
+smaller change (the rows contradict, no reference shows it, ``smallest`` is
+false), the Manager may propose once more with the same rows, each change
+the refused change's ``from`` with only deletions applied, to another fresh
+reviewer. Any other proposal quoting rows an earlier amendment quoted is
+refused here.
 """
 
 from __future__ import annotations
@@ -92,6 +100,77 @@ def _apply(contract: Mapping[str, Any], changes: Sequence[Mapping[str, Any]], la
             )
         items[0]["text"] = change["to"]
     return amended
+
+
+def _squash_rows(rows: Sequence[str]) -> list[str]:
+    return sorted(" ".join(row.split()) for row in rows)
+
+
+def deletions_only(old: str, new: str) -> bool:
+    """``new`` is ``old`` with only deletions applied: strictly shorter, a
+    character subsequence of ``old``, and every word of ``new`` a word of
+    ``old`` in the same order, so no word is added or respelled."""
+
+    if not isinstance(old, str) or not isinstance(new, str) or len(new) >= len(old):
+        return False
+    characters = iter(old)
+    if not all(character in characters for character in new):
+        return False
+    words = iter(re.findall(r"\w+", old))
+    return all(word in words for word in re.findall(r"\w+", new))
+
+
+def retry_refusal(
+    earlier: Sequence[Mapping[str, Any]], rows: Sequence[str], changes: Sequence[Mapping[str, Any]]
+) -> tuple[Optional[int], Optional[str]]:
+    """``(retry_of, refusal)`` for a proposal quoting ``rows`` after the
+    ``earlier`` amendments (issue #96). ``retry_of`` is the refused
+    amendment a Smaller Retry follows, or None when no earlier amendment
+    quotes the same rows; ``refusal`` says why the proposal may not be made,
+    or is None. Kept in step with make_round."""
+
+    same = [item for item in earlier if _squash_rows(item["rows"]) == _squash_rows(rows)]
+    if not same:
+        return None, None
+    first = same[0]
+    number = first["amendment"]
+    if len(same) > 1:
+        return number, (
+            "Contract Amendments %s already quote these rows; a contradiction gets one Smaller "
+            "Retry at most, so the run stops on the need"
+            % ", ".join(str(item["amendment"]) for item in same)
+        )
+    verdict = (first.get("review") or {}).get("verdict") or {}
+    if first.get("status") != "refused" or not (
+        verdict.get("contradiction") is True
+        and verdict.get("smallest") is False
+        and not verdict.get("visible_in")
+    ):
+        return number, (
+            "Contract Amendment %d already quotes these rows and was %s; only a refusal that "
+            "names a smaller change (contradiction true, nothing visible, smallest false) "
+            "allows one Smaller Retry" % (number, first.get("status"))
+        )
+    refused = {change["row"]: change for change in first["changes"]}
+    for change in changes:
+        before = refused.get(change["row"])
+        if before is None or before["from"] != change["from"]:
+            return number, (
+                "a Smaller Retry of Contract Amendment %d changes only rows it changed, from "
+                "the same text; %s is not one" % (number, change["row"])
+            )
+        if not deletions_only(change["from"], change["to"]):
+            return number, (
+                "a Smaller Retry of Contract Amendment %d only deletes words from %s's text; "
+                "%r adds or respells text" % (number, change["row"], change["to"][:80])
+            )
+    if {change["row"]: change["to"] for change in changes} == {
+        row: change["to"] for row, change in refused.items()
+    }:
+        return number, (
+            "a Smaller Retry of Contract Amendment %d repeats the refused change" % number
+        )
+    return number, None
 
 
 def _roles(entries: Any) -> set[str]:
@@ -180,6 +259,14 @@ def replay_contract_amendments(
                     "amendments applied before it make %s"
                     % (label, str(event.get("contract_sha256"))[:12], before[:12])
                 )
+            retry_of, refusal = retry_refusal(amendments, rows, changes)
+            if refusal is not None:
+                raise ContractError("%s: %s" % (label, refusal))
+            if event.get("retry_of") != retry_of:
+                raise ContractError(
+                    "%s names retry_of %r, but the ledger makes it %r"
+                    % (label, event.get("retry_of"), retry_of)
+                )
             amended = _apply(current, changes, label)
             if event.get("amended_sha256") != contract_digest(amended):
                 raise ContractError("%s names the wrong amended contract hash" % label)
@@ -193,6 +280,7 @@ def replay_contract_amendments(
                 ],
                 "reason": event["reason"],
                 "report": event.get("report"),
+                "retry_of": retry_of,
                 "affects": _affects(current, changes),
                 "packet": event["packet"],
                 "packet_sha256": event["packet_sha256"],
@@ -388,7 +476,9 @@ def run_contract_amendments(
 __all__ = [
     "AMENDMENT_LEDGER_NAME",
     "contract_digest",
+    "deletions_only",
     "replay_contract_amendments",
+    "retry_refusal",
     "run_contract_amendments",
     "verify_contract_amendments",
 ]

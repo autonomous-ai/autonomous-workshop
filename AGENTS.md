@@ -293,6 +293,13 @@ contract by hash before Make acceptance, refusing a missing review, a
 disagreement or visible change counted as applied, or a changed contract
 hash, and the receipt lists every amendment. `build-a-toy` folds each
 applied amendment into the toy's contract and ledger.
+Its #96 amendment allows one Smaller Retry: when a review confirms the
+contradiction, finds the change invisible but names a smaller one, the
+Manager may propose once more with the same rows, each change's new text the
+refused `from` with only deletions applied, to another fresh
+`contract-reviewer`. The tool and the host's replay refuse a retry that adds
+or respells a word, a third proposal for the same rows, a retry after a
+contradiction or visibility refusal, and a reused reviewer.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

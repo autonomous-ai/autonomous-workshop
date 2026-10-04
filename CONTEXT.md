@@ -358,6 +358,14 @@ the next attempt (ADR 0085, issue #90). A Reference Camera amendment (ADR
 0083) is the host's own and is not one.
 _Avoid_: Contract edit, override, waiver
 
+**Smaller Retry**:
+The one further Contract Amendment allowed after a refusal whose Contract
+Reviewer confirmed the contradiction and found the change invisible but
+named a smaller change: the same rows, each change's new text the refused
+change's old text with only deletions applied, reviewed by another fresh
+Contract Reviewer. Its refusal stops the run with the need (issue #96).
+_Avoid_: Second attempt, re-proposal
+
 **Contract Reviewer**:
 The fresh reader, never the Workshop Manager and never a Component's
 reviewer, who confirms or refuses one Contract Amendment after viewing every
