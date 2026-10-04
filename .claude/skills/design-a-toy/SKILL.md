@@ -603,6 +603,59 @@ Bring the Interfaces up to date with what you fixed: every mesh and every
 swept clearance is a coupled Interface whose pose table matches the sweep
 you just ran, and every envelope still holds its side through the travel.
 
+Then check every **travel stop** the contract names: each hard stop that a
+host Component's material puts at an extreme of a motion ("hard stops on
+vertical housing faces end both extremes"). The swept space, the openings
+that let the travel through and the print stance were each fixed for their
+own reasons, and together they can leave the host no material to stop with.
+For each stop, at each extreme it names, the host needs material that
+
+- lies outside every moving part's swept space over its travel, plus the
+  clearance;
+- lies in a stopping part's way within 4 degrees past the extreme (its lead;
+  a part geared to it counts too);
+- prints in the host's stance: it grows from the bed, or from material the
+  contract already prints, never steeper than the overhang limit, at least
+  0.8 thick.
+
+When the parts turn about one axis, compute it with
+`python .claude/skills/design-a-toy/scripts/travel_stop.py CHECK.json --map`;
+its docstring gives the input. The script cannot read the contract, so
+supply it: one slice per layer the moving parts occupy along their axis
+(each with the host's section there as an outline, its contract openings and
+other parts' envelopes as `keep_out`, and as `anchors` only material the
+contract prints by other means, such as a pillar whose roof leans on a wall
+behind the slice), each moving part's section in that layer at its contract
+numbers with its travel toward the extreme, and the build direction from the
+host's stance. Leave out nothing the contract fixes on a moving part, as in
+Stage 3c. For any other motion, sample the leads by hand.
+
+When no slice holds a site, the stop cannot be built where the contract puts
+it. Before sealing, name another stop: another Component, a shoulder in the
+gear train or the detent, keeping the words to what is buildable. A new
+stop that shows changes the images too.
+
+Worked example: Broken God's open extreme (attempt 17, amend-k). R03, the
+`wing-housing` Interface and the mechanism prose put hard stops on vertical
+spine-housing faces at both ends of the 35 degree wing travel. The housing
+prints upside down on its top (Z 208.7), and its shoulder slots open through
+the top in front of the back wall (Y 7.3 to 17.6).
+
+| Slice | Extreme | Wing lead (wing#1 / wing#2) | Verdict |
+|---|---|---|---|
+| Sector layer, Y 11.8 to 17.6 | open | wholly outside the 40.7 outline | no site |
+| Boss layer, Y 7.3 to 11.8 | open | 3.3 / 2.0 mm² free, nearest printable 14.2 / 12.0 away: each hub sweeps the column to the bed | no site |
+| Boss layer, Y 7.3 to 11.8 | closed | a central rib above the sector mesh, Z 199.5 | site |
+
+No housing stop can end the open extreme. Nothing caught this before the
+run, which measured 0.000 mm³ of top-down-printable housing in both wings'
+leads and stopped on a Contract Contradiction. The fix (amend-l) kept the
+closed hard stop and named R06's detent for the open extreme, a change to the
+words alone.
+
+Record every stop in the working notes as a table: stop, host, extreme,
+slice, lead, site, verdict, resolution.
+
 Last, check every **camera-named composition claim**, moving parts or not.
 The pose, the cameras and the words were fixed separately, and a claim true
 from one camera can be false from another. For every requirement that names
@@ -647,7 +700,8 @@ Record every claim in the working notes as a table: requirement, camera,
 landmarks, projected numbers, verdict, resolution.
 
 Done when: every check passes on the contract as amended, the motion plan is
-in the contract, the Interfaces match it, and every camera-named composition
+in the contract, the Interfaces match it, every named travel stop has a
+printable site at each extreme it ends, and every camera-named composition
 claim holds from its camera.
 
 ## Stage 4 - Visual review
