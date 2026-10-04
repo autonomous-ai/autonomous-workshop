@@ -538,7 +538,8 @@ both the contract and the images.
 
 ## Stage 3d - Check that the mechanism can move
 
-Skip this stage when the toy has no moving part. Otherwise, the images and
+When the toy has no moving part, skip to the camera-composition check at the
+end of this stage, which every toy runs. Otherwise, the images and
 the print fixes of Stages 3b and 3c may have moved a gear, a hinge or a
 blade, so check the mechanism against the contract as it now stands.
 
@@ -602,8 +603,52 @@ Bring the Interfaces up to date with what you fixed: every mesh and every
 swept clearance is a coupled Interface whose pose table matches the sweep
 you just ran, and every envelope still holds its side through the travel.
 
+Last, check every **camera-named composition claim**, moving parts or not.
+The pose, the cameras and the words were fixed separately, and a claim true
+from one camera can be false from another. For every requirement that names
+a camera and claims a composition or silhouette in the Display Pose (framing,
+a V, a line, an arc, symmetry, what is in front of what), project the
+landmarks the contract pins through that camera and confirm the claim. The
+landmarks are the ones the claim is about, at their contract numbers: blade
+and limb centrelines, hinge and pivot points, extents, the focal part's
+centre. Compute it with
+`python .claude/skills/design-a-toy/scripts/camera_composition.py CHECK.json`;
+its docstring gives the input, the camera convention (`render_review`'s, the
+one `references[].camera` uses) and the claims it judges. Read framing, arcs
+and silhouettes from the screen positions it prints. When the prose gives a
+camera in another convention ("35 degrees azimuth" with no frame), convert it
+and record the conversion; if the claim's truth depends on the reading, the
+words are ambiguous and must change too.
+
+A claim that fails changes before the images are approved: the camera, the
+pose or the words, whichever the Inventor's Taste can best spare. Prefer
+deleting or narrowing the words when the images already show the pose; a new
+camera or pose changes what the images show, so redo Stage 3b for them.
+
+Worked example: Broken God's R01 (attempt 16): "At 35 degrees azimuth and 22
+degrees elevation ... the chest cage ... is the focal point, framed by the
+open wings as a V." R02 fixes the pose: both wings open and mirrored, each top
+blade's centreline 4.3 degrees above horizontal. The blades hinge at X ±16,
+Z 198.8 and reach about 175 mm outward along ±X.
+
+| Camera | Blade at +X | Blade at -X | Claim "as a V" |
+|---|---|---|---|
+| [35, 22] in `render_review`'s convention | falls 22.5 | rises 33.3 | fails |
+| [-55, 22], 35 degrees round from the front | falls 10.1 | rises 19.2 | fails |
+| [-90, 15], ref-01's camera | rises 4.2 | rises 4.2 | holds, a shallow V |
+
+From either reading of R01's camera the blades make a tilted, near-straight
+line, not a V; only near the front do they rise in mirror. Nothing caught this
+before the run, which stopped on a Contract Contradiction that both its
+Contract Reviewer and a blind critic confirmed. The fix (amend-k) deleted
+"as a V" from R01, a change to the words alone, so no image changed.
+
+Record every claim in the working notes as a table: requirement, camera,
+landmarks, projected numbers, verdict, resolution.
+
 Done when: every check passes on the contract as amended, the motion plan is
-in the contract, and the Interfaces match it.
+in the contract, the Interfaces match it, and every camera-named composition
+claim holds from its camera.
 
 ## Stage 4 - Visual review
 
