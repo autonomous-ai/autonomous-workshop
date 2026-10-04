@@ -131,9 +131,12 @@ one section a failure you cannot place requires.
   then rerun your round, read the rows it delivers, and build to them.
 - Report to the Manager when build and print pass, when your Component is
   locked, or when you are blocked. Use 10 lines or fewer: status (passed and
-  awaiting review, locked, or blocked), shape rounds used, the latest round
-  id, its packet sha256 and B-rep identity, the review round you acted on,
-  each detail you left out after two refusals, and open issues.
+  awaiting review, locked, or blocked), shape rounds used
+  (`shape_rounds_used`), the latest round (`round`), its visual packet path
+  (`visual.packet`) and packet sha256 (`visual.packet_sha256`), both absent
+  when the round rendered no packet, and its B-rep identity (`identity`), all
+  from that round's `summary.json` and printed by the round, the review round
+  you acted on, each detail you left out after two refusals, and open issues.
   Send no logs and no images.
 - Stay available after your Component locks: until the assembly passes, an
   unlock comes back to you rather than to a new worker.

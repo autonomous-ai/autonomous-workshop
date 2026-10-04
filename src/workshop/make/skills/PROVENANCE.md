@@ -1904,3 +1904,13 @@ still allows a retry, `--record-amendment-review` prints the reviewer's
 reason and the retry rule beside the need, and `--contract-amendments` marks
 a retry. Nothing is built for a proposal or a review. This changes the
 `make-round` fingerprint.
+
+## Local change: a component round prints the B-rep identity a worker reports (2026-10-04)
+
+A Workshop-local change (issue #98) to Workshop's own `make-round`. A
+component round records its B-rep identity as `identity` in `summary.json`
+(it was only in `make-round-state.json`) and prints it on an `identity` line;
+any round with a visual packet prints its sha256 and path on a `packet`
+line (`visual.packet_sha256`, `visual.packet`). The Component Worker definition names these fields
+exactly. This changes the `make-round` fingerprint; materialized runs keep
+their copied bytes.

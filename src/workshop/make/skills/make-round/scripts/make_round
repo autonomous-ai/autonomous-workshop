@@ -1175,6 +1175,8 @@ def render_summary(summary: dict) -> str:
         used = summary.get("shape_rounds_used", summary.get("shape_rounds", 0))
         lines.append("  shape %d/%d shape round(s) used; this round %s" % (
             used, summary["shape_limit"], "is a shape round" if summary.get("shape_round") else "is not one"))
+        if summary.get("identity") is not None:
+            lines.append("  identity %s  B-rep identity (summary.json identity)" % summary["identity"])
         helpers = summary.get("imported_helpers") or {}
         if helpers:
             lines.append("  helpers " + ", ".join("%s %s" % (path, digest[:12]) for path, digest in helpers.items()))
@@ -1212,6 +1214,9 @@ def render_summary(summary: dict) -> str:
     if summary.get("visual") is not None:
         visual = summary["visual"]
         lines.append("  visual %s  %s" % (visual["status"].upper(), visual.get("observation", visual.get("detail", ""))))
+        if visual.get("packet_sha256"):
+            lines.append("  packet %s  %s  (summary.json visual.packet_sha256, visual.packet)"
+                         % (visual["packet_sha256"], visual.get("packet", "")))
         for item in visual["findings"]:
             lines.append("    %s: %s | evidence: %s | repair: %s" % (item["part"], item["defect"], item["evidence"], item["repair"]))
         for item in visual.get("differences") or []:
@@ -4094,6 +4099,8 @@ def make_round(args) -> int:
             shape_limit=SHAPE_REPAIR_LIMIT, phase=next_policy["phase"], locked=lock_record(next_policy),
             unlock=outcome["unlocks"], imported_helpers=helpers, carry_key=key, contract_rows=rows_digest,
             worker_nonce=getattr(args, "worker_nonce", None),
+            # Issue #98: the B-rep identity the Component Worker reports.
+            identity=round_identity,
         )
         if envelopes:
             summary["envelopes"] = envelopes

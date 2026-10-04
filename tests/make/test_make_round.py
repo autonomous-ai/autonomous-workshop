@@ -1379,6 +1379,43 @@ class ContractComponentReviewTest(unittest.TestCase):
             self.assertEqual(unguarded["round"], 2)
             self.assertIsNone(unguarded["worker_nonce"])
 
+    def test_every_field_the_worker_reports_is_in_the_rounds_summary_and_output(self):
+        """Issue #98: each summary field the worker definition names exists."""
+        import re
+        from workshop.make.role_agents import (
+            COMPONENT_WORKER, make_role_agent_files, parse_make_role_agent_bytes)
+
+        content = make_role_agent_files()[COMPONENT_WORKER]
+        instructions = parse_make_role_agent_bytes(COMPONENT_WORKER, content)["developer_instructions"]
+        report = instructions[instructions.index("- Report to the Manager"):]
+        report = report[:report.index("\n- ")]
+        fields = [name for name in re.findall(r"`([a-z_]+(?:\.[a-z_0-9]+)*)`", report)
+                  if not name.endswith(".json")]
+        self.assertEqual(sorted(fields), ["identity", "round", "shape_rounds_used", "visual.packet", "visual.packet_sha256"])
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            state = json.loads((project / "measure/component-rounds/body/make-round-state.json").read_text())
+            printed = module.render_summary(summary)
+            for field in fields:
+                with self.subTest(field=field):
+                    value = summary
+                    for key in field.split("."):
+                        self.assertIn(key, value)
+                        value = value[key]
+                    self.assertIsNotNone(value)
+                    if isinstance(value, str):
+                        self.assertIn(value, printed)
+            self.assertEqual(summary["identity"], state["identity"])
+            self.assertIn("r%04d" % summary["round"], printed)
+            # A recorded review keeps both values in the round's summary.
+            reviewed = self._review(module, project, summary)
+            self.assertEqual((reviewed["identity"], reviewed["visual"]["packet_sha256"]),
+                             (summary["identity"], summary["visual"]["packet_sha256"]))
+            self.assertIn(summary["identity"], module.render_summary(reviewed))
+            self.assertIn(summary["visual"]["packet_sha256"], module.render_summary(reviewed))
+
     def test_a_worker_nonce_belongs_only_to_a_component_build_round(self):
         module = load_module()
         nonce = "ab" * 16

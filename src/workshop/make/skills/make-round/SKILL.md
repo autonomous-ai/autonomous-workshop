@@ -358,6 +358,10 @@ view and is reviewed afresh.
 `make_round` makes the build -> review -> repair loop mandatory. Read the
 summary's `shape` and `lock` lines, or `shape_round`, `shape_rounds_used`,
 `locked` and `unlock` in `summary.json`, before deciding what to do next.
+A component round prints its B-rep identity on an `identity` line and its
+packet sha256 and path on a `packet` line, recorded as `identity`,
+`visual.packet_sha256` and `visual.packet` in `summary.json` (issue #98):
+the values a Component Worker reports.
 
 - A round that passes build and print must be reviewed before the
   Component's geometry may change. Until its review is recorded, a round
