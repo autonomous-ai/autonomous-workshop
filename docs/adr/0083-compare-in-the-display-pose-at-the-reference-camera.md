@@ -11,7 +11,9 @@
   (`workflow/agent_run.py`, `workflow/native_run.py`, `cli/main.py`)
 - Amends: ADR 0075 and ADR 0076 (what the comparison shows), ADR 0082 (which
   Components define `assembly_pose`)
-- Issue: #81
+- Issue: #81; extended by ADR 0085's issue #100 amendment (2026-10-04): an Owner
+  Contract Amendment on resume shares `CONTRACT-AMENDMENTS.json` with the
+  camera amendments
 
 ## Context
 

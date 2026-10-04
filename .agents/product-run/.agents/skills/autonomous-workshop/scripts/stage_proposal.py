@@ -2892,6 +2892,11 @@ def _blocked_reports(content: str) -> dict[int, dict[str, Any]]:
 
 # ADR 0085: kept in step with AMENDMENT_LEDGER_NAME in make_round.
 CONTRACT_AMENDMENTS_NAME = "contract-amendments.jsonl"
+# Issue #100: the host's run-root amendments file, which may hold an Owner
+# Contract Amendment. The host reaches a run with one only when this
+# finalizer carries the marker below (kept in step with make_round).
+OWNER_AMENDMENTS_FILE = "CONTRACT-AMENDMENTS.json"
+OWNER_AMENDMENTS_MARKER = "workshop-owner-contract-amendments-v1"
 
 
 def _make_round_tool(run_root: Path) -> dict[str, Any]:
@@ -2930,11 +2935,15 @@ def _current_design_contract(
     run_root: Path, wish_sha256: str, project: Path
 ) -> Optional[Mapping[str, Any]]:
     """The sealed Design Contract with every applied Contract Amendment (ADR
-    0085): what the signature review's requirement rows must match."""
+    0085) and every Owner Contract Amendment (issue #100): what the
+    signature review's requirement rows must match."""
 
     sealed = _sealed_design_contract(run_root, wish_sha256)
     ledger = project / "measure" / CONTRACT_AMENDMENTS_NAME
-    if sealed is None or (not ledger.exists() and not ledger.is_symlink()):
+    owner = run_root / OWNER_AMENDMENTS_FILE
+    if sealed is None or (
+        not ledger.exists() and not ledger.is_symlink() and not owner.is_file()
+    ):
         return sealed
     tool = _make_round_tool(run_root)
     if "current_contract" not in tool:

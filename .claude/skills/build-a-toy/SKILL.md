@@ -207,8 +207,8 @@ python3 .claude/skills/build-a-toy/scripts/ledger.py next <contract-dir>/build-a
 ```
 
 It does what that prints: `launch`, `watch`, `diagnose`, `fix`,
-`resume-budget`, `ask-owner`, or `migrate` for a ledger that predates this
-mode. A `diagnose` that carries `then_ask_owner` is still done first, so the
+`resume-budget`, `resume-amendment`, `ask-owner`, or `migrate` for a ledger
+that predates this mode. A `diagnose` that carries `then_ask_owner` is still done first, so the
 owner is asked once, with the diagnosis in hand. Write every decision into the ledger **before** acting on it, then run
 `ledger.py check` on it. The tools are under `scripts/`, run from the
 Workshop checkout with `uv run python`; none assumes a platform or a home
@@ -247,8 +247,10 @@ person is listed under "When the loop stops and asks".
    classify it with `ledger.py classify` on that file, and record one `stops`
    entry with the class, the evidence and the progress.
 4. **Fold in-run amendments** into the contract, whatever the class (below).
-5. **Fix** by class (the table below), then set `loop.state: launch` once
-   nothing is pending.
+5. **Fix** by class (the table below), then run `ledger.py next`. It
+   prints `resume-amendment` when the stopped run can take the fix as an
+   owner amendment (below); otherwise set `loop.state: launch` once nothing
+   is pending.
 6. **Check the stop conditions** with `ledger.py next`. It prints
    `ask-owner` with every reason that holds; otherwise the next pass
    starts at 1.
@@ -263,7 +265,7 @@ worker blocked on two rows).
 | Class | Evidence | What the loop does |
 |---|---|---|
 | Camera need | a Reference Camera mismatch `need` | Step 3's path, unchanged |
-| `contract-contradiction` | a `need` quoting contradicting statements, a Blocked Report open or waiting (except at a progressing attempt's first budget stop with no other such evidence: the raise gives the root its turn to answer), a Component Worker's report quoting rows that cannot both hold, or a repeated print defect that a contract row forces | Fix it at the root (below) |
+| `contract-contradiction` | a `need` quoting contradicting statements, a Blocked Report open or waiting (except at a progressing attempt's first budget stop with no other such evidence: the raise gives the root its turn to answer), a Component Worker's report quoting rows that cannot both hold, or a repeated print defect that a contract row forces | Fix it at the root (below); resume the stopped run with an invisible fix as an owner amendment, else relaunch |
 | `reference-mismatch` | an image contradicts the contract or the camera beyond what a Reference Conflict absorbs | Fix the image with `design-a-toy` Stage 3b; it is a visible change |
 | `harness-defect` | Workshop itself went wrong: a false stop, a miscount, a guard or tool refusing valid work | Open an issue, fix and merge it (below) |
 | `budget-progressing` | `stop_category` `budget`, and more Components locked or fewer repeated print defects than the previous attempt, with no raise yet in this attempt | Resume once with the cap raised by 100M tokens: `uv run workshop resume <wish-id> --max-tokens <limit + 100000000> --turn-minutes 360 --json`, with `--check-motion true` when the run has it; record `budget_raised: true` |
@@ -292,6 +294,29 @@ one of these: fold it as above.) Fix the contract:
    it in the entry's `design_check`. The swept-volume-over-ceiling check in
    Stage 3c is the first such check (attempt 15).
 4. **Apply it, or batch it for the owner**, by the approval rule below.
+5. **Resume the stopped run with it when it is invisible.** Once every
+   Contract Contradiction of the attempt is applied, invisible (`visible:
+   false`) and nothing else is pending, `ledger.py next` prints
+   `resume-amendment`. Resume the run that stopped instead of relaunching,
+   so its locked Components keep their locks:
+
+   ```bash
+   uv run workshop resume <wish-id> --amend-contract <contract-dir>/CONTRACT.md \
+     --turn-minutes 360 --json [--check-motion true]
+   ```
+
+   The host records it as an Owner Contract Amendment (issue #100): it
+   refuses anything beyond requirement text, Interface text and prose, keeps
+   the run's sealed name line (so the root file's own `Name this toy
+   exactly` line, or none, is fine) and unlocks only the Components whose
+   own rows changed. Fold the run's applied in-run amendments into
+   `CONTRACT.md` first, as `ledger.py next` requires, or the file would undo
+   them. On success set each entry's `resume: resumed` and
+   `loop.state: watching`, and keep watching the same attempt. A run
+   materialized before #100 refuses it ("materialized before owner contract
+   amendments") and nothing is recorded: set `resume: refused` and launch
+   the next attempt. A visible change redraws an image, which only a new
+   attempt seals, so it is always relaunched.
 
 ### Folding in-run Contract Amendments back
 

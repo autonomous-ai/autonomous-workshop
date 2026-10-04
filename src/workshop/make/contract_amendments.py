@@ -28,10 +28,22 @@ false), the Manager may propose once more with the same rows, each change
 the refused change's ``from`` with only deletions applied, to another fresh
 reviewer. Any other proposal quoting rows an earlier amendment quoted is
 refused here.
+
+Issue #100 adds the Owner Contract Amendment: when a run stops on a Contract
+Contradiction need, the owner may answer it on resume (``workshop resume
+--amend-contract CONTRACT.md``) with the amended contract file instead of a
+new attempt. The host diffs that file against the contract the run reads
+now and refuses anything beyond requirement text, Interface text and prose;
+the run keeps its sealed name line. It records the change by hash beside
+``WISH.json`` (the run root's ``CONTRACT-AMENDMENTS.json``) and in its own
+host-correction ledger. Rounds read the owner's rows after every applied
+in-run amendment, and in-run amendments close: the replay before Make
+acceptance refuses one numbered after the owner's first amendment.
 """
 
 from __future__ import annotations
 
+import difflib
 import hashlib
 import json
 import os
@@ -57,6 +69,15 @@ _VERDICT_KEYS = frozenset({"contradiction", "smallest", "visible_in", "reference
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 _MAKE_ATTEMPTS = ("artifacts", "make")
 _INSTANCE = re.compile(r"^(.+)#[1-9][0-9]*$")
+# Issue #100: a run's make_round and Make finalizer apply an Owner Contract
+# Amendment only when they carry this marker (kept in step with both).
+OWNER_AMENDMENTS_MARKER = b"workshop-owner-contract-amendments-v1"
+OWNER_AMENDMENT_KIND = "owner-contract-amendment"
+# The round's name line build-a-toy prepends to the contract it seals; the
+# run keeps the one it sealed.
+NAME_LINE = re.compile(r"Name this (?:toy|revision) exactly: [^\n]*")
+_FENCE = re.compile(r"```design-contract\s*\n(.*?)```", re.DOTALL)
+_PROSE_BLOCK = "```design-contract\n(the design-contract block)\n```"
 
 
 def contract_digest(contract: Mapping[str, Any]) -> str:
@@ -334,6 +355,13 @@ def _read_ledger(ledger: Path) -> str:
         raise ContractError("the Contract Amendment ledger is invalid: %s" % exc) from exc
 
 
+def read_amendment_ledger(ledger: Path) -> str:
+    """One Contract Amendment ledger's text, refusing anything but a bounded
+    regular file."""
+
+    return _read_ledger(Path(ledger))
+
+
 def _record(item: Mapping[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in item.items() if not key.startswith("_")}
 
@@ -346,9 +374,12 @@ def verify_contract_amendments(
     references: Mapping[str, tuple[Path, str]],
     blocked_reports: Sequence[Mapping[str, Any]] = (),
     reviewer_check: Optional[Any] = None,
+    owner_amendments: Sequence[Mapping[str, Any]] = (),
 ) -> list[dict[str, Any]]:
     """Refuse Make output whose Contract Amendments do not replay; return
-    every amendment, applied or refused, as the Make gate receipt records it.
+    every amendment, applied or refused, as the Make gate receipt records it,
+    then every owner amendment the host recorded (issue #100), which closes
+    in-run amendments after the number the ledger had reached.
 
     ``references`` maps each sealed reference file to its run path and sealed
     sha256. ``blocked_reports`` are the run's Blocked Reports: one cleared by
@@ -365,6 +396,11 @@ def verify_contract_amendments(
         amendments = replay_contract_amendments(
             _read_ledger(ledger), contract, wish_sha256=wish_sha256
         )
+    if owner_amendments and contract is None:
+        raise ContractError("an owner amendment needs a run sealed with a Design Contract")
+    refusal = owner_closure_refusal(amendments, owner_amendments)
+    if refusal is not None:
+        raise ContractError(refusal)
     seen_reviewers: dict[str, int] = {}
     images = {
         os.path.realpath(path): digest for path, digest in references.values()
@@ -433,7 +469,185 @@ def verify_contract_amendments(
                     "Blocked Report %s is cleared by Contract Amendment %s, which is not an "
                     "applied amendment naming it" % (report.get("report"), answer.get("amendment"))
                 )
-    return [_record(item) for item in amendments]
+    return [_record(item) for item in amendments] + [dict(item) for item in owner_amendments]
+
+
+def owner_contract_changes(
+    current: Mapping[str, Any], amended: Mapping[str, Any]
+) -> list[dict[str, Any]]:
+    """Each requirement and Interface text the owner's ``amended`` contract
+    changes against the ``current`` one, as ``{"row", "scope", "from",
+    "to"}``, requirements first, in contract order (issue #100).
+
+    Refuses, naming every difference at once, a change to anything else: the
+    schema, title, Inventor, envelope, a reference or its camera, a geometry,
+    a requirement's id, scope or order, and an Interface's id, kind,
+    Components, envelope, poses or yielding side.
+    """
+
+    errors: list[str] = []
+    changes: list[dict[str, Any]] = []
+    for key in sorted(set(current) | set(amended)):
+        if key in ("requirements", "interfaces"):
+            continue
+        if current.get(key) != amended.get(key):
+            errors.append("it changes %s" % key)
+    old_rows = [item for item in current.get("requirements") or () if isinstance(item, dict)]
+    new_rows = [item for item in amended.get("requirements") or () if isinstance(item, dict)]
+    if [(item.get("id"), item.get("scope")) for item in old_rows] != [
+        (item.get("id"), item.get("scope")) for item in new_rows
+    ]:
+        errors.append("it adds, removes, reorders or rescopes a requirement")
+    else:
+        for index, (old, new) in enumerate(zip(old_rows, new_rows)):
+            if old.get("text") != new.get("text"):
+                changes.append({
+                    "row": old.get("id") if isinstance(old.get("id"), str) else "requirements[%d]" % index,
+                    "scope": old.get("scope"), "from": old.get("text"), "to": new.get("text"),
+                })
+    if ("interfaces" in current) != ("interfaces" in amended):
+        errors.append("it adds or removes the Interfaces section")
+    old_faces = [item for item in current.get("interfaces") or () if isinstance(item, dict)]
+    new_faces = [item for item in amended.get("interfaces") or () if isinstance(item, dict)]
+    if [item.get("id") for item in old_faces] != [item.get("id") for item in new_faces]:
+        errors.append("it adds, removes or reorders an Interface")
+    else:
+        for old, new in zip(old_faces, new_faces):
+            other = sorted(
+                key for key in set(old) | set(new) if key != "text" and old.get(key) != new.get(key)
+            )
+            if other:
+                errors.append("it changes Interface %s's %s" % (old.get("id"), ", ".join(other)))
+            elif old.get("text") != new.get("text"):
+                row = INTERFACE_ROW + str(old.get("id"))
+                changes.append({"row": row, "scope": row, "from": old.get("text"), "to": new.get("text")})
+    if errors:
+        raise ContractError(
+            "an owner amendment changes only requirement text, Interface text and prose; "
+            "the amended contract %s. Reference images, geometries and an Interface's other "
+            "fields stay sealed: relaunch to change them" % "; ".join(errors)
+        )
+    return changes
+
+
+def owner_affects(contract: Mapping[str, Any], changes: Sequence[Mapping[str, Any]]) -> list[str]:
+    """The Components whose own contract rows an owner amendment changes: the
+    geometry a requirement is scoped to, and every Component an Interface
+    joins. An assembly row is no Component's row; the assembly round, the
+    blind review and the final verification read it."""
+
+    affected: set[str] = set()
+    for change in changes:
+        if change["row"].startswith(INTERFACE_ROW):
+            for item in contract.get("interfaces") or ():
+                if isinstance(item, dict) and INTERFACE_ROW + str(item.get("id")) == change["row"]:
+                    affected |= _roles(item.get("components"))
+        elif isinstance(change["scope"], str) and change["scope"].startswith(GEOMETRY_SCOPE):
+            affected.add(change["scope"][len(GEOMETRY_SCOPE):])
+    return sorted(affected)
+
+
+def apply_owner_amendments(
+    contract: Mapping[str, Any], owners: Sequence[Mapping[str, Any]]
+) -> dict[str, Any]:
+    """``contract`` with every owner amendment's row texts set, in order;
+    refuses a row the contract does not have. Kept in step with make_round."""
+
+    amended = json.loads(json.dumps(contract))
+    for owner in owners:
+        for change in owner.get("changes") or ():
+            row = change["row"]
+            if row.startswith(INTERFACE_ROW):
+                items = [
+                    item for item in amended.get("interfaces") or ()
+                    if isinstance(item, dict) and INTERFACE_ROW + str(item.get("id")) == row
+                ]
+            else:
+                items = [
+                    item for index, item in enumerate(amended.get("requirements") or ())
+                    if isinstance(item, dict)
+                    and (item.get("id") == row or "requirements[%d]" % index == row)
+                ]
+            if len(items) != 1:
+                raise ContractError("an owner amendment changes %s, which the contract does not have" % row)
+            items[0]["text"] = change["to"]
+    return amended
+
+
+def _prose(objective: str) -> list[str]:
+    return _FENCE.sub(lambda _match: _PROSE_BLOCK, objective).splitlines()
+
+
+def owner_objective(
+    sealed_objective: str, current_objective: str, amended_text: str
+) -> tuple[Optional[str], Optional[str]]:
+    """``(objective, prose_diff)`` for an owner's amended contract file.
+
+    A run sealed by ``workshop wish --contract`` holds the whole contract as
+    its objective: the amended objective is the file with the run's sealed
+    name line in place of its own (``Name this toy exactly: ...``), and
+    ``prose_diff`` the unified diff of the prose outside the design-contract
+    block against ``current_objective``, or None when the prose is
+    unchanged. A correction run's objective is its brief and holds no
+    contract prose: both are None, and only the block's rows are amended.
+    """
+
+    if _FENCE.search(sealed_objective) is None:
+        return None, None
+    sealed_first = sealed_objective.split("\n", 1)[0]
+    amended_first = amended_text.split("\n", 1)[0]
+    if NAME_LINE.fullmatch(sealed_first):
+        if NAME_LINE.fullmatch(amended_first):
+            objective = sealed_first + amended_text[len(amended_first):]
+        else:
+            objective = sealed_first + "\n\n" + amended_text
+    elif NAME_LINE.fullmatch(amended_first):
+        raise ContractError(
+            "the amended contract opens with a name line, but this run sealed none; a run "
+            "keeps the name it was sealed with"
+        )
+    else:
+        objective = amended_text
+    diff = "\n".join(
+        difflib.unified_diff(
+            _prose(current_objective), _prose(objective), "sealed", "amended", n=1, lineterm=""
+        )
+    )
+    return objective, diff or None
+
+
+def contract_in_effect(
+    contract: Mapping[str, Any],
+    amendments: Sequence[Mapping[str, Any]],
+    owners: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """The sealed ``contract`` with every applied in-run amendment of one
+    replayed ledger, then every owner amendment: what the rounds read."""
+
+    current: Mapping[str, Any] = contract
+    for item in amendments:
+        if item["status"] == "applied":
+            current = item["_amended"]
+    return apply_owner_amendments(current, owners)
+
+
+def owner_closure_refusal(
+    amendments: Sequence[Mapping[str, Any]], owners: Sequence[Mapping[str, Any]]
+) -> Optional[str]:
+    """Why a ledger may not stand beside the owner amendments, or None: the
+    owner's first amendment closes in-run amendments after the number the
+    ledger had reached then (issue #100)."""
+
+    if not owners:
+        return None
+    closed = owners[0]["in_run_amendments"]
+    late = [item["amendment"] for item in amendments if item["amendment"] > closed]
+    if late:
+        return (
+            "Contract Amendment %d was proposed after the owner amended the contract; owner "
+            "amendment 1 closed in-run amendments after amendment %d" % (late[0], closed)
+        )
+    return None
 
 
 def run_contract_amendments(
@@ -475,8 +689,18 @@ def run_contract_amendments(
 
 __all__ = [
     "AMENDMENT_LEDGER_NAME",
+    "NAME_LINE",
+    "OWNER_AMENDMENTS_MARKER",
+    "OWNER_AMENDMENT_KIND",
+    "apply_owner_amendments",
     "contract_digest",
+    "contract_in_effect",
     "deletions_only",
+    "owner_affects",
+    "owner_closure_refusal",
+    "owner_contract_changes",
+    "owner_objective",
+    "read_amendment_ledger",
     "replay_contract_amendments",
     "retry_refusal",
     "run_contract_amendments",

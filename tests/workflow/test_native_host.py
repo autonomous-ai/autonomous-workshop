@@ -4866,3 +4866,190 @@ class ReferenceCameraAmendmentTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "schema 3 Design Contract"):
             resume_native_run(product_id, reference_cameras={"ref-02-body.png": (0, 0)})
         self.assertEqual(seen, [])
+
+
+class OwnerContractAmendmentTest(unittest.TestCase):
+    """Issue #100: a Contract Contradiction need is answered on resume by the
+    owner's amended contract file, recorded as an Owner Contract Amendment
+    of requirement text, Interface text and prose; nothing sealed changes."""
+
+    BLOCK = {
+        "schema_version": 4, "title": "Broken God", "inventor": "fixture",
+        "envelope_mm": [100, 100, 100],
+        "references": [
+            {"file": "ref-01-whole.png", "shows": "assembly", "camera": [-60, 20]},
+            {"file": "ref-02-body.png", "shows": "geometry:body", "camera": [90, 15]},
+        ],
+        "geometries": [
+            {"id": "body", "name": "Body", "count": 1, "extents_mm": [10, 10, 10], "wall_min_mm": 1},
+            {"id": "wing", "name": "Wing", "count": 2, "extents_mm": [10, 10, 2], "wall_min_mm": 1},
+        ],
+        "requirements": [
+            {"id": "R01", "scope": "assembly", "text": "Hard stops end both extremes."},
+            {"id": "R02", "scope": "geometry:body", "text": "The body carries the travel stops."},
+        ],
+        "interfaces": [
+            {"id": "wing-body", "kind": "static", "components": ["wing#1", "wing#2", "body"],
+             "text": "Hard stops on vertical body faces end the travel."},
+        ],
+    }
+
+    @classmethod
+    def contract_text(cls, block, *, name="Broken God v09", prose="Hard stops end both extremes."):
+        return "Name this toy exactly: %s.\n\n# Broken God\n\n%s\n\n```design-contract\n%s\n```\n" % (
+            name, prose, json.dumps(block, indent=1))
+
+    def _run(self):
+        from workshop.wish.design_contract import parse_design_contract
+
+        launcher = _FakeLauncher()
+        seen = []
+        original = launcher.resume
+
+        def resume(**arguments):
+            path = Path(arguments["run_root"]) / "CONTRACT-AMENDMENTS.json"
+            seen.append(json.loads(path.read_text()) if path.is_file() else None)
+            return original(**arguments)
+
+        launcher.resume = resume
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        home = Path(temporary.name).resolve() / "workshop-home"
+        for patcher in (
+            mock.patch.dict(os.environ, {"WORKSHOP_HOME": str(home)}, clear=True),
+            mock.patch("workshop.workflow.native_run._source_checkout_root", return_value=None),
+            mock.patch("workshop.workflow.native_run.CodexNativeSessionLauncher", return_value=launcher),
+        ):
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        product_id = "owner-amendment-wish"
+        text = self.contract_text(self.BLOCK)
+        contract = parse_design_contract(text).to_dict()
+        wish = Wish.create(product_id, text,
+                           context={"design_contract": contract, "inventor_id": "soren-voss"})
+        started = start_native_run(wish, effort="spark")
+        return product_id, started, seen
+
+    def amended(self, **texts):
+        block = json.loads(json.dumps(self.BLOCK))
+        block["requirements"][0]["text"] = texts.get(
+            "r01", "A hard stop ends the closed extreme; the detent holds the open one.")
+        block["interfaces"][0]["text"] = texts.get(
+            "face", "A vertical body face stops it closed; the detent holds it open.")
+        return block
+
+    def test_an_owner_amendment_records_the_changed_rows_and_resumes(self):
+        product_id, started, seen = self._run()
+        self.assertEqual((started["status"], started["stage"]), ("waiting", "make"))
+        paths = native_run_paths(product_id)
+        wish_bytes = (paths.workspace / "WISH.json").read_bytes()
+        text = self.contract_text(self.amended(), name="Broken God v10", prose="A detent holds it open.")
+
+        resumed = resume_native_run(product_id, amended_contract=text)
+
+        self.assertEqual((paths.workspace / "WISH.json").read_bytes(), wish_bytes)
+        self.assertEqual(resumed["wish_sha256"], started["wish_sha256"])
+        [document] = seen
+        [owner] = document["owner_amendments"]
+        self.assertEqual((owner["kind"], owner["owner_amendment"], owner["source"]),
+                         ("owner-contract-amendment", 1, "owner"))
+        self.assertEqual([c["row"] for c in owner["changes"]], ["R01", "interface:wing-body"])
+        self.assertEqual(owner["changes"][0]["from"], "Hard stops end both extremes.")
+        # An assembly row is no Component's row; the Interface joins wing and body.
+        self.assertEqual(owner["affects"], ["body", "wing"])
+        self.assertEqual(owner["in_run_amendments"], 0)
+        self.assertNotEqual(owner["contract_sha256"], owner["amended_sha256"])
+        # The run keeps its sealed name line; the prose change is recorded.
+        self.assertTrue(document["objective"].startswith("Name this toy exactly: Broken God v09.\n"))
+        self.assertIn("A detent holds it open.", document["objective"])
+        self.assertIn("+A detent holds it open.", owner["prose_diff"])
+        self.assertNotIn("Name this toy", owner["prose_diff"])
+        self.assertEqual(stat.S_IMODE((paths.workspace / "CONTRACT-AMENDMENTS.json").stat().st_mode), 0o400)
+        self.assertEqual(resumed["contract_amendments"][-1], owner)
+        records = [json.loads(line) for line in
+                   (paths.host_state / "host-corrections.jsonl").read_text().splitlines()]
+        [record] = [r for r in records if r["correction"] == "owner-contract-amendment"]
+        self.assertEqual(record["amendment"], owner)
+        self.assertEqual(record["wish_sha256"], hashlib.sha256(wish_bytes).hexdigest())
+        output = StringIO()
+        with redirect_stdout(output):
+            _print_native_receipt(resumed, verb="Resume")
+        self.assertIn("Owner Contract Amendment 1: R01", output.getvalue())
+        self.assertIn("unlocks body, wing; prose changed", output.getvalue())
+
+        # A later camera amendment keeps the owner's record beside it.
+        resume_native_run(product_id, reference_cameras={"ref-02-body.png": (-90, 15)})
+        self.assertEqual(seen[-1]["owner_amendments"], [owner])
+        self.assertEqual(seen[-1]["reference_cameras"], {"ref-02-body.png": [-90, 15]})
+        # A second owner amendment is diffed against the first.
+        second = resume_native_run(product_id, amended_contract=self.contract_text(
+            self.amended(r01="A hard stop ends the closed extreme."), prose="A detent holds it open."))
+        owners = [i for i in second["contract_amendments"] if i.get("kind") == "owner-contract-amendment"]
+        self.assertEqual([o["owner_amendment"] for o in owners], [1, 2])
+        self.assertEqual(owners[1]["contract_sha256"], owner["amended_sha256"])
+        self.assertEqual(owners[1]["changes"], [{
+            "row": "R01", "scope": "assembly",
+            "from": "A hard stop ends the closed extreme; the detent holds the open one.",
+            "to": "A hard stop ends the closed extreme."}])
+        self.assertIsNone(owners[1]["prose_diff"])
+
+    def test_anything_beyond_row_text_and_prose_is_refused_before_the_session_resumes(self):
+        product_id, _started, seen = self._run()
+        workspace = native_run_paths(product_id).workspace
+
+        def changed(edit):
+            block = self.amended()
+            edit(block)
+            return self.contract_text(block)
+
+        for text, refusal in (
+            (changed(lambda b: b["references"][1].update(camera=[0, 15])), "it changes references"),
+            (changed(lambda b: b["geometries"][0].update(extents_mm=[11, 10, 10])), "it changes geometries"),
+            (changed(lambda b: b["requirements"][1].update(scope="assembly")), "rescopes a requirement"),
+            (changed(lambda b: b["requirements"].pop()), "removes"),
+            (changed(lambda b: b["interfaces"][0].update(components=["wing#1", "body"])),
+             "Interface wing-body.s components"),
+            (changed(lambda b: b.update(schema_version=3)), "schema_version"),
+            (self.contract_text(self.BLOCK), "changes nothing"),
+            ("no contract here", "no fenced"),
+        ):
+            with self.subTest(refusal=refusal), self.assertRaisesRegex(ContractError, refusal):
+                resume_native_run(product_id, amended_contract=text)
+        self.assertEqual(seen, [])
+        self.assertFalse((workspace / "CONTRACT-AMENDMENTS.json").exists())
+
+    def test_a_run_whose_frozen_tools_predate_owner_amendments_is_refused(self):
+        product_id, _started, seen = self._run()
+        with mock.patch("workshop.workflow.native_run.OWNER_AMENDMENTS_MARKER", b"not-in-frozen-tools"), \
+                self.assertRaisesRegex(ContractError, "materialized before owner contract amendments"):
+            resume_native_run(product_id, amended_contract=self.contract_text(self.amended()))
+        self.assertEqual(seen, [])
+        paths = native_run_paths(product_id)
+        self.assertFalse((paths.workspace / "CONTRACT-AMENDMENTS.json").exists())
+        ledger = paths.host_state / "host-corrections.jsonl"
+        recorded = ledger.read_text().splitlines() if ledger.exists() else []
+        self.assertFalse(any(json.loads(line).get("correction") == "owner-contract-amendment"
+                             for line in recorded))
+
+    def test_an_in_run_amendment_awaiting_review_holds_the_owner_amendment(self):
+        from workshop.make.contract_amendments import contract_digest
+
+        product_id, started, seen = self._run()
+        paths = native_run_paths(product_id)
+        contract = json.loads((paths.workspace / "WISH.json").read_text())["context"]["design_contract"]
+        changed = json.loads(json.dumps(contract))
+        changed["requirements"][1]["text"] = "The body carries the closed stops."
+        measure = paths.workspace / ("artifacts/make/r%04d/product/cad/measure" % started["round"])
+        measure.mkdir(parents=True)
+        (measure / "contract-amendments.jsonl").write_text(json.dumps({
+            "event": "proposal", "amendment": 1,
+            "rows": ["Hard stops end both extremes.", "The body carries the travel stops."],
+            "changes": [{"row": "R02", "scope": "geometry:body", "from": "The body carries the travel stops.",
+                         "to": "The body carries the closed stops."}],
+            "reason": "x", "report": None, "retry_of": None, "affects": ["body"], "packet": "/p",
+            "packet_sha256": "0" * 64, "contract_sha256": contract_digest(contract),
+            "amended_sha256": contract_digest(changed), "at": "2026-10-04T02:16:00Z",
+            "wish_sha256": started["wish_sha256"]}) + "\n")
+        with self.assertRaisesRegex(ContractError, "awaits its Contract Reviewer"):
+            resume_native_run(product_id, amended_contract=self.contract_text(self.amended()))
+        self.assertEqual(seen, [])

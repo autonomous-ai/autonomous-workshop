@@ -2129,6 +2129,8 @@ class AgentRun:
             "from": old, "to": new, "sealed": sealed[file_name].get("camera"),
         }
         document = {
+            # Issue #100: an owner amendment recorded earlier keeps its keys.
+            **document,
             "schema_version": 1,
             "reference_cameras": cameras,
             "amendments": [*document["amendments"], amendment],
@@ -2151,6 +2153,92 @@ class AgentRun:
                 "changes": [change], "wish_sha256": bound["sha256"], **amendment,
             },
             label="Reference Camera amendment",
+        )
+
+    def amendments_document(self) -> Optional[dict[str, Any]]:
+        """The run root's host-written ``CONTRACT-AMENDMENTS.json``, verified
+        against its input binding, or None when the host has written none."""
+
+        payload = self._load()
+        bound = {item["path"]: item for item in payload["inputs"]}.get(AMENDMENTS_NAME)
+        target = self.run_root / AMENDMENTS_NAME
+        if bound is None:
+            if target.exists() or target.is_symlink():
+                raise StateConflict("untracked %s blocks a contract amendment" % AMENDMENTS_NAME)
+            return None
+        content = target.read_bytes()
+        if target.is_symlink() or _sha256(content) != bound["sha256"]:
+            raise StateConflict("%s differs from its frozen input" % AMENDMENTS_NAME)
+        return json.loads(content)
+
+    def record_owner_contract_amendment(
+        self,
+        amendment: Mapping[str, Any],
+        *,
+        objective: Optional[str],
+        reason: str,
+    ) -> dict[str, Any]:
+        """Record one Owner Contract Amendment (issue #100) the caller built
+        and checked against the contract this run reads now.
+
+        WISH.json and every image keep their bytes: the host appends the
+        amendment to the run root's ``CONTRACT-AMENDMENTS.json`` (and, for a
+        run whose objective is its contract, the amended objective with the
+        run's sealed name line), rebinds that file in the tamper-checked
+        input manifest, and appends one owner-only host-correction record
+        holding the same amendment. Returns that record.
+        """
+
+        if not isinstance(reason, str) or not 1 <= len(reason.strip()) <= 512:
+            raise ContractError("owner contract amendment reason must be a short string")
+        if not isinstance(amendment, Mapping) or amendment.get("kind") != "owner-contract-amendment":
+            raise ContractError("owner contract amendment is invalid")
+        if objective is not None and not isinstance(objective, str):
+            raise ContractError("amended objective must be text")
+        payload = self._load()
+        if payload["status"] == "complete":
+            raise TransitionError("a completed agent run has no contract to amend")
+        if payload["stage"] != "make":
+            raise TransitionError("a Design Contract is amended only while Make is open")
+        by_path: dict[str, dict[str, Any]] = {
+            item["path"]: dict(item) for item in payload["inputs"]
+        }
+        wish_bytes = (self.run_root / "WISH.json").read_bytes()
+        bound = by_path.get("WISH.json")
+        if bound is None or _sha256(wish_bytes) != bound["sha256"]:
+            raise StateConflict("WISH.json differs from its frozen input")
+        path = AMENDMENTS_NAME
+        previous_input = by_path.get(path)
+        document = self.amendments_document() or {
+            "schema_version": 1, "reference_cameras": {}, "amendments": [],
+        }
+        owners = list(document.get("owner_amendments") or ())
+        if amendment.get("owner_amendment") != len(owners) + 1:
+            raise StateConflict("owner contract amendment is out of order")
+        document = {
+            **document,
+            "owner_amendments": [*owners, dict(amendment)],
+            **({"objective": objective} if objective is not None else {}),
+        }
+        content = (
+            json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n"
+        ).encode("utf-8")
+        digest = _sha256(content)
+        by_path[path] = {"path": path, "sha256": digest, "size": len(content), "mode": 0o400}
+        change = {
+            "path": path,
+            "previous_sha256": None if previous_input is None else previous_input["sha256"],
+            "previous_mode": None if previous_input is None else previous_input["mode"],
+            "sha256": digest, "mode": 0o400,
+        }
+        return self._rebind_inputs(
+            payload, by_path, [(PurePosixPath(path), content, 0o400)], [],
+            {
+                "correction": "owner-contract-amendment", "reason": reason.strip(),
+                "changes": [change], "wish_sha256": bound["sha256"],
+                "amendment": dict(amendment),
+            },
+            label="owner contract amendment",
         )
 
     def _rebind_inputs(

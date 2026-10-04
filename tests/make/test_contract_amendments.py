@@ -18,7 +18,12 @@ from tests.make.test_make_round import load_module
 from workshop.errors import ContractError
 from workshop.make import make_round_guard
 from workshop.make.contract_amendments import (
+    OWNER_AMENDMENTS_MARKER,
+    apply_owner_amendments,
     contract_digest,
+    owner_affects,
+    owner_contract_changes,
+    owner_objective,
     run_contract_amendments,
     verify_contract_amendments,
 )
@@ -573,6 +578,126 @@ class ContractAmendmentTest(unittest.TestCase):
 
     def module_source(self):
         return Path(self.module.__file__).read_bytes()
+
+    # -- Owner Contract Amendments (issue #100) ---------------------------------
+
+    def owner(self, changes, number=1, in_run=0):
+        """Write the host's run-root amendments file with one more owner
+        amendment, as the host does on resume."""
+
+        path = self.run_root / "CONTRACT-AMENDMENTS.json"
+        document = json.loads(path.read_text()) if path.is_file() else {
+            "schema_version": 1, "reference_cameras": {}, "amendments": []}
+        record = {"kind": "owner-contract-amendment", "owner_amendment": number, "source": "owner",
+                  "status": "applied", "changes": changes, "affects": [], "in_run_amendments": in_run,
+                  "contract_sha256": "c" * 64, "amended_sha256": "d" * 64, "prose_diff": None}
+        document.setdefault("owner_amendments", []).append(record)
+        path.write_text(json.dumps(document))
+        return record
+
+    def test_owner_rows_apply_after_the_in_run_amendments_and_unlock_only_their_components(self):
+        self.propose()
+        self.review()
+        rows = {role: self.module.contract_rows(self.project, role) for role in ("spine-housing", "wing")}
+        self.owner([{"row": "R03", "scope": "assembly", "from": CLEAR, "to": "The wing gears keep 0.6 mm."}],
+                   in_run=1)
+        current = self.module.current_contract(self.project)
+        self.assertEqual([item["text"] for item in current["requirements"]],
+                         [NEW_STANCE, SEATS, "The wing gears keep 0.6 mm."])
+        # An owner's assembly row is no Component's row: every lock holds.
+        self.assertEqual({role: self.module.contract_rows(self.project, role) for role in rows}, rows)
+        self.owner([{"row": "R02", "scope": "geometry:spine-housing", "from": SEATS, "to": "Seats at Y 17.6."}],
+                   number=2, in_run=1)
+        after = {role: self.module.contract_rows(self.project, role) for role in rows}
+        self.assertNotEqual(after["spine-housing"], rows["spine-housing"])
+        self.assertEqual(after["wing"], rows["wing"])
+        # The finalizer matches the signature review against the same rows.
+        script = self.run_root / ".agents/skills/make-round/scripts"
+        script.mkdir(parents=True)
+        (script / "make_round").write_bytes(self.module_source())
+        spec = importlib.util.spec_from_file_location("stage_proposal_owner_amendment", STAGE_PROPOSAL)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        finalized = tool._current_design_contract(self.run_root, self.wish_sha256, self.project)
+        self.assertEqual(finalized, self.module.current_contract(self.project))
+        self.assertEqual([item["text"] for item in finalized["requirements"]],
+                         [NEW_STANCE, "Seats at Y 17.6.", "The wing gears keep 0.6 mm."])
+
+    def test_the_finalizer_reads_an_owner_amendment_without_a_ledger(self):
+        script = self.run_root / ".agents/skills/make-round/scripts"
+        script.mkdir(parents=True)
+        (script / "make_round").write_bytes(self.module_source())
+        spec = importlib.util.spec_from_file_location("stage_proposal_owner_only", STAGE_PROPOSAL)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        self.owner([{"row": "R01", "scope": "geometry:spine-housing", "from": STANCE, "to": NEW_STANCE}])
+        current = tool._current_design_contract(self.run_root, self.wish_sha256, self.project)
+        self.assertEqual(current["requirements"][0]["text"], NEW_STANCE)
+
+    def test_an_owner_amendment_closes_in_run_amendments(self):
+        self.owner([{"row": "R03", "scope": "assembly", "from": CLEAR, "to": "The wing gears keep 0.6 mm."}])
+        with self.assertRaisesRegex(ValueError, "owner amended this contract"):
+            self.propose()
+        code, stdout, _stderr = self.main("--contract-amendments")
+        self.assertEqual(code, 0)
+        self.assertIn("owner amendment 1  APPLIED by the owner", stdout)
+        self.assertIn("R03  %s\n    -> The wing gears keep 0.6 mm." % CLEAR, stdout)
+
+    def test_the_host_replay_refuses_an_in_run_amendment_after_the_owners(self):
+        self.propose()
+        self.review()
+        owner = {"kind": "owner-contract-amendment", "owner_amendment": 1, "in_run_amendments": 0,
+                 "changes": []}
+        with self.assertRaisesRegex(ContractError, "proposed after the owner amended the contract"):
+            self.verify(owner_amendments=[owner])
+        listed = self.verify(owner_amendments=[{**owner, "in_run_amendments": 1}])
+        self.assertEqual([item.get("kind") for item in listed],
+                         ["contract-amendment", "owner-contract-amendment"])
+
+    def test_owner_changes_are_row_and_interface_text_only(self):
+        current = {**CONTRACT, "interfaces": [
+            {"id": "wing-housing", "kind": "static", "components": ["wing#1", "spine-housing"], "text": "A"}]}
+        amended = json.loads(json.dumps(current))
+        amended["requirements"][2]["text"] = "B"
+        amended["interfaces"][0]["text"] = "C"
+        changes = owner_contract_changes(current, amended)
+        self.assertEqual(changes, [
+            {"row": "R03", "scope": "assembly", "from": CLEAR, "to": "B"},
+            {"row": "interface:wing-housing", "scope": "interface:wing-housing", "from": "A", "to": "C"}])
+        self.assertEqual(owner_affects(current, changes), ["spine-housing", "wing"])
+        self.assertEqual(owner_affects(current, changes[:1]), [])
+        applied = apply_owner_amendments(current, [{"changes": changes}])
+        self.assertEqual((applied["requirements"][2]["text"], applied["interfaces"][0]["text"]), ("B", "C"))
+        with self.assertRaisesRegex(ContractError, "does not have"):
+            apply_owner_amendments(current, [{"changes": [{"row": "R09", "to": "x"}]}])
+        amended["references"][0]["camera"] = [0, 0]
+        amended["requirements"][0]["id"] = "R09"
+        amended["interfaces"][0]["kind"] = "coupled"
+        with self.assertRaises(ContractError) as refused:
+            owner_contract_changes(current, amended)
+        for named in ("it changes references", "rescopes a requirement", "Interface wing-housing's kind"):
+            self.assertIn(named, str(refused.exception))
+
+    def test_the_owner_objective_keeps_the_sealed_name_line(self):
+        block = "```design-contract\n{}\n```\n"
+        sealed = "Name this toy exactly: Broken God v09.\n\n# Broken God\nHard stops.\n" + block
+        amended = "Name this toy exactly: Broken God v10.\n\n# Broken God\nA detent.\n" + block
+        objective, diff = owner_objective(sealed, sealed, amended)
+        self.assertEqual(objective, amended.replace("v10", "v09"))
+        self.assertIn("-Hard stops.\n+A detent.", diff)
+        # A file without a name line takes the sealed one.
+        objective, _diff = owner_objective(sealed, sealed, amended.split("\n", 2)[2])
+        self.assertTrue(objective.startswith("Name this toy exactly: Broken God v09.\n\n# Broken God"))
+        # Unchanged prose is no diff, whatever the block holds.
+        self.assertIsNone(owner_objective(sealed, sealed, sealed.replace("{}", '{"a": 1}'))[1])
+        # A correction run's objective is its brief: there is no prose to amend.
+        self.assertEqual(owner_objective("Fix the wings.", "Fix the wings.", amended), (None, None))
+        with self.assertRaisesRegex(ContractError, "sealed none"):
+            owner_objective("# Broken God\n" + block, "# Broken God\n" + block, amended)
+
+    def test_both_tools_carry_the_owner_amendment_marker(self):
+        self.assertIn(OWNER_AMENDMENTS_MARKER, self.module_source())
+        self.assertIn(OWNER_AMENDMENTS_MARKER, STAGE_PROPOSAL.read_bytes())
 
     def test_the_guard_keeps_amendments_to_the_root_and_logs_contract_reviewer_reads(self):
         def call(command, agent_type=None):

@@ -90,6 +90,17 @@ from workshop.make.blocked_reports import (
     verify_no_open_blocked_reports,
 )
 from workshop.make.contract_amendments import (
+    AMENDMENT_LEDGER_NAME,
+    OWNER_AMENDMENT_KIND,
+    OWNER_AMENDMENTS_MARKER,
+    contract_digest,
+    contract_in_effect,
+    owner_affects,
+    owner_closure_refusal,
+    owner_contract_changes,
+    owner_objective,
+    read_amendment_ledger,
+    replay_contract_amendments,
     run_contract_amendments,
     verify_contract_amendments,
 )
@@ -216,6 +227,8 @@ from workshop.runtime.progress import (
     write_native_progress,
 )
 from workshop.wish import Wish
+from workshop.wish.contracts import MAX_OBJECTIVE_CHARS
+from workshop.wish.design_contract import parse_design_contract
 from workshop.workflow.agent_run import (
     AgentArtifact,
     AgentOutcome,
@@ -388,6 +401,7 @@ _LEGACY_RELEASE_UPGRADE_NEED = (
 _PRODUCT_RUN_FINALIZER_INPUT = (
     ".agents/skills/autonomous-workshop/scripts/stage_proposal.py"
 )
+_PRODUCT_RUN_MAKE_ROUND_INPUT = ".agents/skills/make-round/scripts/make_round"
 _PRODUCT_RUN_PDF_VALIDATOR_INPUT = (
     ".agents/skills/autonomous-workshop/scripts/pdf_validator.py"
 )
@@ -2912,6 +2926,181 @@ def _contract_amendment_history(host_state_root: Path) -> list[dict[str, Any]]:
                 and record.get("correction") == "reference-camera-amendment"):
             amendments.append({key: record.get(key) for key in ("file", "shows", "from", "to", "sealed")})
     return amendments
+
+
+def _owner_contract_amendments(host_state_root: Path) -> list[dict[str, Any]]:
+    """Every Owner Contract Amendment the host recorded on resume (issue
+    #100), oldest first, from its own host-correction ledger."""
+
+    ledger = host_state_root / "host-corrections.jsonl"
+    if not ledger.exists():
+        return []
+    content = _read_stable_private_bytes(ledger, label="host corrections", maximum_bytes=1024 * 1024)
+    owners = []
+    for line in content.splitlines():
+        record = json.loads(line)
+        if (record.get("kind") == "autonomous-workshop.host-correction"
+                and record.get("correction") == OWNER_AMENDMENT_KIND
+                and isinstance(record.get("amendment"), dict)):
+            owners.append(record["amendment"])
+    return owners
+
+
+def _verified_owner_contract_amendments(run: AgentRun) -> list[dict[str, Any]]:
+    """The owner amendments the host recorded, refusing a run-root amendments
+    file that does not hold exactly those: what make_round and the finalizer
+    read must be what the host recorded (issue #100)."""
+
+    owners = _owner_contract_amendments(run.host_state_root)
+    document = run.amendments_document()
+    held = list((document or {}).get("owner_amendments") or ())
+    if held != owners:
+        raise StateConflict(
+            "CONTRACT-AMENDMENTS.json does not hold the owner contract amendments the host recorded"
+        )
+    return owners
+
+
+def _owner_amendment_tools_refusal(paths: NativeRunPaths, checkpoint: AgentRunCheckpoint) -> Optional[str]:
+    """Why this run cannot take an Owner Contract Amendment, or None.
+
+    A run's make_round and Make finalizer are frozen at launch. Only tools
+    that carry the owner-amendment marker read the owner's rows; a run
+    materialized before issue #100 would keep building to, and finalizing
+    against, the sealed rows while the host recorded others.
+    """
+
+    for path, label in (
+        (_PRODUCT_RUN_MAKE_ROUND_INPUT, "make_round"),
+        (_PRODUCT_RUN_FINALIZER_INPUT, "Make finalizer"),
+    ):
+        expected = checkpoint.input_sha256s.get(path)
+        target = paths.workspace / path
+        if expected is None or target.is_symlink() or not target.is_file():
+            return "this run carries no %s that reads an owner amendment" % label
+        content = target.read_bytes()
+        if _sha256(content) != expected:
+            raise StateConflict("%s differs from its frozen input" % path)
+        if OWNER_AMENDMENTS_MARKER not in content:
+            return (
+                "this run's %s was materialized before owner contract amendments (issue #100) "
+                "and would keep reading the sealed rows" % label
+            )
+    return None
+
+
+def _record_owner_contract_amendment(
+    paths: NativeRunPaths,
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    amended_text: str,
+) -> dict[str, Any]:
+    """Check the owner's amended contract file against the contract this run
+    reads now and record the difference as an Owner Contract Amendment.
+
+    Refuses a run outside Make, a run without a sealed Design Contract, a run
+    whose frozen tools predate owner amendments, an in-run amendment awaiting
+    its review or a ledger that does not replay, and any change beyond
+    requirement text, Interface text and prose.
+    """
+
+    if checkpoint.stage != "make":
+        raise ContractError(
+            "an owner contract amendment answers a Make need; this run is in %s" % checkpoint.stage
+        )
+    refusal = _owner_amendment_tools_refusal(paths, checkpoint)
+    if refusal is not None:
+        raise ContractError(
+            "--amend-contract refused: %s. Nothing was recorded; relaunch with the amended "
+            "contract" % refusal
+        )
+    sealed, _references = _sealed_contract_inputs(paths.workspace, checkpoint.wish_sha256)
+    if sealed is None:
+        raise ContractError("only a run sealed with a Design Contract has a contract to amend")
+    owners = _verified_owner_contract_amendments(run)
+    # The in-run ledger of the current Make attempt: the owner's rows apply
+    # after every amendment it applied, and close it to further proposals.
+    product = paths.workspace / ("artifacts/make/r%04d/product" % checkpoint.round_index)
+    ledgers = (
+        sorted(
+            path for path in product.rglob(AMENDMENT_LEDGER_NAME)
+            if path.parent.name == "measure" and path.is_file() and not path.is_symlink()
+        )
+        if product.is_dir() and not product.is_symlink()
+        else []
+    )
+    if len(ledgers) > 1:
+        raise ContractError("the current Make attempt has more than one Contract Amendment ledger")
+    amendments: list[dict[str, Any]] = []
+    if ledgers:
+        try:
+            amendments = replay_contract_amendments(
+                read_amendment_ledger(ledgers[0]), sealed, wish_sha256=checkpoint.wish_sha256
+            )
+        except ContractError as exc:
+            raise ContractError("the run's Contract Amendment ledger does not replay: %s" % exc) from exc
+    pending = [item["amendment"] for item in amendments if item["status"] == "proposed"]
+    if pending:
+        raise ContractError(
+            "Contract Amendment %d awaits its Contract Reviewer; resume without --amend-contract "
+            "until it is reviewed" % pending[0]
+        )
+    closure = owner_closure_refusal(amendments, owners)
+    if closure is not None:
+        raise ContractError(closure)
+    current = contract_in_effect(sealed, amendments, owners)
+    wish = _strict_json_bytes((paths.workspace / "WISH.json").read_bytes(), label="materialized Wish")
+    sealed_objective = wish.get("objective")
+    if not isinstance(sealed_objective, str):
+        raise StateConflict("materialized Wish has no objective")
+    document = run.amendments_document() or {}
+    current_objective = document.get("objective", sealed_objective)
+    if not isinstance(current_objective, str):
+        raise StateConflict("CONTRACT-AMENDMENTS.json holds an invalid objective")
+    if not isinstance(amended_text, str) or not amended_text.strip():
+        raise ContractError("the amended contract file is empty")
+    if len(amended_text) > MAX_OBJECTIVE_CHARS:
+        raise ContractError(
+            "the amended contract is longer than a Wish objective (%d characters)" % MAX_OBJECTIVE_CHARS
+        )
+    objective, prose_diff = owner_objective(sealed_objective, current_objective, amended_text)
+    if objective is not None and len(objective) > MAX_OBJECTIVE_CHARS:
+        raise ContractError(
+            "the amended objective is longer than a Wish objective (%d characters)" % MAX_OBJECTIVE_CHARS
+        )
+    amended = parse_design_contract(amended_text).to_dict()
+    changes = owner_contract_changes(current, amended)
+    if not changes and prose_diff is None:
+        raise ContractError(
+            "the amended contract changes nothing the run reads now; nothing was recorded"
+        )
+    after = contract_in_effect(current, (), [{"changes": changes}])
+    record = {
+        "kind": OWNER_AMENDMENT_KIND,
+        "owner_amendment": len(owners) + 1,
+        "source": "owner",
+        "status": "applied",
+        "changes": changes,
+        "affects": owner_affects(current, changes),
+        "contract_sha256": contract_digest(current),
+        "amended_sha256": contract_digest(after),
+        "prose_diff": prose_diff,
+        "objective_sha256": _sha256(current_objective.encode("utf-8")),
+        "amended_objective_sha256": (
+            None if objective is None else _sha256(objective.encode("utf-8"))
+        ),
+        "file_sha256": _sha256(amended_text.encode("utf-8")),
+        "in_run_amendments": len(amendments) if not owners else owners[0]["in_run_amendments"],
+        "make_attempt": "r%04d" % checkpoint.round_index,
+        "wish_sha256": checkpoint.wish_sha256,
+        "at": utc_now(),
+    }
+    run.record_owner_contract_amendment(
+        record,
+        objective=objective,
+        reason="workshop resume --amend-contract (file sha256 %s)" % record["file_sha256"][:12],
+    )
+    return record
 
 
 def _sealed_contract_inputs(
@@ -7771,6 +7960,8 @@ def _evaluate_make_stage(
             wish_sha256=checkpoint.wish_sha256,
             references=sealed_references,
             blocked_reports=blocked_reports,
+            # Issue #100: the owner's amendments, as the host recorded them.
+            owner_amendments=_verified_owner_contract_amendments(run),
             reviewer_check=(
                 contract_reviewer_check(run.host_state_root)
                 if checkpoint.component_reviewer_binding
@@ -10597,11 +10788,12 @@ def _native_receipt(
     contract_amendments = (
         _contract_amendment_history(paths.host_state) if paths is not None else []
     )
-    # ADR 0085: the in-run Contract Amendments follow the camera amendments.
+    # ADR 0085: the in-run Contract Amendments follow the camera amendments,
+    # and the owner's amendments on resume (issue #100) follow those.
     if paths is not None:
         contract_amendments = contract_amendments + _run_contract_amendments(
             paths, checkpoint.wish_sha256
-        )
+        ) + _owner_contract_amendments(paths.host_state)
     # Issue #88: every Blocked Report, read from the run's own ledgers so a
     # run that stopped before Make acceptance still lists them.
     blocked_reports = run_blocked_reports(paths.workspace) if paths is not None else []
@@ -11532,6 +11724,7 @@ def resume_native_run(
     turn_untimed: bool = False,
     check_motion: bool = False,
     reference_cameras: Optional[Mapping[str, Sequence[float]]] = None,
+    amended_contract: Optional[str] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
@@ -11540,6 +11733,12 @@ def resume_native_run(
     reference_cameras answers a camera-mismatch need (ADR 0083): each sealed
     reference file named is given a corrected Reference Camera, recorded as a
     host amendment that changes only that camera, before the session resumes.
+
+    amended_contract answers a Contract Contradiction need (issue #100): the
+    owner's amended contract file, recorded as an Owner Contract Amendment
+    of the requirement text, Interface text and prose it changes against the
+    contract the run reads now, before the session resumes. A run whose
+    frozen tools predate it is refused and nothing is recorded.
 
     The ignored keyword preserves source compatibility with the former
     optional-publication API; every resumed Release now requires publication.
@@ -11567,6 +11766,8 @@ def resume_native_run(
         raise ContractError("choose an exact turn boundary or an untimed turn, not both")
     if reference_cameras is not None and not isinstance(reference_cameras, Mapping):
         raise ContractError("reference cameras must map a reference file to AZ,EL")
+    if amended_contract is not None and not isinstance(amended_contract, str):
+        raise ContractError("the amended contract must be the contract file's text")
 
     activity_observer = _validated_activity_observer(activity_observer)
     timing_observer = _combined_timing_observer(
@@ -11595,6 +11796,11 @@ def resume_native_run(
                     reason="workshop resume --reference-camera %s=%s"
                     % (file_name, ",".join("%g" % float(value) for value in camera)),
                 )
+            checkpoint = run.snapshot()
+        if amended_contract is not None:
+            if checkpoint.status not in ("active", "waiting"):
+                raise StateConflict("a Design Contract is amended only on an unfinished run")
+            _record_owner_contract_amendment(paths, run, checkpoint, amended_contract)
             checkpoint = run.snapshot()
         if adopt_turn_budget:
             _adopt_turn_budget(paths, checkpoint)

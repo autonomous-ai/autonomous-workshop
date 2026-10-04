@@ -491,6 +491,24 @@ are separate. Frozen older runs retain their materialized rules and tools.
    host replays every amendment against the sealed contract before it
    accepts Make and the run report lists each one.
 
+   **Owner Contract Amendments (issue #100).** A run you stopped on a
+   Contract Contradiction need may be resumed with the owner's answer: the
+   host records an Owner Contract Amendment of requirement text, Interface
+   text and prose beside `WISH.json` (the run root's
+   `CONTRACT-AMENDMENTS.json`, written only by the host). After every
+   resume from such a need, run `make_round <cad-project>
+   --contract-amendments`. An `owner amendment` lists each changed row
+   before and after and the Components it unlocks; when that file holds an
+   `objective`, it replaces `WISH.json`'s objective, with the run's name
+   unchanged. Every round reads the owner's rows after the applied in-run
+   amendments. Ask each unlocked Component's worker to rerun its Component,
+   send the new packet to its reviewer as usual, and continue; locked
+   Components the owner's rows did not touch stay locked. An owner's
+   assembly row binds no Component: the assembly rounds, the blind review
+   and the final verification read it. From then on `--propose-amendment`
+   is refused: a further contradiction stops the run on a need for the
+   owner.
+
    Do not answer a blocked worker in prose alone: an answer the tool did not
    record leaves the report open. While any Blocked Report is open or
    waiting, `make_round` refuses an assembly round and `--full`, the

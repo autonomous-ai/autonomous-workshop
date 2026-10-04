@@ -99,6 +99,11 @@ when the reviewer confirms the rows cannot both hold, the change is the
 smallest and no reference shows it. Rounds then read the amended rows, and a
 Component whose rows changed unlocks. While one awaits review an assembly
 round and --full refuse to run.
+The owner may amend the contract on resume (`workshop resume --amend-contract`,
+issue #100): the host writes an Owner Contract Amendment into the run root's
+CONTRACT-AMENDMENTS.json. Rounds read its rows after every applied in-run
+amendment, a Component whose own rows it changed unlocks, and from then on
+--propose-amendment is refused: a further contradiction stops on a need.
 This tool makes no model calls.
 
 Exit 0: all checks and the recorded (or carried) review passed. Exit 1:
@@ -176,6 +181,10 @@ CAMERA_SCHEMA_VERSION = 3
 # round delivers the Component's contract itself (ADR 0084).
 INTERFACE_TEXT_SCHEMA_VERSION = 4
 AMENDMENTS_NAME = "CONTRACT-AMENDMENTS.json"
+# The host reaches a run with an Owner Contract Amendment (issue #100) only
+# when this tool carries the marker below; a run materialized before it is
+# refused, since its rounds would keep reading the sealed rows.
+OWNER_AMENDMENTS_MARKER = "workshop-owner-contract-amendments-v1"
 DISPLAY_POSE_DIR = "display-pose"
 INSTANCE_PARAM = "instance"
 INSTANCE_CONVENTION = ("define %s(shape, pose, %s) to place instance n in assembly coordinates, and "
@@ -2764,23 +2773,65 @@ def read_contract_amendments(project: Path) -> dict:
     return contract_amendments(ledger.read_text(encoding="utf-8"), sealed_contract(project))
 
 
+def owner_amendments(project: Path) -> list:
+    """Every Owner Contract Amendment the host recorded on resume (issue
+    #100), oldest first, from the run root's CONTRACT-AMENDMENTS.json. Only
+    the host writes that file; one that does not parse amends nothing."""
+
+    root = run_root(project)
+    if root is None:
+        return []
+    try:
+        document = json.loads((root / AMENDMENTS_NAME).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    items = document.get("owner_amendments") if isinstance(document, dict) else None
+    return [item for item in items if isinstance(item, dict) and isinstance(item.get("changes"), list)] \
+        if isinstance(items, list) else []
+
+
+def apply_owner_amendments(contract: dict, owners: list) -> dict:
+    """``contract`` with each Owner Contract Amendment's row texts set, in
+    order. The host checked every row against the contract it amended."""
+
+    if not owners:
+        return contract
+    amended = json.loads(json.dumps(contract))
+    for owner in owners:
+        for change in owner["changes"]:
+            row = change.get("row") if isinstance(change, dict) else None
+            if not isinstance(row, str) or not isinstance(change.get("to"), str):
+                continue
+            if row.startswith("interface:"):
+                items = [item for item in amended.get("interfaces") or ()
+                         if isinstance(item, dict) and "interface:%s" % item.get("id") == row]
+            else:
+                items = [item for index, item in enumerate(amended.get("requirements") or ())
+                         if isinstance(item, dict) and (item.get("id") == row or "requirements[%d]" % index == row)]
+            if len(items) == 1:
+                items[0]["text"] = change["to"]
+    return amended
+
+
 def current_contract(project: Path) -> dict | None:
-    """The sealed Design Contract with every applied Contract Amendment: what
-    a component round delivers and its contract rows hash. A ledger that does
-    not replay amends nothing here; --contract-amendments, the finalizer and
-    the host refuse it."""
+    """The sealed Design Contract with every applied Contract Amendment, then
+    every Owner Contract Amendment (issue #100): what a component round
+    delivers and its contract rows hash. A ledger that does not replay
+    amends nothing here; --contract-amendments, the finalizer and the host
+    refuse it."""
 
     contract = sealed_contract(project)
     if contract is None:
         return None
+    owners = owner_amendments(project)
     try:
         amendments = read_contract_amendments(project)
     except (OSError, UnicodeError, ValueError):
-        return contract
+        return apply_owner_amendments(contract, owners)
     for _, item in sorted(amendments.items()):
         if item["status"] == "applied":
             contract = item["_amended"]
-    return contract
+    return apply_owner_amendments(contract, owners)
 
 
 def amendment_view(item: dict) -> dict:
@@ -2810,6 +2861,13 @@ def propose_amendment(project: Path, proposal_path) -> dict:
     contract = current_contract(project)
     if contract is None:
         raise ValueError("a Contract Amendment needs a run sealed with a Design Contract")
+    owners = owner_amendments(project)
+    if owners:
+        # Issue #100: once the owner amended the contract, the owner answers
+        # every later contradiction too.
+        raise ValueError("the owner amended this contract on resume (owner amendment %d); an in-run "
+                         "amendment is closed, so stop the run with a need quoting the rows"
+                         % len(owners))
     record = json.loads(Path(proposal_path).read_text(encoding="utf-8"))
     if not isinstance(record, dict) or set(record) not in (
             {"rows", "changes", "reason"}, {"rows", "changes", "reason", "report"}):
@@ -2995,11 +3053,24 @@ def amendment_need(item: dict) -> str:
     return need[:MAX_NEED_CHARS]
 
 
+def owner_view(number: int, item: dict) -> dict:
+    """An Owner Contract Amendment as --contract-amendments lists it."""
+
+    return {"kind": "owner-contract-amendment", "owner_amendment": number, "status": "applied",
+            "source": "owner", "changes": [{key: change.get(key) for key in ("row", "from", "to")}
+                                           for change in item["changes"] if isinstance(change, dict)],
+            "affects": list(item.get("affects") or ()), "contract_sha256": item.get("contract_sha256"),
+            "amended_sha256": item.get("amended_sha256"), "prose_diff": item.get("prose_diff"),
+            "at": item.get("at")}
+
+
 def render_amendments(views: list) -> str:
     if not views:
         return "make_round: no Contract Amendments"
     lines = []
     for item in views:
+        if item.get("kind") == "owner-contract-amendment":
+            continue
         lines.append("amendment %d  %s  contract %s -> %s  affects %s" % (
             item["amendment"], item["status"].upper(), item["contract_sha256"][:12], item["amended_sha256"][:12],
             ", ".join(item.get("affects") or ()) or "-"))
@@ -3016,6 +3087,18 @@ def render_amendments(views: list) -> str:
                 ", ".join(verdict["visible_in"]) or "none", verdict["reason"]))
         else:
             lines.append("  packet %s  sha256 %s: ask a fresh contract-reviewer" % (item["packet"], item["packet_sha256"]))
+    # Issue #100: the owner's amendments apply after every in-run amendment.
+    for item in views:
+        if item.get("kind") != "owner-contract-amendment":
+            continue
+        lines.append("owner amendment %d  APPLIED by the owner  contract %s -> %s  unlocks %s" % (
+            item["owner_amendment"], str(item["contract_sha256"])[:12], str(item["amended_sha256"])[:12],
+            ", ".join(item["affects"]) or "no Component"))
+        for change in item["changes"]:
+            lines.append("  %s  %s\n    -> %s" % (change["row"], change["from"], change["to"]))
+        if item.get("prose_diff"):
+            lines.append("  prose (CONTRACT-AMENDMENTS.json's objective replaces WISH.json's):")
+            lines.extend("    " + line for line in str(item["prose_diff"]).splitlines())
     return "\n".join(lines)
 
 
@@ -3772,6 +3855,8 @@ def make_round(args) -> int:
     if getattr(args, "contract_amendments", False):
         try:
             views = [amendment_view(item) for _, item in sorted(read_contract_amendments(project).items())]
+            # Issue #100: the owner's amendments follow, as the rounds apply them.
+            views += [owner_view(number, item) for number, item in enumerate(owner_amendments(project), 1)]
         except (OSError, UnicodeError, ValueError) as exc:
             print("make_round: the Contract Amendment ledger is invalid: %s" % exc, file=sys.stderr)
             return 2

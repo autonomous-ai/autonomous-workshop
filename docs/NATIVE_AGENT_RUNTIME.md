@@ -1113,6 +1113,20 @@ reviewer. The tool and the replay refuse any other proposal quoting rows an
 earlier amendment quoted, and each retry names the amendment it follows as
 `retry_of`.
 
+The owner may answer a Contract Contradiction need on resume (issue #100):
+`workshop resume <wish-id> --amend-contract CONTRACT.md`. The host diffs the
+file against the contract the run reads now (sealed, then applied in-run
+amendments, then earlier owner amendments), refuses anything beyond
+requirement text, Interface text and prose, keeps the run's sealed name
+line, and records an Owner Contract Amendment by hash in the run root's
+`CONTRACT-AMENDMENTS.json` and its own host-correction ledger before the
+session resumes. Rounds read the owner's rows, Components whose own rows
+changed unlock, and in-run amendments close: Make acceptance refuses one
+numbered after the owner's first amendment and refuses a run-root file that
+does not hold exactly the owner amendments the host recorded. A run whose
+frozen `make_round` or finalizer lacks the owner-amendment marker is
+refused before anything is written.
+
 A new run whose sealed Design Contract has an Interfaces section (ADR 0082)
 also proves the meetings between Components before assembly. The Workshop
 Manager builds samples of the Shared Helpers under `samples/` and runs

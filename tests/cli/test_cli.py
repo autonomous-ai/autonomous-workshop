@@ -624,6 +624,26 @@ class NativeCommandTest(unittest.TestCase):
         self.assertIn("more than once", stderr.getvalue())
         resume.assert_not_called()
 
+    def test_resume_passes_the_owners_amended_contract_text(self):
+        # Issue #100: the CLI only reads the file; the host checks it.
+        with tempfile.TemporaryDirectory() as directory:
+            contract = Path(directory) / "CONTRACT.md"
+            contract.write_text("Name this toy exactly: X v10.\n", encoding="utf-8")
+            with mock.patch(
+                "cli.main.resume_native_run", return_value=native_receipt()
+            ) as resume, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                main(("resume", "wish-one"))
+                self.assertNotIn("amended_contract", resume.call_args.kwargs)
+                main(("resume", "wish-one", "--amend-contract", str(contract)))
+            self.assertEqual(resume.call_args.kwargs["amended_contract"], "Name this toy exactly: X v10.\n")
+            stderr = StringIO()
+            with mock.patch("cli.main.resume_native_run") as resume, redirect_stderr(stderr), \
+                    redirect_stdout(StringIO()):
+                result = main(("resume", "wish-one", "--amend-contract", str(Path(directory) / "missing.md")))
+            self.assertNotEqual(result, 0)
+            self.assertIn("cannot read amended contract file", stderr.getvalue())
+            resume.assert_not_called()
+
     def test_wish_pins_an_explicit_inventor_in_the_immutable_wish(self):
         with mock.patch(
             "cli.main.generate_wish_id", return_value="wish-pinned-inventor"

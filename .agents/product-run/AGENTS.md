@@ -233,6 +233,13 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   run on the need the tool prints. While one awaits review, assembly and the Make proposal
   are refused; after a compaction run `make_round <cad-project>
   --contract-amendments`. The rules are in `references/make.md`.
+- The owner may answer a Contract Contradiction need on resume with an Owner
+  Contract Amendment (issue #100). After every resume from such a need, run
+  `make_round <cad-project> --contract-amendments`: an `owner amendment`
+  lists the rows the owner changed and the Components it unlocks, and the
+  run root's `CONTRACT-AMENDMENTS.json` `objective` replaces `WISH.json`'s.
+  Ask each unlocked Component's worker to rerun, and continue. From then on
+  `--propose-amendment` is refused: a further contradiction is a need.
 - Keep every tool subprocess attached to the Manager's dedicated POSIX process
   session. Do not daemonize, detach, call `setsid`/`start_new_session`, or leave
   a background process running after a tool returns. Host timeout recovery

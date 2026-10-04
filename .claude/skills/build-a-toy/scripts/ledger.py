@@ -38,6 +38,7 @@ CLASSES = (
 )
 ISSUE_STATES = ("open", "implementing", "merged", "failed", "conflict", "abandoned")
 CHECK_STATES = ("proposed", "open", "merged")
+RESUME_STATES = (None, "resumed", "refused")
 DEFAULT_COST_CAP = 100.0
 NO_PROGRESS_LIMIT = 3
 BUDGET_RAISE_TOKENS = 100_000_000
@@ -134,6 +135,11 @@ def check(ledger: dict) -> list[str]:
             errors.append(f"{where} is applied before it was approved")
         if item.get("applied") is True and not item.get("reaudit"):
             errors.append(f"{where} is applied without a whole-contract re-audit (`reaudit`)")
+        resume = item.get("resume")
+        if resume not in RESUME_STATES:
+            errors.append(f"{where}.resume must be null, `resumed` or `refused`")
+        elif resume == "resumed" and not (item.get("applied") is True and item.get("visible") is False):
+            errors.append(f"{where} resumed its run with an owner amendment, so it is invisible and applied")
         design = item.get("design_check")
         if not isinstance(design, dict) or not design.get("name") or design.get("status") not in CHECK_STATES:
             errors.append(f"{where}.design_check needs a name and a status ({', '.join(CHECK_STATES)})")
@@ -387,8 +393,41 @@ def next_action(ledger: dict) -> dict:
     ]
     if pending:
         return {"action": "fix", "pending": pending, "why": [f"diagnosed {last['class']}"]}
+    resumable = resumable_amendments(ledger, last)
+    if resumable:
+        return {
+            "action": "resume-amendment",
+            "wish_id": last["wish_id"],
+            "contract": ledger.get("contract"),
+            "contradictions": resumable,
+            "why": [
+                "the run stopped on a Contract Contradiction whose root fix is invisible and applied: "
+                "resume it with the owner amendment (`workshop resume --amend-contract`); record "
+                "`resume: refused` on these entries and launch if the run refuses it"
+            ],
+        }
     return {"action": "launch", "attempt": loop["attempt"] + 1, "source_commit": loop.get("source_commit"),
             "why": ["nothing is pending"]}
+
+
+def resumable_amendments(ledger: dict, last: dict) -> list[str]:
+    """The Contract Contradictions of the last stop's attempt that its run can
+    take as an owner amendment on resume (issue #100), or none.
+
+    The last stop is a Contract Contradiction, and every entry of its attempt
+    not yet tried on resume (`resume` null) is applied and invisible: a
+    visible change redraws an image, which only a new attempt seals.
+    """
+
+    if last.get("class") != "contract-contradiction":
+        return []
+    untried = [
+        item for item in ledger.get("contract_contradictions") or []
+        if item.get("attempt") == last.get("attempt") and item.get("resume") is None
+    ]
+    if not untried or not all(item.get("applied") is True and item.get("visible") is False for item in untried):
+        return []
+    return [item["id"] for item in untried]
 
 
 _FENCE = re.compile(r"```design-contract\s*\n(.*?)```", re.DOTALL)

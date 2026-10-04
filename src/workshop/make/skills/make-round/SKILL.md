@@ -588,6 +588,19 @@ One amendment awaits review at a time; while it does, an assembly round and
 one awaits review. The host replays the ledger against the sealed contract
 before it accepts Make.
 
+The owner may also amend the contract on resume (`workshop resume
+--amend-contract`, issue #100). The host appends an Owner Contract
+Amendment (`owner_amendments`: each changed row before and after, the
+Components whose own rows changed, the contract hash before and after) to
+the run root's `CONTRACT-AMENDMENTS.json`, and for a run whose objective is
+its contract also writes the amended `objective`. Rounds read the owner's
+rows after every applied in-run amendment, so a locked Component whose own
+rows changed unlocks as above; an owner's assembly row binds no Component.
+`--contract-amendments` lists each owner amendment after the in-run ones,
+and from then on `--propose-amendment` is refused. The host refuses an
+owner amendment for a run whose `make_round` or finalizer lacks the marker
+`workshop-owner-contract-amendments-v1`.
+
 ## Record assembly visual feedback
 
 The native Manager performs the assembly's visual judgment. Python renders and hashes

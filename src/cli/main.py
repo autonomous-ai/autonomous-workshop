@@ -521,7 +521,24 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
             return ",".join("%g" % v for v in value) if isinstance(value, list) else "?"
 
         for item in amendments:
-            if isinstance(item, Mapping) and item.get("kind") == "contract-amendment":
+            if isinstance(item, Mapping) and item.get("kind") == "owner-contract-amendment":
+                # Issue #100: the owner's amendment on resume.
+                print(
+                    "Owner Contract Amendment %s: %s; contract %s -> %s, unlocks %s%s"
+                    % (
+                        item.get("owner_amendment", "?"),
+                        "; ".join(
+                            "%s %r -> %r" % (change.get("row"), change.get("from"), change.get("to"))
+                            for change in item.get("changes") or ()
+                            if isinstance(change, Mapping)
+                        ) or "prose only",
+                        str(item.get("contract_sha256", "?"))[:12],
+                        str(item.get("amended_sha256", "?"))[:12],
+                        ", ".join(str(name) for name in item.get("affects") or ()) or "no Component",
+                        "; prose changed" if item.get("prose_diff") else "",
+                    )
+                )
+            elif isinstance(item, Mapping) and item.get("kind") == "contract-amendment":
                 # ADR 0085: an in-run amendment of invisible rows, confirmed
                 # (or refused) by a fresh Contract Reviewer.
                 if item.get("status") == "invalid":
@@ -1394,6 +1411,7 @@ def _resume(args: argparse.Namespace) -> int:
         **({"reasoning_effort": args.effort} if args.effort is not None else {}),
         **_turn_boundary_options(args.turn_minutes),
         **_reference_camera_options(getattr(args, "reference_cameras", None)),
+        **_amended_contract_options(getattr(args, "amend_contract", None)),
         activity_observer=live_progress.activity,
         timing_observer=live_progress.timing,
     )
@@ -1402,6 +1420,19 @@ def _resume(args: argparse.Namespace) -> int:
     else:
         _print_native_receipt(receipt, verb="Resume")
     return _native_exit_code(receipt, strict=args.strict)
+
+
+def _amended_contract_options(path) -> dict:
+    """``{"amended_contract": text}`` from ``--amend-contract FILE``, or
+    nothing. The host checks the text against the run's contract (issue
+    #100); the CLI only reads the file."""
+
+    if path is None:
+        return {}
+    try:
+        return {"amended_contract": Path(path).read_text(encoding="utf-8")}
+    except (OSError, UnicodeError) as exc:
+        raise WorkshopError("cannot read amended contract file") from exc
 
 
 def _reference_camera_options(values) -> dict:
@@ -2412,6 +2443,18 @@ def parser() -> argparse.ArgumentParser:
         help=(
             "answer a camera-mismatch need: give one sealed reference of a schema 3 "
             "Design Contract a corrected Reference Camera; only that camera changes"
+        ),
+    )
+    resume.add_argument(
+        "--amend-contract",
+        type=Path,
+        default=None,
+        metavar="CONTRACT.md",
+        help=(
+            "answer a Contract Contradiction need with the owner's amended contract file: "
+            "the host records its changed requirement text, Interface text and prose as an "
+            "owner amendment and refuses anything else; the run keeps its sealed name, "
+            "WISH.json and images. A run materialized before this option is refused"
         ),
     )
     resume.add_argument("--json", action="store_true", help="emit one JSON receipt")

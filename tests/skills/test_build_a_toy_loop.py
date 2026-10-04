@@ -319,6 +319,40 @@ class NextActionTest(unittest.TestCase):
 
         self.assertEqual(ledger.next_action(data)["pending"], ["cc-1: apply amend-a and re-audit"])
 
+    def test_an_invisible_root_fix_resumes_the_stopped_run_with_an_owner_amendment(self):
+        # Issue #100: the run keeps its locked Components instead of a relaunch.
+        data = _ledger()
+        data["loop"].update(state="fixing", wish_id="wish-2")
+
+        action = ledger.next_action(data)
+        self.assertEqual(action["action"], "resume-amendment")
+        self.assertEqual((action["wish_id"], action["contract"], action["contradictions"]),
+                         ("wish-2", "toys-spec/toy/CONTRACT.md", ["cc-1"]))
+
+        # A run that refuses it (materialized before #100) is relaunched.
+        data["contract_contradictions"][0]["resume"] = "refused"
+        self.assertEqual(ledger.check(data), [])
+        self.assertEqual(ledger.next_action(data)["action"], "launch")
+        # One already resumed is not resumed again; a new one of the attempt is.
+        data["contract_contradictions"][0]["resume"] = "resumed"
+        data["contract_contradictions"].append(_contradiction("cc-2", 2, "swept-volume-over-ceiling:wing", "amend-b"))
+        self.assertEqual(ledger.next_action(data)["contradictions"], ["cc-2"])
+
+    def test_a_visible_root_fix_is_relaunched_not_resumed(self):
+        data = _ledger()
+        data["loop"].update(state="fixing", wish_id="wish-2")
+        data["contract_contradictions"][0].update(visible=True, approved="owner 2026-10-04")
+
+        self.assertEqual(ledger.next_action(data)["action"], "launch")
+
+    def test_a_resume_mark_is_checked(self):
+        data = _ledger()
+        data["contract_contradictions"][0]["resume"] = "maybe"
+        self.assertIn("contract_contradictions[0].resume must be null, `resumed` or `refused`", ledger.check(data))
+        data["contract_contradictions"][0].update(resume="resumed", visible=True, approved="owner 2026-10-04")
+        self.assertIn("contract_contradictions[0] resumed its run with an owner amendment, so it is invisible "
+                      "and applied", ledger.check(data))
+
     def test_stop_conditions_win_over_the_state(self):
         data = _ledger()
         data["loop"].update(state="watching", wish_id="wish-3")

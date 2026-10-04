@@ -1931,3 +1931,17 @@ packet rendered before the Component's latest ruling. An unreadable ledger
 refuses the component round before the build. Nothing is judged. This
 changes the `make-round` fingerprint; materialized runs keep their copied
 bytes.
+
+## Local change: an Owner Contract Amendment reaches the rounds (2026-10-04)
+
+A Workshop-local change (issue #100, amending ADR 0085) to Workshop's own
+`make-round`. `current_contract` reads the run root's host-written
+`CONTRACT-AMENDMENTS.json` `owner_amendments` and sets each owner row's text
+after every applied in-run amendment, so component packets, summaries and
+contract-rows hashes read the owner's rows and a Component whose own rows
+changed unlocks. `--contract-amendments` lists each owner amendment after
+the in-run ones, and `--propose-amendment` is refused once one exists. The
+tool carries the marker `workshop-owner-contract-amendments-v1`, which the
+host requires before it records an owner amendment. Nothing is judged. This
+changes the `make-round` fingerprint; materialized runs keep their copied
+bytes and are refused an owner amendment.

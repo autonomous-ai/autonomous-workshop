@@ -376,6 +376,18 @@ change's old text with only deletions applied, reviewed by another fresh
 Contract Reviewer. Its refusal stops the run with the need (issue #96).
 _Avoid_: Second attempt, re-proposal
 
+**Owner Contract Amendment**:
+The owner's answer to a Contract Contradiction need on resume: `workshop
+resume <wish-id> --amend-contract CONTRACT.md` with the amended contract
+file. The host records only the requirement text, Interface text and prose
+that file changes against the contract the run reads now, and refuses
+anything else; the run keeps its sealed name line, `WISH.json` and images.
+Rounds read its rows after every applied Contract Amendment, Components
+whose own rows changed unlock, and the run's in-run Contract Amendments
+close. It needs no Contract Reviewer: the source is the owner. A run
+materialized before it is refused and relaunched (issue #100).
+_Avoid_: Contract override, re-seal, owner patch
+
 **Contract Reviewer**:
 The fresh reader, never the Workshop Manager and never a Component's
 reviewer, who confirms or refuses one Contract Amendment after viewing every
