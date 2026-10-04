@@ -254,7 +254,7 @@ are separate. Frozen older runs retain their materialized rules and tools.
 
    Write its answer unchanged as
    `{"round", "packet_sha256", "reviewer", "agrees", "reason", "differences",
-   "reference_conflicts"}`;
+   "reference_conflicts", "ruling_disputes"}`;
    `differences` lists `{"feature", "reference", "model"}` (at most 12) and is
    required when it disagrees. `reference_conflicts`, when the reviewer gives
    it, lists `{"file", "reference", "contract"}` (at most 12): places where a
@@ -262,7 +262,15 @@ are separate. Frozen older runs retain their materialized rules and tools.
    Contract wins: a Reference Conflict is not a difference, costs no shape
    round, may stand beside an agreement, never reaches the worker, and is
    reported to the person when the run ends so the image can be corrected.
-   Do not repair toward the image and do not stop the run for it. `reviewer` is the reviewer's native agent id,
+   Do not repair toward the image and do not stop the run for it.
+   `ruling_disputes`, when the reviewer gives it, lists `{"report",
+   "reason"}` (at most 12): a ruling in the packet's `rulings` the reviewer
+   thinks wrong. It is not a difference either: it costs no shape round,
+   may stand beside an agreement, and never reaches the worker; the ruling
+   stands. Read each one in the round's `ruling-disputes.json`; if it shows
+   the ruling was wrong, answer through the tools you already have (a
+   Contract Amendment or a need), never by telling the worker to repair
+   toward it. `reviewer` is the reviewer's native agent id,
    exactly as the runtime returned it when you spawned it (on Claude Code, 17
    lowercase hex characters), never a name. Record it with the same
    `--component` argument plus `--record-review <review.json>`. The
@@ -271,9 +279,15 @@ are separate. Frozen older runs retain their materialized rules and tools.
    whose recorded review names an agent that is not this run's Component
    Reviewer or that did not read every image of the packet it judged. If
    `--record-review` refuses an answer as malformed (for example a
-   disagreement whose only findings are Reference Conflicts), send the
-   refusal line unchanged to the same reviewer thread and record its
-   corrected answer for the same packet.
+   disagreement whose only findings are Reference Conflicts or Ruling
+   Disputes), send the refusal line unchanged to the same reviewer thread
+   and record its corrected answer for the same packet. If it refuses the
+   review because you decided a Blocked Report of that Component after the
+   round was rendered, do not resend the packet: ask the worker to rerun its
+   Component unchanged and send the new packet. That rerun is not a shape
+   round. A worker whose last review disagreed only on what your ruling
+   rules out reruns unchanged the same way, and the new packet gets a fresh
+   review instead of the old disagreement.
 
    After recording, tell the worker only "review recorded for round N". The
    worker reads the recorded review from that round itself; on a
@@ -391,7 +405,12 @@ are separate. Frozen older runs retain their materialized rules and tools.
    - **Decision**, `{"report": N, "decision": "<ruling>"}`: a ruling inside
      a freedom the contract grants, geometry the rows leave open. Send the
      ruling to that worker unchanged. It answers with a new component round
-     or a new Blocked Report.
+     or a new Blocked Report. The ruling also binds the Component Reviewer
+     (issue #97): every later packet of that Component carries it under
+     `rulings` (report, rows, the worker's request and your ruling), so
+     never add it to a review request yourself. When the report rules out a
+     repair a review asked for, write the ruling so it says what the
+     reviewer may no longer ask for and why (a print stance, a row).
    - **Decision waiting on a Component**, `{"report": N, "decision":
      "<ruling>", "waits_on": "part_<other>.step.py"}`: the ruling needs
      another Component to change first (the wing keeps below the slot

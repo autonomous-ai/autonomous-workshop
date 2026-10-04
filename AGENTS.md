@@ -300,6 +300,12 @@ refused `from` with only deletions applied, to another fresh
 `contract-reviewer`. The tool and the host's replay refuse a retry that adds
 or respells a word, a third proposal for the same rows, a retry after a
 contradiction or visibility refusal, and a reused reviewer.
+ADR 0081's #97 amendment makes a Manager's ruling on a Blocked Report bind
+the Component Reviewer for new runs: the Component's decided rulings travel
+in its review packet and join the carry key, the request stays the packet
+path and hash, and a reviewer who thinks a ruling wrong lists a Ruling
+Dispute instead of a difference. A dispute costs no Shape Round and never
+reaches the worker; a dispute-only review agrees.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

@@ -84,6 +84,13 @@ or a need quoting the rows. A waiting report stays open until that Component
 passes a round; --blocked-reports then marks it woken. While any report is
 open an assembly round and --full refuse to run, and the host refuses the
 Make proposal and Make acceptance.
+A decided ruling binds the Component Reviewer (issue #97): every later
+packet of that Component carries its rulings (report, rows, request,
+ruling), and a carried review needs the same rulings. A reviewer who thinks
+a ruling wrong lists it under ruling_disputes, not differences: a dispute
+costs no Shape Round, never reaches the worker, and a review whose only
+findings are disputes agrees. A review of a packet older than a ruling is
+refused; an unchanged rerun gets a fresh packet without a Shape Round.
 Where a Contract Contradiction's smallest fix changes nothing a sealed
 reference shows, the Manager may propose a Contract Amendment instead of a
 need (--propose-amendment, ADR 0085). A fresh contract-reviewer reads its
@@ -337,14 +344,18 @@ def prepare_comparisons(project, out, refs, display_pose=False):
     return comparisons, None
 
 
-def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=False, contract=None):
+def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=False, contract=None,
+                   rulings=None):
     """Render evidence for native inspection; never infer a visual verdict.
     ``component`` is the role of a component round, else None.
     ``display_pose`` (a component round of a schema 3 contract) renders the
     comparisons from the Component in its Display Pose at each reference's
     Reference Camera, while front, top and iso stay in the print stance.
     ``contract`` (a component round of a schema 4 contract) is the
-    Component's own Design Contract, bound into the packet (ADR 0084)."""
+    Component's own Design Contract, bound into the packet (ADR 0084).
+    ``rulings`` are the Workshop Manager's decided rulings on the
+    Component's Blocked Reports, bound into the packet when there are any
+    (issue #97)."""
     bound = (lambda: component_sources(project, component)) if component else (lambda: source_hashes(project))
     before = bound()
     views = out / "visual"
@@ -383,6 +394,8 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
               "comparisons": comparisons}
     if contract is not None:
         packet["contract"] = contract
+    if rulings:
+        packet["rulings"] = rulings
     packet_path = out / "visual-packet.json"
     packet_path.write_text(json.dumps(packet, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     if component:
@@ -396,6 +409,9 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
         if contract is not None:
             detail += ("; the packet's contract holds the Component's rows and the text of every Interface "
                        "naming it")
+        if rulings:
+            detail += ("; the packet's rulings are the Workshop Manager's decisions on this Component's Blocked "
+                       "Reports, which bind the reviewer")
     else:
         detail = "Manager must inspect all views for placement, proportions, missing/extra parts and visible intersections"
         if comparisons:
@@ -564,10 +580,11 @@ def record_review(project: Path, review_path, component: str) -> dict:
     if mismatch:
         required = (required - {"agrees"}) | {"camera_mismatch"}
     if (not isinstance(review, dict) or not required <= set(review)
-            or not set(review) <= required | ({"differences", "reference_conflicts"} if not mismatch else set())):
+            or not set(review) <= required | ({"differences", "reference_conflicts", "ruling_disputes"}
+                                              if not mismatch else set())):
         raise ValueError("a review needs round, packet_sha256, reviewer, agrees and reason, and optional "
-                         "differences and reference_conflicts; a camera mismatch replaces agrees, differences "
-                         "and reference_conflicts with camera_mismatch")
+                         "differences, reference_conflicts and ruling_disputes; a camera mismatch replaces "
+                         "agrees, differences, reference_conflicts and ruling_disputes with camera_mismatch")
     if type(review["round"]) is not int or review["round"] != latest:
         raise ValueError("a review must judge the latest round, r%04d" % latest)
     if summary.get("review") is not None:
@@ -585,6 +602,12 @@ def record_review(project: Path, review_path, component: str) -> dict:
     stale = packet_error(visual, project, role)
     if stale is not None:
         raise ValueError("the reviewed round has %s" % stale if stale != "visual packet changed" else stale)
+    # Issue #97: the rulings the reviewer read are the Manager's current ones.
+    shown_rulings = json.loads(Path(visual["packet"]).read_text(encoding="utf-8")).get("rulings") or []
+    if shown_rulings != component_rulings(project, role):
+        raise ValueError("the Workshop Manager decided a Blocked Report of %s after r%04d was rendered, so its "
+                         "packet does not carry the current rulings; the worker reruns the Component unchanged "
+                         "and the reviewer judges the new packet" % (role, latest))
     reviewer = review["reviewer"]
     if not isinstance(reviewer, str) or not 1 <= len(reviewer.strip()) <= 200:
         raise ValueError("a review needs the reviewer's name")
@@ -606,7 +629,12 @@ def record_review(project: Path, review_path, component: str) -> dict:
         if any(not isinstance(v, str) or not 1 <= len(v.strip()) <= 1000 for v in item.values()):
             raise ValueError("difference text must be nonempty and bounded")
     conflicts = reference_conflicts(review, summary, project)
-    if not review["agrees"] and not differences and conflicts:
+    disputes = ruling_disputes(review, summary, shown_rulings)
+    if not review["agrees"] and not differences and (conflicts or disputes):
+        if disputes and not conflicts:
+            raise ValueError("a review whose only findings are Ruling Disputes agrees: the Workshop Manager's "
+                             "ruling binds the reviewer, and a dispute is not a difference (issue #97); answer "
+                             "with agrees true")
         raise ValueError("a review whose only findings are Reference Conflicts agrees: the Design Contract "
                          "wins, and a conflict is not a difference (ADR 0084); answer with agrees true")
     if not review["agrees"] and not differences:
@@ -620,6 +648,7 @@ def record_review(project: Path, review_path, component: str) -> dict:
         "contract_rows": summary.get("contract_rows"),
         "imported_helpers": summary.get("imported_helpers") or {}, "review": recorded,
         **({"reference_conflicts": conflicts} if conflicts else {}),
+        **({"ruling_disputes": disputes} if disputes else {}),
     })
     reviewed = policy["reviewed"]
     acceptance = None
@@ -632,11 +661,16 @@ def record_review(project: Path, review_path, component: str) -> dict:
     if conflicts:
         summary["reference_conflicts"] = conflicts
         (out / "reference-conflicts.json").write_text(json.dumps(conflicts, sort_keys=True, indent=2) + "\n")
+    if disputes:
+        summary["ruling_disputes"] = disputes
+        (out / "ruling-disputes.json").write_text(json.dumps(disputes, sort_keys=True, indent=2) + "\n")
     visual["status"] = "reviewed"
     summary["ok"] = policy["phase"] == LOCKED
     summary["locked"] = lock_record(policy)
-    # The worker reads review.json; a Reference Conflict is nothing to repair.
-    worker_review = {key: value for key, value in review.items() if key != "reference_conflicts"}
+    # The worker reads review.json; a Reference Conflict or a Ruling Dispute
+    # is nothing to repair.
+    worker_review = {key: value for key, value in review.items()
+                     if key not in ("reference_conflicts", "ruling_disputes")}
     (out / "review.json").write_text(json.dumps(worker_review, sort_keys=True, indent=2) + "\n")
     summary_path.write_text(json.dumps(summary, sort_keys=True, indent=1) + "\n")
     state["policy"] = policy
@@ -1239,6 +1273,15 @@ def render_summary(summary: dict) -> str:
     if conflicts:
         lines.append("  conflict %d Reference Conflict(s) recorded: the Design Contract wins; nothing to repair; "
                      "reported when the run ends" % len(conflicts))
+    disputes = summary.get("ruling_disputes") or []
+    if disputes:
+        lines.append("  dispute the reviewer disputes the ruling on Blocked Report %s: not a difference; the ruling "
+                     "stands and nothing is repaired; the Workshop Manager reads ruling-disputes.json"
+                     % ", ".join(str(item["report"]) for item in disputes))
+    rulings = summary.get("rulings") or []
+    if rulings:
+        lines.append("  ruling %d Blocked Report ruling(s) in the packet bind the reviewer: %s" % (
+            len(rulings), ", ".join(str(item["report"]) for item in rulings)))
     contract = summary.get("contract")
     if contract is not None:
         lines.append("  contract %d requirement row(s), %d Interface(s) in summary.json and the packet" % (
@@ -2041,10 +2084,12 @@ def amended_assembly_rows(project: Path) -> list:
             if not str(change.get("scope")).startswith((GEOMETRY_LABEL, "interface:"))]
 
 
-def carry_key(identity: str | None, refs: list, project: Path, rows: str) -> str | None:
+def carry_key(identity: str | None, refs: list, project: Path, rows: str, rulings: list | None = None) -> str | None:
     """What a review judged: the B-rep, the shown reference bytes at their
-    cameras, and the Component's contract rows. A review carries to a later
-    round only when all three are unchanged."""
+    cameras, the Component's contract rows and the Blocked Report rulings
+    its packet carried (issue #97). A review carries to a later round only
+    when all of them are unchanged. Without rulings the key is what it was
+    before them, so a Component with none keeps its keys."""
 
     if identity is None:
         return None
@@ -2052,7 +2097,10 @@ def carry_key(identity: str | None, refs: list, project: Path, rows: str) -> str
     for label, ref in refs:
         path = resolve_reference(ref, project)
         shown.append([label, split_camera(ref)[1], file_hash(path) if path is not None else None])
-    return hashlib.sha256(json.dumps([identity, sorted(shown), rows]).encode()).hexdigest()
+    judged = [identity, sorted(shown), rows]
+    if rulings:
+        judged.append(rulings)
+    return hashlib.sha256(json.dumps(judged, sort_keys=True).encode()).hexdigest()
 
 
 def record_unlock(project: Path, unlock_path, component: str) -> dict:
@@ -2265,6 +2313,54 @@ def blocked_view(project: Path, report: dict) -> dict:
             view["status"] = "woken"
             view["woken_by"] = {"component": last["waits_on"], "round": woke}
     return view
+
+
+def component_rulings(project: Path, role: str) -> list:
+    """The Workshop Manager's decided rulings on this Component's Blocked
+    Reports (issue #97), oldest first: what binds its Component Reviewer.
+
+    Each is ``{"report", "round", "rows", "request", "ruling", "decided_at"}``:
+    the rows the worker quoted, its report (``request``: what it was asked
+    and why it cannot be built) and the final decision. Only a report whose
+    last answer is a decision that waits on nothing is a ruling; an open,
+    waiting, need or amended report is not. Copied from the ledger, never
+    judged. Raises ``ValueError`` for an invalid ledger."""
+
+    rulings = []
+    for number, report in sorted(read_blocked_reports(project).items()):
+        if report["component"] != role or report["status"] != "decided":
+            continue
+        decision = report["answers"][-1]
+        rulings.append({"report": number, "round": report["round"], "rows": list(report["rows"]),
+                        "request": report["reason"], "ruling": decision["ruling"], "decided_at": decision["at"]})
+    return rulings
+
+
+def ruling_disputes(review: dict, summary: dict, rulings: list) -> list[dict]:
+    """A review's Ruling Disputes (issue #97): the reviewer thinks a ruling in
+    its packet is wrong. Each names one ruling of the packet by its report
+    number and says why. A dispute is not a difference: it costs no Shape
+    Round and never reaches the worker; the ruling stands until the Workshop
+    Manager answers otherwise. Returned as recorded, with the round's
+    Component."""
+
+    disputes = review.get("ruling_disputes", [])
+    if not isinstance(disputes, list) or len(disputes) > MAX_DIFFERENCES:
+        raise ValueError("a review lists at most %d ruling_disputes" % MAX_DIFFERENCES)
+    numbers = [item["report"] for item in rulings]
+    recorded = []
+    for item in disputes:
+        if not isinstance(item, dict) or set(item) != {"report", "reason"}:
+            raise ValueError("a ruling dispute needs report and reason: the Blocked Report number of a ruling "
+                             "in the packet, and why the ruling is wrong")
+        if type(item["report"]) is not int or item["report"] not in numbers:
+            raise ValueError("a ruling dispute names one ruling of the packet: %s"
+                             % (", ".join("Blocked Report %d" % n for n in numbers) or "the packet has none"))
+        if not isinstance(item["reason"], str) or not 1 <= len(item["reason"].strip()) <= MAX_REASON:
+            raise ValueError("a ruling dispute's reason is 1 to %d characters" % MAX_REASON)
+        recorded.append({"component": summary["parts"][0], "report": item["report"], "round": summary["round"],
+                         "reviewer": review["reviewer"].strip(), "reason": item["reason"].strip()})
+    return recorded
 
 
 def open_blocked(project: Path) -> list:
@@ -3793,6 +3889,7 @@ def make_round(args) -> int:
     component = None
     display_pose = False
     delivered = None
+    rulings = []
     if args.component:
         try:
             role, entry = component_role(project, args.component)
@@ -3803,6 +3900,14 @@ def make_round(args) -> int:
         parts = [entry]
         display_pose = camera_contract(project)
         delivered = component_contract(project, role)
+        try:
+            # Issue #97: the Manager's rulings on this Component's Blocked
+            # Reports bind its reviewer, so they travel in the packet.
+            rulings = component_rulings(project, role)
+        except (OSError, UnicodeError, ValueError) as exc:
+            print("make_round: the Blocked Report ledger %s is invalid: %s" % (blocked_ledger(project), exc),
+                  file=sys.stderr)
+            return 2
         missing = place_hook_missing(entry) if display_pose else ""
         if missing:
             print("make_round: %s" % missing, file=sys.stderr)
@@ -4033,7 +4138,7 @@ def make_round(args) -> int:
     # earlier review carries to it, and the lock it leaves.
     outcome = None
     if component is not None:
-        key = carry_key(round_identity, refs, project, rows_digest)
+        key = carry_key(round_identity, refs, project, rows_digest, rulings)
         outcome = round_policy(policy, {"identity": round_identity, "helpers": current_helpers,
                                         "checks_ok": ok, "carry_key": key, "round": round_index,
                                         "contract_rows": rows_digest})
@@ -4050,7 +4155,8 @@ def make_round(args) -> int:
                             % outcome["carried"]["round"]}
     else:
         visual = prepare_visual(project, entry, out, cad, refs, component,
-                                display_pose=component is not None and display_pose, contract=delivered)
+                                display_pose=component is not None and display_pose, contract=delivered,
+                                rulings=rulings)
     summary = {
         "round": round_index,
         "scope": "component:%s" % component if component is not None else "assembly",
@@ -4092,6 +4198,8 @@ def make_round(args) -> int:
                 summary["accepted"] = carried["acceptance"]
             if carried.get("reference_conflicts"):
                 summary["reference_conflicts"] = carried["reference_conflicts"]
+            if carried.get("ruling_disputes"):
+                summary["ruling_disputes"] = carried["ruling_disputes"]
             summary["ok"] = next_policy["phase"] == LOCKED
         summary.update(
             review=review, shape_round=outcome["shape_round"],
@@ -4109,6 +4217,8 @@ def make_round(args) -> int:
         if delivered is not None:
             # ADR 0084: the worker reads its rows from the sealed contract.
             summary["contract"] = delivered
+        if rulings:
+            summary["rulings"] = rulings
         if freeze is not None:
             summary["helper_freeze"] = freeze_report(project, freeze, helpers)
         if ok:
@@ -4339,6 +4449,28 @@ def self_check() -> int:
     check(reviewer_binding({}, "a1f355b61d99918ed", "claude") == "a1f355b61d99918ed"
           and refused({"reviewer_id": "a1f355b61d99918ed"}, "a7740f58e37677176", "claude"),
           "a Component's first reviewer id binds it; another id is refused")
+    with tempfile.TemporaryDirectory() as tmp:
+        project = Path(tmp)
+        (project / "measure").mkdir()
+        events = [
+            {"event": "report", "report": 1, "at": "t1", "component": "legs", "round": 5, "rows": ["R18"],
+             "reason": "the review asks for a shield over open space"},
+            {"event": "decision", "report": 1, "at": "t2", "ruling": "keep the arch struts",
+             "waits_on": None, "waits_on_round": None},
+            {"event": "report", "report": 2, "at": "t3", "component": "legs", "round": 6, "rows": ["R18"],
+             "reason": "still open"},
+            {"event": "report", "report": 3, "at": "t4", "component": "wing", "round": 2, "rows": ["R26"],
+             "reason": "another Component"},
+            {"event": "decision", "report": 3, "at": "t5", "ruling": "keep the table",
+             "waits_on": None, "waits_on_round": None},
+        ]
+        blocked_ledger(project).write_text("".join(json.dumps(e) + "\n" for e in events), encoding="utf-8")
+        check([item["report"] for item in component_rulings(project, "legs")] == [1]
+              and component_rulings(project, "legs")[0]["ruling"] == "keep the arch struts",
+              "a Component's packet carries only its own decided Blocked Report rulings")
+        check(carry_key("a", [], project, "rows", []) == carry_key("a", [], project, "rows")
+              != carry_key("a", [], project, "rows", component_rulings(project, "legs")),
+              "a ruling is part of what a review judged; without one the key is unchanged")
     summary = {
         "round": 3, "scope": "assembly", "project": "/p/cad", "parts": ["frame", "knob", "lens"], "changed": ["frame"], "checked": ["frame"],
         "build": {"frame": {"verdict": "PASS", "failures": []}},

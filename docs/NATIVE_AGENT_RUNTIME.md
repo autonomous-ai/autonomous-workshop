@@ -1082,6 +1082,17 @@ with its exact bytes, or differs from the Component's earlier reviewer.
 Codex runs keep the free-text reviewer until Codex exposes equivalent
 subagent and read evidence.
 
+A Manager's ruling on a Component's Blocked Report binds that Component's
+reviewer (issue #97, amending ADR 0081). Every later component packet and
+summary carry the Component's decided rulings as `rulings`, copied from
+`measure/blocked-reports.jsonl`, and the rulings join the carry key, so an
+unchanged rerun after a new ruling is reviewed afresh without a Shape Round.
+The review request stays the packet path and hash. A reviewer who thinks a
+ruling wrong lists it under `ruling_disputes`, not `differences`: it costs
+no Shape Round, never reaches the worker, and a dispute-only review agrees.
+`--record-review` refuses a review of a packet rendered before the latest
+ruling. Frozen runs keep their materialized `make_round` and definitions.
+
 A new run may also amend its own Design Contract inside Make (ADR 0085), but
 only for a Contract Contradiction whose smallest fix no sealed reference
 image shows. The root proposes it with `make_round --propose-amendment`, a

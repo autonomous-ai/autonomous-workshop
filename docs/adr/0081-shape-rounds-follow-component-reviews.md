@@ -12,7 +12,8 @@
 - Extended by: spec B of issue #76's series (issue #77, reviewer identity
   and the Manager-reviewer channel; see "Extension: one proven Component
   Reviewer" below) and spec C (Interfaces, which add an Interface failure as
-  a third unlock reason; ADR 0082)
+  a third unlock reason; ADR 0082); amended by issue #97 (2026-10-04, see
+  "Amendment: a Blocked Report ruling binds the Component Reviewer" below)
 
 ## Context
 
@@ -228,6 +229,108 @@ agent type, a missed image, other bytes, a second reviewer, a non-id and a
 changed packet, and an unreadable log as a host conflict. Launcher and
 checkpoint tests cover the hook registration, the environment and the frozen
 binding.
+
+## Amendment: a Blocked Report ruling binds the Component Reviewer (2026-10-04, issue #97)
+
+Status: Accepted; implemented and deterministically tested; not yet
+validated by a live run.
+
+### Context
+
+Broken God attempt 17 (`wish-20261004-050844-831e5160`) lost the
+legs-pelvis lock and about 5.5M worker tokens to one repeated request. From
+r0005 on, every review asked the worker to remove the pelvis arch struts and
+hang a shield over open space, which the sealed print stance ("prints
+upright on its soles; no part needs support; the pelvis gets a
+pointed-arch underside") forbids. The worker filed Blocked Report 1; the
+Manager ruled "keep the struts; if a later review asks again, give this
+reason". The reviewer never saw that ruling: the fixed request (decision 4
+of the #77 extension) is only the packet path and hash, and the packet had
+no ruling. It repeated the request on every round, and the worker spent
+Shape Rounds r0006, r0007, r0009 and r0010 on it, reaching the cap of five.
+
+### Decision
+
+For new runs:
+
+1. **Rulings travel in the packet.** A component round writes the
+   Component's decided rulings into its visual packet and summary as
+   `rulings`, oldest first: `{"report", "round", "rows", "request",
+   "ruling", "decided_at"}`, copied from `measure/blocked-reports.jsonl`
+   (the worker's report as `request`, the Manager's last decision as
+   `ruling`). A ruling is a report of this Component whose last answer is a
+   decision that waits on nothing; an open, waiting, need or amended report
+   is not one. They are bound by the packet hash like the contract rows;
+   make_round copies them and judges nothing. An unreadable ledger refuses
+   the component round before anything is built.
+2. **The request stays fixed.** The Manager still sends only the packet
+   path and hash; the ruling reaches the reviewer through the packet, never
+   through the Manager's words.
+3. **The reviewer is bound.** The Component Reviewer definition says: never
+   ask again, as a difference, for what a ruling rules out. A reviewer who
+   thinks a ruling wrong lists it under `ruling_disputes`, each `{"report",
+   "reason"}` naming a ruling of the packet. A Ruling Dispute is not a
+   difference: like a Reference Conflict (ADR 0084) it costs no Shape
+   Round, never reaches the worker (`review.json` is written without it;
+   the round keeps `ruling-disputes.json`), and a review whose only
+   findings are disputes agrees. `--record-review` refuses a disagreeing
+   review with no differences and a dispute, and a dispute naming no ruling
+   of the packet.
+4. **What a review judged includes its rulings.** The rulings join the
+   carry key, appended only when there are any, so a Component with none
+   keeps its keys. A disagreement does not carry to an unchanged rerun made
+   after a new ruling: that rerun is not a Shape Round (decision 3) and is
+   reviewed afresh, against the ruling. `--record-review` refuses a review
+   of a packet rendered before the Component's latest ruling; the worker
+   reruns unchanged.
+5. **Shape Round counting is unchanged.** Whether a disagreeing review's
+   differences only repeat a ruled-out request is a judgement of text, and
+   make_round makes none. The deterministic parts are decisions 3 and 4: the
+   reviewer itself separates disputes from differences, a dispute-only
+   review agrees, and a ruling buys an unchanged rerun a fresh review
+   without spending a Shape Round.
+
+### Consequences
+
+- A ruled-out request costs at most the review that prompted the Blocked
+  Report. In attempt 17 the ruling would have reached the r0006 reviewer,
+  which, bound by it, could have agreed on the remaining printable repairs.
+- A reviewer that ignores its instructions and repeats a ruled-out request
+  as a difference still spends a Shape Round; nothing deterministic can tell
+  that difference from a new one. The five-round cap and the Component
+  Acceptance still bound the loop.
+- Ruling Disputes stay in the round evidence (summary, `ruling-disputes.json`
+  and the summary's `dispute` line) for the Manager; they are not added to
+  the run report. A Manager who agrees with one answers with the tools it
+  has (a Contract Amendment or a need), never by telling the worker to
+  repair toward the dispute.
+- A new ruling on a locked Component changes its carry key, so its next
+  unchanged rerun after an unlock is reviewed again instead of carried.
+  Locks themselves, `--require-component-passes` and the assembly packet
+  are unchanged.
+
+### Compatibility
+
+Runs created before this change keep their materialized `make_round`,
+agent definitions and instructions, including on resume; their packets
+carry no rulings and their reviews have no `ruling_disputes`. Only
+`workshop resume --refresh-tools`, the operator's explicit request, brings
+the new rules to an existing run. The ledger format of issue #88 is
+unchanged.
+
+### Verification
+
+`make_round` tests cover a packet and summary carrying only the
+Component's decided rulings (not open, waiting or another Component's), an
+unchanged packet and carry key without one, an unchanged rerun after a
+ruling reviewed afresh without a Shape Round and a dispute-only review that
+locks and carries its dispute, a dispute-only disagreement refused, disputes
+beside differences spending only the differences' Shape Round, a review of
+a packet older than a ruling refused, malformed disputes refused, a dispute
+with no ruling in the packet refused, and an invalid ledger refusing the
+round before a build. `make_round --self-check` holds the ruling selection
+and the carry key rule. The agent asset tests hold the reviewer and worker
+definitions.
 
 ## Rejected alternatives
 

@@ -469,6 +469,54 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         self.assertIn("**Contract Contradiction**: Two Design Contract statements that cannot both hold", context)
         self.assertIn("**Blocked Report**: A Component Worker's recorded report", context)
 
+    def test_a_blocked_report_ruling_binds_the_reviewer_through_its_packet(self):
+        # Issue #97: the ruling reaches the reviewer in the packet, never in
+        # the Manager's words, and a dispute of it is not a difference.
+        def text(*parts):
+            return " ".join(REPOSITORY.joinpath(*parts).read_text(encoding="utf-8").split())
+
+        reviewer = text("src/workshop/make/agents/component-reviewer.toml")
+        for required in (
+            "The Workshop Manager's rulings bind you",
+            "Never ask again, as a difference, for what a ruling rules out",
+            "list it under `ruling_disputes`, never under `differences`",
+            "it costs no Shape Round, the worker never sees it, and the ruling stands",
+            "A review whose only findings are Ruling Disputes agrees",
+            '"ruling_disputes": [{"report": 1, "reason": "..."}]',
+            "no `reference_conflicts` and no `ruling_disputes`",
+        ):
+            with self.subTest(reviewer=required):
+                self.assertIn(required, reviewer)
+        worker = text("src/workshop/make/agents/component-worker.toml")
+        for required in (
+            "The decision binds your Component Reviewer too",
+            "When your latest review disagreed only on what the decision rules out, rerun your Component unchanged",
+            "that rerun is not a shape round",
+        ):
+            with self.subTest(worker=required):
+                self.assertIn(required, worker)
+        make = text(".agents/product-run/.agents/skills/autonomous-workshop/references/make.md")
+        for required in (
+            "The ruling also binds the Component Reviewer (issue #97)",
+            "never add it to a review request yourself",
+            '"reference_conflicts", "ruling_disputes"}`',
+            "`ruling_disputes`, when the reviewer gives it, lists `{\"report\", \"reason\"}`",
+            "never by telling the worker to repair toward it",
+            "ask the worker to rerun its Component unchanged and send the new packet",
+        ):
+            with self.subTest(make=required):
+                self.assertIn(required, make)
+        skill = text("src/workshop/make/skills/make-round/SKILL.md")
+        for required in ("A decided ruling binds the Component Reviewer (issue #97)",
+                         "`ruling_disputes` (at most 12)", "`ruling-disputes.json`"):
+            with self.subTest(skill=required):
+                self.assertIn(required, skill)
+        context = text("CONTEXT.md")
+        self.assertIn("**Ruling Dispute**: A Component Reviewer's statement", context)
+        adr = text("docs/adr/0081-shape-rounds-follow-component-reviews.md")
+        self.assertIn("## Amendment: a Blocked Report ruling binds the Component Reviewer (2026-10-04, issue #97)",
+                      adr)
+
     def test_the_root_may_amend_invisible_rows_through_a_fresh_contract_reviewer(self):
         # ADR 0085: the same tool and rules on both runtimes.
         def text(*parts):

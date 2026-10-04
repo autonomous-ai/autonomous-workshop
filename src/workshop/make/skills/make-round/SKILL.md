@@ -306,7 +306,13 @@ costs no shape round, it may stand beside `"agrees": true`, and the worker
 never sees it (`review.json` is written without it; the round keeps it in
 `reference-conflicts.json` and the summary's `reference_conflicts`). The
 final verifier reports each one, and the run reports it when it ends.
-Then record it without rebuilding:
+A review may also list `ruling_disputes` (at most 12), each `{"report",
+"reason"}`: a ruling in the packet's `rulings` (below, Blocked Reports) the
+reviewer thinks wrong. A Ruling Dispute is not a difference either: the
+ruling stands, it costs no shape round, it may stand beside `"agrees":
+true`, and the worker never sees it (the round keeps it in
+`ruling-disputes.json` and the summary's `ruling_disputes`, and a carried
+review carries it). Then record it without rebuilding:
 
 ```sh
 "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
@@ -318,8 +324,9 @@ hash, changed sources, packet, renders, references or comparisons, a round
 whose build or print checks failed or that has no packet, a second review of
 the same round (a carried review counts), a reviewer named as the
 Workshop Manager, a malformed Reference Conflict or one naming a reference
-the round did not compare, and a disagreeing review whose only findings are
-Reference Conflicts (such a review agrees). Where the Workshop host names the runtime
+the round did not compare, a malformed Ruling Dispute or one naming no
+ruling of the packet, and a disagreeing review whose only findings are
+Reference Conflicts or Ruling Disputes (such a review agrees). Where the Workshop host names the runtime
 (`WORKSHOP_REVIEWER_RUNTIME`, set on Claude Code), `reviewer` must be the
 reviewer's native agent id in that runtime's format (17 lowercase hex
 characters), the Component's first review binds it in the component state as
@@ -333,7 +340,8 @@ review, and tells the worker only which round was reviewed: the worker reads
 Under a schema 3 Design Contract the reviewer may answer camera mismatch
 instead: the side of the model that faces the Reference Camera is not the
 side the reference shows. It names the reference and the landmarks each side
-shows, and replaces `agrees`, `differences` and `reference_conflicts`:
+shows, and replaces `agrees`, `differences`, `reference_conflicts` and
+`ruling_disputes`:
 
 ```json
 {"round": 3, "packet_sha256": "<visual packet hash from summary>",
@@ -517,6 +525,19 @@ assembly round and `--full` refuse to run; the Make finalizer and the host
 refuse the Make proposal and Make acceptance, and on Claude Code a hook
 refuses the root's turn end unless it ends on a recorded need. The tool is
 the same on every runtime; no hook is needed to report or clear.
+
+A decided ruling binds the Component Reviewer (issue #97). Every later
+component round of that Component writes its decided rulings, oldest first,
+into the visual packet and the summary as `rulings`: `{"report", "round",
+"rows", "request", "ruling", "decided_at"}`, copied from the ledger (the
+worker's report as `request`, the Manager's last decision as `ruling`). Only
+a report whose last answer is a decision that waits on nothing is a ruling.
+The rulings join the carry key, so a review carries to a later round only
+under the same rulings; without any, packet and key are unchanged. An
+unchanged rerun after a new ruling is therefore reviewed afresh and is not
+a shape round. `--record-review` refuses a review of a packet rendered
+before the Component's latest ruling; the worker reruns unchanged. An
+unreadable ledger refuses the component round before anything is built.
 
 ### Contract Amendments (ADR 0085)
 

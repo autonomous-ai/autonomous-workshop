@@ -1914,3 +1914,20 @@ any round with a visual packet prints its sha256 and path on a `packet`
 line (`visual.packet_sha256`, `visual.packet`). The Component Worker definition names these fields
 exactly. This changes the `make-round` fingerprint; materialized runs keep
 their copied bytes.
+
+## Local change: a Blocked Report ruling binds the Component Reviewer (2026-10-04)
+
+A Workshop-local change (issue #97, amending ADR 0081) to Workshop's own
+`make-round`. A component round writes the Component's decided Blocked
+Report rulings (a report of that Component whose last answer is a decision
+that waits on nothing) into its visual packet and summary as `rulings`,
+copied from `measure/blocked-reports.jsonl`, and appends them to the carry
+key only when there are any. `--record-review` accepts `ruling_disputes`
+(`{"report", "reason"}`, at most 12, each naming a ruling of the packet),
+keeps them out of the worker's `review.json`, writes
+`ruling-disputes.json`, carries them with a carried review, refuses a
+disagreement whose only findings are disputes, and refuses a review of a
+packet rendered before the Component's latest ruling. An unreadable ledger
+refuses the component round before the build. Nothing is judged. This
+changes the `make-round` fingerprint; materialized runs keep their copied
+bytes.

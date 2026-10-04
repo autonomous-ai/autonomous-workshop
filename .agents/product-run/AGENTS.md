@@ -213,7 +213,9 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   follows, a decision waiting on another Component (wake the worker again
   after that Component's next passing round), a need quoting its rows,
   which you then seal with `stage_proposal.py ... need`, or an applied
-  Contract Amendment that names it. While one is open,
+  Contract Amendment that names it. A decision binds the Component
+  Reviewer through the Component's later packets; never repeat it in a
+  review request. While one is open,
   assembly, the Make proposal and Make acceptance are refused, and on
   Claude Code so is your turn end unless it ends on a recorded need. After
   a compaction run `make_round <cad-project> --blocked-reports`. The rules

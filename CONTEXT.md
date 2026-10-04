@@ -342,8 +342,18 @@ when the Manager wakes the worker again. While one is open the host refuses
 an assembly round, the Make proposal and Make acceptance, and on Claude Code
 the root's turn end unless it ends on a recorded need. The run report lists
 every Blocked Report, how it was cleared and how long it stayed open (issue
-#88).
+#88). A Decision that waits on nothing is a ruling that binds the Component
+Reviewer too: every later review packet of that Component carries it
+(issue #97).
 _Avoid_: Blocked message, stuck worker
+
+**Ruling Dispute**:
+A Component Reviewer's statement that a Workshop Manager ruling in its
+review packet is wrong. It names the Blocked Report and says why. It is not
+a difference: the ruling stands, it costs no Shape Round and never reaches
+the Component Worker, and a review whose only findings are Ruling Disputes
+agrees (issue #97).
+_Avoid_: Disagreement with the ruling, re-asking a ruled-out repair
 
 **Contract Amendment**:
 A change to the text of Design Contract rows made inside a run to remove a

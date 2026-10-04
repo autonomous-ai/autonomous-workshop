@@ -13,6 +13,9 @@
 - Amends: the root rule that `.codex/agents/` holds only the Inventor roster,
   and the rule that every descendant runs at the root's frozen reasoning
   effort. Both change for new runs only.
+- Amended by: ADR 0081's issue #97 section (2026-10-04): the Manager's
+  Blocked Report rulings travel in the review packet and bind the Component
+  Reviewer; the fixed review request is unchanged.
 
 ## Context
 

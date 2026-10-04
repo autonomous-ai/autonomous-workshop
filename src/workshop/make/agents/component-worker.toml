@@ -127,6 +127,12 @@ one section a failure you cannot place requires.
   a new component round, or, if it still cannot hold, a new Blocked
   Report. If the decision waits on another Component, wait until the
   Manager wakes you again. Never sit idle on a decision you received. The
+  decision binds your Component Reviewer too: your next rounds carry it in
+  their packet (the summary's `ruling` line). When your latest review
+  disagreed only on what the decision rules out, rerun your Component
+  unchanged: that rerun is not a shape round, and it is reviewed afresh
+  against the ruling. Otherwise make the decision and the review's other
+  repairs in one round. The
   Manager may instead amend your rows (a Contract Amendment, ADR 0085);
   then rerun your round, read the rows it delivers, and build to them.
 - Report to the Manager when build and print pass, when your Component is

@@ -2966,7 +2966,7 @@ class InterfaceTextDeliveryTest(unittest.TestCase):
                              "names one reference this round compared: ref-02-body.png"),
             "with a camera mismatch": ({"agrees": None, "camera_mismatch": dict(ReferenceCameraRoundTest.MISMATCH),
                                         "reference_conflicts": [dict(CONFLICT_FIXTURE)]},
-                                       "camera mismatch replaces agrees, differences and reference_conflicts"),
+                                       "camera mismatch replaces agrees, differences, reference_conflicts and ruling_disputes"),
         }
         for name, (changes, refusal) in cases.items():
             with self.subTest(name), tempfile.TemporaryDirectory() as tmp:
@@ -2992,6 +2992,211 @@ class InterfaceTextDeliveryTest(unittest.TestCase):
 
 
 CONFLICT_FIXTURE = InterfaceTextDeliveryTest.CONFLICT
+
+
+class BlockedReportRulingTest(unittest.TestCase):
+    """Issue #97: a Workshop Manager's decided ruling on a Component's Blocked
+    Report travels in its review packet and binds the Component Reviewer; a
+    reviewer who thinks it wrong disputes it apart from the form, which
+    costs no Shape Round."""
+
+    _run_root = SealedReferenceTest._run_root
+    _fake_run = SealedReferenceTest._fake_run
+    _main = SealedReferenceTest._main
+    _root = InterfaceTextDeliveryTest._root
+    _contract = InterfaceTextDeliveryTest._contract
+    _component = InterfaceTextDeliveryTest._component
+    _review = InterfaceTextDeliveryTest._review
+    REFS = InterfaceTextDeliveryTest.REFS
+    POSED = InterfaceTextDeliveryTest.POSED
+    STAFF = InterfaceTextDeliveryTest.STAFF
+    PAIR = InterfaceTextDeliveryTest.PAIR
+    DIFFERS = ContractComponentReviewTest.DIFFERS
+    STRUTS = [{"feature": "pelvis struts", "reference": "open space under the shield",
+               "model": "two arch struts under the shield; remove them"}]
+    ROW = "The ferrule is a riveted band."
+    REQUEST = "Review of round 1 asks for a shield over open space; upright it starts as an island in air."
+    RULING = "Keep the arch struts: the part prints upright without support. If a review asks again, give this reason."
+
+    def _ledger(self, project, *events):
+        ledger = project / "measure" / "blocked-reports.jsonl"
+        ledger.parent.mkdir(exist_ok=True)
+        with ledger.open("a", encoding="utf-8") as handle:
+            for event in events:
+                handle.write(json.dumps(event) + "\n")
+
+    def _report(self, number, component="body", reason=REQUEST):
+        return {"event": "report", "report": number, "at": "2026-10-04T06:28:38Z", "component": component,
+                "round": 1, "rows": [self.ROW], "reason": reason}
+
+    def _decision(self, number, ruling=RULING, waits_on=None):
+        return {"event": "decision", "report": number, "at": "2026-10-04T06:32:31Z", "ruling": ruling,
+                "waits_on": waits_on, "waits_on_round": None if waits_on is None else 1}
+
+    def _ruled(self, project):
+        self._ledger(project, self._report(1), self._decision(1))
+
+    def _state(self, project):
+        return json.loads((project / "measure/component-rounds/body/make-round-state.json").read_text())["policy"]
+
+    def _packet(self, summary):
+        return json.loads(Path(summary["visual"]["packet"]).read_text())
+
+    def test_the_packet_and_summary_carry_only_the_components_decided_rulings(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            self._ledger(project, self._report(1), self._decision(1),
+                         self._report(2, reason="still waiting for an answer"),
+                         self._report(3, component="wing"), self._decision(3, ruling="Keep the blade table."),
+                         self._report(4, reason="waits on the base"), self._decision(4, waits_on="base"))
+            _, summary = self._component(module, project, calls)
+            ruling = {"report": 1, "round": 1, "rows": [self.ROW], "request": self.REQUEST,
+                      "ruling": self.RULING, "decided_at": "2026-10-04T06:32:31Z"}
+            self.assertEqual(self._packet(summary)["rulings"], [ruling])
+            self.assertEqual(summary["rulings"], [ruling])
+            self.assertIn("rulings", summary["visual"]["detail"])
+            self.assertIn("1 Blocked Report ruling(s) in the packet bind the reviewer: 1",
+                          module.render_summary(summary))
+
+    def test_without_a_ruling_the_packet_and_carry_key_are_unchanged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            self._ledger(project, self._report(1))  # open, not a ruling
+            _, summary = self._component(module, project, calls)
+            self.assertNotIn("rulings", self._packet(summary))
+            self.assertNotIn("rulings", summary)
+            identity = self._state(project)["identity"]
+            self.assertEqual(summary["carry_key"],
+                             module.carry_key(identity, summary["refs"], project, summary["contract_rows"]))
+
+    def test_a_ruling_after_a_disagreement_earns_a_fresh_review_without_a_shape_round(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            self._review(module, project, summary, agrees=False, reason="The struts must go.",
+                         differences=self.STRUTS)
+            self._ruled(project)
+            # The unchanged rerun is not carried: what the review judged changed.
+            code, rerun = self._component(module, project, calls, edit=False)
+            self.assertEqual(code, 1)
+            self.assertIsNone(rerun["review"])
+            self.assertEqual((rerun["shape_round"], rerun["shape_rounds"], rerun["phase"]),
+                             (False, 0, "awaiting-review"))
+            self.assertEqual(self._packet(rerun)["rulings"][0]["report"], 1)
+            dispute = {"report": 1, "reason": "The reference shows open space; the ruling keeps the struts."}
+            result = self._review(module, project, rerun, ruling_disputes=[dispute])
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["locked"], {"round": 2, "source": "agreeing-review"})
+            recorded = [{"component": "body", "report": 1, "round": 2, "reviewer": "fresh-reviewer-subagent",
+                         "reason": dispute["reason"]}]
+            self.assertEqual(result["ruling_disputes"], recorded)
+            out = Path(result["out"])
+            self.assertNotIn("ruling_disputes", json.loads((out / "review.json").read_text()))
+            self.assertEqual(json.loads((out / "ruling-disputes.json").read_text()), recorded)
+            self.assertIn("disputes the ruling on Blocked Report 1", module.render_summary(result))
+            self.assertEqual((self._state(project)["phase"], self._state(project)["shape_rounds"]), ("locked", 0))
+            # An unchanged rerun carries the review and its dispute.
+            code, carried = self._component(module, project, calls, edit=False)
+            self.assertEqual((code, carried["review"]["carried_from"]), (0, 2))
+            self.assertEqual(carried["ruling_disputes"], recorded)
+
+    def test_a_dispute_only_disagreement_is_refused_and_spends_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            self._ruled(project)
+            _, summary = self._component(module, project, calls)
+            dispute = [{"report": 1, "reason": "The struts are not in the reference."}]
+            with self.assertRaisesRegex(ValueError, "only findings are Ruling Disputes agrees"):
+                self._review(module, project, summary, agrees=False, reason="The struts differ.",
+                             ruling_disputes=dispute)
+            self.assertEqual((self._state(project)["phase"], self._state(project)["shape_rounds"]),
+                             ("awaiting-review", 0))
+            self.assertFalse((Path(summary["out"]) / "review.json").exists())
+            self.assertTrue(self._review(module, project, summary, ruling_disputes=dispute)["ok"])
+
+    def test_disputes_beside_differences_spend_only_the_differences_shape_round(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            self._ruled(project)
+            _, summary = self._component(module, project, calls)
+            result = self._review(module, project, summary, agrees=False, reason="The arm is thin.",
+                                  differences=self.DIFFERS,
+                                  ruling_disputes=[{"report": 1, "reason": "The struts still show."}])
+            self.assertFalse(result["ok"])
+            self.assertEqual(len(result["ruling_disputes"]), 1)
+            self.assertEqual(json.loads((Path(result["out"]) / "review.json").read_text())["differences"],
+                             self.DIFFERS)
+            _, repaired = self._component(module, project, calls)
+            self.assertEqual((repaired["shape_round"], repaired["shape_rounds"]), (True, 1))
+
+    def test_a_review_of_a_packet_older_than_a_ruling_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            self._ruled(project)
+            with self.assertRaisesRegex(ValueError, "decided a Blocked Report of body after r0001"):
+                self._review(module, project, summary)
+            self.assertEqual(self._state(project)["phase"], "awaiting-review")
+            # An unchanged rerun renders the ruling and is reviewed as usual.
+            _, rerun = self._component(module, project, calls, edit=False)
+            self.assertEqual((rerun["round"], rerun["shape_rounds"]), (2, 0))
+            self.assertTrue(self._review(module, project, rerun)["ok"])
+
+    def test_a_malformed_ruling_dispute_is_refused(self):
+        good = {"report": 1, "reason": "The ruling is wrong."}
+        cases = {
+            "not a list": ({"ruling_disputes": dict(good)}, "at most 12 ruling_disputes"),
+            "too many": ({"ruling_disputes": [dict(good)] * 13}, "at most 12 ruling_disputes"),
+            "missing reason": ({"ruling_disputes": [{"report": 1}]}, "needs report and reason"),
+            "extra field": ({"ruling_disputes": [{**good, "repair": "remove"}]}, "needs report and reason"),
+            "unknown report": ({"ruling_disputes": [{**good, "report": 2}]}, "names one ruling of the packet"),
+            "report as text": ({"ruling_disputes": [{**good, "report": "1"}]}, "names one ruling of the packet"),
+            "empty reason": ({"ruling_disputes": [{**good, "reason": " "}]}, "1 to 1000 characters"),
+            "with a camera mismatch": ({"agrees": None, "camera_mismatch": dict(ReferenceCameraRoundTest.MISMATCH),
+                                        "ruling_disputes": [dict(good)]},
+                                       "camera mismatch replaces agrees, differences, reference_conflicts and "
+                                       "ruling_disputes"),
+        }
+        for name, (changes, refusal) in cases.items():
+            with self.subTest(name), tempfile.TemporaryDirectory() as tmp:
+                project = self._root(tmp)
+                module, calls = load_module(), []
+                self._ruled(project)
+                _, summary = self._component(module, project, calls)
+                review = write_review(project, summary, **changes)
+                if changes.get("agrees", True) is None:
+                    data = json.loads(review.read_text())
+                    del data["agrees"]
+                    review.write_text(json.dumps(data))
+                with self.assertRaisesRegex(ValueError, refusal):
+                    module.record_review(project, review, "part_body.step.py")
+
+    def test_a_dispute_without_any_ruling_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            with self.assertRaisesRegex(ValueError, "the packet has none"):
+                self._review(module, project, summary, ruling_disputes=[{"report": 1, "reason": "wrong"}])
+
+    def test_an_invalid_ledger_refuses_the_component_round_before_building(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            (project / "measure").mkdir(exist_ok=True)
+            (project / "measure" / "blocked-reports.jsonl").write_text("{not json}\n")
+            (project / "part_body.step.py").write_text(self.POSED % 1)
+            with mock.patch.object(module, "read_freeze", return_value={"round": 1, "helpers": {}}):
+                code = self._main(module, project, ["--component", "part_body.step.py"], calls)
+            self.assertEqual(code, 2)
+            self.assertIn("Blocked Report ledger", self.stderr)
+            self.assertFalse(any(Path(command[1]).name == "gen" for command in calls))
 
 
 def module_run_root(project):
