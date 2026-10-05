@@ -20,7 +20,8 @@ AI generation and editing via OpenRouter `openai/gpt-5.4-image-2`. No web imager
 - Every reference is generated, then AI-edited, then keyed to alpha, then squeezed horizontally by at most 20%, then padded to 800 x 800:
   - ref-01: x 0.865, chosen for the best silhouette IoU
   - ref-02: x 1.062
-  - ref-03 and ref-04: none
+  - ref-03: x 1.1 (the edited image base7_d)
+  - ref-04: none
 
 The generator kept drawing ramps of 17 to 20 degrees and long wedges. That is why the contract moved from 25 to 22 degrees. The user's range is 20 to 30. At 22 degrees the base image matches the contract silhouette at IoU 0.971 with no resize.
 
@@ -46,10 +47,12 @@ The silhouette IoU is against the contract's projected convex part model, side v
 | ref-02 | grille hole diameter | 1.6 (amended from 1.5) | 1.6 | ok |
 | ref-02 | grille circle | 20.0 | 20.2 | ok |
 | ref-02 | mic holes, front view | (35.0, 39.3), (35.0, -35.7) | (35.9, 28.1), (35.9, -25.8) | DISAGREE, raised (the board fixes them) |
-| ref-03 | silhouette IoU at 22 degrees | >= 0.90 | 0.971 | ok |
+| ref-03 | silhouette IoU at 22 degrees | >= 0.90 | 0.959 (image base7_d, x 1.1) | ok |
 | ref-03 | side aspect | 1.517 | 1.526 | ok |
 | ref-03 | front / rear height | 18.5 / 47.8 | fit 18.5 / 47.8 | ok |
-| ref-03 | boss, horizontal width / height | 10.2 / 4.0 (11.0 at 22 degrees) | 6.0 / 3.6, centred 36.1 from front | DISAGREE on width, raised (hidden when docked) |
+| ref-03 | boss axis | square to the slope (top face parallel to the 22 degree slope) | top face at 20.8 degrees on a 21.4 degree slope | ok. Fixed 2026-10-05 after the owner pointed out that the first image drew the boss vertical |
+| ref-03 | boss width along slope / height normal | 11.0 / 4.0 | 9.2 / 2.6 | DISAGREE, raised (hidden when docked); 2 edit rounds |
+| ref-03 | boss centre from front | 36.3 | 34.0 | DISAGREE (2.3 mm), raised |
 | ref-04 | aspect | 3.535 | 3.672 | ok (3.9%) |
 | ref-04 | width at middle | 6.0 | 5.7 | ok (0.3 mm) |
 | ref-04 | depth | 9.9 | 9.5 | ok (0.4 mm) |
