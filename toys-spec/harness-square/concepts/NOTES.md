@@ -116,3 +116,14 @@ The owner asked for a separate part instead of one solid wedge: a rectangle with
 | VC8 | Clear Shell | black wedge | about 25° | drawn as an audio cassette, not VHS |
 
 Common: most renders draw the screen smaller than the cassette or landscape. The real 84 mm square glass fills most of the cassette's 103 mm height.
+
+## Detachable handheld with a desk dock (VC4, FX2 Hover)
+
+New owner requirement (2026-10-05): the device lifts off its stand and is used in the hand like a phone; on the desk it sits at 20–30°. The owner picked VC4 Neon Grid and FX2 Hover to rework. VC4's face loses the cassette interior (no reel windows) and takes the SW5 deck styling instead. Prompts are in the scratchpad `prompts15.py` (keys `vx/...`), which uses our own earlier renders (grid_c, vhsdeck_a, hover_a) as edit references. Images are in `handheld-dock/`; the page is `HANDHELD_DOCK_CONCEPTS.html`.
+
+| Concept | Shots | Flags |
+|---|---|---|
+| VC4 Neon Grid Dock | dock, lift (pogo contacts), hand | 187 mm wide so two-handed; about 28 mm thick for the 22.3 mm PCB; penguin looks Tux-like; chrome strip must be flush with the glass |
+| FX2 Hover Dock | dock (25° wedge base, rerun), lift (pogo + USB-C), hand | renders show a 10 mm tile, the real one is about 28 mm; less room for a battery |
+
+Hardware impact: a battery and charger are now needed. The device charges through pogo pins on the dock and keeps its bottom USB-C, and magnets locate it on the dock.
