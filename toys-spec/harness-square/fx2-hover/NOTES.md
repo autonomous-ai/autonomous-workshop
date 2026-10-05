@@ -76,3 +76,44 @@ Not measurable in these views: the USB-C opening and counterbore, the board boss
 ## Stage 3d
 
 No moving parts, so skipped.
+
+## Revision for the updated design-a-toy skill (merged main d9e673dd, 2026-10-05)
+
+The contract moved to schema 4. It now has a camera on every reference, three static Interfaces with text, a Print section carrying the two required rules word for word, and no print minimum of its own.
+
+### Reference cameras (render_review convention)
+
+| Ref | Camera | Cue |
+|---|---|---|
+| ref-01 | [0, 0] | pure side elevation, front on the image's left, so seen from +X, level |
+| ref-02 | [90, -75] | square-on back face; the docked back faces 22 degrees off straight down (true -68, rounded) |
+| ref-03 | [0, 0] | pure side elevation, front on the left |
+| ref-04 | [-90, 75] | square-on to the pad top, which lies on the 22 degree slope (true 68, rounded) |
+
+### Stage 3c against the library minimums (`print_details.py --limits --nozzle 0.4`)
+
+| Part | Feature | Size | Minimum (name) | Verdict | Resolution |
+|---|---|---|---|---|---|
+| tile | mic hole | 1.0 | 0.5 (min_cut_width) | ok | |
+| tile | grille hole | 1.6 | 0.5 (min_cut_width) | ok | |
+| tile | material between grille holes | at least 1.8 (3.4 pitch) | 1.6 (min_web) | ok | pitch of at least 3.4 now stated; the image's spacing measured about 3.0 to 3.3 |
+| tile | rim | 3.0 | 0.9 (min_relief_width) | ok | |
+| base | boss | 11.0 across | 2.0 (min_feature) | ok | |
+| base | pad groove | 6.4 wide, 1.0 deep | 0.5 / 0.5 | ok | |
+| pad | width | 6.0 | 0.8 (min_wall) | ok | |
+
+No stacked or curved detail sits on a host too small for it. No knife edge either: the base's top edges carry 3.0 mm rounds.
+
+### Hidden joints
+
+| Joint | Check | Value | Verdict | Resolution |
+|---|---|---|---|---|
+| boss in recess | clearance on each side | 0.3 | ok | |
+| boss in recess | stands on a bed face? | the recess is a hole in the tile's bed face; the boss is on the base top | ok | |
+| magnet in boss | clearance on each side | 0.05 (6.1 pocket) | fail | pocket enlarged to 6.4 |
+| pad in groove | clearance on each side | 0.2 | ok | |
+| pad in groove | groove in the base bed face? | no, it is in the top face | ok | |
+
+### Stage 3d camera composition
+
+No requirement names a camera or claims a composition. The old "35 / 22 fixed frame" wording appears in neither contract, so there is nothing to project.

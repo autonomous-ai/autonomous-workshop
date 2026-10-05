@@ -74,3 +74,48 @@ Not measurable in these views: the pogo slots and pockets, the USB-C openings, t
 ## Stage 3d
 
 No moving parts, so skipped.
+
+## Revision for the updated design-a-toy skill (merged main d9e673dd, 2026-10-05)
+
+The contract moved to schema 4. It now has a camera on every reference, four static Interfaces with text, a Print section carrying the two required rules word for word, and no print minimum of its own. "Left" is now defined as the viewer's left (x < 0).
+
+### Reference cameras (render_review convention)
+
+| Ref | Camera | Cue |
+|---|---|---|
+| ref-01 | [0, 0] | pure side elevation, front on the image's left, so seen from +X, level |
+| ref-02 | [-90, 75] | square-on to the docked face, tilted 22 degrees back (true 68, rounded) |
+| ref-03 | [90, -75] | square-on back face |
+| ref-04 | [0, 0] | pure side elevation, front on the left |
+| ref-05 | [-90, 0] | straight-on front of the bar |
+
+### Stage 3c against the library minimums
+
+| Part | Feature | Size | Minimum (name) | Verdict | Resolution |
+|---|---|---|---|---|---|
+| front | rib groove or slot | 1.2 wide, 0.8 deep | 0.5 / 0.5 (min_cut_width / depth) | ok | |
+| front | material between slots | 2.6 | 1.6 (min_web) | ok | |
+| front | stripe groove | 4.0 x 1.0 | 0.5 / 0.5 | ok | |
+| front | flap step | 1.0 | 0.5 (min_relief_height) | ok | |
+| back | mic hole | 1.0 | 0.5 | ok | |
+| wedge | grid V-groove | 1.2 x 0.6 | 0.5 / 0.5 | ok | |
+| ledge | top face | 6.8 | 0.8 land (min_wall) | ok | |
+
+No stacked or curved detail sits on a host too small for it. No knife edge either.
+
+### Hidden joints
+
+| Joint | Check | Value | Verdict | Resolution |
+|---|---|---|---|---|
+| ledge pegs in wedge | clearance on each side | 0.1 (4.0 in 4.2) | fail | holes 4.4 |
+| ledge pegs in wedge | hole parallel to the bed | horizontal in the wedge's bottom-down stance | fail | teardrop tops |
+| ledge pegs | stand on the bar's bed face? | pegs on the rear face; the bar prints on its front face | ok | |
+| pogo connectors | clearance on each side | 0.0 to 0.05 (14.5 and 14.6 slots) | fail | slots and pockets 14.9 x 5.6, glued |
+| pogo pair | both sides agree | slot centre 8.2 from the device back, so the ledge pocket centre moved to 8.2 | fixed | |
+| wire path | wedge channel meets the bar's hole | both at x +/-30.0, 5.0 above the desk | ok | stated in the Interface |
+| device between cheeks | clearance on each side | 0.3 | ok | |
+| face plate on tub | stands on a bed face? | plate prints inner face down and carries no pegs | ok | |
+
+### Stage 3d camera composition
+
+No requirement names a camera or claims a composition, so there is nothing to project.
