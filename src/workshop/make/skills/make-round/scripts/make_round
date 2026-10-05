@@ -19,6 +19,14 @@ or edits source. No silhouette score is computed: every reference is composed
 beside the model, rendered at the camera the reference declares, and a reader
 compares their form (ADR 0076).
 
+A round's builds run at once, and its checks then run at once (issue #101):
+beside `gen`, cad/scripts/brepbundle.py builds each part once and keeps it
+as a native B-rep bundle under __cadgen__/round-brep/, and when that build
+is the identity `gen` reported, both print gates, every Keep-out Envelope
+check and both renders read it instead of building again. summary.json's
+`brep` records the identity every check read. MAKE_ROUND_JOBS=1 runs them
+one after another.
+
 An assembly round shows every reference the Wish sealed, unless a current
 component round already showed it; it never passes on an empty reference list
 when the Wish has references. In Contract Mode a component round shows the
@@ -127,6 +135,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 STATE_NAME = "make-round-state.json"
@@ -139,6 +148,17 @@ MAX_BLOCKED_TEXT = 4000
 MAX_NEED_CHARS = 1024
 ROUNDS_DIR = "rounds"
 COMPONENT_ROUNDS_DIR = "component-rounds"
+# A round's one build of each Component, kept as a native B-rep bundle that
+# every later check of the round reads instead of rebuilding (issue #101).
+# They live in cadgen's derived cache, which is never sealed or published,
+# and only the latest round of each scope keeps its bundles.
+BREP_DIR = ("__cadgen__", "round-brep")
+BREP_BUNDLE_ENV = "WORKSHOP_BREP_BUNDLE"
+BREP_IDENTITY_ENV = "WORKSHOP_BREP_IDENTITY"
+# brepbundle.READ_LINE, as a check's log records it.
+BREP_READ = re.compile(r"^\[brep\] (\S+) read (\S+) (base|instance-[0-9]+) identity ([0-9a-f]{64})$", re.M)
+ROUND_JOBS_ENV = "MAKE_ROUND_JOBS"
+DEFAULT_ROUND_JOBS = 8
 TOOL_TIMEOUT_SECONDS = 900
 FULL_TIMEOUT_SECONDS = 1800
 MAX_TAIL_CHARS = 600
@@ -386,7 +406,7 @@ def prepare_comparisons(project, out, refs, display_pose=False):
 
 
 def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=False, contract=None,
-                   rulings=None):
+                   rulings=None, extra_env=None):
     """Render evidence for native inspection; never infer a visual verdict.
     ``component`` is the role of a component round, else None.
     ``display_pose`` (a component round of a schema 3 contract) renders the
@@ -396,7 +416,8 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
     Component's own Design Contract, bound into the packet (ADR 0084).
     ``rulings`` are the Workshop Manager's decided rulings on the
     Component's Blocked Reports, bound into the packet when there are any
-    (issue #97)."""
+    (issue #97). ``extra_env`` points the renders at the round's kept build
+    (issue #101)."""
     bound = (lambda: component_sources(project, component)) if component else (lambda: source_hashes(project))
     before = bound()
     views = out / "visual"
@@ -408,18 +429,25 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
         if view not in VISUAL_VIEWS:
             # the = form: argparse reads a leading "-" as a new option
             command.append("--view=%s" % view)
-    done = run(command + ["--sheet", "-o", str(views)], cwd=project, log=out / "visual-render.log")
+    # Issue #101: both renders read the round's kept build, so they run at once.
+    env = {"extra_env": extra_env} if extra_env else {}
+    jobs = [{"command": command + ["--sheet", "-o", str(views)], "cwd": project,
+             "log": out / "visual-render.log", **env}]
+    if display_pose and refs:
+        posed = out / ("display_pose_%s.step.py" % component.replace("-", "_"))
+        posed.write_text(DISPLAY_POSE_ENTRY % {"project": str(project), "part": entry.name}, encoding="utf-8")
+        jobs.append({"command": [sys.executable, str(cad / "render_review"), str(posed),
+                                 *("--view=%s" % view for view in reference_views),
+                                 "-o", str(views / DISPLAY_POSE_DIR)],
+                     "cwd": project, "log": out / "display-pose-render.log", **env})
+    dones = run_all(jobs)
+    done = dones[0]
     paths = [views / (VISUAL_SHEET + ".png")]
     rendered = [views / (v + ".png") for v in VISUAL_VIEWS]
     if done.returncode or not all(p.is_file() for p in (*paths, *rendered)) or before != bound():
         return {"status": "error", "findings": [], "detail": "Visual render failed or source changed; inspect visual-render.log"}
     if display_pose and refs:
-        posed = out / ("display_pose_%s.step.py" % component.replace("-", "_"))
-        posed.write_text(DISPLAY_POSE_ENTRY % {"project": str(project), "part": entry.name}, encoding="utf-8")
-        done = run([sys.executable, str(cad / "render_review"), str(posed),
-                    *("--view=%s" % view for view in reference_views),
-                    "-o", str(views / DISPLAY_POSE_DIR)],
-                   cwd=project, log=out / "display-pose-render.log")
+        done = dones[1]
         if done.returncode or before != bound():
             return {"status": "error", "findings": [],
                     "detail": "Display Pose render failed or source changed; inspect display-pose-render.log"}
@@ -1029,10 +1057,7 @@ def reproduction_check(python: str, part: Path, project: Path, out: Path, identi
     with ``identity``, the one `gen` reported for this round's build. Returns
     the round's build failure when they differ, else None. Self-contained, so
     a caller may run it beside the round's other checks."""
-    role = part.name.removeprefix("part_").removesuffix(".step.py")
-    tool = Path(__file__).resolve().with_name(REPRODUCE_TOOL)
-    done = run([python, str(tool), str(part)], cwd=project, log=out / ("reproduce-%s.log" % role))
-    return reproduction_failure(identity, done)
+    return reproduction_failure(identity, run(**reproduction_job(python, part, project, out)))
 
 
 # A region row of either print gate, `N. [kind] ...`, and the line under it
@@ -1478,6 +1503,161 @@ def run(command, *, cwd, log: Path, timeout=TOOL_TIMEOUT_SECONDS, extra_env=None
     return done
 
 
+def round_jobs() -> int:
+    """How many of a round's independent tool runs go at once (issue #101).
+    MAKE_ROUND_JOBS=1 runs them one after another, in the order listed."""
+
+    value = os.environ.get(ROUND_JOBS_ENV)
+    if value is not None:
+        try:
+            jobs = int(value)
+        except ValueError:
+            raise ValueError("%s must be a whole number" % ROUND_JOBS_ENV) from None
+        if jobs < 1:
+            raise ValueError("%s must be at least 1" % ROUND_JOBS_ENV)
+        return jobs
+    return max(1, min(DEFAULT_ROUND_JOBS, (os.cpu_count() or 2) - 2))
+
+
+def run_all(jobs: list) -> list:
+    """Run independent tool commands, each a ``run`` keyword dict, at the same
+    time; their results in the order given. Each keeps its own log and
+    verdict, so the order they finish in changes nothing (issue #101)."""
+
+    if not jobs:
+        return []
+    width = min(round_jobs(), len(jobs))
+    if width == 1:
+        return [run(**job) for job in jobs]
+    with ThreadPoolExecutor(max_workers=width) as pool:
+        return list(pool.map(lambda job: run(**job), jobs))
+
+
+def brep_supported(cad: Path) -> bool:
+    """Whether this skill tree keeps a round's builds as B-rep bundles for its
+    checks to read (issue #101)."""
+
+    return (cad / "brepbundle.py").is_file()
+
+
+def brep_job(python: str, cad: Path, part: Path, project: Path, directory: Path, log: Path,
+             instance: int | None = None) -> dict:
+    """The run job that builds ``part`` (or one instance) once and keeps it."""
+
+    command = [python, str(cad / "brepbundle.py"), "build", str(part), "--out", str(directory)]
+    if instance is not None:
+        command += ["--instance", str(instance)]
+    return {"command": command, "cwd": project, "log": log}
+
+
+def reproduction_job(python: str, part: Path, project: Path, out: Path) -> dict:
+    """The run job of reproduction_check, so it runs beside the round's other
+    builds (issues #101, #102)."""
+
+    role = part.name.removeprefix("part_").removesuffix(".step.py")
+    tool = Path(__file__).resolve().with_name(REPRODUCE_TOOL)
+    return {"command": [python, str(tool), str(part)], "cwd": project, "log": out / ("reproduce-%s.log" % role)}
+
+
+def round_brep_root(project: Path, component: str | None) -> Path:
+    """Where this round keeps its builds: a fresh directory per scope (a
+    component, or the assembly) in cadgen's derived cache, so an earlier
+    round's bundles are gone before this round builds."""
+
+    root = project.joinpath(*BREP_DIR, "component-%s" % component if component is not None else "assembly")
+    if root.is_dir() and not root.is_symlink():
+        shutil.rmtree(root)
+    return root
+
+
+def kept_build(stdout: str, identity: str | None) -> str | None:
+    """The identity the B-rep bundle ``brepbundle.py build`` kept reads back
+    as, when that build is ``identity``, the one `gen` reported (its
+    ``builtIdentity``); else None, and the checks build from source."""
+
+    if identity is None:
+        return None
+    for line in (stdout or "").splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            payload = json.loads(line)
+        except ValueError:
+            continue
+        kept = payload.get("brepBundle") if isinstance(payload, dict) else None
+        if (isinstance(kept, dict) and kept.get("builtIdentity") == identity
+                and isinstance(kept.get("identity"), str) and re.fullmatch(r"[0-9a-f]{64}", kept["identity"])):
+            return kept["identity"]
+    return None
+
+
+def brep_env(root: Path | None, identity: str | None) -> dict:
+    """The environment a check reads one Component's kept build through."""
+
+    if root is None or identity is None:
+        return {}
+    return {BREP_BUNDLE_ENV: str(root), BREP_IDENTITY_ENV: identity}
+
+
+def brep_reads(log: Path) -> list[dict]:
+    """The kept builds one check read, from the lines its log records."""
+
+    try:
+        text = log.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    return [{"entry": match.group(2), "bundle": match.group(3), "identity": match.group(4)}
+            for match in BREP_READ.finditer(text)]
+
+
+def brep_record(kept: dict, digests: dict, logs: dict) -> dict:
+    """What a round records about its kept builds (issue #101): each part's
+    bundle and identity, the instances built beside it, and the B-rep every
+    check read -- an empty list for a check that built from source.
+    ``consistent`` holds when every read is the bundle it names: a part's
+    kept build, or the instance's own."""
+
+    record = {"kept": {}, "reads": {}}
+    expected = {}
+    for role, (root, read_back) in sorted(kept.items()):
+        # identity: what the build returned, the round's; read_identity: what
+        # its bundle reads back as, which every check of it reads.
+        item = {"bundle": str(root), "identity": digests[role], "read_identity": read_back, "instances": {}}
+        for manifest in sorted(Path(root).glob("*/manifest.json")):
+            try:
+                data = json.loads(manifest.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            if manifest.parent.name == "base":
+                identity = read_back
+                item["max_drift_mm"] = data.get("max_drift_mm")
+            else:
+                identity = read_back if data.get("alias") == "base" else data.get("identity")
+                item["instances"][manifest.parent.name] = identity
+            expected[(Path(str(data.get("entry"))).name, manifest.parent.name)] = identity
+        record["kept"][role] = item
+    for check, log in sorted(logs.items()):
+        record["reads"][check] = brep_reads(log)
+    record["consistent"] = all(expected.get((read["entry"], read["bundle"])) == read["identity"]
+                               for reads in record["reads"].values() for read in reads)
+    return record
+
+
+def kept_instances(part: Path, role: str, interfaces: list | None, display_pose: bool) -> list[int]:
+    """The instances of a Component its round places: each one a separable
+    Interface names, and instance 1 for its Display Pose when its placement
+    takes an instance. Each is built once, beside the round's build."""
+
+    if instance_hook_missing(part):
+        return []
+    found = {instance for _item, _side, reference in separable_roles(interfaces, role)
+             for instance in [reference_role(reference)[1]] if instance is not None}
+    if display_pose:
+        found.add(1)
+    return sorted(found)
+
+
 def parse_motion(stdout: str | bytes, returncode: int, stderr: str | bytes = "") -> dict:
     """Read the complete motion result without promoting partial output to PASS."""
     if isinstance(stdout, bytes):
@@ -1749,6 +1929,16 @@ def _takes_instance(function):
         return False
 
 
+def _kept(instance):
+    """The round's kept build of the part (issue #101), or None to build it."""
+    try:
+        import brepbundle
+    except ImportError:
+        return None
+    bundle = brepbundle.for_entry(PROJECT / PART, instance=instance, purpose="display-pose")
+    return None if bundle is None else bundle.shape
+
+
 def gen_step():
     if str(PROJECT) not in sys.path:
         sys.path.insert(0, str(PROJECT))
@@ -1757,9 +1947,12 @@ def gen_step():
     spec.loader.exec_module(module)
     place = module.assembly_pose
     if _takes_instance(place):
-        built = module.gen_step(instance=1) if _takes_instance(module.gen_step) else module.gen_step()
+        built = _kept(1)
+        if built is None:
+            built = module.gen_step(instance=1) if _takes_instance(module.gen_step) else module.gen_step()
         return place(built, None, instance=1)
-    return place(module.gen_step(), None)
+    built = _kept(None)
+    return place(module.gen_step() if built is None else built, None)
 '''
 
 
@@ -3656,10 +3849,28 @@ def parse_envelope(stdout: str, returncode: int) -> dict:
     return {"verdict": verdict, "poses": payload.get("poses") or [], "detail": str(payload.get("detail", ""))[:300]}
 
 
-def check_envelopes(project: Path, role: str, part: Path, out: Path, interfaces: list) -> dict:
+def check_envelopes(project: Path, role: str, part: Path, out: Path, interfaces: list, extra_env=None) -> dict:
     """Run check_envelope for every separable Interface this Component joins."""
 
-    results = {}
+    results, pending = envelope_jobs(project, role, part, out, interfaces, extra_env)
+    return finish_envelopes(results, pending, run_all([job for _key, _side, _reference, job in pending]))
+
+
+def finish_envelopes(results: dict, pending: list, dones: list) -> dict:
+    """``results`` with each pending check_envelope run's verdict in its place."""
+
+    for (key, side, reference, _job), done in zip(pending, dones):
+        results[key] = {"role": side, "component": reference, **parse_envelope(done.stdout, done.returncode)}
+    return results
+
+
+def envelope_jobs(project: Path, role: str, part: Path, out: Path, interfaces: list, extra_env=None):
+    """``(results, pending)``: the envelope results known without a run (a
+    missing instance hook), each other key held in order, and the
+    ``(key, side, reference, run job)`` of every check_envelope run, so they
+    can run beside the round's other checks (issue #101)."""
+
+    results, pending = {}, []
     for item, side, reference in separable_roles(interfaces, role):
         _role, instance = reference_role(reference)
         # A side that is one instance is reported as "<interface> <id>#<n>".
@@ -3675,9 +3886,12 @@ def check_envelopes(project: Path, role: str, part: Path, out: Path, interfaces:
                    "--envelope", str(envelope_path), "--role", side, "--json"]
         if instance is not None:
             command += ["--instance", str(instance)]
-        done = run(command, cwd=project, log=out / ("%s.log" % stem))
-        results[key] = {"role": side, "component": reference, **parse_envelope(done.stdout, done.returncode)}
-    return results
+        results[key] = None
+        job = {"command": command, "cwd": project, "log": out / ("%s.log" % stem)}
+        if extra_env:
+            job["extra_env"] = extra_env
+        pending.append((key, side, reference, job))
+    return results, pending
 
 
 def interface_state_path(project: Path, interface_id: str) -> Path:
@@ -3843,7 +4057,9 @@ def interface_check(project: Path, interface_id: str, args, cad: Path) -> int:
         shutil.rmtree(out)
         print("make_round: interface %s: %s" % (interface_id, "; ".join(hooks)), file=sys.stderr)
         return 2
-    identities = {role: component_identity(project, role, out, cad) for role in roles}
+    # Issue #101: the Components are built at the same time.
+    with ThreadPoolExecutor(max_workers=max(1, min(round_jobs(), len(roles)))) as pool:
+        identities = dict(zip(roles, pool.map(lambda role: component_identity(project, role, out, cad), roles)))
     refusals = [reason for role in roles for reason in [locked_at(project, role, identities[role])] if reason]
     if refusals:
         shutil.rmtree(out)
@@ -3978,6 +4194,7 @@ def make_round(args) -> int:
                 raise ValueError("--no-motion conflicts with --check-motion true")
             option = False
         check_motion = motion_policy()["enabled"](option)
+        round_jobs()
     except (OSError, ValueError) as exc:
         print("make_round: %s" % exc, file=sys.stderr)
         return 2
@@ -4210,10 +4427,36 @@ def make_round(args) -> int:
     # pending packet still shows what is on disk.
     built_step = entry.with_name(entry.name[:-len(".py")])
     earlier_step = built_step.read_bytes() if component is not None and built_step.is_file() else None
+    # Issue #101: every build of the round runs at the same time, each in its
+    # own process. `gen --write` builds each part and writes its STEP; beside
+    # it brepbundle.py builds the same source as the checks load it and keeps
+    # that B-rep under __cadgen__/round-brep/ for every later check of the
+    # round to read instead of building again, plus each instance a check
+    # places. A component round's reproduction build (issue #102) runs beside
+    # them too. Results come back in the order listed.
+    keep = brep_supported(cad)
+    brep_root = round_brep_root(project, component) if keep else None
+    builds, bundles, reproductions = [], {}, {}
     for part in parts:
         role = part.name.removeprefix("part_").removesuffix(".step.py")
+        builds.append({"command": [python, str(cad / "gen"), str(part), "--write", "--json"], "cwd": project,
+                       "log": out / ("gen-%s.log" % role)})
+    for part in parts if keep else ():
+        role = part.name.removeprefix("part_").removesuffix(".step.py")
+        bundles[role] = len(builds)
+        builds.append(brep_job(python, cad, part, project, brep_root / role / "base", out / ("brep-%s.log" % role)))
+    if component is not None:
+        reproductions[component] = len(builds)
+        builds.append(reproduction_job(python, entry, project, out))
+    instances = kept_instances(entry, component, interfaces, display_pose) if keep and component is not None else []
+    for number in instances:
+        builds.append(brep_job(python, cad, entry, project, brep_root / component / ("instance-%d" % number),
+                               out / ("brep-%s-instance-%d.log" % (component, number)), number))
+    built = run_all(builds)
+    kept: dict[str, tuple] = {}
+    for part, done in zip(parts, built):
+        role = part.name.removeprefix("part_").removesuffix(".step.py")
         step = part.with_name(part.name[:-len(".py")])
-        done = run([python, str(cad / "gen"), str(part), "--write", "--json"], cwd=project, log=out / ("gen-%s.log" % role))
         parsed = parse_build(done.stdout, done.stderr, done.returncode)
         if parsed["verdict"] == "PASS" and not step.is_file():
             parsed = {"verdict": "FAIL", "failures": ["gen reported success but wrote no %s" % step.name]}
@@ -4222,12 +4465,20 @@ def make_round(args) -> int:
             continue
         identity = parse_identity(done.stdout)
         # Issue #102: a component round shows its source builds one B-rep.
-        unreproduced = (reproduction_check(python, part, project, out, identity)
-                        if component is not None and identity is not None else None)
+        unreproduced = (reproduction_failure(identity, built[reproductions[role]])
+                        if role in reproductions and identity is not None else None)
         if unreproduced is not None:
             build_failures[role] = unreproduced
             continue
         digests[role] = identity or hashlib.sha256(step.read_bytes()).hexdigest()
+        read_back = kept_build(built[bundles[role]].stdout, identity) if role in bundles else None
+        if read_back is not None:
+            kept[role] = (brep_root / role, read_back)
+
+    def check_env(role):
+        root, read_back = kept.get(role, (None, None))
+        return brep_env(root, read_back)
+
     changed = diff_parts(state.get("parts", {}), digests) if not args.all_parts else sorted(digests)
     # The geometry this round scored: the Component's identity, or every
     # part's for the assembly. None when it did not build.
@@ -4293,6 +4544,9 @@ def make_round(args) -> int:
     previous_print = state.get("print") or {}
     same_context = context is not None and context == state.get("print_context")
     printing: dict[str, dict] = {}
+    # Issue #101: every gate of every part, and a component round's Keep-out
+    # Envelope checks (2c), read the round's kept build, so they run at once.
+    gate_jobs = []
     for role in sorted(digests):
         prior = previous_print.get(role)
         if (
@@ -4302,19 +4556,34 @@ def make_round(args) -> int:
             printing[role] = prior
             continue
         part = next(p for p in parts if p.name.removeprefix("part_").removesuffix(".step.py") == role)
-        logs = {}
-        gates = {}
+        env = check_env(role)
         for gate, extra in (
             ("thickness", ["--nozzle", str(args.nozzle)]),
             ("overhang", ["--angle", str(args.overhang_angle)]),
         ):
-            log = out / ("%s-%s.log" % (gate, role))
-            done = run(
-                [python, str(cad / ("check_" + gate)), str(part), *extra,
-                 "--report", str(out / ("%s-%s.md" % (gate, role)))],
-                cwd=project,
-                log=log,
-            )
+            job = {"command": [python, str(cad / ("check_" + gate)), str(part), *extra,
+                               "--report", str(out / ("%s-%s.md" % (gate, role)))],
+                   "cwd": project, "log": out / ("%s-%s.log" % (gate, role))}
+            if env:
+                job["extra_env"] = env
+            gate_jobs.append((role, gate, job))
+    # 2c. a separable Interface's Keep-out Envelope, checked on this
+    # Component alone: either side repairs without touching the other (ADR 0082).
+    envelopes, envelope_pending = {}, []
+    if component is not None and component in digests:
+        envelopes, envelope_pending = envelope_jobs(project, component, entry, out, interfaces,
+                                                    check_env(component))
+    checked = run_all([job for _role, _gate, job in gate_jobs]
+                      + [job for _key, _side, _reference, job in envelope_pending])
+    envelopes = finish_envelopes(envelopes, envelope_pending, checked[len(gate_jobs):])
+    measured: dict[str, dict] = {}
+    for (role, gate, job), done in zip(gate_jobs, checked):
+        measured.setdefault(role, {})[gate] = (job["log"], done)
+    for role, runs in measured.items():
+        prior = previous_print.get(role)
+        logs = {}
+        gates = {}
+        for gate, (log, done) in runs.items():
             parsed = (parse_thickness if gate == "thickness" else parse_overhang)(done.stdout)
             if done.returncode == 3:
                 parsed["verdict"] = "UNVERIFIED"
@@ -4355,12 +4624,10 @@ def make_round(args) -> int:
             "measured_round": round_index,
             "logs": {},
         }
-
-    # 2c. a separable Interface's Keep-out Envelope, checked on this
-    # Component alone: either side repairs without touching the other (ADR 0082).
-    envelopes = {}
-    if component is not None and component in digests:
-        envelopes = check_envelopes(project, component, entry, out, interfaces)
+    # The B-rep each check read (issue #101): its log's "[brep] ... read"
+    # lines, none when it built from source.
+    brep_logs = {"%s-%s" % (gate, role): job["log"] for role, gate, job in gate_jobs}
+    brep_logs.update(("envelope %s" % key, job["log"]) for key, _side, _reference, job in envelope_pending)
 
     # 3. the references this round shows its reader, each composed beside the
     # model at the reference's declared camera. Nothing is scored (ADR 0076).
@@ -4417,9 +4684,15 @@ def make_round(args) -> int:
                   "detail": "the reviewed B-rep, references and contract rows of r%04d are unchanged"
                             % outcome["carried"]["round"]}
     else:
+        # A component round's renders, and a one-piece project's, read the
+        # entry's kept build; an assembly entry builds its parts as before.
+        entry_role = entry.name.removeprefix("part_").removesuffix(".step.py")
         visual = prepare_visual(project, entry, out, cad, refs, component,
                                 display_pose=component is not None and display_pose, contract=delivered,
-                                rulings=rulings)
+                                rulings=rulings, extra_env=check_env(entry_role))
+        brep_logs["render"] = out / "visual-render.log"
+        if component is not None and display_pose and refs:
+            brep_logs["display-pose"] = out / "display-pose-render.log"
     summary = {
         "round": round_index,
         "scope": "component:%s" % component if component is not None else "assembly",
@@ -4451,6 +4724,8 @@ def make_round(args) -> int:
         "ok": False,
         "out": str(out),
     }
+    if kept:
+        summary["brep"] = brep_record(kept, digests, brep_logs)
     if component is not None:
         next_policy = outcome["state"]
         carried = outcome["carried"]

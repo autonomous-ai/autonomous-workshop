@@ -135,7 +135,16 @@ def build_shape(source: Path):
     # `cadgen.inspection_runtime` import can only find what that copy ships.
     _runtime_paths()
     source = _resolve_source(source)
+    # Workshop (#101): inside a make_round round the entry's one build is kept
+    # as a B-rep bundle with its colours and children; render that.
+    bundle = None
     if source.name.endswith(ENTRY_SUFFIX):
+        import brepbundle
+
+        bundle = brepbundle.for_entry(source, purpose="render_review")
+    if bundle is not None:
+        shape = bundle.shape
+    elif source.name.endswith(ENTRY_SUFFIX):
         with contextlib.redirect_stdout(io.StringIO()):
             module = _load_entry(source)
             builder = getattr(module, GEN_FUNC, None)

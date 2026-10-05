@@ -244,7 +244,8 @@ class ComponentRoundReproducibilityTest(unittest.TestCase):
             self.assertIn("not reproducible", printed)
             self.assertFalse(summary["checks_ok"])
             # A failed build is neither gated nor rendered, and has no identity to review.
-            self.assertEqual(calls, ["gen", "reproduce_build"])
+            # Its builds ran at once (issue #101): gen, the reproduction and the kept build.
+            self.assertEqual(sorted(calls), ["brepbundle.py", "gen", "reproduce_build"])
             self.assertIsNone(summary["identity"])
 
     def test_a_round_refuses_a_detail_refused_in_the_second_build_only(self):
@@ -269,7 +270,8 @@ class ComponentRoundReproducibilityTest(unittest.TestCase):
                 project, _fake_tools({"gen": "brep-1", "reproduce": "brep-1"}, calls), 1)
             self.assertEqual(summary["build"]["wheel"]["verdict"], "PASS")
             self.assertEqual(summary["identity"], "brep-1")
-            self.assertEqual(calls[:2], ["gen", "reproduce_build"])
+            # Every build first, at the same time (issue #101), then the gates.
+            self.assertEqual(sorted(calls[:3]), ["brepbundle.py", "gen", "reproduce_build"])
             self.assertIn("check_thickness", calls)
             self.assertEqual(summary["visual"]["status"], "pending")
 

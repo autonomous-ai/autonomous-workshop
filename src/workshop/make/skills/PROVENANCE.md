@@ -1973,3 +1973,32 @@ first did not. No threshold, gate or verdict changes. This changes the
 `cad`, `image-to-cad` and `make-round` fingerprints; materialized runs keep
 their copied bytes, and a parked run picks the change up through
 `workshop resume --refresh-tools`.
+
+## Local change: a round builds each Component once; its checks read that B-rep (2026-10-05)
+
+A Workshop-local change (issue #101, amending ADR 0063) to the vendored `cad`
+tree and to Workshop's own `make-round`. In `cad`, the new
+`scripts/brepbundle.py build <entry> [--instance N] --out DIR` builds a
+source (or one instance) once, as a print gate builds it, and keeps it as a
+native B-rep bundle: one `BinTools` container with every build123d node's
+label, colour and children and the print-details feature tags, reloaded and
+compared node by node (topology, types, orientations, sampled geometry
+within 1e-9 mm) before its manifest is written; it records the build's
+identity and the one its bytes read back as, which a renormalized direction
+can move. `printlib.entry_shape`, `render_review.build_shape`, and
+`make-round`'s `check_envelope` and generated Display Pose entry read the
+bundle named by `WORKSHOP_BREP_BUNDLE` when it was built from their very
+entry, check the recomputed read-back identity against
+`WORKSHOP_BREP_IDENTITY`, refuse a bundle that does not match and print one
+`[brep] ... read` line; otherwise they build from source as before. In
+`make-round`, `make_round` runs every build of a round at once -- `gen`, the
+bundle build of each part, the reproduction build of issue #102 and one
+build per placed instance -- uses a bundle only when its build is the
+identity `gen` reported, keeps bundles under `__cadgen__/round-brep/`
+(never sealed; the latest round of each scope only), runs both print gates,
+every Keep-out Envelope check and both renders in parallel
+(`MAKE_ROUND_JOBS`), records the identity every check read in
+`summary.json` (`brep`), and builds an interface round's Components in
+parallel. Verdicts, command lines and report formats are unchanged. This
+changes the `cad` and `make-round` fingerprints; materialized runs keep
+their copied bytes.

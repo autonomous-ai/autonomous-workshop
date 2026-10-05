@@ -253,6 +253,19 @@ component geometry.
   A part that did not build is reported as a gate failure, not a skip: there is
   no solid to measure. A round passes only when both gates pass on every part,
   so `built` and `printable at this nozzle` stay separate verdicts.
+- A round's builds all run at once (issue #101): `gen --write`, the
+  reproduction build and `brepbundle.py build`, which builds the part once
+  as a gate would and keeps it as a native B-rep bundle in cadgen's derived
+  cache (`__cadgen__/round-brep/`, never sealed; the latest round only), plus
+  one build per instance a check places. When that build is the identity
+  `gen` reported, the print gates, every Keep-out Envelope check and both
+  renders read it, all at the same time, instead of building again.
+  `summary.json`'s `brep` records the identity every check read: the
+  bundle's read-back identity, which can differ from the build's `identity`
+  by a renormalized direction (at most 1e-9 mm, recorded as `max_drift_mm`);
+  the build's identity stays the round's. A check whose entry defines
+  `gen_print_union()` still builds from source. `MAKE_ROUND_JOBS=1` runs the
+  checks one after another.
 - Each failing region names its feature: the print-details feature it lies
   on with the line that made it (`band@part_wing.step.py:42`), else the
   nearest B-rep face (`plane@(12,-4,30)`), and how far it is past the limit.

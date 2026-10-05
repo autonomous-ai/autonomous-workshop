@@ -23,6 +23,10 @@ with ``gen_step(instance=N)`` when gen_step takes an instance (otherwise every
 instance is the same shape) and places it with
 ``assembly_pose(shape, pose, instance=N)``.
 
+Inside a make_round round the Component's build, or its instance's, is read
+from the round's B-rep bundle (cad/scripts/brepbundle.py, issue #101) and
+placed with assembly_pose; outside one it is built from source.
+
 Measured on the B-rep with Boolean volumes. Exit 0 when the Component keeps
 to its side, 1 when it does not or cannot be placed, 2 on bad usage.
 """
@@ -77,6 +81,12 @@ def check(part: Path, envelope: dict, role: str, instance: int | None = None) ->
     sys.path.insert(0, str(cad))
     from printlib import GEN_FUNC, load_entry, project_on_path
 
+    import brepbundle
+
+    # Issue #101: inside a make_round round the Component's one build (or its
+    # instance's) is kept as a B-rep bundle; place that instead of rebuilding.
+    bundle = brepbundle.for_entry(part, instance=instance, purpose="check_envelope")
+
     with project_on_path(part.parent), contextlib.redirect_stdout(io.StringIO()):
         module = load_entry(part, "envelope")
         place = getattr(module, PLACE_FUNC, None)
@@ -90,12 +100,15 @@ def check(part: Path, envelope: dict, role: str, instance: int | None = None) ->
                 return {"ok": False, "role": role, "poses": [],
                         "detail": "%s's %s takes no %s; define %s(shape, pose, %s) to place instance %d"
                                   % (part.name, PLACE_FUNC, INSTANCE_PARAM, PLACE_FUNC, INSTANCE_PARAM, instance)}
-            shape = build(instance=instance) if _takes_instance(build) else build()
+            if bundle is not None:
+                shape = bundle.shape
+            else:
+                shape = build(instance=instance) if _takes_instance(build) else build()
 
             def place(shape, pose, _place=place):
                 return _place(shape, pose, instance=instance)
         else:
-            shape = build()
+            shape = bundle.shape if bundle is not None else build()
         tolerance = max(MIN_TOLERANCE_MM3, RELATIVE_TOLERANCE * _volume(shape))
         results = []
         if role == "inside":

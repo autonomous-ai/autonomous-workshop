@@ -1687,8 +1687,9 @@ class ContractComponentReviewTest(unittest.TestCase):
             self.assertIn("has no Component Review; report it and wait", self.stderr)
             self.assertEqual(latest["round"], 1)
             self.assertFalse((project / "measure/component-rounds/body/r0002").exists())
-            # only the build ran: no print gate, no render
-            self.assertEqual([Path(c[1]).name for c in calls[before:]], ["gen"])
+            # only the builds ran (gen and, beside it, the reproduction build):
+            # no print gate, no render
+            self.assertEqual(sorted(Path(c[1]).name for c in calls[before:]), ["gen", "reproduce_build"])
             # a build that fails is a change too
             code, _ = self._component(module, project, calls, faults={"build": True})
             self.assertEqual(code, 2)

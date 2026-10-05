@@ -359,8 +359,24 @@ def entry_mesh(path: Path, namespace: str, *, deviation: float = MESH_DEVIATION,
                       angular=angular)
 
 
+# Workshop (#101): feature tags a gate read from the round's B-rep bundle, in
+# place of the registry a build in this process would have filled.
+_BUNDLE_TAGS: list = []
+
+
 def entry_shape(path: Path, namespace: str):
-    """Build one printable entry's printed object -- see PRINT_UNION_FUNC."""
+    """One printable entry's printed object -- see PRINT_UNION_FUNC.
+
+    Inside a make_round round the entry's one build is kept as a B-rep bundle
+    (`brepbundle.py`); the gate reads that, with the feature tags the build
+    recorded, instead of building again. An entry with a `gen_print_union()`,
+    or a gate run outside a round, builds from source."""
+    import brepbundle
+
+    bundle = brepbundle.for_entry(path, purpose=Path(sys.argv[0]).name or namespace)
+    if bundle is not None and bundle.printed:
+        _BUNDLE_TAGS[:] = bundle.tags
+        return bundle.shape
     return build_entry(path, namespace, printed=True)
 
 
@@ -497,7 +513,7 @@ def feature_tags() -> list[dict]:
     needs no import path of its own. A tag holds `kind`, `name`, `site` and
     the feature's `shape` in the generator's coordinates.
     """
-    tags, seen = [], set()
+    tags, seen = list(_BUNDLE_TAGS), set()
     for module in list(sys.modules.values()):
         registry = getattr(module, TAG_REGISTRY, None)
         if not isinstance(registry, list) or id(registry) in seen:

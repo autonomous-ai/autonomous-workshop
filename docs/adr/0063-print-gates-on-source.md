@@ -108,3 +108,45 @@ The mesh exporter, `verify_project --exports`, cadgen's STL and 3MF writers,
 manifest holding `.stl`, `.3mf` or `.glb` is still rejected. Upstream also does
 not restore the old source-vs-artifact staleness check, and neither does
 Workshop: with no artifact there is nothing to go stale.
+
+## Amendment (2026-10-05, issue #101)
+
+Inside a `make_round` round the gates still measure the B-rep built from the
+part's source, but they no longer build it themselves. Beside `gen --write`,
+the round runs `cad/scripts/brepbundle.py build` once per part: it builds the
+source in its own process exactly as a gate does (`printlib.build_entry`)
+and keeps that shape as a native B-rep bundle (`BinTools`: every double,
+tolerance and mesh as built, with every node's label, colour and children
+and the print-details feature tags). `check_thickness`, `check_overhang`,
+every `check_envelope` and both renders then read it, at the same time. The
+bundle is used only when its build has the B-rep identity `gen` reported
+(ADR 0073); otherwise every check builds from source as before. The
+exported STEP is never what a gate reads, and STEP was not used for the
+bundle: it keeps neither OCCT's per-edge and per-vertex tolerances nor the
+build123d tree a render draws. `gen`'s own shape was not kept either: its
+loader leaves a different mesh on the same B-rep.
+
+`BinTools` keeps every double it writes, but reading a direction normalizes
+it again, so a line or an axis can come back one unit in the last place off
+(Broken God's spine-housing: 240 of 4472 edges and 1 of 786 faces moved, by
+at most 3e-14 mm; topology, vertices, types and orientations unchanged). The
+read shape's identity can then differ from the build's, so the bundle
+records both: the build's, which stays the round's identity for every policy
+decision, and the one every read of its bytes returns. It is written only
+when every node reads back with the same topology, types, orientations,
+labels and colours, its sampled geometry within 1e-9 mm, and two reads
+agree. Each check recomputes the identity it read, must match the bundle's,
+and is recorded in the round's `summary.json` (`brep`); a bundle that reads
+back as anything else fails the check rather than falling back. Every check
+of a round therefore reads one and the same B-rep, where before each read
+its own rebuild.
+
+What a check measures from a mesh can still notice the drift. Measured on
+Broken God, the spine-housing round's reports and images were byte-identical
+to a rebuild's; the wing's thickness gate drew 277560 samples where a
+rebuild drew 277725, and 1-8 render pixels per view moved by 1-2 of 255,
+with every verdict, thinnest wall and region unchanged. A verdict at the
+very edge of a threshold could therefore differ from a fresh build's.
+Outside a round -- `verify_project --print-gates` and the host's print-ready
+rerun -- nothing sets the bundle, so every gate builds from source exactly as
+this ADR decided, and that fresh build remains the print-ready authority.
