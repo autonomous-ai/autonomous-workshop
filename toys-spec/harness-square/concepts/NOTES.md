@@ -135,3 +135,26 @@ Owner (2026-10-05): shrink the VHS device to the device's own size (VHS aestheti
 - VC4 took four passes. Pass `vy` was still cassette-wide. Pass `vz` was too tight, with the screen filling the face. Pass `vw` got the proportions right (about 120 × 106 × 28 mm, ribbed side bands, stripe band under the glass), but the device stood up at 35–60°. Pass `vv` changed the stand to a 25° grid-engraved wedge with a chrome front bar and two rear pins, which fixed the docked angle (dock_d about 30°, dock_a about 35°). The "seat" renders still draw the device upright above the empty wedge.
 - Hover (`vy`): a 110 mm tile on a 25° ceramic wedge with a magnet. Docked angle about 25°. Renders draw the tile about 10 mm thick against the real 28 mm.
 - The creature was switched from penguin to cat in VC4 because the penguin read as Tux.
+
+### FX2 Hover: magnetic hold at 30° (hand calculation)
+
+The owner's question: can magnets alone hold a 200 g device on a 30° slope, with no ledge underneath? The reference is the current device's 5-pin magnetic pogo connectors (photo from the owner; force rating unknown).
+
+Gravity at 30°, W = 200 g × 9.81 = 1.96 N:
+- along the slope: W sin 30° = 0.98 N (about 100 gf);
+- into the slope: W cos 30° = 1.70 N.
+
+A magnet pulls perpendicular to the slope, so it holds against sliding only through friction: μ (1.70 + F_mag) ≥ load along the slope.
+
+| Case | Load along slope | μ | F_mag needed |
+|---|---|---|---|
+| resting | 0.98 N | 0.3 (plastic on glazed ceramic) | ≥ 1.6 N |
+| resting | 0.98 N | 0.8 (silicone pad) | 0 (friction alone holds) |
+| swiping, 1 N finger, μ_finger 0.5 | 1.48 N | 0.3 | ≥ 2.2 N |
+| swiping | 1.48 N | 0.8 | 0 |
+
+Rocking is the larger risk. A 2 N tap at the top-left corner of a 110 mm tile sits about 78 mm from the centre. The tile pivots on the puck's edge, and the magnet plus weight resist at the puck radius r. The condition is (F_mag + 1.7) · r ≥ 2 · (78 − r):
+- r = 15 mm (30 mm puck): F_mag ≥ 6.7 N;
+- r = 35 mm (70 mm puck or pad ring): F_mag ≥ 0.8 N.
+
+Typical small magnetic pogo pairs hold a few newtons in pull and only about 20–30% of that in shear, so on their own they are marginal. Fix, keeping the floating look: a hidden boss on the puck that drops into a recess in the tile back takes the sliding load mechanically; contact spread over about 70 mm (a ring or three pads) with a silicone face; magnets only seat the tile and resist peel. The base needs weight or rubber feet so it does not slide on the desk when tapped.
