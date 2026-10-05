@@ -1,9 +1,12 @@
-# ADR 0082: Make rounds review one sheet and judge plan and reference apart
+# ADR 0087: Make rounds review one sheet and judge plan and reference apart
 
 - Status: Accepted
-- Date: 2026-09-28
+- Date: 2026-09-28; renumbered from 0082 and amended for ADR 0076, ADR 0081
+  and issue #77 on 2026-10-05
 - Relates to: ADR 0060 (make-round visual feedback), ADR 0063 (component-first
-  Spark Make), ADR 0075 (form differences), ADR 0077 (Component Reviewer)
+  Spark Make), ADR 0075 (form differences), ADR 0076 (independent Component
+  Review), ADR 0077 (Component Reviewer), ADR 0081 (Shape Rounds) and its
+  issue #77 extension (proven reviewer reads)
 
 ## Context
 
@@ -28,23 +31,32 @@ to change construction family when a silhouette is wrong.
   `iso_bottom` (55 degrees), and `--sheet`, which writes every rendered view
   labelled in one `sheet.png`.
 - Every `make_round` renders `iso`, `front`, `left`, `top`, `iso_front`,
-  `iso_back`, `iso_left`, `iso_right` and `iso_bottom` plus the sheet, and
-  binds all ten images in `visual-packet.json`. `front`, `top` and `iso` keep
-  their names, so review rows that cite them stay valid. The Manager opens the
-  sheet at most once per round.
+  `iso_back`, `iso_left`, `iso_right` and `iso_bottom` plus the sheet. Its
+  `visual-packet.json` binds `sheet.png`, `front`, `top` and `iso`; the other
+  views reach a reader only inside the sheet, whose hash binds them. `front`,
+  `top` and `iso` keep their names, so review rows that cite them stay valid,
+  and a Component Reviewer, whose reads the host checks image by image
+  (issue #77), opens four images per packet rather than ten. The Manager
+  opens the assembly sheet at most once per round.
 - Visual feedback adds two required fields. `matches_plan` is a boolean
   judgement against the plan the object is built from (`WISH-EXPANSION.md`, the
   sealed concept, or the Design Contract). `matches_reference` is a boolean
-  exactly when the round has reference images and `null` otherwise. `pass` is
+  exactly when the packet has comparison images and `null` otherwise. `pass` is
   refused unless `matches_plan` is true and `matches_reference` is not false.
+- A Component Review (ADR 0076) carries the same two fields beside `agrees`,
+  and an agreeing review is refused unless `matches_plan` is true and
+  `matches_reference` is not false, so a review cannot lock a Component
+  (ADR 0081) while saying it misses its plan. A disagreeing review still
+  lists its differences. A camera mismatch carries neither field.
 - The pending packet's detail and the make-round skill give the judging order,
   name the common failures, and say that a wrong silhouette is usually repaired
   by a different construction family.
 
 - Spark previews the rough whole once before any component loop.
   `make_round --preview-assembly` renders the combined entry's sheet under
-  `measure/assembly-previews/pNNNN/` and nothing else: no gate, likeness,
-  round history, state or pass. The Manager fixes proportion, scale and
+  `measure/assembly-previews/pNNNN/` and nothing else: no gate, review,
+  round history, state or pass. It runs only from the root, like an
+  assembly round, and refuses every other mode flag. The Manager fixes proportion, scale and
   placement between parts there, and previews again only after a component's
   size or placement changes. The gated assembly review of ADR 0063 still
   follows every component pass. Panda reviews the assembled object on every
@@ -65,9 +77,11 @@ model and lowers no gate.
 - Feedback written for the old four-field schema is refused by the new tool.
   Frozen runs keep the tool and skill bytes they materialized.
 - Cross-sections, and a bound on looks per component, are separate decisions.
-- Under ADR 0077 the Component Reviewer, not the Manager, opens a component
-  round's sheet and returns `matches_plan` and `matches_reference`. These sit
-  beside ADR 0075's `differences`, which stay optional above the floor and
-  required below it: the two verdicts say whether the model meets the plan
-  and the references, the differences say where it does not. The sheet joins
-  each `compare-NN.png` in the packet the reviewer is given.
+- The Component Reviewer, not the Manager, opens a component round's sheet
+  and returns `matches_plan` and `matches_reference` beside `agrees`. The two
+  verdicts say whether the model meets the plan and the references; the
+  review's `differences` say where it does not. No likeness score is computed
+  (ADR 0076): `compare-NN.png` shows the reference beside the model, and the
+  sheet joins it in the packet the reviewer reads.
+- Reviews written for ADR 0076's schema without the two fields are refused by
+  the new tool. Frozen runs keep the tool and agent bytes they materialized.

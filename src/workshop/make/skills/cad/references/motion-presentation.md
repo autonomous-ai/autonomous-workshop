@@ -41,6 +41,11 @@ count themselves down on stderr. `--deadline SECONDS`
 finish, naming the sample or frame it reached, instead of computing for hours
 with nothing to show; there is no bound unless you set one.
 
+A posed state has no byte or triangle limit: it is the assembly's own
+tessellation, bound by hash and rebuilt by validation. Never simplify locked
+or contract-required geometry, such as rivets, to make the animation; if a
+heavy assembly is too slow, lower `--frames` or raise `--deadline`.
+
 Named moving groups carry their descendants, preserving all ancestor
 placements. Repeated labels need an unambiguous dotted path. Overlapping mover
 selections, such as both a group and its child, are rejected because they

@@ -11,8 +11,8 @@ sources:
   - https://iskbearing.com/product-details/lm8uu (LM8UU 8 × 15 × 24 mm)
   - https://www.hiwin.de/en/Products/Linear-guideways/Blocks/Miniature-guides/MGN-HIRES-series/MGN05CZFHM/p/5-002502 (MGN preload classes ZF slight play, Z0 very light, Z1 light)
   - skills/cad/scripts/cadfits.py (slot_for, peg_for, print_in_place_gap)
-related: [joints, friction-wear-and-lubricants, shafts-and-bearings, lead-screws, linkages, fit-derivation, mechanism-verification, latches-detents-and-ratchets, layer-anisotropy, thermal-expansion-and-hybrid-parts, exact-constraint-and-kinematic-mounts]
-updated: 2026-09-23
+related: [joints, friction-wear-and-lubricants, shafts-and-bearings, lead-screws, linkages, fit-derivation, mechanism-verification, latches-detents-and-ratchets, layer-anisotropy, thermal-expansion-and-hybrid-parts, exact-constraint-and-kinematic-mounts, telescoping-tubes-and-locks]
+updated: 2026-10-01
 ---
 
 # Linear guides and slides
@@ -96,6 +96,8 @@ low speed.
   which is the first remedy the bearing makers list.
 
 ## Guide forms
+
+Nested tubes that extend, and their locks: [[telescoping-tubes-and-locks]].
 
 | form | build | use | notes |
 |---|---|---|---|

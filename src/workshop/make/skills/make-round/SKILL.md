@@ -1,6 +1,6 @@
 ---
 name: make-round
-description: Run isolated component or assembled-object Make repair rounds with deterministic CAD checks and native visual inspection. Render the selected scope, inspect form and proportions, and record visual errors alongside likeness, build and motion results. Does not replace independent blind review or final verification.
+description: Run isolated component or assembled-object Make repair rounds with deterministic CAD checks and visual comparison. Render the selected scope beside each reference at its declared camera; an independent reviewer judges each component, the Manager records assembly findings alongside build, print and motion results. Does not replace independent blind review or final verification.
 ---
 
 **Motion verification is opt-in.** Standalone `make_round` and `verify_project`
@@ -108,12 +108,21 @@ calls were reassembling by hand.
 ## Rules
 
 - Run `make_round` once per repair round, after editing source and before
-  deciding what to repair next. Then have the visual packet inspected and
-  record the findings using `--record-visual` without rebuilding: for an
-  assembly round, inspect it yourself; for a component round, follow
-  `references/make.md`, which in runs that have a Component Reviewer gives it
-  that inspection once the round's checks pass (ADR 0077). Read its summary; open a full report only
+  deciding what to repair next. For a component round, have an independent
+  reviewer judge the visual packet and record it with `--record-review`; for
+  an assembly round, inspect the packet yourself and record your findings
+  with `--record-visual`. Neither rebuilds. Read its summary; open a full report only
   when the summary names a failure you cannot place.
+- In a run with the make_round guard (ADR 0080), only a `component-worker`
+  runs a component round; the root Workshop Manager alone runs
+  `--record-review`, `--record-unlock`, `--record-visual`, assembly rounds,
+  `--shared-helpers`, `--interface` (ADR 0082), `--clear-blocked`,
+  `--propose-amendment` and `--record-amendment-review` (ADR 0085); only
+  a worker runs `--report-blocked` (issue #88). A Workshop hook
+  refuses a call from the wrong agent and gives each worker round a one-time
+  `--worker-nonce`; never pass one yourself. The host refuses a component
+  round without a nonce it issued, so run `make_round` only as one plain
+  command.
 - A round can take minutes. Start `make_round` with `yield_time_ms: 300000`
   and, while it runs, continue it with an empty `write_stdin` poll at
   `yield_time_ms: 300000`, and continue a yielded `exec` cell with
@@ -122,10 +131,11 @@ calls were reassembling by hand.
   into a poll: it is an output budget there, and as a yield it is worse than
   the 10000 ms default. Omit `yield_time_ms` before writing a small one. Never
   put a `sleep` between polls: each poll re-sends the whole session.
-- Do not read the cad or image-to-cad scripts to learn their flags. The
+- Do not read the cad scripts to learn their flags. The
   exact invocations are below; they are the same programs the host gates
   run, unchanged.
-- Open `visual/sheet.png` at most once per round: one labelled image holding every
+- Open `visual/sheet.png` at most once per round; the reader is the Component
+  Reviewer for a component round and the Manager for an assembly round. It is one labelled image holding every
   view the round rendered -- `iso`, `front`, `left` (the side profile), `top`,
   and the tilted three-quarter views `iso_front`, `iso_back`, `iso_left`,
   `iso_right` and `iso_bottom`. The single views sit beside it at full size;
@@ -135,15 +145,24 @@ calls were reassembling by hand.
   flattens depth along its own axis. Compare against the Wish, concept,
   dimensions and reference images when present. Look for misplaced, missing or extra parts,
   size/proportion mismatch, visible intersections, wrong orientation, floating
-  geometry and incorrect form. A high likeness score cannot establish visual
-  correctness. Use a targeted additional view if a part is hidden; record
+  geometry and incorrect form. Use a targeted additional view if a part is hidden; record
   unresolved visibility as inconclusive rather than claiming a pass.
-- For every scored reference the packet also holds `compare-NN.png`: the
-  reference beside the model rendered at the pose the likeness gate matched,
-  both at one height. Judge form there. Look for bodies thinner or blockier
-  than the reference, openings or gaps it shows that the model fills, members
-  merged or missing, and detail simplified away. Silhouette IoU cannot see
-  any of these.
+- For every reference the packet also holds `compare-NN.png`: the reference
+  beside the model rendered at the reference's declared camera (`@AZ,EL`, or
+  the front view when none is declared), both at one height. Under a schema 3
+  Design Contract (ADR 0083) every sealed reference has its Reference Camera
+  in the contract, and a component round renders the comparison from the
+  Component in its Display Pose, `assembly_pose(shape, None)` (the first
+  instance when the geometry's count is above 1), at that camera, under
+  `visual/display-pose/`; `front`, `top` and `iso` stay in the print stance.
+  A schema 3 component round of a file with no `assembly_pose` is refused
+  before anything is built. A camera the host amended (`CONTRACT-AMENDMENTS.json`
+  beside `WISH.json`) replaces the sealed one, and the summary's `camera`
+  line says so. Judge form
+  there. Look for bodies thinner or blockier than the reference, openings or
+  gaps it shows that the model fills, members merged or missing, and detail
+  simplified away. No silhouette score is computed anywhere in the Make
+  loop (ADR 0076).
 - `make_round` never lowers a threshold, never edits source, and never
   replaces the final `verify_project` run the Make gate requires. It writes
   round reports under `<project>/measure/rounds/`, component histories under
@@ -153,14 +172,15 @@ calls were reassembling by hand.
 - Spark uses two levels. Pass one isolated round history for every component,
   then begin assembled-object rounds. Component feedback cannot stand in for
   assembly feedback, and an assembly repair that changes component geometry
-  invalidates that component's prior pass.
+  needs a recorded `--record-unlock` and invalidates that component's prior
+  pass unless its rerun rebuilds the reviewed B-rep.
 
 ## Usage
 
 ```sh
 "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
     --ref hero=<project>/cad/ref/hero.png@-60,20 [--ref side=...@0,0] \
-    [--min 0.90] [--nozzle 0.4] [--overhang-angle 45] \
+    [--nozzle 0.4] [--overhang-angle 45] \
     [--all-parts] [--check-motion true|false] [--json]
 ```
 
@@ -201,29 +221,29 @@ component geometry.
 
 - `<project>/cad` is the directory holding the generator sources: exactly one
   entry `<name>.step.py` and any number of `part_<role>.step.py`.
-- `--ref LABEL=PATH@AZ,EL[,TOL]` repeats once per reference view. The suffix
-  is the camera the image was taken from (degrees; front `-90,0`, right `0,0`,
-  iso `-45,35`; TOL defaults to 30): `render_views` searches only inside that
-  window and flags a model built the wrong way round, and `--full` passes it to
-  `verify_project --image-derived`, which refuses a reference without one.
-  Omitted, the labels are read from the project's `*_spec.md`: a
+- `--ref LABEL=PATH@AZ,EL` repeats once per reference view. The suffix is
+  the camera the image was taken from (degrees; front `-90,0`, right `0,0`,
+  iso `-45,35`); the model is rendered at that camera beside the reference.
+  Without a suffix the model is shown from the front. A trailing `,TOL` is
+  accepted and ignored. Omitted, the labels are read from the project's `*_spec.md`: a
   `LABEL=ref/<file>@AZ,EL` line or a row of the build spec's Likeness handoff
   table, whose camera column supplies the camera.
-- Every reference the Wish sealed under `wish-references/` is scored in the
+- Every reference the Wish sealed under `wish-references/` is shown in the
   assembly round without being named anywhere (ADR 0072). It is labelled by
-  its file stem, for example `ref-01-hero`. The one exception is a sealed
-  reference that a current, passing component round already scored at or
-  above the floor. To use that exception for a reference that shows a single
-  Component, pass `--ref LABEL=wish-references/<file>` to that Component's
-  round. Otherwise the reference is scored against the whole object and
-  fails there. A sealed reference that is missing or has changed fails the
-  round. The ledger only needs to list references you found yourself.
+  its file stem, for example `ref-01-hero`, or in Contract Mode by the
+  contract's `shows` label. The exception is a sealed reference that a
+  current, passing component round already showed its reviewer. In Contract
+  Mode a component round shows its own `geometry:<id>` image automatically;
+  outside it, pass `--ref LABEL=wish-references/<file>` to that Component's
+  round. A `geometry:<id>` image with no current passing component round fails
+  the assembly round; the assembly never shows it against the whole object.
+  A reference that is missing or has changed fails the round. The ledger only
+  needs to list references you found yourself.
 - The Wish seals a reference's pixels, not the camera it was taken from. To
   give a sealed reference its camera, pass a `--ref` (or ledger entry) that
   points at that file, or a byte-identical copy of it, with the camera
-  suffix: the sealed image is still scored once, under its sealed label, now
-  from that camera. `--full` fails in `verify_project` while any scored
-  reference still has no camera.
+  suffix: the sealed image is still shown once, under its sealed label, now
+  from that camera.
 - `--nozzle` is the diameter the print will use and sets the minimum wall;
   `--overhang-angle` is the slope from vertical the printer bridges unsupported.
 - Only parts whose written STEP bytes changed since the previous round are
@@ -233,6 +253,27 @@ component geometry.
   A part that did not build is reported as a gate failure, not a skip: there is
   no solid to measure. A round passes only when both gates pass on every part,
   so `built` and `printable at this nozzle` stay separate verdicts.
+- Each failing region names its feature: the print-details feature it lies
+  on with the line that made it (`band@part_wing.step.py:42`), else the
+  nearest B-rep face (`plane@(12,-4,30)`), and how far it is past the limit.
+  The `wall` and `over` lines list them after `at`; the gate reports under
+  the round have the rest. Repair that feature, not a coordinate.
+- A feature that failed the same part's previous round too is a **Repeated
+  Print Defect**: an `again` line names it and `summary.json` lists it under
+  `repeated_print_defects`. Read the report's feature row before you change
+  numbers again; a repeat means the last repair guessed.
+- A part whose print-details features refused a size or a spot did not
+  build: its **Detail Refusals** come all at once, each on a `refuse` line
+  under the part's `build` line with its feature, the line that asked for
+  it, the reason and what passes there, and in `summary.json` under the
+  part's `build.detail_refusals`. A detail refused at the same line in the
+  part's previous round too gets an `again REFUSE` line and is listed under
+  `repeated_detail_refusals`, apart from `repeated_print_defects`: leave
+  that detail out and name it.
+- A part whose tessellation is open is not measured. An invalid B-rep fails
+  with its bad faces listed. A valid one is re-tessellated once, finer; if it
+  stays open the gate's verdict is `UNMEASURABLE`, which is not a print
+  failure and is never a pass: simplify the faces the report names and rerun.
 - An unchanged part reuses its previous PASS only when both gates passed, the
   tool logs still hash to what was recorded, and the nozzle, angle, gate bytes
   and interpreter are identical. A failed or legacy record is always
@@ -243,15 +284,354 @@ component geometry.
   (parts with a fresh build verdict, including build failures), `print` (the
   per-part wall and overhang verdicts with their measurements) and `reused`
   (parts whose gate evidence was carried forward).
-- The initial command returns exit 1 with visual status `pending` until native
-  feedback is recorded, even if all numeric checks pass. A renderer failure
-  produces visual status `error`; never fabricate feedback for missing images.
-- Exit 0 means numeric checks and recorded visual feedback pass; 1 means failed,
-  inconclusive or pending; 2 means invalid input or the round could not run.
+- The initial command returns exit 1 with visual status `pending` until the
+  review (component) or native feedback (assembly) is recorded, even if all
+  numeric checks pass. A renderer failure produces visual status `error`;
+  never fabricate a review or feedback for missing images.
+- Exit 0 means numeric checks and the recorded (or carried) review or visual
+  feedback pass; 1 means failed, inconclusive or pending; 2 means invalid
+  input, a refused review, a round the round policy refused, or the round
+  could not run.
 
-## Record visual feedback
+## Review a component round
 
-The native Manager performs the visual judgment. Python renders and hashes
+A component passes when it builds, its print gates pass and an independent
+reviewer agrees that it looks like its reference (ADR 0076). The Workshop
+Manager does not judge its own component: each Component has one reviewer
+that did not author it, spawned once and asked again in the same thread for
+every later round. The request is fixed: the round's `visual-packet.json`
+path and its packet sha256, nothing else, once per packet. Under a schema 4
+Design Contract (ADR 0084) the round writes the Component's contract into
+the packet itself, bound by the packet hash: `contract` holds its geometry
+row, its `requirements` rows and the `text` of every Interface that names it
+(`<id>` or `<id>#<n>`). The summary's `contract` holds the same for the
+worker. Before schema 4 the packet has no `contract`, and the request also
+carries that geometry's contract lines. Write its answer unchanged with the
+exact packet hash from the summary:
+
+```json
+{"round": 3, "packet_sha256": "<visual packet hash from summary>",
+ "reviewer": "<the reviewer's native agent id>", "agrees": false,
+ "matches_plan": true, "matches_reference": false,
+ "reason": "The arm reads half as thick as the reference.",
+ "differences": [{"feature": "upper arm", "reference": "as thick as the leg",
+                  "model": "half the leg's thickness"}]}
+```
+
+`matches_plan` and `matches_reference` are the reviewer's two separate
+judgements of `sheet.png` and the comparisons (ADR 0087): against the
+Component's contract rows or plan, and against its reference images,
+`null` when the packet has no `compare-NN.png`. An agreeing review needs
+`matches_plan` true and `matches_reference` not false.
+`differences` (at most 12) is required when `agrees` is false and is the
+repair list for the next round. A review may also list
+`reference_conflicts` (at most 12), each `{"file", "reference",
+"contract"}`: the reference image this round compared, what it shows, and
+what the Design Contract requires instead, quoting the row or Interface
+text. A Reference Conflict is not a difference: the Design Contract wins, it
+costs no shape round, it may stand beside `"agrees": true`, and the worker
+never sees it (`review.json` is written without it; the round keeps it in
+`reference-conflicts.json` and the summary's `reference_conflicts`). The
+final verifier reports each one, and the run reports it when it ends.
+A review may also list `ruling_disputes` (at most 12), each `{"report",
+"reason"}`: a ruling in the packet's `rulings` (below, Blocked Reports) the
+reviewer thinks wrong. A Ruling Dispute is not a difference either: the
+ruling stands, it costs no shape round, it may stand beside `"agrees":
+true`, and the worker never sees it (the round keeps it in
+`ruling-disputes.json` and the summary's `ruling_disputes`, and a carried
+review carries it). Then record it without rebuilding:
+
+```sh
+"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
+    --component part_<role>.step.py --record-review <review.json>
+```
+
+It refuses a review of a round that is not the latest, a different packet
+hash, changed sources, packet, renders, references or comparisons, a round
+whose build or print checks failed or that has no packet, a second review of
+the same round (a carried review counts), a reviewer named as the
+Workshop Manager, a missing or malformed `matches_plan` or
+`matches_reference`, an agreeing review whose verdicts say it misses, a malformed Reference Conflict or one naming a reference
+the round did not compare, a malformed Ruling Dispute or one naming no
+ruling of the packet, and a disagreeing review whose only findings are
+Reference Conflicts or Ruling Disputes (such a review agrees). Where the Workshop host names the runtime
+(`WORKSHOP_REVIEWER_RUNTIME`, set on Claude Code), `reviewer` must be the
+reviewer's native agent id in that runtime's format (17 lowercase hex
+characters), the Component's first review binds it in the component state as
+`reviewer_id`, and a review naming another id is refused with the bound one.
+`make_round` cannot prove who the reviewer was; the host does, at Make
+acceptance, from the guard's record of which agent the runtime started and
+which packet images it read. The Manager must not write, edit or filter the
+review, and tells the worker only which round was reviewed: the worker reads
+`review.json` in that round.
+
+Under a schema 3 Design Contract the reviewer may answer camera mismatch
+instead: the side of the model that faces the Reference Camera is not the
+side the reference shows. It names the reference and the landmarks each side
+shows, and replaces `agrees`, `differences`, `reference_conflicts` and
+`ruling_disputes`:
+
+```json
+{"round": 3, "packet_sha256": "<visual packet hash from summary>",
+ "reviewer": "<the reviewer's native agent id>",
+ "reason": "The reference shows the halo face-on; the model shows its rim.",
+ "camera_mismatch": {"file": "ref-03-gear-staff.png",
+                     "reference": "the halo's face and its eight spokes",
+                     "model": "the halo edge-on, one thin bar"}}
+```
+
+`--record-review` refuses one without landmarks, naming a reference the round
+did not compare, or on a round compared without a Reference Camera. It is not
+a Component Review: the Component stays awaiting review, no shape round is
+spent, nothing is written to `review.json` (the claim is kept in
+`camera-mismatch.json`), and the summary's `camera_mismatch.need` is the
+need the Workshop Manager stops the run with. The host answers it with a
+camera-only amendment; a rerun of the unchanged B-rep then shows the new
+view and is reviewed afresh.
+
+### The round policy (ADR 0081)
+
+`make_round` makes the build -> review -> repair loop mandatory. Read the
+summary's `shape` and `lock` lines, or `shape_round`, `shape_rounds_used`,
+`locked` and `unlock` in `summary.json`, before deciding what to do next.
+A component round prints its B-rep identity on an `identity` line and its
+packet sha256 and path on a `packet` line, recorded as `identity`,
+`visual.packet_sha256` and `visual.packet` in `summary.json` (issue #98):
+the values a Component Worker reports.
+
+- A round that passes build and print must be reviewed before the
+  Component's geometry may change. Until its review is recorded, a round
+  whose B-rep identity differs exits 2 and leaves nothing behind (the STEP it
+  overwrote is put back); a rerun that leaves the geometry unchanged may run
+  at any time, for example to regenerate a stale packet. Report the passing
+  round and wait.
+- A **shape round** is the first geometry-changing round after a disagreeing
+  review. Build and print repairs, unchanged reruns, and changes forced from
+  outside the Component (a Shared Helper change, an assembly unlock) are
+  never shape rounds. The summary says whether this round was one and how
+  many of the five are used.
+- An agreeing review **locks** the Component. So does a disagreeing review
+  recorded once the five shape rounds are used: it becomes a **component
+  acceptance** that the run reports when it ends, so the loop cannot run on
+  without end. A locked Component refuses a geometry change until something
+  outside it requires one:
+  - a Shared Helper the Component imports changes (detected automatically);
+  - a Coupled Interface check fails and the contract names this Component
+    as its yielding one (`--interface`, below; recorded automatically);
+  - the Workshop Manager records that an assembly round needs it changed:
+
+    ```sh
+    "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
+        --component part_<role>.step.py --record-unlock <unlock.json>
+    ```
+
+    with `{"assembly_round": 4, "finding": 0, "reason": "..."}`, citing one
+    finding recorded on that assembly round with `--record-visual`. It
+    builds nothing.
+
+  Rounds after an unlock are admitted and never counted. When the next
+  passing round rebuilds the reviewed B-rep, with the same references and
+  contract rows, the review or acceptance carries forward
+  (`review.carried_from`), the round exits 0 and the Component locks again
+  with no new review. A different B-rep returns it to "passed, awaiting
+  review" with its shape-round count kept; a disagreeing review then, at the
+  cap, is a new component acceptance.
+- A component round that fails its checks is not rendered (visual status
+  `not-rendered`); only a passing round is shown to the reviewer.
+- A component packet binds the Component's own source and STEP and the Shared
+  Helpers it imports, directly or through another project module
+  (`imported_helpers` in the summary). Editing any other file does not stale
+  it.
+
+### Interfaces between Components (ADR 0082)
+
+When the sealed Design Contract has an `interfaces` section, three more
+rules apply. Contracts without it keep the rules above unchanged.
+
+- **Freeze the Shared Helpers first.** The Workshop Manager builds samples
+  under `<project>/samples/<name>.step.py` (a peg in its socket, a pinion on
+  its sector), each importing the Shared Helpers from the project, and runs:
+
+  ```sh
+  "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad --shared-helpers
+  ```
+
+  It first checks the Shared Helper rules on every helper a Component or
+  sample imports, and builds nothing while one fails (exit 1, every failure
+  on stderr): each design value, a module-level UPPER_CASE name bound to a
+  number or a tuple of numbers, cites `# wiki: <slug>[#section]` on its line
+  or in the comment lines directly above, the page exists in the run's wiki,
+  and the value appears in an `assert` of the module. A value derived from
+  cited values needs no citation. A function or class named for a standard
+  element (gear, pinion, rack, bearing, screw, bolt, nut, washer, thread...)
+  needs `bd_warehouse` or `py_gearworks`, and no helper names an involute.
+  `features/print_details.py` is exempt only while its bytes are the
+  print-details library's; an edited copy is refused. Then it builds every
+  sample and runs `check_thickness` and `check_overhang` on it. A pass writes `measure/shared-helpers-freeze.json` with the sha256 of
+  every Shared Helper (each project `.py` module that is not an entry, a
+  sample or evidence) and appends the event to
+  `measure/shared-helper-freezes.jsonl`; a failing sample, or one that
+  imports no Shared Helper, freezes nothing. A component round before the
+  freeze exits 2. After it, a component round's `frozen` line (`helper_freeze`
+  in `summary.json`) names each Shared Helper it imports that changed since
+  the freeze and every Component that imports it. Rerun the check to
+  re-freeze; the change is recorded as an event.
+- **Keep-out Envelopes.** For each separable Interface a Component joins, its
+  round runs `check_envelope` on its B-rep: the inside Component, placed by
+  its entry's `assembly_pose(shape, pose)` at every declared pose, stays
+  inside that pose's shape; the outside Component, placed with `pose` None,
+  stays out of every shape. A failure fails the round's checks like a print
+  gate (the `keep` line, `envelopes` in `summary.json`).
+- **Instances (issue #80).** An Interface may name one instance of a Unique
+  Geometry whose count is above 1, `<id>#<n>` (`wing#1`, `wing#2`). The
+  geometry's one `part_<id>.step.py` builds and places every instance:
+  `assembly_pose(shape, pose, instance)` places instance n, and
+  `gen_step(instance=1)` builds it when the instances differ (a `gen_step`
+  without `instance` builds identical copies). A file whose `assembly_pose`
+  takes no `instance` fails the envelope check and is refused by
+  `--interface`, with a message naming this convention. An envelope side
+  that is an instance runs `check_envelope --instance n`, reported as
+  `<interface> <id>#<n>`; instances on both sides run both checks in the
+  same round.
+- **Coupled Interfaces.** Once every Component an Interface joins is locked:
+
+  ```sh
+  "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad --interface <id>
+  ```
+
+  It refuses (exit 2) a separable or static Interface and any Component not
+  locked at its current geometry, builds those Components only, places them
+  through `assembly_pose(shape, None)` and runs `check_motion`'s
+  `coupled_motion_collision` over the sealed pose table (or the
+  `measure/motion.json` condition its `poses_from` names), with the
+  non-moving Components as obstacles. Each instance an Interface names is
+  its own child, labelled `<id>#<n>`, which the pose table's movers name;
+  locking, staleness and the unlock belong to its Component, built once, so
+  a failure yielding `wing#2` unlocks the wing. Rounds live under
+  `measure/interface-rounds/<id>/`. A failure unlocks the yielding
+  Component with the check's evidence; its repair is never a shape round.
+  `--require-component-passes` refuses assembly while any Coupled Interface
+  lacks a current passing check, and so does the final verifier, which lists
+  every Interface with its proof in `component-acceptance.json`.
+
+### Blocked Reports (issue #88)
+
+A Component Worker that cannot proceed -- two of its contract rows cannot
+both hold, a stated print rule (stance, "no part needs support") its
+geometry cannot meet, or a choice only the Workshop Manager may make --
+records a Blocked Report, then reports blocked:
+
+```bash
+"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project> \
+    --component part_<role>.step.py --report-blocked <blocked.json>
+```
+
+`blocked.json` is `{"rows": [...], "reason": "..."}`, each row copied
+verbatim from the sealed Design Contract (whitespace aside); a row that is
+not in it is refused, and so is a second report while one of the
+Component's reports is open. The report records the Component, its latest
+round and the rows in `measure/blocked-reports.jsonl`, bound to the run by
+the sha256 of `WISH.json`. It builds nothing and takes no nonce.
+
+The Workshop Manager answers it with `--clear-blocked <answer.json>`:
+
+- `{"report": N, "decision": "..."}`: a ruling inside a freedom the
+  contract grants; the worker follows it with a new round or a new report.
+- `{"report": N, "decision": "...", "waits_on": "part_<other>.step.py"}`:
+  the report stays open, waiting, until that Component's next round whose
+  checks pass. That round's summary carries `wakes_blocked` and a `wake`
+  line, and `--blocked-reports` shows the report `WOKEN`; the Manager then
+  clears it with a new decision for the worker.
+- `{"report": N, "need": "..."}`: a Contract Contradiction, one line that
+  quotes every row; the Manager seals it with `stage_proposal.py need`.
+- `{"report": N, "amendment": M}`: Contract Amendment M, which names report
+  N, was applied (below).
+
+`--blocked-reports [--json]` lists every report and its answers, and exits
+1 while one is open, waiting or woken. While any is open or waiting an
+assembly round and `--full` refuse to run; the Make finalizer and the host
+refuse the Make proposal and Make acceptance, and on Claude Code a hook
+refuses the root's turn end unless it ends on a recorded need. The tool is
+the same on every runtime; no hook is needed to report or clear.
+
+A decided ruling binds the Component Reviewer (issue #97). Every later
+component round of that Component writes its decided rulings, oldest first,
+into the visual packet and the summary as `rulings`: `{"report", "round",
+"rows", "request", "ruling", "decided_at"}`, copied from the ledger (the
+worker's report as `request`, the Manager's last decision as `ruling`). Only
+a report whose last answer is a decision that waits on nothing is a ruling.
+The rulings join the carry key, so a review carries to a later round only
+under the same rulings; without any, packet and key are unchanged. An
+unchanged rerun after a new ruling is therefore reviewed afresh and is not
+a shape round. `--record-review` refuses a review of a packet rendered
+before the Component's latest ruling; the worker reruns unchanged. An
+unreadable ledger refuses the component round before anything is built.
+
+### Contract Amendments (ADR 0085)
+
+When a Contract Contradiction's smallest fix changes nothing a sealed
+reference image shows, the Workshop Manager may amend the rows inside the
+run instead of stopping on a need:
+
+```bash
+"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project> \
+    --propose-amendment <proposal.json>
+```
+
+`proposal.json` is `{"rows": [...], "changes": [{"from": "...", "to":
+"..."}], "reason": "...", "report": N}`: two or more contract statements
+that cannot both hold, verbatim; each change replaces one whole requirement
+text or (schema 4) Interface text, and nothing else; `report` is optional.
+The tool writes `measure/contract-amendments/aNN/packet.json` (the rows, the
+changes, the reason and every sealed reference by path and sha256),
+appends the proposal to `measure/contract-amendments.jsonl` bound to the
+sha256 of `WISH.json` and to the canonical-JSON hash of the contract it
+amends, and prints the packet path and hash. A fresh `contract-reviewer`
+reads the packet and every reference and answers `contradiction`,
+`smallest`, `visible_in` and `references_checked`; the Manager records it
+with `--record-amendment-review <review.json>`, adding `amendment`,
+`packet_sha256` and `reviewer`. It applies only when both are true and
+`visible_in` is empty, and exits 1 otherwise with the need to stop on. A
+reviewer is refused when it is the Manager, a Component's reviewer, or the
+reviewer of an earlier amendment.
+
+A refusal with `contradiction` true, `visible_in` empty and `smallest`
+false allows one Smaller Retry (issue #96): a new proposal with the same
+rows whose every change is a row the refused amendment changed, from the
+same text, with only deletions applied (shorter, a subsequence, no word
+added or respelled). The proposal and its packet record `retry_of`, and
+`--record-amendment-review` prints the reviewer's reason after a refusal
+that allows it. Any other proposal quoting rows an earlier amendment quoted
+is refused: a third one, one after a contradiction or visibility refusal,
+or one after an applied amendment.
+
+After an amendment applies, every round reads the sealed contract with the
+amended rows: the rows a component round delivers, the rows a Blocked Report
+quotes, and the contract-rows hash its review binds. A locked Component
+whose rows changed unlocks (summary `unlock a Contract Amendment changed
+this Component's rows`), and no earlier review carries across the change.
+One amendment awaits review at a time; while it does, an assembly round and
+`--full` refuse to run and the finalizer refuses the Make proposal.
+`--contract-amendments [--json]` lists every amendment and exits 1 while
+one awaits review. The host replays the ledger against the sealed contract
+before it accepts Make.
+
+The owner may also amend the contract on resume (`workshop resume
+--amend-contract`, issue #100). The host appends an Owner Contract
+Amendment (`owner_amendments`: each changed row before and after, the
+Components whose own rows changed, the contract hash before and after) to
+the run root's `CONTRACT-AMENDMENTS.json`, and for a run whose objective is
+its contract also writes the amended `objective`. Rounds read the owner's
+rows after every applied in-run amendment, so a locked Component whose own
+rows changed unlocks as above; an owner's assembly row binds no Component.
+`--contract-amendments` lists each owner amendment after the in-run ones,
+and from then on `--propose-amendment` is refused. The host refuses an
+owner amendment for a run whose `make_round` or finalizer lacks the marker
+`workshop-owner-contract-amendments-v1`.
+
+## Record assembly visual feedback
+
+The native Manager performs the assembly's visual judgment. Python renders and hashes
 evidence; it never calls a vision model, diagnoses an image or chooses repairs.
 A clean build and green gates are not a form verdict. Open `sheet.png` and
 judge in this order:
@@ -309,8 +689,8 @@ reference images. Use `pass` with an empty findings list only after inspection
 finds no errors;
 use `inconclusive` and describe the missing evidence when a verdict is impossible.
 
-When a scored reference is below the floor, add `differences`: every way the
-model's form differs from that reference in `compare-NN.png`, at most 12.
+Add `differences` for every way the model's form differs from a reference in
+`compare-NN.png`, at most 12.
 
 ```json
 "differences": [{
@@ -324,54 +704,21 @@ model's form differs from that reference in `compare-NN.png`, at most 12.
 
 `decision` is `repair` or `keep`. A difference to `repair` cannot pass; it
 needs a matching finding and a new round. A kept difference names what forces
-it. An empty list below the floor is refused, and so is an observation that
-repeats the previous round's: inspect each round's images afresh (ADR 0075).
+it. An observation that repeats the previous round's is refused: inspect each
+round's images afresh (ADR 0075).
 Then run:
 
 ```sh
 "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
-    [--component part_<role>.step.py] --record-visual <feedback.json>
+    --record-visual <feedback.json>
 ```
 
 This updates the same round's summary with detected visual errors. It rejects
 changed source/constraint bytes, changed renders/references/comparisons, wrong
-packet hashes, contradictory findings, missing differences below the floor, a
-copied observation and repeat submissions. Source edits start a new round;
+packet hashes, contradictory findings, a copied observation and repeat
+submissions. A component round does not take `--record-visual`. Source edits start a new round;
 never rebind prior prose to new hashes. Manager self-review does not consume or
 replace the independent blind critic allowance.
-
-## Accept a stalled-out component image
-
-In Contract Mode a component round scores its sealed `geometry:<id>` image at
-the 0.90 floor (ADR 0074). An image below the floor is stalled out after three
-rounds that each changed the Component's geometry without raising IoU by more
-than 0.005. A rerun that changed no geometry neither counts nor resets the
-count (ADR 0075). The summary shows `stalled N/3` and the heights where the
-model's width misfits the reference most.
-
-A stalled-out image may be accepted only after an independent review. Spawn a
-fresh subagent that did not author the Component. Give it the latest round's
-`compare-NN.png` images and that geometry's contract lines, and ask whether
-the remaining differences are acceptable. Write its answer:
-
-```json
-{"round": 7, "comparisons": {"<path from the packet>": "<sha256>"},
- "reviewer": "<subagent name>", "agrees": true, "reason": "<why>"}
-```
-
-Then rerun the same round without editing:
-
-```sh
-"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <project>/cad \
-    --component part_<role>.step.py --accept-likeness "<reason>" \
-    --acceptance-review <review.json>
-```
-
-The round refuses the acceptance when the image has not stalled out, the
-review names another round or other images, the reviewer is the Workshop
-Manager, the reviewer did not agree, or the geometry changed after the
-reviewed round. It cannot prove who the reviewer was; the Manager must not
-write the review itself.
 
 ## Final review
 
@@ -384,40 +731,34 @@ just to run it. The host alone performs the authoritative `--fresh` rebuild.
 
 ## Summary
 
-The summary names, in order: the changed parts and their build verdicts, the
-likeness score per view with the change since
-the previous round, the pose it was scored at and, below the floor, the
-heights where the width misfits most, the motion gate verdict,
-the native visual findings and differences, and the `--full` verdict when requested. Everything the tools printed is kept
+The summary names, in order: the changed parts with their build and print
+verdicts, any reference that could not be shown, which round each sealed
+reference was shown to, a component's shape-round count, the motion gate
+verdict, the visual findings and differences, the component review and any
+acceptance at the shape-repair limit, and the `--full` verdict when requested. Everything the tools printed is kept
 under `measure/rounds/rNNNN/` beside `summary.json`.
 
 ## Tool card
 
 Every gate `make_round` runs, exactly as it runs it. `$C` is
-`.agents/skills/cad/scripts`, `$I` is `.agents/skills/image-to-cad/scripts`.
+`.agents/skills/cad/scripts`.
 
 | Step | Invocation | Reads |
 |---|---|---|
 | build a part | `"$WORKSHOP_PYTHON" $C/gen part_<role>.step.py --write --json` | exit code, and the sibling `part_<role>.step` it writes |
-| likeness | `"$WORKSHOP_PYTHON" $I/render_views.py <entry>.step.py --match <ref.png> --label <L> --min 0.90 -o <dir> --shaded --json [--camera=AZ,EL[,TOL]] [--poses-from <prev poses.json>]` | `results[].iou`, `.ok`, `.az/.el/.roll/.fov` |
+| build a sample | `PYTHONPATH=<project> "$WORKSHOP_PYTHON" $C/gen samples/<name>.step.py --write --json`, then both print gates | exit codes and gate verdicts |
+| keep-out envelope | `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/check_envelope part_<role>.step.py --envelope <round>/envelope-<id>.json --role inside\|outside --json` | `ok` and the per-pose volumes outside or inside the envelope |
+| interface check | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/interface-rounds/<id>/rNNNN/motion.json --json` | the one `coupled_motion_collision` condition's `status` |
 | motion | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/motion.json --json` | `status` per condition: `pass`, `fail`, `inconclusive` |
-| inspection views | `"$WORKSHOP_PYTHON" $C/render_review <selected entry.step.py> --view iso --view front --view left --view top --view iso_front --view iso_back --view iso_left --view iso_right --view iso_bottom --sheet -o <round>/visual` | `sheet.png` (every view, labelled) plus each exact shaded PNG, for native Manager inspection of one component or the assembly |
-| final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --strict-fit [--image-derived --likeness-ref L=PATH@AZ,EL[,TOL] ...] --report <project>/measure/verification-pipeline.md` | exit 0 = verifier passed; host gate still required |
+| inspection views | `"$WORKSHOP_PYTHON" $C/render_review <selected entry.step.py> --view iso --view front --view left --view top --view iso_front --view iso_back --view iso_left --view iso_right --view iso_bottom [--view=AZ,EL ...] --sheet -o <round>/visual` | `sheet.png` (every view, labelled) plus each exact shaded PNG; the reference-camera views are composed into `compare-NN.png` beside each reference |
+| final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --strict-fit --print-gates [--image-derived] --report <project>/measure/verification-pipeline.md` | exit 0 = verifier passed; host gate still required |
 | motion sheet | `"$WORKSHOP_PYTHON" $C/motion_presentation.py` (see the cad skill) | presentation only, not a gate |
-
-`render_views.py --match` searches the camera pose and scores with the
-likeness gate's own comparison; `--poses-from` replays the previous round's
-pose so consecutive rounds measure the model, not the camera. Each reference
-keeps its own pose file; the summary records the selected file as
-`poses_path`. A bounded search writes separate evidence, and its pose is
-retained only when its score is better than the replay. A reference
-with a transparent background is read from its alpha channel. When the replay scores under the floor, `make_round` re-searches a +/-30 degree window around that camera and keeps the better score, marked `(re-searched)` in the summary; a moved part is otherwise scored under a stale camera. A replay that `render_views` refuses because its stored pose sits outside the declared camera window is re-searched the same way, inside that window.
 
 ## What this is not
 
 It batches deterministic tools and records native judgment. Numeric verdicts
-come from the original tools; visual findings come from the Manager's actual
-image inspection. It cannot independently verify the truth of those findings.
+come from the original tools; visual judgments come from the reviewer's or
+the Manager's actual image inspection. It cannot independently verify the truth of those findings.
 The thresholds are the tools' defaults unless you pass them, and the
 final Make proposal still requires the integrated `verify_project` run the
 cad skill describes.

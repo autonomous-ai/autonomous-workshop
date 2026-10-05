@@ -1,20 +1,29 @@
+import hashlib
 import json
+import stat
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 
 from workshop.errors import ContractError
+from workshop.make.role_guard import (
+    install_make_round_guard,
+    installed_make_round_guard,
+)
 from workshop.runtime.managers import (
     MAX_NATIVE_TURN_SECONDS,
     NATIVE_TOKEN_USAGE_FIELDS,
 )
 from workshop.runtime.claude import (
+    CLAUDE_SESSION_CHECKPOINT_NAME,
     CLAUDE_TOKEN_BUDGET_STOP_MESSAGE,
+    claude_hook_settings,
     DEFAULT_CLAUDE_TIMEOUT_SECONDS,
     ClaudeInvocationError,
     ClaudeNativeSessionLauncher,
     ClaudeNativeSessionOutcome,
+    _canonical_json,
     claude_subprocess_environment,
     claude_supports_native_workshop,
 )
@@ -266,6 +275,8 @@ class ClaudeNativeSessionTest(unittest.TestCase):
             seen.setdefault("commands", []).append(command)
             self.assertEqual(kwargs["cwd"], str(self.run_root))
             self.assertIn("WORKSHOP_PYTHON", kwargs["env"])
+            # make_round checks a reviewer id in this runtime's format (#77).
+            self.assertEqual(kwargs["env"]["WORKSHOP_REVIEWER_RUNTIME"], "claude")
             self.assertNotIn("FACTORY_PASSWORD", kwargs["env"])
             return _FakeProcess(
                 [
@@ -423,6 +434,53 @@ class ClaudeNativeSessionTest(unittest.TestCase):
                     self._turn(launcher(window), "resume")
         self.assertEqual(len(commands), 2)
 
+    def test_guard_settings_run_the_installed_script_for_bash(self):
+        script = Path("/state/make-round-guard/make_round_guard.py")
+        hook = json.loads(claude_hook_settings(script))["hooks"]["PreToolUse"][0]
+        self.assertEqual(hook["matcher"], "Bash")
+        self.assertIn(str(script), hook["hooks"][0]["command"])
+
+    def test_guard_settings_also_record_reviewer_reads_and_subagent_starts(self):
+        # Issue #77: the evidence that binds a Component Review to its reviewer.
+        script = Path("/state/make-round-guard/make_round_guard.py")
+        hooks = json.loads(claude_hook_settings(script))["hooks"]
+        self.assertEqual([entry["matcher"] for entry in hooks["PreToolUse"]], ["Bash", "Read"])
+        for entry in (hooks["PreToolUse"][1], hooks["SubagentStart"][0]):
+            self.assertIn(str(script), entry["hooks"][0]["command"])
+
+    def test_guard_settings_hold_the_root_turn_end_to_open_blocked_reports(self):
+        # Issue #88: the same guard answers the root's Stop event.
+        script = Path("/state/make-round-guard/make_round_guard.py")
+        hooks = json.loads(claude_hook_settings(script))["hooks"]
+        self.assertEqual(len(hooks["Stop"]), 1)
+        self.assertNotIn("matcher", hooks["Stop"][0])
+        self.assertIn(str(script), hooks["Stop"][0]["hooks"][0]["command"])
+
+    def test_an_installed_make_round_guard_is_registered_on_every_turn(self):
+        commands = []
+
+        def popen(command, **kwargs):
+            del kwargs
+            commands.append(command)
+            return _FakeProcess([_init_line()])
+
+        launcher = ClaudeNativeSessionLauncher(
+            binary="/bin/claude",
+            cli_version="2.1.285",
+            popen_factory=popen,
+            uuid_factory=lambda: "initial-session-id",
+        )
+        self._turn(launcher, "start")
+        self.assertNotIn("--settings", commands[0])
+        install_make_round_guard(self.host_state)
+        self._turn(launcher, "resume")
+        settings = commands[1][commands[1].index("--settings") + 1]
+        self.assertEqual(
+            settings,
+            claude_hook_settings(installed_make_round_guard(self.host_state)),
+        )
+        self.assertLess(commands[1].index("--settings"), commands[1].index("--resume"))
+
     def test_a_session_without_a_window_passes_none_and_refuses_one(self):
         commands = []
 
@@ -458,7 +516,7 @@ class ClaudeNativeSessionTest(unittest.TestCase):
                     **options,
                 )
                 if not options:
-                    launcher.token_budget_observer = lambda counters, *, final: None
+                    launcher.token_budget_observer = lambda counters, *, final, **_: None
                 with self.assertRaisesRegex(ClaudeInvocationError, "2.1.285 or newer"):
                     self._turn(launcher, "start")
                 self.assertFalse((self.host_state / "claude-session.json").exists())
@@ -545,7 +603,7 @@ class ClaudeNativeSessionTest(unittest.TestCase):
             popen_factory=popen,
             uuid_factory=lambda: "initial-session-id",
         )
-        with self.assertRaisesRegex(ClaudeInvocationError, "weekly limit"):
+        with self.assertRaisesRegex(ClaudeInvocationError, "weekly limit") as caught:
             launcher.start(
                 product_id="wish-one",
                 wish_sha256=DIGEST,
@@ -554,6 +612,59 @@ class ClaudeNativeSessionTest(unittest.TestCase):
                 host_state_root=self.host_state,
                 prompt="make",
             )
+        # Typed, so the host can show a resumable usage-limit stop (#94).
+        from workshop.runtime.managers import NativeManagerUsageLimitError
+
+        self.assertIsInstance(caught.exception, NativeManagerUsageLimitError)
+
+    def _error_turn(self, text):
+        def popen(command, **kwargs):
+            del command, kwargs
+            return _FakeProcess(
+                [
+                    json.dumps(
+                        {
+                            "type": "result",
+                            "is_error": True,
+                            "result": text,
+                            "session_id": "claude-session-one",
+                        }
+                    )
+                    + "\n",
+                ],
+                returncode=1,
+            )
+
+        launcher = ClaudeNativeSessionLauncher(
+            binary="/bin/claude",
+            cli_version="2.0.0",
+            popen_factory=popen,
+            uuid_factory=lambda: "initial-session-id",
+        )
+        with self.assertRaises(ClaudeInvocationError) as caught:
+            launcher.start(
+                product_id="wish-one",
+                wish_sha256=DIGEST,
+                constitution_sha256=DIGEST,
+                run_root=self.run_root,
+                host_state_root=self.host_state,
+                prompt="make",
+            )
+        return caught.exception
+
+    def test_usage_limit_error_turn_is_a_typed_usage_limit(self):
+        from workshop.runtime.claude import ClaudeUsageLimitError
+
+        error = self._error_turn("Claude AI usage limit reached|1760000000 private")
+        self.assertIsInstance(error, ClaudeUsageLimitError)
+        self.assertIn("signature=rate-limited", str(error))
+        self.assertNotIn("private", str(error))
+
+    def test_other_error_turns_are_not_usage_limits(self):
+        from workshop.runtime.managers import NativeManagerUsageLimitError
+
+        error = self._error_turn("Not logged in · Please run /login")
+        self.assertNotIsInstance(error, NativeManagerUsageLimitError)
 
     def test_environment_keeps_the_macos_credential_account(self):
         """Without USER the CLI reports itself logged out mid-run."""
@@ -705,6 +816,88 @@ class ClaudeNativeSessionTest(unittest.TestCase):
         )
         self.assertEqual(resumed.session_id, "claude-session-real")
 
+    def _rebind(self, launcher, constitution_sha256, **overrides):
+        values = {
+            "product_id": "wish-one",
+            "wish_sha256": DIGEST,
+            "run_root": self.run_root,
+            "host_state_root": self.host_state,
+            "constitution_sha256": constitution_sha256,
+        }
+        values.update(overrides)
+        return launcher.rebind_session_constitution(**values)
+
+    def test_rebind_session_constitution_moves_only_the_instruction_hash(self):
+        """A host tool refresh reaches a Claude run by rebinding its record."""
+
+        launcher = self._launcher_with_streams(
+            [[_init_line(), _result_line()], [_init_line(), _result_line()]]
+        )
+        self._turn(launcher, "start")
+        checkpoint = self.host_state / CLAUDE_SESSION_CHECKPOINT_NAME
+        before = json.loads(checkpoint.read_text(encoding="utf-8"))
+        corrected = "c" * 64
+
+        result = self._rebind(launcher, corrected)
+
+        self.assertEqual(
+            result,
+            {
+                "session_id": SESSION,
+                "previous_constitution_sha256": DIGEST,
+                "constitution_sha256": corrected,
+                "changed": True,
+            },
+        )
+        after = json.loads(checkpoint.read_text(encoding="utf-8"))
+        unchanged = {"constitution_sha256", "checkpoint_sha256"}
+        self.assertEqual(
+            {key: value for key, value in after.items() if key not in unchanged},
+            {key: value for key, value in before.items() if key not in unchanged},
+        )
+        self.assertEqual(after["constitution_sha256"], corrected)
+        self.assertEqual(
+            after["checkpoint_sha256"],
+            hashlib.sha256(
+                _canonical_json(
+                    {key: value for key, value in after.items() if key != "checkpoint_sha256"}
+                )
+            ).hexdigest(),
+        )
+        self.assertEqual(stat.S_IMODE(checkpoint.stat().st_mode), 0o600)
+        self.assertFalse(self._rebind(launcher, corrected)["changed"])
+
+        with self.assertRaisesRegex(ContractError, "checkpoint binding is invalid"):
+            self._turn(launcher, "resume")
+        resumed = launcher.resume(
+            product_id="wish-one",
+            wish_sha256=DIGEST,
+            constitution_sha256=corrected,
+            run_root=self.run_root,
+            host_state_root=self.host_state,
+            prompt="make",
+        )
+        self.assertEqual(resumed.session_id, SESSION)
+
+    def test_rebind_session_constitution_refuses_another_binding_or_a_tampered_record(self):
+        launcher = self._launcher_with_streams([[_init_line(), _result_line()]])
+        self._turn(launcher, "start")
+        checkpoint = self.host_state / CLAUDE_SESSION_CHECKPOINT_NAME
+        for overrides in (
+            {"wish_sha256": "d" * 64},
+            {"product_id": "wish-two"},
+            {"run_root": self.run_root.parent},
+        ):
+            with self.subTest(overrides=overrides), self.assertRaisesRegex(
+                ContractError, "checkpoint binding is invalid"
+            ):
+                self._rebind(launcher, "e" * 64, **overrides)
+        tampered = json.loads(checkpoint.read_text(encoding="utf-8"))
+        tampered["session_id"] = "claude-session-other"
+        checkpoint.write_text(json.dumps(tampered) + "\n", encoding="utf-8")
+        with self.assertRaisesRegex(ContractError, "checkpoint binding is invalid"):
+            self._rebind(launcher, "e" * 64)
+
     def _launcher_with_streams(self, streams, returncodes=None):
         remaining = [list(lines) for lines in streams]
         codes = list(returncodes or [0] * len(remaining))
@@ -822,7 +1015,7 @@ class ClaudeNativeSessionTest(unittest.TestCase):
                 subagent,
                 _result_line({"claude-opus-5": OPUS_TOTALS}),
             ],
-            lambda counters, *, final: reports.append((dict(counters), final)),
+            lambda counters, *, final, **_: reports.append((dict(counters), final)),
             commands,
         )
         self._turn(launcher, "start")
@@ -842,6 +1035,36 @@ class ClaudeNativeSessionTest(unittest.TestCase):
         self.assertEqual(final["reasoning_output_tokens"], 181_276)
         self.assertEqual(final["cached_input_tokens"], 16_463_646)
 
+    def test_a_budget_report_names_the_session_and_its_streamed_requests(self):
+        """A resume names the resumed session from its first report, and the
+        streamed requests travel apart from the session-wide result (#84)."""
+
+        reports = []
+
+        def observer(counters, *, final, session_id, streamed):
+            reports.append((session_id, counters["input_tokens"], streamed["input_tokens"]))
+
+        launcher, unused = self._budgeted_launcher(
+            [
+                _assistant_line("msg_01A", PER_BLOCK_USAGE),
+                _result_line({"claude-opus-5": OPUS_TOTALS}),
+            ],
+            observer,
+        )
+        self._turn(launcher, "start")
+        launcher._popen_factory = lambda command, **kwargs: _FakeProcess([
+            _assistant_line("msg_02A", PER_BLOCK_USAGE, session_id=SESSION),
+            _result_line({"claude-opus-5": OPUS_TOTALS}),
+        ])
+        reports.clear()
+        self._turn(launcher, "resume")
+        request_input = 2 + 13_227 + 10_010
+        self.assertEqual(reports, [
+            (SESSION, request_input, request_input),
+            (SESSION, OPUS_GROSS_INPUT, request_input),
+            (SESSION, OPUS_GROSS_INPUT, request_input),
+        ])
+
     def test_an_unbudgeted_turn_forwards_no_subagent_text(self):
         commands = []
         launcher, unused = self._budgeted_launcher(
@@ -855,7 +1078,7 @@ class ClaudeNativeSessionTest(unittest.TestCase):
     def test_a_budget_stop_kills_the_turn_at_the_crossing_request(self):
         seen = []
 
-        def observer(counters, *, final):
+        def observer(counters, *, final, **_):
             seen.append(final)
             if counters["input_tokens"] > 30_000:
                 raise RuntimeError("limit")
@@ -879,7 +1102,7 @@ class ClaudeNativeSessionTest(unittest.TestCase):
         self.assertEqual(seen, [False, False])
 
     def test_a_limit_reached_by_the_final_totals_stops_a_finished_turn(self):
-        def observer(counters, *, final):
+        def observer(counters, *, final, **_):
             if final:
                 raise RuntimeError("limit")
 
@@ -896,7 +1119,7 @@ class ClaudeNativeSessionTest(unittest.TestCase):
         reports = []
         launcher, unused = self._budgeted_launcher(
             [_init_line(), _assistant_line("msg_01A", PER_BLOCK_USAGE)],
-            lambda counters, *, final: reports.append((dict(counters), final)),
+            lambda counters, *, final, **_: reports.append((dict(counters), final)),
         )
         launcher_error = None
         try:

@@ -5,6 +5,7 @@ from workshop.errors import ContractError
 from workshop.make.role_agents import (
     COMPONENT_REVIEWER,
     COMPONENT_WORKER,
+    CONTRACT_REVIEWER,
     MAKE_ROLE_AGENT_NAMES,
     make_role_agent_files,
     parse_make_role_agent_bytes,
@@ -27,7 +28,8 @@ class MakeRoleAgentFilesTest(unittest.TestCase):
         files = make_role_agent_files()
         self.assertEqual(set(files), set(MAKE_ROLE_AGENT_NAMES))
         self.assertEqual(
-            set(MAKE_ROLE_AGENT_NAMES), {COMPONENT_WORKER, COMPONENT_REVIEWER}
+            set(MAKE_ROLE_AGENT_NAMES),
+            {COMPONENT_WORKER, COMPONENT_REVIEWER, CONTRACT_REVIEWER},
         )
         for name, content in files.items():
             self.assertEqual(parse_make_role_agent_bytes(name, content)["name"], name)
@@ -41,27 +43,46 @@ class MakeRoleAgentFilesTest(unittest.TestCase):
         self.assertNotIn("model", worker)
         self.assertNotIn("model", reviewer)
 
-    def test_worker_is_confined_to_its_component_and_never_views_images(self):
+    def test_contract_reviewer_inherits_root_effort_and_checks_three_things(self):
+        reviewer = tomllib.loads(
+            make_role_agent_files()[CONTRACT_REVIEWER].decode("utf-8")
+        )
+        self.assertNotIn("model_reasoning_effort", reviewer)
+        self.assertNotIn("model", reviewer)
+        text = reviewer["developer_instructions"]
+        for phrase in (
+            "ADR 0085",
+            "packet path and its sha256",
+            "View every image under `references`",
+            "`contradiction`",
+            "`smallest`",
+            "`visible_in`",
+            "references_checked",
+            "Do not spawn",
+            "Do not advance",
+        ):
+            self.assertIn(phrase, text)
+
+    def test_worker_authors_its_component_and_never_views_rendered_rounds(self):
         worker = tomllib.loads(
             make_role_agent_files()[COMPONENT_WORKER].decode("utf-8")
         )["developer_instructions"]
         for phrase in (
             "part_<id>.step.py",
+            "Write the first",
+            "own sealed `geometry:<id>` reference",
             "--component",
-            "shared helper",
-            "Do not view images",
+            "--worker-nonce",
+            "shared file",
+            "Do not view the rendered round images",
+            "cannot both hold",
             "yield_time_ms: 300000",
             "10 lines",
-            "stalled 3/3",
-            "--accept-likeness",
             "Do not spawn",
             "Do not advance",
             "external effect",
         ):
             self.assertIn(phrase, worker)
-        # Main has no shape-repair limit and no --record-review (ADR 0077).
-        self.assertNotIn("shape-repair limit", worker)
-        self.assertNotIn("--record-review", worker)
 
     def test_reviewer_is_the_only_image_reader_and_answers_in_the_review_shape(self):
         reviewer = tomllib.loads(
@@ -71,16 +92,11 @@ class MakeRoleAgentFilesTest(unittest.TestCase):
             "compare-NN.png",
             '"agrees"',
             '"differences"',
-            '"status": "pass"|"fail"',
-            '"decision"',
-            "stalled out below the 0.90 floor",
             "Do not edit",
             "Do not spawn",
             "external effect",
         ):
             self.assertIn(phrase, reviewer)
-        # Main keeps the silhouette likeness gate (ADR 0074).
-        self.assertNotIn("No silhouette score", reviewer)
 
 
 class ParseMakeRoleAgentBytesTest(unittest.TestCase):

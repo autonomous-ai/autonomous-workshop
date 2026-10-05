@@ -27,10 +27,17 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Optional
 
 from workshop.errors import ContractError
+from workshop.runtime.make_round_hook import (
+    HOOK_TIMEOUT_SECONDS,
+    REVIEWER_RUNTIME_ENV,
+    installed_make_round_guard,
+    make_round_guard_command,
+)
 from workshop.runtime.managers import (
     MAX_NATIVE_TOKEN_COUNT,
     MAX_NATIVE_TURN_SECONDS,
     NativeManagerInvocationError,
+    NativeManagerUsageLimitError,
     NativeManagerRecoverableError,
     NativeTokenUsage,
     SUPPORTED_REASONING_EFFORTS,
@@ -106,12 +113,50 @@ CLAUDE_SUBPROCESS_ENVIRONMENT_ALLOWLIST = (
 )
 
 
+def claude_hook_settings(script: Path) -> str:
+    """The ``--settings`` JSON registering the make_round guard (ADR 0080).
+
+    ``Bash`` admits make_round calls by role. ``Read`` and ``SubagentStart``
+    give the guard the evidence that binds each Component Review to the
+    reviewer that read its packet (ADR 0081, issue #77); an older guard
+    ignores both events. ``Stop`` refuses the root's turn end while the
+    current Make attempt holds an open Blocked Report, unless the turn ends
+    on a recorded need (issue #88); an older guard ignores it too.
+    """
+
+    hook = [
+        {
+            "type": "command",
+            "command": make_round_guard_command(script),
+            "timeout": HOOK_TIMEOUT_SECONDS,
+        }
+    ]
+    return json.dumps(
+        {
+            "hooks": {
+                "PreToolUse": [
+                    {"matcher": "Bash", "hooks": hook},
+                    {"matcher": "Read", "hooks": hook},
+                ],
+                "Stop": [{"hooks": hook}],
+                "SubagentStart": [{"hooks": hook}],
+            }
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
 class ClaudeInvocationError(NativeManagerInvocationError):
     """Claude Code could not complete a native Workshop turn."""
 
 
 class ClaudeRecoverableInvocationError(NativeManagerRecoverableError):
     """A typed Claude timeout that may resume the same session."""
+
+
+class ClaudeUsageLimitError(ClaudeInvocationError, NativeManagerUsageLimitError):
+    """Claude Code refused the turn at the account's usage or rate limit."""
 
 
 def _parsed_version(version: str) -> Optional[tuple[int, ...]]:
@@ -368,7 +413,8 @@ def _invocation_counters(
 
     The result's ``modelUsage`` also counts compaction and final output, so
     each counter takes the larger of the two; neither source can lower what
-    the other already observed.
+    the other already observed.  On ``--resume`` the result totals the whole
+    session, not only this invocation; the host charges a session once.
     """
 
     totals = {name: 0 for name in _INVOCATION_COUNTERS}
@@ -558,7 +604,12 @@ class ClaudeNativeSessionLauncher:
         if path.exists() or path.is_symlink():
             raise ContractError("Claude native session checkpoint already exists")
         # Refuse an unusable command before any session identity is written.
-        command = self._command(Path(run_root), prompt, session_id=None)
+        command = self._command(
+            Path(run_root),
+            prompt,
+            session_id=None,
+            host_state_root=Path(host_state_root),
+        )
         digest = hashlib.sha256(_canonical_json(identity)).hexdigest()
         _write_private_checkpoint(path, {**identity, "checkpoint_sha256": digest})
         bound = {"session_id": session_id, "digest": digest}
@@ -632,10 +683,16 @@ class ClaudeNativeSessionLauncher:
             raise ContractError("Claude native session checkpoint schema is invalid")
         session_id = _canonical_session_id(payload.get("session_id"))
         unused_session, token_usage = self._stream(
-            command=self._command(Path(run_root), prompt, session_id=session_id),
+            command=self._command(
+                Path(run_root),
+                prompt,
+                session_id=session_id,
+                host_state_root=Path(host_state_root),
+            ),
             run_root=Path(run_root),
             activity_observer=activity_observer,
             finalization_marker=finalization_marker,
+            resumed_session_id=session_id,
         )
         return _session_outcome(
             session_id,
@@ -646,6 +703,65 @@ class ClaudeNativeSessionLauncher:
             self.cli_version,
             token_usage,
         )
+
+    def rebind_session_constitution(
+        self,
+        *,
+        product_id: str,
+        wish_sha256: str,
+        run_root: Path,
+        host_state_root: Path,
+        constitution_sha256: str,
+    ) -> Mapping[str, Any]:
+        """Rebind the stored session to a host-corrected instruction tree.
+
+        The record binds the hash of the run's instruction and skill bytes, so
+        a host tool refresh moves it by design and rebinds it in the same
+        operation. The record must be self-consistent and bound to this exact
+        product, Wish and pair of roots; only its constitution field changes,
+        and the session, runtime policy and CLI version it names are kept.
+        """
+
+        _require_sha256(wish_sha256, "Claude Wish sha256")
+        _require_sha256(constitution_sha256, "Claude constitution sha256")
+        path = Path(host_state_root) / self.session_checkpoint_name
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(payload, dict):
+                raise ContractError("Claude session checkpoint is not an object")
+            identity = {
+                key: value for key, value in payload.items() if key != "checkpoint_sha256"
+            }
+            session_id = _canonical_session_id(payload.get("session_id"))
+            previous = _require_sha256(
+                payload.get("constitution_sha256"), "Claude constitution sha256"
+            )
+            if (
+                payload.get("checkpoint_sha256")
+                != hashlib.sha256(_canonical_json(identity)).hexdigest()
+                or payload.get("kind") != CLAUDE_SESSION_CHECKPOINT_KIND
+                or payload.get("schema_version") not in (1, 2)
+                or payload.get("product_id") != product_id
+                or payload.get("wish_sha256") != wish_sha256
+                or payload.get("run_root_sha256") != _path_sha256(Path(run_root))
+                or payload.get("host_state_root_sha256")
+                != _path_sha256(Path(host_state_root))
+            ):
+                raise ContractError("Claude session checkpoint does not match")
+        except (OSError, ValueError, ContractError) as exc:
+            raise ContractError(
+                "Claude native session checkpoint binding is invalid"
+            ) from exc
+        if previous != constitution_sha256:
+            rebound = {**identity, "constitution_sha256": constitution_sha256}
+            digest = hashlib.sha256(_canonical_json(rebound)).hexdigest()
+            _write_private_checkpoint(path, {**rebound, "checkpoint_sha256": digest})
+        return {
+            "session_id": session_id,
+            "previous_constitution_sha256": previous,
+            "constitution_sha256": constitution_sha256,
+            "changed": previous != constitution_sha256,
+        }
 
     def _checkpoint_identity(
         self,
@@ -688,6 +804,7 @@ class ClaudeNativeSessionLauncher:
         prompt: str,
         *,
         session_id: Optional[str],
+        host_state_root: Optional[Path] = None,
     ) -> list[str]:
         prompt = _validated_prompt(prompt)
         if not self.binary:
@@ -718,6 +835,14 @@ class ClaudeNativeSessionLauncher:
             # Subagent requests reach the stream, and so the budget, only
             # when forwarded.
             command.append("--forward-subagent-text")
+        guard = (
+            None if host_state_root is None
+            else installed_make_round_guard(host_state_root)
+        )
+        if guard is not None:
+            # ADR 0080: the hook lives in host state and is registered from
+            # there, never from a settings file in the workspace.
+            command.extend(("--settings", claude_hook_settings(guard)))
         if session_id is not None:
             command.extend(("--resume", session_id))
         command.append(prompt)
@@ -730,6 +855,9 @@ class ClaudeNativeSessionLauncher:
             extra={
                 "TMPDIR": str(private_temp),
                 "WORKSHOP_PYTHON": str(Path(sys.executable).absolute()),
+                # make_round checks a Component Review's reviewer against
+                # this runtime's native agent id format (issue #77).
+                REVIEWER_RUNTIME_ENV: "claude",
                 "PYTHONHASHSEED": "0",
                 "PYTHONDONTWRITEBYTECODE": "1",
                 "PYTHONNOUSERSITE": "1",
@@ -744,6 +872,7 @@ class ClaudeNativeSessionLauncher:
         activity_observer: Optional[Callable[[str], None]],
         finalization_marker: Optional[Path] = None,
         session_observer: Optional[Callable[[str], None]] = None,
+        resumed_session_id: Optional[str] = None,
     ) -> tuple[Optional[str], Optional[NativeTokenUsage]]:
         if activity_observer is not None:
             activity_observer("starting")
@@ -789,6 +918,7 @@ class ClaudeNativeSessionLauncher:
         observed: Optional[str] = None
         stream_error: Optional[str] = None
         terminal_signature: Optional[str] = None
+        usage_limited = False
         token_usage: Optional[NativeTokenUsage] = None
         budget_observer = self.token_budget_observer
         requests: dict[str, dict[str, int]] = {}
@@ -802,7 +932,15 @@ class ClaudeNativeSessionLauncher:
             if not final and counters == observed_counters:
                 return
             observed_counters = counters
-            budget_observer(counters, final=final)
+            # A resumed session's result totals the whole session, so the
+            # host needs the session and this invocation's streamed requests
+            # apart from that result to charge the session once (#84).
+            budget_observer(
+                counters,
+                final=final,
+                session_id=observed or resumed_session_id,
+                streamed=_invocation_counters(requests, None),
+            )
 
         stdout = process.stdout
         try:
@@ -830,12 +968,15 @@ class ClaudeNativeSessionLauncher:
                     if event.get("type") == "rate_limit_event":
                         info = event.get("rate_limit_info")
                         if isinstance(info, Mapping) and info.get("status") == "rejected":
+                            usage_limited = True
                             stream_error = (
                                 "Claude Code weekly limit reached; "
                                 "the native session cannot start"
                             )
                     elif event.get("is_error") is True:
                         terminal_signature = _terminal_failure_signature(event)
+                        if terminal_signature == "rate-limited":
+                            usage_limited = True
                         if stream_error is None:
                             stream_error = (
                                 "Claude Code reported an error turn (signature=%s)"
@@ -885,6 +1026,10 @@ class ClaudeNativeSessionLauncher:
                         ) from None
         stderr_thread.join(timeout=1.0)
         if stream_error is not None:
+            if usage_limited:
+                # A typed, content-free cause the host can show as a
+                # resumable stop; the message stays the host's own text.
+                raise ClaudeUsageLimitError(stream_error)
             raise ClaudeInvocationError(stream_error)
         if returncode not in (0, None):
             detail = "".join(stderr_chunks).strip().replace("\n", " ")
@@ -914,6 +1059,7 @@ __all__ = [
     "ClaudeNativeSessionLauncher",
     "ClaudeNativeSessionOutcome",
     "ClaudeRecoverableInvocationError",
+    "ClaudeUsageLimitError",
     "MINIMUM_CLAUDE_NATIVE_RUNTIME_VERSION",
     "claude_subprocess_environment",
     "claude_supports_native_workshop",

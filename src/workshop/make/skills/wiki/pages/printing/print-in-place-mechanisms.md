@@ -9,8 +9,8 @@ sources:
   - https://3dcentral.ca/articulated-3d-prints-how-flexi-toys-work/
   - https://help.prusa3d.com/article/elephant-foot-compensation_114487
   - "experience: sections of a published print-in-place flexi toy's segment joints, measured along each axis and normal to the faces"
-related: [flexi-chain-joints, printed-part-count, joints, fit-derivation, fdm-first-layer-and-warping, fdm-bridging-and-sacrificial-layers, fdm-hole-accuracy, overhangs-and-print-orientation, gears, mechanism-verification, flexures-and-living-hinges, mass-properties-and-measurement]
-updated: 2026-09-28
+related: [flexi-chain-joints, printed-part-count, joints, fit-derivation, fdm-first-layer-and-warping, fdm-bridging-and-sacrificial-layers, fdm-hole-accuracy, overhangs-and-print-orientation, gears, mechanism-verification, flexures-and-living-hinges, mass-properties-and-measurement, ball-and-socket-joints, posable-figure-joints]
+updated: 2026-10-01
 ---
 
 # Print-in-place mechanisms
@@ -105,6 +105,7 @@ if it is on the bed.
   equator's 45° line so the lip itself is self-supporting. A socket closing
   more than half the ball cannot be assembled, but printed in place it can —
   that is the reason to print it in place ([[joints#revolute-joints]]).
+  Swing, holding torque and forms: [[ball-and-socket-joints]].
 - **Captive gears.** Gear teeth take `xy` on the flanks **in addition to**
   the gear's own backlash; the face-to-housing gap under each gear takes `z`.
   Print gear axes vertical so teeth are extruded profiles and nothing

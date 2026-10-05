@@ -60,6 +60,37 @@ class LoadWishReferencesTest(unittest.TestCase):
         self.assertEqual(files["ref-02-front.png"], front.read_bytes())
         self.assertEqual(load_wish_references([]), ())
 
+    def test_a_file_already_named_for_its_place_keeps_its_name(self):
+        # A Design Contract names its images ref-NN-<slug>; passed in order,
+        # each must seal under that exact name, or Make cannot find its label.
+        assembly = self._image("ref-01-broken-god.png")
+        wing = self._image("ref-02-wing.png", size=(32, 32))
+
+        loaded = load_wish_references([assembly, wing])
+
+        self.assertEqual(
+            [item.reference.name for item in loaded],
+            ["ref-01-broken-god.png", "ref-02-wing.png"],
+        )
+
+    def test_a_place_name_keeps_a_long_slug_and_double_hyphens_unchanged(self):
+        # Contract file names allow 64-character slugs and runs of hyphens;
+        # neither may be rewritten, or the name no longer matches the contract.
+        long_name = "ref-01-" + "a" * 60 + ".png"
+        hyphens = "ref-02-wing--left.png"
+        loaded = load_wish_references(
+            [self._image(long_name), self._image(hyphens, size=(32, 32))]
+        )
+
+        self.assertEqual([item.reference.name for item in loaded], [long_name, hyphens])
+
+    def test_a_ref_prefix_for_another_place_is_kept_as_part_of_the_slug(self):
+        misplaced = self._image("ref-05-spine.png")
+
+        loaded = load_wish_references([misplaced])
+
+        self.assertEqual(loaded[0].reference.name, "ref-01-ref-05-spine.png")
+
     def test_unsupported_or_unreadable_files_are_rejected_by_name(self):
         gif = self._image("spinner.gif")
         text = self.root / "notes.txt"

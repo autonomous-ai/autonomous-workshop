@@ -236,10 +236,11 @@ def generate(project, *, selections=None, frames=8, view="iso", size=600, deadli
     rows = []
     for identity, occurrences in states:
         # Bound by hash only: the state never reaches disk, and validation
-        # rebuilds it from the same declared poses.
+        # rebuilds it from the same declared poses. Its size is the assembly's
+        # own tessellation, so no fixed byte limit applies: a presentation
+        # must never make a run change locked geometry to fit (ADR 0060, #93).
+        # The work is bounded by the state count and the deadline instead.
         data = tool["state_bytes"](occurrences)
-        if len(data) > 20 * 1024 * 1024:
-            raise ValueError("motion state exceeds the 20 MiB reconciliation limit")
         rows.append({**identity, "sha256": hashlib.sha256(data).hexdigest()})
     evidence = {"schema_version": 2, "kind": "declared-cad-motion-animation", "sources": source_hashes,
                 "assembly_entry": entry, "states": rows, "render": render,

@@ -2,13 +2,17 @@
 # (case and accents ignored, whole words) also searches every other member.
 # Add a group whenever a search misses a page that exists. Avoid members that
 # are common words in unrelated senses, or every query containing them expands.
+# A member typed inside a longer typed member does not call its own group
+# ("split pin" never calls the "split" of parting lines), so a single common
+# word is safe beside a phrase; alone it still expands every query it is in
+# ("lamp socket", not "socket").
 
 shaft | axle | spindle | arbor
 joint | pivot | kinematic pair
 revolute | hinge | pivot
 prismatic | slide | slider | rail | guide
 hinge | knuckle | living hinge
-ball joint | socket joint
+ball joint | socket joint | spherical joint | ball and socket | ball-and-socket
 pin | dowel
 key | keyway | d-flat | d-shaft
 ball bearing | bearing | roller bearing
@@ -50,7 +54,7 @@ overhang | teardrop
 # printing and part design
 wall | wall thickness | minimum wall | thin wall
 hollow | shell | shelling | infill
-knife edge | sliver | feather edge | taper
+knife edge | sliver | feather edge
 bridge | ledge | unsupported | support material
 orientation | print pose | build direction
 split | part count | decomposition | parting line | seam
@@ -79,7 +83,7 @@ plan view | top view
 
 # electronics
 lamp | bulb | emitter
-socket | receiver | lamp holder
+lamp socket | bulb socket | receiver | lamp holder
 twist-lock | bayonet | quarter turn
 coupon | test print | fit test
 wire | cable | loom | harness
@@ -290,5 +294,52 @@ sandwich panel | honeycomb core | sandwich core
 topology optimisation | topology optimization | generative design
 webbing | strap | strapping
 side release buckle | quick release buckle | ladder lock | tri-glide | cam buckle
-hook and loop | velcro
+hook and loop | hook-and-loop | velcro
 cord lock | cord stopper
+
+# joint variants
+split pin | cotter pin
+r-clip | r-pin | hairpin clip | hairpin cotter | hitch pin clip | spring cotter | bridge pin
+knuckle joint | fork and eye | clevis joint
+rod end | heim joint | rose joint | spherical rod end
+gooseneck | goose neck | loc-line | segmented hose | modular hose | snake arm
+click joint | clicky joint | ratchet joint
+bjd | ball-jointed doll | ball jointed doll | strung doll
+double-jointed | double hinge | double joint
+ball head | ballhead | tripod head
+articulation | posable | poseable | points of articulation | action figure
+joinery | woodworking joint | wood joint | carpentry joint
+box joint | finger joint | comb joint
+mortise | mortice
+half-lap | halving joint | lap joint
+drawbore | draw bore | draw pin
+bowtie | butterfly key | dutchman
+scarf joint | splice joint
+lazy susan | turntable bearing | swivel plate
+slewing ring | slew ring | slewing bearing
+slip ring | rotary electrical joint | rotating electrical connector
+lazy tongs | scissor linkage | x-linkage | extending arm
+pantograph | copying linkage | scaling linkage
+rolling joint | rolling contact joint | rolling-contact joint | core joint | xr joint
+jacob's ladder | tumbling blocks | two-way hinge
+cross-spring pivot | cross-axis pivot | cross-strip pivot | free-flex pivot
+crossed strap | crossed band | crossed ligament
+dog clutch | jaw clutch | claw clutch | claw coupling | positive clutch
+set screw | grub screw | setscrew
+cv joint | constant velocity joint | constant-velocity joint | homokinetic joint
+clamp hub | split hub | clamping hub | clamp collar
+roll pin | spring pin | coiled pin | slotted pin
+keyless bushing | locking assembly | shrink disc | shrink disk
+hirth joint | hirth coupling | curvic coupling | face spline | rosette joint
+shift fork | selector fork | shifter yoke
+telescoping | telescopic | extendable pole
+snap button | spring button | valco button
+flip lock | lever lock | cam lever clamp
+fir tree clip | christmas tree clip | pine tree clip
+push rivet | snap rivet | plastic rivet | panel rivet
+press stud | snap fastener | popper
+cross axle | plus axle | x axle
+interrupted thread | interrupted screw | breech lock
+dual lock | mushroom fastener | reclosable fastener
+dzus | quarter-turn fastener | turnlock | cowl fastener
+child resistant | child proof | push and turn

@@ -44,7 +44,11 @@ class ClaudeAgentProjectionTest(unittest.TestCase):
         self.assertEqual(first, project_agents(".claude/agents", sources))
         self.assertEqual(
             sorted(first),
-            [".claude/agents/component-reviewer.md", ".claude/agents/component-worker.md"],
+            [
+                ".claude/agents/component-reviewer.md",
+                ".claude/agents/component-worker.md",
+                ".claude/agents/contract-reviewer.md",
+            ],
         )
         self.assertEqual(project_agents(".codex/agents", sources), {})
         self.assertEqual(project_agents(".grok/agents", sources), {})

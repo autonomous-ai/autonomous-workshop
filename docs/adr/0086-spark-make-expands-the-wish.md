@@ -1,4 +1,4 @@
-# ADR 0081: Spark Make expands the Wish before building
+# ADR 0086: Spark Make expands the Wish before building
 
 - Status: Accepted
 - Date: 2026-09-25

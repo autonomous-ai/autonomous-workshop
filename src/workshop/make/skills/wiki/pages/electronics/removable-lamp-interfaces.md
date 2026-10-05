@@ -6,8 +6,8 @@ sources:
   - skills/electromechanical-integration/references/lighting-discovery.md
   - skills/cad/references/motion-manifests.md
   - "experience: CAD booleans that could not predict shrinkage, elephant foot or contact spring force at a printed receiver"
-related: [lighting-design, electrical-component-selection, joints, mechanism-verification]
-updated: 2026-09-23
+related: [lighting-design, electrical-component-selection, joints, mechanism-verification, bayonet-and-twist-locks]
+updated: 2026-10-01
 ---
 
 # Removable lamp and socket interfaces

@@ -10,8 +10,8 @@ sources:
   - https://en.wikipedia.org/wiki/Density (steel 7850, lead 11340, brass 8600, zinc 7000, sand 1600–2000 kg/m³)
   - .venv/lib/python3.12/site-packages/build123d/topology/three_d.py (Solid.center, CenterOf.MASS via GProp, density 1)
   - .venv/lib/python3.12/site-packages/build123d/topology/shape_core.py (Shape.compute_mass, Shape.combined_center)
-related: [filament-properties, toy-safety-constraints, fdm-first-layer-and-warping, perimeters-infill-and-strength, wheeled-vehicles, handheld-ergonomics, perspective-and-hidden-views, exact-constraint-and-kinematic-mounts, counterweights-and-gravity-balance]
-updated: 2026-09-23
+related: [filament-properties, toy-safety-constraints, fdm-first-layer-and-warping, perimeters-infill-and-strength, wheeled-vehicles, handheld-ergonomics, perspective-and-hidden-views, exact-constraint-and-kinematic-mounts, counterweights-and-gravity-balance, swivels-and-turntables]
+updated: 2026-10-01
 ---
 
 # Stability and tipping

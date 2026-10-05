@@ -34,11 +34,18 @@ from workshop.errors import (
 )
 from workshop.make.revision import MAKE_INVENT_REVISION_CAPABILITY_PATH
 from workshop.make.role_agents import (
+    COMPONENT_WORKER,
     MAKE_ROLE_AGENT_NAMES,
     make_role_agent_path,
     parse_make_role_agent_bytes,
 )
 from workshop._validation import require_sha256
+from workshop.make.role_guard import (
+    MAKE_ROUND_GUARD_MANAGER_IDS,
+    REVIEWER_BINDING_MANAGER_IDS,
+    install_make_round_guard,
+    verify_make_round_guard,
+)
 from workshop.runtime.agent_projection import (
     CLAUDE_AGENT_DIRECTORY,
     project_agents,
@@ -63,6 +70,7 @@ from workshop.runtime.project_boundary import (
     PRODUCT_RUN_ROOT_MARKER_BYTES,
 )
 from workshop.wish import Wish
+from workshop.wish.design_contract import CAMERA_SCHEMA_VERSION, reference_camera
 from workshop.wish.contracts import (
     MAX_WISH_REFERENCE_BYTES,
     MAX_WISH_REFERENCE_TOTAL_BYTES,
@@ -248,6 +256,13 @@ def _sha256(value: bytes) -> str:
 #: all three shapes, so a run started before the policy existed keeps working
 #: unchanged and is never silently upgraded.
 MAKE_OPTIONS_NAME = "MAKE-OPTIONS.json"
+# Host-owned camera-only amendments of a schema 3 Design Contract (ADR 0083).
+AMENDMENTS_NAME = "CONTRACT-AMENDMENTS.json"
+
+
+def _plain_angle(value: Any) -> Any:
+    number = float(value)
+    return int(number) if number.is_integer() else number
 
 
 def _make_options_bytes(*, check_motion: bool, carry_unchanged: bool) -> bytes:
@@ -837,6 +852,12 @@ class AgentRunCheckpoint:
     # with an exact number. Neither set means the run keeps its frozen policy.
     turn_seconds: Optional[int] = None
     turn_untimed: bool = False
+    # The sha256 of the make_round guard hook sealed in host state (ADR 0080);
+    # None for a run created without one.
+    make_round_guard_sha256: Optional[str] = None
+    # Whether Make acceptance binds each Component Review to one proven
+    # Component Reviewer (issue #77); frozen at creation, False for older runs.
+    component_reviewer_binding: bool = False
 
     @property
     def complete(self) -> bool:
@@ -884,9 +905,12 @@ class AgentRun:
         wish_reference_files: Optional[Mapping[str, bytes]] = None,
         revision_snapshot: Optional[bytes] = None,
         make_role_agents: Optional[Mapping[str, bytes]] = None,
+        make_round_guard: bool = False,
     ) -> "AgentRun":
         if type(check_motion) is not bool:
             raise ContractError("agent run check_motion must be boolean")
+        if type(make_round_guard) is not bool:
+            raise ContractError("agent run make_round_guard must be boolean")
         # The fixed Make roles (ADR 0077) sit beside the Inventor roster in
         # ``.codex/agents``. A run created without them keeps the roster-only
         # directory it always had.
@@ -899,6 +923,12 @@ class AgentRun:
             parse_make_role_agent_bytes(role_name, role_bytes)
             role_agent_files.append(
                 (PurePosixPath(make_role_agent_path(role_name)), role_bytes, 0o400)
+            )
+        # The guard (ADR 0080) admits Component rounds only from the Component
+        # Worker, so it needs that role and a runtime whose hooks name it.
+        if make_round_guard and COMPONENT_WORKER not in make_role_agents:
+            raise ContractError(
+                "the make_round guard needs the Component Worker role agent"
             )
         if type(carry_unchanged) is not bool:
             raise ContractError("agent run carry_unchanged must be boolean")
@@ -930,6 +960,10 @@ class AgentRun:
             reasoning_effort=manager_reasoning_effort,
         )
         selected_manager = selected_runtime.spec
+        if make_round_guard and selected_manager.manager_id not in MAKE_ROUND_GUARD_MANAGER_IDS:
+            raise ContractError(
+                "the make_round guard needs a Codex or Claude Code Workshop Manager"
+            )
         if required_inventor_id is not None and (
             not isinstance(required_inventor_id, str)
             or _AGENT_SKILL_NAME.fullmatch(required_inventor_id) is None
@@ -1356,6 +1390,12 @@ class AgentRun:
         if turn_untimed or turn_seconds is not None:
             # Absent means the frozen policy decides; ``null`` means no wall clock.
             core["turn_seconds"] = None if turn_untimed else turn_seconds
+        if make_round_guard:
+            # Host state, never the workspace, holds the hook and its nonces.
+            core["make_round_guard_sha256"] = install_make_round_guard(selected_host)
+            if selected_manager.manager_id in REVIEWER_BINDING_MANAGER_IDS:
+                # Only a runtime whose hooks record subagent starts and reads.
+                core["component_reviewer_binding"] = True
         checkpoint_sha256 = cls._write_checkpoint_file(
             selected_host / "agent-run.json", core
         )
@@ -1511,6 +1551,10 @@ class AgentRun:
             expected_fields.add("needs")
         if "turn_seconds" in payload:
             expected_fields.add("turn_seconds")
+        if "make_round_guard_sha256" in payload:
+            expected_fields.add("make_round_guard_sha256")
+        if "component_reviewer_binding" in payload:
+            expected_fields.add("component_reviewer_binding")
         if set(payload) != expected_fields:
             raise StateConflict("agent run checkpoint fields are invalid")
         if (
@@ -1575,6 +1619,21 @@ class AgentRun:
                 or not MIN_AGENT_TURN_SECONDS <= boundary <= MAX_NATIVE_TURN_SECONDS
             ):
                 raise StateConflict("agent run native turn boundary is invalid")
+        if "make_round_guard_sha256" in payload:
+            try:
+                require_sha256(
+                    payload["make_round_guard_sha256"], "make_round guard sha256"
+                )
+            except ContractError as exc:
+                raise StateConflict("agent run make_round guard binding is invalid") from exc
+            verify_make_round_guard(
+                self.host_state_root, payload["make_round_guard_sha256"]
+            )
+        if "component_reviewer_binding" in payload and (
+            payload["component_reviewer_binding"] is not True
+            or "make_round_guard_sha256" not in payload
+        ):
+            raise StateConflict("agent run reviewer binding is invalid")
         _identifier(payload["product_id"], "agent run product_id")
         _positive_int(payload["max_rounds"], "agent run max_rounds", 100)
         expected_root = _sha256(str(self.run_root).encode("utf-8"))
@@ -1988,27 +2047,232 @@ class AgentRun:
                                 "sha256": digest, "mode": 0o400})
         if not changes:
             return ()
+        self._rebind_inputs(
+            payload, by_path, writes, removals,
+            {"correction": "domain-skill-refresh", "reason": reason.strip(), "changes": changes},
+            label="domain skill refresh",
+        )
+        return tuple(changes)
+
+    def amend_reference_camera(
+        self, file_name: str, camera: Sequence[float], *, reason: str
+    ) -> Optional[dict[str, Any]]:
+        """Amend one sealed reference's Reference Camera (ADR 0083).
+
+        A Component Reviewer's camera mismatch stops the run with a need; the
+        build-a-toy agent answers it with a corrected camera for that one
+        reference. WISH.json, the contract's requirements and every image
+        stay byte for byte as sealed: the host writes the run-root
+        ``CONTRACT-AMENDMENTS.json`` that make_round reads beside them,
+        rebinds it in the tamper-checked input manifest, and appends one
+        owner-only host-correction record naming the file and both cameras.
+        Returns that record, or None when the reference already shows from
+        ``camera``.
+        """
+
+        if not isinstance(reason, str) or not 1 <= len(reason.strip()) <= 512:
+            raise ContractError("reference camera amendment reason must be a short string")
+        payload = self._load()
+        if payload["status"] == "complete":
+            raise TransitionError("a completed agent run has no Reference Camera to amend")
+        if payload["stage"] != "make":
+            raise TransitionError("a Reference Camera is amended only while Make is open")
+        by_path: dict[str, dict[str, Any]] = {
+            item["path"]: dict(item) for item in payload["inputs"]
+        }
+        wish_bytes = (self.run_root / "WISH.json").read_bytes()
+        bound = by_path.get("WISH.json")
+        if bound is None or _sha256(wish_bytes) != bound["sha256"]:
+            raise StateConflict("WISH.json differs from its frozen input")
+        context = json.loads(wish_bytes).get("context") or {}
+        contract = context.get("design_contract") if isinstance(context, Mapping) else None
+        schema = contract.get("schema_version") if isinstance(contract, Mapping) else None
+        if type(schema) is not int or schema < CAMERA_SCHEMA_VERSION:
+            raise ContractError(
+                "only a run sealed with a schema 3 Design Contract or later has Reference Cameras to amend"
+            )
+        sealed = {
+            item["file"]: item for item in contract.get("references") or ()
+            if isinstance(item, Mapping) and isinstance(item.get("file"), str)
+        }
+        if file_name not in sealed:
+            raise ContractError(
+                "the sealed Design Contract has no reference %r; it lists %s"
+                % (file_name, ", ".join(sorted(sealed)))
+            )
+        if reference_camera(list(camera)) is None:
+            raise ContractError(
+                "a Reference Camera is AZ,EL in degrees, AZ in -180..180 and EL in -90..90"
+            )
+        new = [_plain_angle(value) for value in camera]
+        path = AMENDMENTS_NAME
+        previous_input = by_path.get(path)
+        target = self.run_root / path
+        if previous_input is None:
+            if target.exists() or target.is_symlink():
+                raise StateConflict("untracked %s blocks a Reference Camera amendment" % path)
+            document: dict[str, Any] = {
+                "schema_version": 1, "reference_cameras": {}, "amendments": [],
+            }
+        else:
+            content = target.read_bytes()
+            if _sha256(content) != previous_input["sha256"]:
+                raise StateConflict("%s differs from its frozen input" % path)
+            document = json.loads(content)
+        cameras = dict(document["reference_cameras"])
+        old = cameras.get(file_name, sealed[file_name].get("camera"))
+        if old == new:
+            return None
+        cameras[file_name] = new
+        amendment = {
+            "file": file_name, "shows": sealed[file_name].get("shows"),
+            "from": old, "to": new, "sealed": sealed[file_name].get("camera"),
+        }
+        document = {
+            # Issue #100: an owner amendment recorded earlier keeps its keys.
+            **document,
+            "schema_version": 1,
+            "reference_cameras": cameras,
+            "amendments": [*document["amendments"], amendment],
+        }
+        content = (
+            json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n"
+        ).encode("utf-8")
+        digest = _sha256(content)
+        by_path[path] = {"path": path, "sha256": digest, "size": len(content), "mode": 0o400}
+        change = {
+            "path": path,
+            "previous_sha256": None if previous_input is None else previous_input["sha256"],
+            "previous_mode": None if previous_input is None else previous_input["mode"],
+            "sha256": digest, "mode": 0o400,
+        }
+        return self._rebind_inputs(
+            payload, by_path, [(PurePosixPath(path), content, 0o400)], [],
+            {
+                "correction": "reference-camera-amendment", "reason": reason.strip(),
+                "changes": [change], "wish_sha256": bound["sha256"], **amendment,
+            },
+            label="Reference Camera amendment",
+        )
+
+    def amendments_document(self) -> Optional[dict[str, Any]]:
+        """The run root's host-written ``CONTRACT-AMENDMENTS.json``, verified
+        against its input binding, or None when the host has written none."""
+
+        payload = self._load()
+        bound = {item["path"]: item for item in payload["inputs"]}.get(AMENDMENTS_NAME)
+        target = self.run_root / AMENDMENTS_NAME
+        if bound is None:
+            if target.exists() or target.is_symlink():
+                raise StateConflict("untracked %s blocks a contract amendment" % AMENDMENTS_NAME)
+            return None
+        content = target.read_bytes()
+        if target.is_symlink() or _sha256(content) != bound["sha256"]:
+            raise StateConflict("%s differs from its frozen input" % AMENDMENTS_NAME)
+        return json.loads(content)
+
+    def record_owner_contract_amendment(
+        self,
+        amendment: Mapping[str, Any],
+        *,
+        objective: Optional[str],
+        reason: str,
+    ) -> dict[str, Any]:
+        """Record one Owner Contract Amendment (issue #100) the caller built
+        and checked against the contract this run reads now.
+
+        WISH.json and every image keep their bytes: the host appends the
+        amendment to the run root's ``CONTRACT-AMENDMENTS.json`` (and, for a
+        run whose objective is its contract, the amended objective with the
+        run's sealed name line), rebinds that file in the tamper-checked
+        input manifest, and appends one owner-only host-correction record
+        holding the same amendment. Returns that record.
+        """
+
+        if not isinstance(reason, str) or not 1 <= len(reason.strip()) <= 512:
+            raise ContractError("owner contract amendment reason must be a short string")
+        if not isinstance(amendment, Mapping) or amendment.get("kind") != "owner-contract-amendment":
+            raise ContractError("owner contract amendment is invalid")
+        if objective is not None and not isinstance(objective, str):
+            raise ContractError("amended objective must be text")
+        payload = self._load()
+        if payload["status"] == "complete":
+            raise TransitionError("a completed agent run has no contract to amend")
+        if payload["stage"] != "make":
+            raise TransitionError("a Design Contract is amended only while Make is open")
+        by_path: dict[str, dict[str, Any]] = {
+            item["path"]: dict(item) for item in payload["inputs"]
+        }
+        wish_bytes = (self.run_root / "WISH.json").read_bytes()
+        bound = by_path.get("WISH.json")
+        if bound is None or _sha256(wish_bytes) != bound["sha256"]:
+            raise StateConflict("WISH.json differs from its frozen input")
+        path = AMENDMENTS_NAME
+        previous_input = by_path.get(path)
+        document = self.amendments_document() or {
+            "schema_version": 1, "reference_cameras": {}, "amendments": [],
+        }
+        owners = list(document.get("owner_amendments") or ())
+        if amendment.get("owner_amendment") != len(owners) + 1:
+            raise StateConflict("owner contract amendment is out of order")
+        document = {
+            **document,
+            "owner_amendments": [*owners, dict(amendment)],
+            **({"objective": objective} if objective is not None else {}),
+        }
+        content = (
+            json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n"
+        ).encode("utf-8")
+        digest = _sha256(content)
+        by_path[path] = {"path": path, "sha256": digest, "size": len(content), "mode": 0o400}
+        change = {
+            "path": path,
+            "previous_sha256": None if previous_input is None else previous_input["sha256"],
+            "previous_mode": None if previous_input is None else previous_input["mode"],
+            "sha256": digest, "mode": 0o400,
+        }
+        return self._rebind_inputs(
+            payload, by_path, [(PurePosixPath(path), content, 0o400)], [],
+            {
+                "correction": "owner-contract-amendment", "reason": reason.strip(),
+                "changes": [change], "wish_sha256": bound["sha256"],
+                "amendment": dict(amendment),
+            },
+            label="owner contract amendment",
+        )
+
+    def _rebind_inputs(
+        self,
+        payload: Mapping[str, Any],
+        by_path: Mapping[str, Mapping[str, Any]],
+        writes: Sequence[tuple[PurePosixPath, bytes, int]],
+        removals: Sequence[PurePosixPath],
+        correction: Mapping[str, Any],
+        *,
+        label: str,
+    ) -> dict[str, Any]:
+        """Write host-owned input bytes, rebind the input manifest in a new
+        checkpoint revision, and append the host-correction record."""
+
         inputs = sorted(by_path.values(), key=lambda item: item["path"])
         if len(inputs) > MAX_AGENT_INPUT_FILES:
-            raise ContractError("domain skill refresh exceeds the agent input file limit")
+            raise ContractError("%s exceeds the agent input file limit" % label)
         total = sum(
             item["size"] for item in inputs
             if not _is_wish_reference_path(item["path"]) and item["path"] != REVISION_INPUT
         )
         if total > MAX_AGENT_INPUT_BYTES:
-            raise ContractError("domain skill refresh exceeds the agent input byte budget")
+            raise ContractError("%s exceeds the agent input byte budget" % label)
 
         record = {
             "kind": "autonomous-workshop.host-correction",
             "schema_version": 1,
-            "correction": "domain-skill-refresh",
-            "reason": reason.strip(),
+            **correction,
             "previous_checkpoint_sha256": payload["checkpoint_sha256"],
             # The successor hash is not known until checkpoint writing, but
             # every hash has the same encoded length. Refuse an oversized
             # correction before modifying the immutable tools or checkpoint.
             "checkpoint_sha256": payload["checkpoint_sha256"],
-            "changes": changes,
         }
         _host_correction_line(record)
 
@@ -2060,7 +2324,7 @@ class AgentRun:
         self._write_next(payload, updated)
         record["checkpoint_sha256"] = self._expected_checkpoint_sha256
         self.record_host_correction(record)
-        return tuple(changes)
+        return record
 
     def record_host_correction(self, record: Mapping[str, Any]) -> None:
         """Append one owner-only ledger line describing a host correction."""
@@ -2162,6 +2426,8 @@ class AgentRun:
             token_budgeted=_uses_token_budget(payload, self._budget_authority),
             turn_seconds=payload.get("turn_seconds"),
             turn_untimed="turn_seconds" in payload and payload["turn_seconds"] is None,
+            make_round_guard_sha256=payload.get("make_round_guard_sha256"),
+            component_reviewer_binding=payload.get("component_reviewer_binding", False),
         )
 
     def expected_gate_subject_sha256(self) -> str:

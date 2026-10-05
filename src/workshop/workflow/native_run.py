@@ -85,6 +85,31 @@ from workshop.release.renders import (
 )
 from workshop.make.native import NativeMade, validate_build_groups
 from workshop.make.role_agents import make_role_agent_files
+from workshop.make.blocked_reports import (
+    run_blocked_reports,
+    verify_no_open_blocked_reports,
+)
+from workshop.make.contract_amendments import (
+    AMENDMENT_LEDGER_NAME,
+    OWNER_AMENDMENT_KIND,
+    OWNER_AMENDMENTS_MARKER,
+    contract_digest,
+    contract_in_effect,
+    owner_affects,
+    owner_closure_refusal,
+    owner_contract_changes,
+    owner_objective,
+    read_amendment_ledger,
+    replay_contract_amendments,
+    run_contract_amendments,
+    verify_contract_amendments,
+)
+from workshop.make.role_guard import (
+    contract_reviewer_check,
+    MAKE_ROUND_GUARD_MANAGER_IDS,
+    verify_component_round_nonces,
+    verify_make_round_guard,
+)
 from workshop.make.revision import (
     MAKE_INVENT_REVISION_CAPABILITY_PATH,
     NativeMakeInventRevision,
@@ -174,6 +199,7 @@ from workshop.runtime import (
 from workshop.runtime.managers import (
     MAX_NATIVE_TURN_SECONDS,
     NATIVE_TOKEN_USAGE_FIELDS,
+    NativeManagerUsageLimitError,
     NativeSessionLauncher,
 )
 from workshop.runtime.agent_assets import (
@@ -201,6 +227,8 @@ from workshop.runtime.progress import (
     write_native_progress,
 )
 from workshop.wish import Wish
+from workshop.wish.contracts import MAX_OBJECTIVE_CHARS
+from workshop.wish.design_contract import parse_design_contract
 from workshop.workflow.agent_run import (
     AgentArtifact,
     AgentOutcome,
@@ -373,6 +401,7 @@ _LEGACY_RELEASE_UPGRADE_NEED = (
 _PRODUCT_RUN_FINALIZER_INPUT = (
     ".agents/skills/autonomous-workshop/scripts/stage_proposal.py"
 )
+_PRODUCT_RUN_MAKE_ROUND_INPUT = ".agents/skills/make-round/scripts/make_round"
 _PRODUCT_RUN_PDF_VALIDATOR_INPUT = (
     ".agents/skills/autonomous-workshop/scripts/pdf_validator.py"
 )
@@ -500,6 +529,10 @@ class _VerifiedRelease:
 
 class _RecoverableNativeTurn(WorkshopError):
     """Internal typed signal for a checkpoint-bound turn continuation."""
+
+
+class _NativeUsageLimitStop(WorkshopError):
+    """Internal typed signal: the provider's account usage limit refused a turn."""
 
 
 class _MakeProposalRejected(Exception):
@@ -2695,6 +2728,442 @@ def _likeness_acceptance_history(host_state_root: Path) -> list[dict[str, Any]]:
     if not isinstance(acceptances, list):
         raise StateConflict("Make gate receipt is malformed: %s" % latest.name)
     return acceptances
+
+
+_COMPONENT_ACCEPTANCE_FIELDS = frozenset(
+    {"label", "scope", "reviewer", "shape_rounds", "reason", "accepted_by"}
+)
+_REFERENCE_CONFLICT_FIELDS = frozenset(
+    {"label", "scope", "file", "round", "reviewer", "reference", "contract"}
+)
+_COMPONENT_SHAPE_REPAIR_LIMIT = 5
+_WORKSHOP_MANAGER_NAMES = frozenset({"workshop-manager", "manager", "workshop manager"})
+
+
+def _verify_make_round_workers(
+    run_root: Path,
+    host_state_root: Path,
+    guard_sha256: Optional[str],
+    made: NativeMade,
+    *,
+    require_every_component: bool = False,
+    bind_reviewers: bool = False,
+) -> None:
+    """Refuse Make output holding a Component round no worker ran (ADR 0080).
+
+    A run created without the make_round guard keeps its frozen behaviour. A
+    changed guard is a host-state conflict; a round without an issued worker
+    nonce is a Make rejection the Manager repairs by rerunning it through a
+    component-worker. With ``bind_reviewers`` (issue #77) a recorded
+    Component Review whose reviewer is unproven is refused the same way.
+    """
+
+    if guard_sha256 is None:
+        return
+    verify_make_round_guard(host_state_root, guard_sha256)
+    project = (
+        Path(run_root)
+        .joinpath(*PurePosixPath(made.product_root).parts)
+        .joinpath(*PurePosixPath(made.cad_project_path).parts)
+    )
+    verify_component_round_nonces(
+        project,
+        host_state_root,
+        run_root=Path(run_root),
+        require_every_component=require_every_component,
+        bind_reviewers=bind_reviewers,
+    )
+
+
+def _made_component_acceptances(product: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Components accepted at the shape-repair limit, from sealed product metadata.
+
+    The Make finalizer copies them from the final verifier's hash-bound
+    ``component-acceptance.json``. Each one is a Component whose independent
+    reviewer still disagreed after the shape-repair allowance was spent. The
+    host checks their shape again before sealing them into its own receipt,
+    so a report never repeats an unbounded, self-reviewed or self-labelled
+    "user" acceptance.
+    """
+
+    raw = product.get("component_acceptances", ())
+    if isinstance(raw, (str, bytes)) or not isinstance(raw, Sequence) or len(raw) > 64:
+        raise ContractError("Made component acceptances are invalid")
+    acceptances: list[dict[str, Any]] = []
+    for item in raw:
+        if not isinstance(item, Mapping) or set(item) != _COMPONENT_ACCEPTANCE_FIELDS:
+            raise ContractError("Made component acceptance fields are invalid")
+        label, scope, reason = item["label"], item["scope"], item["reason"]
+        reviewer, shape_rounds = item["reviewer"], item["shape_rounds"]
+        if (
+            not isinstance(label, str) or not 1 <= len(label.strip()) <= 200
+            or not label.startswith("geometry:")
+            or not isinstance(scope, str) or len(scope) > 200
+            or not scope.startswith("component:")
+            or not scope[len("component:"):].strip()
+            or not isinstance(reviewer, str) or not 1 <= len(reviewer.strip()) <= 200
+            or reviewer.strip().lower() in _WORKSHOP_MANAGER_NAMES
+            or type(shape_rounds) is not int
+            or shape_rounds < _COMPONENT_SHAPE_REPAIR_LIMIT
+            or not isinstance(reason, str) or not 1 <= len(reason.strip()) <= 1000
+            or item["accepted_by"] != "workshop-manager"
+        ):
+            raise ContractError("Made component acceptance is invalid")
+        acceptances.append({key: item[key] for key in sorted(_COMPONENT_ACCEPTANCE_FIELDS)})
+    return acceptances
+
+
+def _made_reference_conflicts(product: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Reference Conflicts from sealed product metadata (ADR 0084).
+
+    The Make finalizer copies them from the final verifier's hash-bound
+    ``component-acceptance.json``. Each is a place where a Component's
+    reference image shows what its Design Contract forbids; the contract
+    won, and the host reports the conflict so the image can be corrected.
+    The host checks their shape again before sealing them into its receipt.
+    """
+
+    raw = product.get("reference_conflicts", ())
+    if isinstance(raw, (str, bytes)) or not isinstance(raw, Sequence) or len(raw) > 64:
+        raise ContractError("Made reference conflicts are invalid")
+    conflicts: list[dict[str, Any]] = []
+    for item in raw:
+        if not isinstance(item, Mapping) or set(item) != _REFERENCE_CONFLICT_FIELDS:
+            raise ContractError("Made reference conflict fields are invalid")
+        label, scope, reviewer = item["label"], item["scope"], item["reviewer"]
+        if (
+            not isinstance(label, str) or not 1 <= len(label.strip()) <= 200
+            or not label.startswith("geometry:")
+            or not isinstance(scope, str) or len(scope) > 200
+            or not scope.startswith("component:")
+            or not scope[len("component:"):].strip()
+            or not isinstance(item["file"], str) or not 1 <= len(item["file"].strip()) <= 200
+            or type(item["round"]) is not int or item["round"] < 1
+            or not isinstance(reviewer, str) or not 1 <= len(reviewer.strip()) <= 200
+            or reviewer.strip().lower() in _WORKSHOP_MANAGER_NAMES
+            or any(
+                not isinstance(item[key], str) or not 1 <= len(item[key].strip()) <= 1000
+                for key in ("reference", "contract")
+            )
+        ):
+            raise ContractError("Made reference conflict is invalid")
+        conflicts.append({key: item[key] for key in sorted(_REFERENCE_CONFLICT_FIELDS)})
+    return conflicts
+
+
+_INTERFACE_PROOFS = {
+    "static": "shared-helper-samples",
+    "separable": "keep-out-envelope",
+    "coupled": "pass",
+}
+
+
+def _made_interfaces(product: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """The sealed contract's Interfaces with how each was proven (ADR 0082).
+
+    The Make finalizer copies them from the final verifier's hash-bound
+    ``component-acceptance.json``. The host checks their shape again before
+    sealing them into its own receipt: a Coupled Interface is reported only
+    with a passing interface check.
+    """
+
+    raw = product.get("interfaces", ())
+    if isinstance(raw, (str, bytes)) or not isinstance(raw, Sequence) or len(raw) > 64:
+        raise ContractError("Made interfaces are invalid")
+    interfaces: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in raw:
+        kind = item.get("kind") if isinstance(item, Mapping) else None
+        expected = {"id", "kind", "components", "check"} | (
+            {"yielding", "round"} if kind == "coupled" else set()
+        )
+        if not isinstance(item, Mapping) or set(item) != expected or kind not in _INTERFACE_PROOFS:
+            raise ContractError("Made interface fields are invalid")
+        identifier, components = item["id"], item["components"]
+        if (
+            not isinstance(identifier, str) or not 1 <= len(identifier) <= 200
+            or identifier in seen
+            or not isinstance(components, list) or len(components) < 2
+            or not all(isinstance(entry, str) and 1 <= len(entry) <= 200 for entry in components)
+            or len(set(components)) != len(components)
+            or item["check"] != _INTERFACE_PROOFS[kind]
+            or (kind == "coupled" and (
+                item["yielding"] not in components
+                or type(item["round"]) is not int or item["round"] < 1
+            ))
+        ):
+            raise ContractError("Made interface is invalid")
+        seen.add(identifier)
+        interfaces.append({key: item[key] for key in sorted(expected)})
+    return interfaces
+
+
+def _component_acceptance_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """The accepted Components of the current Make, from the host's own receipt."""
+
+    return _latest_make_check(host_state_root, "component_acceptances")
+
+
+def _reference_conflict_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """The Reference Conflicts of the current Make, from the host's own
+    receipt (ADR 0084)."""
+
+    return _latest_make_check(host_state_root, "reference_conflicts")
+
+
+def _contract_amendment_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """Every Reference Camera amendment the host recorded (ADR 0083), oldest
+    first: the file, what it shows, and the camera before and after."""
+
+    ledger = host_state_root / "host-corrections.jsonl"
+    if not ledger.exists():
+        return []
+    content = _read_stable_private_bytes(ledger, label="host corrections", maximum_bytes=1024 * 1024)
+    amendments = []
+    for line in content.splitlines():
+        record = json.loads(line)
+        if (record.get("kind") == "autonomous-workshop.host-correction"
+                and record.get("correction") == "reference-camera-amendment"):
+            amendments.append({key: record.get(key) for key in ("file", "shows", "from", "to", "sealed")})
+    return amendments
+
+
+def _owner_contract_amendments(host_state_root: Path) -> list[dict[str, Any]]:
+    """Every Owner Contract Amendment the host recorded on resume (issue
+    #100), oldest first, from its own host-correction ledger."""
+
+    ledger = host_state_root / "host-corrections.jsonl"
+    if not ledger.exists():
+        return []
+    content = _read_stable_private_bytes(ledger, label="host corrections", maximum_bytes=1024 * 1024)
+    owners = []
+    for line in content.splitlines():
+        record = json.loads(line)
+        if (record.get("kind") == "autonomous-workshop.host-correction"
+                and record.get("correction") == OWNER_AMENDMENT_KIND
+                and isinstance(record.get("amendment"), dict)):
+            owners.append(record["amendment"])
+    return owners
+
+
+def _verified_owner_contract_amendments(run: AgentRun) -> list[dict[str, Any]]:
+    """The owner amendments the host recorded, refusing a run-root amendments
+    file that does not hold exactly those: what make_round and the finalizer
+    read must be what the host recorded (issue #100)."""
+
+    owners = _owner_contract_amendments(run.host_state_root)
+    document = run.amendments_document()
+    held = list((document or {}).get("owner_amendments") or ())
+    if held != owners:
+        raise StateConflict(
+            "CONTRACT-AMENDMENTS.json does not hold the owner contract amendments the host recorded"
+        )
+    return owners
+
+
+def _owner_amendment_tools_refusal(paths: NativeRunPaths, checkpoint: AgentRunCheckpoint) -> Optional[str]:
+    """Why this run cannot take an Owner Contract Amendment, or None.
+
+    A run's make_round and Make finalizer are frozen at launch. Only tools
+    that carry the owner-amendment marker read the owner's rows; a run
+    materialized before issue #100 would keep building to, and finalizing
+    against, the sealed rows while the host recorded others.
+    """
+
+    for path, label in (
+        (_PRODUCT_RUN_MAKE_ROUND_INPUT, "make_round"),
+        (_PRODUCT_RUN_FINALIZER_INPUT, "Make finalizer"),
+    ):
+        expected = checkpoint.input_sha256s.get(path)
+        target = paths.workspace / path
+        if expected is None or target.is_symlink() or not target.is_file():
+            return "this run carries no %s that reads an owner amendment" % label
+        content = target.read_bytes()
+        if _sha256(content) != expected:
+            raise StateConflict("%s differs from its frozen input" % path)
+        if OWNER_AMENDMENTS_MARKER not in content:
+            return (
+                "this run's %s was materialized before owner contract amendments (issue #100) "
+                "and would keep reading the sealed rows" % label
+            )
+    return None
+
+
+def _record_owner_contract_amendment(
+    paths: NativeRunPaths,
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    amended_text: str,
+) -> dict[str, Any]:
+    """Check the owner's amended contract file against the contract this run
+    reads now and record the difference as an Owner Contract Amendment.
+
+    Refuses a run outside Make, a run without a sealed Design Contract, a run
+    whose frozen tools predate owner amendments, an in-run amendment awaiting
+    its review or a ledger that does not replay, and any change beyond
+    requirement text, Interface text and prose.
+    """
+
+    if checkpoint.stage != "make":
+        raise ContractError(
+            "an owner contract amendment answers a Make need; this run is in %s" % checkpoint.stage
+        )
+    refusal = _owner_amendment_tools_refusal(paths, checkpoint)
+    if refusal is not None:
+        raise ContractError(
+            "--amend-contract refused: %s. Nothing was recorded; relaunch with the amended "
+            "contract" % refusal
+        )
+    sealed, _references = _sealed_contract_inputs(paths.workspace, checkpoint.wish_sha256)
+    if sealed is None:
+        raise ContractError("only a run sealed with a Design Contract has a contract to amend")
+    owners = _verified_owner_contract_amendments(run)
+    # The in-run ledger of the current Make attempt: the owner's rows apply
+    # after every amendment it applied, and close it to further proposals.
+    product = paths.workspace / ("artifacts/make/r%04d/product" % checkpoint.round_index)
+    ledgers = (
+        sorted(
+            path for path in product.rglob(AMENDMENT_LEDGER_NAME)
+            if path.parent.name == "measure" and path.is_file() and not path.is_symlink()
+        )
+        if product.is_dir() and not product.is_symlink()
+        else []
+    )
+    if len(ledgers) > 1:
+        raise ContractError("the current Make attempt has more than one Contract Amendment ledger")
+    amendments: list[dict[str, Any]] = []
+    if ledgers:
+        try:
+            amendments = replay_contract_amendments(
+                read_amendment_ledger(ledgers[0]), sealed, wish_sha256=checkpoint.wish_sha256
+            )
+        except ContractError as exc:
+            raise ContractError("the run's Contract Amendment ledger does not replay: %s" % exc) from exc
+    pending = [item["amendment"] for item in amendments if item["status"] == "proposed"]
+    if pending:
+        raise ContractError(
+            "Contract Amendment %d awaits its Contract Reviewer; resume without --amend-contract "
+            "until it is reviewed" % pending[0]
+        )
+    closure = owner_closure_refusal(amendments, owners)
+    if closure is not None:
+        raise ContractError(closure)
+    current = contract_in_effect(sealed, amendments, owners)
+    wish = _strict_json_bytes((paths.workspace / "WISH.json").read_bytes(), label="materialized Wish")
+    sealed_objective = wish.get("objective")
+    if not isinstance(sealed_objective, str):
+        raise StateConflict("materialized Wish has no objective")
+    document = run.amendments_document() or {}
+    current_objective = document.get("objective", sealed_objective)
+    if not isinstance(current_objective, str):
+        raise StateConflict("CONTRACT-AMENDMENTS.json holds an invalid objective")
+    if not isinstance(amended_text, str) or not amended_text.strip():
+        raise ContractError("the amended contract file is empty")
+    if len(amended_text) > MAX_OBJECTIVE_CHARS:
+        raise ContractError(
+            "the amended contract is longer than a Wish objective (%d characters)" % MAX_OBJECTIVE_CHARS
+        )
+    objective, prose_diff = owner_objective(sealed_objective, current_objective, amended_text)
+    if objective is not None and len(objective) > MAX_OBJECTIVE_CHARS:
+        raise ContractError(
+            "the amended objective is longer than a Wish objective (%d characters)" % MAX_OBJECTIVE_CHARS
+        )
+    amended = parse_design_contract(amended_text).to_dict()
+    changes = owner_contract_changes(current, amended)
+    if not changes and prose_diff is None:
+        raise ContractError(
+            "the amended contract changes nothing the run reads now; nothing was recorded"
+        )
+    after = contract_in_effect(current, (), [{"changes": changes}])
+    record = {
+        "kind": OWNER_AMENDMENT_KIND,
+        "owner_amendment": len(owners) + 1,
+        "source": "owner",
+        "status": "applied",
+        "changes": changes,
+        "affects": owner_affects(current, changes),
+        "contract_sha256": contract_digest(current),
+        "amended_sha256": contract_digest(after),
+        "prose_diff": prose_diff,
+        "objective_sha256": _sha256(current_objective.encode("utf-8")),
+        "amended_objective_sha256": (
+            None if objective is None else _sha256(objective.encode("utf-8"))
+        ),
+        "file_sha256": _sha256(amended_text.encode("utf-8")),
+        "in_run_amendments": len(amendments) if not owners else owners[0]["in_run_amendments"],
+        "make_attempt": "r%04d" % checkpoint.round_index,
+        "wish_sha256": checkpoint.wish_sha256,
+        "at": utc_now(),
+    }
+    run.record_owner_contract_amendment(
+        record,
+        objective=objective,
+        reason="workshop resume --amend-contract (file sha256 %s)" % record["file_sha256"][:12],
+    )
+    return record
+
+
+def _sealed_contract_inputs(
+    run_root: Path, wish_sha256: str
+) -> tuple[Optional[dict[str, Any]], dict[str, tuple[Path, str]]]:
+    """The Design Contract ``WISH.json`` sealed, or None, and each sealed
+    reference file -> its run path and sealed sha256 (ADR 0085)."""
+
+    content = (Path(run_root) / "WISH.json").read_bytes()
+    if _sha256(content) != wish_sha256:
+        raise StateConflict("materialized Wish differs from the run binding")
+    document = _strict_json_bytes(content, label="materialized Wish")
+    context = document.get("context") if isinstance(document, dict) else None
+    contract = context.get("design_contract") if isinstance(context, dict) else None
+    references = {
+        item["name"]: (Path(run_root) / "wish-references" / item["name"], item["sha256"])
+        for item in document.get("references") or ()
+        if isinstance(item, dict) and isinstance(item.get("name"), str)
+        and isinstance(item.get("sha256"), str)
+    }
+    return (contract if isinstance(contract, dict) else None), references
+
+
+def _run_contract_amendments(paths: NativeRunPaths, wish_sha256: str) -> list[dict[str, Any]]:
+    """Every in-run Contract Amendment of the run (ADR 0085), read from its
+    ledgers so a run that stopped before Make acceptance still lists them."""
+
+    try:
+        contract, _references = _sealed_contract_inputs(paths.workspace, wish_sha256)
+    except (OSError, StateConflict, WorkshopError):
+        return []
+    if contract is None:
+        return []
+    return run_contract_amendments(paths.workspace, contract=contract, wish_sha256=wish_sha256)
+
+
+def _interface_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """The proven Interfaces of the current Make, from the host's own receipt."""
+
+    return _latest_make_check(host_state_root, "interfaces")
+
+
+def _latest_make_check(host_state_root: Path, key: str) -> list[dict[str, Any]]:
+    """One list the latest Make gate receipt sealed among its checks."""
+
+    gates = Path(host_state_root) / "gates"
+    if not gates.is_dir():
+        return []
+    receipts = sorted(
+        path for path in gates.iterdir()
+        if path.name.endswith("-make.json") and not path.is_symlink()
+    )
+    if not receipts:
+        return []
+    latest = receipts[-1]
+    try:
+        checks = json.loads(latest.read_bytes().decode("utf-8"))["evidence"]["checks"]
+        values = checks.get(key) or []
+    except (OSError, UnicodeError, ValueError, KeyError, TypeError, AttributeError) as exc:
+        raise StateConflict("Make gate receipt is unreadable: %s" % latest.name) from exc
+    if not isinstance(values, list):
+        raise StateConflict("Make gate receipt is malformed: %s" % latest.name)
+    return values
 
 
 def _best_round(history: Sequence[Mapping[str, Any]]) -> Optional[Mapping[str, Any]]:
@@ -5360,21 +5829,60 @@ def _product_token_observer(paths, checkpoint, budget):
 _CLAUDE_TOKEN_SOURCE = "claude-native-stream-v1"
 
 
+def _resumed_session_tokens(prior, counters, streamed):
+    """One session's running total after a later invocation resumed it.
+
+    The prior charge plus this invocation's streamed requests, raised by the
+    invocation's own counters (whose result totals the whole session). No
+    counter falls below the session's recorded charge.
+    """
+
+    tokens = {key: max(prior[key] + streamed[key], counters[key]) for key in prior}
+    tokens["input_tokens"] = max(
+        tokens["input_tokens"], tokens["cached_input_tokens"] + tokens["cache_write_input_tokens"]
+    )
+    tokens["output_tokens"] = max(tokens["output_tokens"], tokens["reasoning_output_tokens"])
+    return tokens
+
+
 def _claude_token_observer(paths, checkpoint, budget):
     """Charge one Claude invocation's streamed usage to the product allowance.
 
-    Each ``--print`` invocation starts its own count, so it is recorded as one
-    more observed thread beside every earlier invocation of the product. The
-    launcher reports running counters as requests stream in and the final
-    counters once the invocation ends; the ledger is durable per report.
+    The ledger holds one observed thread per native session (#84). A
+    ``--print`` invocation of a new session adds a thread; one that resumes a
+    recorded session replaces that thread's counters with the session's new
+    running total and counts the invocation, because a resumed result totals
+    the whole session. Threads recorded before sessions were named never
+    match, so their recorded charge stays as it was. The launcher reports
+    running counters as requests stream in and the final counters once the
+    invocation ends; the ledger is durable per report.
     """
 
     previous = [] if budget.observation is None else budget.observation["threads"]
     thread_id = "claude-invocation-%06d" % (len(previous) + 1)
     root_thread_id = previous[0]["thread_id"] if previous else thread_id
 
-    def observe(counters, *, final=False):
-        threads = [*previous, {"thread_id": thread_id, "status": "observed", "tokens": dict(counters)}]
+    def observe(counters, *, final=False, session_id=None, streamed=None):
+        index = next((
+            position for position, thread in enumerate(previous)
+            if session_id is not None and thread.get("session_id") == session_id
+        ), None)
+        if index is None:
+            thread = {"thread_id": thread_id, "status": "observed", "tokens": dict(counters),
+                      "invocations": 1}
+            if session_id is not None:
+                thread["session_id"] = session_id
+            threads = [*previous, thread]
+        else:
+            prior = previous[index]
+            threads = list(previous)
+            threads[index] = {
+                **prior,
+                "tokens": _resumed_session_tokens(
+                    prior["tokens"], counters, counters if streamed is None else streamed
+                ),
+                "invocations": prior.get("invocations", 1) + 1,
+            }
         totals = {key: sum(thread["tokens"][key] for thread in threads) for key in counters}
         try:
             budget.observe({
@@ -6855,6 +7363,10 @@ def _launcher_call(
         raise _RecoverableNativeTurn(
             "native %s session did not complete: %s" % (runtime.display_name, exc)
         ) from None
+    except NativeManagerUsageLimitError as exc:
+        raise _NativeUsageLimitStop(
+            "native %s session did not complete: %s" % (runtime.display_name, exc)
+        ) from None
     except (CodexInvocationError, NativeManagerInvocationError) as exc:
         raise WorkshopError(
             "native %s session did not complete: %s" % (runtime.display_name, exc)
@@ -7425,6 +7937,44 @@ def _evaluate_make_stage(
             assignment, invented, expected_round=checkpoint.round_index
         )
         canonical = made.validate_product_tree(run.run_root)
+        _verify_make_round_workers(
+            run.run_root,
+            run.host_state_root,
+            checkpoint.make_round_guard_sha256,
+            made,
+            # Component-first Spark Make builds every Component in a round.
+            require_every_component=checkpoint.effort == "spark",
+            bind_reviewers=checkpoint.component_reviewer_binding,
+        )
+        cad_project = (
+            run.run_root
+            .joinpath(*PurePosixPath(made.product_root).parts)
+            .joinpath(*PurePosixPath(made.cad_project_path).parts)
+        )
+        # Issue #88: no Make acceptance while a Blocked Report is open.
+        blocked_reports = verify_no_open_blocked_reports(
+            cad_project, wish_sha256=checkpoint.wish_sha256,
+        )
+        # ADR 0085: every in-run Contract Amendment replays against the
+        # sealed contract and carries its independent review.
+        sealed_contract, sealed_references = _sealed_contract_inputs(
+            run.run_root, checkpoint.wish_sha256
+        )
+        contract_amendments = verify_contract_amendments(
+            cad_project,
+            contract=sealed_contract,
+            wish_sha256=checkpoint.wish_sha256,
+            references=sealed_references,
+            blocked_reports=blocked_reports,
+            # Issue #100: the owner's amendments, as the host recorded them.
+            owner_amendments=_verified_owner_contract_amendments(run),
+            reviewer_check=(
+                contract_reviewer_check(run.host_state_root)
+                if checkpoint.component_reviewer_binding
+                and checkpoint.make_round_guard_sha256 is not None
+                else None
+            ),
+        )
         # Spark consumes Make's accepted output, not another engineering
         # acceptance pass. Keep only exact-byte and upstream identity checks.
         product_checks = {}
@@ -7441,6 +7991,19 @@ def _evaluate_make_stage(
         likeness_acceptances = _made_likeness_acceptances(made.product)
         if likeness_acceptances:
             product_checks["likeness_acceptances"] = likeness_acceptances
+        component_acceptances = _made_component_acceptances(made.product)
+        if component_acceptances:
+            product_checks["component_acceptances"] = component_acceptances
+        interfaces = _made_interfaces(made.product)
+        if interfaces:
+            product_checks["interfaces"] = interfaces
+        reference_conflicts = _made_reference_conflicts(made.product)
+        if reference_conflicts:
+            product_checks["reference_conflicts"] = reference_conflicts
+        if blocked_reports:
+            product_checks["blocked_reports"] = blocked_reports
+        if contract_amendments:
+            product_checks["contract_amendments"] = contract_amendments
         additional = _manifest_agent_artifacts(
             made.product_root, made.product_manifest
         )
@@ -9474,7 +10037,117 @@ def _rebind_existing_progress(
     tracker.rebind(updated, activity=activity)
 
 
+_NATIVE_SESSION_STOP_NAME = "native-session-stop.json"
+_NATIVE_SESSION_STOP_KIND = "autonomous-workshop.native-session-stop"
+# The only causes a session stop record may name; neither carries provider text.
+_NATIVE_SESSION_STOP_CAUSES = ("usage-limit", "session-ended")
+_USAGE_LIMIT_NEED = (
+    "The native session stopped at the provider account's usage limit; resume "
+    "this run with `workshop resume` after that limit resets."
+)
+
+
+def _clear_native_session_stop(paths: NativeRunPaths) -> None:
+    try:
+        (paths.host_state / _NATIVE_SESSION_STOP_NAME).unlink()
+    except FileNotFoundError:
+        pass
+
+
+def _record_native_session_stop(
+    run: AgentRun, paths: NativeRunPaths, *, cause: str
+) -> None:
+    """Record that this invocation ended while its checkpoint is still active.
+
+    The record binds the exact current checkpoint, so any later checkpoint
+    (a resume's adoption, a stage transition) makes it stale. It is
+    telemetry for ``workshop status`` (issue #94) and never gate evidence.
+    """
+
+    if cause not in _NATIVE_SESSION_STOP_CAUSES:
+        raise ContractError("native session stop cause is not recognized")
+    checkpoint = run.snapshot()
+    if checkpoint.status != "active":
+        _clear_native_session_stop(paths)
+        return
+    _write_private_json(paths.host_state / _NATIVE_SESSION_STOP_NAME, {
+        "schema_version": 1,
+        "kind": _NATIVE_SESSION_STOP_KIND,
+        "product_id": checkpoint.product_id,
+        "wish_sha256": checkpoint.wish_sha256,
+        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+        "cause": cause,
+    })
+
+
+def _current_native_session_stop(
+    checkpoint: AgentRunCheckpoint, paths: Optional[NativeRunPaths]
+) -> Optional[str]:
+    """The recorded cause when this exact active checkpoint has no live session."""
+
+    if paths is None or checkpoint.status != "active":
+        return None
+    path = paths.host_state / _NATIVE_SESSION_STOP_NAME
+    if not path.exists():
+        return None
+    try:
+        record = _read_stable_private_json(
+            path, label="native session stop", maximum_bytes=4096
+        )
+    except WorkshopError:
+        return None
+    if not (
+        record.get("schema_version") == 1
+        and record.get("kind") == _NATIVE_SESSION_STOP_KIND
+        and record.get("product_id") == checkpoint.product_id
+        and record.get("wish_sha256") == checkpoint.wish_sha256
+        and record.get("checkpoint_sha256") == checkpoint.checkpoint_sha256
+        and record.get("cause") in _NATIVE_SESSION_STOP_CAUSES
+    ):
+        return None
+    return record["cause"]
+
+
 def _run_native_session(
+    run: AgentRun,
+    paths: NativeRunPaths,
+    *,
+    launcher: Optional[NativeSessionLauncher],
+    activity_observer: Optional[Callable[[str], None]] = None,
+    timing_observer: Optional[WishRunTimingObserver] = None,
+) -> tuple[AgentRunCheckpoint, Optional[CodexNativeSessionOutcome], int, str]:
+    """Advance native stages; record a visible stop if this invocation ends early.
+
+    The invocation holds the mutation lock, so a previous stop record is
+    cleared before any native work. When the invocation then raises while
+    the checkpoint is still ``active``, no native session remains live:
+    the host records the content-free cause so ``workshop status`` reports
+    the run as stopped instead of ``active`` (issue #94).
+    """
+
+    _clear_native_session_stop(paths)
+    try:
+        return _run_native_session_turns(
+            run,
+            paths,
+            launcher=launcher,
+            activity_observer=activity_observer,
+            timing_observer=timing_observer,
+        )
+    except BaseException as exc:
+        cause = (
+            "usage-limit"
+            if isinstance(exc, _NativeUsageLimitStop)
+            else "session-ended"
+        )
+        try:
+            _record_native_session_stop(run, paths, cause=cause)
+        except Exception:
+            pass  # Telemetry only; the original failure still propagates.
+        raise
+
+
+def _run_native_session_turns(
     run: AgentRun,
     paths: NativeRunPaths,
     *,
@@ -9981,10 +10654,10 @@ def _write_inspection_progress_snapshot(
     )
 
 
-def _diagnosed_provider_transport_failure(
+def _diagnosed_provider_failure_category(
     checkpoint: AgentRunCheckpoint, paths: NativeRunPaths
-) -> bool:
-    """Whether this run's own ADR 0050 diagnosis names a provider transport error."""
+) -> Optional[str]:
+    """The ADR 0050 diagnosis category of this run's last provider failure, if any."""
 
     try:
         diagnosis = _read_stable_private_json(
@@ -9993,20 +10666,40 @@ def _diagnosed_provider_transport_failure(
             maximum_bytes=MAX_CODEX_FAILURE_DIAGNOSTIC_BYTES,
         )
     except WorkshopError:
-        return False
+        return None
     if not (
         diagnosis.get("schema_version") == 2
         and diagnosis.get("kind") == CODEX_FAILURE_DIAGNOSTIC_KIND
         and diagnosis.get("product_id") == checkpoint.product_id
         and diagnosis.get("wish_sha256") == checkpoint.wish_sha256
     ):
-        return False
+        return None
     detail = diagnosis.get("diagnostic")
     terminal_error = detail.get("terminal_error") if isinstance(detail, Mapping) else None
-    return (
-        isinstance(terminal_error, Mapping)
-        and terminal_error.get("category") == "provider-transport"
+    category = (
+        terminal_error.get("category") if isinstance(terminal_error, Mapping) else None
     )
+    return category if isinstance(category, str) else None
+
+
+def _budget_stop_is_current(lifetime_budget: Optional[Mapping[str, Any]]) -> bool:
+    """Whether the recorded budget stop still binds after any later cap raise.
+
+    The host keeps ``token-budget-stop.json`` after a resume raises the cap,
+    so a "limit reached" record is current only while observed usage is at
+    or over the current limit (issue #94). An accounting stop, or one whose
+    usage cannot be compared, stays current.
+    """
+
+    if lifetime_budget is None or not lifetime_budget.get("last_stop_reason"):
+        return False
+    if lifetime_budget["last_stop_reason"] != "product token limit reached":
+        return True
+    used = lifetime_budget.get("used_tokens")
+    limit = lifetime_budget.get("limit_tokens")
+    if type(used) is not int or type(limit) is not int:
+        return True
+    return used >= limit
 
 
 def _native_stop_category(
@@ -10029,12 +10722,30 @@ def _native_stop_category(
         # consecutive-rejection limit, and the legacy-release upgrade and
         # final CAD guard gates in Release).
         return "gate-refusal"
-    if lifetime_budget is not None and lifetime_budget.get("last_stop_reason"):
+    budget_current = _budget_stop_is_current(lifetime_budget)
+    if (
+        budget_current
+        and lifetime_budget.get("last_stop_reason") == "product token limit reached"
+    ):
+        # A reached cap blocks every resume until it is raised, whatever
+        # else also stopped the last invocation.
+        return "budget"
+    session_stop = _current_native_session_stop(checkpoint, paths)
+    if session_stop == "usage-limit":
+        # This exact checkpoint's last invocation ended at the provider's
+        # account usage limit; that newer cause outranks an older record.
+        return "usage-limit"
+    if budget_current:
         return "budget"
     if paths is None:
         return "unclassified"
-    if _diagnosed_provider_transport_failure(checkpoint, paths):
+    diagnosed = _diagnosed_provider_failure_category(checkpoint, paths)
+    if diagnosed == "provider-transport":
         return "transport"
+    if diagnosed == "rate-limit" and session_stop is not None:
+        # Codex's ADR 0050 diagnosis survives later turns, so it names the
+        # stop only when this exact checkpoint's invocation has ended.
+        return "usage-limit"
     previous_count = _read_inspection_progress_snapshot(paths, checkpoint.product_id)
     current_count = _inspection_cache_measurement_count(paths)
     if action not in ("inspected", "inspected-terminal"):
@@ -10073,6 +10784,25 @@ def _native_receipt(
     likeness_acceptances = (
         _likeness_acceptance_history(paths.host_state) if paths is not None else []
     )
+    component_acceptances = (
+        _component_acceptance_history(paths.host_state) if paths is not None else []
+    )
+    interfaces = _interface_history(paths.host_state) if paths is not None else []
+    reference_conflicts = (
+        _reference_conflict_history(paths.host_state) if paths is not None else []
+    )
+    contract_amendments = (
+        _contract_amendment_history(paths.host_state) if paths is not None else []
+    )
+    # ADR 0085: the in-run Contract Amendments follow the camera amendments,
+    # and the owner's amendments on resume (issue #100) follow those.
+    if paths is not None:
+        contract_amendments = contract_amendments + _run_contract_amendments(
+            paths, checkpoint.wish_sha256
+        ) + _owner_contract_amendments(paths.host_state)
+    # Issue #88: every Blocked Report, read from the run's own ledgers so a
+    # run that stopped before Make acceptance still lists them.
+    blocked_reports = run_blocked_reports(paths.workspace) if paths is not None else []
     local_release_run = False
     if paths is not None:
         try:
@@ -10277,6 +11007,13 @@ def _native_receipt(
                 lifetime_budget["last_stop_reason"] = stop["reason"]
         except WorkshopError:
             lifetime_budget = {"status": "unavailable", "scope": "lifetime-native-execution"}
+    if (
+        visible_status == "active"
+        and _current_native_session_stop(checkpoint, paths) is not None
+    ):
+        # The last invocation for this exact checkpoint ended without a live
+        # native session; the run waits for an operator resume (issue #94).
+        visible_status = "waiting"
     stop_category = (
         _native_stop_category(
             checkpoint, paths=paths, action=action, lifetime_budget=lifetime_budget
@@ -10284,11 +11021,18 @@ def _native_receipt(
         if visible_status != "complete"
         else None
     )
+    if stop_category == "usage-limit" and _USAGE_LIMIT_NEED not in needs:
+        needs.append(_USAGE_LIMIT_NEED)
     receipt: dict[str, Any] = {
         "schema_version": 1,
         "kind": "native-agent-run",
         "rounds": rounds,
         "likeness_acceptances": likeness_acceptances,
+        "component_acceptances": component_acceptances,
+        "interfaces": interfaces,
+        "reference_conflicts": reference_conflicts,
+        "contract_amendments": contract_amendments,
+        "blocked_reports": blocked_reports,
         "product_id": checkpoint.product_id,
         "status": visible_status,
         "stage": visible_stage,
@@ -10577,6 +11321,9 @@ def start_native_run(
                 check_motion=check_motion,
                 carry_unchanged=carry_unchanged,
                 make_role_agents=make_role_agent_files(),
+                # ADR 0080: only runtimes whose hooks name the calling
+                # subagent can admit Component rounds by role.
+                make_round_guard=selected_manager.manager_id in MAKE_ROUND_GUARD_MANAGER_IDS,
             )
         except Exception:
             # If setup fails early, release only this exact empty reservation.
@@ -10982,10 +11729,22 @@ def resume_native_run(
     turn_seconds: Optional[int] = None,
     turn_untimed: bool = False,
     check_motion: bool = False,
+    reference_cameras: Optional[Mapping[str, Sequence[float]]] = None,
+    amended_contract: Optional[str] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
 ) -> Mapping[str, Any]:
     """Resume one exact native session under an exclusive host mutation lock.
+
+    reference_cameras answers a camera-mismatch need (ADR 0083): each sealed
+    reference file named is given a corrected Reference Camera, recorded as a
+    host amendment that changes only that camera, before the session resumes.
+
+    amended_contract answers a Contract Contradiction need (issue #100): the
+    owner's amended contract file, recorded as an Owner Contract Amendment
+    of the requirement text, Interface text and prose it changes against the
+    contract the run reads now, before the session resumes. A run whose
+    frozen tools predate it is refused and nothing is recorded.
 
     The ignored keyword preserves source compatibility with the former
     optional-publication API; every resumed Release now requires publication.
@@ -11011,6 +11770,10 @@ def resume_native_run(
         raise ContractError("untimed turn option must be boolean")
     if turn_untimed and turn_seconds is not None:
         raise ContractError("choose an exact turn boundary or an untimed turn, not both")
+    if reference_cameras is not None and not isinstance(reference_cameras, Mapping):
+        raise ContractError("reference cameras must map a reference file to AZ,EL")
+    if amended_contract is not None and not isinstance(amended_contract, str):
+        raise ContractError("the amended contract must be the contract file's text")
 
     activity_observer = _validated_activity_observer(activity_observer)
     timing_observer = _combined_timing_observer(
@@ -11030,6 +11793,21 @@ def resume_native_run(
         if checkpoint.status in ("active", "waiting"):
             checkpoint = _adopt_resume_motion_policy(paths, run, checkpoint, check_motion)
             checkpoint = _adopt_resume_inspection_tools(paths, run, checkpoint)
+        if reference_cameras:
+            if checkpoint.status not in ("active", "waiting"):
+                raise StateConflict("a Reference Camera is amended only on an unfinished run")
+            for file_name, camera in sorted(reference_cameras.items()):
+                run.amend_reference_camera(
+                    file_name, camera,
+                    reason="workshop resume --reference-camera %s=%s"
+                    % (file_name, ",".join("%g" % float(value) for value in camera)),
+                )
+            checkpoint = run.snapshot()
+        if amended_contract is not None:
+            if checkpoint.status not in ("active", "waiting"):
+                raise StateConflict("a Design Contract is amended only on an unfinished run")
+            _record_owner_contract_amendment(paths, run, checkpoint, amended_contract)
+            checkpoint = run.snapshot()
         if adopt_turn_budget:
             _adopt_turn_budget(paths, checkpoint)
         if max_tokens is not None:
