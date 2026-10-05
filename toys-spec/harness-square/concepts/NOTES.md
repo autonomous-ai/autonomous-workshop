@@ -99,3 +99,20 @@ The owner picked the synthwave VHS Deck (SW5) as the best look and set a new til
 | VH6 | Camcorder | camcorder_a, camcorder_b | 20–30° | lens can be the real CSI camera |
 | VH7 | VCR 12:00 | vfd_a, vfd_b | 28–35° | clock needs an extra 4-digit LED module; b too steep |
 | VH8 | Rewinder | rewinder_a, rewinder_b | 25° (a) | b about 40° with a bezel lip; hinge is decorative |
+
+## VHS cassette on a tilted stand (VC1–VC8)
+
+The owner asked for a separate part instead of one solid wedge: a rectangle with the shape of a real VHS cassette (187 × 103 × 25 mm), mounted on a stand tilted 20–30°. Prompts are in the scratchpad `prompts14.py` (keys `vc/...`). The first pass (`_a`/`_b`) drew the cassette standing at 50–75°, so it was discarded and not committed. The second pass (`_c`/`_d`) asks for the back edge to sit 45 mm above the front edge. Images are in `vhs-stand/`. Angles are estimated from the renders.
+
+| Code | Name | Stand | Angle | Flags |
+|---|---|---|---|---|
+| VC1 | Deck Dock | mini VCR deck | about 20° | at the low limit |
+| VC2 | Glow Reel | black wedge, screen left, glowing reel right | 20–25° | screen drawn landscape, the real one is square |
+| VC3 | Sunset Acrylic | gradient acrylic wedge | about 25° | gradient acrylic is bought in, not printed |
+| VC4 | Neon Grid | two chrome posts over a grid-engraved slab | about 25° | posts must carry the touch load and the FPC |
+| VC5 | Wire Easel | bent chrome wire | about 25° | PCB must fit inside the 25 mm cassette |
+| VC6 | Rental Cradle | black tray with chrome rails | 25–35° | rental_c is too steep |
+| VC7 | Blank Tape | folded aluminium bracket | 25–35° | blank_d is too steep; PCB in the cassette |
+| VC8 | Clear Shell | black wedge | about 25° | drawn as an audio cassette, not VHS |
+
+Common: most renders draw the screen smaller than the cassette or landscape. The real 84 mm square glass fills most of the cassette's 103 mm height.
