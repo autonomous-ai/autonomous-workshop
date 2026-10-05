@@ -158,3 +158,9 @@ Rocking is the larger risk. A 2 N tap at the top-left corner of a 110 mm tile si
 - r = 35 mm (70 mm puck or pad ring): F_mag ≥ 0.8 N.
 
 Typical small magnetic pogo pairs hold a few newtons in pull and only about 20–30% of that in shear, so on their own they are marginal. Fix, keeping the floating look: a hidden boss on the puck that drops into a recess in the tile back takes the sliding load mechanically; contact spread over about 70 mm (a ring or three pads) with a silicone face; magnets only seat the tile and resist peel. The base needs weight or rubber feet so it does not slide on the desk when tapped.
+
+### FX2 with a boss and pad ring; current dock in the VC4 theme
+
+- FX2 Hover (`vh2/`, scratchpad `prompts17.py`): the base gets a 70 mm ring of three silicone pads and a central 12 mm boss with a magnet; the tile back gets a matching recess (see the magnetic hold note above). The docked images show the tile at 20–25°, and hover_dock_a deliberately shows the ring. The lift images draw the base nearly square and less sloped than the 25° wedge.
+- CUR, Current Dock × VC4 (`cv/`): uses the owner's photo of the current device and dock as an edit reference (logo ignored). It keeps the mechanics: two 5-pin magnetic pogo connectors on the device's bottom edge, a front ledge with contacts, and a sloped back support. It is restyled with the VC4 cues. Flags: the front ledge must stay below the glass surface so it does not block swipes off the bottom edge; some docked renders show the device resting loosely on the ledge.
+- `handheld-dock/` drops the old hover_dock and hover_seat images and adds the vh2 and cv images.
