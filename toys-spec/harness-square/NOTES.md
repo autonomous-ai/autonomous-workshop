@@ -31,3 +31,15 @@ X1 has had one generation round and has not been measured.
 Not done yet for any option: the full per-feature table, the Stage 3c print
 check, and the Stage 3d motion check. They run on the option chosen, before
 handoff to build-a-toy.
+
+## Contracts: FX2 Hover Dock and CUR Grid Dock (2026-10-05)
+
+The owner picked FX2 and CUR for contracts. Both were written with design-a-toy against the real hardware:
+- `fx2-hover/CONTRACT.md`
+- `cur-dock/CONTRACT.md`
+
+Each folder has a `NOTES.md` with the measured board positions and the Stage 3b and 3c tables. The image review page is `CONTRACT_REVIEW.html`.
+
+The STEP file shows the board is 80.0 x 40.0 x 1.2 mm with a 7.02 mm component stack; the old 80.7 x 35.2 x 22.3 was the bounding box of a board tilted 30 degrees. That puts the tile at 15.5 mm and the CUR device at 16 mm.
+
+Both docks moved to 22 degrees, inside the 20 to 30 range, because the image model keeps drawing 17 to 20 degree ramps. The remaining image disagreements are listed on the review page and wait on the owner's approval of the images.
