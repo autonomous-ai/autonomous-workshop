@@ -127,3 +127,11 @@ New owner requirement (2026-10-05): the device lifts off its stand and is used i
 | FX2 Hover Dock | dock (25° wedge base, rerun), lift (pogo + USB-C), hand | renders show a 10 mm tile, the real one is about 28 mm; less room for a battery |
 
 Hardware impact: a battery and charger are now needed. The device charges through pogo pins on the dock and keeps its bottom USB-C, and magnets locate it on the dock.
+
+### Revision: compact VC4, no charging
+
+Owner (2026-10-05): shrink the VHS device to the device's own size (VHS aesthetic only, not real cassette size). Charging is not required. The device must sit fixed on the desk at 20–30°, lift off easily for two-handed use, and drop back just as easily. It runs on its USB-C cable, which now leaves from the back edge. `handheld-dock/` was replaced (the pogo-contact images were removed). Prompts are in the scratchpad `prompts16.py` plus inline reruns (keys `vy/`, `vz/`, `vw/`, `vv/`).
+
+- VC4 took four passes. Pass `vy` was still cassette-wide. Pass `vz` was too tight, with the screen filling the face. Pass `vw` got the proportions right (about 120 × 106 × 28 mm, ribbed side bands, stripe band under the glass), but the device stood up at 35–60°. Pass `vv` changed the stand to a 25° grid-engraved wedge with a chrome front bar and two rear pins, which fixed the docked angle (dock_d about 30°, dock_a about 35°). The "seat" renders still draw the device upright above the empty wedge.
+- Hover (`vy`): a 110 mm tile on a 25° ceramic wedge with a magnet. Docked angle about 25°. Renders draw the tile about 10 mm thick against the real 28 mm.
+- The creature was switched from penguin to cat in VC4 because the penguin read as Tux.
