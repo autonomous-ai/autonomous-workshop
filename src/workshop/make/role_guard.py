@@ -167,8 +167,7 @@ def _reviewer_reads(
 
 def _packet_images(summary: dict, label: str) -> dict[str, str]:
     """Resolved path -> sha256 of every image a reviewed round's packet shows:
-    its bound views (the sheet, or front, top and iso before ADR 0087) and
-    each comparison image."""
+    its sheet and each comparison image."""
 
     visual = summary.get("visual")
     packet_path = visual.get("packet") if isinstance(visual, dict) else None

@@ -1922,7 +1922,7 @@ class StageProposalToolTest(unittest.TestCase):
 
     def write_component_round(
         self, project, role, *, ok=True, round_number=1, step_bytes=None,
-        views=("front", "top", "iso"),
+        views=("sheet",),
     ):
         """A current, passing (or failing) isolated Component round with a
         hashed visual packet (issue 54). Returns the packet's sha256.
@@ -1980,7 +1980,7 @@ class StageProposalToolTest(unittest.TestCase):
         )
 
     @staticmethod
-    def geometry_review_row(geometry, text, packet_sha256, *, view="iso"):
+    def geometry_review_row(geometry, text, packet_sha256, *, view="sheet"):
         return {
             "requirement": text,
             "geometry": geometry,
@@ -2040,24 +2040,25 @@ class StageProposalToolTest(unittest.TestCase):
         self.run_make_round_one(assignment, invented)
         self.assert_made_round_one(assignment, invented)
 
-    def test_make_accepts_a_geometry_requirement_citing_the_sheet_of_a_sheet_only_packet(self):
-        # ADR 0087: a newer packet binds only sheet.png, which holds every view.
+    def test_make_refuses_a_single_view_instead_of_the_sheet(self):
+        # ADR 0087: a packet binds only sheet.png, which holds every view.
         assignment, invented, project = self.create_geometry_contract_product(
             [("dome", self.DOME_CURVE)]
         )
-        packet_sha256 = self.write_component_round(project, "dome", views=("sheet",))
+        packet_sha256 = self.write_component_round(project, "dome")
         self.write_geometry_review(
             project,
-            [self.geometry_review_row("dome", self.DOME_CURVE, packet_sha256, view="sheet")],
+            [self.geometry_review_row("dome", self.DOME_CURVE, packet_sha256, view="iso")],
         )
-        self.run_make_round_one(assignment, invented)
-        self.assert_made_round_one(assignment, invented)
+        result = self.run_make_round_one(assignment, invented, expected=2)
+        self.assertIn("names an invalid view", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
-    def test_make_refuses_a_single_view_a_sheet_only_packet_does_not_bind(self):
+    def test_make_refuses_a_sheet_its_visual_packet_does_not_bind(self):
         assignment, invented, project = self.create_geometry_contract_product(
             [("dome", self.DOME_CURVE)]
         )
-        packet_sha256 = self.write_component_round(project, "dome", views=("sheet",))
+        packet_sha256 = self.write_component_round(project, "dome", views=("front", "top", "iso"))
         self.write_geometry_review(
             project, [self.geometry_review_row("dome", self.DOME_CURVE, packet_sha256)]
         )

@@ -224,9 +224,8 @@ SIGNATURE_REVIEW_FIELDS_V9 = SIGNATURE_REVIEW_FIELDS | {
 # gate still cannot see the sealed contract, so it checks shape only.
 SIGNATURE_REVIEW_GEOMETRY_FIELDS = {"geometry_form_requirements", "geometry_blind_reads"}
 SIGNATURE_REVIEW_FIELDS_V9_GEOMETRY = SIGNATURE_REVIEW_FIELDS_V9 | SIGNATURE_REVIEW_GEOMETRY_FIELDS
-# A packet from before ADR 0087 binds front, top and iso; a newer one binds
-# only the sheet that holds every view.
-GEOMETRY_PACKET_VIEWS = ("front", "top", "iso", "sheet")
+# A packet binds only the sheet that holds every view (ADR 0087).
+GEOMETRY_PACKET_VIEWS = ("sheet",)
 BLIND_REREAD_IMAGES = ("iso", "signature")
 SHA256_TEXT = re.compile(r"^[0-9a-f]{64}$")
 

@@ -1241,7 +1241,7 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
                 "blind_evidence": "The exact iso view shows one smooth curve.",
                 "matches": True,
                 "packet_sha256": "0" * 64,
-                "view": "iso",
+                "view": "sheet",
             }
         ]
         review["geometry_blind_reads"] = [
@@ -1259,7 +1259,8 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         self.assertEqual(validate(self.project), _sha(review_path.read_bytes()))
 
         invalid_view = json.loads(review_path.read_text(encoding="utf-8"))
-        invalid_view["geometry_form_requirements"][0]["view"] = "left"
+        # ADR 0087: a packet binds only the sheet, so a single view is invalid.
+        invalid_view["geometry_form_requirements"][0]["view"] = "iso"
         review_path.write_text(
             json.dumps(invalid_view, sort_keys=True, separators=(",", ":")),
             encoding="utf-8",
@@ -1268,7 +1269,7 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
             validate(self.project)
 
         missing_blind_read = json.loads(review_path.read_text(encoding="utf-8"))
-        missing_blind_read["geometry_form_requirements"][0]["view"] = "iso"
+        missing_blind_read["geometry_form_requirements"][0]["view"] = "sheet"
         missing_blind_read["geometry_blind_reads"] = []
         review_path.write_text(
             json.dumps(missing_blind_read, sort_keys=True, separators=(",", ":")),

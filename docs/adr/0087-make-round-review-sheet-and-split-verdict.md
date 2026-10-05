@@ -37,9 +37,9 @@ to change construction family when a silhouette is wrong.
   at full size beside it. A Component Reviewer, whose reads the host checks
   image by image (issue #77), opens one image plus each `compare-NN.png` per
   packet rather than ten. A geometry-scoped blind read (ADR 0072) cites the
-  view `sheet`; the finalizer and verifier still accept `front`, `top` and
-  `iso` for a packet from before this change. The Manager opens the assembly
-  sheet at most once per round.
+  view `sheet`, the only view the finalizer and verifier accept; a frozen run
+  keeps the finalizer and verifier bytes it materialized. The Manager opens
+  the assembly sheet at most once per round.
 - Visual feedback adds two required fields. `matches_plan` is a boolean
   judgement against the plan the object is built from (`WISH-EXPANSION.md`, the
   sealed concept, or the Design Contract). `matches_reference` is a boolean

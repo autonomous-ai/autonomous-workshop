@@ -2075,9 +2075,8 @@ def _sealed_geometry_requirement_rows(
     return rows
 
 
-# A packet from before ADR 0087 binds front, top and iso; a newer one binds
-# only the sheet that holds every view.
-_GEOMETRY_PACKET_VIEWS = ("front", "top", "iso", "sheet")
+# A packet binds only the sheet that holds every view (ADR 0087).
+_GEOMETRY_PACKET_VIEWS = ("sheet",)
 
 
 def _validate_geometry_requirements(
