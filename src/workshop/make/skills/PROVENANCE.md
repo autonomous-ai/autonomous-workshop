@@ -2002,3 +2002,12 @@ every Keep-out Envelope check and both renders in parallel
 parallel. Verdicts, command lines and report formats are unchanged. This
 changes the `cad` and `make-round` fingerprints; materialized runs keep
 their copied bytes.
+
+## Local change: check_layout skips the host-installed print-details library (2026-10-05)
+
+A Workshop-local change (issue #103) to the vendored `cad` skill's
+`check_layout`. A project module byte-identical to the sibling skill's
+`print-details/scripts/print_details.py` (installed by the host as
+`features/print_details.py`) is not counted by `oversized-library`; a modified
+copy still is. This changes the `cad` fingerprint; materialized runs keep their
+copied bytes until `workshop resume --refresh-tools`.

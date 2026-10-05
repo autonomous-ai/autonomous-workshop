@@ -19,7 +19,8 @@ Four rules, all failing:
 * `missing-assembly-entry` — part entries with no combined assembly entry.
 * `oversized-library` — a project WITH part entries whose importable modules
   have outgrown Tier 2. Split into the Tier 3 package: `params.py`,
-  `parts/`, `features/`, `assemblies/`.
+  `parts/`, `features/`, `assemblies/`. A byte-for-byte copy of a library the
+  host installs (print-details' `features/print_details.py`) is not counted.
 
 Static only: it reads source, never imports build123d, so it costs milliseconds
 and can run before `gen`. That also means the named-part count is an
@@ -37,6 +38,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import json
 import sys
 import tokenize
@@ -51,6 +53,14 @@ MAX_ENTRY_NAMED_PARTS = 2  # 3+ named parts must be split
 # test — a 300-line library whose parts have stopped being readable side by side
 # is still due the package.
 MAX_LIBRARY_CODE_LINES = 400
+
+# Workshop (#103): libraries the host installs into a project byte for byte
+# (the sibling print-details skill's library, installed as
+# `features/print_details.py`) are host-owned bytes the model may not edit or
+# split, so they are not the project's own code. A modified copy is counted.
+HOST_LIBRARY_SOURCES = (
+    Path(__file__).resolve().parents[2] / "print-details" / "scripts" / "print_details.py",
+)
 
 ENTRY_SUFFIX = ".step.py"
 PART_PREFIX = "part_"
@@ -151,6 +161,23 @@ def named_parts(path: Path) -> int:
             if rendered:
                 labels.add(rendered)
     return len(labels)
+
+
+def _sha256(path: Path) -> str | None:
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return None
+
+
+def host_library_digests() -> set[str]:
+    """Digests of the libraries the host installs into projects verbatim."""
+    return {digest for digest in map(_sha256, HOST_LIBRARY_SOURCES) if digest}
+
+
+def is_host_library(path: Path, digests: set[str]) -> bool:
+    """True when ``path`` is a byte-for-byte copy of a host-installed library."""
+    return bool(digests) and _sha256(path) in digests
 
 
 def iter_library_modules(directory: Path):
@@ -256,7 +283,10 @@ def check(root: Path) -> list[dict]:
 
         # Once a project has part entries, the full layout is mandatory.
         if part_entries:
+            host_digests = host_library_digests()
             for module in iter_library_modules(directory):
+                if is_host_library(module, host_digests):
+                    continue
                 lines = code_lines(module)
                 if lines <= MAX_LIBRARY_CODE_LINES:
                     continue
