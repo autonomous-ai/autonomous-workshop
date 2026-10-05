@@ -63,6 +63,10 @@ def _build_shape(source: Path):
 
     _runtime_paths()
     if source.name.endswith(ENTRY_SUFFIX):
+        # Workshop #102: serial Booleans, so one source builds one B-rep.
+        from cadgen.booleans import serial_booleans
+
+        serial_booleans()
         module_name = "_product_" + source.name.replace(".", "_")
         spec = importlib.util.spec_from_file_location(module_name, source)
         if spec is None or spec.loader is None:

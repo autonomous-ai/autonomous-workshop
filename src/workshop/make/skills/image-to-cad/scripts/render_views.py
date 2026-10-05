@@ -191,6 +191,10 @@ def load_entry(path: Path):
         raise ImportError(f"cannot load {path}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
+    # Workshop #102: serial Booleans, so one source builds one B-rep.
+    from cadgen.booleans import serial_booleans
+
+    serial_booleans()
     project = str(path.parent)
     if project not in sys.path:
         sys.path.insert(0, project)

@@ -201,6 +201,10 @@ def load_entry(path: Path, namespace: str):
     spec = importlib.util.spec_from_file_location(module_name, path)
     if spec is None or spec.loader is None:
         raise ImportError(f"cannot load {path}")
+    # Workshop #102: serial Booleans, so one source builds one B-rep.
+    from cadgen.booleans import serial_booleans
+
+    serial_booleans()
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
     try:

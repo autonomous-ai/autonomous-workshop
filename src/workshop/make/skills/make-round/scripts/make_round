@@ -989,6 +989,52 @@ def parse_identity(stdout: str) -> str | None:
     return None
 
 
+# Issue #102: a component round builds its source a second time, in its own
+# process, and a source whose two builds differ fails the round.
+REPRODUCE_TOOL = "reproduce_build"
+REPRODUCE_HINT = ("the build depends on something besides its source: an unseeded random, set or dict "
+                  "iteration order, the clock, a file it reads, or a Boolean switched back to parallel. "
+                  "Make it build the same shape every time, then rerun the round")
+
+
+def reproduction_failure(identity: str, done: subprocess.CompletedProcess) -> dict | None:
+    """The build failure of a source whose second build did not reproduce
+    ``identity``, the B-rep identity `gen` reported for its first; None when
+    it did. A second build that fails, refuses a detail or reports another
+    identity all mean one source does not give one B-rep (issue #102)."""
+    second = parse_identity(done.stdout) if done.returncode == 0 else None
+    if second == identity:
+        return None
+    failure = {"verdict": "FAIL", "reproducible": False, "identities": [identity, second]}
+    if second is not None:
+        why = "two builds of this source gave B-rep identities %s and %s" % (identity[:12], second[:12])
+    elif done.returncode == 0:
+        why = "a second build of this source reported no B-rep identity"
+    else:
+        refusals = detail_refusals(done.stderr or done.stdout)
+        if refusals:
+            failure["reproduction_refusals"] = refusals
+            why = "the first build passed and a second build of the same source refused %s" % ", ".join(
+                "%s at %s" % (item["feature"], item["site"]) for item in refusals[:4])
+        else:
+            lines = [line.strip() for line in (done.stderr or done.stdout or "").splitlines() if line.strip()]
+            why = "the first build passed and a second build of the same source failed: %s" % (
+                lines[-1][:120] if lines else "exit %d" % done.returncode)
+    failure["failures"] = ["not reproducible: " + why, REPRODUCE_HINT]
+    return failure
+
+
+def reproduction_check(python: str, part: Path, project: Path, out: Path, identity: str) -> dict | None:
+    """Build ``part`` again in its own process and compare its B-rep identity
+    with ``identity``, the one `gen` reported for this round's build. Returns
+    the round's build failure when they differ, else None. Self-contained, so
+    a caller may run it beside the round's other checks."""
+    role = part.name.removeprefix("part_").removesuffix(".step.py")
+    tool = Path(__file__).resolve().with_name(REPRODUCE_TOOL)
+    done = run([python, str(tool), str(part)], cwd=project, log=out / ("reproduce-%s.log" % role))
+    return reproduction_failure(identity, done)
+
+
 # A region row of either print gate, `N. [kind] ...`, and the line under it
 # naming its feature: `at feature <key> -- ...` or `at face <key> -- ...`.
 REGION_ROW = re.compile(r"\d+\.\s+\[([a-z ]+)\]")
@@ -4174,7 +4220,14 @@ def make_round(args) -> int:
         if parsed["verdict"] == "FAIL":
             build_failures[role] = parsed
             continue
-        digests[role] = parse_identity(done.stdout) or hashlib.sha256(step.read_bytes()).hexdigest()
+        identity = parse_identity(done.stdout)
+        # Issue #102: a component round shows its source builds one B-rep.
+        unreproduced = (reproduction_check(python, part, project, out, identity)
+                        if component is not None and identity is not None else None)
+        if unreproduced is not None:
+            build_failures[role] = unreproduced
+            continue
+        digests[role] = identity or hashlib.sha256(step.read_bytes()).hexdigest()
     changed = diff_parts(state.get("parts", {}), digests) if not args.all_parts else sorted(digests)
     # The geometry this round scored: the Component's identity, or every
     # part's for the assembly. None when it did not build.
@@ -4489,6 +4542,15 @@ def self_check() -> int:
     check(parsed["verdict"] == "FAIL" and parsed["failures"][-1].startswith("ValueError"), "a failing build yields FAIL and the reason")
     check(parse_build('{"ok":true}\n', "", 0) == {"verdict": "PASS", "failures": []}, "a clean build yields PASS")
     check(parse_build("", "", 3)["failures"] == ["gen exit 3"], "a silent non-zero build still names its exit code")
+    again = subprocess.CompletedProcess([], 0, '{"identitySha256": "a1"}\n', "")
+    check(reproduction_failure("a1", again) is None, "a second build with the same identity reproduces")
+    moved = reproduction_failure("a1", subprocess.CompletedProcess([], 0, '{"identitySha256": "b2"}\n', ""))
+    check(moved is not None and moved["verdict"] == "FAIL" and moved["identities"] == ["a1", "b2"]
+          and moved["failures"][0].startswith("not reproducible"), "a second build with another identity fails the build")
+    refused = reproduction_failure("a1", subprocess.CompletedProcess([], 1, "", 'detail-refusal {"feature": "rivet", '
+                                   '"site": "part_a.step.py:9", "reason": "r", "passes": "p"}\n'))
+    check(refused is not None and "rivet at part_a.step.py:9" in refused["failures"][0],
+          "a second build that refuses a detail fails the build and names it")
     thin = parse_thickness(
         "part_frame.step.py: 4.20 cm3 solid, grid 0.100 mm\n"
         "  FAIL  wall >= 0.80 mm (+/-0.10)        2.1% of surface below\n"

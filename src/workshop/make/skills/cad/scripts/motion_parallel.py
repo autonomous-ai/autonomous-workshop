@@ -62,6 +62,14 @@ def _read_shape(path):
 def _initialize(tool_path, movers, obstacles, steps, tolerance):
     global _STATE
     tool = runpy.run_path(tool_path)
+    # Workshop #102: the worker's overlap Booleans run serially, as the
+    # parent's do.
+    cadgen_src = Path(__file__).resolve().parent / 'packages' / 'cadgen' / 'src'
+    if cadgen_src.is_dir() and str(cadgen_src) not in sys.path:
+        sys.path.insert(0, str(cadgen_src))
+    from cadgen.booleans import serial_booleans
+
+    serial_booleans()
     placed = [(name, _read_shape(path), tool['_pose_table'](spec, steps, f'movers[{i}]'))
               for i, (name, path, spec) in enumerate(movers)]
     fixed = [(name, _read_shape(path)) for name, path in obstacles]

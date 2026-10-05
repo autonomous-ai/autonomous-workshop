@@ -73,7 +73,9 @@ def _module_file(func: str, root: Path) -> Path:
 def _kernel_version() -> str:
     try:
         import OCP
-        return getattr(OCP, "__version__", "?")
+        # Workshop #102: a body cached from a parallel-Boolean build is not
+        # reused by a serial one.
+        return getattr(OCP, "__version__", "?") + "+serial-booleans"
     except ImportError:
         return "none"
 
@@ -162,6 +164,14 @@ def cached_map(func: str, items: Iterable[str], *, root: str | os.PathLike,
 
 
 def _worker(root: str, func: str, item: str, brep: str, record: str) -> None:
+    # Workshop #102: a body builds with serial Booleans, as `gen` builds the
+    # source that asked for it, so one item gives one B-rep.
+    cadgen_src = Path(__file__).resolve().parent / "packages" / "cadgen" / "src"
+    if cadgen_src.is_dir() and str(cadgen_src) not in sys.path:
+        sys.path.insert(0, str(cadgen_src))
+    from cadgen.booleans import serial_booleans
+
+    serial_booleans()
     sys.path.insert(0, root)
     module, name = func.split(":", 1)
     result = getattr(importlib.import_module(module), name)(item)

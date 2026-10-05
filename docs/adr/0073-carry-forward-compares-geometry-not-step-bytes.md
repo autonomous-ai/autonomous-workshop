@@ -123,3 +123,43 @@ changed, every archive's previously sealed `made.json` B-rep hash and every
 tessellation-cache key computed under the old `shape_identity` now simply
 fails to match the new one -- a miss, never a false match, exactly as
 "unchanged" must fail safe.
+
+## Amendment (2026-10-05, issue #102): Booleans run serially
+
+The issue #74 amendment found the geometry deterministic and left OCCT's
+parallel Booleans on. Broken God attempt 18 (`wish-20261004-144101-6b3a843e`)
+showed the geometry itself can vary: the unchanged
+`part_spine-housing.step.py` was accepted at one B-rep identity, clean
+rebuilds gave another, and some builds refused a print detail. Reproduced on
+a copy of that run's CAD project (`cadquery-ocp==7.9.3.1.1`,
+`build123d==0.11.1`, the source without the worker's local wrapper, eight
+concurrent builds, one process each): with build123d's parallel Booleans,
+7 builds gave `2f8e11…` and 1 gave `567d16…` with a rivet refused at
+`:313`; with every Boolean serial, all 8 gave `2f8e11…` with no refusal.
+
+**Decision**: every build in the Make toolchain runs its OCCT Booleans
+serially. `cadgen.booleans.serial_booleans()` overrides `SetRunParallel`
+on `BOPAlgo_Options` and `BRepAlgoAPI_Algo` so build123d's request for a
+parallel Boolean is ignored, and every loader that runs a `gen_step()`
+source calls it before the source runs. A Component file needs no wrapper.
+This reverses `docs/PARALLEL_BOOLEAN_EXPERIMENT.md`'s recommendation not to
+wire it in; that experiment measured 2.6x the build time on many small
+parts and could not reproduce the variation. On Broken God's Components the
+serial build is not slower: all eleven builds took 388 s parallel and 336 s
+serial, one at a time on a shared host, with the same identity per
+Component either way (per-Component times in `changes/102.fixed.md`): the cost that experiment measured does not hold for parts of this
+size, and the variation now has a reproduction.
+
+**Caught at the component round**: a component round builds its source a
+second time in its own process (`make-round/scripts/reproduce_build`, which
+returns the identity `gen --json` reports) and fails the build as `not
+reproducible` when the two identities differ, or when only one build
+refuses a detail. The check is a self-contained function, so it can run
+beside the round's other checks. It runs only when `gen` reported a fresh
+identity; an unchanged source `gen` reused was checked when it was built.
+
+Identities sealed before this change were taken from parallel builds.
+Where a parallel build happened to settle differently from the serial one,
+a Correction Run's comparison misses and the Component is rebuilt and
+re-reviewed -- a miss, never a false match. Frozen runs keep their
+materialized tool bytes and their parallel Booleans.

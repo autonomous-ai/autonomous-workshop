@@ -270,6 +270,16 @@ component geometry.
   part's previous round too gets an `again REFUSE` line and is listed under
   `repeated_detail_refusals`, apart from `repeated_print_defects`: leave
   that detail out and name it.
+- Every build runs its OCCT Booleans serially (issue #102), so one source
+  gives one B-rep identity and one set of Detail Refusals; a Component file
+  needs no wrapper of its own for that. A component round also builds its
+  source a second time in its own process (`reproduce_build`, logged as
+  `reproduce-<role>.log`). When the two builds differ in identity, or only
+  one of them refuses a detail, the part did not build: its `build` line
+  reads `not reproducible` with both identities (`build.identities`,
+  `build.reproducible: false`). Find what the build reads besides its
+  source -- an unseeded random, set or dict order, the clock, a file -- and
+  rerun.
 - A part whose tessellation is open is not measured. An invalid B-rep fails
   with its bad faces listed. A valid one is re-tessellated once, finer; if it
   stays open the gate's verdict is `UNMEASURABLE`, which is not a print

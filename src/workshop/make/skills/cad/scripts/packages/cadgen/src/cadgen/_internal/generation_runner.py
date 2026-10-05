@@ -11,6 +11,7 @@ import sys
 from typing import Iterator
 from typing import Sequence
 
+from cadgen.booleans import serial_booleans
 from cadgen._internal.cli_locking import lock_wait_notice
 from cadgen._internal.file_metadata import text_to_cad_identity_metadata
 from cadgen._internal.file_metadata import write_dxf_text_to_cad_metadata
@@ -70,6 +71,9 @@ def _load_generator_module(script_path: Path) -> object:
         if candidate not in sys.path:
             sys.path.insert(0, candidate)
 
+    # Workshop #102: every Boolean the source runs is serial, so one source
+    # always builds one B-rep identity and one set of Detail Refusals.
+    serial_booleans()
     try:
         sys.modules[module_name] = module
         module_spec.loader.exec_module(module)
@@ -482,6 +486,33 @@ def _run_script_generator_inner(
         generated_scene.source_closure_hash = source_closure.closure_hash
         generated_scene.source_closure_files = source_closure.files
     return generated_scene
+
+
+def rebuilt_identity(script_path: Path) -> str:
+    """Build a ``gen_step()`` source again and return its B-rep identity.
+
+    The identity is the one ``scripts/gen --json`` reports as ``identitySha256``
+    for the same build: the shape ``gen_step()`` returned, hashed in memory
+    before any STEP round-trip. Nothing is written and no lock is taken, so it
+    can run in its own process beside ``gen`` to show that a source builds the
+    same B-rep twice (Workshop #102). A Detail Refusal fails it as it fails
+    ``gen``.
+    """
+    from build123d import Shape as Build123dShape
+
+    from cadgen.inspection_runtime import shape_identity
+
+    resolved = Path(script_path).resolve()
+    with _detail_build():
+        module = _load_generator_module(resolved)
+        generator = getattr(module, "gen_step", None)
+        if not callable(generator):
+            raise RuntimeError(f"{_display_path(resolved)} does not define callable gen_step()")
+        raw_payload = generator()
+    shape = _normalize_step_payload(raw_payload, script_path=resolved).get("shape")
+    if not isinstance(shape, Build123dShape) or shape.wrapped is None:
+        raise TypeError(f"{_display_path(resolved)} gen_step() returned no build123d shape")
+    return shape_identity(shape.wrapped)
 
 
 def _is_git_lfs_pointer(step_path: Path) -> bool:

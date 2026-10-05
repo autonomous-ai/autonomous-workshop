@@ -1945,3 +1945,31 @@ tool carries the marker `workshop-owner-contract-amendments-v1`, which the
 host requires before it records an owner amendment. Nothing is judged. This
 changes the `make-round` fingerprint; materialized runs keep their copied
 bytes and are refused an owner amendment.
+
+## Local change: serial Booleans, and a component round proves its build reproduces (2026-10-05)
+
+A Workshop-local change (issue #102, amending ADR 0073) to the vendored `cad`
+and `image-to-cad` trees and Workshop's own `make-round`. build123d asks OCCT
+for a parallel Boolean before every fuse, cut and section; in Broken God
+attempt 18 the same unchanged `part_spine-housing.step.py` built two B-rep
+identities and sometimes refused a print detail. The vendored cadgen gains
+`cadgen.booleans.serial_booleans()`, which overrides `SetRunParallel` on
+`BOPAlgo_Options` and `BRepAlgoAPI_Algo` to always pass `False`
+(process-wide, idempotent). Every loader that runs a `gen_step()` source
+calls it first: cadgen's generator loader (`gen`, `inspect`, `artifact`,
+the warm daemon), `printlib.load_entry` (the print gates and
+`check_envelope`), `render_review`, `render_product`, `check_mount`,
+`check_motion`, the `cadcache` body worker (whose cache key now names
+serial Booleans, so a body cached from a parallel build is rebuilt), the
+`motion_parallel` workers
+and image-to-cad's `render_views`. cadgen also gains
+`generation_runner.rebuilt_identity()`, which builds a source again and
+returns the identity `gen --json` reports, writing nothing and taking no
+lock. `make-round` gains `scripts/reproduce_build`, and a component round
+whose `gen` reported an identity runs it in its own process and fails the
+build (`not reproducible`, `build.reproducible: false`,
+`build.identities`) when the second build differs or refuses a detail the
+first did not. No threshold, gate or verdict changes. This changes the
+`cad`, `image-to-cad` and `make-round` fingerprints; materialized runs keep
+their copied bytes, and a parked run picks the change up through
+`workshop resume --refresh-tools`.

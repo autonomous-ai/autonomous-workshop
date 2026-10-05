@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""Build one gen_step() source again and print its B-rep identity (issue #102).
+
+    reproduce_build <project>/part_<id>.step.py
+
+A component round runs this in its own process beside `gen`: it builds the
+same source a second time, writes nothing and takes no lock, and prints one
+JSON line, {"identitySha256": "<hash>"}, the identity `gen --json` reports for
+the same build. make_round compares the two; a source whose two builds differ
+is not reproducible and fails its round with a build error.
+
+The cad skill's cadgen runtime does the work, so the build runs exactly as
+`gen` runs it: serial Booleans, the project on sys.path, and every Detail
+Refusal collected and reported. Exit 0 with the identity, 1 when the source
+does not build, 2 on bad usage.
+"""
+
+from __future__ import annotations
+
+import contextlib
+import io
+import json
+import os
+import sys
+from pathlib import Path
+
+CAD_SCRIPTS = Path(__file__).resolve().parents[2] / "cad" / "scripts"
+
+
+def _runtime_paths() -> None:
+    # The skill's vendored cadgen first, as `gen` puts it.
+    for path in (CAD_SCRIPTS, CAD_SCRIPTS / "packages", CAD_SCRIPTS / "packages" / "cadgen" / "src"):
+        text = str(path)
+        if path.is_dir() and text not in sys.path:
+            sys.path.insert(0, text)
+
+
+def main(argv=None) -> int:
+    args = list(sys.argv[1:] if argv is None else argv)
+    if len(args) != 1 or not args[0].endswith(".step.py"):
+        print("usage: reproduce_build <project>/part_<id>.step.py", file=sys.stderr)
+        return 2
+    source = Path(args[0]).resolve()
+    if not source.is_file():
+        print("reproduce_build: no such source: %s" % source, file=sys.stderr)
+        return 2
+    _runtime_paths()
+    from cadgen._internal.generation_runner import rebuilt_identity
+
+    # The source's own prints must not reach the one JSON line on stdout.
+    with contextlib.redirect_stdout(io.StringIO()):
+        try:
+            identity = rebuilt_identity(source)
+        except Exception as error:  # noqa: BLE001 - the CLI boundary: report, do not traceback
+            # A Detail Refusal error lists every refusal on its own lines, as gen's does.
+            print("reproduce_build: %s: %s" % (type(error).__name__, error), file=sys.stderr)
+            return 1
+    print(json.dumps({"identitySha256": identity, "source": os.path.basename(source)}))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

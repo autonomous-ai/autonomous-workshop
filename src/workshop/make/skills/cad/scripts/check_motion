@@ -193,6 +193,10 @@ def build_assembly(entry: Path):
     if inserted:
         sys.path.insert(0, project)
     module_name = f"_checkmotion_{entry.name.replace('.', '_')}"
+    # Workshop #102: serial Booleans, so one source builds one B-rep.
+    from cadgen.booleans import serial_booleans
+
+    serial_booleans()
     try:
         spec = importlib.util.spec_from_file_location(module_name, entry)
         if spec is None or spec.loader is None:

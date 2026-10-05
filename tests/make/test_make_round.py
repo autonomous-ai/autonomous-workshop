@@ -866,6 +866,11 @@ class MakeRoundTest(unittest.TestCase):
                     return subprocess.CompletedProcess(
                         command, 0, json.dumps({"identitySha256": identity["value"]}) + "\n", ""
                     )
+                if tool == "reproduce_build":
+                    # Issue #102: the component round's second build reproduces it.
+                    return subprocess.CompletedProcess(
+                        command, 0, json.dumps({"identitySha256": identity["value"]}) + "\n", ""
+                    )
                 if tool == "render_review":
                     out = Path(command[command.index("-o") + 1])
                     out.mkdir()
