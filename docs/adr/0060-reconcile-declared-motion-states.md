@@ -58,3 +58,24 @@ constructor, the reconstruction comparison and evidence schema 2 all stand;
 the states are now tessellated in memory and bound by hash instead of being
 written as `measure/motion-states/state-*.stl`, which a sealed product manifest
 would reject.
+
+## Amended: no fixed state byte limit (2026-10-03, #93)
+
+Generation refused a posed state whose canonical encoding exceeded 20 MiB
+(about 419k triangles). That cap was the size limit of the on-disk state
+files this ADR originally wrote. Once ADR 0062 moved the states into memory
+it protected nothing: validation never checked it, and it fired only after
+every state was posed and every frame rendered. It did decide geometry: a
+Broken God run swapped locked, contract-required rivets for bosses and then
+blocked, because round rivets and bosses both exceeded it.
+
+The cap is removed. A state is the assembly's own tessellation at the fixed
+`motion_states.TOLERANCE`; generation and validation build it identically
+and the hash binding is unchanged, so a changed or rehashed state still
+fails. The work stays bounded by the 48-state limit and the optional
+deadline. A coarser presentation tessellation was rejected: a small round
+feature's triangle count is set by the angular tolerance (a sphere is about
+8,000 triangles at any radius), so it would need a second, adaptive
+tolerance, and remeshing a shape that already carries a finer triangulation
+would make the hash depend on call order. No print or geometry gate changes.
+Materialized runs keep their copied tool bytes, including the cap.

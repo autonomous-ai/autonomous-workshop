@@ -27,8 +27,16 @@ the ray leaves the material, so it is wall thickness in the direction the wall
 is actually crossed -- not distance to the medial axis, which halves it, and not
 a bounding measure. It is quantised to half the grid pitch, which is printed.
 
-The mesh must be closed: inside and outside are meaningless otherwise, so a
-non-watertight mesh is refused rather than measured. Run `check_mesh` first.
+The mesh must be closed: inside and outside are meaningless otherwise. When
+the default tessellation is open, the B-rep decides what to say (`printlib.
+printed_mesh`): an invalid solid FAILS with its bad faces listed; a valid one is
+re-tessellated once, finer, and measured if that closes it; one that stays open
+is UNMEASURABLE (exit 4), which is not a print failure.
+
+Every region printed below names what it belongs to: the nearest feature the
+print-details library tagged while the entry was built, else the nearest B-rep
+face, and a wall says how far it is under the limit. The repair starts there,
+not at a coordinate.
 
 The fix belongs in the generator. `references/print-optimisation.md` carries it,
 and `scripts/cadprint.py` derives both halves so a wall is a derivation rather
@@ -37,7 +45,8 @@ than a number typed twice.
     python "$CAD_SKILL_ROOT/scripts/check_thickness" <project>/part_x.step.py --nozzle 0.4
     python "$CAD_SKILL_ROOT/scripts/check_thickness" <project>/part_x.step.py --report measure/thickness.md
 
-Exit 0 when no surface is under the minimum wall, 1 when any is, 2 on bad usage.
+Exit 0 when no surface is under the minimum wall, 1 when any is or the solid is
+invalid, 2 on bad usage, 4 when the mesh stays open on a valid solid.
 """
 
 from __future__ import annotations
@@ -51,10 +60,13 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from meshlib import (  # noqa: E402
-    sliver_metrics, summarize, voxel_pitch, voxelize, weld,
+    sliver_metrics, voxel_pitch, voxelize, weld,
 )
 import progresslib
-from printlib import entry_mesh, entry_role, resolve_single_entry  # noqa: E402
+from printlib import (  # noqa: E402
+    entry_role, entry_shape, feature_line, feature_tags, mesh_refusal, nearest_feature,
+    printed_mesh, resolve_single_entry,
+)
 
 PLA_DENSITY = 1.24      # g/cm3
 # A part may spend this share of its surface on taper tips before the count
@@ -63,6 +75,7 @@ PLA_DENSITY = 1.24      # g/cm3
 TAPER_BUDGET = 0.02
 REPORT_REGIONS = 6
 INFILL = 0.15           # what a slicer would have put in the space anyway
+UNMEASURABLE = 4        # exit status: a valid solid whose mesh stays open
 MAX_SAMPLES = 400_000
 SHARP_EDGE_COS = float(np.cos(np.deg2rad(30.0)))
 
@@ -472,6 +485,34 @@ def _self_check():
     print("check_thickness self-check: ok")
 
 
+def feature_cell(found):
+    if found is None:
+        return "-"
+    return f"{found['label']}, {found['distance']:.2f} mm away".replace("|", "/")
+
+
+def refuse_mesh(entry, meshed, report):
+    """An entry with no closed mesh to measure: an invalid solid FAILS, a valid
+    one whose mesh stays open is UNMEASURABLE. Either way no wall is measured."""
+    lines = mesh_refusal(entry.name, meshed)
+    invalid = meshed["status"] == "invalid"
+    verdict = "INVALID SOLID" if invalid else "UNMEASURABLE MESH"
+    if invalid:
+        progresslib.record_geometry_failure()
+    for line in lines:
+        print(line)
+    print("RESULT:", verdict)
+    if report:
+        out = Path(report)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        body = "\n".join(lines)
+        out.write_text(
+            f"# Thickness and hollow\n\n`{' '.join(sys.argv[1:])}`\n\n{body}\n\n"
+            f"RESULT: {verdict}\n", encoding="utf-8")
+        print(f"  wrote {out}")
+    return 1 if invalid else UNMEASURABLE
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("entry", nargs="?", help="a printable *.step.py entry, or a "
@@ -504,12 +545,11 @@ def main():
     wall = args.wall if args.wall is not None else 3 * args.nozzle
 
     entry = resolve_single_entry(args.entry)
-    verts, faces = weld(entry_mesh(entry, entry_role(entry)))
-    state = summarize(verts, faces)
-    if state["boundary"]:
-        sys.exit(f"{entry.name}: {state['boundary']} open edges -- inside and outside are "
-                 "undefined on an open surface. Run check_mesh, then repair_mesh, and "
-                 "fix the solid in the generator.")
+    shape = entry_shape(entry, entry_role(entry))
+    meshed = printed_mesh(shape)
+    if meshed["status"] != "closed":
+        return refuse_mesh(entry, meshed, args.report)
+    verts, faces = meshed["verts"], meshed["faces"]
 
     target = args.voxel if args.voxel else min_wall / 6
     pitch = voxel_pitch(verts, target)
@@ -570,6 +610,10 @@ def main():
     taper_area = sum(r["area"] for r in tapers)
     over_budget = taper_area > TAPER_BUDGET * total_area
     thin_fails = bool(walls) or over_budget or (args.strict_thin and bool(tapers))
+    # A failing region is always shown, ahead of the rest, so its feature is named.
+    failing = [r for r in regions if r.get("kind") == "wall"
+               or (r.get("kind") in ("taper", "spot") and (over_budget or args.strict_thin))]
+    regions = failing + [r for r in regions if not any(r is f for f in failing)]
     worst = ""
     if thin.any():
         at = points[np.argmin(thickness)]
@@ -621,15 +665,22 @@ def main():
     for status, name, detail in checks:
         print(f"  {status}  {name:30s} {detail}")
         failed |= status == "FAIL"
-    shown = regions[:REPORT_REGIONS]
+    shown = regions[:max(REPORT_REGIONS, len(failing))]
+    tags = feature_tags() if shown and shape is not None else []
+    for r in shown:
+        r["feature"] = nearest_feature(shape, r["at"], tags)
+        r["short"] = min_wall - r["thinnest"]
     if shown:
-        print(f"        every thin region, worst first -- repair them in one round, "
+        print(f"        every thin region, failing first -- repair them in one round, "
               f"not one per run:")
         for i, r in enumerate(shown, 1):
             print(f"        {i}. [{r['kind']:5s}] {r['thinnest']:.2f} mm at "
                   f"({r['at'][0]:.1f}, {r['at'][1]:.1f}, {r['at'][2]:.1f})"
                   f"  {r['samples']:5d} samples, {r['area']:.1f} mm2, "
                   f"runs {r['extent']:.1f} mm, band {r['width']:.2f} mm")
+            named = feature_line(r["feature"])
+            print(f"           {named + '; ' if named else ''}{r['short']:.2f} mm under the "
+                  f"{min_wall:.2f} mm wall")
         if region_count > len(shown):
             print(f"        ... and {region_count - len(shown)} smaller region(s)")
     print("RESULT:", "WALL BELOW MINIMUM" if failed else "printable at this wall")
@@ -646,11 +697,15 @@ def main():
             "material at that edge. A `spot` is too short to run a nozzle along "
             "at all, and is usually the surface normal misbehaving at a sharp "
             "convex corner.\n\n"
-            "| # | kind | thinnest | at | samples | area mm2 | runs mm | band mm |\n"
-            "|---|---|---|---|---|---|---|---|\n"
+            "`feature` is the print-details feature the region lies on, else the "
+            "nearest B-rep face; `under limit` is how far its thinnest point is "
+            f"below the {min_wall:.2f} mm wall.\n\n"
+            "| # | kind | thinnest | under limit | at | feature | samples | area mm2 | runs mm | band mm |\n"
+            "|---|---|---|---|---|---|---|---|---|---|\n"
             + "\n".join(
-                f"| {i} | {r['kind']} | {r['thinnest']:.2f} mm | "
+                f"| {i} | {r['kind']} | {r['thinnest']:.2f} mm | {r['short']:.2f} mm | "
                 f"({r['at'][0]:.1f}, {r['at'][1]:.1f}, {r['at'][2]:.1f}) | "
+                f"{feature_cell(r['feature'])} | "
                 f"{r['samples']} | {r['area']:.1f} | {r['extent']:.1f} | {r['width']:.2f} |"
                 for i, r in enumerate(shown, 1)))
         out.write_text(

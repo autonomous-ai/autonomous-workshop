@@ -2029,9 +2029,8 @@ def _sealed_design_contract(
 def _wish_has_sealed_references(run_root: Path, wish_sha256: str) -> bool:
     """Whether the materialized Wish sealed any reference images (ADR 0072).
 
-    A sealed reference can only ever be scored by the final verifier's
-    likeness gate under ``--image-derived``, so the finalizer uses this to
-    require that mode.
+    A sealed reference is accounted for only by the final verifier under
+    ``--image-derived``, so the finalizer uses this to require that mode.
     """
 
     references = _materialized_wish(run_root, wish_sha256).get("references")
@@ -2076,7 +2075,8 @@ def _sealed_geometry_requirement_rows(
     return rows
 
 
-_GEOMETRY_PACKET_VIEWS = ("front", "top", "iso")
+# A packet binds only the sheet that holds every view (ADR 0087).
+_GEOMETRY_PACKET_VIEWS = ("sheet",)
 
 
 def _validate_geometry_requirements(
@@ -2307,7 +2307,11 @@ def _validate_signature_review(
         "Make signature review",
         maximum=MAX_SIGNATURE_REVIEW_BYTES,
     )
-    design_contract = _sealed_design_contract(run_root, wish_sha256)
+    design_contract = _current_design_contract(
+        run_root,
+        wish_sha256,
+        run_root.joinpath(*(PurePosixPath(product_root_value) / cad_project_path).parts),
+    )
     sealed_geometry_rows = (
         _sealed_geometry_requirement_rows(design_contract)
         if design_contract is not None
@@ -2602,33 +2606,49 @@ def _geometry_validate_disclosure(product_root: Path, verification: Path, produc
     return value
 
 
-LIKENESS_ACCEPTANCE_NAME = "likeness-acceptance.json"
-MAX_LIKENESS_ACCEPTANCES = 64
-_ACCEPTED_LIKENESS_RESULT = re.compile(
-    r"^- Result: \*\*PASS \((\d+) accepted failing gates?\)\*\* \(exit 0\)$", re.MULTILINE
-)
+COMPONENT_ACCEPTANCE_NAME = "component-acceptance.json"
+MAX_COMPONENT_ACCEPTANCES = 64
+COMPONENT_SHAPE_REPAIR_LIMIT = 5
+_MANAGER_NAMES = frozenset({"workshop-manager", "manager", "workshop manager"})
+# How the final verifier says each Interface was proven (ADR 0082).
+INTERFACE_PROOFS = {
+    "static": "shared-helper-samples",
+    "separable": "keep-out-envelope",
+    "coupled": "pass",
+}
 
 
-def _likeness_acceptances(
+def _component_acceptances(
     run_root: Path, product_root_value: str, verification_relative: PurePosixPath
-) -> Optional[list[dict[str, Any]]]:
-    """The final verifier's likeness acceptances, or None when it wrote none.
+) -> Optional[
+    tuple[list[dict[str, Any]], Optional[list[dict[str, Any]]], list[dict[str, Any]]]
+]:
+    """``(acceptances, interfaces, conflicts)`` from the final verifier, or
+    None when it wrote no record.
 
-    ADR 0074: the verifier writes ``likeness-acceptance.json`` beside its
-    report and binds it to the report's exact bytes. Every entry is a
-    likeness failure the Workshop Manager accepted after it stalled out, with
-    the reason the run reports when it ends.
+    The verifier writes ``component-acceptance.json`` beside its report and
+    binds it to the report's exact bytes. Every acceptance is a Component
+    whose independent reviewer still disagreed after the shape-repair
+    allowance was spent; the Workshop Manager accepted it with the reason the
+    run reports when it ends. ``interfaces`` lists the sealed contract's
+    Interfaces with how each was proven (ADR 0082), or is None for a
+    contract without an Interfaces section. ``conflicts`` lists the
+    Reference Conflicts the component reviews recorded (ADR 0084).
     """
 
     relative = "%s/%s" % (
         product_root_value,
-        (verification_relative.parent / LIKENESS_ACCEPTANCE_NAME).as_posix(),
+        (verification_relative.parent / COMPONENT_ACCEPTANCE_NAME).as_posix(),
     )
     if not os.path.lexists(run_root.joinpath(*PurePosixPath(relative).parts)):
         return None
-    label = "Make %s" % LIKENESS_ACCEPTANCE_NAME
+    label = "Make %s" % COMPONENT_ACCEPTANCE_NAME
     document, _, _ = _read_json(run_root, relative, label)
-    record = _fields(document, {"schema_version", "verification_sha256", "acceptances"}, label)
+    record = _mapping(document, label)
+    if not {"schema_version", "verification_sha256", "acceptances"} <= set(record) or not set(record) <= {
+        "schema_version", "verification_sha256", "acceptances", "interfaces", "reference_conflicts"
+    }:
+        raise ProposalError("%s fields are invalid" % label)
     verification_sha256, _, _ = _hash_regular(
         run_root,
         "%s/%s" % (product_root_value, verification_relative.as_posix()),
@@ -2639,32 +2659,121 @@ def _likeness_acceptances(
     ) != verification_sha256:
         raise ProposalError("%s does not bind the current CAD verification report" % label)
     acceptances = _array(record["acceptances"], label + " acceptances")
-    if len(acceptances) > MAX_LIKENESS_ACCEPTANCES:
+    if len(acceptances) > MAX_COMPONENT_ACCEPTANCES:
         raise ProposalError("%s lists too many acceptances" % label)
     for index, raw in enumerate(acceptances, 1):
         item_label = "%s acceptance %d" % (label, index)
-        item = _fields(raw, {"label", "scope", "iou", "floor", "reason", "accepted_by"}, item_label)
-        _bounded_text(item["label"], item_label + " label", 200)
+        item = _fields(
+            raw,
+            {"label", "scope", "reviewer", "shape_rounds", "reason", "accepted_by"},
+            item_label,
+        )
+        if not _bounded_text(item["label"], item_label + " label", 200).startswith("geometry:"):
+            raise ProposalError("%s label must name a sealed geometry image" % item_label)
         scope = _bounded_text(item["scope"], item_label + " scope", 200)
-        if scope != "assembly" and not scope.startswith("component:"):
-            raise ProposalError("%s scope is invalid" % item_label)
+        if not scope.startswith("component:") or not scope[len("component:"):].strip():
+            raise ProposalError("%s scope must name a component" % item_label)
+        reviewer = _bounded_text(item["reviewer"], item_label + " reviewer", 200)
+        if reviewer.strip().lower() in _MANAGER_NAMES:
+            raise ProposalError(
+                "%s reviewer must be someone other than the Workshop Manager" % item_label
+            )
+        shape_rounds = item["shape_rounds"]
+        if type(shape_rounds) is not int or shape_rounds < COMPONENT_SHAPE_REPAIR_LIMIT:
+            raise ProposalError(
+                "%s must record at least %d shape rounds"
+                % (item_label, COMPONENT_SHAPE_REPAIR_LIMIT)
+            )
         _bounded_text(item["reason"], item_label + " reason", 1_000)
         if item["accepted_by"] != "workshop-manager":
             raise ProposalError("%s must be accepted by the workshop-manager" % item_label)
-        floor, iou = item["floor"], item["iou"]
-        if (
-            type(floor) not in (int, float)
-            or type(iou) not in (int, float)
-            or not 0.0 <= iou < floor <= 1.0
+    interfaces = None
+    if "interfaces" in record:
+        interfaces = _verified_interfaces(record["interfaces"], label)
+    conflicts = _verified_reference_conflicts(record.get("reference_conflicts", []), label)
+    return acceptances, interfaces, conflicts
+
+
+REFERENCE_CONFLICT_FIELDS = frozenset(
+    {"label", "scope", "file", "round", "reviewer", "reference", "contract"}
+)
+
+
+def _verified_reference_conflicts(value: Any, label: str) -> list[dict[str, Any]]:
+    """The verifier's Reference Conflicts (ADR 0084): each names a sealed
+    geometry image, its Component, the round and reviewer that recorded it,
+    what the reference shows and what the Design Contract requires."""
+
+    conflicts = _array(value, label + " reference_conflicts")
+    if len(conflicts) > MAX_COMPONENT_ACCEPTANCES:
+        raise ProposalError("%s lists too many reference conflicts" % label)
+    for index, raw in enumerate(conflicts, 1):
+        item_label = "%s reference conflict %d" % (label, index)
+        item = _fields(raw, set(REFERENCE_CONFLICT_FIELDS), item_label)
+        if not _bounded_text(item["label"], item_label + " label", 200).startswith("geometry:"):
+            raise ProposalError("%s label must name a sealed geometry image" % item_label)
+        scope = _bounded_text(item["scope"], item_label + " scope", 200)
+        if not scope.startswith("component:") or not scope[len("component:"):].strip():
+            raise ProposalError("%s scope must name a component" % item_label)
+        _bounded_text(item["file"], item_label + " file", 200)
+        if type(item["round"]) is not int or item["round"] < 1:
+            raise ProposalError("%s round must be a component round number" % item_label)
+        reviewer = _bounded_text(item["reviewer"], item_label + " reviewer", 200)
+        if reviewer.strip().lower() in _MANAGER_NAMES:
+            raise ProposalError(
+                "%s reviewer must be someone other than the Workshop Manager" % item_label
+            )
+        _bounded_text(item["reference"], item_label + " reference", 1_000)
+        _bounded_text(item["contract"], item_label + " contract", 1_000)
+    return conflicts
+
+
+def _verified_interfaces(value: Any, label: str) -> list[dict[str, Any]]:
+    """The verifier's Interface list: each sealed Interface with its Kind,
+    Components and proof. A Coupled Interface is listed only with a current
+    passing --interface check; anything else fails the verifier itself."""
+
+    interfaces = _array(value, label + " interfaces")
+    if len(interfaces) > MAX_COMPONENT_ACCEPTANCES:
+        raise ProposalError("%s lists too many interfaces" % label)
+    seen = set()
+    for index, raw in enumerate(interfaces, 1):
+        item_label = "%s interface %d" % (label, index)
+        item = _mapping(raw, item_label)
+        kind = item.get("kind")
+        expected = {"id", "kind", "components", "check"} | (
+            {"yielding", "round"} if kind == "coupled" else set())
+        if set(item) != expected or kind not in INTERFACE_PROOFS:
+            raise ProposalError("%s fields are invalid" % item_label)
+        identifier = _bounded_text(item["id"], item_label + " id", 200)
+        if identifier in seen:
+            raise ProposalError("%s repeats an interface id" % item_label)
+        seen.add(identifier)
+        components = _array(item["components"], item_label + " components")
+        if len(components) < 2 or len(set(map(str, components))) != len(components):
+            raise ProposalError("%s must join two or more Components" % item_label)
+        for component in components:
+            _bounded_text(component, item_label + " component", 200)
+        if item["check"] != INTERFACE_PROOFS[kind]:
+            raise ProposalError(
+                "%s is not proven: %s needs %s" % (item_label, kind, INTERFACE_PROOFS[kind])
+            )
+        if kind == "coupled" and (
+            item["yielding"] not in components
+            or type(item["round"]) is not int or item["round"] < 1
         ):
-            raise ProposalError("%s must record an IoU below its floor" % item_label)
-    return acceptances
+            raise ProposalError("%s needs its yielding Component and check round" % item_label)
+    return interfaces
 
 
-def _seal_likeness_acceptances(
-    product_root: Path, acceptances: Optional[list[dict[str, Any]]]
+def _seal_component_acceptances(
+    product_root: Path,
+    acceptances: Optional[list[dict[str, Any]]],
+    interfaces: Optional[list[dict[str, Any]]] = None,
+    conflicts: Optional[list[dict[str, Any]]] = None,
 ) -> None:
-    """Copy the verifier's acceptances into product.json; never let the agent author them."""
+    """Copy the verifier's acceptances, Interfaces and Reference Conflicts
+    into product.json; never let the agent author them."""
 
     path = product_root / "product.json"
     if path.is_symlink() or not path.is_file():
@@ -2675,43 +2784,199 @@ def _seal_likeness_acceptances(
         return  # the ordinary product.json read reports it
     if not isinstance(product, dict):
         return
+    if "likeness_acceptances" in product:
+        raise ProposalError(
+            "Make product.json likeness_acceptances is retired; component "
+            "acceptances come only from the final verifier's %s"
+            % COMPONENT_ACCEPTANCE_NAME
+        )
     if acceptances is None:
-        if "likeness_acceptances" in product:
-            raise ProposalError(
-                "Make product.json likeness_acceptances must come from the final "
-                "verifier's %s, which does not exist" % LIKENESS_ACCEPTANCE_NAME
-            )
+        for key in ("component_acceptances", "interfaces", "reference_conflicts"):
+            if key in product:
+                raise ProposalError(
+                    "Make product.json %s must come from the final verifier's %s, "
+                    "which does not exist" % (key, COMPONENT_ACCEPTANCE_NAME)
+                )
         return
+    if interfaces is None and "interfaces" in product:
+        raise ProposalError(
+            "Make product.json interfaces must come from the final verifier's %s, "
+            "which lists none" % COMPONENT_ACCEPTANCE_NAME
+        )
     updated = dict(product)
     if acceptances:
-        updated["likeness_acceptances"] = acceptances
+        updated["component_acceptances"] = acceptances
     else:
-        updated.pop("likeness_acceptances", None)
+        updated.pop("component_acceptances", None)
+    if interfaces is not None:
+        updated["interfaces"] = interfaces
+    if conflicts:
+        updated["reference_conflicts"] = conflicts
+    else:
+        updated.pop("reference_conflicts", None)
     if updated != product:
         path.write_text(json.dumps(updated, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def _passing_final_result(
-    current_record: str, acceptances: Optional[list[dict[str, Any]]]
-) -> bool:
-    """A plain PASS, or a PASS whose only accepted failures are the Manager's
-    recorded assembly likeness acceptances (ADR 0074)."""
+def _passing_final_result(current_record: str) -> bool:
+    """Only a plain PASS; no verifier gate may be recorded as an accepted failure."""
 
-    if "- Result: **PASS** (exit 0)\n" in current_record:
-        return True
-    match = _ACCEPTED_LIKENESS_RESULT.search(current_record)
-    if match is None or not acceptances or not any(
-        item["scope"] == "assembly" for item in acceptances
+    return "- Result: **PASS** (exit 0)\n" in current_record
+
+
+# Blocked Reports (issue #88): kept in step with ``blocked_reports`` in
+# workshop/make/make_round_guard.py; this finalizer is standalone.
+BLOCKED_REPORTS_NAME = "blocked-reports.jsonl"
+MAX_BLOCKED_LEDGER_BYTES = 1024 * 1024
+OPEN_BLOCKED = frozenset({"open", "waiting"})
+
+
+def _blocked_text(value: Any, maximum: int) -> bool:
+    return isinstance(value, str) and 1 <= len(value.strip()) <= maximum
+
+
+def _blocked_reports(content: str) -> dict[int, dict[str, Any]]:
+    reports: dict[int, dict[str, Any]] = {}
+    for line in content.splitlines():
+        event = json.loads(line)
+        if not isinstance(event, dict):
+            raise ValueError("a Blocked Report event is not an object")
+        kind, number = event.get("event"), event.get("report")
+        if type(number) is not int or not _blocked_text(event.get("at"), 64):
+            raise ValueError("a Blocked Report event has no number or time")
+        wish = event.get("wish_sha256")
+        if wish is not None and not (isinstance(wish, str) and re.fullmatch(r"[0-9a-f]{64}", wish)):
+            raise ValueError("a Blocked Report event has an invalid Wish binding")
+        if kind == "report":
+            rows, round_value = event.get("rows"), event.get("round")
+            if (
+                number != len(reports) + 1
+                or not _blocked_text(event.get("component"), 200)
+                or not (round_value is None or (type(round_value) is int and round_value >= 1))
+                or not isinstance(rows, list) or not 1 <= len(rows) <= 8
+                or not all(_blocked_text(row, 4000) for row in rows)
+                or not _blocked_text(event.get("reason"), 4000)
+            ):
+                raise ValueError("Blocked Report %s is invalid" % number)
+            reports[number] = {"component": event["component"], "wish_sha256": wish, "status": "open"}
+            continue
+        report = reports.get(number)
+        if report is None or report["status"] not in OPEN_BLOCKED:
+            raise ValueError("Blocked Report %s is not open to answer" % number)
+        if wish != report["wish_sha256"]:
+            raise ValueError("Blocked Report %s is answered from another run" % number)
+        if kind == "decision":
+            waits_on, waits_round = event.get("waits_on"), event.get("waits_on_round")
+            if not _blocked_text(event.get("ruling"), 4000) or not (
+                (waits_on is None and waits_round is None)
+                or (_blocked_text(waits_on, 200) and waits_on != report["component"]
+                    and type(waits_round) is int and waits_round >= 0)
+            ):
+                raise ValueError("the decision on Blocked Report %s is invalid" % number)
+            report["status"] = "waiting" if waits_on is not None else "decided"
+        elif kind == "need":
+            if not _blocked_text(event.get("need"), 1024):
+                raise ValueError("the need on Blocked Report %s is invalid" % number)
+            report["status"] = "need"
+        elif kind == "amendment":
+            # ADR 0085: an applied Contract Amendment removed the contradiction.
+            amendment, amended = event.get("amendment"), event.get("amended_sha256")
+            if type(amendment) is not int or amendment < 1 or not (
+                isinstance(amended, str) and re.fullmatch(r"[0-9a-f]{64}", amended)
+            ):
+                raise ValueError("the amendment answering Blocked Report %s is invalid" % number)
+            report["status"] = "amended"
+        else:
+            raise ValueError("unknown Blocked Report event %r" % kind)
+    return reports
+
+
+# ADR 0085: kept in step with AMENDMENT_LEDGER_NAME in make_round.
+CONTRACT_AMENDMENTS_NAME = "contract-amendments.jsonl"
+# Issue #100: the host's run-root amendments file, which may hold an Owner
+# Contract Amendment. The host reaches a run with one only when this
+# finalizer carries the marker below (kept in step with make_round).
+OWNER_AMENDMENTS_FILE = "CONTRACT-AMENDMENTS.json"
+OWNER_AMENDMENTS_MARKER = "workshop-owner-contract-amendments-v1"
+
+
+def _make_round_tool(run_root: Path) -> dict[str, Any]:
+    script = run_root / ".agents/skills/make-round/scripts/make_round"
+    try:
+        return runpy.run_path(str(script))
+    except OSError as exc:
+        raise ProposalError("Make round tool is unavailable: %s" % exc) from exc
+
+
+def _refuse_unreviewed_contract_amendments(run_root: Path, project: Path) -> None:
+    """Refuse the Make proposal while a Contract Amendment awaits its review,
+    or when its ledger does not replay against the sealed contract (ADR
+    0085). The run's own make_round replays it; a frozen make_round without
+    amendments has nothing to replay."""
+
+    ledger = project / "measure" / CONTRACT_AMENDMENTS_NAME
+    if not ledger.exists() and not ledger.is_symlink():
+        return
+    tool = _make_round_tool(run_root)
+    if "read_contract_amendments" not in tool:
+        return
+    try:
+        amendments = tool["read_contract_amendments"](project)
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise ProposalError("the Contract Amendment ledger is invalid: %s" % exc) from exc
+    held = [str(number) for number, item in sorted(amendments.items()) if item["status"] == "proposed"]
+    if held:
+        raise ProposalError(
+            "Contract Amendment %s awaits its review; record the contract-reviewer's verdict "
+            "with make_round --record-amendment-review before proposing Make" % ", ".join(held)
+        )
+
+
+def _current_design_contract(
+    run_root: Path, wish_sha256: str, project: Path
+) -> Optional[Mapping[str, Any]]:
+    """The sealed Design Contract with every applied Contract Amendment (ADR
+    0085) and every Owner Contract Amendment (issue #100): what the
+    signature review's requirement rows must match."""
+
+    sealed = _sealed_design_contract(run_root, wish_sha256)
+    ledger = project / "measure" / CONTRACT_AMENDMENTS_NAME
+    owner = run_root / OWNER_AMENDMENTS_FILE
+    if sealed is None or (
+        not ledger.exists() and not ledger.is_symlink() and not owner.is_file()
     ):
-        return False
-    rows = [
-        line.split("|")
-        for line in current_record.splitlines()
-        if line.startswith("|") and len(line.split("|")) > 3 and line.split("|")[3].strip() == "accepted-fail"
+        return sealed
+    tool = _make_round_tool(run_root)
+    if "current_contract" not in tool:
+        return sealed
+    current = tool["current_contract"](project)
+    return current if isinstance(current, dict) else sealed
+
+
+def _refuse_open_blocked_reports(project: Path) -> None:
+    """Refuse the Make proposal while a Blocked Report is open (issue #88)."""
+
+    ledger = project / "measure" / BLOCKED_REPORTS_NAME
+    if not ledger.exists() and not ledger.is_symlink():
+        return
+    try:
+        identity = ledger.lstat()
+        if not stat.S_ISREG(identity.st_mode) or identity.st_size > MAX_BLOCKED_LEDGER_BYTES:
+            raise ValueError("not a bounded regular file")
+        reports = _blocked_reports(ledger.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise ProposalError("the Blocked Report ledger is invalid: %s" % exc) from exc
+    held = [
+        "%d (%s, %s)" % (number, report["component"], report["status"])
+        for number, report in sorted(reports.items())
+        if report["status"] in OPEN_BLOCKED
     ]
-    return len(rows) == int(match.group(1)) and all(
-        "check_likeness" in row[2] for row in rows
-    )
+    if held:
+        raise ProposalError(
+            "Blocked Report %s is open; answer each with make_round --clear-blocked "
+            "(a decision, or a need quoting its rows) before proposing Make"
+            % ", ".join(held)
+        )
 
 
 def _make_contract(
@@ -2761,6 +3026,8 @@ def _make_contract(
     ):
         raise ProposalError("CAD project path must be a real in-product directory")
     _prune_derived_cad_caches(project, "Make CAD project")
+    _refuse_open_blocked_reports(project)
+    _refuse_unreviewed_contract_amendments(run_root, project)
     combined_entries = sorted(
         path.name
         for path in project.glob("*.step.py")
@@ -2787,19 +3054,36 @@ def _make_contract(
         raise ProposalError(
             "CAD verification must live inside the declared CAD project"
         )
-    likeness_acceptances = _likeness_acceptances(
+    verified = _component_acceptances(
         run_root, product_root_value, verification_relative
     )
+    component_acceptances = None if verified is None else verified[0]
+    interfaces = None if verified is None else verified[1]
+    reference_conflicts = None if verified is None else verified[2]
+    sealed_contract = _sealed_design_contract(run_root, assignment["wish_sha256"])
     if (
-        likeness_acceptances is None
+        component_acceptances is None
         and _wish_has_sealed_references(run_root, assignment["wish_sha256"])
-        and _sealed_design_contract(run_root, assignment["wish_sha256"]) is not None
+        and sealed_contract is not None
     ):
         raise ProposalError(
             "Contract Mode Make requires the final verifier's %s bound to its "
-            "report; rerun verify_project --image-derived (ADR 0074)" % LIKENESS_ACCEPTANCE_NAME
+            "report; rerun verify_project --image-derived" % COMPONENT_ACCEPTANCE_NAME
         )
-    _seal_likeness_acceptances(product_root, likeness_acceptances)
+    if verified is not None and sealed_contract is not None and "interfaces" in sealed_contract:
+        # ADR 0082: every sealed Interface is listed with how it was proven.
+        sealed_ids = sorted(
+            str(item.get("id")) for item in sealed_contract.get("interfaces") or ()
+            if isinstance(item, dict)
+        )
+        if interfaces is None or sorted(str(item["id"]) for item in interfaces) != sealed_ids:
+            raise ProposalError(
+                "Make %s must list every Interface of the sealed Design Contract; "
+                "rerun verify_project --image-derived" % COMPONENT_ACCEPTANCE_NAME
+            )
+    _seal_component_acceptances(
+        product_root, component_acceptances, interfaces, reference_conflicts
+    )
     product_document, product_bytes, _ = _read_json(
         run_root,
         "%s/product.json" % product_root_value,
@@ -2853,7 +3137,7 @@ def _make_contract(
             final_mode not in current_record
             and image_derived_final_mode not in current_record
         )
-        or not _passing_final_result(current_record, likeness_acceptances)
+        or not _passing_final_result(current_record)
     ):
         raise ProposalError(
             "CAD verification must be a passing final report or a disclosed unverified handoff"

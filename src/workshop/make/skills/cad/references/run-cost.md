@@ -73,6 +73,10 @@ On the prismatic model:
 | 1 `--match`, `--search-fov 0,25,40` | 23.1 s | 2.6x — final run only |
 | 3 `--match` **with `--poses-from`** | **7.8 s** | the search skipped, same IoU |
 
+`verify_project --image-derived` runs only the named views and
+`--compare-step`. The `--match` rows below describe the standalone
+`render_views` tool; no Workshop gate scores a reference pose.
+
 **A searched pose is scored twice, at two sizes.** The coarse sweep and its
 halvings run at `SEARCH_SIZE` (240 px) because the sweep is hundreds of
 renders; the halvings are then replayed at the size the gate scores
@@ -118,7 +122,7 @@ do not tell you when a round was wasted.
   round.
 - Run `interfere` standalone as the last check of the last edit round, and only
   then `verify_project`. Final mode rebuilds every entry first, then runs
-  validate/interfere before likeness and exports and stops on a clash. The
+  validate/interfere before the render tail and print gates and stops on a clash. The
   deliberate price is that `interfere` runs twice on the final shape;
   `verify_project` is not a per-edit probe.
 - Read the whole failed pipeline record before editing. The runner collects all

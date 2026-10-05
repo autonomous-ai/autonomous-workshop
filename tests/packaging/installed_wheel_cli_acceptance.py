@@ -33,6 +33,7 @@ SKILL_PATHS = {
     "image-to-cad": "make/skills/image-to-cad",
     "make-round": "make/skills/make-round",
     "manual-design": "release/skills/manual-design",
+    "print-details": "make/skills/print-details",
     "product-design": "make/skills/product-design",
     "step-parts": "make/skills/step-parts",
     "wiki": "make/skills/wiki",

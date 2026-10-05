@@ -20,8 +20,8 @@ Final mode (the default) runs layout, design-reference provenance, multi-target
 generation with STEP writes, print fit, local audits, bought-part mounts,
 powered-system integration and optional motion (--check-motion true) when
 declared or required by a documented assembly procedure, then refs + validate for every entry and assembly
-interference.  Image-derived renders and likeness run only after that inspect
-batch is clean, and the print gates (--print-gates) run last of all, so a clash
+interference.  Image-derived renders and the source-vs-STEP drift check run
+only after that inspect batch is clean, and the print gates (--print-gates) run last of all, so a clash
 or an invalid solid cannot spend any of their budget.
 
 STEP remains the only deliverable: --print-gates writes no mesh, it tessellates
@@ -32,8 +32,10 @@ expensive motion and inspect tail, and the print gates are collected across
 every part, so one failed gate cannot hide the next one's actionable error.
 
 Image-derived mode adds the gates geometry-only CAD cannot answer: spec/source
-reconciliation, landmark coverage, orthogonal and reference-pose renders,
-source-vs-STEP drift, and silhouette likeness.  It deliberately requires local
+reconciliation, landmark coverage, orthogonal renders, and source-vs-STEP
+drift.  No silhouette score is computed: in Contract Mode each sealed Component
+image is accounted for by that Component's current round, which an independent
+reviewer compared with its reference.  It deliberately requires local
 measure/check_spec.py and measure/check_landmarks.py audits because those claims
 are project-specific and cannot be inferred generically, and a measure/mounts.json
 whenever the project carries a component STEP under ref/ -- a fetched part with no
@@ -79,7 +81,7 @@ from typing import Sequence
 SCRIPTS_DIR = Path(__file__).resolve().parent
 IMAGE_SCRIPTS_DIR = SCRIPTS_DIR.parents[1] / "image-to-cad" / "scripts"
 MAKE_ROUND_SCRIPT = SCRIPTS_DIR.parents[1] / "make-round" / "scripts" / "make_round"
-LIKENESS_ACCEPTANCE_NAME = "likeness-acceptance.json"
+COMPONENT_ACCEPTANCE_NAME = "component-acceptance.json"
 POWER_SCRIPTS_DIR = (
     SCRIPTS_DIR.parents[1] / "electromechanical-integration" / "scripts"
 )
@@ -87,11 +89,6 @@ CADGEN_PACKAGE_DIR = SCRIPTS_DIR / "packages" / "cadgen" / "src" / "cadgen"
 ENTRY_SUFFIX = ".step.py"
 PART_PREFIX = "part_"
 DEFAULT_PREVIEW_TOLERANCE = 0.1
-# Keep these in step with check_likeness.DEFAULT_MIN and STALL_STREAK. Final
-# acceptance never lowers the numeric floor: it preserves the raw failure and
-# records the Workshop Manager's decision and reason separately (ADR 0074).
-LIKENESS_FLOOR = 0.90
-LIKENESS_STALL_STREAK = 3
 DEFAULT_BED = (220.0, 220.0, 220.0)
 # Wall-clock ceiling handed to check_motion. The host's own CAD-gate timeout is
 # 30 minutes for the entire verification, so a single sweep that wants more than
@@ -101,12 +98,6 @@ DEFAULT_MOTION_DEADLINE_SECONDS = 900.0
 MOTION_DEADLINE_ENV = "WORKSHOP_MOTION_DEADLINE_SECONDS"
 BED_DECLARATION = re.compile(
     r"--bed\s+(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d+)?)"
-)
-SAFE_LABEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
-# `@AZ,EL[,TOL]` after a likeness reference path: where the photograph was
-# taken from. render_views.py owns the default tolerance and the search window.
-CAMERA_SUFFIX = re.compile(
-    r"@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)(?:,(\d+(?:\.\d+)?))?$"
 )
 ASSEMBLY_HEADING = re.compile(r"^#{1,6}\s+.*\bassembly\b", re.IGNORECASE)
 ASSEMBLY_ORDER = re.compile(r"\bassembly\s+(?:order|procedure|steps?|sequence)\b", re.IGNORECASE)
@@ -233,7 +224,8 @@ SIGNATURE_REVIEW_FIELDS_V9 = SIGNATURE_REVIEW_FIELDS | {
 # gate still cannot see the sealed contract, so it checks shape only.
 SIGNATURE_REVIEW_GEOMETRY_FIELDS = {"geometry_form_requirements", "geometry_blind_reads"}
 SIGNATURE_REVIEW_FIELDS_V9_GEOMETRY = SIGNATURE_REVIEW_FIELDS_V9 | SIGNATURE_REVIEW_GEOMETRY_FIELDS
-GEOMETRY_PACKET_VIEWS = ("front", "top", "iso")
+# A packet binds only the sheet that holds every view (ADR 0087).
+GEOMETRY_PACKET_VIEWS = ("sheet",)
 BLIND_REREAD_IMAGES = ("iso", "signature")
 SHA256_TEXT = re.compile(r"^[0-9a-f]{64}$")
 
@@ -575,66 +567,6 @@ def _parse_bed(raw: str) -> tuple[float, float, float]:
     return values  # type: ignore[return-value]
 
 
-def _parse_likeness_ref(raw: str) -> tuple[str, str, str | None]:
-    """`LABEL=PATH[@AZ,EL[,TOL]]` -> (label, path, camera text or None)."""
-    if "=" not in raw:
-        raise argparse.ArgumentTypeError(
-            "likeness reference must be LABEL=PATH@AZ,EL, for example "
-            "hero=ref/hero.png@-60,20"
-        )
-    label, path = raw.split("=", 1)
-    label = label.strip()
-    path = path.strip()
-    if not SAFE_LABEL.fullmatch(label):
-        raise argparse.ArgumentTypeError(
-            "likeness label must start with a letter or digit and contain only "
-            "letters, digits, dot, underscore, or hyphen"
-        )
-    camera = None
-    if "@" in path:
-        match = CAMERA_SUFFIX.search(path)
-        if match is None:
-            raise argparse.ArgumentTypeError(
-                f"likeness camera must be @AZ,EL or @AZ,EL,TOL in degrees: {raw!r}"
-            )
-        az, el, tol = match.groups()
-        if not -90 <= float(el) <= 90:
-            raise argparse.ArgumentTypeError(
-                f"likeness camera elevation {el} is outside -90..90: {raw!r}"
-            )
-        if tol is not None and not 0 < float(tol) < 90:
-            raise argparse.ArgumentTypeError(
-                f"likeness camera tolerance {tol} must be above 0 and below 90, "
-                f"where the window would reach the mirror pose: {raw!r}"
-            )
-        camera = ",".join(v for v in (az, el, tol) if v is not None)
-        path = path[:match.start()].strip()
-    if not path:
-        raise argparse.ArgumentTypeError("likeness reference path is empty")
-    return label, path, camera
-
-
-def _parse_likeness_entry(raw: str) -> tuple[str, str]:
-    """`LABEL=ENTRY` -> (label, entry path): the entry a reference is scored
-    against when it shows one part rather than the combined assembly."""
-    if "=" not in raw:
-        raise argparse.ArgumentTypeError(
-            "likeness entry must be LABEL=ENTRY, for example "
-            "lid=part_lid.step.py"
-        )
-    label, entry = (part.strip() for part in raw.split("=", 1))
-    if not SAFE_LABEL.fullmatch(label):
-        raise argparse.ArgumentTypeError(
-            "likeness label must start with a letter or digit and contain only "
-            "letters, digits, dot, underscore, or hyphen"
-        )
-    if not entry.endswith(".step.py"):
-        raise argparse.ArgumentTypeError(
-            f"likeness entry must be a *.step.py entry generator: {raw!r}"
-        )
-    return label, entry
-
-
 def _documented_assembly_claims(project: Path) -> list[str]:
     """Assembly-path claims that make a missing motion manifest observable.
 
@@ -685,161 +617,17 @@ def _documented_entry_references(project: Path) -> list[str]:
     return missing
 
 
-def _read_likeness_history(project: Path) -> list[dict]:
-    """Read the append-only likeness rows with the gate's tolerant semantics."""
-    path = project / "measure" / "likeness-history.jsonl"
-    if not path.is_file():
-        return []
-    rows = []
-    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
-        try:
-            row = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(row, dict):
-            rows.append(row)
-    return rows
-
-
-def _history_reference_matches(
-    row: dict,
-    reference: Path,
-    *,
-    project: Path,
-    cwd: Path,
-) -> bool:
-    """Match the producer's canonical identity, then legacy path spellings."""
-    resolved = row.get("reference_resolved")
-    if isinstance(resolved, str) and resolved:
-        try:
-            return Path(resolved).resolve() == reference.resolve()
-        except OSError:
-            return False
-    raw = row.get("reference")
-    if raw is None:  # rows written before references were stored: label-only compatibility
-        return True
-    if not isinstance(raw, str) or not raw:
-        return False
-    path = Path(raw)
-    candidates = [path.resolve()] if path.is_absolute() else [
-        (cwd / path).resolve(),
-        (project / path).resolve(),
-    ]
-    return reference.resolve() in candidates
-
-
-def _likeness_rows_for(
-    history: list[dict],
-    label: str,
-    reference: Path,
-    *,
-    project: Path,
-    cwd: Path,
-) -> list[dict]:
-    return [
-        row for row in history
-        if row.get("label") == label
-        and _history_reference_matches(
-            row, reference, project=project, cwd=cwd
-        )
-    ]
-
-
-def _mismatch_acceptance_labels(
-    project: Path,
-    cwd: Path,
-    likeness_refs: list[tuple[str, Path]],
-) -> tuple[set[str], list[str]]:
-    """Views whose latest failing loop has reached the stopping condition."""
-    history = _read_likeness_history(project)
-    eligible: set[str] = set()
-    blockers: list[str] = []
-    for label, reference in likeness_refs:
-        rows = _likeness_rows_for(
-            history, label, reference, project=project, cwd=cwd
-        )
-        if not rows:
-            blockers.append(f"{label}: no scored history for this reference")
-            continue
-        latest = rows[-1]
-        if latest.get("ok") is True:
-            continue
-        streak = latest.get("stall_streak")
-        if not isinstance(streak, int):
-            blockers.append(
-                f"{label}: rerun check_likeness to record the stalled-out state"
-            )
-            continue
-        if streak < LIKENESS_STALL_STREAK:
-            blockers.append(
-                f"{label}: {streak}/{LIKENESS_STALL_STREAK} consecutive "
-                "stalled/regressing rounds"
-            )
-            continue
-        eligible.add(label)
-    return eligible, blockers
-
-
-def _accepted_likeness_summary(
-    project: Path,
-    cwd: Path,
-    likeness_refs: list[tuple[str, Path]],
-    eligible_labels: set[str],
-    prior_row_counts: dict[str, int],
-    items: list[tuple[str, float]] | None = None,
-) -> tuple[str | None, list[str]]:
-    """Look up the fresh gate decision; do not reproduce its pass/fail rules."""
-    history = _read_likeness_history(project)
-    accepted: list[str] = []
-    blockers: list[str] = []
-    for label, reference in likeness_refs:
-        rows = _likeness_rows_for(
-            history, label, reference, project=project, cwd=cwd
-        )
-        if len(rows) <= prior_row_counts.get(label, 0):
-            blockers.append(f"{label}: final likeness run wrote no history row")
-            continue
-        row = rows[-1]
-        if row.get("ok") is True:
-            continue
-        failed_because = row.get("failed_because")
-        if failed_because != "floor":
-            blockers.append(
-                f"{label}: final likeness failure is {failed_because or 'unclassified'}, "
-                "not an accepted floor mismatch"
-            )
-            continue
-        if label not in eligible_labels:
-            blockers.append(f"{label}: this view was not stalled out before final")
-            continue
-        if row.get("trend") == "improving":
-            blockers.append(
-                f"{label}: likeness moved again in the final run; run another round "
-                "before deciding whether to accept it"
-            )
-            continue
-        streak = row.get("stall_streak")
-        if not isinstance(streak, int) or streak < LIKENESS_STALL_STREAK:
-            blockers.append(f"{label}: final likeness row is no longer stalled out")
-            continue
-        iou = row.get("iou")
-        if not isinstance(iou, (int, float)):
-            blockers.append(f"{label}: final likeness row has no numeric score")
-            continue
-        accepted.append(f"{label}={float(iou):.3f}<{LIKENESS_FLOOR:.2f}")
-        if items is not None:
-            items.append((label, float(iou)))
-    return (", ".join(accepted) if accepted else None), blockers
-
-
-# ── Contract Mode likeness (ADR 0074) ─────────────────────────────────────────
+# ── Contract Mode component review ────────────────────────────────────────────
 #
-# A Design Contract labels each sealed image `assembly` or `geometry:<id>`. The
-# verifier scores the assembly images against the whole object. A geometry
-# image shows one Component, so scoring it here would fail every run and
-# measure nothing; it is accounted for by that Component's current round
-# instead. make_round owns what "a current, passing component round" means, so
-# the verifier asks it rather than reproducing the rule.
+# A Design Contract labels each sealed image `assembly` or `geometry:<id>`. A
+# geometry image shows one Component and is accounted for by that Component's
+# current round: its checks passed and an independent reviewer (never the
+# Workshop Manager) recorded that the model looks like the image, or the
+# shape-repair allowance ran out and the reviewer's recorded disagreement
+# becomes a component acceptance the run reports when it ends. make_round owns
+# what "a current, passing component round" means, so the verifier asks it
+# rather than reproducing the rule. Assembly images are shown to the assembly's
+# blind review; nothing here scores a silhouette.
 
 
 def _contract_sealed_references(project: Path) -> tuple[dict | None, list[dict], str | None]:
@@ -858,26 +646,6 @@ def _contract_sealed_references(project: Path) -> tuple[dict | None, list[dict],
     if not any(item["label"] == "assembly" or item["label"].startswith("geometry:") for item in sealed):
         return None, [], None
     return make_round, sealed, None
-
-
-def _contract_likeness_refusal(sealed: list[dict], likeness_refs: list[tuple[str, Path]]) -> str | None:
-    """Why this --likeness-ref set cannot verify a Contract Mode toy, or None."""
-    given = {hashlib.sha256(Path(reference).read_bytes()).hexdigest(): label for label, reference in likeness_refs}
-    for item in sealed:
-        if item["label"].startswith("geometry:") and item["sha256"] in given:
-            role = item["label"][len("geometry:"):]
-            return (
-                f"--likeness-ref {given[item['sha256']]} is the sealed {item['label']} image; it shows one "
-                f"Component and is scored in its component round (make_round --component "
-                f"part_{role}.step.py), never against the whole object"
-            )
-    missing = [item["path"].name for item in sealed if item["label"] == "assembly" and item["sha256"] not in given]
-    if missing:
-        return (
-            "Contract Mode final verification must score every sealed assembly image; "
-            "pass --likeness-ref for " + ", ".join(missing)
-        )
-    return None
 
 
 def _gen_part_identities(stdout: str) -> dict[str, str]:
@@ -900,16 +668,19 @@ def _gen_part_identities(stdout: str) -> dict[str, str]:
     return identities
 
 
-def _component_likeness_coverage(
+def _component_review_coverage(
     make_round: dict,
     project: Path,
     sealed: list[dict],
     identities: dict[str, str],
+    conflicts: list[dict] | None = None,
 ) -> tuple[list[str], list[dict]]:
     """``(failures, acceptances)`` for every sealed geometry image.
 
     A Component's identity is the B-rep hash `gen` reported for it, or, when
     `gen` found it current and built nothing, the sha256 of its STEP on disk.
+    Each Reference Conflict the covering review recorded (ADR 0084) is
+    appended to ``conflicts`` when it is given.
     """
     digests: dict[str, str] = {}
     for item in sealed:
@@ -921,7 +692,7 @@ def _component_likeness_coverage(
             digests[role] = identities[role]
         elif step.is_file():
             digests[role] = _sha256_file(step)
-    covered = make_round["component_coverage"](project, digests, LIKENESS_FLOOR)
+    covered = make_round["component_coverage"](project, digests)
     failures: list[str] = []
     acceptances: list[dict] = []
     for item in sealed:
@@ -931,64 +702,127 @@ def _component_likeness_coverage(
         cover = covered.get(item["sha256"])
         if cover is None:
             failures.append(
-                f"{item['label']}: no current component round passed {LIKENESS_FLOOR:.2f} or "
-                f"was accepted after stalling out; run make_round --component part_{role}.step.py"
+                f"{item['label']}: no current component round passed its checks and "
+                f"independent review; run make_round --component part_{role}.step.py"
             )
             continue
+        if conflicts is not None:
+            for conflict in cover.get("reference_conflicts") or ():
+                conflicts.append({
+                    "label": item["label"],
+                    "scope": f"component:{cover['role']}",
+                    "file": str(conflict["file"]),
+                    "round": int(conflict["round"]),
+                    "reviewer": str(conflict["reviewer"]),
+                    "reference": str(conflict["reference"]),
+                    "contract": str(conflict["contract"]),
+                })
         accepted = cover.get("accepted")
         if accepted is not None:
             acceptances.append({
                 "label": item["label"],
                 "scope": f"component:{cover['role']}",
-                "iou": float(accepted["iou"]),
-                "floor": LIKENESS_FLOOR,
-                "reason": accepted["reason"],
+                "reviewer": str(accepted["reviewer"]),
+                "shape_rounds": int(accepted["shape_rounds"]),
+                "reason": str(accepted["reason"]),
                 "accepted_by": "workshop-manager",
             })
     return failures, acceptances
 
 
-def _component_likeness_failed(runner: "Runner", make_round: dict, project: Path, sealed: list[dict]) -> bool:
+def _interface_review(make_round: dict, project: Path, identities: dict[str, str]) -> tuple[list[str], list[dict] | None]:
+    """``(failures, report)`` for the sealed contract's Interfaces (ADR 0082).
+
+    ``report`` is None when the contract has no Interfaces section. Every
+    Coupled Interface needs a current passing make_round --interface check on
+    the Components' present identities; make_round owns that rule.
+    """
+    if "contract_interfaces" not in make_round:
+        return [], None
+    interfaces, error = make_round["contract_interfaces"](project)
+    if error is not None:
+        return [error], None
+    if interfaces is None:
+        return [], None
+    digests: dict[str, str] = {}
+    for interface in interfaces:
+        # An instance reference (wing#2) is judged on its Component's
+        # identity (issue #80).
+        for role in make_round.get("reference_roles", list)(interface.get("components") or ()):
+            step = project / f"{PART_PREFIX}{role}.step"
+            if role in identities:
+                digests[role] = identities[role]
+            elif step.is_file():
+                digests[role] = _sha256_file(step)
+    failures = [f"{failure}; run make_round --interface" for failure in
+                make_round["interface_failures"](project, interfaces, digests)]
+    return failures, make_round["interface_report"](project, interfaces, digests)
+
+
+def _component_review_failed(runner: "Runner", make_round: dict, project: Path, sealed: list[dict]) -> bool:
     """Record the Contract Mode component-image gate; True when it fails."""
     started = time.perf_counter()
-    failures, acceptances = _component_likeness_coverage(
-        make_round, project, sealed, _gen_part_identities(runner.last_stdout)
-    )
+    identities = _gen_part_identities(runner.last_stdout)
+    conflicts: list[dict] = []
+    failures, acceptances = _component_review_coverage(make_round, project, sealed, identities, conflicts)
+    interface_failures, interfaces = _interface_review(make_round, project, identities)
+    failures += interface_failures
+    if interfaces is not None:
+        runner.interfaces = interfaces
+        proofs = {"keep-out-envelope": "Keep-out Envelope checked in each side's component round",
+                  "shared-helper-samples": "Shared Helper samples passed the print gates"}
+        for item in interfaces:
+            proof = proofs.get(item["check"]) or (
+                f"--interface check {item['check']}" + (f" at r{item['round']:04d}" if item.get("round") else ""))
+            runner.note("interface", f"{item['id']} ({item['kind']}: {' + '.join(item['components'])}): {proof}")
     for failure in failures:
         print(f"verify_project: {failure}", file=sys.stderr)
-    if runner.likeness_acceptances is not None:
-        runner.likeness_acceptances.extend(acceptances)
+    if runner.component_acceptances is not None:
+        runner.component_acceptances.extend(acceptances)
+        runner.reference_conflicts.extend(conflicts)
     labels = ", ".join(item["label"] for item in sealed if item["label"].startswith("geometry:"))
     runner.records.append({
-        "command": f"component likeness  # ADR 0074: {labels or 'no component images'}",
+        "command": f"component review  # {labels or 'no component images'}",
         "status": f"rc={1 if failures else 0}",
         "seconds": time.perf_counter() - started,
     })
     for item in acceptances:
         runner.note(
-            "component likeness acceptance",
-            f"{item['label']}={item['iou']:.3f}<{LIKENESS_FLOOR:.2f} accepted by the Workshop Manager; "
+            "component acceptance",
+            f"{item['label']} accepted by the Workshop Manager at the shape-repair limit "
+            f"({item['shape_rounds']} shape rounds; reviewer {item['reviewer']} disagreed); "
             f"reason: {item['reason']}",
+        )
+    for item in conflicts:
+        runner.note(
+            "reference conflict",
+            f"{item['label']} {item['file']} shows {item['reference']}; the Design Contract requires "
+            f"{item['contract']} (reviewer {item['reviewer']}, r{item['round']:04d}); the contract wins",
         )
     return bool(failures)
 
 
-def _prior_assembly_acceptances(report: Path) -> list[dict]:
-    try:
-        record = json.loads((report.parent / LIKENESS_ACCEPTANCE_NAME).read_text(encoding="utf-8"))
-        return [item for item in record["acceptances"] if item.get("scope") == "assembly"]
-    except (OSError, ValueError, KeyError, TypeError, AttributeError):
-        return []
-
-
-def _write_likeness_acceptance(report: Path, acceptances: list[dict]) -> None:
-    """Bind the Manager's likeness acceptances to this exact verification report."""
+def _write_component_acceptance(
+    report: Path,
+    acceptances: list[dict],
+    interfaces: list[dict] | None = None,
+    conflicts: list[dict] | None = None,
+) -> None:
+    """Bind the Manager's component acceptances, the contract's Interfaces
+    with how each was proven (ADR 0082), and the Reference Conflicts the
+    reviews recorded (ADR 0084) to this exact verification report."""
     record = {
         "schema_version": 1,
         "verification_sha256": hashlib.sha256(report.read_bytes()).hexdigest(),
         "acceptances": acceptances,
     }
-    (report.parent / LIKENESS_ACCEPTANCE_NAME).write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    if interfaces is not None:
+        record["interfaces"] = interfaces
+    if conflicts:
+        record["reference_conflicts"] = conflicts
+    (report.parent / COMPONENT_ACCEPTANCE_NAME).write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+
+
 def _declared_carried(entry: Path) -> list[str]:
     """Read ``CARRIES = "ref/x.step"`` statically, like ``PRINTABLE``.
 
@@ -1180,9 +1014,16 @@ class Runner:
         self.inspection_checks: list[dict[str, object]] = []
         self.geometry_deadline = None
         self.last_stdout = ""
-        # None outside an image-derived final run; else every likeness failure
-        # the Workshop Manager accepted, written beside the report (ADR 0074).
-        self.likeness_acceptances: list[dict] | None = None
+        # None outside an image-derived final run; else every Component the
+        # Workshop Manager accepted at the shape-repair limit, written beside
+        # the report as component-acceptance.json.
+        self.component_acceptances: list[dict] | None = None
+        # Reference Conflicts the component reviews recorded (ADR 0084),
+        # gathered alongside the acceptances.
+        self.reference_conflicts: list[dict] = []
+        # The sealed contract's Interfaces and how each was proven, when it
+        # has an Interfaces section (ADR 0082).
+        self.interfaces: list[dict] | None = None
 
     def command(
         self,
@@ -1392,7 +1233,7 @@ def _run_or_stop(runner: Runner, argv: Sequence[str | Path], **kwargs) -> bool:
 
 
 def _inspect_geometry(runner: Runner, entry_args: list[str]) -> int:
-    """Refs, validate, and assembly interfere. A clash stops the likeness tail."""
+    """Refs, validate, and assembly interfere. A clash stops the render tail."""
     requests: list[dict[str, object]] = []
     for index, entry in enumerate(entry_args):
         label = "assembly" if index == 0 else Path(entry).name.removesuffix(ENTRY_SUFFIX)
@@ -1625,7 +1466,6 @@ def _sweep_tool_paths(*, image_derived: bool) -> list[Path]:
     if image_derived:
         paths.extend([
             IMAGE_SCRIPTS_DIR / "render_views.py",
-            IMAGE_SCRIPTS_DIR / "check_likeness.py",
         ])
     return paths
 
@@ -1725,14 +1565,8 @@ def _write_report(
     previous = None
     if preserve_existing and path.is_file():
         previous = path.read_text(encoding="utf-8")
-    accepted_failures = sum(
-        1 for record in runner.records if record.get("status") == "accepted-fail"
-    )
     unfinished = any(check["status"] == "unverified" for check in runner.inspection_checks)
     result_text = ("UNVERIFIED" if unfinished else "PASS") if result == 0 else "FAIL"
-    if result == 0 and accepted_failures and not unfinished:
-        noun = "gate" if accepted_failures == 1 else "gates"
-        result_text += f" ({accepted_failures} accepted failing {noun})"
     lines = [
         "# Verification pipeline record",
         "",
@@ -1768,8 +1602,9 @@ def _write_report(
                   "print_ready_claim": False, "checks": runner.inspection_checks,
                   "verification_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
     (path.parent / "geometry-inspection.json").write_text(json.dumps(disclosure, indent=2) + "\n", encoding="utf-8")
-    if runner.likeness_acceptances is not None:
-        _write_likeness_acceptance(path, runner.likeness_acceptances)
+    if runner.component_acceptances is not None:
+        _write_component_acceptance(path, runner.component_acceptances, runner.interfaces,
+                                    runner.reference_conflicts)
 
 
 # ── Harness verdict ───────────────────────────────────────────────────────────
@@ -2033,15 +1868,7 @@ def _final(
     skip_thickness: bool,
     overhang_angle: float,
     image_derived: bool,
-    likeness_refs: list[tuple[str, Path]],
-    likeness_min: float,
-    likeness_accept_mismatch: str | None,
-    likeness_mismatch_labels: set[str],
-    likeness_accept_regression: str | None,
-    search_fov: str,
     skip_gen: bool = False,
-    likeness_cameras: dict[str, str | None] | None = None,
-    likeness_entries: dict[str, Path] | None = None,
 ) -> int:
     entries = [assembly, *parts]
     entry_args = [_path_arg(path, runner.cwd) for path in entries]
@@ -2147,125 +1974,32 @@ def _final(
 
     if image_derived:
         snap_dir = project / "snap"
-        # One render per entry that references are scored against: the combined
-        # assembly always (it carries the orthogonal review views), then every
-        # part entry a --likeness-entry names, each into its own folder so its
-        # poses.json survives the next render.
-        groups: dict[Path, list[tuple[str, Path]]] = {assembly: []}
-        for label, reference in likeness_refs:
-            target = (likeness_entries or {}).get(label, assembly)
-            groups.setdefault(target, []).append((label, reference))
-        match_dirs: dict[str, Path] = {}
-        for target, refs in groups.items():
-            out_dir = snap_dir if target == assembly else snap_dir / target.name.removesuffix(".step.py")
-            render_args: list[str | Path] = [
-                sys.executable,
-                IMAGE_SCRIPTS_DIR / "render_views.py",
-                _path_arg(target, runner.cwd),
-            ]
-            if target == assembly:
-                render_args += ["--view", "front", "--view", "right", "--view", "top", "--view", "iso"]
-            for label, reference in refs:
-                render_args.extend(
-                    ["--match", _path_arg(reference, runner.cwd), "--label", f"match-{label}"]
-                )
-                camera = (likeness_cameras or {}).get(label)
-                if camera:
-                    # the = form: argparse reads a leading "-" as a new option
-                    render_args.append(f"--camera={camera}")
-                match_dirs[label] = out_dir
-            render_args.extend(
-                [
-                    "--search-fov", search_fov,
-                    # check_likeness is the acceptance gate below.  Zero here lets
-                    # the renderer finish writing every view even when likeness is
-                    # poor; a non-zero exit still catches source-vs-STEP drift.
-                    "--min", "0",
-                    "--compare-step",
-                    "--json",
-                    "-o", _path_arg(out_dir, runner.cwd),
-                ]
-            )
-            if not _run_or_stop(runner, render_args):
-                return 1
-
-        likeness_args: list[str | Path] = [
+        render_args: list[str | Path] = [
             sys.executable,
-            IMAGE_SCRIPTS_DIR / "check_likeness.py",
+            IMAGE_SCRIPTS_DIR / "render_views.py",
+            _path_arg(assembly, runner.cwd),
+            "--view", "front",
+            "--view", "right",
+            "--view", "top",
+            "--view", "iso",
         ]
-        for label, reference in likeness_refs:
-            likeness_args.extend(
-                [
-                    "--pair", _path_arg(match_dirs.get(label, snap_dir) / f"match-{label}.png", runner.cwd),
-                    _path_arg(reference, runner.cwd),
-                    "--label", label,
-                ]
-            )
-        likeness_args.extend(
+        render_args.extend(
             [
-                "--min", str(likeness_min),
-                "--report", _path_arg(project / "measure" / "likeness.md", runner.cwd),
+                # Orthogonal review views plus the source-vs-STEP drift check;
+                # a non-zero exit is drift between the source and its STEP.
+                "--compare-step",
+                "--json",
+                "-o", _path_arg(snap_dir, runner.cwd),
             ]
         )
-        if likeness_accept_regression:
-            likeness_args.extend(["--accept-regression", likeness_accept_regression])
-        history_before = _read_likeness_history(project)
-        prior_row_counts = {
-            label: len(_likeness_rows_for(
-                history_before, label, reference, project=project, cwd=runner.cwd
-            ))
-            for label, reference in likeness_refs
-        }
-        likeness_rc = runner.command(likeness_args)
-        if likeness_rc != 0:
-            accepted = None
-            acceptance_blockers: list[str] = []
-            accepted_items: list[tuple[str, float]] = []
-            if likeness_rc == 1 and likeness_accept_mismatch:
-                accepted, acceptance_blockers = _accepted_likeness_summary(
-                    project,
-                    runner.cwd,
-                    likeness_refs,
-                    likeness_mismatch_labels,
-                    prior_row_counts,
-                    items=accepted_items,
-                )
-            if accepted is None or acceptance_blockers:
-                for blocker in acceptance_blockers:
-                    print(f"verify_project: {blocker}", file=sys.stderr)
-                return 1
-            # Keep the child gate's raw non-zero result observable while
-            # recording that this specific failure no longer blocks delivery.
-            runner.records[-1]["status"] = "accepted-fail"
-            runner.note(
-                "check_likeness acceptance",
-                f"raw floor failure accepted by the Workshop Manager: {accepted}; "
-                f"reason: {likeness_accept_mismatch}",
-            )
-            if runner.likeness_acceptances is not None:
-                runner.likeness_acceptances.extend(
-                    {
-                        "label": label,
-                        "scope": "assembly",
-                        "iou": iou,
-                        "floor": LIKENESS_FLOOR,
-                        "reason": likeness_accept_mismatch,
-                        "accepted_by": "workshop-manager",
-                    }
-                    for label, iou in accepted_items
-                )
-        elif likeness_accept_mismatch:
-            print(
-                "verify_project: warning: --likeness-accept-mismatch was not needed; "
-                "the fresh likeness gate passed, so no acceptance decision was recorded",
-                file=sys.stderr,
-            )
+        if not _run_or_stop(runner, render_args):
+            return 1
 
     # Last, where the print sweep has always run. Two independent reasons put it
     # here rather than straight after interference: a clash or an invalid solid
     # must not spend its voxel-grid budget, and on a multi-part project it is
     # typically the most expensive block in the run -- `references/run-cost.md`
-    # puts it above the render/likeness tail once a project has a few parts. The
+    # puts it above the render tail once a project has a few parts. The
     # runner fails cheap first everywhere else; this is not the place to stop.
     if print_gates and _run_print_gates(
         runner,
@@ -2412,8 +2146,7 @@ def self_check() -> int:
         root = Path(td).resolve()
         os.chdir(root)
         try:
-            img = ["proj", "--image-derived",
-                   "--likeness-ref", "hero=ref/hero.png@-60,20"]
+            img = ["proj", "--image-derived"]
 
             _sc_project(root)
             fixture("image-derived final refuses an unclassified power state",
@@ -2462,161 +2195,16 @@ def self_check() -> int:
             fixture("CARRIES cannot move foreign geometry out of ref/",
                     img + ["--unpowered"], "not under ref/")
 
-            _sc_project(root)
-            fixture("the final likeness floor cannot be lowered",
-                    img + ["--unpowered", "--likeness-min", "0.5"], "fixed")
-
-            _sc_project(root)
-            fixture("an accepted mismatch cannot lower the fixed final floor",
-                    img + ["--unpowered", "--likeness-min", "0.5",
-                           "--likeness-accept-mismatch", "single oblique view"],
-                    "fixed")
-
-            _sc_project(root)
-            fixture("a mismatch acceptance without image-derived mode is refused",
-                    ["proj", "--likeness-accept-mismatch", "fixture"],
-                    "requires --image-derived")
-
-            _sc_project(root)
-            fixture("a user mismatch acceptance cannot skip the stalled-out condition",
-                    img + ["--unpowered", "--likeness-accept-mismatch", "fixture"],
-                    "stalled out")
-
-            project = _sc_project(root)
-            reference = project / "ref" / "hero.png"
-            history_path = project / "measure" / "likeness-history.jsonl"
-            conflicting_identity = {
-                "reference": str(reference),
-                "reference_resolved": str(project / "ref" / "different.png"),
-            }
-            hit = not _history_reference_matches(
-                conflicting_identity, reference, project=project, cwd=root
-            )
-            print(f"{'ok  ' if hit else 'FAIL'} a canonical reference mismatch "
-                  "cannot fall through to a matching legacy spelling")
-            ok &= hit
-
-            stalled_rows = [
-                {"run": 1, "label": "hero", "reference": str(reference),
-                 "iou": 0.75, "trend": "first", "ok": False,
-                 "failed_because": "floor", "stall_streak": 0},
-                {"run": 2, "label": "hero", "reference": str(reference),
-                 "iou": 0.75, "trend": "stalled", "ok": False,
-                 "failed_because": "floor", "stall_streak": 1},
-                {"run": 3, "label": "hero", "reference": str(reference),
-                 "iou": 0.74, "trend": "regressing", "ok": False,
-                 "failed_because": "regression", "stall_streak": 2},
-                {"run": 4, "label": "hero", "reference": str(reference),
-                 "iou": 0.74, "trend": "stalled", "ok": False,
-                 "failed_because": "floor", "stall_streak": 3},
-            ]
-            for row in stalled_rows:
-                # The raw spelling came from another working directory and is
-                # ambiguous here; the producer-recorded identity is authoritative.
-                row["reference"] = "ref/from-another-cwd.png"
-                row["reference_resolved"] = str(reference)
-            history_path.write_text(
-                "".join(json.dumps(row) + "\n" for row in stalled_rows),
-                encoding="utf-8",
-            )
-            eligible, blockers = _mismatch_acceptance_labels(
-                project, root, [("hero", reference)]
-            )
-            hit = eligible == {"hero"} and not blockers
-            print(f"{'ok  ' if hit else 'FAIL'} canonical reference identity keeps "
-                  "three cross-CWD non-improving rounds eligible")
-            ok &= hit
-
-            summary, blockers = _accepted_likeness_summary(
-                project, root, [("hero", reference)], eligible, {"hero": 4}
-            )
-            hit = summary is None and any("no history row" in blocker
-                                          for blocker in blockers)
-            print(f"{'ok  ' if hit else 'FAIL'} a child failure cannot reuse the "
-                  "last row when no fresh history was written")
-            ok &= hit
-
-            summary, blockers = _accepted_likeness_summary(
-                project, root, [("hero", reference)], eligible, {"hero": 3}
-            )
-            hit = summary == "hero=0.740<0.90" and not blockers
-            print(f"{'ok  ' if hit else 'FAIL'} accepted-fail keeps the raw score "
-                  f"visible  - {summary}")
-            ok &= hit
-
-            stalled_rows[-1]["trend"] = "improving"
-            stalled_rows[-1]["stall_streak"] = 0
-            history_path.write_text(
-                "".join(json.dumps(row) + "\n" for row in stalled_rows),
-                encoding="utf-8",
-            )
-            summary, blockers = _accepted_likeness_summary(
-                project, root, [("hero", reference)], eligible, {"hero": 3}
-            )
-            hit = summary is None and any("moved again" in blocker
-                                          for blocker in blockers)
-            print(f"{'ok  ' if hit else 'FAIL'} a fresh improving row cancels a "
-                  "previously unlocked acceptance")
-            ok &= hit
-
-            eligible, blockers = _mismatch_acceptance_labels(
-                project, root, [("hero", reference)]
-            )
-            hit = not eligible and any("0/3" in blocker for blocker in blockers)
-            print(f"{'ok  ' if hit else 'FAIL'} an improving round resets the "
-                  "acceptance streak")
-            ok &= hit
-
-            stalled_rows[-1].update({
-                "trend": "stalled", "stall_streak": 3,
-                "failed_because": "regression", "ok": False,
-            })
-            history_path.write_text(
-                "".join(json.dumps(row) + "\n" for row in stalled_rows),
-                encoding="utf-8",
-            )
-            eligible, blockers = _mismatch_acceptance_labels(
-                project, root, [("hero", reference)]
-            )
-            summary, final_blockers = _accepted_likeness_summary(
-                project, root, [("hero", reference)], eligible, {"hero": 3}
-            )
-            hit = (eligible == {"hero"} and not blockers and summary is None
-                   and any("regression" in blocker for blocker in final_blockers))
-            print(f"{'ok  ' if hit else 'FAIL'} an unaccepted regression remains "
-                  "blocked after the loop stalls")
-            ok &= hit
-
-            stalled_rows[-1].update({
-                "iou": 0.95, "trend": "improving", "stall_streak": 0,
-                "failed_because": None, "ok": True,
-            })
-            history_path.write_text(
-                "".join(json.dumps(row) + "\n" for row in stalled_rows),
-                encoding="utf-8",
-            )
-            eligible, blockers = _mismatch_acceptance_labels(
-                project, root, [("hero", reference)]
-            )
-            hit = not eligible and not blockers
-            print(f"{'ok  ' if hit else 'FAIL'} an already passing history lets the "
-                  "fresh gate prove the acceptance flag unnecessary")
-            ok &= hit
-
-            report_runner = Runner(cwd=root, dry_run=False, verbose=False)
-            report_runner.records.append(
-                {"command": "check_likeness", "status": "accepted-fail", "seconds": 0.1}
-            )
-            report_path = root / "accepted-report.md"
-            _write_report(
-                report_path, report_runner, mode="final", result=0, elapsed=0.1,
-                bed=DEFAULT_BED,
-            )
-            headline = report_path.read_text(encoding="utf-8")
-            hit = "Result: **PASS (1 accepted failing gate)**" in headline
-            print(f"{'ok  ' if hit else 'FAIL'} report headline exposes an accepted "
-                  "failing gate")
-            ok &= hit
+            # The silhouette likeness gate is gone from the pipeline: its flags
+            # must not be quietly accepted and ignored.
+            for removed in (["--likeness-ref", "hero=ref/hero.png@-60,20"],
+                            ["--likeness-min", "0.5"],
+                            ["--likeness-accept-mismatch", "fixture"],
+                            ["--likeness-accept-regression", "fixture"],
+                            ["--search-fov", "0,25,40"]):
+                _sc_project(root)
+                fixture(f"the removed {removed[0]} flag is refused",
+                        img + ["--unpowered", *removed], "unrecognized arguments")
 
             # the two audits are required precisely because no generic gate can
             # state a project's own claim
@@ -2624,79 +2212,6 @@ def self_check() -> int:
             (project / "measure" / "check_landmarks.py").unlink()
             fixture("a missing landmark audit is a refusal, not a skipped row",
                     img + ["--unpowered"], "check_landmarks.py")
-
-            _sc_project(root)
-            fixture("image-derived final refuses a likeness reference with no camera",
-                    ["proj", "--image-derived", "--unpowered",
-                     "--likeness-ref", "hero=ref/hero.png"],
-                    "declared camera")
-
-            _sc_project(root)
-            fixture("a camera window that reaches the mirror pose is refused",
-                    ["proj", "--image-derived", "--unpowered",
-                     "--likeness-ref", "hero=ref/hero.png@-60,20,90"],
-                    "below 90")
-
-            got = _parse_likeness_ref("hero=ref/hero.png@-60.5,20")
-            hit = got == ("hero", "ref/hero.png", "-60.5,20")
-            print(f"{'ok  ' if hit else 'FAIL'} a likeness camera parses off the path  - {got}")
-            ok &= hit
-
-            _sc_project(root)
-            fixture("a likeness reference without --image-derived is refused",
-                    ["proj", "--likeness-ref", "hero=ref/hero.png"],
-                    "--likeness-ref requires --image-derived")
-
-            _sc_project(root)
-            fixture("a likeness entry without --image-derived is refused",
-                    ["proj", "--likeness-entry", "hero=part_a.step.py"],
-                    "--likeness-entry requires --image-derived")
-
-            _sc_project(root, {"part_a.step.py": "PRINTABLE = True\n\n\ndef gen_step():\n    return None\n"})
-            fixture("a likeness entry for a label no reference has is refused",
-                    ["proj", "--image-derived", "--unpowered",
-                     "--likeness-ref", "hero=ref/hero.png@-60,20",
-                     "--likeness-entry", "side=part_a.step.py"],
-                    "names no --likeness-ref label")
-
-            _sc_project(root, {"part_a.step.py": "PRINTABLE = True\n\n\ndef gen_step():\n    return None\n"})
-            fixture("a likeness entry that is not a project entry is refused",
-                    ["proj", "--image-derived", "--unpowered",
-                     "--likeness-ref", "hero=ref/hero.png@-60,20",
-                     "--likeness-entry", "hero=part_b.step.py"],
-                    "is not an entry of this project")
-
-            # a reference routed to a part is rendered from that part, into
-            # its own folder, and scored from there
-            _sc_project(root, {"part_a.step.py": "PRINTABLE = True\n\n\ndef gen_step():\n    return None\n"})
-            import contextlib as _route_ctx
-            import io as _route_io
-            route_out = _route_io.StringIO()
-            with _route_ctx.redirect_stdout(route_out), _route_ctx.redirect_stderr(_route_io.StringIO()):
-                try:
-                    main(["proj", "--dry-run", "--image-derived", "--unpowered",
-                          "--likeness-ref", "hero=ref/hero.png@-60,20",
-                          "--likeness-entry", "hero=part_a.step.py"])
-                except SystemExit:
-                    pass
-            route_lines = route_out.getvalue().splitlines()
-            part_render = next((line for line in route_lines if "render_views.py" in line
-                                and "part_a.step.py" in line), "")
-            asm_render = next((line for line in route_lines if "render_views.py" in line
-                               and "widget.step.py" in line), "")
-            score = next((line for line in route_lines if "check_likeness.py" in line), "")
-            hit = ("match-hero" in part_render and "match-hero" not in asm_render
-                   and "--view" in asm_render and "snap/part_a/match-hero.png" in score)
-            print(f"{'ok  ' if hit else 'FAIL'} a reference routed to a part entry is "
-                  "rendered and scored from that part")
-            if not hit:
-                print(f"       part={part_render!r}\n       asm={asm_render!r}\n       score={score!r}")
-            ok &= hit
-
-            _sc_project(root)
-            fixture("a regression waiver without --image-derived is refused",
-                    ["proj", "--likeness-accept-regression", "fixture"],
-                    "requires --image-derived")
 
             # the two --bed forms are not interchangeable, and the error has to
             # say so rather than silently taking the first number
@@ -2838,7 +2353,7 @@ def self_check() -> int:
             print(f"{'ok  ' if hit else 'FAIL'} successful advisory output remains visible")
             ok &= hit
 
-            # rendering, likeness and the print gates are the expensive tail; a
+            # rendering and the print gates are the expensive tail; a
             # clash must stop them all, and the print gates go last because on a
             # multi-part project they are the dearest block in the run. Assert
             # the whole order, not just the dependency: moving a block within the
@@ -2850,34 +2365,33 @@ def self_check() -> int:
             with _ctx.redirect_stdout(order_out), _ctx.redirect_stderr(_io.StringIO()):
                 try:
                     main(["proj", "--dry-run", "--print-gates", "--image-derived",
-                          "--unpowered", "--likeness-ref", "hero=ref/hero.png@-60,20"])
+                          "--unpowered"])
                 except SystemExit:
                     pass
             order_text = order_out.getvalue()
             interfere_at = order_text.find("interfere:assembly")
             render_at = order_text.find("render_views.py")
-            likeness_at = order_text.find("check_likeness.py")
             mesh_at = order_text.find("check_mesh")
             hit = (
                 interfere_at >= 0
                 and render_at > interfere_at
-                and likeness_at > render_at
-                and mesh_at > likeness_at
+                and mesh_at > render_at
+                and "check_likeness" not in order_text
             )
-            print(f"{'ok  ' if hit else 'FAIL'} interfere, then rendering and "
-                  "likeness, then the print gates last")
+            print(f"{'ok  ' if hit else 'FAIL'} interfere, then rendering, then the "
+                  "print gates last, and no likeness gate")
             if not hit:
-                print(f"       interfere={interfere_at} render={render_at} "
-                      f"likeness={likeness_at} mesh={mesh_at}")
+                print(f"       interfere={interfere_at} render={render_at} mesh={mesh_at}")
             ok &= hit
 
-            # the declared camera has to reach the search, or the handedness
-            # check it exists for never runs
+            # the render keeps its orthogonal views and the source-vs-STEP drift
+            # check, and never searches a reference pose for a silhouette score
             render_line = next((line for line in order_text.splitlines()
                                 if "render_views.py" in line), "")
-            hit = "--camera=-60,20" in render_line
-            print(f"{'ok  ' if hit else 'FAIL'} the declared camera is passed to the "
-                  "pose search")
+            hit = ("--compare-step" in render_line and "--match" not in render_line
+                   and "--camera" not in render_line)
+            print(f"{'ok  ' if hit else 'FAIL'} the render checks STEP drift and "
+                  "matches no reference pose")
             if not hit:
                 print(f"       {render_line or '(no render_views line)'}")
             ok &= hit
@@ -3024,30 +2538,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--motion-manifest", help="motion JSON; defaults to measure/motion.json when present")
     parser.add_argument("--bed", type=_parse_bed, help="printer bed WxDxH (default: project declaration, then 220x220x220)")
     parser.add_argument("--preview-tolerance", type=float, default=DEFAULT_PREVIEW_TOLERANCE, help="quick-mode render mesh tolerance (default: 0.1)")
-    parser.add_argument("--image-derived", action="store_true", help="require spec/landmark audits and run render, STEP-drift, and likeness gates")
-    parser.add_argument(
-        "--likeness-ref",
-        action="append",
-        type=_parse_likeness_ref,
-        default=[],
-        metavar="LABEL=PATH@AZ,EL[,TOL]",
-        help="reference image inside the project and the camera it was taken from "
-             "(degrees; TOL default 30); repeat for every usable viewpoint",
-    )
-    parser.add_argument(
-        "--likeness-entry",
-        action="append",
-        type=_parse_likeness_entry,
-        default=[],
-        metavar="LABEL=ENTRY",
-        help="score the --likeness-ref of that label against this project entry "
-             "instead of the combined assembly: a reference that shows one part "
-             "(one piece of a set, one tool of a kit) is compared with that part",
-    )
-    parser.add_argument("--likeness-min", type=float, default=0.90, help="minimum IoU for every likeness pair; final delivery cannot set it below 0.90")
-    parser.add_argument("--likeness-accept-mismatch", metavar="REASON", help="accept a raw sub-0.90 likeness failure after the same view/reference has stalled out; preserves the failing score and records the Workshop Manager's reason, which the run reports when it ends")
-    parser.add_argument("--likeness-accept-regression", metavar="REASON", help="record why a final score below the best prior run is accepted; passed through to check_likeness")
-    parser.add_argument("--search-fov", default="0,25,40", help="comma-separated FOVs for reference-pose search (default: 0,25,40)")
+    parser.add_argument("--image-derived", action="store_true", help="require spec/landmark audits, render the orthogonal views, check source-vs-STEP drift, and in Contract Mode require an independently reviewed component round for every sealed component image")
     parser.add_argument("--report", help="final pipeline record path inside project (default: measure/verification-pipeline.md)")
     parser.add_argument("--no-report", action="store_true", help="do not persist the final pipeline record")
     parser.add_argument("--dry-run", action="store_true", help="print the sequential plan without changing files")
@@ -3125,21 +2616,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.preview_tolerance <= 0:
         parser.error("--preview-tolerance must be positive")
-    if not 0 <= args.likeness_min <= 1:
-        parser.error("--likeness-min must be between 0 and 1")
-    if args.likeness_accept_mismatch is not None:
-        args.likeness_accept_mismatch = args.likeness_accept_mismatch.strip()
-        if not args.likeness_accept_mismatch:
-            parser.error("--likeness-accept-mismatch requires a non-empty reason")
-    if args.likeness_min < LIKENESS_FLOOR:
-        parser.error(
-            f"--likeness-min {args.likeness_min:.2f} is below the {LIKENESS_FLOOR:.2f} "
-            "fixed delivery floor. A final --likeness-accept-mismatch decision may "
-            "accept a stalled failing result, but it never lowers this floor"
-        )
     if args.quick and args.strict_fit:
         parser.error("--strict-fit is a final-mode option and cannot be combined with --quick")
-    if args.quick and (args.image_derived or args.likeness_ref):
+    if args.quick and args.image_derived:
         parser.error("image-derived gates are final-mode options and cannot be combined with --quick")
     if args.quick and args.strict_mount:
         parser.error("--strict-mount is a final-mode option and cannot be combined with --quick")
@@ -3159,14 +2638,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--powered and --unpowered are mutually exclusive")
     if args.unpowered and not args.image_derived:
         parser.error("--unpowered is only needed with --image-derived")
-    if args.likeness_ref and not args.image_derived:
-        parser.error("--likeness-ref requires --image-derived")
-    if args.likeness_entry and not args.image_derived:
-        parser.error("--likeness-entry requires --image-derived")
-    if args.likeness_accept_mismatch and not args.image_derived:
-        parser.error("--likeness-accept-mismatch requires --image-derived")
-    if args.likeness_accept_regression and not args.image_derived:
-        parser.error("--likeness-accept-regression requires --image-derived")
     if args.report and args.no_report:
         parser.error("--report and --no-report are mutually exclusive")
     try:
@@ -3179,10 +2650,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         printables = _printable_entries(assembly, parts)
         explicit_motion = _resolve_inside_project(args.motion_manifest, project, cwd)
         report_path = _resolve_inside_project(args.report, project, cwd)
-        likeness_refs = [
-            (label, _resolve_inside_project(raw_path, project, cwd))
-            for label, raw_path, _camera in args.likeness_ref
-        ]
     except (OSError, SyntaxError, ValueError) as exc:
         refuse(str(exc))
 
@@ -3205,27 +2672,6 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
         except (ValueError, OSError, TypeError, KeyError) as exc:
             refuse(str(exc))
-
-    labels = [label for label, _reference in likeness_refs]
-    if len(labels) != len(set(labels)):
-        refuse("--likeness-ref labels must be unique within one final run")
-
-    # A reference that shows one part is scored against that part's entry;
-    # every other reference keeps the combined assembly.
-    likeness_entries: dict[str, Path] = {}
-    known_entries = {path.resolve(): path for path in (assembly, *parts)}
-    for label, raw_entry in args.likeness_entry:
-        if label not in labels:
-            refuse(f"--likeness-entry {label}= names no --likeness-ref label")
-        if label in likeness_entries:
-            refuse(f"--likeness-entry gives {label} more than one entry")
-        try:
-            entry = _resolve_inside_project(raw_entry, project, cwd)
-        except (OSError, ValueError) as exc:
-            refuse(str(exc))
-        if entry is None or entry.resolve() not in known_entries:
-            refuse(f"--likeness-entry {label}={raw_entry} is not an entry of this project")
-        likeness_entries[label] = known_entries[entry.resolve()]
 
     if args.print_gates and not printables:
         refuse(
@@ -3321,13 +2767,6 @@ def main(argv: Sequence[str] | None = None) -> int:
                     f"mismatched checksum for: {listed}"
                 )
 
-    resolved_likeness_refs: list[tuple[str, Path]] = []
-    for label, reference in likeness_refs:
-        if reference is None or not reference.is_file():
-            refuse(f"likeness reference not found: {label}={reference}")
-        resolved_likeness_refs.append((label, reference))
-
-    likeness_mismatch_labels: set[str] = set()
     contract_make_round: dict | None = None
     contract_sealed: list[dict] = []
     if args.image_derived:
@@ -3341,24 +2780,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             refuse(
                 f"--image-derived requires exactly one *_spec.md in the project; found {len(specs)}"
             )
-        if not resolved_likeness_refs:
-            refuse("--image-derived requires at least one --likeness-ref LABEL=PATH@AZ,EL")
-        undeclared = [label for label, _path, camera in args.likeness_ref if camera is None]
-        if undeclared:
-            refuse(
-                "--image-derived requires a declared camera on every --likeness-ref, "
-                f"as LABEL=PATH@AZ,EL[,TOL]; missing for: {', '.join(undeclared)}. "
-                "A pose search free over every azimuth scores a mirror-image model "
-                "like the right one, so the likeness gate cannot see handedness "
-                "without it."
-            )
         contract_make_round, contract_sealed, contract_error = _contract_sealed_references(project)
         if contract_error is not None:
             refuse(contract_error)
-        if contract_make_round is not None:
-            refusal = _contract_likeness_refusal(contract_sealed, resolved_likeness_refs)
-            if refusal is not None:
-                refuse(refusal)
         for audit_name in ("check_spec.py", "check_landmarks.py"):
             audit = project / "measure" / audit_name
             if not audit.is_file():
@@ -3366,18 +2790,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                     f"--image-derived requires {audit.relative_to(project)}; "
                     "the project-specific claim cannot be checked generically"
                 )
-        for tool in ("render_views.py", "check_likeness.py"):
-            if not (IMAGE_SCRIPTS_DIR / tool).is_file():
-                refuse(f"image-derived tool not found: {IMAGE_SCRIPTS_DIR / tool}")
-        if args.likeness_accept_mismatch:
-            likeness_mismatch_labels, blockers = _mismatch_acceptance_labels(
-                project, cwd, resolved_likeness_refs
-            )
-            if blockers:
-                refuse(
-                    "--likeness-accept-mismatch requires every currently failing "
-                    "view/reference to be stalled out first: " + "; ".join(blockers)
-                )
+        render_views = IMAGE_SCRIPTS_DIR / "render_views.py"
+        if not render_views.is_file():
+            refuse(f"image-derived tool not found: {render_views}")
     bed = args.bed or _declared_bed(project) or DEFAULT_BED
     runner = Runner(cwd=cwd, dry_run=bool(args.dry_run), verbose=bool(args.verbose))
     if signature_review_sha256 is not None:
@@ -3422,14 +2837,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         entries = [assembly, *parts]
         entry_args = [_path_arg(path, runner.cwd) for path in entries]
         if args.image_derived and not args.no_report and not args.dry_run:
-            runner.likeness_acceptances = []
+            runner.component_acceptances = []
         if not _run_or_stop(
             runner,
             [sys.executable, SCRIPTS_DIR / "gen", *entry_args, "--write", "--json"],
             warm=True,
         ):
             result = 1
-        elif contract_make_round is not None and not args.dry_run and _component_likeness_failed(
+        elif contract_make_round is not None and not args.dry_run and _component_review_failed(
             runner, contract_make_round, project, contract_sealed
         ):
             result = 1
@@ -3448,9 +2863,6 @@ def main(argv: Sequence[str] | None = None) -> int:
                 if prior is not None and prior[1] == closure:
                     result = prior[0]
                     reused = True
-                    if runner.likeness_acceptances is not None:
-                        # The reused verdict's assembly acceptance stands with it.
-                        runner.likeness_acceptances.extend(_prior_assembly_acceptances(reuse_report))
                     runner.records.append({
                         "command": "verify_project  # reused prior verdict (unchanged project)",
                         "status": "reused",
@@ -3473,14 +2885,6 @@ def main(argv: Sequence[str] | None = None) -> int:
                     skip_thickness=bool(args.skip_thickness),
                     overhang_angle=float(args.overhang_angle),
                     image_derived=bool(args.image_derived),
-                    likeness_refs=resolved_likeness_refs,
-                    likeness_min=float(args.likeness_min),
-                    likeness_accept_mismatch=args.likeness_accept_mismatch,
-                    likeness_mismatch_labels=likeness_mismatch_labels,
-                    likeness_accept_regression=args.likeness_accept_regression,
-                    search_fov=str(args.search_fov),
-                    likeness_cameras={label: camera for label, _path, camera in args.likeness_ref},
-                    likeness_entries=likeness_entries,
                     skip_gen=True,
                 )
     elapsed = time.perf_counter() - workflow_started

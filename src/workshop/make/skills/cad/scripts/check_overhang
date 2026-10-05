@@ -30,10 +30,20 @@ centre finds that very stem and calls the cap a bridge. The probe therefore
 starts at the region's own edge, and reach says how far the region stands out
 from whatever holds it.
 
+Every region printed names what it belongs to: the nearest feature the
+print-details library tagged while the entry was built, else the nearest B-rep
+face. An overhang also says how far it is past the limits: its steepest slope
+against --angle, and its reach against --ledge.
+
+An open tessellation is not measured. `printlib.printed_mesh` decides what it
+is: an invalid solid FAILS with its bad faces listed, a valid one is
+re-tessellated once, finer, and one that stays open is UNMEASURABLE.
+
     python "$CAD_SKILL_ROOT/scripts/check_overhang" <project>/part_x.step.py --angle 45
     python "$CAD_SKILL_ROOT/scripts/check_overhang" <project>/part_x.step.py --report measure/overhang.md
 
-Exit 0 when nothing needs support, 1 when something does, 2 on bad usage.
+Exit 0 when nothing needs support, 1 when something does or the solid is
+invalid, 2 on bad usage, 4 when the mesh stays open on a valid solid.
 """
 
 from __future__ import annotations
@@ -46,9 +56,12 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from meshlib import summarize, voxel_pitch, voxelize, weld  # noqa: E402
+from meshlib import voxel_pitch, voxelize, weld  # noqa: E402
 import progresslib
-from printlib import entry_mesh, entry_role, resolve_single_entry  # noqa: E402
+from printlib import (  # noqa: E402
+    entry_role, entry_shape, feature_line, feature_tags, mesh_refusal, nearest_feature,
+    printed_mesh, resolve_single_entry,
+)
 
 MAX_SAMPLES = 300_000
 REPORT_REGIONS = 8
@@ -59,6 +72,7 @@ MIN_REGION_AREA = 1.0  # mm2
 # it is carried by the perimeter next to it -- a rim, a step, the flat under a
 # small boss. Roughly two extrusion widths; --ledge moves it.
 LEDGE_REACH = 1.0  # mm
+UNMEASURABLE = 4  # exit status: a valid solid whose mesh stays open
 
 
 def down_facing(verts, faces, limit_deg):
@@ -79,11 +93,15 @@ def down_facing(verts, faces, limit_deg):
     return slope < limit_deg, slope, area
 
 
-def sample_faces(verts, faces, keep, area, pitch, cap=MAX_SAMPLES):
-    """Points spread over the kept triangles, by area."""
+def sample_faces(verts, faces, keep, area, pitch, cap=MAX_SAMPLES, slope=None):
+    """Points spread over the kept triangles, by area.
+
+    With `slope`, a third array: each sample's own triangle's slope.
+    """
     idx = np.flatnonzero(keep & (area > 0))
     if idx.size == 0:
-        return np.zeros((0, 3)), np.zeros(0)
+        empty = (np.zeros((0, 3)), np.zeros(0))
+        return empty if slope is None else (*empty, np.zeros(0))
     tri = verts[faces[idx]]
     want = np.maximum(1, np.ceil(area[idx] / (pitch * pitch)).astype(int))
     if want.sum() > cap:
@@ -96,7 +114,9 @@ def sample_faces(verts, faces, keep, area, pitch, cap=MAX_SAMPLES):
     a, b, c = tri[which, 0], tri[which, 1], tri[which, 2]
     points = a + u[:, 0:1] * (b - a) + u[:, 1:2] * (c - a)
     weights = np.repeat(area[idx] / want, want)
-    return points, weights
+    if slope is None:
+        return points, weights
+    return points, weights, np.repeat(slope[idx], want)
 
 
 def on_the_bed(points, bed_z, layer):
@@ -136,8 +156,12 @@ def gap_below(inside, origin, pitch, points, limit):
     return gaps
 
 
-def cluster(points, weights, gaps, link):
-    """Group samples into connected regions, largest first."""
+def cluster(points, weights, gaps, link, slopes=None):
+    """Group samples into connected regions, largest first.
+
+    With `slopes`, each region also records its steepest slope and the sample
+    nearest its centre: `at` is a mean, which lies in the air under a ring.
+    """
     from scipy.ndimage import label
 
     if len(points) == 0:
@@ -169,6 +193,11 @@ def cluster(points, weights, gaps, link):
             "hi": tuple(float(v) for v in here[:, :2].max(axis=0)),
             "points": here,
         })
+        if slopes is not None:
+            centre = here.mean(axis=0)
+            out[-1]["steepest"] = float(slopes[sel].min())
+            out[-1]["on"] = tuple(float(v) for v in
+                                  here[int(np.argmin(np.linalg.norm(here - centre, axis=1)))])
     out.sort(key=lambda r: -r["area"])
     return out
 
@@ -269,6 +298,44 @@ def classify(inside, origin, pitch, regions, bridge, ledge):
     return regions
 
 
+def past_limits(region, angle, ledge):
+    """How far a failing region is past the limits that decided it, or ""."""
+    if region["kind"] != "overhang":
+        return ""
+    return (f"steepest {region['steepest']:.0f} deg from vertical, "
+            f"{angle - region['steepest']:.0f} deg past the {angle:.0f} deg limit; "
+            f"reaches {region['reach']:.1f} mm, {region['reach'] - ledge:.1f} mm past "
+            f"the {ledge:.1f} mm ledge")
+
+
+def feature_cell(found):
+    if found is None:
+        return "-"
+    return f"{found['label']}, {found['distance']:.2f} mm away".replace("|", "/")
+
+
+def refuse_mesh(entry, meshed, report):
+    """An entry with no closed mesh to measure: an invalid solid FAILS, a valid
+    one whose mesh stays open is UNMEASURABLE. Either way nothing is measured."""
+    lines = mesh_refusal(entry.name, meshed)
+    invalid = meshed["status"] == "invalid"
+    verdict = "INVALID SOLID" if invalid else "UNMEASURABLE MESH"
+    if invalid:
+        progresslib.record_geometry_failure()
+    for line in lines:
+        print(line)
+    print("RESULT:", verdict)
+    if report:
+        out = Path(report)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        body = "\n".join(lines)
+        out.write_text(
+            f"# Overhang and support\n\n`{' '.join(sys.argv[1:])}`\n\n{body}\n\n"
+            f"RESULT: {verdict}\n", encoding="utf-8")
+        print(f"  wrote {out}")
+    return 1 if invalid else UNMEASURABLE
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("entry", nargs="?", help="a printable *.step.py entry, or a "
@@ -294,12 +361,11 @@ def main() -> int:
         ap.error("a printable entry is required unless --self-check is given")
 
     entry = resolve_single_entry(args.entry)
-    verts, faces = weld(entry_mesh(entry, entry_role(entry)))
-    state = summarize(verts, faces)
-    if state["boundary"]:
-        sys.exit(f"{entry.name}: {state['boundary']} open edges -- which way is inside is "
-                 "undefined on an open surface. Run check_mesh, then repair_mesh, and "
-                 "fix the solid in the generator.")
+    shape = entry_shape(entry, entry_role(entry))
+    meshed = printed_mesh(shape)
+    if meshed["status"] != "closed":
+        return refuse_mesh(entry, meshed, args.report)
+    verts, faces = meshed["verts"], meshed["faces"]
 
     pitch = voxel_pitch(verts, args.voxel or max(args.layer * 2, 0.4))
     inside, origin = voxelize(verts, faces, pitch)
@@ -308,17 +374,20 @@ def main() -> int:
     total_area = float(area.sum())
     steep_area = float(area[steep].sum())
 
-    points, weights = sample_faces(verts, faces, steep, area, pitch)
+    points, weights, slopes = sample_faces(verts, faces, steep, area, pitch, slope=slope)
     regions = []
     if len(points):
         gaps = gap_below(inside, origin, pitch, points, max(args.bridge, 20.0))
         # The build plate supports what sits on it, and a face a layer or two
         # above material below it is a step, not a drop.
         loose = ~on_the_bed(points, bed_z, args.layer) & (gaps > max(2.0 * args.layer, pitch))
-        points, weights, gaps = points[loose], weights[loose], gaps[loose]
-        regions = cluster(points, weights, gaps, link=4 * pitch)
+        points, weights, gaps, slopes = points[loose], weights[loose], gaps[loose], slopes[loose]
+        regions = cluster(points, weights, gaps, link=4 * pitch, slopes=slopes)
 
     classify(inside, origin, pitch, regions, args.bridge, args.ledge)
+    # A failing region is always shown, ahead of the rest, so its feature is named.
+    failing = [r for r in regions if r["kind"] == "overhang"]
+    regions = failing + [r for r in regions if r["kind"] != "overhang"]
 
     needs_support = [r for r in regions if r["kind"] == "overhang"]
     if needs_support:
@@ -347,14 +416,21 @@ def main() -> int:
     for status, name, detail in checks:
         print(f"  {status}  {name:38s} {detail}")
         failed |= status == "FAIL"
-    shown = regions[:REPORT_REGIONS]
+    shown = regions[:max(REPORT_REGIONS, len(failing))]
+    tags = feature_tags() if shown and shape is not None else []
+    for r in shown:
+        r["feature"] = nearest_feature(shape, r["on"], tags)
+        r["past"] = past_limits(r, args.angle, args.ledge)
     if shown:
-        print("        every unsupported region, largest first:")
+        print("        every unsupported region, failing first, then largest first:")
         for i, r in enumerate(shown, 1):
             print(f"        {i}. [{r['kind']:8s}] {r['area']:7.1f} mm2 at "
                   f"({r['at'][0]:.1f}, {r['at'][1]:.1f}, {r['at'][2]:.1f})  "
                   f"span {r['span']:5.1f} mm of {r['extent'][0]:.0f}x{r['extent'][1]:.0f}, "
                   f"reach {r['reach']:5.1f} mm, {r['gap']:.1f} mm of air below")
+            detail = "; ".join(filter(None, [feature_line(r["feature"]), r["past"]]))
+            if detail:
+                print(f"           {detail}")
         if len(regions) > len(shown):
             print(f"        ... and {len(regions) - len(shown)} smaller region(s)")
     print("RESULT:", "NEEDS SUPPORT" if failed else "prints unsupported")
@@ -372,11 +448,15 @@ def main() -> int:
             "`reach` is how far the region stands out from anything at its own level: half "
             "the span for a bore ceiling, the whole protrusion for a cap held up in its "
             "middle.\n\n"
-            "| # | kind | area mm2 | at | span mm | reach mm | air below mm |\n"
-            "|---|---|---|---|---|---|---|\n"
+            "`feature` is the print-details feature the region lies on, else the nearest "
+            "B-rep face; `past limit` says how far an overhang is past the slope and "
+            "ledge limits.\n\n"
+            "| # | kind | area mm2 | at | feature | past limit | span mm | reach mm | air below mm |\n"
+            "|---|---|---|---|---|---|---|---|---|\n"
             + "\n".join(
                 f"| {i} | {r['kind']} | {r['area']:.1f} | "
                 f"({r['at'][0]:.1f}, {r['at'][1]:.1f}, {r['at'][2]:.1f}) | "
+                f"{feature_cell(r['feature'])} | {r['past'] or '-'} | "
                 f"{r['span']:.1f} | {r['reach']:.1f} | {r['gap']:.1f} |"
                 for i, r in enumerate(shown, 1)))
         out.write_text(

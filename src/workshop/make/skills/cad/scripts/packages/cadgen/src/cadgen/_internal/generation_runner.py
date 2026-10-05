@@ -5,6 +5,7 @@ import contextlib
 from dataclasses import dataclass
 from dataclasses import replace
 import importlib.util
+import os
 from pathlib import Path
 import sys
 from typing import Iterator
@@ -388,6 +389,45 @@ def _generator_progress_line(
         yield sink
 
 
+# Workshop (#86): while a generator runs, the project's print-details library
+# collects every Detail Refusal instead of raising at the first; the build then
+# fails once with all of them. Found by its registry, under any import name.
+_DETAIL_BUILD_ENV = "WORKSHOP_PRINT_DETAILS_BUILD"
+_REFUSAL_REGISTRY = "DETAIL_REFUSALS"
+
+
+def _raise_detail_refusals(after: BaseException | None = None) -> None:
+    for module in list(sys.modules.values()):
+        registry = getattr(module, _REFUSAL_REGISTRY, None)
+        collect = getattr(module, "refusal_error", None)
+        if isinstance(registry, list) and registry and callable(collect):
+            error = collect(after)
+            if error is not None:
+                raise error from after
+
+
+@contextlib.contextmanager
+def _detail_build() -> Iterator[None]:
+    for module in list(sys.modules.values()):
+        registry = getattr(module, _REFUSAL_REGISTRY, None)
+        if isinstance(registry, list):
+            registry.clear()
+    previous = os.environ.get(_DETAIL_BUILD_ENV)
+    os.environ[_DETAIL_BUILD_ENV] = "1"
+    try:
+        try:
+            yield
+        except Exception as error:
+            _raise_detail_refusals(error)
+            raise
+        _raise_detail_refusals()
+    finally:
+        if previous is None:
+            os.environ.pop(_DETAIL_BUILD_ENV, None)
+        else:
+            os.environ[_DETAIL_BUILD_ENV] = previous
+
+
 def _run_script_generator_inner(
     spec: EntrySpec,
     generator_name: str,
@@ -405,7 +445,7 @@ def _run_script_generator_inner(
     # unloads modules mid-run; the sys.modules delta stays as a belt-and-braces union.
     evict_first_party_modules()
     modules_before_load = set(sys.modules)
-    with record_first_party_execution() as executed_files:
+    with record_first_party_execution() as executed_files, _detail_build():
         with logger.timed(f"load generator {spec.source_ref}"):
             module = _load_generator_module(spec.script_path)
         generator = getattr(module, generator_name, None)

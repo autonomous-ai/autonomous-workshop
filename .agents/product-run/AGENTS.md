@@ -154,7 +154,16 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   second identity tree, or invent an undeclared specialist. The same directory
   may also hold two fixed Make roles that are not Inventors:
   `component-worker` and `component-reviewer`. Use them only as
-  `references/make.md` describes (ADR 0077). When `MANAGER.json` names a
+  `references/make.md` describes (ADR 0077, ADR 0080). In Spark Make a
+  Component Worker authors and repairs each Component, and only a Component
+  Worker runs a Component's `make_round` rounds: a Workshop hook refuses them
+  from you, an Inventor or any other agent. You write only the shared
+  `params.py` and `features/` files and run assembly. Each Component has one
+  Component Reviewer that you ask with the fixed request `references/make.md`
+  gives, and whose answer you record unchanged. When the Design Contract
+  has Interfaces, those shared files hold only what Interfaces need, and you
+  freeze them with `make_round --shared-helpers` before any worker starts and
+  check each Coupled Interface with `make_round --interface` before assembly. When `MANAGER.json` names a
   different agent directory, the host also writes each of these agents there
   in that runtime's own format, from the same bytes. Spawn them from that
   directory by the same name; `.codex/agents/` stays the identity binding.
@@ -187,6 +196,50 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   no polling at all. This rule is repeated in `references/make.md`; it lives
   here because a compaction drops that file from the session and this file
   survives.
+- Never end your turn while a Component Worker or a Component Reviewer
+  request is still running. Wait for it with the long wait, record what it
+  returns, and end your turn only on a stage proposal, a recorded need, or a
+  host stop. An ended turn is not a wait: the session can end before the
+  agent reports, and its round is lost. On Claude Code, a background agent's
+  result arrives as a notification only after your current tool call
+  returns; when nothing is left to do but wait, run one foreground `Bash`
+  wait with `timeout: 600000`, `"$WORKSHOP_PYTHON" -c "import time;
+  time.sleep(300)"`, read every notification it returns with, and repeat
+  until each running agent has reported. This rule is repeated in
+  `references/make.md` for the same reason as the waiting rule above.
+- A Component Worker that is blocked records a Blocked Report with
+  `make_round --report-blocked`. Clear every one at once, only with
+  `make_round <cad-project> --clear-blocked`: a decision the worker
+  follows, a decision waiting on another Component (wake the worker again
+  after that Component's next passing round), a need quoting its rows,
+  which you then seal with `stage_proposal.py ... need`, or an applied
+  Contract Amendment that names it. A decision binds the Component
+  Reviewer through the Component's later packets; never repeat it in a
+  review request. While one is open,
+  assembly, the Make proposal and Make acceptance are refused, and on
+  Claude Code so is your turn end unless it ends on a recorded need. After
+  a compaction run `make_round <cad-project> --blocked-reports`. The rules
+  are in `references/make.md`; this one lives here because it survives
+  compaction.
+- A Contract Contradiction whose smallest fix no sealed reference image
+  shows may become a Contract Amendment instead of a need (ADR 0085):
+  `make_round <cad-project> --propose-amendment`, then a fresh
+  `contract-reviewer` given only the packet path and hash, then
+  `--record-amendment-review` with its verdict. Never change a row any other
+  way, and never resolve a contradiction silently in shared code. A refusal
+  that only names a smaller change allows one Smaller Retry (same rows,
+  words deleted only, another fresh `contract-reviewer`); any other refused
+  amendment, a refused retry, or any change an image would show stops the
+  run on the need the tool prints. While one awaits review, assembly and the Make proposal
+  are refused; after a compaction run `make_round <cad-project>
+  --contract-amendments`. The rules are in `references/make.md`.
+- The owner may answer a Contract Contradiction need on resume with an Owner
+  Contract Amendment (issue #100). After every resume from such a need, run
+  `make_round <cad-project> --contract-amendments`: an `owner amendment`
+  lists the rows the owner changed and the Components it unlocks, and the
+  run root's `CONTRACT-AMENDMENTS.json` `objective` replaces `WISH.json`'s.
+  Ask each unlocked Component's worker to rerun, and continue. From then on
+  `--propose-amendment` is refused: a further contradiction is a need.
 - Keep every tool subprocess attached to the Manager's dedicated POSIX process
   session. Do not daemonize, detach, call `setsid`/`start_new_session`, or leave
   a background process running after a tool returns. Host timeout recovery
@@ -215,7 +268,9 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   failed or is unavailable, explicitly reconcile its saved work and reassign
   the unfinished design before proceeding; do not treat failure as completion.
   An already reviewed, sealed Invent contract satisfies this dependency for
-  Forge/Quest Make without repeating Invent.
+  Forge/Quest Make without repeating Invent. In Spark Make a delegated
+  Inventor design is optional notes for the Component Workers; an Inventor
+  never authors a Component or runs `make_round`.
 
 ## Product work
 
@@ -224,24 +279,39 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
 - A Make session's cost is the number of model requests times the context
   each carries. Run each repair round through the materialized `make-round`
   skill (`scripts/make_round`) and read its summary, instead of calling
-  export, thickness, render, likeness, and motion tools one by one. Its
+  export, thickness, render, and motion tools one by one. Its
   `SKILL.md` is the tool card: the exact invocations of every cad and
   image-to-cad gate. Do not `cat`, `rg`, or `sed` through skill scripts to
   learn their flags, and open a full report only when a summary names a
   failure you cannot place.
+- For Spark outside Contract Mode, first obtain references (sealed, found by
+  image search, and generated when the runtime has a built-in image tool) as
+  `references/visual-reference-inspection.md` directs, then expand the Wish
+  into `<cad-project>/WISH-EXPANSION.md` as `references/wish-expansion.md`
+  directs, translating its style words into section, edge, silhouette and
+  proportion rules by the Inventor's Taste; the sealed Wish stays unchanged
+  and still decides.
 - For Spark, spend the baseline phase on the parts before the whole. Model each
-  distinct physical component in its own `part_<role>.step.py`, run and pass an
+  distinct physical component in its own `part_<role>.step.py` (a piece split
+  at a natural seam, never a pre-planned `_a`/`_b` print half; split one form
+  on a plane only after reorienting and reshaping it fail `check_overhang`),
+  run and pass an
   isolated `make_round --component part_<role>.step.py` visual review-and-fix
-  loop for every component, and only then create/review the combined entry with
-  `--require-component-passes`. If an assembly repair changes a component,
+  loop for every component, and only then review the combined entry with
+  `--require-component-passes`. Before any Component Review, once every
+  component has a first passing round, run one `make_round --preview-assembly` of the rough whole and
+  fix placement between parts in the combined entry; a preview is never a pass. If an assembly repair changes a component,
   repeat that component's isolated loop before reviewing the assembly again.
 - Inspect each Make round's visual packet for misplaced parts, proportion and
   size mismatches, missing/extra geometry, visible intersections and form errors.
   Record concrete native observations through `make_round --record-visual` so
   its summary carries visual feedback alongside numeric checks. Likeness alone
   cannot pass this inspection, including for products without reference images.
-  View each image at most once per round; inspect all supplied views and use
-  targeted additional views when occlusion leaves a concrete uncertainty.
+  Open each round's `visual/sheet.png` once: it holds every view, including
+  the side and the tilted three-quarter views. Judge depth and direction on
+  the tilted view that faces the feature, open a single full-size view only
+  when a detail is too small on the sheet, and use targeted additional views
+  when occlusion leaves a concrete uncertainty.
 - Every Wish is open-ended. The one universal toy blueprint supplies baseline
   contract expectations; it does not classify or constrain what can be
   invented. Product-specific methods and extra evidence come from the Wish,

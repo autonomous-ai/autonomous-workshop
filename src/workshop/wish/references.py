@@ -36,6 +36,9 @@ from workshop.wish.contracts import (
 
 _PILLOW_FORMATS = {"PNG": "image/png", "JPEG": "image/jpeg", "WEBP": "image/webp"}
 _MAX_SLUG_CHARS = 40
+_PLACE_NAME = re.compile(
+    r"^ref-(?P<index>0[1-9]|[1-9][0-9])-(?P<slug>[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?)$"
+)
 _URL_SCHEMES = ("http", "https")
 WISH_REFERENCE_FETCH_TIMEOUT_SECONDS = 30
 _USER_AGENT = "autonomous-workshop/wish-reference"
@@ -111,6 +114,21 @@ def _url_stem(url: str) -> str:
 
     path = urllib.parse.unquote(urllib.parse.urlsplit(url).path)
     return PurePosixPath(path).stem
+
+
+def _place_slug(stem: str, position: int) -> str:
+    """The slug of the reference sealed at ``position``.
+
+    A file already named for that place, the way a Design Contract names its
+    images (``ref-NN-<slug>``), keeps its slug unchanged instead of gaining a
+    second prefix: Make finds a sealed image's contract label by its exact
+    file name. Any other stem is slugged.
+    """
+
+    named = _PLACE_NAME.fullmatch(stem)
+    if named is not None and int(named.group("index")) == position:
+        return named.group("slug")
+    return _slug(stem)
 
 
 def _slug(stem: str) -> str:
@@ -203,7 +221,7 @@ def load_wish_references(
             )
         name = "ref-%02d-%s.%s" % (
             position,
-            _slug(stem),
+            _place_slug(stem, position),
             WISH_REFERENCE_MEDIA_TYPES[media_type],
         )
         reference = WishReference(name, digest, media_type, size, width, height)

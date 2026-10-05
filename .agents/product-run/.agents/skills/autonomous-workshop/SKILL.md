@@ -162,7 +162,10 @@ notes. After compaction or resume, reconcile those notes with native agent
 status and completed artifacts before continuing construction. A failed or
 unavailable child requires explicit reconciliation and reassignment of the
 unfinished design, not an assumed completed handoff. Forge/Quest Make reuses
-its already reviewed, sealed Invent contract without repeating Invent.
+its already reviewed, sealed Invent contract without repeating Invent. In Spark
+Make a delegated design is notes only: Component Workers author every
+Component, and an Inventor never writes a `part_<id>.step.py` or runs
+`make_round` (ADR 0080).
 
 Complete the Goal only after the ready-stage finalizer succeeds, then return
 control to the host immediately. Do not begin the next stage. If work is
@@ -279,7 +282,11 @@ requires you to qualify a different component, redesign the mechanism, or
 eliminate the dependency unless the Wish explicitly requires that exact part.
 Do not delegate that engineering choice to the operator. A need is valid only
 for an external condition that cannot be removed without violating the Wish, a
-deterministic gate, safety, or host-only effect authority. A successful `need` command
+deterministic gate, safety, or host-only effect authority, or when two
+statements of the sealed Design Contract cannot both hold. For a contract
+contradiction, return `waiting` and quote both statements in the reason; do
+not pick one. A detail the contract leaves open, or a freedom it explicitly
+grants, is yours to decide and is never a need. A successful `need` command
 writes a checkpoint-bound non-ready `agent-outcome.json` with no artifact or
 transition, after which you return control without claiming Goal completion.
 Never substitute chat prose, a self-score, or a large pasted JSON object for

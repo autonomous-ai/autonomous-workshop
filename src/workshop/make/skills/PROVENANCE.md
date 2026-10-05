@@ -430,6 +430,59 @@ Consequences for existing runs:
   `workshop fix` correction whose source archive was made before this change
   therefore re-measures such a part instead of carrying it, even when its
   geometry did not move. That costs work, never correctness.
+## Vendored cadgen installed into the Workshop venv (2026-09-26)
+
+A Workshop-local change to the vendored `cad` tree, not an upstream resync.
+`cad/scripts/packages/cadgen` has declared version 0.4.19 since it was
+vendored, the same number as the unrelated `earthtojake/text-to-cad` release on
+PyPI that the root `cadgen==0.4.19` pin installed. The two are different code:
+the PyPI wheel lacks `cadgen.inspection_runtime` (added here in 6716bf26) and
+carries modules this copy never had. A process that imported `cadgen` before
+putting the vendored path first got the PyPI copy, and a later
+`cadgen.inspection_runtime` import could not be found. The #65 Correction Run
+lost an assembled-round render to it: `render_review` put the path first only
+after the entry it was rendering had imported `cadgen`.
+
+Two changes:
+
+- The root `pyproject.toml` installs this tree through `[tool.uv.sources]`
+  (editable), so the uv venv holds the vendored code under the same pin. A plain
+  pip install of the Workshop wheel still resolves the pinned PyPI release.
+- `render_review.build_shape` puts the vendored path first before it runs the
+  entry, as `gen`, `snap_frames` and the other skill entry points already do.
+
+The vendored `pyproject.toml` now builds with `uv_build` instead of setuptools.
+setuptools writes `src/cadgen.egg-info/` and `build/` into the source tree,
+which here is a fingerprinted skill: they would drift this `LOCK.json`
+fingerprint on every synced checkout and be copied into every run. It also
+drops the `readme = "README.md"` line, since no README was ever vendored, and
+the setuptools package-data for `.mjs` files that do not exist here. **The `cad`
+fingerprint changed**: a frozen run keeps its materialized skills, and a parked
+one picks the fix up through `workshop resume --refresh-tools`.
+
+## Pin build123d and cadquery-ocp for cadgen (2026-09-25)
+
+A Workshop-local change to the vendored `cad` tree, not an upstream resync.
+`cadgen/pyproject.toml` declared `build123d` and `cadquery-ocp` with no
+version, so two installs of the same `cadgen==0.4.19` could resolve
+different OCCT builds. #60's parallel-boolean experiment
+(`docs/PARALLEL_BOOLEAN_EXPERIMENT.md`, Finding 3) found a fresh resolve can
+land on a pair that does not work together at all -- `cadquery-ocp` 8.0.1
+drops `OCP.TDF.TDF_LabelSequence`, which `cadgen`'s STEP scene loader needs,
+while the newest `cadquery-ocp` release old enough to keep it is too old for
+newer `build123d`'s `OCP.collections` use -- and is the simplest explanation
+for two Carry Forward builds hashing a part differently under no geometry
+change.
+
+`cadgen/pyproject.toml`, the CAD skill's `requirements.txt` and the root
+`pyproject.toml` now all pin `build123d==0.11.1` and
+`cadquery-ocp==7.9.3.1.1` -- the pair `uv.lock` already resolved and the one
+`docs/PARALLEL_BOOLEAN_EXPERIMENT.md`'s own experiment ran against. This
+follows the existing `Pillow>=10,<13` precedent: `tools/verify_skill_locks.py`
+requires the Workshop to pin every CAD skill requirement exactly as the skill
+declares it, so the root dependency list carries the same two specifiers.
+This changes the `cad` fingerprint only; no script, gate or geometry
+algorithm changed.
 
 ## Vendored cadgen installed into the Workshop venv (2026-09-26)
 
@@ -1036,6 +1089,24 @@ the next resync. `tests/make/test_harness_verdict.py` covers it.
   The design pages apply to any moving product; `verification.md` describes
   evidence only a `check_motion: true` run produces.
 
+## `print-details`
+
+Added 2026-10-01 (issue #79). Host-owned, not vendored: authored in this
+repository and recorded in `LOCK.json` under this repository's URL, like
+`make-round`. A one-file build123d library of printable decorative detail for
+Component Workers -- rivets, round bosses, low domes, raised bands and rims,
+half-round pipe ribs, inset panels with an optional lancet arch, windows and
+grille slits. Each limit it enforces names the `wiki` page it comes from
+(`printing/fdm-minimum-feature-sizes.md`,
+`printing/wall-thickness-and-hollowing.md`,
+`printing/overhangs-and-print-orientation.md`); the library reads those
+numbers, it does not change the pages. Its `--self-check` runs the vendored
+`cad` tree's own `check_thickness` and `check_overhang`, unchanged, on every
+feature at its minimum and default sizes. It does not modify the vendored
+`cad` or `wiki` trees, so a resync does not touch it, and it could be offered
+upstream later. The Manager copies it into a CAD project as
+`features/print_details.py` so the sealed project stays self-contained.
+
 ## `make-round`
 
 Local extension (2026-09-09, ADR 0060): each round renders native inspection
@@ -1534,19 +1605,343 @@ model replay, not a new native Wish or validation of the reported machine.
 An earlier development run exposed native shape mutation causing cache misses;
 copying validity inputs and non-destructive Boolean operations corrected it.
 
-## Local change: make-round waits at a 300000 ms yield and names the Component Reviewer (2026-09-29)
+## Local change: the likeness gate leaves the Workshop pipeline (2026-09-29)
+
+A Workshop-local change to the vendored `cad` and `image-to-cad` trees and to
+Workshop's own `make-round`, not an upstream resync (ADR 0076). It supersedes
+the likeness parts of the resync notes above: `verify_project` no longer runs
+`check_likeness` and refuses `--likeness-ref`, `--likeness-min`,
+`--likeness-accept-mismatch`, `--likeness-accept-regression` and
+`--search-fov`; its `render_views` step keeps only the orthogonal renders and
+the source-vs-STEP drift check. In Contract Mode it requires a current
+component round that passed its checks and an independent review for every
+sealed `geometry:<id>` image, and writes `component-acceptance.json` in place
+of `likeness-acceptance.json`. `make_round` no longer calls `render_views
+--match`; it composes each reference beside a `render_review` view at the
+reference's declared camera and records a reviewer's judgement with
+`--record-review`. `cad/SKILL.md` and its references drop the likeness
+invocations, and `image-to-cad/SKILL.md` gains one note at Step 8 saying the
+gate is not used inside Workshop. `render_views.py`, `check_likeness.py` and
+`likeness-gate.md` keep their upstream bytes. This changes the `cad`,
+`image-to-cad` and `make-round` fingerprints.
+
+## Local change: make-round waits at a 300000 ms yield (2026-09-29)
 
 A Workshop-local change to Workshop's own `make-round`, not an upstream resync
 (ADR 0077). The Rules section now starts `make_round` and continues it with an
 empty `write_stdin` poll at `yield_time_ms: 300000` instead of 30000. Codex
 0.158.0 accepts an empty-poll yield from 5000 to 300000 ms and returns as soon
 as the process exits, so the longer yield only removes re-sent polling
-requests. Its first rule now says who inspects the visual packet: the Manager
-for an assembly round, the Component Reviewer for a component round once its
-checks pass; in a run without one, it defers to that run's
-`references/make.md`. `make_round` keeps its pass rule. One change lets
-Component Workers run in parallel: a component round's visual packet binds its
-own `part_<id>.step.py` and STEP and every shared file, but no longer another
-Component's own source or STEP, so a sibling's repair cannot stale a pending
-review. The assembly packet still binds everything. This changes the
+requests. This changes the `make-round` fingerprint.
+
+## Local change: a component packet binds only its own and shared files (2026-09-30)
+
+A Workshop-local change to Workshop's own `make_round` (ADR 0077). Component
+Workers repair Components in parallel, and `--record-review` refused a review
+as stale whenever any source or STEP in the project had changed since the
+packet, including another Component's. A component round's visual packet now
+binds its own `part_<id>.step.py` and STEP and every shared file, but no
+longer another Component's own source or STEP. A shared helper edit still
+stales every pending component packet, and the assembly packet still binds
+everything. This changes the `make-round` fingerprint.
+
+## Local change: component rounds record a worker nonce (2026-09-30)
+
+A Workshop-local change to Workshop's own `make-round` (ADR 0080). `make_round`
+accepts a hidden `--worker-nonce <32 hex>` on a component build round only and
+records it as `worker_nonce` in that round's `summary.json`; any other use is a
+usage error. The Workshop guard hook passes the nonce to a
+`component-worker`'s call; the host refuses a component round whose nonce it
+did not issue. The Rules section says who runs which call. This changes the
 `make-round` fingerprint.
+
+## Local change: the b149710 resync keeps the likeness gate out (2026-09-30)
+
+Merging `main`'s resync to upstream `b149710` into `rein/remove-likeness`
+kept every non-likeness upstream change and left out the upstream likeness
+additions to the vendored `cad` tree: `verify_project --likeness-entry`
+(scoring a part-only reference against its part entry), its camera-window and
+routing self-checks, and the matching prose in `cad/SKILL.md` and
+`references/image-derived-verification.md`. The likeness gate stays out of
+the Workshop pipeline (ADR 0076). `render_views.py`, `check_likeness.py` and
+`likeness-gate.md` keep their upstream `b149710` bytes. This changes the
+`cad` fingerprint.
+
+## Local change: Shape Rounds follow Component Reviews (2026-10-01)
+
+A Workshop-local change to Workshop's own `make-round` (ADR 0081). One pure
+`round_policy` decides admission, Shape Round counting and the lock of a
+component round: a passing round must be reviewed before the Component's
+geometry may change (a refused round exits 2, writes no round and puts back
+the STEP it overwrote); a Shape Round is the first geometry change after a
+disagreeing review; an agreeing review or a Component Acceptance locks the
+Component until a Shared Helper it imports changes or the Manager records an
+assembly unlock with the new root-only `--record-unlock`; a rerun of the
+reviewed B-rep carries the review forward. A component packet binds only the
+Component's own files and the Shared Helpers it imports, and a component round
+that fails its checks is not rendered. This changes the `make-round`
+fingerprint.
+
+## Local change: a Component Review names its bound reviewer (2026-10-01)
+
+A Workshop-local change to Workshop's own `make-round` (issue #77, extending
+ADR 0081). When the Workshop host sets `WORKSHOP_REVIEWER_RUNTIME` (Claude
+Code), `--record-review` requires `reviewer` to be the reviewer's native agent
+id, binds a Component's first reviewer id in its component state and refuses
+a review naming another id. Without it a review keeps the free-text reviewer
+name. `SKILL.md` describes the fixed review request and the worker reading
+the recorded review itself. This changes the `make-round` fingerprint.
+
+## Local change: Interfaces between Components (2026-10-01)
+
+A Workshop-local change (ADR 0082, issue #78) to Workshop's own `make-round`
+and to the vendored `cad` tree. `make_round --shared-helpers` builds the
+Manager's samples under `samples/` and runs `check_thickness` and
+`check_overhang` on them, freezing the Shared Helpers by hash on a pass; under
+a sealed contract with an Interfaces section a component round refuses to
+start before that freeze and reports a frozen helper it imports that changed,
+with the Components that import it. A new `make-round/scripts/check_envelope`
+checks a separable Interface's Keep-out Envelope on a Component's B-rep in its
+own round, and `make_round --interface <id>` runs `check_motion`'s
+`coupled_motion_collision` on one Coupled Interface's locked Components,
+unlocking the contract's yielding Component on failure.
+`--require-component-passes` also needs a current passing check of every
+Coupled Interface. In `cad`, `verify_project`'s Contract Mode component gate
+applies the same Coupled Interface rule through `make_round` and writes the
+Interfaces, each with its proof, into `component-acceptance.json`. Upstream
+`check_motion` keeps its `b149710` bytes. This changes the `cad` and
+`make-round` fingerprints.
+
+## Local change: Shared Helper rules checked at the freeze (2026-10-01)
+
+A Workshop-local change (ADR 0082) to Workshop's own `make-round`.
+`make_round --shared-helpers` now checks the Shared Helper rules on every
+helper a Component or sample imports before it builds a sample: each
+module-level design value cites an existing page of the run's wiki with
+`# wiki: <slug>` and appears in an `assert`; a function or class named for a
+standard element needs `bd_warehouse` or `py_gearworks`; no helper names an
+involute. The installed `features/print_details.py` is exempt only byte for
+byte. A failure builds and freezes nothing. This changes the `make-round`
+fingerprint.
+
+## Local change: Interfaces between instances of one Unique Geometry (2026-10-01)
+
+A Workshop-local change (ADR 0082, amended by #80) to Workshop's own
+`make-round` and `cad/scripts/verify_project`. An Interface may name one
+instance of a Unique Geometry, `<id>#<n>`. `make_round --interface` builds the
+instance's Component once and places each referenced instance as its own
+child labelled `<id>#<n>`, through `assembly_pose(shape, pose, instance)` and,
+when it takes one, `gen_step(instance=n)`; it refuses a Component file whose
+`assembly_pose` takes no `instance`. Locking, staleness and the unlock act on
+the Component. `check_envelope --instance n` checks one instance against its
+side of a Keep-out Envelope, and a component round runs one check per named
+instance. The final verifier judges an instance on its Component's identity.
+Upstream `check_motion` keeps its `b149710` bytes. This changes the `cad` and
+`make-round` fingerprints.
+
+## Local change: compare in the Display Pose at the Reference Camera (2026-10-02)
+
+A Workshop-local change (ADR 0083, issue #81) to Workshop's own
+`make-round`. Under a schema 3 Design Contract every sealed reference carries
+its Reference Camera. A component round renders `compare-NN.png` from a
+generated entry that returns the Component's `assembly_pose(shape, None)`
+(the first instance when its `gen_step` and `assembly_pose` take one) at that
+camera, under `visual/display-pose/`, while `front`, `top` and `iso` stay in
+the print stance; an assembly round shows its sealed assembly reference from
+its camera. A schema 3 component round of a file with no `assembly_pose` is
+refused before anything is built. `--record-review` accepts a
+`camera_mismatch` answer that names the reference and the landmarks each side
+shows: it leaves the round policy awaiting review, spends no Shape Round,
+writes `camera-mismatch.json` instead of `review.json`, and puts the need in
+the summary. A camera the host amended in the run-root
+`CONTRACT-AMENDMENTS.json` replaces the sealed one. Schema 1 and 2 contracts
+keep the declared-camera-else-front comparison. This changes the
+`make-round` fingerprint.
+
+## Local change: print gates name the failing feature; blunt free edges (2026-10-02)
+
+A Workshop-local change (issue #82) to the vendored `cad` tree and to
+Workshop's own `print-details` and `make-round`. In `cad`, `printlib.py` gains
+`entry_shape`, `printed_mesh` and the feature lookup the two gates share:
+`check_thickness` and `check_overhang` now build the entry once, keep its
+B-rep, and for each region they print name the nearest feature print-details
+tagged in `PRINT_DETAIL_TAGS` (within 1 mm), else the nearest B-rep face, with
+how far a failing region is past its limit. Failing regions are listed first.
+An open tessellation is decided by the B-rep: an invalid solid fails with its
+bad faces listed; a valid one is re-tessellated once at a quarter of the
+deviation and half the angle, and measured if that closes it; one that stays
+open exits 4 with `RESULT: UNMEASURABLE MESH`. Thresholds, the classifiers and
+every self-check verdict are unchanged; `check_mesh` is unchanged. The
+`check_overhang` self-check now passes per-sample slopes through `cluster`.
+
+`print-details` tags every feature it makes with the caller's file and line,
+and adds `bore` (teardrop), `blunt_tip` and `rib_end`, each in its
+self-check. `make_round` records each gate's failing feature keys
+(`defects`), a part's `repeated_defects` against its previous round and the
+round's `repeated_print_defects`, and the gates' exit 4 as an `UNMEASURABLE`
+verdict that fails `checks_ok` without counting as a print failure. This
+changes the `cad`, `print-details` and `make-round` fingerprints.
+
+## Local change: `check_mesh` reads the same mesh as the measuring gates (2026-10-02)
+
+A Workshop-local follow-up to issue #82 in the vendored `cad` tree. The change
+above left `check_mesh` on `entry_mesh` at the default deviation, so a valid
+solid whose seam closed only at the finer retry passed `check_thickness` and
+`check_overhang` in its component rounds and then failed `check_mesh`, which
+`verify_project` runs first, at final verification. `check_mesh` now takes its
+mesh from `printlib.printed_mesh` too: an invalid B-rep fails with its bad
+faces listed, a mesh the finer retry closed is checked on that mesh (its
+watertight line says so), and one that stays open exits 4 with
+`RESULT: UNMEASURABLE MESH`. Every other `check_mesh` check and threshold is
+unchanged, and `verify_project` still treats any nonzero exit as a failed mesh
+gate. This changes the `cad` fingerprint.
+
+## Local change: Interface text and Reference Conflicts (2026-10-02)
+
+A Workshop-local change (ADR 0084, issue #83) to Workshop's own `make-round`
+and `cad/scripts/verify_project`. Under a schema 4 Design Contract a component
+round writes the Component's own contract, its geometry row, its requirement
+rows and the `text` of every Interface naming it (`<id>` or `<id>#<n>`), into
+`visual-packet.json` (bound by the packet hash) and `summary.json`, and its
+contract-row hash covers those Interfaces. `--record-review` accepts
+`reference_conflicts` beside `differences`, each naming a reference the round
+compared, what it shows and what the contract requires; they may stand beside
+an agreement, are kept out of `review.json` (in `reference-conflicts.json` and
+the summary), carry with the review, and a disagreeing review with only
+conflicts is refused. The final verifier notes each conflict and writes them
+to `component-acceptance.json` as `reference_conflicts`. Schema 3 contracts
+keep their cameras and Display Pose comparison under schema 4. Schema 1 to 3
+packets carry no `contract`. This changes the `cad` and `make-round`
+fingerprints.
+
+## Local change: every Detail Refusal of a build at once, with a passing value (2026-10-02)
+
+A Workshop-local change (issue #86) to the vendored `cad` tree and to
+Workshop's own `print-details` and `make-round`. Every `PrintLimitError`
+of `print-details` now carries `passing`, what would pass at that spot: the
+limit for a size below it, the largest `d` or `width` the surface there
+takes and the least height that clears it (both re-measured, not
+estimated), the spacing that leaves the minimum gap between copies, or the
+kind of spot when no size fits. While `WORKSHOP_PRINT_DETAILS_BUILD` is set
+a refused feature returns its host unchanged and records its Detail Refusal
+in `DETAIL_REFUSALS`; `refusal_error()` turns them into one
+`DetailRefusals`, one `detail-refusal {json}` line each. Outside a build
+every refusal still raises at once; `limits()` is unchanged, and the
+self-check adds a collected three-refusal build. In `cad`, cadgen's
+generator runner and `printlib.build_entry` set the variable while the
+entry loads and runs, then raise the collected refusals, after any error
+that stopped the build. `make_round` parses the lines into the part's
+`build.detail_refusals`, prints a `refuse` line for each, records each
+part's refusal keys in its state and reports a detail refused at the same
+line in the previous round under `repeated_detail_refusals`, apart from
+`repeated_print_defects`. This changes the `cad`, `print-details` and
+`make-round` fingerprints.
+
+## Local change: Blocked Reports a Component Worker records and the Manager clears (2026-10-03)
+
+A Workshop-local change (issue #88) to Workshop's own `make-round`.
+`make_round --component part_<id>.step.py --report-blocked BLOCKED.json`
+records a Component Worker's Blocked Report in the CAD project's
+`measure/blocked-reports.jsonl`: the Component, its latest round and the
+contract rows it names, each checked verbatim (whitespace aside) against the
+sealed Design Contract, bound to the run by the sha256 of `WISH.json`. The
+Workshop Manager answers it with `--clear-blocked ANSWER.json`: a decision, a
+decision waiting on another Component, or a need that quotes every row. A
+waiting report stays open until that Component's next round whose checks
+pass; that round's summary carries `wakes_blocked`, and `--blocked-reports`
+marks the report woken. While any report is open or waiting an assembly
+round and `--full` refuse to run. Nothing is built for a report or an answer.
+This changes the `make-round` fingerprint.
+
+## Local change: in-run Contract Amendments a fresh Contract Reviewer confirms (2026-10-03)
+
+A Workshop-local change (issue #90, ADR 0085) to Workshop's own `make-round`.
+`make_round --propose-amendment PROPOSAL.json` records the Workshop
+Manager's Contract Amendment in the CAD project's
+`measure/contract-amendments.jsonl`: two or more contract rows that cannot
+both hold, verbatim, and the whole requirement or Interface texts it
+replaces, bound to the sha256 of `WISH.json` and to the canonical-JSON hash
+of the contract it amends. It writes a packet holding every sealed
+reference by path and sha256 for a fresh `contract-reviewer`.
+`--record-amendment-review REVIEW.json` records that reviewer's verdict; the
+amendment applies only when the rows contradict, the change is the
+smallest, and no reference shows it. Rounds then read the amended rows: the
+rows a component round delivers, the rows a Blocked Report quotes, and the
+contract-rows hash its review binds, so a locked Component whose rows
+changed unlocks. `--clear-blocked {"report", "amendment"}` clears a Blocked
+Report with an applied amendment that names it. While an amendment awaits
+review an assembly round and `--full` refuse to run;
+`--contract-amendments` lists them. Nothing is built for a proposal or a
+review. This changes the `make-round` fingerprint.
+
+## Local change: a motion state has no fixed byte limit (2026-10-03)
+
+A Workshop-local change (issue #93, ADR 0060 amendment) to Workshop's own
+`cad/scripts/motion_presentation.py`. `generate` no longer refuses a posed
+state whose canonical encoding exceeds 20 MiB. That cap was the on-disk
+`state-*.stl` artifact limit; since ADR 0062 the state is tessellated in
+memory and bound only by hash, validation never checked its size, and it
+fired after posing and rendering had finished, so it bounded neither memory
+nor time. It did force a detailed toy to change locked, contract-required
+rivets. Validation still rebuilds every state at the same fixed tessellation
+and refuses one whose hash differs. `references/motion-presentation.md`
+says not to simplify geometry for the animation. This changes the `cad`
+fingerprint; materialized runs keep their copied bytes.
+
+## Local change: one Smaller Retry of a refused Contract Amendment (2026-10-04)
+
+A Workshop-local change (issue #96, amending ADR 0085) to Workshop's own
+`make-round`. When the only earlier Contract Amendment quoting the same rows
+was refused with `contradiction` true, `visible_in` empty and `smallest`
+false, `--propose-amendment` accepts one Smaller Retry: the same rows, each
+change a row the refused amendment changed, from the same text, with only
+deletions applied (strictly shorter, a character subsequence, and no word
+added or respelled). The proposal event and packet record `retry_of`. Any
+other proposal quoting rows an earlier amendment quoted is refused: a third
+one, one after a contradiction or visibility refusal, or one after an
+applied amendment; the ledger replay refuses the same. After a refusal that
+still allows a retry, `--record-amendment-review` prints the reviewer's
+reason and the retry rule beside the need, and `--contract-amendments` marks
+a retry. Nothing is built for a proposal or a review. This changes the
+`make-round` fingerprint.
+
+## Local change: a component round prints the B-rep identity a worker reports (2026-10-04)
+
+A Workshop-local change (issue #98) to Workshop's own `make-round`. A
+component round records its B-rep identity as `identity` in `summary.json`
+(it was only in `make-round-state.json`) and prints it on an `identity` line;
+any round with a visual packet prints its sha256 and path on a `packet`
+line (`visual.packet_sha256`, `visual.packet`). The Component Worker definition names these fields
+exactly. This changes the `make-round` fingerprint; materialized runs keep
+their copied bytes.
+
+## Local change: a Blocked Report ruling binds the Component Reviewer (2026-10-04)
+
+A Workshop-local change (issue #97, amending ADR 0081) to Workshop's own
+`make-round`. A component round writes the Component's decided Blocked
+Report rulings (a report of that Component whose last answer is a decision
+that waits on nothing) into its visual packet and summary as `rulings`,
+copied from `measure/blocked-reports.jsonl`, and appends them to the carry
+key only when there are any. `--record-review` accepts `ruling_disputes`
+(`{"report", "reason"}`, at most 12, each naming a ruling of the packet),
+keeps them out of the worker's `review.json`, writes
+`ruling-disputes.json`, carries them with a carried review, refuses a
+disagreement whose only findings are disputes, and refuses a review of a
+packet rendered before the Component's latest ruling. An unreadable ledger
+refuses the component round before the build. Nothing is judged. This
+changes the `make-round` fingerprint; materialized runs keep their copied
+bytes.
+
+## Local change: an Owner Contract Amendment reaches the rounds (2026-10-04)
+
+A Workshop-local change (issue #100, amending ADR 0085) to Workshop's own
+`make-round`. `current_contract` reads the run root's host-written
+`CONTRACT-AMENDMENTS.json` `owner_amendments` and sets each owner row's text
+after every applied in-run amendment, so component packets, summaries and
+contract-rows hashes read the owner's rows and a Component whose own rows
+changed unlocks. `--contract-amendments` lists each owner amendment after
+the in-run ones, and `--propose-amendment` is refused once one exists. The
+tool carries the marker `workshop-owner-contract-amendments-v1`, which the
+host requires before it records an owner amendment. Nothing is judged. This
+changes the `make-round` fingerprint; materialized runs keep their copied
+bytes and are refused an owner amendment.

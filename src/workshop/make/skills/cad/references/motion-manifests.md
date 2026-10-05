@@ -362,6 +362,25 @@ nothing was measured past that point. The fix is to sample what actually needs
 sampling: raise `steps` only around the passes that matter, split a long cycle
 into separate conditions, or raise the budget on purpose.
 
+`WORKSHOP_MOTION_WORKERS` opts coupled nominal sweeps into process parallelism
+(integer 1–32, default 1; Python 3.14 is required for bounded worker termination).
+Workers receive the same complete pose tables and
+exact binary B-reps. The parent consumes results in original pose/pair order,
+so an earlier error or collision cannot be hidden by a faster later worker.
+The worker count changes throughput, not the sampling or overlap thresholds.
+The shared absolute deadline includes worker setup; missing or failed workers
+are inconclusive. Workers are terminated on interruption or early completion.
+Drive/contact evidence still runs on the original whole cycle with its original
+frozen pose, followed by the same retention checks. Do not split the manifest
+into slices as a substitute: that would change the frozen drive reference.
+
+Within one immutable condition, bounded preparation caching reuses material
+unions, volumes and boxes only for exactly equal placed/oriented B-reps. It
+does not cache incomplete measurements or remove the Boolean consistency checks.
+Explicit `WORKSHOP_GEOMETRY_OPERATION_TIMEOUT` is honored by the Make-round
+caller, still bounded by the remaining `WORKSHOP_GEOMETRY_TIMEOUT` allowance;
+without an override the caller retains its 900-second default.
+
 ## Choosing the direction
 
 A wrong direction reads as a blocked path, so derive the vector from the

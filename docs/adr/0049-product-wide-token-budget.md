@@ -24,6 +24,14 @@ or reset. Supported older persistent-budget products may adopt it explicitly
 only when their complete observed native history can be recovered. Previous
 accounting remains preserved. Other runtimes retain their frozen policies.
 
+Changing the cap of an existing token-budget run preserves pending descendants,
+including children interrupted before their first usage report when the cap was
+reached. Pending is not fabricated completed zero usage. The recovered ledger
+must still include every previously tracked thread and all observed counters
+must remain monotonic. Initial adoption from a legacy time/turn budget still
+requires complete observed history. Completed-turn reconciliation and proposal
+gates remain unchanged.
+
 The trusted host reads bounded native rollout records using a compatibility
 adapter introduced and live-validated with Codex 0.153.4. On 2026-09-10 the
 launcher gate was widened to 0.153.4 or newer; the reader continues to validate

@@ -50,6 +50,7 @@ _RESERVED_SKILL_NAMES = frozenset(
         "image-to-cad",
         # Retired for new runs; older frozen runs still materialize it.
         "mechanisms",
+        "print-details",
         "product-design",
         "step-parts",
         "wiki",

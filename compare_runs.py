@@ -103,6 +103,37 @@ def thickness_trail(path: Path) -> list[str]:
     return found
 
 
+def print_rounds(workspace: Path) -> dict:
+    """Vòng component của run: số vòng, số vòng trượt gate in, và số vòng lặp lỗi in.
+
+    Lỗi in lặp lại (issue #82): một vòng trượt mà feature trượt của nó cũng
+    trượt ở vòng trước của cùng Component. Đây là thước đo khi so sánh run;
+    tỷ lệ trượt chỉ để tham khảo, vì một vòng trượt tốn ngang một lần chạy
+    gate tại chỗ.
+    """
+
+    rounds = failing = repeated = refused = 0
+    measured = refusals = False
+    for path in sorted(workspace.rglob("measure/component-rounds/*/r[0-9]*/summary.json")):
+        try:
+            summary = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        rounds += 1
+        printing = summary.get("print") or {}
+        if any((item or {}).get("verdict") == "FAIL" for item in printing.values()):
+            failing += 1
+        if "repeated_print_defects" in summary:
+            measured = True
+            repeated += bool(summary["repeated_print_defects"])
+        # Từ chối chi tiết lặp lại (issue #86): đếm riêng, không phải lỗi in.
+        if "repeated_detail_refusals" in summary:
+            refusals = True
+            refused += bool(summary["repeated_detail_refusals"])
+    return {"rounds": rounds, "failing": failing, "repeated": repeated if measured else None,
+            "refused": refused if refusals else None}
+
+
 def describe(wish_id: str) -> None:
     state = STATE / wish_id
     workspace = RUNS / wish_id / "workspace"
@@ -129,6 +160,14 @@ def describe(wish_id: str) -> None:
     print("  artifact : %d file | STL %d | MANUAL.pdf %s"
           % (sum(1 for _ in artifacts.rglob("*") if _.is_file()),
              len(stl), "CÓ" if manual.is_file() else "chưa"))
+
+    counted = print_rounds(workspace)
+    if counted["rounds"]:
+        print("  vòng in  : %d vòng component | lặp lỗi in %s | lặp từ chối chi tiết %s | trượt %d (tham khảo)"
+              % (counted["rounds"],
+                 "—" if counted["repeated"] is None else counted["repeated"],
+                 "—" if counted["refused"] is None else counted["refused"],
+                 counted["failing"]))
 
     path = transcript(wish_id)
     if path is None:

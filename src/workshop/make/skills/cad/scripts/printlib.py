@@ -37,6 +37,7 @@ import contextlib
 import importlib.util
 import io
 import math
+import os
 import sys
 from pathlib import Path
 
@@ -219,6 +220,48 @@ def purge_project_modules(project: Path) -> None:
             sys.modules.pop(name, None)
 
 
+# Workshop (#86): print-details collects every Detail Refusal of a build while
+# this is set, instead of raising at the first; the build raises them at once.
+DETAIL_BUILD_ENV = "WORKSHOP_PRINT_DETAILS_BUILD"
+REFUSAL_REGISTRY = "DETAIL_REFUSALS"
+
+
+def raise_detail_refusals(after: BaseException | None = None) -> None:
+    """Raise the build's Detail Refusals from whichever loaded module holds
+    them (the project's `features/print_details.py`, under any import name)."""
+    for module in list(sys.modules.values()):
+        registry = getattr(module, REFUSAL_REGISTRY, None)
+        collect = getattr(module, "refusal_error", None)
+        if isinstance(registry, list) and registry and callable(collect):
+            error = collect(after)
+            if error is not None:
+                raise error from after
+
+
+@contextlib.contextmanager
+def detail_build():
+    """Run a generator as one build: every Detail Refusal is reported when it
+    ends, together with any error that stopped it."""
+    for module in list(sys.modules.values()):
+        registry = getattr(module, REFUSAL_REGISTRY, None)
+        if isinstance(registry, list):
+            registry.clear()          # an earlier build's, never this one's
+    previous = os.environ.get(DETAIL_BUILD_ENV)
+    os.environ[DETAIL_BUILD_ENV] = "1"
+    try:
+        try:
+            yield
+        except Exception as error:
+            raise_detail_refusals(error)
+            raise
+        raise_detail_refusals()
+    finally:
+        if previous is None:
+            os.environ.pop(DETAIL_BUILD_ENV, None)
+        else:
+            os.environ[DETAIL_BUILD_ENV] = previous
+
+
 def build_entry(path: Path, namespace: str, *, printed: bool = False):
     """Build one entry and return its shape, with generator stdout swallowed.
 
@@ -226,7 +269,7 @@ def build_entry(path: Path, namespace: str, *, printed: bool = False):
     it defines one (a multi-colour plate), otherwise `gen_step()`.
     """
     sink = io.StringIO()
-    with project_on_path(path.parent), contextlib.redirect_stdout(sink):
+    with project_on_path(path.parent), contextlib.redirect_stdout(sink), detail_build():
         module = load_entry(path, namespace)
         name = GEN_FUNC
         if printed and callable(getattr(module, PRINT_UNION_FUNC, None)):
@@ -310,6 +353,220 @@ def entry_mesh(path: Path, namespace: str, *, deviation: float = MESH_DEVIATION,
     PRINT_UNION_FUNC -- and tessellate it in one step."""
     return tessellate(build_entry(path, namespace, printed=True), deviation=deviation,
                       angular=angular)
+
+
+def entry_shape(path: Path, namespace: str):
+    """Build one printable entry's printed object -- see PRINT_UNION_FUNC."""
+    return build_entry(path, namespace, printed=True)
+
+
+# Workshop (#82): the one finer retry a valid solid with an open tessellation
+# gets. A quarter of the chord deviation and half the angle: BRepMesh then
+# rediscretises every edge, which closes a seam two faces discretised apart.
+FINE_DEVIATION = MESH_DEVIATION / 4
+FINE_ANGULAR = MESH_ANGULAR / 2
+# How many invalid faces a report lists.
+INVALID_FACES_SHOWN = 8
+
+
+def invalid_faces(shape) -> list[dict] | None:
+    """None for a valid B-rep; otherwise every face BRepCheck refuses.
+
+    The list may be empty: a solid can be invalid in its shell or its
+    orientation with every face sound on its own. Each entry names the face's
+    index in `shape.faces()`, its surface type and where it is.
+    """
+    if shape is None or shape.is_valid:
+        return None
+    from OCP.BRepCheck import BRepCheck_Analyzer
+
+    bad = []
+    for index, face in enumerate(shape.faces()):
+        if BRepCheck_Analyzer(face.wrapped).IsValid():
+            continue
+        bad.append(describe_face(face, index))
+    return bad
+
+
+def describe_face(face, index: int) -> dict:
+    """A face as a report names it: index, surface type, area and centre.
+
+    The centre is its bounding box's: an invalid face has no mass centre."""
+    centre = face.bounding_box().center()
+    try:
+        area = float(face.area)
+    except Exception:  # an invalid face may not integrate
+        area = float("nan")
+    return {
+        "index": index,
+        "type": str(face.geom_type).split(".")[-1].lower(),
+        "area": area,
+        "centre": (float(centre.X), float(centre.Y), float(centre.Z)),
+    }
+
+
+def printed_mesh(shape, *, mesh=None) -> dict:
+    """Tessellate a built shape for the mesh gates, closing it if it can be closed.
+
+    A sound solid tessellates watertight at the default deviation. When the
+    mesh comes back open, the B-rep says which of two things went wrong
+    (issue #82):
+
+        invalid        the solid itself is broken. Report its bad faces, so
+                       the worker repairs the generator where it broke.
+        closed         the solid is valid and one finer tessellation closed
+                       the seam the default one left open. Measure that.
+        unmeasurable   the solid is valid and the finer mesh is still open.
+                       Neither inside nor outside is defined, so no gate can
+                       measure it -- and nothing says the part fails to print.
+
+    Returns `{"status", "verts", "faces", "open_edges", "deviation",
+    "retessellated", "invalid_faces"}`; `verts`/`faces` are None unless the
+    status is `closed`. `mesh(shape, deviation, angular)` returns a triangle
+    soup, `tessellate` by default; a test passes its own.
+    """
+    from meshlib import summarize, weld
+
+    mesh = mesh or (lambda subject, deviation, angular: tessellate(
+        subject, deviation=deviation, angular=angular))
+    record = {"status": "closed", "verts": None, "faces": None, "open_edges": 0,
+              "deviation": MESH_DEVIATION, "retessellated": False, "invalid_faces": None}
+    verts, faces = weld(mesh(shape, MESH_DEVIATION, MESH_ANGULAR))
+    record["open_edges"] = summarize(verts, faces)["boundary"]
+    if not record["open_edges"]:
+        record.update(verts=verts, faces=faces)
+        return record
+    bad = invalid_faces(shape)
+    if bad is not None:
+        record.update(status="invalid", invalid_faces=bad)
+        return record
+    verts, faces = weld(mesh(shape, FINE_DEVIATION, FINE_ANGULAR))
+    still_open = summarize(verts, faces)["boundary"]
+    record.update(deviation=FINE_DEVIATION, retessellated=True)
+    if still_open:
+        record.update(status="unmeasurable", open_edges=still_open)
+        return record
+    record.update(verts=verts, faces=faces)
+    return record
+
+
+def mesh_refusal(name: str, record: dict) -> list[str]:
+    """The lines a mesh gate prints when `printed_mesh` gave it nothing to measure."""
+    if record["status"] == "invalid":
+        bad = record["invalid_faces"] or []
+        lines = [f"{name}: the B-rep is not a valid solid, so its tessellation has "
+                 f"{record['open_edges']} open edge(s). Repair the generator where the solid "
+                 "breaks: an overlapping trim, a zero-thickness seam or a self-intersecting "
+                 "sweep, not the mesh."]
+        if bad:
+            lines.append(f"  {len(bad)} invalid face(s):")
+            for item in bad[:INVALID_FACES_SHOWN]:
+                x, y, z = item["centre"]
+                lines.append(f"    face {item['index']} ({item['type']}, {item['area']:.2f} mm2) "
+                             f"centred at ({x:.1f}, {y:.1f}, {z:.1f})")
+            if len(bad) > INVALID_FACES_SHOWN:
+                lines.append(f"    ... and {len(bad) - INVALID_FACES_SHOWN} more")
+        else:
+            lines.append("  every face is valid on its own: the shell or its orientation is "
+                         "broken (two solids touching along an edge, or an inside-out shell)")
+        return lines
+    return [f"{name}: the B-rep is a valid solid, but its tessellation stays open at "
+            f"{record['open_edges']} edge(s) even at {FINE_DEVIATION:g} mm deviation. Inside "
+            "and outside are undefined on an open mesh, so this part cannot be measured; it "
+            "has not failed a print limit. Simplify the faces where the mesh is open (a "
+            "tangent seam, a sliver face from a fillet or a trim) and rerun."]
+
+
+# Workshop (#82): a print gate names the feature a failing region belongs to.
+# print-details records every feature it makes in its module's
+# `PRINT_DETAIL_TAGS`; a region within this distance of a tagged feature is
+# reported as that feature, else as the nearest B-rep face.
+TAG_REGISTRY = "PRINT_DETAIL_TAGS"
+NEAR_FEATURE_MM = 1.0
+
+
+def feature_tags() -> list[dict]:
+    """Every feature print-details tagged while the entry was built.
+
+    Read from whichever loaded module carries the registry -- the project's
+    installed `features/print_details.py` under any import name -- so the gate
+    needs no import path of its own. A tag holds `kind`, `name`, `site` and
+    the feature's `shape` in the generator's coordinates.
+    """
+    tags, seen = [], set()
+    for module in list(sys.modules.values()):
+        registry = getattr(module, TAG_REGISTRY, None)
+        if not isinstance(registry, list) or id(registry) in seen:
+            continue
+        seen.add(id(registry))
+        tags.extend(tag for tag in registry
+                    if isinstance(tag, dict) and {"kind", "name", "site", "shape"} <= tag.keys())
+    return tags
+
+
+def _distance(shape, point) -> float:
+    from build123d import Vector, Vertex
+
+    try:
+        return float(shape.distance_to(Vertex(Vector(*point))))
+    except Exception:  # an empty or degenerate tag shape locates nothing
+        return float("inf")
+
+
+def nearest_feature(shape, point, tags, near: float = NEAR_FEATURE_MM) -> dict | None:
+    """Name what a failing region at `point` belongs to.
+
+    The nearest tagged print-details feature within `near` mm, else the
+    nearest face of `shape`. `key` is what a later round compares to find the
+    same defect again: a tagged feature by its kind and call site, a face by
+    its surface type and centre to the millimetre. None without a shape.
+    """
+    best = None
+    for tag in tags:
+        distance = _distance(tag["shape"], point)
+        if distance <= near and (best is None or distance < best[0]):
+            best = (distance, tag)
+    if best is not None:
+        distance, tag = best
+        return {"kind": "feature", "key": f"{tag['kind']}@{tag['site']}",
+                "label": f"{tag['name']} ({tag['site']})", "distance": distance}
+    if shape is None:
+        return None
+    faces = shape.faces()
+    if not faces:
+        return None
+    from build123d import Vector
+
+    p = Vector(*point)
+    lo = min(_distance(shape, point), float("inf"))
+    found = None
+    for index, face in enumerate(faces):
+        box = face.bounding_box()
+        gap = max(box.min.X - p.X, p.X - box.max.X, box.min.Y - p.Y, p.Y - box.max.Y,
+                  box.min.Z - p.Z, p.Z - box.max.Z, 0.0)
+        if gap > lo + 1e-3:
+            continue
+        distance = _distance(face, point)
+        if found is None or distance < found[0] - 1e-9:
+            found = (distance, index, face)
+    if found is None:
+        return None
+    distance, index, face = found
+    item = describe_face(face, index)
+    x, y, z = item["centre"]
+    key = f"{item['type']}@({round(x) + 0},{round(y) + 0},{round(z) + 0})"
+    return {"kind": "face", "key": key,
+            "label": f"face {index} ({item['type']}, {item['area']:.1f} mm2, centre "
+                     f"({x:.1f}, {y:.1f}, {z:.1f}); no print-details feature within {near:g} mm)",
+            "distance": distance}
+
+
+def feature_line(found: dict | None) -> str:
+    """The `at ...` text a gate prints under a region; the first word after
+    `at feature`/`at face` is the region's repeat key."""
+    if found is None:
+        return ""
+    return f"at {found['kind']} {found['key']} -- {found['label']}, {found['distance']:.2f} mm away"
 
 
 def resolve_single_entry(target: str) -> Path:
