@@ -72,3 +72,15 @@ Images in `future/`, page `FUTURE_CONCEPTS.html` (artifact https://claude.ai/art
   - FX5b is about 30°.
   - FX8 ring feet sit next to the top-left tab tap.
   - FX1 lattice struts must be ≥0.8 mm.
+
+## Sci-fi film concepts (SF1–SF8), 2026-10-05
+
+Added to `FUTURE_CONCEPTS.html`. Images in `scifi/`, AI-generated from text prompts only, one round. Prompts describe genre moods only ("used future", clean white future, glowing digital world, black monolith, starship bridge, neon noir, desert brutalism, hologram) and ask for no copy of any specific film prop.
+
+- Recommended: SF1 Used Future, SF3 Light Grid (edge light pipes fed by the WS2812), SF2 White Drone (the sensor eye can be the real CSI camera).
+- Flags:
+  - The SF1 rear-left corner guard rises above the glass, next to the tab tap.
+  - SF2 is drawn at about 30–35°.
+  - SF6 draws a metal rim above the glass.
+  - The SF8 floating hologram is not real technology; it would become an edge-lit etched acrylic fin.
+  - SF3 recalls Tron.
