@@ -257,10 +257,9 @@ class MakeRoundTest(unittest.TestCase):
                 self.assertIn(required, module.VISUAL_VIEWS)
             packet = json.loads(Path(summary["visual"]["packet"]).read_text())
             names = sorted(Path(path).name for path in packet["images"])
-            # The packet binds the print-stance views and the sheet; the other
-            # views reach a reader inside the sheet, so a reviewer whose reads
-            # the host checks opens four images, not ten (ADR 0087).
-            self.assertEqual(names, ["front.png", "iso.png", "sheet.png", "top.png"])
+            # The packet binds only the sheet, which holds every view, so a
+            # reviewer whose reads the host checks opens one image (ADR 0087).
+            self.assertEqual(names, ["sheet.png"])
             self.assertTrue(summary["visual"]["sheet"].endswith("/visual/sheet.png"))
             self.assertIn(summary["visual"]["sheet"], module.render_summary(summary))
             # The sheet is bound evidence: a changed sheet cannot be reviewed.
@@ -464,7 +463,7 @@ class MakeRoundTest(unittest.TestCase):
             self.assertFalse(summary["ok"])
             self.assertEqual(summary["visual"]["status"], "pending")
             packet = json.loads(Path(summary["visual"]["packet"]).read_text())
-            self.assertEqual(len(packet["images"]), len(module.PACKET_VIEWS) + 1)
+            self.assertEqual([Path(path).name for path in packet["images"]], ["sheet.png"])
             self.assertEqual(packet["references"], {})
             result = module.record_visual(project, self._feedback(project, summary, "fail"))
             self.assertFalse(result["ok"])

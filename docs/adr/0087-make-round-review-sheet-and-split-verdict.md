@@ -32,12 +32,14 @@ to change construction family when a silhouette is wrong.
   labelled in one `sheet.png`.
 - Every `make_round` renders `iso`, `front`, `left`, `top`, `iso_front`,
   `iso_back`, `iso_left`, `iso_right` and `iso_bottom` plus the sheet. Its
-  `visual-packet.json` binds `sheet.png`, `front`, `top` and `iso`; the other
-  views reach a reader only inside the sheet, whose hash binds them. `front`,
-  `top` and `iso` keep their names, so review rows that cite them stay valid,
-  and a Component Reviewer, whose reads the host checks image by image
-  (issue #77), opens four images per packet rather than ten. The Manager
-  opens the assembly sheet at most once per round.
+  `visual-packet.json` binds `sheet.png` alone: every view reaches a reader
+  inside the sheet, whose hash binds them, and the single views stay on disk
+  at full size beside it. A Component Reviewer, whose reads the host checks
+  image by image (issue #77), opens one image plus each `compare-NN.png` per
+  packet rather than ten. A geometry-scoped blind read (ADR 0072) cites the
+  view `sheet`; the finalizer and verifier still accept `front`, `top` and
+  `iso` for a packet from before this change. The Manager opens the assembly
+  sheet at most once per round.
 - Visual feedback adds two required fields. `matches_plan` is a boolean
   judgement against the plan the object is built from (`WISH-EXPANSION.md`, the
   sealed concept, or the Design Contract). `matches_reference` is a boolean

@@ -163,10 +163,9 @@ VISUAL_VIEWS = ("iso", "front", "left", "top", "iso_front", "iso_back",
 VISUAL_SHEET = "sheet"
 VISUAL_FEEDBACK_FIELDS = frozenset(
     ("packet_sha256", "status", "findings", "observation", "matches_plan", "matches_reference"))
-# The views a packet binds: the print-stance views a review row may cite, and
-# the sheet that holds every rendered view. The other views reach the reader
-# only inside the sheet, so a reviewer opens four images, not ten.
-PACKET_VIEWS = ("front", "top", "iso")
+# A packet binds the sheet alone: it holds every rendered view, so a reader
+# whose reads the host checks opens one image per round, not ten. The single
+# views stay on disk beside it.
 # What the Manager is told to do with a pending assembly packet. Kept short:
 # it is printed in every round summary.
 VISUAL_REVIEW_STEPS = (
@@ -410,7 +409,7 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
             # the = form: argparse reads a leading "-" as a new option
             command.append("--view=%s" % view)
     done = run(command + ["--sheet", "-o", str(views)], cwd=project, log=out / "visual-render.log")
-    paths = [views / (v + ".png") for v in (*PACKET_VIEWS, VISUAL_SHEET)]
+    paths = [views / (VISUAL_SHEET + ".png")]
     rendered = [views / (v + ".png") for v in VISUAL_VIEWS]
     if done.returncode or not all(p.is_file() for p in (*paths, *rendered)) or before != bound():
         return {"status": "error", "findings": [], "detail": "Visual render failed or source changed; inspect visual-render.log"}

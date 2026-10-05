@@ -18,8 +18,8 @@ this Component, and the Workshop host checks that you read every image of
 each packet you judge.
 
 - Read the packet JSON, then view each image it lists once: every path under
-  `images` (`sheet.png`, front, top and iso) and every path under
-  `comparisons` (each `compare-NN.png`), by the exact path written there. A
+  `images` (`sheet.png`) and every path under `comparisons` (each
+  `compare-NN.png`), by the exact path written there. A
   review of a packet whose images you did not read is refused.
 - Open `sheet.png` first. It holds every rendered view, including the side
   and the tilted three-quarter views that show depth a dead-on view
@@ -39,7 +39,7 @@ each packet you judge.
   reference, openings it shows that the model fills, members merged or
   missing, detail simplified away. No silhouette score exists; judge what
   you see.
-- `front`, `top` and `iso` show the model in its print stance: the pose it
+- The sheet's `front`, `top` and `iso` tiles show the model in its print stance: the pose it
   prints in, bed face down, which the contract rows state. It may lie on its
   back, side or face where the reference stands upright. Judge print-facing
   surfaces there. A rotation or flip that the print stance explains is not a
