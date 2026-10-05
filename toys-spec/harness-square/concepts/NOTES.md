@@ -52,16 +52,23 @@ Retro computer forms with the screen near flat (≤ 30°), fixed shell, desk onl
 - Regenerated once: breadbin (first pair was too steep, `_c`/`_d` kept), reclined mac (still about 45° after the retry, flagged), turntable (Tux-like penguin). Turntable was then dropped as a repeat of D5.
 - Flags: RT3 cocktail draws a raised rim around the screen; RT5 Model 100 and RT6 lab instrument draw the screen steeper than 25°; RT6 corner bumpers and RT2 rear ribs must sit below the glass; RT4 rainbow badge and RT7 silhouette recall Apple/Commodore trade dress.
 
-## Grass (G1–G3) and synthwave (SW1–SW6) variants, 2026-10-05
+## Synthwave variants (SW1–SW5), 2026-10-05
 
-Added to `RETRO_DESK_CONCEPTS.html` (same artifact). Images in `retro-desk-grass/` and `synthwave/`, all AI-generated from text prompts only (`openai/gpt-5.4-image-2`), one round, no regeneration.
+Added to `RETRO_DESK_CONCEPTS.html` (same artifact). Images in `synthwave/`, all AI-generated from text prompts only (`openai/gpt-5.4-image-2`).
 
-- G1–G3: RT1 radar, RT2 woodgrain and RT4 breadbin with sculpted grass and moss around the base and up the back corners, never on the screen.
-- SW1 Sunset (recommended): a translucent striped half-sun behind the back edge, a light guide for the WS2812, with a grid engraved on the sides and grass at the foot of the sun. SW2 Grid Lawn, SW3 Outrun Breadbin, SW4 Palm Cab, SW5 Neon Radar, SW6 VHS Deck.
+- A grass/moss round (G1–G3, SW2 Grid Lawn) was made and then removed at the owner's request ("tôi nói đùa thôi"). SW1 Sunset, SW2 Outrun Breadbin and SW3 Palm Cab were regenerated without grass (`_c`/`_d`).
+- SW1 Sunset is recommended: a translucent striped half-sun behind the back edge, a light guide for the WS2812, with a cyan grid engraved on the sides.
+- Flags: SW2 is drawn at about 30° and SW4 Neon Radar at about 35°; the SW3 palm fronds are too thin to print as drawn.
+
+## 2060 futuristic concepts (FX1–FX8), 2026-10-05
+
+Images in `future/`, page `FUTURE_CONCEPTS.html` (artifact https://claude.ai/artifact/FNm2n8khhL6ru4UB5H3tfR). AI-generated from text prompts only, one round.
+
+- FX1 Lattice (recommended, gyroid lattice base only additive manufacturing can make), FX2 Hover, FX3 Glass Block, FX4 Exo (transparent shell showing the real board), FX5 Facet, FX6 Liquid Metal, FX7 Soft Skin, FX8 Halo.
 - Flags:
-  - Grass tufts at the back-left corner sit next to the top-left tab tap and must stay below the glass.
-  - SW2a draws a grass rim around the screen.
-  - SW2's penguin looks like Tux.
-  - SW3 is drawn at about 30° and SW5 at about 35°.
-  - The SW4 palm trunk is too thin to print as drawn.
-  - Printed grass needs chunky blades (≥0.8 mm) or flocking.
+  - FX2 base is too thin for the 22.3 mm board.
+  - FX3 and FX4 need clear cast or resin parts.
+  - FX3b, FX6a and FX7 draw a rim above the glass.
+  - FX5b is about 30°.
+  - FX8 ring feet sit next to the top-left tab tap.
+  - FX1 lattice struts must be ≥0.8 mm.
