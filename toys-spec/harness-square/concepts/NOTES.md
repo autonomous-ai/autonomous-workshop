@@ -51,3 +51,17 @@ Retro computer forms with the screen near flat (≤ 30°), fixed shell, desk onl
 - All images are AI-generated with `openai/gpt-5.4-image-2` from text prompts only. No web image was used as input. Pinterest search pages need a login and returned no pins, so inspiration came from named historical devices (1950s radar console, Atari VCS, cocktail arcade table, Commodore 64, Tandy Model 100, Tektronix-style bench instrument, early Macintosh).
 - Regenerated once: breadbin (first pair was too steep, `_c`/`_d` kept), reclined mac (still about 45° after the retry, flagged), turntable (Tux-like penguin). Turntable was then dropped as a repeat of D5.
 - Flags: RT3 cocktail draws a raised rim around the screen; RT5 Model 100 and RT6 lab instrument draw the screen steeper than 25°; RT6 corner bumpers and RT2 rear ribs must sit below the glass; RT4 rainbow badge and RT7 silhouette recall Apple/Commodore trade dress.
+
+## Grass (G1–G3) and synthwave (SW1–SW6) variants, 2026-10-05
+
+Added to `RETRO_DESK_CONCEPTS.html` (same artifact). Images in `retro-desk-grass/` and `synthwave/`, all AI-generated from text prompts only (`openai/gpt-5.4-image-2`), one round, no regeneration.
+
+- G1–G3: RT1 radar, RT2 woodgrain and RT4 breadbin with sculpted grass and moss around the base and up the back corners, never on the screen.
+- SW1 Sunset (recommended): a translucent striped half-sun behind the back edge, a light guide for the WS2812, with a grid engraved on the sides and grass at the foot of the sun. SW2 Grid Lawn, SW3 Outrun Breadbin, SW4 Palm Cab, SW5 Neon Radar, SW6 VHS Deck.
+- Flags:
+  - Grass tufts at the back-left corner sit next to the top-left tab tap and must stay below the glass.
+  - SW2a draws a grass rim around the screen.
+  - SW2's penguin looks like Tux.
+  - SW3 is drawn at about 30° and SW5 at about 35°.
+  - The SW4 palm trunk is too thin to print as drawn.
+  - Printed grass needs chunky blades (≥0.8 mm) or flocking.
