@@ -84,3 +84,18 @@ Added to `FUTURE_CONCEPTS.html`. Images in `scifi/`, AI-generated from text prom
   - SF6 draws a metal rim above the glass.
   - The SF8 floating hologram is not real technology; it would become an edge-lit etched acrylic fin.
   - SF3 recalls Tron.
+
+## VHS round, screen 20–30° (VH1–VH8)
+
+The owner picked the synthwave VHS Deck (SW5) as the best look and set a new tilt requirement: the screen sits at 20–30°. Prompts are in the scratchpad `prompts13.py` (keys `vh/...`) and ask for an exact 25° wedge. Images are in `vhs/`; the page is the VHS section of `RETRO_DESK_CONCEPTS.html`. Angles below are estimated from the three-quarter renders.
+
+| Code | Name | Images | Angle | Flags |
+|---|---|---|---|---|
+| VH1 | VHS Deck 25° (SW5 reworked) | deck_d, deck_c (deck_a about 35°, deck_b has a bezel lip) | 25–28° | none |
+| VH2 | Cassette | cassette_a, cassette_b | about 33° | a is too steep; b has a raised frame |
+| VH3 | Rental Sleeve | sleeve_a, sleeve_b | 20–28° | mostly graphic decal |
+| VH4 | Tape Stack | stack_a, stack_b | 20–22° | top must be one plate |
+| VH5 | Tracking Glitch | tracking_b, tracking_a | about 15° | below 20°, back layers must rise |
+| VH6 | Camcorder | camcorder_a, camcorder_b | 20–30° | lens can be the real CSI camera |
+| VH7 | VCR 12:00 | vfd_a, vfd_b | 28–35° | clock needs an extra 4-digit LED module; b too steep |
+| VH8 | Rewinder | rewinder_a, rewinder_b | 25° (a) | b about 40° with a bezel lip; hinge is decorative |
