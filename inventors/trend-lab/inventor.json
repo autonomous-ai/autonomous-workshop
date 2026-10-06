@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "9aff9b91db0744b26951538d2a2b31d6f6455e7f1af222b7474e0b7882896935",
+      "kind": "codex-skill",
+      "name": "trend-lab-inventor",
+      "path": "skills/trend-lab-inventor"
+    }
+  ],
+  "id": "trend-lab",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

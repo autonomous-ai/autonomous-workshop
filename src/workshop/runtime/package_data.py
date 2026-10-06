@@ -40,11 +40,11 @@ BUNDLED_INVENTOR_IDS = (
     "mira-fold",
     "orin-shadow",
     "pico-press",
-    "reskin-lab",
     "rowan-vale",
     "sonora-reed",
     "soren-voss",
     "tess-loop",
+    "trend-lab",
     "vela-bloom",
     "wren-coil",
 )
