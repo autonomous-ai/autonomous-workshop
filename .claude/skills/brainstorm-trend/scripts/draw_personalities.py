@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Seeded personality draw for brainstorm-trend.
 
-The seed fixes one shuffled order of the whole pool. The first five are the
-contest's personalities; each replacement for a gate-rejected contract is the
-next one in that order, so no personality is ever drawn twice and a run can
-be replayed from its seed alone. Deterministic tooling only, per root
+The pool has two leans, ``mechanism`` and ``form``. The seed fixes one
+shuffled order of each lean. A contest draws the first three of each; a
+gate-rejected contract is replaced by the next one of the same lean, so no
+personality is ever drawn twice, the contest keeps three of each lean, and a
+run can be replayed from its seed alone. Deterministic tooling only, per root
 ``AGENTS.md``: no model calls and no agent orchestration.
 
-    draw_personalities.py [--seed N]                 the first five
-    draw_personalities.py --seed N --replacement K   replacement K (1-5)
+    draw_personalities.py [--seed N]                            the six
+    draw_personalities.py --seed N --lean L --replacement K     replacement K of lean L
 """
 
 from __future__ import annotations
@@ -22,7 +23,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
 POOL_PATH = Path(__file__).resolve().parents[1] / "personalities.json"
-CONTESTANTS = 5
+LEANS = ("mechanism", "form")
+PER_LEAN = 3
 MAX_REPLACEMENTS = 5
 
 
@@ -39,49 +41,66 @@ def load_pool(path: Path = POOL_PATH) -> List[Dict[str, Any]]:
         raise DrawError("every personality needs a non-empty id")
     if len(set(ids)) != len(ids):
         raise DrawError("personality ids must be unique")
-    if len(pool) < CONTESTANTS + MAX_REPLACEMENTS:
-        raise DrawError(
-            "pool needs at least %d personalities" % (CONTESTANTS + MAX_REPLACEMENTS)
-        )
+    for entry in pool:
+        if entry.get("leans") not in LEANS:
+            raise DrawError("personality %r must lean mechanism or form" % entry["id"])
+    for lean in LEANS:
+        # Every replacement could fall on one lean.
+        if sum(1 for entry in pool if entry["leans"] == lean) < PER_LEAN + MAX_REPLACEMENTS:
+            raise DrawError(
+                "pool needs at least %d %s personalities" % (PER_LEAN + MAX_REPLACEMENTS, lean)
+            )
     return pool
 
 
-def order(pool: Sequence[Dict[str, Any]], seed: int) -> List[Dict[str, Any]]:
-    """The whole pool in the order ``seed`` fixes."""
+def order(pool: Sequence[Dict[str, Any]], seed: int) -> Dict[str, List[Dict[str, Any]]]:
+    """Each lean's personalities in the order ``seed`` fixes."""
 
-    shuffled = list(pool)
-    random.Random(seed).shuffle(shuffled)
-    return shuffled
+    rng = random.Random(seed)
+    ordered = {}
+    for lean in LEANS:
+        members = [entry for entry in pool if entry["leans"] == lean]
+        rng.shuffle(members)
+        ordered[lean] = members
+    return ordered
 
 
 def draw(pool: Sequence[Dict[str, Any]], seed: int) -> List[Dict[str, Any]]:
-    return order(pool, seed)[:CONTESTANTS]
+    ordered = order(pool, seed)
+    return [entry for lean in LEANS for entry in ordered[lean][:PER_LEAN]]
 
 
-def replacement(pool: Sequence[Dict[str, Any]], seed: int, number: int) -> Dict[str, Any]:
-    """Replacement ``number`` (1-based) for the contest ``seed`` drew."""
+def replacement(
+    pool: Sequence[Dict[str, Any]], seed: int, lean: str, number: int
+) -> Dict[str, Any]:
+    """Replacement ``number`` (1-based, counted within ``lean``) for the
+    contest ``seed`` drew."""
 
+    if lean not in LEANS:
+        raise DrawError("lean must be mechanism or form")
     if not 1 <= number <= MAX_REPLACEMENTS:
         raise DrawError("replacement must be 1 to %d" % MAX_REPLACEMENTS)
-    return order(pool, seed)[CONTESTANTS + number - 1]
+    return order(pool, seed)[lean][PER_LEAN + number - 1]
 
 
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Draw brainstorm-trend personalities.")
     parser.add_argument("--seed", type=int, help="omit to draw a fresh seed")
-    parser.add_argument("--replacement", type=int, help="1-5; needs --seed")
+    parser.add_argument("--lean", choices=LEANS, help="the rejected personality's lean")
+    parser.add_argument("--replacement", type=int, help="1-5 within the lean; needs --seed and --lean")
     parser.add_argument("--pool", type=Path, default=POOL_PATH)
     args = parser.parse_args(argv)
 
     try:
         pool = load_pool(args.pool)
         if args.replacement is not None:
-            if args.seed is None:
-                raise DrawError("--replacement needs the contest's --seed")
+            if args.seed is None or args.lean is None:
+                raise DrawError("--replacement needs the contest's --seed and the --lean")
             result: Dict[str, Any] = {
                 "seed": args.seed,
+                "lean": args.lean,
                 "replacement": args.replacement,
-                "personality": replacement(pool, args.seed, args.replacement),
+                "personality": replacement(pool, args.seed, args.lean, args.replacement),
             }
         else:
             seed = args.seed if args.seed is not None else secrets.randbelow(2**31)

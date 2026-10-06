@@ -32,6 +32,7 @@ _REQUIRED_TOP_LEVEL = (
     "trend", "chosen_by", "shortlist", "seed", "image_model", "started_at", "steps",
 )
 CHOSEN_BY = ("given", "human")
+CONTESTANTS = 6
 MIN_TREND_SOURCES = 2
 MAX_TREND_SOURCE_AGE_DAYS = 30
 
@@ -102,8 +103,10 @@ class RunLog:
 
     def personalities_drawn(self, *, personalities: Sequence[str], seed: int) -> None:
         personalities = list(personalities)
-        if len(personalities) != 5:
-            raise ValueError(f"expected exactly 5 personalities, got {len(personalities)}")
+        if len(personalities) != CONTESTANTS:
+            raise ValueError(
+                f"expected exactly {CONTESTANTS} personalities, got {len(personalities)}"
+            )
         self._append(
             "personalities_drawn",
             personalities=personalities,

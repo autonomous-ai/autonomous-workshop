@@ -1,13 +1,13 @@
 ---
 name: brainstorm-trend
-description: Invent an original motion toy inspired by a current Trend - shortlist Trends with dated evidence, run a contest of five personality designers through design-a-toy Stages 1-2, gate and round-robin judge their drafts, then finish the winner and hand it to `build-a-toy`. Use when the human wants a new toy from what is trending now, with or without naming the Trend.
+description: Invent an original motion toy inspired by a current Trend - shortlist Trends with dated evidence, run a contest of six personality designers through design-a-toy Stages 1-2, gate and round-robin judge their drafts, then finish the winner and hand it to `build-a-toy`. Use when the human wants a new toy from what is trending now, with or without naming the Trend.
 ---
 
 # Brainstorm a toy from a Trend
 
-This skill runs a **contest**: five designers, each a personality drawn from
-[personalities.json](personalities.json), invent five different toys from one
-Trend; a gate removes drafts that cannot go forward; blind judges compare
+This skill runs a **contest**: six designers, each a personality drawn from
+[personalities.json](personalities.json), three leaning on mechanism and
+three on form, invent six different toys from one Trend; a gate removes drafts that cannot go forward; blind judges compare
 every pair; the winner is finished through `design-a-toy` and handed to
 `build-a-toy`. The vocabulary is `CONTEXT.md`'s: **Trend**, **Trend Hook**,
 **Signature Motion**, **Design Contract**, **Interface**.
@@ -63,8 +63,9 @@ Done when: the Trend is chosen.
 
 ## Step 2 - Draw the designers and start the log
 
-Run `draw_personalities.py` with no seed. It prints the seed and five
-personalities. Give each a slot, `candidate-1` to `candidate-5`.
+Run `draw_personalities.py` with no seed. It prints the seed and six
+personalities, three `mechanism` then three `form`. Give each a slot,
+`candidate-1` to `candidate-6`.
 Replacements in Step 4 come from this seed, never from a new draw.
 
 Create the run directory `brainstorm-trend/<trend-slug>-<YYYY-MM-DD>/`, read
@@ -73,9 +74,9 @@ environment), and write the header with `run_log.py start`: `trend`,
 `chosen_by`, `shortlist` (the checked shortlist, or null for a given Trend),
 `seed`, and `image_model`. Then log `personalities_drawn`.
 
-## Step 3 - Five drafts in parallel
+## Step 3 - Six drafts in parallel
 
-Launch five subagents in one message, one per slot, each with this brief:
+Launch six subagents in one message, one per slot, each with this brief:
 
 - The Trend, its summary, and its sources.
 - The personality's name and `method`, which decides every trade-off the
@@ -111,10 +112,11 @@ contract and judge three things the script cannot:
 
 A draft that fails any check is rejected. Log `gate_rejected` with every
 reason and draw its replacement with `draw_personalities.py --seed <seed>
---replacement <K>`, K counting replacements across the whole contest. The
+--lean <the rejected personality's lean> --replacement <K>`, K counting that
+lean's replacements, so the contest keeps three of each lean. The
 replacement runs Step 3's brief alone in `<slot>-r<K>/` and is gated in
-turn. After the fifth replacement, a rejection gets
-`replacement_personality: null` and its slot stays empty.
+turn. The contest allows five replacements in all; after the fifth, a
+rejection gets `replacement_personality: null` and its slot stays empty.
 
 Done when: every slot holds a passing draft or is empty. With one survivor,
 it wins outright: go to Step 6. With none, tell the human what failed and

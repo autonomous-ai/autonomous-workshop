@@ -76,15 +76,15 @@ class RunLogStepTests(unittest.TestCase):
         with _tmp_dir() as tmp:
             log = self._log(tmp)
             log.personalities_drawn(
-                personalities=["a", "b", "c", "d", "e"], seed=7
+                personalities=["a", "b", "c", "d", "e", "f"], seed=7
             )
             steps = _read_steps(log.path)
             self.assertEqual(len(steps), 1)
             self.assertEqual(steps[0]["type"], "personalities_drawn")
-            self.assertEqual(steps[0]["personalities"], ["a", "b", "c", "d", "e"])
+            self.assertEqual(steps[0]["personalities"], ["a", "b", "c", "d", "e", "f"])
             self.assertIn("at", steps[0])
 
-    def test_personalities_drawn_requires_exactly_five(self) -> None:
+    def test_personalities_drawn_requires_exactly_six(self) -> None:
         with _tmp_dir() as tmp:
             log = self._log(tmp)
             with self.assertRaises(ValueError):
@@ -195,7 +195,7 @@ class RunLogStepTests(unittest.TestCase):
     def test_steps_append_in_order(self) -> None:
         with _tmp_dir() as tmp:
             log = self._log(tmp)
-            log.personalities_drawn(personalities=["a", "b", "c", "d", "e"], seed=7)
+            log.personalities_drawn(personalities=["a", "b", "c", "d", "e", "f"], seed=7)
             log.winner(agent_id="a", contract_path="p")
             steps = _read_steps(log.path)
             self.assertEqual([s["type"] for s in steps], ["personalities_drawn", "winner"])
@@ -373,7 +373,7 @@ class RunLogCliTests(unittest.TestCase):
             fields.write_text(json.dumps({"personalities": ["a"], "seed": 3}))
             result = self._run("append", str(run), "personalities_drawn", str(fields))
             self.assertEqual(result.returncode, 2)
-            self.assertIn("exactly 5", result.stderr)
+            self.assertIn("exactly 6", result.stderr)
             self.assertEqual(RL.load(run)["steps"], [])
 
 
