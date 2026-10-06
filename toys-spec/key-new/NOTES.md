@@ -34,3 +34,27 @@ All images are AI-generated from text prompts only, with OpenRouter
 as input. Each one shows the concept on a split ring next to an ordinary brass
 house key for scale. The drawn sizes are loose; a contract will set the real
 dimensions.
+
+## Round 2: unusual key shapes (`concepts/round2/`), 2026-10-06
+
+The owner dropped the keychain direction. The Key is a standalone object and
+"key" is only its outline. They asked for unusual shapes and pointed to two
+snowflake keys as examples of someone else's idea, which must not be followed.
+Each shape keeps a bow, shaft and bit, with a theme tied to the Key's job of
+putting the phone down. None has a ring hole. Sizes are about 80 mm long and
+3 mm thick, with a tap area of at least 28 mm.
+
+| ID | Name | Idea | Image flags |
+|---|---|---|---|
+| R1 | Thumbprint | A fingerprint swirl on the bow; doomscrolling is a thumb habit | |
+| R2 | Talk to the Hand | The bow is an open palm in a stop gesture | |
+| R3 | Seed | Seed bow, stem shaft, roots as the bit | Drawn in 3D and lost the key outline |
+| R4 | Tuning Fork | Fork tines above a round disc: tune out | |
+| R5 | Origami | Folded-paper facets | Bow drawn with a hole; must be solid for tapping |
+| R6 | Closed Eye | The bow is a calm closed eye | |
+| R7 | Outside | Sun bow, horizon shaft, mountain teeth | Peaks are cut in; they should stand up |
+| R8 | Sundial | Sundial face and gnomon on the bow | Gnomon stands up, so the phone taps the back |
+
+The two snowflake reference images were looked at only and never passed to the
+generator. All images were generated from text with `openai/gpt-5.4-image-2`.
+The page `CONCEPTS.html` now shows round 2.

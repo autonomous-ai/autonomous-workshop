@@ -32,8 +32,9 @@ h1 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 4.2vw
 header p { margin: 0; color: var(--muted); }
 .rules { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .rules span { font-family: var(--mono); font-size: 12px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--fg); }
-.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-@media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 1100px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 860px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .grid { grid-template-columns: minmax(0, 1fr); } }
 figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
 figure img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; background: #f1ede6; }
@@ -51,62 +52,78 @@ footer { margin-top: 28px; color: var(--muted); font-size: 13px; max-width: 75ch
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">Autonomous Key · new shape · round 1</div>
-    <h1>Six smaller shapes for the Key</h1>
-    <p>Today's Key is a 79 × 38 × 2.5 mm plate. You tap it with your phone to unlock blocked apps for up to 60 minutes. Each concept below is a third to half that size and keeps a round tap spot big enough for the NFC tag inside.</p>
-    <div class="rules"><span>tap spot ≥ Ø25 mm</span><span>2.5 mm PLA</span><span>~2–4 g</span><span>hangs on a keyring</span></div>
+    <div class="eyebrow">Autonomous Key · new shape · round 2</div>
+    <h1>Eight unusual key shapes</h1>
+    <p>A standalone object, not a keychain: "key" is only its outline. Each shape keeps a bow, shaft and bit, but gives the key a theme tied to its job, which is putting the phone down. Snowflakes and ornate fantasy keys were left out on purpose.</p>
+    <div class="rules"><span>tap area ≥ Ø28 mm</span><span>~80 mm long</span><span>3 mm PLA</span><span>no ring hole</span></div>
   </header>
 
   <section class="grid">
     <figure>
-      <img src="concepts/k1_keyhole-coin.jpg" alt="Orange round coin with a keyhole cut near its top, on a keyring beside a brass house key">
+      <img src="concepts/round2/r1_thumbprint.jpg" alt="Thumbprint key concept: Fingerprint swirl on a round bow">
       <figcaption>
-        <div class="head"><h2><span class="id">K1</span> Keyhole Coin <span class="rec">smallest</span></h2><span class="size">Ø30 mm</span></div>
-        <p class="idea">A round coin. The keyring runs through a keyhole cut into it.</p>
-        <p class="tap"><b>Tap:</b> the concentric rings on the face.</p>
+        <div class="head"><h2><span class="id">R1</span> Thumbprint</h2><span class="size">~80 × 30 mm</span></div>
+        <p class="idea">Fingerprint swirl on a round bow. Doomscrolling is a thumb habit. The Key carries the thumb, so your thumb is literally the key.</p>
+        <p class="tap"><b>Tap:</b> the fingerprint.</p>
       </figcaption>
     </figure>
     <figure>
-      <img src="concepts/k2_keyhole-tag.jpg" alt="Blue tag shaped like a keyhole, ring hole at the narrow tip">
+      <img src="concepts/round2/r2_palm.jpg" alt="Talk to the Hand key concept: Bow is an open palm in a stop gesture">
       <figcaption>
-        <div class="head"><h2><span class="id">K2</span> Keyhole Tag</h2><span class="size">26 × 42 mm</span></div>
-        <p class="idea">The whole outline is a keyhole, with the ring hole at the narrow tip.</p>
-        <p class="tap"><b>Tap:</b> the raised round head.</p>
+        <div class="head"><h2><span class="id">R2</span> Talk to the Hand</h2><span class="size">~80 × 32 mm</span></div>
+        <p class="idea">Bow is an open palm in a stop gesture. The hand says stop before the app opens. Tapping it reads as a high five with the phone.</p>
+        <p class="tap"><b>Tap:</b> the palm.</p>
       </figcaption>
     </figure>
     <figure>
-      <img src="concepts/k3_mini-skeleton.jpg" alt="Beige half-size skeleton key with a round bow">
+      <img src="concepts/round2/r3_seed-root.jpg" alt="Seed key concept: Seed bow, stem shaft, roots for teeth">
       <figcaption>
-        <div class="head"><h2><span class="id">K3</span> Mini Skeleton</h2><span class="size">26 × 50 mm</span></div>
-        <p class="idea">A half-size old-style key, so the product still looks like a key.</p>
-        <p class="tap"><b>Tap:</b> the round bow.</p>
+        <div class="head"><h2><span class="id">R3</span> Seed</h2><span class="size">~80 × 28 mm</span></div>
+        <p class="idea">Seed bow, stem shaft, roots for teeth. Time away from the phone grows something. The image lost the key outline; the roots need to read as a bit.</p>
+        <p class="tap"><b>Tap:</b> the seed.</p>
       </figcaption>
     </figure>
     <figure>
-      <img src="concepts/k4_padlock.jpg" alt="Charcoal flat padlock with an engraved keyhole; its shackle is the ring loop">
+      <img src="concepts/round2/r4_tuning-fork.jpg" alt="Tuning Fork key concept: Fork tines rise above a round disc">
       <figcaption>
-        <div class="head"><h2><span class="id">K4</span> Padlock <span class="rec">clearest idea</span></h2><span class="size">30 × 26 mm + loop</span></div>
-        <p class="idea">A flat padlock whose shackle is the keyring loop. You tap the lock to open your apps.</p>
-        <p class="tap"><b>Tap:</b> the body, around the keyhole mark.</p>
+        <div class="head"><h2><span class="id">R4</span> Tuning Fork</h2><span class="size">~85 × 30 mm</span></div>
+        <p class="idea">Fork tines rise above a round disc. Tune out the noise. Precise, quiet and instrument-like on a desk.</p>
+        <p class="tap"><b>Tap:</b> the disc.</p>
       </figcaption>
     </figure>
     <figure>
-      <img src="concepts/k5_hourglass.jpg" alt="Brown hourglass-shaped tag with a dotted bottom bulb">
+      <img src="concepts/round2/r5_origami.jpg" alt="Origami key concept: Folded-paper facets, crisp creases">
       <figcaption>
-        <div class="head"><h2><span class="id">K5</span> Hourglass</h2><span class="size">26 × 44 mm</span></div>
-        <p class="idea">Refers to the 60-minute unlock window.</p>
-        <p class="tap"><b>Tap:</b> the dotted bottom bulb.</p>
+        <div class="head"><h2><span class="id">R5</span> Origami</h2><span class="size">~80 × 32 mm</span></div>
+        <p class="idea">Folded-paper facets, crisp creases. Unusual as an object, with no clear message. The drawn bow has a hole; the build would fill it as the tap spot.</p>
+        <p class="tap"><b>Tap:</b> the faceted bow.</p>
       </figcaption>
     </figure>
     <figure>
-      <img src="concepts/k6_thumb-pebble.jpg" alt="Sage grey flat pebble with a thumb dimple">
+      <img src="concepts/round2/r6_closed-eye.jpg" alt="Closed Eye key concept: Bow is a calm closed eye with lashes">
       <figcaption>
-        <div class="head"><h2><span class="id">K6</span> Thumb Pebble</h2><span class="size">34 × 28 × 4 mm</span></div>
-        <p class="idea">A soft pebble that is comfortable in a pocket.</p>
-        <p class="tap"><b>Tap:</b> the thumb dimple.</p>
+        <div class="head"><h2><span class="id">R6</span> Closed Eye</h2><span class="size">~80 × 34 mm</span></div>
+        <p class="idea">Bow is a calm closed eye with lashes. Rest your eyes. Two colours; the lid line marks where to tap.</p>
+        <p class="tap"><b>Tap:</b> the eyelid.</p>
+      </figcaption>
+    </figure>
+    <figure>
+      <img src="concepts/round2/r7_sun-ridge.jpg" alt="Outside key concept: Sun bow, horizon shaft, mountain teeth">
+      <figcaption>
+        <div class="head"><h2><span class="id">R7</span> Outside</h2><span class="size">~85 × 30 mm</span></div>
+        <p class="idea">Sun bow, horizon shaft, mountain teeth. The teeth are mountains: unlocking means going outside. The image cut the peaks in; the build would raise them.</p>
+        <p class="tap"><b>Tap:</b> the sun.</p>
+      </figcaption>
+    </figure>
+    <figure>
+      <img src="concepts/round2/r8_sundial.jpg" alt="Sundial key concept: Sundial face with a gnomon on the bow">
+      <figcaption>
+        <div class="head"><h2><span class="id">R8</span> Sundial</h2><span class="size">~80 × 30 mm</span></div>
+        <p class="idea">Sundial face with a gnomon on the bow. Time is the theme. The gnomon stands about 6 mm high, so the phone taps the back face.</p>
+        <p class="tap"><b>Tap:</b> the flat back.</p>
       </figcaption>
     </figure>
   </section>
 
-  <footer>Concept images are AI-generated from text prompts (openai/gpt-5.4-image-2); no web images were used. A brass house key in each picture shows the scale. Sizes are approximate; the contract will set the real dimensions. Colours are taken from today's range and can change.</footer>
+  <footer>Concept images are AI-generated from text prompts (openai/gpt-5.4-image-2); no web images were used, and the two snowflake keys were looked at only. Sizes are approximate; the contract will set the real dimensions. Round 1 (keychain tags) was dropped and stays in <code>concepts/</code>.</footer>
 </div>
