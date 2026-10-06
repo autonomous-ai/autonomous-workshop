@@ -58,3 +58,19 @@ putting the phone down. None has a ring hole. Sizes are about 80 mm long and
 The two snowflake reference images were looked at only and never passed to the
 generator. All images were generated from text with `openai/gpt-5.4-image-2`.
 The page `CONCEPTS.html` now shows round 2.
+
+## Round 3: cute keys for a company gift (`concepts/round3/`), 2026-10-06
+
+The owner wants a cute key that a company could give its employees. They found
+round 2 odd rather than cute. Round 3 goes kawaii: chubby and rounded, in
+pastel colours, with a face of two dot eyes and blush. Each piece still reads
+as a key and has no ring hole.
+
+C1 Sloth (hugging the shaft), C2 Snail (the shell is the bow), C3 Sleepy Cat
+(curled into the bow), C4 Cloud (raindrop bit), C5 Mushroom, C6 Bunny, C7 Whale,
+C8 Sleepy Moon (nightcap, star bit).
+
+Flags:
+- C1's limbs are raised relief, so the piece comes out thicker.
+- C5's cap is drawn domed and should stay low.
+- C8's crescent leaves a small tap area, so the moon needs to be fuller.
