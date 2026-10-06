@@ -74,3 +74,18 @@ Flags:
 - C1's limbs are raised relief, so the piece comes out thicker.
 - C5's cap is drawn domed and should stay low.
 - C8's crescent leaves a small tap area, so the moon needs to be fuller.
+
+## Round 4: tech and cybersecurity, professional but charming (`concepts/round4/`), 2026-10-06
+
+The owner found round 3 too much like a children's toy. They asked for a more
+professional look that is still charming, with a tech or cybersecurity theme.
+Round 4 is a premium desk object: graphite, navy or off-white with one accent
+colour, no faces, and charm from soft proportions.
+
+T1 Escape (a keycap marked `esc`), T2 Cursor, T3 Pixel (8-bit), T4 Terminal
+(`>_`), T5 Power symbol, T6 Binary (chip bow, `1011` teeth), T7 Tap (the
+contactless symbol), T8 Code (`{ }`).
+
+Flags:
+- T1's keycap is drawn tall and should be kept low.
+- T3's pixel bow is drawn hollow and must be filled for the tap area.
