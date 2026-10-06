@@ -51,8 +51,10 @@ next paragraph. Otherwise research one shortlist of five Trends with
 - at least two sources on different sites are dated within the last 30 days;
 - it carries something to be inspired by beyond its brand: a shape, a
   creature, a motion, an event, a feeling;
-- it is suitable for a children's toy: no politics, tragedy, real living
-  person, or adult-only subject.
+- it is mainstream: covered widely, beyond one niche community;
+- it speaks to the toys' buyers, the tech and office workers who visit
+  autonomous.ai, and suits a toy on their desk: no politics, tragedy, or
+  real living person.
 
 Write the shortlist to the scratchpad and run `run_log.py check-trends` on
 it; replace every candidate that fails until all five pass. Show the human
@@ -91,7 +93,7 @@ Launch six subagents in one message, one per slot, each with this brief:
 - Write `CONTRACT.md` in `brainstorm-trend/<run>/<slot>/` with two prose
   sections the gate looks for: `## Trend Hook`, the one countable or
   pointable feature that makes the toy read as this Trend's, and
-  `## Signature Motion`, what moves, what drives it, and what the child does.
+  `## Signature Motion`, what moves, what drives it, and what the player does.
 - Generate one hero image: the assembled toy in its Display Pose, one
   subject fully inside the frame, by writing a prompt to `<slot>/prompt.txt`
   and running `generate_image.py --prompt-file <slot>/prompt.txt --out
