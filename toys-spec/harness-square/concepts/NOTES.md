@@ -184,3 +184,18 @@ Method: the side elevation came first and its tilt was measured from the top edg
 - The first three-quarter views stood the device near upright. A camera at about 40 degrees down, plus "the screen faces mostly up", fixed this.
 - C2 Arcade Puck still has no front lip after 3 tries (one edit and one regeneration both failed), so the best image was kept and the gap is flagged on the page.
 - C7 VHS Wedge (added on the owner's request, 2026-10-06): the VC4 VHS-styled device on a narrow black wedge whose side faces are a VHS tape face (glowing sunset reel windows and rainbow label stripes), with a chrome front lip. The side view was generated twice (16.1 and 19.0 degrees); the 19.0 one was then edited to 23.4. Of two three-quarter views made from that side view, the front-left one was kept.
+
+## Function-different docks (F1–F6), 2026-10-06
+
+The owner noted that every dock so far is one solid block and asked for docks that do something different. These are in `function/`, two images each. Text prompts only, plus AI edits of the set's own images.
+- F1 Kickstand: no dock; a VHS-dust-door flap on the back flips out as a stand.
+- F2 Swivel: a turntable base.
+- F3 Click Angle: hinged arms with detents.
+- F4 Speaker Horn: a passive acoustic horn in the dock.
+- F5 Tape Drawer: a cassette drawer for a cable or earbuds.
+- F6 Monitor Clip: a clip that folds into a mini stand.
+
+Fixed by editing:
+- F1 image 1, from too steep to low.
+- F2 image 2: it was upright, then still steep, and the third version is turned 45 degrees and low.
+- F6: regenerated with a bat, because the penguin looked like Tux. Its image 2 has a wood-desk background and the folded hook is not clear; this is flagged.
