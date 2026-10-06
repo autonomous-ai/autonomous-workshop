@@ -44,7 +44,8 @@ One entry per stop of an attempt, in order.
 | `class` | `complete`, `camera-need`, `contract-contradiction`, `reference-mismatch`, `harness-defect`, `budget-progressing` or `other`, from `ledger.py classify` |
 | `evidence` | what the diagnosis found, one line each, with paths or times |
 | `progress` | `locked` and `repeated_print_defects` at the stop, from `tally.py --json` |
-| `budget_raised` | `true` on the one stop per attempt that was resumed with a raised cap |
+| `budget_raised` | `true` on the one stop per attempt the loop resumed with its own raised cap (`budget-progressing`); `"owner"` on an `other` stop where the owner approved a raise, any number per attempt; else `false` |
+| `owner_decision` | only with `budget_raised: "owner"`: `{"at": "<ISO time>", "limit_before": <tokens>, "limit_after": <tokens>}` |
 | `resolution` | what the loop did about it |
 
 ### `contract_contradictions[]`

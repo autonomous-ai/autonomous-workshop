@@ -108,7 +108,12 @@ Poll `uv run workshop status <wish-id> --json`. Its `status` is `active`,
   - `budget`: report plainly that **the token budget, the run's only
     backstop, is exhausted**. Hand the decision to the person. A resume
     without a new `--max-tokens` cannot proceed past it. In the unattended
-    mode the loop diagnoses it instead (see below).
+    mode the loop diagnoses it instead (see below). The loop raises the cap
+    on its own at most once per attempt (`budget-progressing`, recorded
+    `budget_raised: true`); any other raise is the owner's. Record an
+    owner-approved raise on the stop it answers as `budget_raised: "owner"`
+    with `owner_decision: {"at": <stop time>, "limit_before": <tokens>,
+    "limit_after": <tokens>}`, and resume with `--max-tokens <limit_after>`.
   - `gate-refusal` or `unclassified`: stop and show the person the receipt.
     A host gate refusal will not be resolved by resuming unchanged, and an
     unclassified stop is not safe to guess about. Ask the person how to
@@ -269,7 +274,7 @@ worker blocked on two rows).
 | `reference-mismatch` | an image contradicts the contract or the camera beyond what a Reference Conflict absorbs | Fix the image with `design-a-toy` Stage 3b; it is a visible change |
 | `harness-defect` | Workshop itself went wrong: a false stop, a miscount, a guard or tool refusing valid work | Open an issue, fix and merge it (below) |
 | `budget-progressing` | `stop_category` `budget`, and more Components locked or fewer repeated print defects than the previous attempt, with no raise yet in this attempt | Resume once with the cap raised by 100M tokens: `uv run workshop resume <wish-id> --max-tokens <limit + 100000000> --turn-minutes 360 --json`, with `--check-motion true` when the run has it; record `budget_raised: true` |
-| `other` | anything else, including a second budget stop in one attempt | Ask the owner |
+| `other` | anything else, including a second budget stop in one attempt | Ask the owner; when the owner raises the token cap, record `budget_raised: "owner"` and `owner_decision` `{at, limit_before, limit_after}` (never `true`: that is the loop's one raise), then resume with `--max-tokens <limit_after>`. A later budget stop in the attempt is still `other` |
 
 ### Fixing a Contract Contradiction at the root
 
