@@ -174,3 +174,12 @@ M1 Sunset Fin, M2 Arcade Puck, M3 Pixel Step, M4 Hover Rail, M5 Holo Prism, M6 M
 ## Minimal stable docks (N1–N6), 2026-10-06
 
 The owner rejected M1–M6: too small to hold the device steadily; they meant minimal in form, not compact. New set in `minimal2/` (same page): a footprint at least the device's size, a low centre of gravity, a front lip, and one accent at most. N1 Slab, N2 Fold, N3 Plinth, N4 Disc, N5 Console, N6 Frame. Text prompts only, `openai/gpt-5.4-image-2`.
+
+## Compact but stable docks (C1–C6), 2026-10-06
+
+The owner went back to compact docks and asked for two things: the dock must hold the device steadily, and the images must show the intended concept. Each concept now has a dock about 72 mm wide (the device is 95 mm), centred under the device's centre of mass, with a front lip. Images are in `compact/`.
+
+Method: the side elevation came first and its tilt was measured from the top edge of the device bar (scratchpad `tilt.py`). The three-quarter view was then generated with the side view as an input image, from a high camera.
+- Side views drawn at "22 degrees" came out at 11 to 16 degrees. The prompt then asked for 30 degrees and the results measured 21.8 to 28.4. C6 was edited from 16.4 to 20.5.
+- The first three-quarter views stood the device near upright. A camera at about 40 degrees down, plus "the screen faces mostly up", fixed this.
+- C2 Arcade Puck still has no front lip after 3 tries (one edit and one regeneration both failed), so the best image was kept and the gap is flagged on the page.
