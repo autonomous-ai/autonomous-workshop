@@ -170,3 +170,7 @@ Typical small magnetic pogo pairs hold a few newtons in pull and only about 20�
 The owner asked for a more compact, minimal dock that keeps the synthwave/arcade/future look and the 3.95" screen. Images in `minimal/`, page `MINIMAL_CONCEPTS.html`. All AI-generated from text prompts only (`openai/gpt-5.4-image-2`), no web imagery.
 
 M1 Sunset Fin, M2 Arcade Puck, M3 Pixel Step, M4 Hover Rail, M5 Holo Prism, M6 Mini Grid (VC4 shell on a cut-down CUR dock). Flags: M2a and M5a are drawn steeper than 22 degrees; M3a puts the steps off to one side instead of under the device; M4 rails must print thicker than drawn; M5 needs clear material.
+
+## Minimal stable docks (N1–N6), 2026-10-06
+
+The owner rejected M1–M6: too small to hold the device steadily; they meant minimal in form, not compact. New set in `minimal2/` (same page): a footprint at least the device's size, a low centre of gravity, a front lip, and one accent at most. N1 Slab, N2 Fold, N3 Plinth, N4 Disc, N5 Console, N6 Frame. Text prompts only, `openai/gpt-5.4-image-2`.
