@@ -164,3 +164,9 @@ Typical small magnetic pogo pairs hold a few newtons in pull and only about 20�
 - FX2 Hover (`vh2/`, scratchpad `prompts17.py`): the base gets a 70 mm ring of three silicone pads and a central 12 mm boss with a magnet; the tile back gets a matching recess (see the magnetic hold note above). The docked images show the tile at 20–25°, and hover_dock_a deliberately shows the ring. The lift images draw the base nearly square and less sloped than the 25° wedge.
 - CUR, Current Dock × VC4 (`cv/`): uses the owner's photo of the current device and dock as an edit reference (logo ignored). It keeps the mechanics: two 5-pin magnetic pogo connectors on the device's bottom edge, a front ledge with contacts, and a sloped back support. It is restyled with the VC4 cues. Flags: the front ledge must stay below the glass surface so it does not block swipes off the bottom edge; some docked renders show the device resting loosely on the ledge.
 - `handheld-dock/` drops the old hover_dock and hover_seat images and adds the vh2 and cv images.
+
+## Minimal-dock concepts (M1–M6), 2026-10-06
+
+The owner asked for a more compact, minimal dock that keeps the synthwave/arcade/future look and the 3.95" screen. Images in `minimal/`, page `MINIMAL_CONCEPTS.html`. All AI-generated from text prompts only (`openai/gpt-5.4-image-2`), no web imagery.
+
+M1 Sunset Fin, M2 Arcade Puck, M3 Pixel Step, M4 Hover Rail, M5 Holo Prism, M6 Mini Grid (VC4 shell on a cut-down CUR dock). Flags: M2a and M5a are drawn steeper than 22 degrees; M3a puts the steps off to one side instead of under the device; M4 rails must print thicker than drawn; M5 needs clear material.
