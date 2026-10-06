@@ -51,6 +51,12 @@ def _stop(attempt, klass="other", locked=0, repeats=0, **extra):
     return stop
 
 
+def _owner_raise_stop(attempt, before, after):
+    return _stop(attempt, budget_raised="owner", owner_decision={
+        "at": "2026-10-06T04:01:03Z", "limit_before": before, "limit_after": after,
+    })
+
+
 def _contradiction(ident, attempt, signature, amendment, visible=False, approved="not-needed"):
     return {
         "id": ident,
@@ -146,6 +152,56 @@ class LedgerCheckTest(unittest.TestCase):
         data["stops"] = [_stop(3, budget_raised=True), _stop(3, budget_raised=True)]
 
         self.assertTrue(any("raised its token budget 2 times" in e for e in ledger.check(data)))
+
+    def test_one_automatic_raise_passes(self):
+        data = _ledger()
+        data["stops"].append(_stop(3, "budget-progressing", locked=4, budget_raised=True))
+
+        self.assertEqual(ledger.check(data), [])
+
+    def test_an_owner_raise_after_the_automatic_one_passes(self):
+        # Broken God attempt 18 (#104): +100M automatically on 2026-10-04,
+        # then a second budget stop where the owner raised 200M -> 240M.
+        data = _ledger()
+        data["stops"] += [
+            _stop(3, "budget-progressing", locked=4, budget_raised=True),
+            _owner_raise_stop(3, 200_000_000, 240_000_000),
+            _owner_raise_stop(3, 240_000_000, 280_000_000),
+        ]
+
+        self.assertEqual(ledger.check(data), [])
+
+    def test_a_malformed_owner_raise_fails(self):
+        cases = {
+            "needs at, limit_before and limit_after": lambda s: s.pop("owner_decision"),
+            "owner_decision.at": lambda s: s["owner_decision"].update(at=""),
+            "limit_before < limit_after": lambda s: s["owner_decision"].update(limit_after=100_000_000),
+            "an owner raise answers an `other` stop": lambda s: s.update({"class": "budget-progressing"}),
+            "must be true, false or": lambda s: s.update(budget_raised="yes"),
+        }
+        for message, damage in cases.items():
+            with self.subTest(message):
+                data = _ledger()
+                stop = _owner_raise_stop(3, 200_000_000, 240_000_000)
+                damage(stop)
+                data["stops"].append(stop)
+
+                self.assertTrue(any(message in e for e in ledger.check(data)), ledger.check(data))
+
+    def test_an_owner_decision_without_an_owner_raise_fails(self):
+        data = _ledger()
+        data["stops"].append(_stop(3, owner_decision={"at": "x", "limit_before": 1, "limit_after": 2}))
+
+        self.assertTrue(any("budget_raised is not" in e for e in ledger.check(data)))
+
+    def test_no_budget_progressing_stop_after_a_raise_in_its_attempt(self):
+        data = _ledger()
+        data["stops"] += [
+            _owner_raise_stop(3, 200_000_000, 240_000_000),
+            _stop(3, "budget-progressing", locked=6),
+        ]
+
+        self.assertTrue(any("after a raise in attempt 3" in e for e in ledger.check(data)))
 
     def test_a_merged_issue_names_its_merge_commit(self):
         data = _ledger()
@@ -300,6 +356,16 @@ class NextActionTest(unittest.TestCase):
         data["stops"].append(_stop(3, "budget-progressing", locked=5, repeats=1))
         self.assertNotEqual(ledger.next_action(data)["action"], "resume-budget")
 
+    def test_an_owner_raise_never_brings_back_the_automatic_one(self):
+        data = _ledger()
+        data["loop"].update(state="fixing", wish_id="wish-3", attempt=3)
+        data["stops"] += [
+            _owner_raise_stop(3, 200_000_000, 240_000_000),
+            _stop(3, "budget-progressing", locked=6),
+        ]
+
+        self.assertNotEqual(ledger.next_action(data)["action"], "resume-budget")
+
     def test_pending_fixes_are_listed(self):
         data = _ledger()
         data["loop"].update(state="fixing", wish_id="wish-2")
@@ -447,6 +513,18 @@ class ClassifyTest(unittest.TestCase):
         })
 
         self.assertEqual(result["class"], "other")
+
+    def test_a_budget_stop_after_an_owner_raise_is_other(self):
+        evidence = {
+            "stop_category": "budget",
+            "budget_raised": "owner",
+            "progress": {"locked": 10, "repeated_print_defects": 0},
+            "previous_progress": {"locked": 4, "repeated_print_defects": 3},
+        }
+
+        self.assertEqual(ledger.classify(evidence)["class"], "other")
+        evidence["blocked_reports_open"] = 1
+        self.assertEqual(ledger.classify(evidence)["class"], "contract-contradiction")
 
     def test_a_budget_stop_without_progress_is_other(self):
         result = ledger.classify({

@@ -86,6 +86,7 @@ def check(ledger: dict) -> list[str]:
 
     versions = ledger.get("contract_versions") or {}
     raised: dict[int, int] = {}
+    any_raise: set = set()
     for index, stop in enumerate(_list(ledger, "stops", errors)):
         where = f"stops[{index}]"
         if not _is_int(stop.get("attempt")):
@@ -101,8 +102,16 @@ def check(ledger: dict) -> list[str]:
             _is_int(progress.get(k)) for k in ("locked", "repeated_print_defects")
         ):
             errors.append(f"{where}.progress needs integer locked and repeated_print_defects")
+        errors.extend(_budget_raise_errors(stop, where))
+        if stop.get("class") == "budget-progressing" and stop.get("attempt") in any_raise:
+            errors.append(
+                f"{where} is budget-progressing after a raise in attempt {stop.get('attempt')}; "
+                "a later budget stop in an attempt is `other`"
+            )
         if stop.get("budget_raised") is True:
             raised[stop.get("attempt")] = raised.get(stop.get("attempt"), 0) + 1
+        if stop.get("budget_raised"):
+            any_raise.add(stop.get("attempt"))
     for attempt, count in sorted(raised.items(), key=lambda item: str(item[0])):
         if count > 1:
             errors.append(f"attempt {attempt} raised its token budget {count} times; the rule allows once")
@@ -201,6 +210,36 @@ def check(ledger: dict) -> list[str]:
     return errors
 
 
+def _budget_raise_errors(stop: dict, where: str) -> list[str]:
+    """The shape of a stop's token raise (issue #104).
+
+    `budget_raised` is `true` for the loop's own once-per-attempt raise at a
+    `budget-progressing` stop, `"owner"` for a raise the owner approved at an
+    `other` stop, or `false`. An owner raise carries `owner_decision`:
+    `{at, limit_before, limit_after}`, with the limits in tokens.
+    """
+
+    raised = stop.get("budget_raised", False)
+    decision = stop.get("owner_decision")
+    if raised not in (True, False, None, "owner"):
+        return [f"{where}.budget_raised must be true, false or \"owner\""]
+    if raised != "owner":
+        if decision is not None:
+            return [f"{where}.owner_decision is set but budget_raised is not \"owner\""]
+        return []
+    errors = []
+    if stop.get("class") != "other":
+        errors.append(f"{where}: an owner raise answers an `other` stop, not {stop.get('class')!r}")
+    if not isinstance(decision, dict):
+        return errors + [f"{where}.owner_decision needs at, limit_before and limit_after"]
+    if not isinstance(decision.get("at"), str) or not decision["at"].strip():
+        errors.append(f"{where}.owner_decision.at must name when the owner decided")
+    before, after = decision.get("limit_before"), decision.get("limit_after")
+    if not (_is_int(before) and _is_int(after) and 0 < before < after):
+        errors.append(f"{where}.owner_decision needs integer limit_before < limit_after, in tokens")
+    return errors
+
+
 def _list(ledger: dict, key: str, errors: list[str]) -> list[dict]:
     value = ledger.get(key, [])
     if not isinstance(value, list) or not all(isinstance(v, dict) for v in value):
@@ -228,7 +267,8 @@ def classify(evidence: dict) -> dict:
     Evidence keys, each optional: status, stop_category, needs (objects with
     `kind` and `text`), blocked_reports_open, worker_blocked, forced_repeats,
     reference_mismatches, harness_defects, progress, previous_progress,
-    budget_raised.
+    budget_raised (any raise earlier in this attempt: `true`, or `"owner"`
+    for an owner-approved one; either keeps a later budget stop `other`).
     """
 
     needs = evidence.get("needs") or []
