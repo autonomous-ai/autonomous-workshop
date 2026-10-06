@@ -89,3 +89,19 @@ contactless symbol), T8 Code (`{ }`).
 Flags:
 - T1's keycap is drawn tall and should be kept low.
 - T3's pixel bow is drawn hollow and must be filled for the tap area.
+
+## Round 5: Christmas (`concepts/round5/`), 2026-10-06
+
+The owner asked for a Christmas vibe: six tech concepts and six that are not
+tech. The style stays grown-up as in round 4: pine green, cranberry and cream
+with gold accents, no faces and no snowflakes.
+
+Tech: X1 Pixel Tree, X2 Circuit Wreath, X3 Keycap Tree, X4 Loading Bauble,
+X5 Gift Chip, X6 Code Tree (`>` chevrons with a `*` star).
+Classic: X7 Peppermint, X8 Reindeer, X9 Wreath, X10 Mitten, X11 The Bow (a gift
+ribbon bow; a key's head is called its bow), X12 Cocoa.
+
+Flags:
+- X3 and X5 are drawn thick and should be flattened.
+- X12 is drawn as a 3D mug and should become a flat relief.
+- X11's loops need to be fuller to give enough tap area.

@@ -32,8 +32,7 @@ h1 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 4.2vw
 header p { margin: 0; color: var(--muted); }
 .rules { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .rules span { font-family: var(--mono); font-size: 12px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--fg); }
-.grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
-@media (max-width: 1100px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
 @media (max-width: 860px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .grid { grid-template-columns: minmax(0, 1fr); } }
 figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
@@ -47,83 +46,122 @@ h2 { font-family: var(--display); font-weight: 500; font-size: 21px; margin: 0; 
 .tap { margin: 0; font-size: 13.5px; color: var(--muted); }
 .tap b { color: var(--fg); font-weight: 600; }
 .rec { display: inline-block; margin-left: 6px; font-family: var(--mono); font-size: 11px; letter-spacing: .04em; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 1px 8px; vertical-align: 2px; }
+.group { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 500; margin: 30px 0 12px; }
+header + .group { margin-top: 0; }
 footer { margin-top: 28px; color: var(--muted); font-size: 13px; max-width: 75ch; }
 </style>
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">Autonomous Key · new shape · round 4</div>
-    <h1>Tech and security keys</h1>
-    <p>Round 3 looked like a children's toy. This round is a premium desk object a software company would give its team: graphite, navy and off-white, each with one accent colour. There are no faces; the charm comes from soft proportions and one playful detail.</p>
+    <div class="eyebrow">Autonomous Key · new shape · round 5</div>
+    <h1>Christmas keys</h1>
+    <p>A holiday gift from the company to the team: festive but grown-up, in pine green, cranberry and cream with gold accents. Six take a tech angle and six are classic Christmas. There are no snowflakes and no faces.</p>
     <div class="rules"><span>tap area ≥ Ø28 mm</span><span>~80 mm long</span><span>~3.5 mm, two or three colour layers</span><span>no ring hole</span></div>
   </header>
 
+  <h3 class="group">Tech Christmas · X1–X6</h3>
   <section class="grid">
     <figure>
-      <img src="concepts/round4/t1_esc-keycap.jpg" alt="Escape key: Bow is a keyboard keycap marked esc">
+      <img src="concepts/round5/x01_pixel-tree.jpg" alt="Pixel Tree key: An 8-bit pixel Christmas tree with a gold pixel star">
       <figcaption>
-        <div class="head"><h2><span class="id">T1</span> Escape</h2><span class="size">~80 mm</span></div>
-        <p class="idea">Bow is a keyboard keycap marked esc. Tap Esc to escape the scroll. The drawn keycap is tall; the print would keep it low.</p>
-        <p class="tap"><b>Tap:</b> the keycap.</p>
+        <div class="head"><h2><span class="id">X1</span> Pixel Tree</h2><span class="size">~80 mm</span></div>
+        <p class="idea">An 8-bit pixel Christmas tree with a gold pixel star. Ties straight to round 4's Pixel key.</p>
+        <p class="tap"><b>Tap:</b> the tree.</p>
       </figcaption>
     </figure>
     <figure>
-      <img src="concepts/round4/t2_cursor.jpg" alt="Cursor key: Bow is a chunky mouse pointer">
+      <img src="concepts/round5/x02_circuit-wreath.jpg" alt="Circuit Wreath key: A wreath drawn as gold circuit traces, with solder pads for berries">
       <figcaption>
-        <div class="head"><h2><span class="id">T2</span> Cursor</h2><span class="size">~80 mm</span></div>
-        <p class="idea">Bow is a chunky mouse pointer. Point and tap. A clean outline that reads from across a desk.</p>
-        <p class="tap"><b>Tap:</b> the arrow.</p>
+        <div class="head"><h2><span class="id">X2</span> Circuit Wreath</h2><span class="size">~80 mm</span></div>
+        <p class="idea">A wreath drawn as gold circuit traces, with solder pads for berries. Subtle and grown-up; reads as Christmas at a second look.</p>
+        <p class="tap"><b>Tap:</b> the green disc.</p>
       </figcaption>
     </figure>
     <figure>
-      <img src="concepts/round4/t3_pixel.jpg" alt="Pixel key: The whole key is 8-bit pixel art">
+      <img src="concepts/round5/x03_keycap-tree.jpg" alt="Keycap Tree key: Three keyboard keycaps stacked into a tree">
       <figcaption>
-        <div class="head"><h2><span class="id">T3</span> Pixel</h2><span class="size">~80 mm</span></div>
-        <p class="idea">The whole key is 8-bit pixel art. Retro and playful. The drawn bow is hollow; the print would fill it to make the tap spot.</p>
-        <p class="tap"><b>Tap:</b> the pixel bow.</p>
+        <div class="head"><h2><span class="id">X3</span> Keycap Tree</h2><span class="size">~80 mm</span></div>
+        <p class="idea">Three keyboard keycaps stacked into a tree. A strong idea for engineers. The drawn stack is thick; the print would keep it flat.</p>
+        <p class="tap"><b>Tap:</b> the bottom keycap.</p>
       </figcaption>
     </figure>
     <figure>
-      <img src="concepts/round4/t4_terminal.jpg" alt="Terminal key: Bow is a tiny terminal window with a >_ prompt">
+      <img src="concepts/round5/x04_loading-bauble.jpg" alt="Loading Bauble key: A red bauble with a loading spinner on its face">
       <figcaption>
-        <div class="head"><h2><span class="id">T4</span> Terminal</h2><span class="size">~80 mm</span></div>
-        <p class="idea">Bow is a tiny terminal window with a >_ prompt. Made for engineers. The prompt marks where to tap.</p>
-        <p class="tap"><b>Tap:</b> the window.</p>
+        <div class="head"><h2><span class="id">X4</span> Loading Bauble</h2><span class="size">~80 mm</span></div>
+        <p class="idea">A red bauble with a loading spinner on its face. A tech joke on an ornament: the year is still loading.</p>
+        <p class="tap"><b>Tap:</b> the bauble.</p>
       </figcaption>
     </figure>
     <figure>
-      <img src="concepts/round4/t5_power.jpg" alt="Power key: Bow is the power symbol on a disc">
+      <img src="concepts/round5/x05_chip-gift.jpg" alt="Gift Chip key: A gift box whose ribbon is circuit traces meeting at a chip">
       <figcaption>
-        <div class="head"><h2><span class="id">T5</span> Power</h2><span class="size">~80 mm</span></div>
-        <p class="idea">Bow is the power symbol on a disc. Switch off. The clearest message in the set, in graphite and red-orange.</p>
-        <p class="tap"><b>Tap:</b> the power ring.</p>
+        <div class="head"><h2><span class="id">X5</span> Gift Chip</h2><span class="size">~80 mm</span></div>
+        <p class="idea">A gift box whose ribbon is circuit traces meeting at a chip. Gift and tech in one. The drawn box is thick; the print would keep it flat.</p>
+        <p class="tap"><b>Tap:</b> the box.</p>
       </figcaption>
     </figure>
     <figure>
-      <img src="concepts/round4/t6_binary.jpg" alt="Binary key: Microchip bow, circuit-trace shaft, 1011 teeth">
+      <img src="concepts/round5/x06_ascii-tree.jpg" alt="Code Tree key: A tree of stacked > chevrons with a * star">
       <figcaption>
-        <div class="head"><h2><span class="id">T6</span> Binary</h2><span class="size">~80 mm</span></div>
-        <p class="idea">Microchip bow, circuit-trace shaft, 1011 teeth. The teeth are binary digits. The most cybersecurity-looking option, in navy and copper.</p>
-        <p class="tap"><b>Tap:</b> the chip.</p>
-      </figcaption>
-    </figure>
-    <figure>
-      <img src="concepts/round4/t7_contactless.jpg" alt="Tap key: Bow carries the contactless wave symbol">
-      <figcaption>
-        <div class="head"><h2><span class="id">T7</span> Tap</h2><span class="size">~80 mm</span></div>
-        <p class="idea">Bow carries the contactless wave symbol. Shows exactly how to use it: tap your phone here.</p>
-        <p class="tap"><b>Tap:</b> the waves.</p>
-      </figcaption>
-    </figure>
-    <figure>
-      <img src="concepts/round4/t8_braces.jpg" alt="Code key: Bow is a pair of { } braces around a dot">
-      <figcaption>
-        <div class="head"><h2><span class="id">T8</span> Code</h2><span class="size">~80 mm</span></div>
-        <p class="idea">Bow is a pair of { } braces around a dot. Quiet and minimal, for developers.</p>
-        <p class="tap"><b>Tap:</b> the braces.</p>
+        <div class="head"><h2><span class="id">X6</span> Code Tree</h2><span class="size">~80 mm</span></div>
+        <p class="idea">A tree of stacked > chevrons with a * star. Code for engineers, in three colours.</p>
+        <p class="tap"><b>Tap:</b> the tree.</p>
       </figcaption>
     </figure>
   </section>
 
-  <footer>Concept images are AI-generated from text prompts (openai/gpt-5.4-image-2). Sizes are approximate; the contract will set the real dimensions. Earlier rounds stay in the repo: round 1 (keychain tags) in <code>concepts/</code>, round 2 (unusual shapes) in <code>concepts/round2/</code> and round 3 (kawaii) in <code>concepts/round3/</code>.</footer>
+  <h3 class="group">Classic Christmas · X7–X12</h3>
+  <section class="grid">
+    <figure>
+      <img src="concepts/round5/x07_peppermint.jpg" alt="Peppermint key: A peppermint swirl bow and a candy-cane striped shaft">
+      <figcaption>
+        <div class="head"><h2><span class="id">X7</span> Peppermint</h2><span class="size">~80 mm</span></div>
+        <p class="idea">A peppermint swirl bow and a candy-cane striped shaft. The most instantly Christmas of the set.</p>
+        <p class="tap"><b>Tap:</b> the swirl.</p>
+      </figcaption>
+    </figure>
+    <figure>
+      <img src="concepts/round5/x08_antlers.jpg" alt="Reindeer key: A cream disc with minimal reindeer antlers">
+      <figcaption>
+        <div class="head"><h2><span class="id">X8</span> Reindeer</h2><span class="size">~80 mm</span></div>
+        <p class="idea">A cream disc with minimal reindeer antlers. Scandinavian and calm; a small red dot hints at Rudolph.</p>
+        <p class="tap"><b>Tap:</b> the disc.</p>
+      </figcaption>
+    </figure>
+    <figure>
+      <img src="concepts/round5/x09_wreath.jpg" alt="Wreath key: An evergreen wreath with a red ribbon on a gold shaft">
+      <figcaption>
+        <div class="head"><h2><span class="id">X9</span> Wreath</h2><span class="size">~80 mm</span></div>
+        <p class="idea">An evergreen wreath with a red ribbon on a gold shaft. Classic and elegant.</p>
+        <p class="tap"><b>Tap:</b> the cream centre.</p>
+      </figcaption>
+    </figure>
+    <figure>
+      <img src="concepts/round5/x10_mitten.jpg" alt="Mitten key: A red knitted mitten with a cream cuff">
+      <figcaption>
+        <div class="head"><h2><span class="id">X10</span> Mitten</h2><span class="size">~80 mm</span></div>
+        <p class="idea">A red knitted mitten with a cream cuff. Cosy, with a raised knit texture.</p>
+        <p class="tap"><b>Tap:</b> the mitten.</p>
+      </figcaption>
+    </figure>
+    <figure>
+      <img src="concepts/round5/x11_ribbon-bow.jpg" alt="The Bow key: The key's bow is literally a gift ribbon bow">
+      <figcaption>
+        <div class="head"><h2><span class="id">X11</span> The Bow</h2><span class="size">~80 mm</span></div>
+        <p class="idea">The key's bow is literally a gift ribbon bow. A pun: a key's head is called its bow. The loops would need to be fuller to give enough tap area.</p>
+        <p class="tap"><b>Tap:</b> the knot and loops.</p>
+      </figcaption>
+    </figure>
+    <figure>
+      <img src="concepts/round5/x12_cocoa.jpg" alt="Cocoa key: A hot cocoa mug with steam and holly">
+      <figcaption>
+        <div class="head"><h2><span class="id">X12</span> Cocoa</h2><span class="size">~80 mm</span></div>
+        <p class="idea">A hot cocoa mug with steam and holly. Sit down and enjoy. Drawn in 3D; the print would be a flat relief.</p>
+        <p class="tap"><b>Tap:</b> the mug.</p>
+      </figcaption>
+    </figure>
+  </section>
+
+  <footer>Concept images are AI-generated from text prompts (openai/gpt-5.4-image-2). Sizes are approximate; the contract will set the real dimensions. Earlier rounds stay in the repo under <code>concepts/</code> (round 1) and <code>concepts/round2/</code> to <code>round4/</code>.</footer>
 </div>
