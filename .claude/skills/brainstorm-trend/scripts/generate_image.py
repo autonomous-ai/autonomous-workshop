@@ -1,6 +1,6 @@
 """Generate one concept-art image via OpenRouter for brainstorm-trend.
 
-Each of the five personality subagents in the brainstorm-trend skill calls
+Each of the six personality subagents in the brainstorm-trend skill calls
 this once, blind to the others, to render its Design Contract's ``signature``
 component. The call is deterministic tooling, not a model judgement: it
 builds one image-generation request, decodes and bounds the one image the
@@ -183,8 +183,8 @@ def generate_image(
 
     The prompt is the caller's whole job: it is what tells the model to draw
     exactly one subject fully inside the frame, per design-a-toy Stage 3.
-    This function only bounds what comes back — 800x800 or smaller, a
-    readable PNG/JPEG/WebP, one still frame — the same shape
+    This function only bounds what comes back — shrunk to 800x800 or
+    smaller, a readable PNG/JPEG/WebP, one still frame — the same shape
     ``load_wish_references`` requires of any reference image.
     """
 
@@ -241,13 +241,17 @@ def generate_image(
         )
     if frames != 1:
         raise OpenRouterError("OpenRouter image must not be animated")
-    if width > MAX_IMAGE_SIDE_PX or height > MAX_IMAGE_SIDE_PX:
-        raise OpenRouterError(
-            "OpenRouter image is %dx%d, over the %dx%d limit"
-            % (width, height, MAX_IMAGE_SIDE_PX, MAX_IMAGE_SIDE_PX)
-        )
     if width < 1 or height < 1:
         raise OpenRouterError("OpenRouter image has no pixels")
+    if width > MAX_IMAGE_SIDE_PX or height > MAX_IMAGE_SIDE_PX:
+        # Image models pick their own size (1024x1024 is common); shrink to
+        # the limit, keeping the aspect ratio and the format.
+        with Image.open(io.BytesIO(image_bytes)) as image:
+            image.thumbnail((MAX_IMAGE_SIDE_PX, MAX_IMAGE_SIDE_PX), Image.Resampling.LANCZOS)
+            buffer = io.BytesIO()
+            image.save(buffer, format=image_format)
+            width, height = image.size
+        image_bytes = buffer.getvalue()
 
     extension = _MEDIA_EXTENSIONS[resolved_media_type]
     if output_path.suffix.lstrip(".").lower() != extension:

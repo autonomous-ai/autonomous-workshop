@@ -106,12 +106,17 @@ def test_generate_image_renames_output_to_match_media_type(tmp_path):
     assert not output_path.exists()
 
 
-def test_generate_image_rejects_oversized_image(tmp_path):
-    image_bytes = _png_bytes(801, 800)
+def test_generate_image_shrinks_an_oversized_image_to_the_limit(tmp_path):
+    image_bytes = _png_bytes(1024, 512)
     transport = _fake_transport(_chat_completions_response(image_bytes))
 
-    with pytest.raises(OpenRouterError, match="801x800"):
-        generate_image("subject", tmp_path / "out.png", config=CONFIG, transport=transport)
+    result = generate_image("subject", tmp_path / "out.png", config=CONFIG, transport=transport)
+
+    assert (result.width, result.height) == (800, 400)
+    with Image.open(result.path) as written:
+        assert written.format == "PNG"
+        assert written.size == (800, 400)
+    assert result.size == result.path.stat().st_size
 
 
 def test_generate_image_rejects_http_error_without_leaking_key(tmp_path):
