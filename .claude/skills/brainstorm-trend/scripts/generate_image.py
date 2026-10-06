@@ -1,11 +1,11 @@
-"""Generate one concept-art image via OpenRouter for brainstorm-reskin.
+"""Generate one concept-art image via OpenRouter for brainstorm-trend.
 
-Each of the five personality subagents in the brainstorm-reskin skill calls
+Each of the five personality subagents in the brainstorm-trend skill calls
 this once, blind to the others, to render its Design Contract's ``signature``
 component. The call is deterministic tooling, not a model judgement: it
 builds one image-generation request, decodes and bounds the one image the
 response carries, and writes it to disk. Everything about *whether* the image
-is any good — subject, composition, theme — is the personality's prompt, not
+is any good — subject, composition, Trend — is the personality's prompt, not
 this script's job to judge; this script only enforces what
 ``design-a-toy`` Stage 3 requires of any reference image: 800x800 or
 smaller, PNG/JPEG/WebP, a single readable frame.
@@ -19,16 +19,19 @@ holds it, and printing that value is redacted.
 
 from __future__ import annotations
 
+import argparse
 import base64
 import binascii
 import io
 import json
+import os
 import re
+import sys
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Dict, Mapping, Optional
+from typing import Callable, Dict, List, Mapping, Optional
 
 MAX_IMAGE_SIDE_PX = 800
 MAX_IMAGE_BYTES = 12 * 1024 * 1024
@@ -36,7 +39,7 @@ MAX_RESPONSE_BYTES = 16 * 1024 * 1024
 MAX_PROMPT_CHARS = 8_000
 HTTP_TIMEOUT_SECONDS = 180
 OPENROUTER_CHAT_COMPLETIONS_URL = "https://openrouter.ai/api/v1/chat/completions"
-USER_AGENT = "brainstorm-reskin/openrouter-image"
+USER_AGENT = "brainstorm-trend/openrouter-image"
 
 OPENROUTER_API_KEY_NAME = "OPENROUTER_API_KEY"
 OPENROUTER_IMAGE_MODEL_NAME = "OPENROUTER_IMAGE_MODEL"
@@ -260,6 +263,45 @@ def generate_image(
         width=width,
         height=height,
     )
+
+
+def main(argv: Optional[List[str]] = None, transport: Optional[Transport] = None) -> int:
+    """CLI: ``generate_image.py --prompt-file P --out PATH [--env .env]``.
+
+    Prints the written image's path, model, media type and size as JSON. The
+    output suffix follows the decoded format, so read the printed path.
+    """
+
+    parser = argparse.ArgumentParser(description="Generate one image via OpenRouter.")
+    parser.add_argument("--prompt-file", type=Path, required=True)
+    parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--env", type=Path, default=Path(".env"))
+    args = parser.parse_args(argv)
+    try:
+        config = load_openrouter_config(args.env, os.environ)
+        image = generate_image(
+            args.prompt_file.read_text(encoding="utf-8"), args.out, config=config, transport=transport
+        )
+    except (OpenRouterError, OSError) as exc:
+        print("generate-image: %s" % exc, file=sys.stderr)
+        return 2
+    json.dump(
+        {
+            "path": str(image.path),
+            "model": image.model,
+            "media_type": image.media_type,
+            "width": image.width,
+            "height": image.height,
+        },
+        sys.stdout,
+        indent=2,
+    )
+    sys.stdout.write("\n")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
 
 
 __all__ = [

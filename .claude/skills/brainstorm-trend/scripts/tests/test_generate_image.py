@@ -20,6 +20,7 @@ from generate_image import (  # noqa: E402
     OpenRouterError,
     generate_image,
     load_openrouter_config,
+    main,
     parse_env_file,
 )
 
@@ -250,3 +251,34 @@ def test_config_repr_never_reveals_the_key():
     assert "super-secret-value" not in repr(config)
     assert "super-secret-value" not in str(config)
     assert "vendor/model" in repr(config)
+
+
+def test_main_writes_the_image_and_prints_its_facts_without_the_key(tmp_path, monkeypatch, capsys):
+    monkeypatch.delenv(OPENROUTER_API_KEY_NAME, raising=False)
+    monkeypatch.delenv(OPENROUTER_IMAGE_MODEL_NAME, raising=False)
+    env = tmp_path / ".env"
+    env.write_text("%s=sk-or-secret-value\n%s=fake/image-model\n" % (OPENROUTER_API_KEY_NAME, OPENROUTER_IMAGE_MODEL_NAME))
+    prompt = tmp_path / "prompt.txt"
+    prompt.write_text("one toy whale, fully inside the frame")
+    transport = _fake_transport(_chat_completions_response(_png_bytes(40, 40)))
+
+    code = main(["--prompt-file", str(prompt), "--out", str(tmp_path / "hero.jpg"), "--env", str(env)], transport=transport)
+
+    captured = capsys.readouterr()
+    assert code == 0
+    facts = json.loads(captured.out)
+    assert facts["path"] == str(tmp_path / "hero.png")
+    assert facts["model"] == "fake/image-model"
+    assert (tmp_path / "hero.png").is_file()
+    assert "sk-or-secret-value" not in captured.out + captured.err
+
+
+def test_main_exits_2_when_the_key_is_missing(tmp_path, monkeypatch, capsys):
+    monkeypatch.delenv(OPENROUTER_API_KEY_NAME, raising=False)
+    prompt = tmp_path / "prompt.txt"
+    prompt.write_text("one toy")
+
+    code = main(["--prompt-file", str(prompt), "--out", str(tmp_path / "hero.png"), "--env", str(tmp_path / "none")])
+
+    assert code == 2
+    assert OPENROUTER_API_KEY_NAME in capsys.readouterr().err

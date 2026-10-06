@@ -37,12 +37,23 @@ statements may be impossible to satisfy together. Unlike the Toy Blueprint it be
 the Wish's prose it is exact enough to check.
 _Avoid_: Spec, design spec, concept
 
-**Theme Hook**:
-One countable or pointable correspondence between a reskin's theme and its
-source game that makes the theme feel chosen for that game rather than pasted
-on — the eight planets of the solar system as the eight pieces of Jungle. A
-reskin without one is rejected, whatever it looks like.
-_Avoid_: Link, connection, theme fit
+**Trend**:
+One topic people are talking about now, backed by dated evidence, that a toy
+is invented to be inspired by. A toy takes inspiration from a Trend; it never
+carries the Trend's protected names, characters, logos or trade dress.
+_Avoid_: Topic, fad, meme, theme
+
+**Trend Hook**:
+One countable or pointable feature of a toy that makes it read as inspired by
+its Trend rather than a generic toy with the Trend's name on it. A
+trend-inspired toy without one is rejected, whatever it looks like.
+_Avoid_: Theme Hook, trend fit, reference
+
+**Signature Motion**:
+The one movement a toy's play centres on, made by parts in contact or sharing
+space over time — a crank that flaps wings, a pull that walks legs. A toy whose
+only motion is decorative has none.
+_Avoid_: Gimmick, action feature, animation
 
 **Contract Mode**:
 A run that was given a Design Contract at creation and is judged against it,

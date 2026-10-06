@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
-"""Contract gate: CONTRACT-FORMAT limits plus Theme Hook presence.
+"""Contract gate: CONTRACT-FORMAT limits, Trend Hook and Signature Motion.
 
 Runs after each personality's ``design-a-toy`` Stages 1-2 draft a Design
-Contract (see the brainstorm-reskin skill's step 4, "Automatic gate"). This
-is deterministic tooling only (per root ``AGENTS.md``): it checks the format
-a contract must meet before it is allowed into the round robin, and reports
-every failure at once. It does not judge whether a Theme Hook is genuinely
-countable or pointable -- only that a Theme Hook section exists. That
-judgement is the orchestrator agent's.
+Contract (see the brainstorm-trend skill's "Gate" step). This is
+deterministic tooling only (per root ``AGENTS.md``): it checks the format a
+contract must meet before it is allowed into the round robin, and reports
+every failure at once. It does not judge whether a Trend Hook is genuinely
+countable or pointable, or whether a Signature Motion is any fun -- only that
+both sections exist and that some Interface is coupled. Those judgements
+belong to the orchestrator and the judges.
 
 The limits on assembly and per-geometry requirement counts, and the whole-
 file character limit, come from ADR 0072 and are the same ones
 ``workshop.wish.design_contract`` enforces before a run seals a contract; this
-script reuses that check rather than re-deriving it, and adds the two checks
-that module has no reason to know about: the file-length ceiling
-(``design_contract`` is handed already-sealed text, not a draft to size-gate)
-and the Theme Hook section, which is a brainstorm-reskin requirement, not a
-Design Contract field.
+script reuses that check rather than re-deriving it, and adds what that
+module has no reason to know about: the file-length ceiling
+(``design_contract`` is handed already-sealed text, not a draft to size-gate),
+the two prose sections, and the rule that a trend toy moves.
 """
 
 from __future__ import annotations
@@ -36,15 +36,19 @@ from workshop.wish.design_contract import parse_design_contract
 # CONTRACT-FORMAT.md.
 MAX_CONTRACT_CHARACTERS = 40_000
 
+REQUIRED_SECTIONS = ("Trend Hook", "Signature Motion")
+
 _FENCE_START = "```design-contract"
-_THEME_HOOK_HEADING = re.compile(r"^#{1,6}[ \t]*Theme Hook[ \t]*$", re.IGNORECASE | re.MULTILINE)
 _HEADING = re.compile(r"^#{1,6}[ \t]", re.MULTILINE)
 
 
-def _theme_hook_present(prose: str) -> bool:
-    """A ``Theme Hook`` heading in the prose, followed by non-blank text."""
+def _section_present(prose: str, title: str) -> bool:
+    """A ``title`` heading in the prose, followed by non-blank text."""
 
-    match = _THEME_HOOK_HEADING.search(prose)
+    heading = re.compile(
+        r"^#{1,6}[ \t]*%s[ \t]*$" % re.escape(title), re.IGNORECASE | re.MULTILINE
+    )
+    match = heading.search(prose)
     if match is None:
         return False
     after = prose[match.end():]
@@ -69,8 +73,9 @@ def gate_contract(text: str) -> Tuple[bool, List[str]]:
             % (len(text), MAX_CONTRACT_CHARACTERS)
         )
 
+    contract = None
     try:
-        parse_design_contract(text)
+        contract = parse_design_contract(text)
     except ContractError as exc:
         message = str(exc)
         prefix = "design contract: "
@@ -78,9 +83,15 @@ def gate_contract(text: str) -> Tuple[bool, List[str]]:
             message = message[len(prefix):]
         reasons.extend(message.split("; "))
 
+    if contract is not None and not any(
+        item.kind == "coupled" for item in contract.interfaces or ()
+    ):
+        reasons.append("no coupled Interface: a trend toy needs a Signature Motion")
+
     prose = text.split(_FENCE_START, 1)[0]
-    if not _theme_hook_present(prose):
-        reasons.append("no Theme Hook section found in the prose")
+    for title in REQUIRED_SECTIONS:
+        if not _section_present(prose, title):
+            reasons.append("no %s section found in the prose" % title)
 
     return (not reasons, reasons)
 
