@@ -183,3 +183,4 @@ Method: the side elevation came first and its tilt was measured from the top edg
 - Side views drawn at "22 degrees" came out at 11 to 16 degrees. The prompt then asked for 30 degrees and the results measured 21.8 to 28.4. C6 was edited from 16.4 to 20.5.
 - The first three-quarter views stood the device near upright. A camera at about 40 degrees down, plus "the screen faces mostly up", fixed this.
 - C2 Arcade Puck still has no front lip after 3 tries (one edit and one regeneration both failed), so the best image was kept and the gap is flagged on the page.
+- C7 VHS Wedge (added on the owner's request, 2026-10-06): the VC4 VHS-styled device on a narrow black wedge whose side faces are a VHS tape face (glowing sunset reel windows and rainbow label stripes), with a chrome front lip. The side view was generated twice (16.1 and 19.0 degrees); the 19.0 one was then edited to 23.4. Of two three-quarter views made from that side view, the front-left one was kept.
