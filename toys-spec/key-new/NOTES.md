@@ -105,3 +105,8 @@ Flags:
 - X3 and X5 are drawn thick and should be flattened.
 - X12 is drawn as a 3D mug and should become a flat relief.
 - X11's loops need to be fuller to give enough tap area.
+
+**2026-10-07:** the owner chose **X1 Pixel Tree** to design and build in a
+new session. The brainstorm continues with two more tech Christmas ideas:
+X13 Git Tree (a git commit graph on a tree, with commits as baubles) and X14
+Padlock Bauble (the bauble's cap is a padlock shackle, with a keyhole).
