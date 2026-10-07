@@ -2,8 +2,77 @@
   "contract": "toys-spec/pixel-tree-key/CONTRACT.md",
   "title": "Pixel Tree Key",
   "inventor": "wyn-seal",
-  "rounds": [],
+  "rounds": [
+    {
+      "round": 0,
+      "attempt": 1,
+      "kind": "wish",
+      "name": "Pixel Tree Key v01",
+      "wish_id": "wish-20261007-045728-5f073b6e",
+      "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261007-045728-5f073b6e/workspace",
+      "toy_dir": null,
+      "status": "abandoned",
+      "brief": null,
+      "finding_ids": [],
+      "notes": "Codex sandbox (bwrap) could not bind the fresh worktree's .venv/bin/python symlink; fixed locally by copying uv.toml/.python-version and a real python binary into the venv. A timeout-killed test resume then invalidated the session checkpoint binding; 0 tokens spent, relaunched as attempt 2."
+    },
+    {
+      "round": 0,
+      "attempt": 2,
+      "kind": "wish",
+      "name": "Pixel Tree Key v01",
+      "wish_id": "wish-20261007-050112-49084163",
+      "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261007-050112-49084163/workspace",
+      "toy_dir": null,
+      "status": "active",
+      "brief": null,
+      "finding_ids": []
+    }
+  ],
   "contract_versions": {
-    "v1": {"status": "current", "notes": "Owner approved images 2026-10-07 (commit 4c1c2115)", "backups": []}
+    "v1": {
+      "status": "current",
+      "notes": "Owner approved images 2026-10-07 (commit 4c1c2115)",
+      "backups": []
+    }
+  },
+  "loop": {
+    "schema": 1,
+    "state": "watching",
+    "attempt": 2,
+    "wish_id": "wish-20261007-050112-49084163",
+    "source_commit": "70252da1 (local detached merge of autonomous-toys 99ca5d5b with origin/main bd069e37; origin/main lacks the wyn-seal Inventor)",
+    "awaiting": null,
+    "updated": "2026-10-07T05:02:00Z"
+  },
+  "stops": [
+    {
+      "attempt": 1,
+      "wish_id": "wish-20261007-045728-5f073b6e",
+      "stop_category": "unclassified",
+      "status": "waiting",
+      "class": "other",
+      "evidence": [
+        "codex stderr: bwrap: Can't create file at <worktree>/.venv/bin/python (symlink venv in a fresh worktree without the local uv.toml pin)",
+        "resume after a timeout-killed session: 'Codex native session checkpoint binding is invalid'"
+      ],
+      "progress": {
+        "locked": 0,
+        "repeated_print_defects": 0
+      },
+      "budget_raised": false,
+      "resolution": "local environment fix in the worktree; relaunched as attempt 2"
+    }
+  ],
+  "contract_contradictions": [],
+  "in_run_amendments": [],
+  "harness_issues": [],
+  "cost_units": {
+    "cap": 100,
+    "by_attempt": {
+      "1": 0
+    },
+    "unmeasured_attempts": [],
+    "total": 0
   }
 }
