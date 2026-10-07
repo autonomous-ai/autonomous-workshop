@@ -31,9 +31,16 @@
   ],
   "contract_versions": {
     "v1": {
-      "status": "current",
+      "status": "superseded",
       "notes": "Owner approved images 2026-10-07 (commit 4c1c2115)",
       "backups": []
+    },
+    "amend-a": {
+      "status": "current",
+      "notes": "toys-spec/pixel-tree-key/build-a-toy/drafts/amend-a-notes.md",
+      "backups": [
+        "toys-spec/pixel-tree-key/build-a-toy/backups/v1/CONTRACT.md"
+      ]
     }
   },
   "loop": {
@@ -43,7 +50,7 @@
     "wish_id": "wish-20261007-050112-49084163",
     "source_commit": "70252da1 (local detached merge of autonomous-toys 99ca5d5b with origin/main bd069e37; origin/main lacks the wyn-seal Inventor)",
     "awaiting": null,
-    "updated": "2026-10-07T05:02:00Z"
+    "updated": "2026-10-07T05:08:30Z"
   },
   "stops": [
     {
@@ -62,9 +69,49 @@
       },
       "budget_raised": false,
       "resolution": "local environment fix in the worktree; relaunched as attempt 2"
+    },
+    {
+      "attempt": 2,
+      "wish_id": "wish-20261007-050112-49084163",
+      "stop_category": "unclassified",
+      "status": "waiting",
+      "class": "contract-contradiction",
+      "evidence": [
+        "need: Contract Contradiction R08 vs bauble-recesses Interface",
+        "in-run amendment 1 refused (smaller exists), amendment 2 refused as visible in ref-04 (reviewer read bauble thickness as 3.5 -> 0.8; geometry already 0.8)",
+        "tokens ~3M"
+      ],
+      "progress": {
+        "locked": 0,
+        "repeated_print_defects": 0
+      },
+      "budget_raised": false,
+      "resolution": "amend-a (R08, R06 text), invisible; resume with --amend-contract"
     }
   ],
-  "contract_contradictions": [],
+  "contract_contradictions": [
+    {
+      "id": "cc-r08-bauble-z",
+      "attempt": 2,
+      "signature": "stage3c-shared-face:bauble",
+      "rows": [
+        "The whole key is one solid plate 3.5 thick with no ring hole, no ring and no see-through gap; the star, the baubles and the body share one flat front face at Z 3.5 and one flat back face at Z 0.",
+        "Each bauble sits in its own 2.0 x 2.0 recess, 0.8 deep (Z 2.7 to 3.5), cut into the body's front face, with zero clearance, its top level with the front face."
+      ],
+      "amendment": "amend-a",
+      "visible": false,
+      "approved": "not-needed",
+      "applied": true,
+      "reaudit": "toys-spec/pixel-tree-key/build-a-toy/drafts/amend-a-notes.md",
+      "recurrence_acknowledged": null,
+      "resume": "resumed",
+      "design_check": {
+        "name": "shared-face rows agree with each Component's extents and Interface Z range",
+        "issue": null,
+        "status": "proposed"
+      }
+    }
+  ],
   "in_run_amendments": [],
   "harness_issues": [],
   "cost_units": {
