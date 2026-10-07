@@ -33,7 +33,7 @@ The scripts live in `.claude/skills/brainstorm-trend/scripts/`:
 | `run_log.py` | `check-trends`, `start`, `append`: the run's `run.json` |
 | `draw_personalities.py` | the seeded draw and its replacements |
 | `generate_image.py` | one image via OpenRouter, reading `.env` |
-| `gate_contract.py` | format limits, both prose sections, a coupled Interface |
+| `gate_contract.py` | format limits, the three prose sections, a coupled Interface |
 | `round_robin.py` | `schedule` and `score` |
 
 Log every step as it happens with `run_log.py append`; the step names and
@@ -82,20 +82,26 @@ Launch six subagents in one message, one per slot, each with this brief:
 
 - The Trend, its summary, and its sources.
 - The personality's name and `method`, which decides every trade-off the
-  Taste would decide in `design-a-toy`. There is no Inventor Taste; the
-  contract's `inventor` is `trend-lab`.
+  Taste would decide in `design-a-toy`, inside `inventors/trend-lab/TASTE.md`:
+  the toy is for the Buyer and meets the print floor. The contract's
+  `inventor` is `trend-lab`. The personality stays out of the contract: never
+  name it, its lean or the contest there, so the judges stay blind.
 - Run `.claude/skills/design-a-toy/SKILL.md` Stages 1 and 2 only. Answer
   every Stage 1 question yourself, in the personality; ask the human
   nothing.
 - The toy is a motion toy with one Signature Motion made by a coupled
   Interface, inspired by the Trend and owning its expression (the scope
   paragraphs above, verbatim).
-- Write `CONTRACT.md` in `brainstorm-trend/<run>/<slot>/` with two prose
-  sections the gate looks for: `## Trend Hook`, the one countable or
-  pointable feature that makes the toy read as this Trend's, and
-  `## Signature Motion`, what moves, what drives it, and what the player does.
+- Write `CONTRACT.md` in `brainstorm-trend/<run>/<slot>/` with three prose
+  sections the gate looks for:
+  - `## Trend Hook`: the one countable or pointable feature that makes the
+    toy read as this Trend's;
+  - `## Signature Motion`: what moves, what drives it, and what the player
+    does;
+  - `## Palette`: one line per Unique Geometry, its id and the one filament
+    colour every Component of it prints in.
 - Generate one Preview Image: the assembled toy in its Display Pose, one
-  subject fully inside the frame, by writing a prompt to `<slot>/prompt.txt`
+  subject fully inside the frame, in the Palette's colours, by writing a prompt to `<slot>/prompt.txt`
   and running `generate_image.py --prompt-file <slot>/prompt.txt --out
   <slot>/preview.png`. Report the path it prints.
 - Return the contract path, the Preview Image path, and one sentence on the toy.

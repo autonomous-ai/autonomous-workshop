@@ -56,8 +56,13 @@ _PROSE = (
     "## Trend Hook\n\n"
     "The six teeth are the six ice shelves in this month's melt news.\n\n"
     "## Signature Motion\n\n"
-    "Press the tail and the jaw gulps.\n"
+    "Press the tail and the jaw gulps.\n\n"
+    "## Palette\n\n"
+    "- body: glacier blue PLA\n"
+    "- jaw: white PLA\n"
 )
+
+_PALETTE = "\n## Palette\n\n- body: blue\n- jaw: white\n"
 
 
 def _contract_text(prose=_PROSE, block=None):
@@ -81,24 +86,24 @@ class GateContractTests(unittest.TestCase):
         self.assertEqual(reasons, ["no Trend Hook section found in the prose"])
 
     def test_fails_with_an_empty_trend_hook_section(self):
-        prose = "# Gulper\n\n## Trend Hook\n\n## Signature Motion\n\nThe jaw gulps.\n"
+        prose = "# Gulper\n\n## Trend Hook\n\n## Signature Motion\n\nThe jaw gulps.\n" + _PALETTE
         passed, reasons = self.tool.gate_contract(_contract_text(prose=prose))
         self.assertFalse(passed)
         self.assertEqual(reasons, ["no Trend Hook section found in the prose"])
 
     def test_fails_without_a_signature_motion_section(self):
-        prose = "# Gulper\n\n## Trend Hook\n\nSix teeth, six ice shelves.\n"
+        prose = "# Gulper\n\n## Trend Hook\n\nSix teeth, six ice shelves.\n" + _PALETTE
         passed, reasons = self.tool.gate_contract(_contract_text(prose=prose))
         self.assertFalse(passed)
         self.assertEqual(reasons, ["no Signature Motion section found in the prose"])
 
     def test_sections_match_in_any_order_and_heading_level(self):
-        prose = "# Gulper\n\n### signature motion\n\nThe jaw gulps.\n\n# Trend Hook\n\nSix teeth.\n"
+        prose = "# Gulper\n\n### signature motion\n\nThe jaw gulps.\n\n# Trend Hook\n\nSix teeth.\n" + _PALETTE
         passed, reasons = self.tool.gate_contract(_contract_text(prose=prose))
         self.assertTrue(passed, reasons)
 
     def test_a_heading_inside_the_contract_block_does_not_count(self):
-        prose = "# Gulper\n\n## Trend Hook\n\nSix teeth.\n"
+        prose = "# Gulper\n\n## Trend Hook\n\nSix teeth.\n" + _PALETTE
         text = _contract_text(prose=prose) + "\n## Signature Motion\n\nAfter the block.\n"
         passed, reasons = self.tool.gate_contract(text)
         self.assertFalse(passed)
@@ -191,8 +196,38 @@ class GateContractTests(unittest.TestCase):
                 "title must be a non-empty string",
                 "no Trend Hook section found in the prose",
                 "no Signature Motion section found in the prose",
+                "no Palette section found in the prose",
             ],
         )
+
+    def test_fails_without_a_palette_section(self):
+        prose = _PROSE.split("## Palette")[0]
+        passed, reasons = self.tool.gate_contract(_contract_text(prose=prose))
+        self.assertFalse(passed)
+        self.assertEqual(reasons, ["no Palette section found in the prose"])
+
+    def test_fails_when_the_palette_leaves_out_a_geometry(self):
+        prose = _PROSE.replace("- jaw: white PLA\n", "")
+        passed, reasons = self.tool.gate_contract(_contract_text(prose=prose))
+        self.assertFalse(passed)
+        self.assertEqual(reasons, ["the Palette names no colour for geometry jaw"])
+
+    def test_a_geometry_id_inside_a_longer_word_does_not_count(self):
+        prose = _PROSE.replace("- jaw: white PLA\n", "- jawline trim: white PLA\n")
+        passed, reasons = self.tool.gate_contract(_contract_text(prose=prose))
+        self.assertFalse(passed)
+        self.assertEqual(reasons, ["the Palette names no colour for geometry jaw"])
+
+    def test_the_palette_has_no_limit_on_colours(self):
+        block = copy.deepcopy(_BLOCK)
+        block["geometries"] += [
+            {"id": "fin-%d" % index, "name": "Fin", "count": 1,
+             "extents_mm": [20, 20, 5], "wall_min_mm": 2.0}
+            for index in range(6)
+        ]
+        prose = _PROSE + "".join("- fin-%d: colour %d\n" % (index, index) for index in range(6))
+        passed, reasons = self.tool.gate_contract(_contract_text(prose=prose, block=block))
+        self.assertTrue(passed, reasons)
 
     def test_main_writes_json_pass_and_reasons(self):
         with tempfile.TemporaryDirectory() as directory:
