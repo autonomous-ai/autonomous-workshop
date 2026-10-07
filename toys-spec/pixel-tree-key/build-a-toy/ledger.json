@@ -62,7 +62,7 @@
     "wish_id": "wish-20261007-050112-49084163",
     "source_commit": "22e31e8b (local merge of autonomous-toys with origin/main 38dbbecf)",
     "awaiting": null,
-    "updated": "2026-10-07T07:40:00Z"
+    "updated": "2026-10-07T07:50:00Z"
   },
   "stops": [
     {
@@ -209,8 +209,8 @@
       "resume": "resumed",
       "design_check": {
         "name": "shared-face rows agree with each Component's extents and Interface Z range",
-        "issue": null,
-        "status": "proposed"
+        "issue": 116,
+        "status": "open"
       }
     },
     {
@@ -230,8 +230,8 @@
       "resume": "resumed",
       "design_check": {
         "name": "assembly rows state only what renders show",
-        "issue": null,
-        "status": "proposed"
+        "issue": 117,
+        "status": "open"
       }
     }
   ],
@@ -250,7 +250,7 @@
       "title": "Finalizer refuses the empty VAULT.json the Codex sandbox leaves when no vault is bound",
       "opened_by_loop": true,
       "attempt": 2,
-      "status": "abandoned",
+      "status": "implementing",
       "merge_commit": null
     }
   ],
