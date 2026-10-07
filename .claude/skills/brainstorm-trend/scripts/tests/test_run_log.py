@@ -26,6 +26,7 @@ GIVEN = {"trend": {"name": "Ice shelves"}, "chosen_by": "given", "shortlist": No
 def _candidate(name: str = "Comet Lumen", **changes) -> dict:
     candidate = {
         "name": name,
+        "keyword": name.lower(),
         "summary": "A naked-eye comet.",
         "sources": [
             {"url": "https://www.nasa.gov/comet", "title": "Comet", "published": "2026-09-30"},
@@ -36,6 +37,11 @@ def _candidate(name: str = "Comet Lumen", **changes) -> dict:
     return candidate
 
 
+def _shortlist(*names: str) -> list[dict]:
+    names = names or ("Comet Lumen", "Fold", "Bears", "Rockets", "Robots")
+    return [_candidate(name) for name in names]
+
+
 class RunLogHeaderTests(unittest.TestCase):
     def test_start_writes_header_with_empty_steps(self) -> None:
         with _tmp_dir() as tmp:
@@ -44,7 +50,7 @@ class RunLogHeaderTests(unittest.TestCase):
                 path,
                 trend={"name": "Comet Lumen"},
                 chosen_by="human",
-                shortlist=[_candidate(), _candidate("Ice shelves")],
+                shortlist=_shortlist(),
                 seed=42,
                 image_model="openrouter/some-model",
                 today=TODAY,
@@ -52,7 +58,8 @@ class RunLogHeaderTests(unittest.TestCase):
             on_disk = json.loads(path.read_text())
             self.assertEqual(on_disk["trend"], {"name": "Comet Lumen"})
             self.assertEqual(on_disk["chosen_by"], "human")
-            self.assertEqual(len(on_disk["shortlist"]), 2)
+            self.assertEqual(len(on_disk["shortlist"]), 5)
+            self.assertEqual(on_disk["shortlist"][0]["keyword"], "comet lumen")
             self.assertEqual(on_disk["seed"], 42)
             self.assertEqual(on_disk["image_model"], "openrouter/some-model")
             self.assertEqual(on_disk["steps"], [])
@@ -284,13 +291,20 @@ class RunLogTrendHeaderTests(unittest.TestCase):
     def test_a_picked_trend_must_be_on_the_shortlist(self) -> None:
         with _tmp_dir() as tmp:
             with self.assertRaisesRegex(ValueError, "not on the shortlist"):
-                self._start(tmp, chosen_by="human", shortlist=[_candidate()])
+                self._start(tmp, chosen_by="human", shortlist=_shortlist())
+
+    def test_a_picked_trend_needs_a_shortlist_of_exactly_five(self) -> None:
+        for size in (4, 6):
+            shortlist = _shortlist("Ice shelves", "B", "C", "D", "E", "F")[:size]
+            with _tmp_dir() as tmp, self.subTest(size=size):
+                with self.assertRaisesRegex(ValueError, "exactly 5"):
+                    self._start(tmp, chosen_by="human", shortlist=shortlist)
 
     def test_every_shortlisted_trend_needs_evidence(self) -> None:
         with _tmp_dir() as tmp:
             stale = _candidate("Ice shelves", sources=_candidate()["sources"][:1])
             with self.assertRaisesRegex(ValueError, "'Ice shelves' lacks evidence"):
-                self._start(tmp, chosen_by="human", shortlist=[stale])
+                self._start(tmp, chosen_by="human", shortlist=[stale, *_shortlist()[1:]])
             self.assertFalse((tmp / "run.json").exists())
 
     def test_chosen_by_is_given_or_human(self) -> None:
@@ -332,8 +346,47 @@ class TrendEvidenceTests(unittest.TestCase):
 
     def test_a_candidate_without_sources_or_name_is_refused(self) -> None:
         self.assertEqual(
-            RL.trend_evidence_reasons({"name": ""}, today=TODAY), ["no name", "no sources list"]
+            RL.trend_evidence_reasons({"name": "", "keyword": "x"}, today=TODAY),
+            ["no name", "no sources list"],
         )
+
+    def test_a_candidate_without_a_keyword_is_refused(self) -> None:
+        for keyword in (None, "", "  "):
+            with self.subTest(keyword=keyword):
+                self.assertEqual(
+                    RL.trend_evidence_reasons(_candidate(keyword=keyword), today=TODAY),
+                    ["no Google Trends keyword"],
+                )
+
+
+class RankTrendsTests(unittest.TestCase):
+    def test_ranks_by_interest_highest_first(self) -> None:
+        asked = []
+
+        def fetch(keywords):
+            asked.append(list(keywords))
+            return {"comet lumen": 1.5, "fold": 14.5, "bears": 0.0, "rockets": 10.1, "robots": 1.7}
+
+        rows, warning = RL.rank_trends(_shortlist(), fetch=fetch)
+        self.assertIsNone(warning)
+        self.assertEqual(asked, [["comet lumen", "fold", "bears", "rockets", "robots"]])
+        self.assertEqual([row["name"] for row in rows], ["Fold", "Rockets", "Robots", "Comet Lumen", "Bears"])
+        self.assertEqual(rows[0], {**_candidate("Fold"), "interest": 14.5})
+
+    def test_a_failed_fetch_keeps_the_order_and_warns(self) -> None:
+        def fetch(keywords):
+            raise RuntimeError("429 Too Many Requests")
+
+        rows, warning = RL.rank_trends(_shortlist(), fetch=fetch)
+        self.assertIn("429", warning)
+        self.assertEqual([row["name"] for row in rows], [c["name"] for c in _shortlist()])
+        self.assertTrue(all(row["interest"] is None for row in rows))
+
+    def test_a_keyword_missing_from_the_answer_has_no_interest(self) -> None:
+        rows, warning = RL.rank_trends(_shortlist(), fetch=lambda keywords: {"fold": 3.0})
+        self.assertIsNone(warning)
+        self.assertEqual(rows[0]["name"], "Fold")
+        self.assertEqual([row["interest"] for row in rows[1:]], [None] * 4)
 
 
 class RunLogCliTests(unittest.TestCase):
@@ -353,6 +406,14 @@ class RunLogCliTests(unittest.TestCase):
             reasons = {row["name"]: row["reasons"] for row in json.loads(result.stdout)}
             self.assertEqual(reasons["Comet Lumen"], [])
             self.assertTrue(reasons["Old"])
+
+    def test_check_trends_refuses_a_shortlist_that_is_not_five(self) -> None:
+        with _tmp_dir() as tmp:
+            shortlist = tmp / "shortlist.json"
+            shortlist.write_text(json.dumps(_shortlist()[:4]))
+            result = self._run("check-trends", str(shortlist), "--today", "2026-10-06")
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("exactly 5", result.stderr)
 
     def test_start_and_append_write_the_run(self) -> None:
         with _tmp_dir() as tmp:

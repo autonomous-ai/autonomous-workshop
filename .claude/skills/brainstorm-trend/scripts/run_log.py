@@ -2,17 +2,20 @@
 
 One run lives at ``brainstorm-trend/<trend>-<date>/run.json`` (gitignored).
 ``RunLog.start`` writes the header once, after the Trend is chosen, with the
-Trend and the shortlist it came from; each of its methods below appends one
+Trend and the shortlist of five it came from; each of its methods below appends one
 step matching a `type` in ``../schemas/run.schema.json`` -- the two must stay
 in sync. ``trend_evidence_reasons`` is the deterministic half of the Trend
 eligibility rule: at least two sources on different sites, each dated within
-the last 30 days. Whether a Trend is otherwise eligible is the orchestrator's
-judgement. Deterministic tooling only: this module makes no model or agent
-calls, per repo AGENTS.md.
+the last 30 days, and a Google Trends keyword. Whether a Trend is otherwise
+eligible is the orchestrator's judgement. ``rank_trends`` orders a shortlist
+by its keywords' Google Trends interest; it only informs the human's pick,
+so a failed lookup warns and leaves the order alone. Deterministic tooling
+only: this module makes no model or agent calls, per repo AGENTS.md.
 
 The CLI lets the orchestrating agent use all of this without writing Python:
 
     run_log.py check-trends SHORTLIST.json [--today YYYY-MM-DD]
+    run_log.py rank-trends SHORTLIST.json      (needs pytrends; see SKILL.md)
     run_log.py start RUN.json HEADER.json
     run_log.py append RUN.json STEP_TYPE FIELDS.json
 """
@@ -25,7 +28,7 @@ import re
 import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any, Callable, Iterable, Mapping, Sequence
 from urllib.parse import urlparse
 
 _REQUIRED_TOP_LEVEL = (
@@ -33,12 +36,15 @@ _REQUIRED_TOP_LEVEL = (
 )
 CHOSEN_BY = ("given", "human")
 CONTESTANTS = 6
+SHORTLIST_SIZE = 5
 MIN_TREND_SOURCES = 2
 MAX_TREND_SOURCE_AGE_DAYS = 30
 
 # Field names that must never carry a credential, and value shapes common to
 # the API keys this run touches (OpenRouter, generic `sk-`/bearer secrets).
 _FORBIDDEN_FIELD_NAMES = re.compile(r"(key|token|secret|password|authorization)", re.IGNORECASE)
+# A shortlisted Trend's Google Trends search term, not a credential.
+_ALLOWED_FIELD_NAMES = frozenset({"keyword"})
 _KEY_SHAPED_VALUE = re.compile(r"\b(sk-[A-Za-z0-9_-]{10,}|Bearer\s+\S+)\b")
 
 
@@ -78,6 +84,10 @@ class RunLog:
             shortlist = [dict(candidate) for candidate in shortlist or ()]
             if not shortlist:
                 raise ValueError("a picked Trend needs the shortlist it was picked from")
+            if len(shortlist) != SHORTLIST_SIZE:
+                raise ValueError(
+                    f"a shortlist holds exactly {SHORTLIST_SIZE} Trends, got {len(shortlist)}"
+                )
             if trend["name"] not in [candidate.get("name") for candidate in shortlist]:
                 raise ValueError("the picked Trend is not on the shortlist")
             for candidate in shortlist:
@@ -207,6 +217,8 @@ def trend_evidence_reasons(
     reasons: list[str] = []
     if not str(candidate.get("name") or "").strip():
         reasons.append("no name")
+    if not str(candidate.get("keyword") or "").strip():
+        reasons.append("no Google Trends keyword")
     sources = candidate.get("sources")
     if not isinstance(sources, list):
         return reasons + ["no sources list"]
@@ -229,6 +241,46 @@ def trend_evidence_reasons(
             f"{today.isoformat()}; needs {MIN_TREND_SOURCES}"
         )
     return reasons
+
+
+Fetch = Callable[[Sequence[str]], Mapping[str, float]]
+
+
+def rank_trends(
+    shortlist: Sequence[Mapping[str, Any]], *, fetch: Fetch | None = None
+) -> tuple[list[dict[str, Any]], str | None]:
+    """Each candidate with its ``interest``, highest first, and a warning.
+
+    ``fetch`` maps the keywords, asked in one request so the numbers share
+    one scale, to their mean interest. When it fails, every ``interest`` is
+    None, the shortlist keeps its order, and the warning says why: the
+    ranking only informs the human's pick, so nothing waits on it.
+    """
+    rows = [dict(candidate) for candidate in shortlist]
+    keywords = [str(row.get("keyword") or "") for row in rows]
+    try:
+        interest = dict((fetch or _google_trends_interest)(keywords))
+    except Exception as exc:  # pytrends raises anything from 429s to parse errors
+        for row in rows:
+            row["interest"] = None
+        return rows, f"Google Trends lookup failed, shortlist left unranked: {exc}"
+    for row, keyword in zip(rows, keywords):
+        value = interest.get(keyword)
+        row["interest"] = None if value is None else round(float(value), 1)
+    rows.sort(key=lambda row: -1.0 if row["interest"] is None else row["interest"], reverse=True)
+    return rows, None
+
+
+def _google_trends_interest(keywords: Sequence[str]) -> Mapping[str, float]:
+    """Worldwide mean interest over the last month, one request for all."""
+    from pytrends.request import TrendReq  # optional: only rank-trends needs it
+
+    trends = TrendReq(hl="en-US", tz=0, timeout=(10, 30), retries=2, backoff_factor=1)
+    trends.build_payload(list(keywords), timeframe="today 1-m", geo="")
+    frame = trends.interest_over_time()
+    if frame.empty:
+        return {}
+    return {keyword: float(frame[keyword].mean()) for keyword in keywords if keyword in frame}
 
 
 def load(path: Path) -> dict[str, Any]:
@@ -259,7 +311,7 @@ def _refuse_credentials(value: Any) -> None:
             raise ValueError("refusing to log a value shaped like a credential")
     elif isinstance(value, Mapping):
         for key, item in value.items():
-            if _FORBIDDEN_FIELD_NAMES.search(str(key)):
+            if str(key) not in _ALLOWED_FIELD_NAMES and _FORBIDDEN_FIELD_NAMES.search(str(key)):
                 raise ValueError(f"refusing to log field named like a credential: {key!r}")
             _refuse_credentials(item)
     elif isinstance(value, (list, tuple)):
@@ -313,6 +365,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     check = commands.add_parser("check-trends", help="Check a shortlist's evidence.")
     check.add_argument("shortlist", help="JSON list of {name, summary, sources}")
     check.add_argument("--today", help="YYYY-MM-DD; defaults to today in UTC")
+    rank = commands.add_parser("rank-trends", help="Rank a shortlist by Google Trends interest.")
+    rank.add_argument("shortlist", help="JSON list of {name, keyword, summary, sources}")
     start = commands.add_parser("start", help="Write a run's header.")
     start.add_argument("run")
     start.add_argument("header", help="JSON object of RunLog.start's keyword arguments")
@@ -330,7 +384,19 @@ def main(argv: Sequence[str] | None = None) -> int:
                 for candidate in _load_json_file(args.shortlist)
             ]
             print(json.dumps(results, indent=2))
-            return 0 if all(not result["reasons"] for result in results) else 1
+            sized = len(results) == SHORTLIST_SIZE
+            if not sized:
+                print(
+                    f"run-log: a shortlist holds exactly {SHORTLIST_SIZE} Trends, got {len(results)}",
+                    file=sys.stderr,
+                )
+            return 0 if sized and all(not result["reasons"] for result in results) else 1
+        if args.command == "rank-trends":
+            rows, warning = rank_trends(_load_json_file(args.shortlist))
+            if warning:
+                print(f"run-log: {warning}", file=sys.stderr)
+            print(json.dumps(rows, indent=2))
+            return 0
         if args.command == "start":
             RunLog.start(Path(args.run), **_load_json_file(args.header))
             return 0

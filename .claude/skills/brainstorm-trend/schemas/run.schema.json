@@ -12,7 +12,8 @@
     "shortlist": {
       "description": "The researched Trends the person picked from; null when they named the Trend themselves.",
       "type": ["array", "null"],
-      "minItems": 1,
+      "minItems": 5,
+      "maxItems": 5,
       "items": {"$ref": "#/$defs/trend"}
     },
     "seed": {"type": "integer"},
@@ -29,6 +30,8 @@
       "required": ["name"],
       "properties": {
         "name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "keyword": {"type": "string", "minLength": 1, "maxLength": 100},
+        "interest": {"type": ["number", "null"]},
         "summary": {"type": "string", "maxLength": 1000},
         "sources": {
           "type": "array",

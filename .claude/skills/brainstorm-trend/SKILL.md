@@ -30,7 +30,7 @@ The scripts live in `.claude/skills/brainstorm-trend/scripts/`:
 
 | Script | Does |
 | --- | --- |
-| `run_log.py` | `check-trends`, `start`, `append`: the run's `run.json` |
+| `run_log.py` | `check-trends`, `rank-trends`, `start`, `append`: the run's `run.json` |
 | `draw_personalities.py` | the seeded draw and its replacements |
 | `generate_image.py` | one image via OpenRouter, reading `.env` |
 | `gate_contract.py` | format limits, the three prose sections, a coupled Interface |
@@ -44,21 +44,31 @@ pass it to a subagent.
 ## Step 1 - Choose the Trend
 
 If the human named a Trend, it is `given`: take it as stated and go to the
-next paragraph. Otherwise research one shortlist of five Trends with
-`WebSearch`, each a `{name, summary, sources}` with every source's `url` and
-`published` date (YYYY-MM-DD). A Trend is eligible when:
+next paragraph. Otherwise research one shortlist of exactly five Trends with
+`WebSearch`, each a `{name, keyword, summary, sources}` with every source's
+`url` and `published` date (YYYY-MM-DD). The `keyword` is the narrow search
+term Google Trends measures the Trend by: the event's own name ("iPhone Duo"),
+never a broad word that also means other things ("Zelda"). A Trend is
+eligible when:
 
 - at least two sources on different sites are dated within the last 30 days;
 - it carries something to be inspired by beyond its brand: a shape, a
   creature, a motion, an event, a feeling;
 - it is mainstream: covered widely, beyond one niche community;
-- it speaks to the toys' buyers, the tech and office workers who visit
-  autonomous.ai, and suits a toy on their desk: no politics, tragedy, or
-  real living person.
+- it speaks to the Buyer and suits a toy on their desk: no politics,
+  tragedy, or real living person.
 
 Write the shortlist to the scratchpad and run `run_log.py check-trends` on
-it; replace every candidate that fails until all five pass. Show the human
-the five as one line each, name and why it is trending, and wait for their
+it; replace every candidate that fails until all five pass. Then rank it:
+
+    uv run --with pytrends --with "urllib3<2" python \
+      .claude/skills/brainstorm-trend/scripts/run_log.py rank-trends SHORTLIST.json
+
+It prints the shortlist highest Google Trends interest first, each with its
+`interest` (mean over the last month, 0 to 100, on one shared scale); save
+that output as the shortlist. When Google blocks the lookup it warns and
+leaves every `interest` null; go on without it. Show the human the five as
+one line each, name, interest and why it is trending, and wait for their
 pick. That pick is `human`.
 
 Done when: the Trend is chosen.
