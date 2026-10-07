@@ -1,0 +1,5 @@
+Edit this product photo. Keep the same part, front view, colour, material, lighting, background and style. Correct only the proportions:
+- The sun must be an exact HALF circle: exactly twice as wide as it is tall. Remove the extra straight band at the bottom of the sun; its flat bottom edge comes straight off the round arc.
+- The stem and toothed rack below the sun are SHORTER: from the sun's flat edge to the bottom of the part is only 1.2 times the sun's height.
+- So the whole part is just a little taller than it is wide (36 wide, 39 tall).
+One object, centred, fully inside the frame with margin on every side, no text.

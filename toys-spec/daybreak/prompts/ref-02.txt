@@ -1,0 +1,9 @@
+Product photo of one 3D-printed part on its own: the base of a desk toy, in matte slate-blue PLA. Seen from the front-right: the camera stands about 30 degrees to the right of straight-on front and looks down about 30 degrees, so the front face, the right side face and the top are all visible. Telephoto lens, almost no perspective.
+
+The part is an open-topped rectangular box 66 wide, 54 deep and 44 tall (one and a half times as wide as tall, a little wider than deep), walls 3 thick, small 1 mm chamfers on every top edge, all outer faces plain and flat.
+- Along the front, just behind the front wall, a narrow top strip with one long slot through it, 38 wide and 6 deep, centred left to right.
+- Behind that slot, a thin inner wall across the box, cut by one narrow vertical slot 10 wide in its middle running from the top all the way down.
+- Behind the inner wall, the rest of the box is one big open rectangular bay, open at the top, with a plain floor.
+- In the back wall and in the inner wall, two small round holes for hinge pins, about 4 across, about 10 below the top, one left of centre and one right of centre (about a quarter of the width in from each side).
+
+Style: product photo of a clean, chunky 3D-printed toy part in matte PLA with faint layer lines, soft even studio light, gentle contact shadow, plain flat #f5f0e6 background. Exactly one object, fully inside the frame with generous margin on every side. No text, no logos, no screens, no buttons, no electronics, not a phone or tablet.
