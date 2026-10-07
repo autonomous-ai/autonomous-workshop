@@ -80,12 +80,12 @@
         {
           "if": {"properties": {"type": {"const": "contract_generated"}}},
           "then": {
-            "required": ["type", "at", "agent_id", "personality", "contract_path", "hero_path"],
+            "required": ["type", "at", "agent_id", "personality", "contract_path", "preview_path"],
             "properties": {
               "agent_id": {"type": "string", "minLength": 1},
               "personality": {"type": "string", "minLength": 1},
               "contract_path": {"type": "string", "minLength": 1},
-              "hero_path": {"type": "string", "minLength": 1}
+              "preview_path": {"type": "string", "minLength": 1}
             }
           }
         },

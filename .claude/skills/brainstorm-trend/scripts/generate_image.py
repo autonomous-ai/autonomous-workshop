@@ -1,12 +1,12 @@
-"""Generate one concept-art image via OpenRouter for brainstorm-trend.
+"""Generate one Preview Image via OpenRouter for brainstorm-trend.
 
 Each of the six personality subagents in the brainstorm-trend skill calls
-this once, blind to the others, to render its Design Contract's ``signature``
-component. The call is deterministic tooling, not a model judgement: it
-builds one image-generation request, decodes and bounds the one image the
-response carries, and writes it to disk. Everything about *whether* the image
-is any good — subject, composition, Trend — is the personality's prompt, not
-this script's job to judge; this script only enforces what
+this once, blind to the others, to draw its draft toy for the judges. The
+call is deterministic tooling, not a model judgement: it builds one
+image-generation request, decodes and bounds the one image the response
+carries, and writes it to disk. Everything about *whether* the image is any
+good — subject, composition, Trend, Palette — is the personality's prompt,
+not this script's job to judge; this script only enforces what
 ``design-a-toy`` Stage 3 requires of any reference image: 800x800 or
 smaller, PNG/JPEG/WebP, a single readable frame.
 

@@ -68,7 +68,7 @@ CONFIG = OpenRouterConfig(api_key="sk-or-secret-value", model="fake/image-model"
 def test_generate_image_writes_bounded_png(tmp_path):
     image_bytes = _png_bytes(64, 32)
     transport = _fake_transport(_chat_completions_response(image_bytes))
-    output_path = tmp_path / "ref-01-hero.png"
+    output_path = tmp_path / "preview.png"
 
     result = generate_image(
         "a lone wizard, fully inside the frame",
@@ -97,11 +97,11 @@ def test_generate_image_writes_bounded_png(tmp_path):
 def test_generate_image_renames_output_to_match_media_type(tmp_path):
     image_bytes = _png_bytes(10, 10)
     transport = _fake_transport(_chat_completions_response(image_bytes))
-    output_path = tmp_path / "ref-01-hero.jpg"
+    output_path = tmp_path / "preview.jpg"
 
     result = generate_image("subject", output_path, config=CONFIG, transport=transport)
 
-    assert result.path == tmp_path / "ref-01-hero.png"
+    assert result.path == tmp_path / "preview.png"
     assert result.path.exists()
     assert not output_path.exists()
 
@@ -267,14 +267,14 @@ def test_main_writes_the_image_and_prints_its_facts_without_the_key(tmp_path, mo
     prompt.write_text("one toy whale, fully inside the frame")
     transport = _fake_transport(_chat_completions_response(_png_bytes(40, 40)))
 
-    code = main(["--prompt-file", str(prompt), "--out", str(tmp_path / "hero.jpg"), "--env", str(env)], transport=transport)
+    code = main(["--prompt-file", str(prompt), "--out", str(tmp_path / "preview.jpg"), "--env", str(env)], transport=transport)
 
     captured = capsys.readouterr()
     assert code == 0
     facts = json.loads(captured.out)
-    assert facts["path"] == str(tmp_path / "hero.png")
+    assert facts["path"] == str(tmp_path / "preview.png")
     assert facts["model"] == "fake/image-model"
-    assert (tmp_path / "hero.png").is_file()
+    assert (tmp_path / "preview.png").is_file()
     assert "sk-or-secret-value" not in captured.out + captured.err
 
 
@@ -283,7 +283,7 @@ def test_main_exits_2_when_the_key_is_missing(tmp_path, monkeypatch, capsys):
     prompt = tmp_path / "prompt.txt"
     prompt.write_text("one toy")
 
-    code = main(["--prompt-file", str(prompt), "--out", str(tmp_path / "hero.png"), "--env", str(tmp_path / "none")])
+    code = main(["--prompt-file", str(prompt), "--out", str(tmp_path / "preview.png"), "--env", str(tmp_path / "none")])
 
     assert code == 2
     assert OPENROUTER_API_KEY_NAME in capsys.readouterr().err

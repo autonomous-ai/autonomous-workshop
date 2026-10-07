@@ -94,11 +94,11 @@ Launch six subagents in one message, one per slot, each with this brief:
   sections the gate looks for: `## Trend Hook`, the one countable or
   pointable feature that makes the toy read as this Trend's, and
   `## Signature Motion`, what moves, what drives it, and what the player does.
-- Generate one hero image: the assembled toy in its Display Pose, one
+- Generate one Preview Image: the assembled toy in its Display Pose, one
   subject fully inside the frame, by writing a prompt to `<slot>/prompt.txt`
   and running `generate_image.py --prompt-file <slot>/prompt.txt --out
-  <slot>/hero.png`. Report the path it prints.
-- Return the contract path, the hero path, and one sentence on the toy.
+  <slot>/preview.png`. Report the path it prints.
+- Return the contract path, the Preview Image path, and one sentence on the toy.
 
 Log `contract_generated` for each as it returns.
 
@@ -107,9 +107,9 @@ Log `contract_generated` for each as it returns.
 For each draft, run `gate_contract.py <slot>/CONTRACT.md`, then read the
 contract and judge three things the script cannot:
 
-- the Trend Hook is genuinely countable or pointable in the hero image;
+- the Trend Hook is genuinely countable or pointable in the Preview Image;
 - the Signature Motion is the toy's play, not decoration;
-- the contract and hero carry none of the Trend owners' names, characters,
+- the contract and Preview Image carry none of the Trend owners' names, characters,
   logos or trade dress.
 
 A draft that fails any check is rejected. Log `gate_rejected` with every
@@ -159,8 +159,8 @@ reports an unresolved tie, choose between the tied drafts yourself and log
 
 Continue the winning draft through `design-a-toy` Stage 3 to Stage 5, in its
 directory, with the winning personality still deciding trade-offs and
-`inventor: trend-lab`. The hero image may become the assembly reference if
-it passes Stage 3b. Stage 4 is the human's one approval gate: wait for it,
+`inventor: trend-lab`. The Preview Image may become the assembly reference
+only if it passes Stage 3b. Stage 4 is the human's one approval gate: wait for it,
 then log `human_approval`. Stage 5 hands the `CONTRACT.md` to `build-a-toy`.
 
 Done when: the human approved the images, `run.json` holds every step from

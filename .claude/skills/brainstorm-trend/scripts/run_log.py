@@ -119,7 +119,7 @@ class RunLog:
         agent_id: str,
         personality: str,
         contract_path: str,
-        hero_path: str,
+        preview_path: str,
         **extra: Any,
     ) -> None:
         self._append(
@@ -127,7 +127,7 @@ class RunLog:
             agent_id=agent_id,
             personality=personality,
             contract_path=contract_path,
-            hero_path=hero_path,
+            preview_path=preview_path,
             **extra,
         )
 
@@ -269,7 +269,7 @@ def _refuse_credentials(value: Any) -> None:
 
 _STEP_REQUIRED_FIELDS: dict[str, tuple[str, ...]] = {
     "personalities_drawn": ("personalities", "seed"),
-    "contract_generated": ("agent_id", "personality", "contract_path", "hero_path"),
+    "contract_generated": ("agent_id", "personality", "contract_path", "preview_path"),
     "gate_rejected": ("agent_id", "personality", "reasons", "replacement_personality"),
     "judgment": ("pair", "ordering", "winner", "reason"),
     "standings": ("standings",),

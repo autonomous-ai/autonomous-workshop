@@ -97,7 +97,7 @@ class RunLogStepTests(unittest.TestCase):
                 agent_id="agent-1",
                 personality="the-tinkerer",
                 contract_path="brainstorm-trend/comet-lumen-2026-10-06/agent-1/CONTRACT.md",
-                hero_path="brainstorm-trend/comet-lumen-2026-10-06/agent-1/hero.png",
+                preview_path="brainstorm-trend/comet-lumen-2026-10-06/agent-1/preview.png",
             )
             steps = _read_steps(log.path)
             self.assertEqual(steps[0]["type"], "contract_generated")
@@ -212,7 +212,7 @@ class RunLogKeyRedactionTests(unittest.TestCase):
                     agent_id="agent-1",
                     personality="p",
                     contract_path="c",
-                    hero_path="h",
+                    preview_path="h",
                     api_key="sk-or-v1-abcdef",  # type: ignore[call-arg]
                 )
 
