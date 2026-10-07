@@ -1,0 +1,71 @@
+<title>Pixel Tree Key</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen&family=Be+Vietnam+Pro:wght@400;600&display=swap">
+<style>
+/* Layout: one column of review cards; assembly first and widest, parts in a wrapping grid */
+:root{
+  --bg:#f5f0e6; --surface:#fffdf8; --fg:#2a2e22; --muted:#6a6e5c; --line:#ddd6c6;
+  --pine:#68724d; --berry:#bb3d43; --gold:#c98a1c;
+  --display:"Silkscreen","Courier New",monospace;
+  --body:"Be Vietnam Pro",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1b1d17; --surface:#24271f; --fg:#ece8dc; --muted:#a7a993; --line:#3a3d31;
+  --pine:#9aa77a; --berry:#e07a7f; --gold:#ffb549; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1b1d17; --surface:#24271f; --fg:#ece8dc; --muted:#a7a993; --line:#3a3d31;
+  --pine:#9aa77a; --berry:#e07a7f; --gold:#ffb549; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 var(--body)}
+.wrap{max-width:980px;margin:0 auto;padding:28px 16px 48px;display:grid;gap:22px}
+h1{font:400 clamp(26px,5vw,40px)/1.1 var(--display);margin:0;color:var(--pine);text-wrap:balance}
+h1 span{color:var(--gold)}
+.lede{margin:6px 0 0;color:var(--muted);max-width:62ch}
+.specs{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.specs span{border:1px solid var(--line);border-radius:4px;padding:3px 9px;font-size:13px;font-variant-numeric:tabular-nums}
+h2{font:400 15px/1.2 var(--display);letter-spacing:.06em;margin:8px 0 0;color:var(--muted)}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+figure{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+figure img{display:block;width:100%;aspect-ratio:1;object-fit:contain;background:#f5f0e6}
+figcaption{padding:10px 12px 12px;font-size:14px}
+figcaption b{font-family:var(--display);font-weight:400;font-size:13px;color:var(--pine)}
+figcaption small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+.hero{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+ul{margin:0;padding-left:20px;display:grid;gap:6px;max-width:70ch}
+li::marker{color:var(--berry)}
+.ask{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:6px;padding:12px 14px}
+</style>
+<div class="wrap">
+  <header>
+    <h1>Pixel Tree Key <span>★</span></h1>
+    <p class="lede">Bộ ảnh tham chiếu để duyệt. Bản in sẽ được đo và so với đúng các ảnh này; duyệt ảnh là duyệt thiết kế.</p>
+    <div class="specs"><span>82 × 41 × 3.5 mm</span><span>≈ 4 g</span><span>chip NFC 21.5 × 11.5 kín bên trong</span><span>in nhiều màu một lần</span></div>
+  </header>
+
+  <h2>TỔNG THỂ</h2>
+  <div class="hero">
+    <figure><img src="ref-01-pixel-tree-key.png" alt="Pixel Tree Key nhìn thẳng từ trên">
+      <figcaption><b>ref-01 cả chiếc chìa</b><small>Nhìn thẳng từ trên xuống, ngôi sao ở trên (-90, 90). Ảnh dùng để so bản in.</small></figcaption></figure>
+    <figure><img src="view-desk.png" alt="Pixel Tree Key nằm trên bàn, nhìn chéo">
+      <figcaption><b>minh hoạ trên bàn</b><small>Chỉ để hình dung; không dùng để so.</small></figcaption></figure>
+  </div>
+
+  <h2>TỪNG PHẦN</h2>
+  <div class="grid">
+    <figure><img src="ref-02-key-body.png" alt="Thân chìa màu xanh với 12 hốc vuông">
+      <figcaption><b>ref-02 thân chìa</b><small>1 chiếc; xanh. 12 hốc vuông chờ quả châu. Nhìn từ trên (-90, 90).</small></figcaption></figure>
+    <figure><img src="ref-03-star.png" alt="Ngôi sao pixel màu vàng">
+      <figcaption><b>ref-03 ngôi sao</b><small>1 chiếc; vàng, dày bằng thân. Nhìn từ trên (-90, 90).</small></figcaption></figure>
+    <figure><img src="ref-04-bauble.png" alt="Một ô vuông quả châu màu đỏ">
+      <figcaption><b>ref-04 quả châu</b><small>12 chiếc: 6 đỏ, 6 vàng, phẳng mặt với thân. Nhìn từ trên (-90, 90).</small></figcaption></figure>
+  </div>
+
+  <h2>KHÁC SO VỚI ẢNH X01</h2>
+  <ul>
+    <li>Màu xanh là nhựa mờ có sẵn, ngả xanh rêu hơn xanh thông của x01.</li>
+    <li>Quả châu và ngôi sao phẳng mặt với thân (không nổi), nên cả chiếc là một tấm dày 3.5 mm.</li>
+    <li>Quả châu đỏ trên cùng dịch xuống một chút để không chạm quả vàng bên cạnh (cần chỗ cho nhựa in).</li>
+    <li>Cổ nối ngôi sao rộng 2.5 mm cho chắc; đây là chỗ dễ gãy nhất nếu làm rơi.</li>
+    <li>Chip nằm kín trong phần dưới của cây, không nhìn thấy; máy in tạm dừng một lần để thả chip vào.</li>
+  </ul>
+
+  <div class="ask">Nếu ổn, trả lời <b>duyệt</b>. Nếu muốn đổi hình, số quả châu, màu hay tỉ lệ, nói điều cần đổi.</div>
+</div>
