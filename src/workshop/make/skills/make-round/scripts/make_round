@@ -258,39 +258,37 @@ def file_hash(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def geometry_sources_tool() -> dict:
+    """cad/scripts/geometry_sources.py: the one definition of a CAD Project's
+    Geometry Sources (issue #110), shared with the motion evidence and the
+    final verifier."""
+    global _GEOMETRY_SOURCES
+    if _GEOMETRY_SOURCES is None:
+        _GEOMETRY_SOURCES = runpy.run_path(
+            str(Path(__file__).resolve().parents[2] / "cad/scripts/geometry_sources.py"))
+    return _GEOMETRY_SOURCES
+
+
+_GEOMETRY_SOURCES = None
+# Directories whose documents and STEP files bind no packet: evidence,
+# audits, notes and renders never make a shape check stale (issue #110).
+NOT_BOUND = frozenset({"rounds", "__cadgen__", "__pycache__", ".git", ".venv", "measure", "notes"})
+
+
 def source_hashes(project):
-    """Bind helpers and design constraints as well as entry generators: the
-    assembly packet depends on every file of the project."""
-    return {
-        p.relative_to(project).as_posix(): file_hash(p)
-        for p in sorted(project.rglob("*"))
-        if p.is_file() and p.suffix in (".py", ".md", ".json", ".step", ".stp")
-        and not any(v in ("rounds", "__cadgen__", "__pycache__", ".git", ".venv")
-                    for v in p.relative_to(project).parts)
-        and (p.suffix in (".py", ".step", ".stp") or not any(
-            v in ("measure", "snap", "review") for v in p.relative_to(project).parts))
-    }
-
-
-def _module_files(project: Path, base: Path, dotted: str, level: int) -> list[Path]:
-    """The project files ``import`` of ``dotted`` at relative ``level`` from a
-    module in ``base`` executes: each package's ``__init__.py`` and the module
-    itself. A name outside the project (cadgen, the standard library) has none."""
-
-    root = project if level == 0 else base
-    for _ in range(max(0, level - 1)):
-        root = root.parent
-    files = []
-    parts = [part for part in dotted.split(".") if part]
-    for index, part in enumerate(parts):
-        root = root / part
-        if (root / "__init__.py").is_file():
-            files.append(root / "__init__.py")
-        elif index == len(parts) - 1 and root.with_suffix(".py").is_file():
-            files.append(root.with_suffix(".py"))
-        elif not root.is_dir():
-            break
-    return [path for path in files if project in path.resolve().parents]
+    """What the assembly packet binds: the project's Geometry Sources, the
+    STEP files the entries build or import, and the design documents its
+    reviewer reads. A measurement, audit, note or render never changes it."""
+    project = Path(project).resolve()
+    bound = dict(geometry_sources_tool()["geometry_sources"](project))
+    for p in sorted(project.rglob("*")):
+        parts = p.relative_to(project).parts
+        if not p.is_file() or any(v in NOT_BOUND for v in parts):
+            continue
+        if p.suffix in (".step", ".stp") or (p.suffix in (".md", ".json")
+                                              and not any(v in ("snap", "review") for v in parts)):
+            bound[p.relative_to(project).as_posix()] = file_hash(p)
+    return dict(sorted(bound.items()))
 
 
 def imported_helpers(project: Path, source: Path) -> dict[str, str]:
@@ -302,48 +300,16 @@ def imported_helpers(project: Path, source: Path) -> dict[str, str]:
     Component does not import or on another Component's files (ADR 0081).
     """
 
-    import ast
-
-    project = project.resolve()
-    found: dict[Path, None] = {}
-    pending = [source.resolve()]
-    seen = set()
-    while pending:
-        module = pending.pop()
-        if module in seen:
-            continue
-        seen.add(module)
-        try:
-            tree = ast.parse(module.read_text(encoding="utf-8"))
-        except (OSError, SyntaxError, UnicodeError, ValueError):
-            continue
-        for node in ast.walk(tree):
-            targets = []
-            if isinstance(node, ast.Import):
-                targets = [(alias.name, 0) for alias in node.names]
-            elif isinstance(node, ast.ImportFrom):
-                stem = node.module or ""
-                targets = [(stem, node.level)]
-                # ``from features import forms`` may name a submodule.
-                targets += [((stem + "." if stem else "") + alias.name, node.level)
-                            for alias in node.names if alias.name != "*"]
-            for dotted, level in targets:
-                for path in _module_files(project, module.parent, dotted, level):
-                    resolved = path.resolve()
-                    if resolved != source.resolve() and resolved not in found:
-                        found[resolved] = None
-                        pending.append(resolved)
-    return {path.relative_to(project).as_posix(): file_hash(path) for path in sorted(found)}
+    return geometry_sources_tool()["imported_helpers"](project, source)
 
 
 def component_sources(project: Path, role: str) -> dict[str, str]:
-    """What a component round binds: its own source and STEP and the Shared
-    Helpers it imports (ADR 0081)."""
+    """What a component round binds: its Geometry Sources (its own source and
+    the Shared Helpers it imports, ADR 0081, issue #110) and its STEP."""
 
     project = project.resolve()
-    source = project / ("part_%s.step.py" % role)
-    bound = imported_helpers(project, source) if source.is_file() else {}
-    for path in (source, project / ("part_%s.step" % role), project / ("part_%s.stp" % role)):
+    bound = dict(geometry_sources_tool()["component_geometry_sources"](project, role))
+    for path in (project / ("part_%s.step" % role), project / ("part_%s.stp" % role)):
         if path.is_file():
             bound[path.name] = file_hash(path)
     return dict(sorted(bound.items()))
@@ -3926,6 +3892,17 @@ def component_identity(project: Path, role: str, out: Path, cad: Path) -> str | 
     return parse_identity(done.stdout) or file_hash(step)
 
 
+def interface_sources(project: Path, roles) -> dict[str, str]:
+    """The Geometry Sources of an Interface's Components (issue #110): each
+    one's source and the Shared Helpers it imports. Its check goes stale when
+    one of these changes, never for a measurement, audit, note or render."""
+
+    bound: dict[str, str] = {}
+    for role in roles:
+        bound.update(geometry_sources_tool()["component_geometry_sources"](project, role))
+    return dict(sorted(bound.items()))
+
+
 def locked_at(project: Path, role: str, digest: str | None) -> str:
     """Why one Component is not locked at its current identity, or ""."""
 
@@ -4071,6 +4048,9 @@ def interface_check(project: Path, interface_id: str, args, cad: Path) -> int:
         shutil.rmtree(out)
         print("make_round: interface %s: %s" % (interface_id, "; ".join(hooks)), file=sys.stderr)
         return 2
+    # What the check judges: read before the builds, so an edit while it runs
+    # leaves it stale rather than current (issue #110).
+    sources = interface_sources(project, roles)
     # Issue #101: the Components are built at the same time.
     with ThreadPoolExecutor(max_workers=max(1, min(round_jobs(), len(roles)))) as pool:
         identities = dict(zip(roles, pool.map(lambda role: component_identity(project, role, out, cad), roles)))
@@ -4106,7 +4086,8 @@ def interface_check(project: Path, interface_id: str, args, cad: Path) -> int:
     steps = {role: file_hash(project / ("part_%s.step" % role)) for role in roles
              if (project / ("part_%s.step" % role)).is_file()}
     state_path.write_text(json.dumps({"round": number, "last_out": str(out), "identities": identities,
-                                      "steps": steps, "ok": passed, "verdict": motion["verdict"]},
+                                      "steps": steps, "sources": sources, "ok": passed,
+                                      "verdict": motion["verdict"]},
                                      indent=1, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(summary, sort_keys=True) if args.json else render_interface_summary(summary))
     return 0 if passed else 1
@@ -4168,10 +4149,14 @@ def interface_report(project: Path, interfaces: list | None, digests: dict) -> l
                 check = "fail"
             elif any(digests.get(role) is None or digests.get(role) not in (
                     (state.get("identities") or {}).get(role), (state.get("steps") or {}).get(role))
-                     for role in reference_roles(item["components"])):
+                     for role in reference_roles(item["components"])) or (
+                    state.get("sources") is not None
+                    and state["sources"] != interface_sources(project, reference_roles(item["components"]))):
                 # Either recorded form names the same geometry: the B-rep
                 # identity gen reported, or the STEP a reader without a fresh
-                # build can only hash (ADR 0073).
+                # build can only hash (ADR 0073). A check that recorded its
+                # Geometry Sources is also stale once one of them changes,
+                # and only then (issue #110).
                 check = "stale"
             else:
                 check = "pass"

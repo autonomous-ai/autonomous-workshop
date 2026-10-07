@@ -1436,9 +1436,9 @@ def _run_preflight_audits(
 # A full sweep on a project that has not changed since its last terminal
 # (PASS or FAIL) verdict re-emits that verdict instead of recomputing it. The
 # closure below is the sweep's entire hash-relevant input: the built STEP
-# bytes for every entry, the tool source bytes a rebuild or inspection would
-# read, the exact CLI arguments, the signature review, and the README/spec
-# file map. An UNVERIFIED verdict is never reused -- see main()'s call site.
+# bytes for every entry, the project's Geometry Sources (issue #110), the tool
+# source bytes a rebuild or inspection would read, the exact CLI arguments,
+# the signature review, and the README/spec file map. An UNVERIFIED verdict is never reused -- see main()'s call site.
 
 _RESULT_LINE_RE = re.compile(
     r"^- Result: \*\*(PASS|FAIL|UNVERIFIED)\b.*\(exit (-?\d+)\)\s*$", re.MULTILINE
@@ -1463,6 +1463,7 @@ def _sweep_tool_paths(*, image_derived: bool) -> list[Path]:
         SCRIPTS_DIR / "inspect",
         SCRIPTS_DIR / "motion_policy.py",
         SCRIPTS_DIR / "motion_presentation.py",
+        SCRIPTS_DIR / "geometry_sources.py",
         POWER_SCRIPTS_DIR / "check_power",
         CADGEN_PACKAGE_DIR,
     ]
@@ -1516,6 +1517,9 @@ def _sweep_closure_sha256(
             for path in (project / "README.md", *sorted(project.glob("*_spec.md")))
             if path.is_file()
         }
+        # The project's Geometry Sources (issue #110): a measurement, audit,
+        # note or render beside them never forces a new sweep.
+        sources = runpy.run_path(str(SCRIPTS_DIR / "geometry_sources.py"))["geometry_sources"](project)
     except OSError:
         return None
     tool_hash = _tool_closure_sha256(tool_paths)
@@ -1523,6 +1527,7 @@ def _sweep_closure_sha256(
         return None
     payload = {
         "steps": step_bytes,
+        "sources": sources,
         "docs": doc_bytes,
         "tools": tool_hash,
         "argv": list(raw_argv),

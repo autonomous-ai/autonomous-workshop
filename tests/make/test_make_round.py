@@ -481,7 +481,7 @@ class MakeRoundTest(unittest.TestCase):
                 self.assertEqual(result["ok"], status == "pass")
 
     def test_stale_or_contradictory_visual_feedback_cannot_pass(self):
-        for change in ("source", "proof_helper", "imported_step", "image", "packet", "wrong_round", "contradiction"):
+        for change in ("source", "imported_helper", "imported_step", "image", "packet", "wrong_round", "contradiction"):
             with self.subTest(change=change), tempfile.TemporaryDirectory() as tmp:
                 project = Path(tmp)
                 module, summary = self._round(project)
@@ -490,10 +490,10 @@ class MakeRoundTest(unittest.TestCase):
                 packet = json.loads(packet_path.read_text())
                 if change == "source":
                     (project / "toy.step.py").write_text("changed")
-                elif change == "proof_helper":
-                    helper = project / "review/early-proof/proof.py"
-                    helper.parent.mkdir(parents=True)
-                    helper.write_text("changed helper")
+                elif change == "imported_helper":
+                    # A module the entry now imports is one of its Geometry Sources.
+                    (project / "proof.py").write_text("SIZE = 2\n")
+                    (project / "toy.step.py").write_text("import proof\ndef gen_step(): pass\n")
                 elif change == "imported_step":
                     (project / "component.step").write_text("changed imported geometry")
                 elif change == "image":
@@ -509,6 +509,18 @@ class MakeRoundTest(unittest.TestCase):
                     path.write_text(json.dumps(feedback))
                 with self.assertRaises(ValueError):
                     module.record_visual(project, path)
+
+    def test_a_proof_helper_no_entry_imports_leaves_the_assembly_packet_current(self):
+        # Issue #110: only Geometry Sources stale a shape check; a review
+        # helper or an audit beside the geometry does not.
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module, summary = self._round(project)
+            path = self._feedback(project, summary)
+            for relative in ("review/early-proof/proof.py", "measure/check_spec.py", "notes/why.md"):
+                (project / relative).parent.mkdir(parents=True, exist_ok=True)
+                (project / relative).write_text("changed helper\n")
+            self.assertTrue(module.record_visual(project, path)["ok"])
 
     def test_render_failure_and_premature_full_do_not_pass(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -2691,6 +2703,67 @@ class InterfaceTest(unittest.TestCase):
             state["identities"] = {"body": "brep-body", "arm": "brep-arm"}
             (project / "measure/interface-rounds/gear-mesh/make-round-state.json").write_text(json.dumps(state))
             self.assertEqual(self.module.interface_failures(project, interfaces, steps), [])
+
+    # -- Geometry Sources (issue #110)
+
+    NOT_GEOMETRY = {"measure/check_landmarks.py": "raise SystemExit(0)\n",
+                    "measure/check_spec.py": "import params\nraise SystemExit(0)\n",
+                    "measure/broken_god_spec.json": "{}\n", "notes/why.md": "# why\n",
+                    "notes/scratch.py": "X = 1\n"}
+
+    def _add(self, project, files):
+        for relative, text in files.items():
+            (project / relative).parent.mkdir(parents=True, exist_ok=True)
+            (project / relative).write_text(text)
+
+    def test_files_beside_the_geometry_leave_an_interface_check_current(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self._locked_pair(project)
+            self.assertEqual(self._main(project, ["--interface", "gear-mesh"]), 0, self.stderr)
+            state_path = project / "measure/interface-rounds/gear-mesh/make-round-state.json"
+            state = json.loads(state_path.read_text())
+            self.assertEqual(sorted(state["sources"]), ["features/__init__.py", "features/joints.py", "params.py",
+                                                        "part_arm.step.py", "part_body.step.py"])
+            interfaces, _ = self.module.contract_interfaces(project)
+            current = dict(state["identities"])
+            self._add(project, self.NOT_GEOMETRY)
+            self._add(project, {path: text + "# edited\n" for path, text in self.NOT_GEOMETRY.items()})
+            self.assertEqual(self.module.interface_failures(project, interfaces, current), [])
+
+    def test_an_edited_imported_helper_or_component_source_makes_an_interface_check_stale(self):
+        for path in ("features/joints.py", "params.py", "part_arm.step.py"):
+            with self.subTest(path=path), tempfile.TemporaryDirectory() as tmp:
+                project = self._project(tmp)
+                self._locked_pair(project)
+                self.assertEqual(self._main(project, ["--interface", "gear-mesh"]), 0, self.stderr)
+                state = json.loads((project / "measure/interface-rounds/gear-mesh/make-round-state.json").read_text())
+                interfaces, _ = self.module.contract_interfaces(project)
+                (project / path).write_text((project / path).read_text() + "# edited\n")
+                # The same B-rep identities: only the Geometry Sources moved.
+                self.assertEqual(self.module.interface_failures(project, interfaces, dict(state["identities"])),
+                                 ["interface gear-mesh is stale: a Component it joins changed after its check"])
+
+    def test_files_beside_the_geometry_leave_a_component_packet_current(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            _code, summary = self._component(project, "body")
+            self.assertEqual(summary["visual"]["status"], "pending")
+            self.assertIsNone(self.module.packet_error(summary["visual"], project, "body"))
+            self._add(project, self.NOT_GEOMETRY)
+            self.assertIsNone(self.module.packet_error(summary["visual"], project, "body"))
+            (project / "features/joints.py").write_text("PEG_D = 4.2  # wiki: joints-and-fits\nassert PEG_D >= 3\n")
+            self.assertEqual(self.module.packet_error(summary["visual"], project, "body"),
+                             "stale CAD sources or design constraints")
+
+    def test_files_beside_the_geometry_leave_the_assembly_packet_sources_unchanged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            before = self.module.source_hashes(project)
+            self._add(project, self.NOT_GEOMETRY)
+            self.assertEqual(self.module.source_hashes(project), before)
+            (project / "features/joints.py").write_text("PEG_D = 4.2  # wiki: joints-and-fits\nassert PEG_D >= 3\n")
+            self.assertNotEqual(self.module.source_hashes(project), before)
 
     def test_the_new_modes_take_no_component_or_assembly_options(self):
         with tempfile.TemporaryDirectory() as tmp:

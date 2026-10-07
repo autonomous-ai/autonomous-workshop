@@ -473,10 +473,14 @@ the values a Component Worker reports.
   cap, is a new component acceptance.
 - A component round that fails its checks is not rendered (visual status
   `not-rendered`); only a passing round is shown to the reviewer.
-- A component packet binds the Component's own source and STEP and the Shared
-  Helpers it imports, directly or through another project module
-  (`imported_helpers` in the summary). Editing any other file does not stale
-  it.
+- A component packet binds the Component's Geometry Sources (its own source
+  and the Shared Helpers it imports, directly or through another project
+  module: `imported_helpers` in the summary) and its STEP. Editing any other
+  file does not stale it. Every shape check reads this one definition,
+  `.agents/skills/cad/scripts/geometry_sources.py` (issue #110): the assembly
+  packet, an interface check, the motion evidence and `verify_project`'s
+  sweep reuse go stale when a Geometry Source changes, never for a
+  measurement, audit, note, sample or render.
 
 ### Interfaces between Components (ADR 0082)
 
@@ -545,6 +549,8 @@ rules apply. Contracts without it keep the rules above unchanged.
   a failure yielding `wing#2` unlocks the wing. Rounds live under
   `measure/interface-rounds/<id>/`. A failure unlocks the yielding
   Component with the check's evidence; its repair is never a shape round.
+  A check stays current until a Component it joins changes identity or one
+  of their Geometry Sources changes (`sources` in its state).
   `--require-component-passes` refuses assembly while any Coupled Interface
   lacks a current passing check, and so does the final verifier, which lists
   every Interface with its proof in `component-acceptance.json`.

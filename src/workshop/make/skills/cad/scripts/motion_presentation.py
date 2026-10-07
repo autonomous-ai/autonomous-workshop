@@ -48,12 +48,16 @@ def digest(project, relative):
     return hashlib.sha256(read_file(project, relative)).hexdigest()
 
 
+@functools.lru_cache(maxsize=1)
+def geometry_sources_tool():
+    return runpy.run_path(str(Path(__file__).with_name("geometry_sources.py")))
+
+
 def sources(project):
-    return {
-        p.relative_to(project).as_posix(): digest(project, p.relative_to(project).as_posix())
-        for p in sorted(project.rglob("*.py"))
-        if not any(part in ("__cadgen__", "__pycache__", ".venv", ".git") for part in p.relative_to(project).parts)
-    }
+    """The project's Geometry Sources (issue #110): its entries and the
+    modules they import. An audit, note or render never makes the motion
+    evidence stale."""
+    return geometry_sources_tool()["geometry_sources"](project, digest=digest)
 
 
 @functools.lru_cache(maxsize=1)
