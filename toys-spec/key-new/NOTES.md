@@ -110,3 +110,17 @@ Flags:
 new session. The brainstorm continues with two more tech Christmas ideas:
 X13 Git Tree (a git commit graph on a tree, with commits as baubles) and X14
 Padlock Bauble (the bauble's cap is a padlock shackle, with a keyhole).
+
+## Round 6: Christmas Terminal (`concepts/round6/`), 2026-10-07
+
+The owner liked round 4's T4 Terminal form but said it does not feel like
+Christmas. Six variants were made by passing the T4 image to the generator as
+the base, so the window, shaft and bit stay the same, and asking for one
+Christmas detail each:
+
+- S1 Santa Hat on the window's corner.
+- S2 ASCII Tree: a `*` tree with a gold star on the screen, and red, gold and green title-bar dots.
+- S3 Fairy Lights along the title bar.
+- S4 Snow Cap with icicles. The image added an unrequested holly sprig.
+- S5 Gift Wrap: a red ribbon and bow.
+- S6 Holly & Cane: holly on the corner and a candy-cane shaft.
