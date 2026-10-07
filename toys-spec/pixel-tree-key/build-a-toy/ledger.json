@@ -1,0 +1,9 @@
+{
+  "contract": "toys-spec/pixel-tree-key/CONTRACT.md",
+  "title": "Pixel Tree Key",
+  "inventor": "wyn-seal",
+  "rounds": [],
+  "contract_versions": {
+    "v1": {"status": "current", "notes": "Owner approved images 2026-10-07 (commit 4c1c2115)", "backups": []}
+  }
+}
