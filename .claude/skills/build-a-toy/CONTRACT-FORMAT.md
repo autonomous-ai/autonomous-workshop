@@ -173,6 +173,14 @@ instances.)
   `assembly` or `geometry:<id>`. That is the requirement's Requirement Scope.
   Write the text as one observable claim. A number already carried by a
   geometry field is not repeated here.
+  An `assembly` row states only what renders of the assembled toy in its
+  Display Pose show, because the blind signature review needs visible
+  evidence for it. Materials, print order, pauses, inserted parts and
+  physical behaviour go in the prose, or in a geometry row a gate measures.
+  A row or Interface `text` that puts several Components on one face, plane
+  or level agrees with each one's `extents_mm` and every Interface range
+  that places it, and a Component thinner or thicker than its neighbours
+  states its thickness in its own row.
 
 ## Validation before any run
 
@@ -188,6 +196,9 @@ A contract is ready only when all of these hold. Report every failure at once.
   with `n` in 1..`count`.
 - Every Unique Geometry has at least one reference whose `shows` names it.
 - Every reference file exists beside `CONTRACT.md` and meets the image rules.
+- Every assembly row states only what the assembled renders show, and
+  every shared face agrees with the extents and Interface ranges of the
+  Components it names.
 - The prose carries the blunt-edge and detail rules above, states no
   minimum below the library's, and every detail left out has its row.
 - **At most 16 assembly-scoped requirements, and at most 4 per Unique
