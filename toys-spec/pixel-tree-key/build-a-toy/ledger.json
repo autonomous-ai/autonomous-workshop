@@ -50,7 +50,7 @@
     "wish_id": "wish-20261007-050112-49084163",
     "source_commit": "22e31e8b (local merge of autonomous-toys with origin/main 38dbbecf)",
     "awaiting": null,
-    "updated": "2026-10-07T06:45:00Z"
+    "updated": "2026-10-07T06:52:00Z"
   },
   "stops": [
     {
@@ -105,6 +105,24 @@
       },
       "budget_raised": false,
       "resolution": "owner chose (A) 2026-10-07: fix check_thickness on main (#114), then resume attempt 2 with --refresh-tools; merged 38dbbecf, resumed 06:44 with --refresh-tools from ptk-a1 at 22e31e8b (refresh also rebound main's #108-#110 changes in cad, make-round and autonomous-workshop: 12 files)"
+    },
+    {
+      "attempt": 2,
+      "wish_id": "wish-20261007-050112-49084163",
+      "stop_category": "unclassified",
+      "status": "waiting",
+      "class": "camera-need",
+      "evidence": [
+        "need: Reference Camera mismatch ref-02-key-body.png at -90,90 (reviewer saw no recesses/groove; key-body r0002 camera-mismatch.json)",
+        "model is front-up (bit on +X in both, iso shows recesses on +Z); straight-down flat shading hides 0.8 recesses",
+        "tokens ~14M"
+      ],
+      "progress": {
+        "locked": 0,
+        "repeated_print_defects": 0
+      },
+      "budget_raised": false,
+      "resolution": "camera ref-02-key-body.png -90,90 -> -90,75 (cue: reference shows the plate's lower edge, seen slightly from the front); resumed with --reference-camera"
     }
   ],
   "contract_contradictions": [
