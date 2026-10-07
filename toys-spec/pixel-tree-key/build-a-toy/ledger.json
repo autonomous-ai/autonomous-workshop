@@ -57,12 +57,12 @@
   },
   "loop": {
     "schema": 1,
-    "state": "watching",
+    "state": "fixing",
     "attempt": 2,
     "wish_id": "wish-20261007-050112-49084163",
     "source_commit": "22e31e8b (local merge of autonomous-toys with origin/main 38dbbecf)",
     "awaiting": null,
-    "updated": "2026-10-07T07:05:00Z"
+    "updated": "2026-10-07T07:35:00Z"
   },
   "stops": [
     {
@@ -152,6 +152,43 @@
       },
       "budget_raised": false,
       "resolution": "amend-c: R09 visible colours only; resumed with --amend-contract 07:03"
+    },
+    {
+      "attempt": 2,
+      "wish_id": "wish-20261007-050112-49084163",
+      "stop_category": "unclassified",
+      "status": "waiting",
+      "class": "other",
+      "evidence": [
+        "need: three integrated verify_project runs lost Codex unified-exec handles ('Network access to 127.0.0.1 was blocked ... sandbox policy', then 'Unknown process id'); final-verification.log partial, no verification-final.md",
+        "signature review round 2 and assembly r3 pass; 3 Components locked",
+        "tokens ~23M"
+      ],
+      "progress": {
+        "locked": 3,
+        "repeated_print_defects": 0
+      },
+      "budget_raised": false,
+      "resolution": "resumed once unchanged (07:15) so the Manager runs the verifier once; investigate the runtime if it recurs"
+    },
+    {
+      "attempt": 2,
+      "wish_id": "wish-20261007-050112-49084163",
+      "stop_category": "unclassified",
+      "status": "waiting",
+      "class": "harness-defect",
+      "evidence": [
+        "final verify_project rerun passed rc0 in 129.7s (verification-final.md), print_ready_claim true",
+        "make finalizer refused: workspace VAULT.json is 0 bytes r--r--r-- (bwrap read-only mount point of an immutable path; host vault .unavailable and snapshot removed)",
+        "resume failed 'completed native turn lacks reconciled token usage' (token-accounting-need.json: terminal output 37111 < baseline 40057); reconciles on next resume",
+        "tokens ~25M"
+      ],
+      "progress": {
+        "locked": 3,
+        "repeated_print_defects": 0
+      },
+      "budget_raised": false,
+      "resolution": "owner approved 2026-10-07: fix stage_proposal empty-vault handling on main (#115), resume with --refresh-tools"
     }
   ],
   "contract_contradictions": [
@@ -207,6 +244,14 @@
       "attempt": 2,
       "status": "merged",
       "merge_commit": "38dbbecf"
+    },
+    {
+      "number": 115,
+      "title": "Finalizer refuses the empty VAULT.json the Codex sandbox leaves when no vault is bound",
+      "opened_by_loop": true,
+      "attempt": 2,
+      "status": "implementing",
+      "merge_commit": null
     }
   ],
   "cost_units": {
