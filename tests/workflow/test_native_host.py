@@ -86,6 +86,7 @@ from workshop.runtime import (
     CodexInvocationError,
     CodexRecoverableInvocationError,
 )
+from workshop.make.native import _freeze
 from workshop.make.role_agents import make_role_agent_files
 from workshop.make.role_guard import (
     install_make_round_guard,
@@ -3577,6 +3578,35 @@ class NativeHostTest(unittest.TestCase):
             with self.subTest(bad=bad):
                 with self.assertRaises(ContractError):
                     _made_interfaces({"interfaces": bad})
+
+    def test_made_interfaces_accept_the_frozen_product_the_host_reads(self):
+        # Issue #105: the host reads made.json through NativeMade, which
+        # freezes lists into tuples. Every Interface kind must still pass and
+        # come back as plain JSON, identical to the unfrozen result.
+        static = {"id": "spine-pins", "kind": "static", "components": ["spine", "rib"],
+                  "check": "shared-helper-samples"}
+        interfaces = [static, *self.INTERFACES]
+        frozen = _freeze({"title": "t", "interfaces": interfaces})
+        self.assertIsInstance(frozen["interfaces"][1]["components"], tuple)
+        sealed = _made_interfaces(frozen)
+        self.assertEqual(sealed, interfaces)
+        self.assertTrue(all(type(item["components"]) is list for item in sealed))
+        self.assertEqual(json.dumps(sealed, sort_keys=True), json.dumps(interfaces, sort_keys=True))
+        coupled = self.INTERFACES[1]
+        for bad in (
+            [dict(coupled, components=["wing"])],
+            [dict(coupled, components="wing,heart-core")],
+            [dict(coupled, components=["wing", "wing"])],
+            [dict(coupled, components=["wing", ""])],
+            [dict(coupled, components=["wing", 7])],
+            [dict(coupled, components={"wing": 1, "heart-core": 2})],
+            [dict(coupled, yielding="tail")],
+            [dict(static, check="pass")],
+            [coupled, coupled],
+        ):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ContractError):
+                    _made_interfaces(_freeze({"interfaces": bad}))
 
     def test_interfaces_are_read_from_the_latest_make_gate_receipt(self):
         with tempfile.TemporaryDirectory() as temporary:
