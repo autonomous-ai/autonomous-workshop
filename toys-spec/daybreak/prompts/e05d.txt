@@ -1,0 +1,6 @@
+Redraw this same part as a straight-on FRONT view: the camera is level with the part and looks straight at the sun's front face, so no side or top faces show. Keep the colour, material, lighting, background and style.
+- The sun is an exact half circle, flat edge down, 36 wide and 18 tall (twice as wide as tall), with the engraved ring at the middle of the flat edge and nine engraved rays.
+- Below the middle of its flat edge, a narrow stem 8 wide and 21 tall (a little taller than the sun) runs straight down to the bottom of the part.
+- Behind the stem, a toothed rack 12 wide shows its chunky gear teeth sticking out on both sides of the stem, from the bottom up to the sun's flat edge.
+- The whole part is 36 wide and 39 tall: very slightly taller than wide.
+One object only, centred, fully inside the frame with margin on every side, no text.

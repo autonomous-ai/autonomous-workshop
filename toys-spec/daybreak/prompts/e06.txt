@@ -1,0 +1,1 @@
+Edit this product photo. Keep the same rod, colour, material, lighting, background, camera and style. Make the rod a little THICKER: its thickness becomes one eleventh of its length (now it is about one sixteenth), like a short pencil without a point. Same length, same position, small chamfer at each end. One object, fully inside the frame with margin, no text.

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daybreak references</title>
+<style>
+/* Layout: a contact sheet. Assembly large on top, five parts in a grid, then the build-vs-picture list. */
+:root{
+  --bg:#eef0ec; --paper:#fbfcfa; --ink:#1f2a33; --muted:#5d6b73; --line:#d5dbd6; --accent:#c9861c;
+  --display:"Fraunces",Georgia,serif; --body:"Be Vietnam Pro",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#151b20;--paper:#1d252b;--ink:#e6ebe8;--muted:#9aa8ae;--line:#2f3a41;--accent:#e3a443;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#151b20;--paper:#1d252b;--ink:#e6ebe8;--muted:#9aa8ae;--line:#2f3a41;--accent:#e3a443;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--body);padding-inline:16px;padding-block:28px 48px}
+.wrap{max-width:1080px;margin:0 auto;display:grid;gap:28px}
+h1{font:600 2rem/1.15 var(--display);margin:0;text-wrap:balance}
+h2{font:600 1.15rem/1.3 var(--display);margin:0}
+.lede{color:var(--muted);max-width:65ch;margin:6px 0 0}
+figure{margin:0;background:var(--paper);border:1px solid var(--line);border-radius:6px;overflow:hidden;display:flex;flex-direction:column}
+figure img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:cover;background:#f5f0e6}
+figcaption{padding:10px 12px 12px;display:grid;gap:2px;min-width:0}
+.name{font-weight:600}
+.cam{font:12px/1.4 var(--mono);color:var(--muted)}
+.hero{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px;align-items:start}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+ul{margin:8px 0 0;padding-left:1.2em;display:grid;gap:6px;max-width:72ch}
+.tag{font:11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+@media (max-width:720px){.hero{grid-template-columns:1fr}}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Be+Vietnam+Pro:wght@400;600&family=JetBrains+Mono&display=swap">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="tag">Stage 4 · duyệt ảnh</span>
+    <h1>Daybreak — bộ ảnh tham chiếu</h1>
+    <p class="lede">Gập lại là đêm, mở ra là bình minh. Duyệt bộ ảnh này là duyệt luôn hình dáng và góc nhìn mà bản build sẽ được so sánh.</p>
+  </header>
+
+  <section class="hero">
+    <figure>
+      <img src="ref-01-daybreak.png" alt="Daybreak mở phẳng: hộp xanh, hai lá xanh lá, mặt trời cam mọc ở giữa">
+      <figcaption><span class="name">ref-01 · Cả món đồ chơi (mở)</span><span class="cam">nhìn từ trước-phải, hơi từ trên (-75, 30)</span></figcaption>
+    </figure>
+    <div>
+      <h2>Bản build sẽ khác ảnh ở đâu</h2>
+      <ul>
+        <li>Mặt trời trong ảnh hơi to và hơi thấp. Bản build: mặt trời rộng 36 mm, mép dưới cao hơn mặt hộp 3 mm.</li>
+        <li>Nhìn từ góc này, bản build lộ vài răng của thanh răng ngay sau đỉnh mặt trời (khoảng 6 mm). Ảnh không vẽ phần này.</li>
+        <li>Hai lá trong ảnh hơi nghiêng. Bản build: hai lá nằm phẳng, tựa lên mặt hộp.</li>
+        <li>Bánh răng trên hai lá được vẽ răng vuông và nhỏ. Bản build: 6 răng bánh răng thật, to hơn, chìa xa hơn.</li>
+        <li>Ảnh mặt trời vẽ hình hơi cao hơn nửa hình tròn, chân hơi ngắn. Bản build: đúng nửa hình tròn, chân dài 21,5 mm.</li>
+        <li>Ảnh spine vẽ vách trong thấp hơn miệng hộp. Bản build: vách trong cao bằng miệng hộp.</li>
+      </ul>
+      <h2 style="margin-top:18px">Đổi so với bản dự thi</h2>
+      <ul>
+        <li>Spine cao 44 mm thay vì 30 mm, để mặt trời giấu hẳn bên trong khi gập.</li>
+        <li>Bánh răng to hơn (6 răng), đủ ngưỡng 3 mm của Taste; thanh răng nằm ngay sau mặt trời.</li>
+        <li>Khi mở, hai lá tựa lên mặt hộp; đó cũng là điểm dừng.</li>
+        <li>Ẩn bên trong, chỉ để in không cần support: phễu 45° sau bánh răng, vát đầu răng của thanh răng.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="grid">
+    <figure><img src="ref-02-spine.png" alt="Spine: hộp xanh mở nắp"><figcaption><span class="name">ref-02 · Spine — 1 chiếc</span><span class="cam">trước-phải, từ trên (-75, 30)</span></figcaption></figure>
+    <figure><img src="ref-03-leaf-left.png" alt="Lá trái có căn nhà"><figcaption><span class="name">ref-03 · Lá trái (căn nhà, trăng) — 1</span><span class="cam">trước-phải, từ trên cao (-75, 45)</span></figcaption></figure>
+    <figure><img src="ref-04-leaf-right.png" alt="Lá phải có cái cây"><figcaption><span class="name">ref-04 · Lá phải (cái cây, sao) — 1</span><span class="cam">trước-trái, từ trên cao (-105, 45)</span></figcaption></figure>
+    <figure><img src="ref-05-sun-rack.png" alt="Mặt trời trên thanh răng"><figcaption><span class="name">ref-05 · Mặt trời + thanh răng — 1</span><span class="cam">thẳng trước, ngang tầm (-90, 0)</span></figcaption></figure>
+    <figure><img src="ref-06-hinge-pin.png" alt="Trục chốt"><figcaption><span class="name">ref-06 · Trục chốt — 2 chiếc</span><span class="cam">từ bên phải, hơi từ trên (0, 15)</span></figcaption></figure>
+  </section>
+</div>
+</body>
+</html>
