@@ -36,11 +36,23 @@
       "backups": []
     },
     "amend-a": {
-      "status": "current",
+      "status": "superseded",
       "notes": "toys-spec/pixel-tree-key/build-a-toy/drafts/amend-a-notes.md",
       "backups": [
         "toys-spec/pixel-tree-key/build-a-toy/backups/v1/CONTRACT.md"
       ]
+    },
+    "amend-c": {
+      "status": "current",
+      "notes": "toys-spec/pixel-tree-key/build-a-toy/drafts/amend-c-notes.md",
+      "backups": [
+        "toys-spec/pixel-tree-key/build-a-toy/backups/CONTRACT.amend-a.r09.md"
+      ]
+    },
+    "amend-b": {
+      "status": "draft-not-applied",
+      "notes": "4.0 mm plate alternative; owner chose the #114 gate fix instead",
+      "backups": []
     }
   },
   "loop": {
@@ -50,7 +62,7 @@
     "wish_id": "wish-20261007-050112-49084163",
     "source_commit": "22e31e8b (local merge of autonomous-toys with origin/main 38dbbecf)",
     "awaiting": null,
-    "updated": "2026-10-07T06:52:00Z"
+    "updated": "2026-10-07T07:05:00Z"
   },
   "stops": [
     {
@@ -123,6 +135,23 @@
       },
       "budget_raised": false,
       "resolution": "camera ref-02-key-body.png -90,90 -> -90,75 (cue: reference shows the plate's lower edge, seen slightly from the front); resumed with --reference-camera"
+    },
+    {
+      "attempt": 2,
+      "wish_id": "wish-20261007-050112-49084163",
+      "stop_category": "unclassified",
+      "status": "waiting",
+      "class": "contract-contradiction",
+      "evidence": [
+        "need: signature review cannot show R09's PLA types, print order and Z 1.8 pause from renders; Components and assembly build/print/visual checks pass",
+        "tokens ~18M"
+      ],
+      "progress": {
+        "locked": 3,
+        "repeated_print_defects": 0
+      },
+      "budget_raised": false,
+      "resolution": "amend-c: R09 visible colours only; resumed with --amend-contract 07:03"
     }
   ],
   "contract_contradictions": [
@@ -143,6 +172,27 @@
       "resume": "resumed",
       "design_check": {
         "name": "shared-face rows agree with each Component's extents and Interface Z range",
+        "issue": null,
+        "status": "proposed"
+      }
+    },
+    {
+      "id": "cc-r09-invisible",
+      "attempt": 2,
+      "signature": "stage2-visible-assembly-rows:assembly",
+      "rows": [
+        "The body is PLA Matte dark green, the star and baubles G1 to G6 are PLA Lite sunflower yellow and baubles R1 to R6 are PLA Matte dark red, printed as one multi-colour job back face down that pauses at Z 1.8 to receive the NFC inlay.",
+        "The blind signature review requires visible evidence and matches: true for every assembly row (run need, 07:01)."
+      ],
+      "amendment": "amend-c",
+      "visible": false,
+      "approved": "not-needed",
+      "applied": true,
+      "reaudit": "toys-spec/pixel-tree-key/build-a-toy/drafts/amend-c-notes.md",
+      "recurrence_acknowledged": null,
+      "resume": "resumed",
+      "design_check": {
+        "name": "assembly rows state only what renders show",
         "issue": null,
         "status": "proposed"
       }

@@ -172,7 +172,7 @@ least 3.5 thick and 7.5 wide. The inlay is sealed and cannot fall out.
   "envelope_mm": [41.4, 82.25, 3.5],
   "references": [
     {"file": "ref-01-pixel-tree-key.png", "shows": "assembly", "camera": [-90, 90]},
-    {"file": "ref-02-key-body.png", "shows": "geometry:key-body", "camera": [-90, 75]},
+    {"file": "ref-02-key-body.png", "shows": "geometry:key-body", "camera": [-90, 90]},
     {"file": "ref-03-star.png", "shows": "geometry:star", "camera": [-90, 90]},
     {"file": "ref-04-bauble.png", "shows": "geometry:bauble", "camera": [-90, 90]}
   ],
@@ -202,7 +202,7 @@ least 3.5 thick and 7.5 wide. The inlay is sealed and cannot fall out.
     {"id": "R08", "scope": "assembly",
      "text": "The whole key is one solid plate 3.5 thick with no ring hole, no ring and no see-through gap; the star and the body share one flat front face at Z 3.5 and one flat back face at Z 0, and every bauble's top is level with that front face."},
     {"id": "R09", "scope": "assembly",
-     "text": "The body is matte dark green, the star and baubles G1 to G6 are sunflower yellow and baubles R1 to R6 are dark red, each colour a separate body flush with the front face."},
+     "text": "The body is PLA Matte dark green, the star and baubles G1 to G6 are PLA Lite sunflower yellow and baubles R1 to R6 are PLA Matte dark red, printed as one multi-colour job back face down that pauses at Z 1.8 to receive the NFC inlay."},
     {"id": "R10", "scope": "assembly",
      "text": "The key has six red and six gold baubles, at the centres the bauble-recesses Interface lists, with no two baubles touching."}
   ],
