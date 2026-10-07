@@ -1102,6 +1102,12 @@ class StageProposalToolTest(unittest.TestCase):
         skill = self.materialize_vault(tool=True, vault=False)
         # the tool is a static skill; a stage the host gave no snapshot has no vault rules
         self.assertIsNone(tool._design_vault(self.run_root))
+        # the Codex sandbox mounts protected paths read-only, so an absent
+        # snapshot appears inside it as an empty mount point: still no vault
+        snapshot = self.run_root / "VAULT.json"
+        snapshot.write_bytes(b"")
+        self.assertIsNone(tool._design_vault(self.run_root))
+        snapshot.unlink()
         (skill / "vault_tools.py").unlink()
         self.materialize_vault(tool=False, vault=True)
         with self.assertRaisesRegex(tool.ProposalError, "missing from the run"):
