@@ -1914,8 +1914,13 @@ class AgentRun:
         motion_skill_root: Optional[Path] = None,
         finalizer_skill_root: Optional[Path] = None,
         check_motion: Optional[bool] = None,
+        dry_run: bool = False,
     ) -> tuple[dict[str, Any], ...]:
         """Bring the run's host-owned domain skills up to the installed source.
+
+        With ``dry_run`` the same changes are computed and returned and
+        nothing is written: no file, manifest, checkpoint or ledger line
+        (issue #107).
 
         Domain skills are immutable to the native agent, not to the host that
         owns them.  When a deterministic tool a gate depends on is corrected,
@@ -2047,6 +2052,8 @@ class AgentRun:
                                 "sha256": digest, "mode": 0o400})
         if not changes:
             return ()
+        if dry_run:
+            return tuple(changes)
         self._rebind_inputs(
             payload, by_path, writes, removals,
             {"correction": "domain-skill-refresh", "reason": reason.strip(), "changes": changes},

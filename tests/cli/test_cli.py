@@ -1129,6 +1129,114 @@ class NativeCommandTest(unittest.TestCase):
             main(("resume", "wish-one", "--turn-budget"))
         self.assertIs(resume.call_args.kwargs["adopt_turn_budget"], True)
 
+    @staticmethod
+    def refresh_receipt(changes, *, dry_run):
+        return {
+            "product_id": "wish-one",
+            "action": ("tools-would-change" if dry_run else "tools-refreshed")
+            if changes else "tools-current",
+            "dry_run": dry_run,
+            "changed_paths": [item["path"] for item in changes],
+            "changes": changes,
+            "session_rebound": False,
+        }
+
+    REFRESH_CHANGES = [
+        {"path": ".agents/skills/cad/scripts/verify_project", "previous_sha256": "1" * 64,
+         "previous_mode": 0o500, "sha256": "2" * 64, "mode": 0o500},
+        {"path": ".agents/skills/make-round/scripts/sheet.py", "previous_sha256": None,
+         "previous_mode": None, "sha256": "3" * 64, "mode": 0o400},
+        {"path": ".agents/skills/make-round/scripts/old.py", "previous_sha256": "4" * 64,
+         "previous_mode": 0o400, "sha256": None, "mode": None},
+    ]
+
+    def test_refresh_tools_lists_every_change_and_warns_before_applying(self):
+        # Issue #107: the listing names every file and refuses nothing.
+        calls = []
+
+        def refresh(product_id, *, reason, dry_run=False):
+            calls.append(dry_run)
+            return self.refresh_receipt(self.REFRESH_CHANGES, dry_run=dry_run)
+
+        stdout = StringIO()
+        with mock.patch("cli.main.refresh_native_run_tools", side_effect=refresh), \
+                mock.patch("cli.main.resume_native_run", return_value=native_receipt(stage="make")) as resume, \
+                redirect_stdout(stdout), redirect_stderr(StringIO()):
+            result = main(("resume", "wish-one", "--refresh-tools"))
+        self.assertEqual(result, 0)
+        self.assertEqual(calls, [True, False])
+        resume.assert_called_once()
+        text = stdout.getvalue()
+        for change in self.REFRESH_CHANGES:
+            self.assertIn(change["path"], text)
+        self.assertIn("changed .agents/skills/cad/scripts/verify_project", text)
+        self.assertIn("added   .agents/skills/make-round/scripts/sheet.py", text)
+        self.assertIn("removed .agents/skills/make-round/scripts/old.py", text)
+        self.assertIn("111111111111 -> 222222222222", text)
+        warning = text[text.index("WARNING"):]
+        self.assertIn("2 skill trees", warning)
+        self.assertIn("cad, make-round", warning)
+        self.assertIn("source commit", warning)
+        self.assertLess(text.index("WARNING"), text.index("Host tools refreshed"))
+
+    def test_refresh_tools_warns_only_for_trees_outside_the_named_intent(self):
+        def refresh(product_id, *, reason, dry_run=False):
+            return self.refresh_receipt(self.REFRESH_CHANGES, dry_run=dry_run)
+
+        for named, warned in ((("cad",), True), (("cad", "make-round"), False)):
+            stdout = StringIO()
+            arguments = ["resume", "wish-one", "--refresh-tools", "--dry-run"]
+            for tree in named:
+                arguments += ["--refresh-tree", tree]
+            with self.subTest(named=named), \
+                    mock.patch("cli.main.refresh_native_run_tools", side_effect=refresh), \
+                    mock.patch("cli.main.resume_native_run") as resume, \
+                    redirect_stdout(stdout), redirect_stderr(StringIO()):
+                result = main(tuple(arguments))
+            self.assertEqual(result, 0)
+            resume.assert_not_called()
+            text = stdout.getvalue()
+            self.assertEqual("WARNING" in text, warned)
+            if warned:
+                self.assertIn("also changes make-round, beyond", text)
+
+    def test_refresh_tools_dry_run_applies_nothing_and_resumes_nothing(self):
+        calls = []
+
+        def refresh(product_id, *, reason, dry_run=False):
+            calls.append(dry_run)
+            return self.refresh_receipt(self.REFRESH_CHANGES, dry_run=dry_run)
+
+        stdout = StringIO()
+        with mock.patch("cli.main.refresh_native_run_tools", side_effect=refresh), \
+                mock.patch("cli.main.resume_native_run") as resume, \
+                redirect_stdout(stdout), redirect_stderr(StringIO()):
+            result = main(("resume", "wish-one", "--refresh-tools", "--dry-run", "--json"))
+        self.assertEqual(result, 0)
+        self.assertEqual(calls, [True])
+        resume.assert_not_called()
+        receipt = json.loads(stdout.getvalue())
+        self.assertEqual(receipt["action"], "tools-would-change")
+        self.assertEqual(len(receipt["changes"]), 3)
+        stderr = StringIO()
+        with mock.patch("cli.main.refresh_native_run_tools") as refresh_call, \
+                redirect_stderr(stderr), self.assertRaises(SystemExit):
+            main(("resume", "wish-one", "--dry-run"))
+        refresh_call.assert_not_called()
+        self.assertIn("--refresh-tools", stderr.getvalue())
+
+    def test_refresh_tools_with_no_changes_says_so(self):
+        stdout = StringIO()
+        with mock.patch(
+            "cli.main.refresh_native_run_tools",
+            side_effect=lambda product_id, *, reason, dry_run=False: self.refresh_receipt([], dry_run=dry_run),
+        ), mock.patch("cli.main.resume_native_run") as resume, \
+                redirect_stdout(stdout), redirect_stderr(StringIO()):
+            main(("resume", "wish-one", "--refresh-tools", "--dry-run"))
+        resume.assert_not_called()
+        self.assertIn("already match this install; nothing would change", stdout.getvalue())
+        self.assertNotIn("WARNING", stdout.getvalue())
+
     def test_failed_native_run_exits_one_even_without_strict(self):
         with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(
             "cli.main.start_native_run",

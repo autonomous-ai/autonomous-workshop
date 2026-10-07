@@ -1389,6 +1389,20 @@ def _resume(args: argparse.Namespace) -> int:
         flush=True,
     )
     if getattr(args, "refresh_tools", False):
+        # Issue #107: list what the refresh changes, and warn, before any
+        # byte is rewritten. The host lists; it never picks a commit.
+        preview = refresh_native_run_tools(
+            args.product_id, reason="workshop resume --refresh-tools", dry_run=True
+        )
+        _print_tool_refresh_listing(
+            preview, intended_trees=getattr(args, "refresh_trees", None) or (), file=progress
+        )
+        if args.dry_run:
+            print("Dry run: nothing was rewritten and the run was not resumed.",
+                  file=progress, flush=True)
+            if args.json:
+                _print_json(preview)
+            return 0
         refreshed = refresh_native_run_tools(
             args.product_id, reason="workshop resume --refresh-tools"
         )
@@ -1420,6 +1434,78 @@ def _resume(args: argparse.Namespace) -> int:
     else:
         _print_native_receipt(receipt, verb="Resume")
     return _native_exit_code(receipt, strict=args.strict)
+
+
+def _tool_refresh_tree(path: str) -> str:
+    """The skill tree a refreshed run path belongs to, or the path itself."""
+
+    parts = path.split("/")
+    if len(parts) > 3 and parts[0] == ".agents" and parts[1] == "skills":
+        return parts[2]
+    return path
+
+
+def _print_tool_refresh_listing(preview, *, intended_trees, file) -> None:
+    """Print every file a tool refresh changes, by skill tree, then warnings.
+
+    Formatting only: the changes come from the host's dry run. Nothing is
+    refused here; the operator reads the list and decides (issue #107).
+    """
+
+    changes = list(preview.get("changes") or ())
+    if not changes:
+        print("Host tools already match this install; nothing would change.",
+              file=file, flush=True)
+        return
+    by_tree: dict[str, list] = {}
+    for change in changes:
+        by_tree.setdefault(_tool_refresh_tree(change["path"]), []).append(change)
+
+    def short(digest):
+        return digest[:12]
+
+    print(
+        "A tool refresh from this install changes %d file(s) in %d skill tree(s), "
+        "compared with the run's current tool bytes:" % (len(changes), len(by_tree)),
+        file=file,
+    )
+    for tree in sorted(by_tree):
+        print("  %s: %d file(s)" % (tree, len(by_tree[tree])), file=file)
+        for change in by_tree[tree]:
+            if change.get("previous_sha256") is None:
+                line = "added   %s  sha256 %s" % (change["path"], short(change["sha256"]))
+            elif change.get("sha256") is None:
+                line = "removed %s  was sha256 %s" % (
+                    change["path"], short(change["previous_sha256"]))
+            else:
+                line = "changed %s  sha256 %s -> %s" % (
+                    change["path"], short(change["previous_sha256"]), short(change["sha256"]))
+                if change.get("previous_mode") != change.get("mode"):
+                    line += "  mode %s -> %s" % (
+                        oct(change.get("previous_mode") or 0), oct(change.get("mode") or 0))
+            print("    " + line, file=file)
+    trees = sorted(by_tree)
+    if intended_trees:
+        beyond = [tree for tree in trees if tree not in set(intended_trees)]
+        if beyond:
+            print(
+                "WARNING: this refresh also changes %s, beyond the named --refresh-tree %s. "
+                "Every listed file is rewritten. If those changes are not part of the fix, "
+                "refresh from a branch holding the run's own source commit plus only the fix."
+                % (", ".join(beyond), ", ".join(sorted(set(intended_trees)))),
+                file=file,
+            )
+    elif len(trees) > 1:
+        print(
+            "WARNING: this refresh changes %d skill trees: %s. Every listed file is "
+            "rewritten, including changes unrelated to the fix you want. To bring only "
+            "that fix, refresh from a branch holding the run's own source commit plus "
+            "the fix, never from a newer main. Name the intended trees with "
+            "--refresh-tree, or list without rewriting with --dry-run."
+            % (len(trees), ", ".join(trees)),
+            file=file,
+        )
+    file.flush()
 
 
 def _amended_contract_options(path) -> dict:
@@ -2465,7 +2551,27 @@ def parser() -> argparse.ArgumentParser:
         help=(
             "before resuming, rewrite the run's host-owned deterministic tools "
             "(domain skills such as the CAD verifier) from this Workshop install and "
-            "rebind them in the run manifest; recorded in the run's private host state"
+            "rebind them in the run manifest; recorded in the run's private host state. "
+            "Every changed file is listed, by skill tree, before it is rewritten"
+        ),
+    )
+    resume.add_argument(
+        "--refresh-tree",
+        action="append",
+        default=None,
+        metavar="TREE",
+        dest="refresh_trees",
+        help=(
+            "with --refresh-tools: name a skill tree the refresh is meant to change "
+            "(for example cad); a change in any other tree is warned about, never refused"
+        ),
+    )
+    resume.add_argument(
+        "--dry-run",
+        action="store_true",
+        help=(
+            "with --refresh-tools: list what the refresh would change and stop; "
+            "nothing is rewritten and the run is not resumed"
         ),
     )
     resume.set_defaults(handler=_resume)
@@ -2581,7 +2687,11 @@ def parser() -> argparse.ArgumentParser:
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     try:
-        args = parser().parse_args(argv)
+        command = parser()
+        args = command.parse_args(argv)
+        if (getattr(args, "dry_run", False) or getattr(args, "refresh_trees", None)) \
+                and not getattr(args, "refresh_tools", False):
+            command.error("--dry-run and --refresh-tree require --refresh-tools")
         return int(args.handler(args))
     except (WorkshopError, OSError, ValueError, KeyError) as exc:
         print("workshop: %s" % exc, file=sys.stderr)

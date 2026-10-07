@@ -41,7 +41,12 @@ had no operation to change them.
    input manifest in a new checkpoint revision, and append an owner-only
    record to `host-corrections.jsonl` in host state. Only skills the run
    already carries are refreshed. `workshop resume --refresh-tools` exposes
-   it; nothing refreshes implicitly.
+   it; nothing refreshes implicitly. Since issue #107 it first lists every
+   file it changes, by skill tree, with the old and new sha256, and warns
+   when the change set spans more trees than the fix (or than the trees
+   named with `--refresh-tree`); `--dry-run` lists and writes nothing. The
+   host never chooses a commit: the operator refreshes from the run's own
+   source commit plus the fix.
 
 ## Consequences
 

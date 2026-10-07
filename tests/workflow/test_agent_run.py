@@ -621,6 +621,49 @@ class AgentRunTest(unittest.TestCase):
         with self.assertRaises(ContractError):
             run.refresh_domain_skill_tools({"cad": cad}, reason="")
 
+    def test_refresh_dry_run_lists_every_change_and_writes_nothing(self):
+        # Issue #107: an operator sees what a refresh would rewrite before it
+        # rewrites anything, and the listing is exactly what it then applies.
+        cad = self.root / "cad-skill"
+        (cad / "scripts").mkdir(parents=True)
+        (cad / "SKILL.md").write_bytes(b"# CAD skill\n")
+        (cad / "scripts" / "check_fit").write_bytes(b"#!/bin/sh\nexit 1\n")
+        (cad / "scripts" / "obsolete.py").write_bytes(b"print('old')\n")
+        run = self.create(domain_skill_roots={"cad": cad})
+        before = run.snapshot()
+
+        def tree_state():
+            return {
+                path: (path.read_bytes(), path.stat().st_mode)
+                for root in (run.run_root, run.host_state_root)
+                for path in sorted(root.rglob("*")) if path.is_file()
+            }
+
+        self.assertEqual(
+            run.refresh_domain_skill_tools({"cad": cad}, reason="same", dry_run=True), ()
+        )
+        (cad / "scripts" / "check_fit").write_bytes(b"#!/bin/sh\nexit 0\n")
+        (cad / "scripts" / "helper.py").write_bytes(b"print('new')\n")
+        (cad / "scripts" / "obsolete.py").unlink()
+        state = tree_state()
+        preview = run.refresh_domain_skill_tools(
+            {"cad": cad}, reason="preview", dry_run=True
+        )
+        self.assertEqual(
+            {item["path"] for item in preview},
+            {
+                ".agents/skills/cad/scripts/check_fit",
+                ".agents/skills/cad/scripts/helper.py",
+                ".agents/skills/cad/scripts/obsolete.py",
+            },
+        )
+        self.assertEqual(tree_state(), state)
+        self.assertEqual(run.snapshot(), before)
+        self.assertFalse((run.host_state_root / "host-corrections.jsonl").exists())
+
+        applied = run.refresh_domain_skill_tools({"cad": cad}, reason="apply")
+        self.assertEqual(applied, preview)
+
     def test_token_review_refresh_is_allowlisted_and_preserves_workflow(self):
         marker = self.skill / "references/token-budget-v1.md"
         marker.write_bytes(b"old token rules\n")

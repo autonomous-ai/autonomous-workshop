@@ -769,3 +769,20 @@ class FoldInRunAmendmentsTest(unittest.TestCase):
                          ["in-run amendment wish-2#1: fold it into CONTRACT.md"])
         data["in_run_amendments"] = [entry, dict(entry)]
         self.assertIn("in_run_amendments[1] repeats amendment 1 of wish-2", ledger.check(data))
+
+
+class RefreshGuidanceTest(unittest.TestCase):
+    def test_a_running_run_is_refreshed_from_its_source_commit_plus_the_fix(self):
+        # Issue #107: a refresh from main brought unrelated gates into a run.
+        text = " ".join((REPOSITORY / ".claude/skills/build-a-toy/SKILL.md").read_text(encoding="utf-8").split())
+        section = text[text.index("### Delivering a fix to a running run"):]
+        for required in (
+            "Never refresh a running run from `main`",
+            "the run's own source commit plus only the fix",
+            "`loop.source_commit`",
+            "git cherry-pick",
+            "--refresh-tools --dry-run --refresh-tree <tree>",
+            "`WARNING`",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, section)
