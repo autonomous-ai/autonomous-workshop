@@ -192,6 +192,13 @@ The self-contained directory holding a toy's geometry source, exports,
 measurements, renders, and verification report. It is the exact unit the host
 rebuilds and seals.
 
+**Geometry Sources**:
+The files of a CAD Project whose bytes decide a shape: each Component's
+source, the Shared Helpers it imports and the project parameters. A check on a
+shape goes stale only when these change; measurements, audits, notes and
+renders in the same project never make it stale.
+_Avoid_: Source closure, project files
+
 **Evidence Scene**:
 An assembly built only to answer a question about a toy, never part of the toy
 and never printed: two pieces set side by side so a mirrored cue reads as one
