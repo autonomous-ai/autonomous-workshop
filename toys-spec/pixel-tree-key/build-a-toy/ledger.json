@@ -24,7 +24,7 @@
       "wish_id": "wish-20261007-050112-49084163",
       "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261007-050112-49084163/workspace",
       "toy_dir": null,
-      "status": "active",
+      "status": "waiting",
       "brief": null,
       "finding_ids": []
     }
@@ -45,12 +45,18 @@
   },
   "loop": {
     "schema": 1,
-    "state": "watching",
+    "state": "awaiting-owner",
     "attempt": 2,
     "wish_id": "wish-20261007-050112-49084163",
     "source_commit": "70252da1 (local detached merge of autonomous-toys 99ca5d5b with origin/main bd069e37; origin/main lacks the wyn-seal Inventor)",
-    "awaiting": null,
-    "updated": "2026-10-07T05:08:30Z"
+    "awaiting": {
+      "reasons": [
+        "harness defect in check_thickness needs a fix on main (owner asks before anything reaches main), or the owner picks the contract-margin alternative"
+      ],
+      "review_page": null,
+      "since": "2026-10-07T05:16:00Z"
+    },
+    "updated": "2026-10-07T05:16:00Z"
   },
   "stops": [
     {
@@ -87,6 +93,24 @@
       },
       "budget_raised": false,
       "resolution": "amend-a (R08, R06 text), invisible; resume with --amend-contract"
+    },
+    {
+      "attempt": 2,
+      "wish_id": "wish-20261007-050112-49084163",
+      "stop_category": "unclassified",
+      "status": "waiting",
+      "class": "harness-defect",
+      "evidence": [
+        "need + blocked reports 1 (key-body pocket floor) and 2 (bauble): exact 0.8 slab measures 0.7333333333333333 vs gate threshold min_wall - pitch/2 = 0.7333333333333334 (pitch 0.1333)",
+        "check_thickness: `thin = thickness < min_wall - step` fails by 1.1e-16 (float), workspace thickness-boundary-diagnostic.json",
+        "tokens ~8M"
+      ],
+      "progress": {
+        "locked": 0,
+        "repeated_print_defects": 2
+      },
+      "budget_raised": false,
+      "resolution": "awaiting owner: (A) fix the gate comparison on main and resume, or (B) contract margin: plate 4.0 with 1.0 layers (draft build-a-toy/drafts/amend-b-4mm-CONTRACT.md, invisible, needs relaunch since extents change)"
     }
   ],
   "contract_contradictions": [
