@@ -124,3 +124,10 @@ Christmas detail each:
 - S4 Snow Cap with icicles. The image added an unrequested holly sprig.
 - S5 Gift Wrap: a red ribbon and bow.
 - S6 Holly & Cane: holly on the corner and a candy-cane shaft.
+
+**2026-10-07:** the owner chose **S2 ASCII Tree** to design and build in a new
+session, with three changes:
+- Centre the tree on the screen.
+- Draw the top star as a yellow `*` the same size as the others.
+- Use 4 rows in total, including the star: 1, 3, 5 and 7 glyphs.
+Draw the green `*` as typed asterisks, not snowflakes.
