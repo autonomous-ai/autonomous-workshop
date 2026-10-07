@@ -78,9 +78,11 @@ one section a failure you cannot place requires.
   every Component that imports it.
 - Run `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round
   <cad-project> --component part_<id>.step.py --nozzle <nozzle>` after each
-  edit, as one plain command. A Workshop hook adds a one-time
-  `--worker-nonce` to it; never pass one yourself, and never run the round
-  another way. Start it with `yield_time_ms: 300000`; while it runs, continue it with
+  edit, as its own Bash command: never in the same command as a file edit,
+  a heredoc or any other step. Edit the source first, with your edit tool or
+  in a command of its own. A Workshop hook adds a one-time `--worker-nonce`
+  to the round; never pass one yourself, and never run the round another
+  way. In a guarded run make_round refuses a round the hook did not see. Start it with `yield_time_ms: 300000`; while it runs, continue it with
   an empty `write_stdin` poll at `yield_time_ms: 300000`. The poll returns as
   soon as the round exits. Never sleep between polls.
 - Read the round summary, not full logs. Open a report only for a failure the

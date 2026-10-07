@@ -947,6 +947,10 @@ class MakeRoundTest(unittest.TestCase):
         self.assertIn("at most once per round", text)
         self.assertIn("--component", text)
         self.assertIn("--require-component-passes", text)
+        # Issue #113: a round never shares a command with a file edit.
+        flat = " ".join(text.split())
+        self.assertIn("run `make_round` as its own plain Bash command, never in the same "
+                      "command as a file edit, a heredoc", flat)
         self.assertTrue(SCRIPT.is_file())
         self.assertTrue(SCRIPT.stat().st_mode & 0o100)
 
@@ -3348,6 +3352,59 @@ class BlockedReportRulingTest(unittest.TestCase):
             self.assertEqual(code, 2)
             self.assertIn("Blocked Report ledger", self.stderr)
             self.assertFalse(any(Path(command[1]).name == "gen" for command in calls))
+
+
+class GuardedRunNonceTest(unittest.TestCase):
+    """Issue #113: in a run the host gave the make_round guard, a component
+    build round without a worker nonce fails at once."""
+
+    _run_root = SealedReferenceTest._run_root
+    _main = SealedReferenceTest._main
+    _fake_run = SealedReferenceTest._fake_run
+
+    def _guard(self, project):
+        from workshop.make.role_guard import MAKE_ROUND_GUARD_MARKER, make_round_guard_marker_bytes
+
+        marker = module_run_root(project) / MAKE_ROUND_GUARD_MARKER
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_bytes(make_round_guard_marker_bytes())
+
+    def test_a_component_round_without_a_nonce_fails_in_a_guarded_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._run_root(tmp, {"ref-01-whole.png": b"whole"})
+            self._guard(project)
+            module, calls = load_module(), []
+            code = self._main(module, project, ["--component", "part_body.step.py"], calls)
+            self.assertEqual(code, 2)
+            self.assertIn("--worker-nonce", self.stderr)
+            self.assertIn("own", self.stderr)
+            self.assertEqual(calls, [])
+            self.assertFalse((project / "measure/component-rounds/body").exists())
+
+    def test_a_nonce_round_runs_in_a_guarded_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._run_root(tmp, {"ref-01-whole.png": b"whole"})
+            self._guard(project)
+            module, calls = load_module(), []
+            self._main(module, project, ["--component", "part_body.step.py", "--worker-nonce", "ab" * 16], calls)
+            summary = json.loads((project / "measure/component-rounds/body/r0001/summary.json").read_text())
+            self.assertEqual(summary["worker_nonce"], "ab" * 16)
+
+    def test_a_component_round_without_a_nonce_still_runs_where_no_guard_is_materialised(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._run_root(tmp, {"ref-01-whole.png": b"whole"})
+            module, calls = load_module(), []
+            self._main(module, project, ["--component", "part_body.step.py"], calls)
+            summary = json.loads((project / "measure/component-rounds/body/r0001/summary.json").read_text())
+            self.assertIsNone(summary["worker_nonce"])
+
+    def test_records_that_build_nothing_need_no_nonce_in_a_guarded_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._run_root(tmp, {"ref-01-whole.png": b"whole"})
+            self._guard(project)
+            module, calls = load_module(), []
+            code = self._main(module, project, ["--blocked-reports"], calls)
+            self.assertEqual(code, 0)
 
 
 def module_run_root(project):

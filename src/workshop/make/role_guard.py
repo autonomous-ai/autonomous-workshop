@@ -53,6 +53,12 @@ REVIEWER_ID = re.compile(r"[0-9a-f]{17}")
 # make package does not import the workflow package.
 REVISION_SOURCE = "revision-source.zip"
 _COMPONENT_ROUNDS = ("measure", "component-rounds")
+# Issue #113: the sealed run input that tells make_round the run has the
+# guard, so a component round without a worker nonce fails at once. It lives
+# in the read-only ``.agents`` tree. Kept in step with ``GUARD_MARKER`` in
+# make_round, which only checks that it exists.
+MAKE_ROUND_GUARD_MARKER = ".agents/MAKE-ROUND-GUARD.json"
+_COMPONENT_STATE = "make-round-state.json"
 
 
 def _component_source(role: str) -> str:
@@ -63,6 +69,15 @@ def make_round_guard_bytes() -> bytes:
     """The packaged guard hook's exact bytes."""
 
     return resources.files("workshop.make").joinpath(MAKE_ROUND_GUARD_SCRIPT).read_bytes()
+
+
+def make_round_guard_marker_bytes() -> bytes:
+    """Canonical bytes of the sealed marker of a guarded run (issue #113)."""
+
+    return json.dumps(
+        {"kind": "workshop-make-round-guard", "schema_version": 1, "worker_nonce": "required"},
+        sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")
 
 
 def install_make_round_guard(host_state_root: Path) -> str:
@@ -296,6 +311,39 @@ def _carried_summaries(run_root: Path) -> set[str]:
     return digests
 
 
+def _missing_round_summaries(rounds: Path) -> list[str]:
+    """Every Component round its ``make-round-state.json`` records with no
+    ``summary.json`` in the product tree (issue #113).
+
+    A Component's state records its latest round; every round up to it
+    wrote a summary, and a refused round records nothing. A summary moved
+    out of the tree hides that round from the nonce check, so it is missing
+    evidence, never a round to skip.
+    """
+
+    missing = []
+    states = sorted(rounds.glob("*/" + _COMPONENT_STATE)) if rounds.is_dir() else []
+    for state_path in states:
+        role = state_path.parent.name
+        try:
+            if state_path.is_symlink() or not state_path.is_file():
+                raise ValueError("not a regular file")
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            latest = state.get("round") if isinstance(state, dict) else None
+            if type(latest) is not int or latest < 0:
+                raise ValueError("no round")
+        except (OSError, UnicodeError, ValueError) as exc:
+            raise ContractError(
+                "the %s of Component %s is invalid" % (_COMPONENT_STATE, role)
+            ) from exc
+        missing.extend(
+            "%s r%04d" % (role, number)
+            for number in range(1, latest + 1)
+            if not (state_path.parent / ("r%04d" % number) / "summary.json").is_file()
+        )
+    return missing
+
+
 def verify_component_round_nonces(
     project: Path,
     host_state_root: Path,
@@ -306,7 +354,9 @@ def verify_component_round_nonces(
 ) -> None:
     """Refuse a Component round no ``component-worker`` ran (ADR 0080).
 
-    Every round summary under ``measure/component-rounds`` must carry a nonce
+    Every round a Component's ``make-round-state.json`` records must have
+    its ``summary.json`` (issue #113), and every round summary under
+    ``measure/component-rounds`` must carry a nonce
     the guard issued to a worker for that Component, each used by one round
     only. A summary whose exact bytes the revision source sealed was carried
     forward by a correction and keeps the evidence it already had. With
@@ -318,6 +368,14 @@ def verify_component_round_nonces(
     """
 
     rounds = Path(project).joinpath(*_COMPONENT_ROUNDS)
+    missing = _missing_round_summaries(rounds)
+    if missing:
+        raise ContractError(
+            "Component round %s is recorded in make-round-state.json but its "
+            "summary.json is missing from the product tree; keep every round's "
+            "evidence where make_round wrote it, or have a component-worker rerun "
+            "that Component's round" % ", ".join(missing)
+        )
     summaries = (
         sorted(rounds.glob("*/r[0-9][0-9][0-9][0-9]/summary.json"))
         if rounds.is_dir() else []
@@ -375,12 +433,14 @@ def verify_component_round_nonces(
 __all__ = [
     "MAKE_ROUND_GUARD_DIRECTORY",
     "MAKE_ROUND_GUARD_MANAGER_IDS",
+    "MAKE_ROUND_GUARD_MARKER",
     "MAKE_ROUND_GUARD_SCRIPT",
     "REVIEWER_BINDING_MANAGER_IDS",
     "contract_reviewer_check",
     "install_make_round_guard",
     "installed_make_round_guard",
     "make_round_guard_bytes",
+    "make_round_guard_marker_bytes",
     "verify_component_round_nonces",
     "verify_make_round_guard",
 ]

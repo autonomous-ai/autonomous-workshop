@@ -3465,6 +3465,32 @@ class NativeHostTest(unittest.TestCase):
             with self.assertRaisesRegex(StateConflict, "make_round guard"):
                 _verify_make_round_workers(run_root, host, "0" * 64, made)
 
+    def test_a_guarded_make_refuses_a_recorded_round_whose_summary_is_missing(self):
+        """Issue #113: rounds moved out of the product tree refuse Make."""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            host = root / "host"
+            host.mkdir()
+            run_root = root / "run"
+            component = run_root / "artifacts/make/r0001/product/cad/measure/component-rounds/wing"
+            component.mkdir(parents=True)
+            (component / "make-round-state.json").write_text(json.dumps({"round": 2}))
+            made = mock.Mock(product_root="artifacts/make/r0001/product", cad_project_path="cad")
+            digest = install_make_round_guard(host)
+            table = host / "make-round-guard" / "worker-nonces.jsonl"
+            for index in (1, 2):
+                nonce = ("%02d" % index) * 16
+                with table.open("a") as handle:
+                    handle.write(json.dumps({"nonce": nonce, "component": "part_wing.step.py",
+                                             "agent_type": "component-worker"}) + "\n")
+                out = component / ("r%04d" % index)
+                out.mkdir()
+                (out / "summary.json").write_text(json.dumps({"worker_nonce": nonce}))
+            _verify_make_round_workers(run_root, host, digest, made)
+            (component / "r0002/summary.json").rename(root / "moved-summary.json")
+            with self.assertRaisesRegex(ContractError, "wing r0002 is recorded"):
+                _verify_make_round_workers(run_root, host, digest, made)
+
     def test_made_component_acceptances_are_validated_before_the_host_seals_them(self):
         accepted = dict(self.COMPONENT_ACCEPTANCE)
         self.assertEqual(_made_component_acceptances({"title": "t"}), [])

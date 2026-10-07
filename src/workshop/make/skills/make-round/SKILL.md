@@ -121,8 +121,12 @@ calls were reassembling by hand.
   a worker runs `--report-blocked` (issue #88). A Workshop hook
   refuses a call from the wrong agent and gives each worker round a one-time
   `--worker-nonce`; never pass one yourself. The host refuses a component
-  round without a nonce it issued, so run `make_round` only as one plain
-  command.
+  round without a nonce it issued, so run `make_round` as its own plain Bash
+  command, never in the same command as a file edit, a heredoc or any other
+  step. The hook refuses a command that names `make_round` with a call it
+  cannot see (a heredoc, or no call it can parse, beyond reading the script
+  with `sed`, `grep` or `cat`), and in a guarded run make_round itself
+  refuses a component round without a nonce (issue #113).
 - A round can take minutes. Start `make_round` with `yield_time_ms: 300000`
   and, while it runs, continue it with an empty `write_stdin` poll at
   `yield_time_ms: 300000`, and continue a yielded `exec` cell with

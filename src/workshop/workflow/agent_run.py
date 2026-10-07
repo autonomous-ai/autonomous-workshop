@@ -42,8 +42,10 @@ from workshop.make.role_agents import (
 from workshop._validation import require_sha256
 from workshop.make.role_guard import (
     MAKE_ROUND_GUARD_MANAGER_IDS,
+    MAKE_ROUND_GUARD_MARKER,
     REVIEWER_BINDING_MANAGER_IDS,
     install_make_round_guard,
+    make_round_guard_marker_bytes,
     verify_make_round_guard,
 )
 from workshop.runtime.agent_projection import (
@@ -1246,6 +1248,12 @@ class AgentRun:
         )
         all_input_files.extend(wish_reference_inputs)
         all_input_files.extend(revision_inputs)
+        if make_round_guard:
+            # Issue #113: make_round refuses a component round without a
+            # worker nonce in a run holding this sealed marker.
+            all_input_files.append(
+                (PurePosixPath(MAKE_ROUND_GUARD_MARKER), make_round_guard_marker_bytes(), 0o400)
+            )
         all_input_files.sort(key=lambda item: item[0].as_posix())
         input_paths = [relative.as_posix() for relative, _, _ in all_input_files]
         if len(input_paths) != len(set(input_paths)):

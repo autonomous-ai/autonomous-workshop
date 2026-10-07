@@ -2021,3 +2021,15 @@ the background with the product-run `wait_for.py` helper, which returns as
 soon as the round's recorded exit status appears, never with a fixed
 `sleep`. The Codex wording is unchanged. This changes the `make-round`
 fingerprint; materialized runs keep their copied bytes.
+
+## Local change: a guarded run refuses a component round without a nonce (2026-10-07)
+
+A Workshop-local change (issue #113, amending ADR 0080) to Workshop's own
+`make-round`. In a run holding the host-sealed
+`.agents/MAKE-ROUND-GUARD.json`, `make_round` refuses a component
+build round without `--worker-nonce` (exit 2) and tells the worker to run it as
+its own plain Bash command; `--record-review`, `--record-unlock`,
+`--report-blocked` and the other records are unchanged, and a run without the
+marker runs component rounds as before. `SKILL.md` says to run `make_round` as
+its own command, never beside a file edit or heredoc. This changes the
+`make-round` fingerprint; materialized runs keep their copied bytes.

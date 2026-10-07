@@ -48,7 +48,10 @@ the Shared Helpers it imports. The assembly round keeps the Workshop
 Manager's --record-visual, the blind review and --full.
 In a run with the make_round guard (ADR 0080) only a Component Worker runs a
 component round: the guard hook passes --worker-nonce, the round records it,
-and the host refuses a component round whose nonce it did not issue.
+and the host refuses a component round whose nonce it did not issue. A
+component round without a nonce in such a run (the host's sealed
+.agents/MAKE-ROUND-GUARD.json) is refused at once: run make_round as its own
+plain Bash command so the guard sees it (issue #113).
 
 When the sealed Design Contract has an Interfaces section (ADR 0082), the
 Workshop Manager first runs --shared-helpers: it builds the samples under
@@ -139,6 +142,10 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 STATE_NAME = "make-round-state.json"
+# Issue #113: the host seals this under the run root in a run with the
+# make_round guard (ADR 0080); kept in step with MAKE_ROUND_GUARD_MARKER in
+# workshop/make/role_guard.py. Its presence is all that is read.
+GUARD_MARKER = (".agents", "MAKE-ROUND-GUARD.json")
 # Blocked Reports (issue #88).
 BLOCKED_REPORTS_NAME = "blocked-reports.jsonl"
 OPEN_BLOCKED = frozenset({"open", "waiting"})
@@ -1752,6 +1759,13 @@ def run_root(project: Path):
         if (parent / "WISH.json").is_file():
             return parent
     return None
+
+
+def guarded_run(project: Path) -> bool:
+    """Whether the host gave this run the make_round guard (issue #113)."""
+
+    root = run_root(project)
+    return root is not None and os.path.lexists(root.joinpath(*GUARD_MARKER))
 
 
 # Kept in step with WISH_REFERENCES_DIRECTORY and _REFERENCE_NAME in
@@ -5126,6 +5140,13 @@ def main(argv=None) -> int:
             parser.error("--worker-nonce belongs only to a component build round")
         if not re.fullmatch(r"[0-9a-f]{32}", args.worker_nonce):
             parser.error("--worker-nonce is invalid")
+    elif (args.component and not (args.record_review or args.record_unlock or blocked_modes)
+          and guarded_run(Path(args.project).resolve())):
+        print("make_round: this run has the make_round guard, and this component round has no "
+              "--worker-nonce: the guard did not see the call. Rerun make_round as its own plain "
+              "Bash command, never in the same command as a file edit or a heredoc; the guard "
+              "then passes the nonce (ADR 0080, issue #113).", file=sys.stderr)
+        return 2
     return make_round(args)
 
 
