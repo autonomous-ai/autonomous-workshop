@@ -129,5 +129,5 @@ Christmas detail each:
 session, with three changes:
 - Centre the tree on the screen.
 - Draw the top star as a yellow `*` the same size as the others.
-- Use 4 rows in total, including the star: 1, 3, 5 and 7 glyphs.
+- Use 4 rows in total, including the star: 1, 2, 3 and 4 glyphs with a space between glyphs (`   *` / `  * *` / ` * * *` / `* * * *`), 10 glyphs in all.
 Draw the green `*` as typed asterisks, not snowflakes.
