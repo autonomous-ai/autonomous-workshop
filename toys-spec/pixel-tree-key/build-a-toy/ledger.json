@@ -57,12 +57,12 @@
   },
   "loop": {
     "schema": 1,
-    "state": "fixing",
+    "state": "stopped",
     "attempt": 2,
     "wish_id": "wish-20261007-050112-49084163",
     "source_commit": "22e31e8b (local merge of autonomous-toys with origin/main 38dbbecf)",
     "awaiting": null,
-    "updated": "2026-10-07T07:35:00Z"
+    "updated": "2026-10-07T07:40:00Z"
   },
   "stops": [
     {
@@ -188,7 +188,7 @@
         "repeated_print_defects": 0
       },
       "budget_raised": false,
-      "resolution": "owner approved 2026-10-07: fix stage_proposal empty-vault handling on main (#115), resume with --refresh-tools"
+      "resolution": "owner approved 2026-10-07: fix stage_proposal empty-vault handling on main (#115), resume with --refresh-tools; owner stopped the loop 2026-10-07 (someone else is working on it): fix not merged, run left waiting"
     }
   ],
   "contract_contradictions": [
@@ -250,7 +250,7 @@
       "title": "Finalizer refuses the empty VAULT.json the Codex sandbox leaves when no vault is bound",
       "opened_by_loop": true,
       "attempt": 2,
-      "status": "implementing",
+      "status": "abandoned",
       "merge_commit": null
     }
   ],
