@@ -1,0 +1,92 @@
+<title>ASCII Tree Key</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column, the assembly large, then the parts in a wrapping grid, then the notes. */
+:root {
+  --bg: #f3f1ec; --surface: #fbfaf7; --fg: #23262a; --muted: #5d6268;
+  --line: #d9d5cc; --accent: #3f7f45; --gold: #b07a12;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #17191c; --surface: #202328; --fg: #e8e6e1; --muted: #a2a7ad;
+  --line: #34383e; --accent: #7cc283; --gold: #e2b44f; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #17191c; --surface: #202328; --fg: #e8e6e1; --muted: #a2a7ad;
+  --line: #34383e; --accent: #7cc283; --gold: #e2b44f; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 16px/1.55 var(--sans); padding-inline: 16px; padding-block: 28px 48px; }
+main { max-width: 980px; margin: 0 auto; display: grid; gap: 36px; }
+h1 { font: 600 clamp(26px, 5vw, 36px)/1.15 var(--mono); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 .star { color: var(--gold); }
+h2 { font: 600 13px/1.3 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 12px; }
+p { margin: 0; max-width: 65ch; }
+.lede { color: var(--muted); margin-top: 8px; }
+.hero { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 720px) { .hero { grid-template-columns: 1fr; } .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 440px) { .grid { grid-template-columns: 1fr; } }
+figure { margin: 0; display: grid; gap: 8px; min-width: 0; }
+figure img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); background: #f5f0e6; display: block; }
+figcaption { font-size: 14px; color: var(--muted); }
+figcaption b { color: var(--fg); font: 600 13px/1.4 var(--mono); display: block; }
+.tag { font: 500 11px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
+ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; max-width: 70ch; }
+.ask { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; }
+.ask p + p { margin-top: 6px; }
+code { font: 14px var(--mono); }
+</style>
+<main>
+  <header>
+    <h1>ASCII Tree Key <span class="star">*</span></h1>
+    <p class="lede">The S2 terminal key with your three changes. 80 × 42 mm, 4 mm thick, six colours, NFC tag sealed inside. Approving these pictures approves the build.</p>
+  </header>
+
+  <section>
+    <h2>The whole key</h2>
+    <div class="hero">
+      <figure>
+        <img src="ref-01-ascii-tree-key.png" alt="Top view of the whole key: graphite terminal window with red, gold and green dots, a black screen with a centred tree of ten asterisks in rows of 1, 2, 3 and 4, the top one gold, a slim shaft and a three-toothed bit.">
+        <figcaption><b>ref-01 · the assembled key</b>Seen straight down, title bar at the top (−90, 90). The build is scored against this one.</figcaption>
+      </figure>
+      <figure>
+        <img src="view-desk.png" alt="Three-quarter view of the key on a desk, showing the cream stripe in the bow's edge.">
+        <figcaption><span class="tag">Preview only</span><b>On a desk</b>Shows the cream stripe in the edge. It is not used in the build.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>The parts, one picture per shape</h2>
+    <div class="grid">
+      <figure><img src="ref-02-base.png" alt="Graphite base: plain bow plate with a small rectangular pocket for the NFC tag, shaft and bit.">
+        <figcaption><b>ref-02 · base</b>One. The graphite back layer, shaft and bit; the pocket holds the NFC tag. Straight down (−90, 90).</figcaption></figure>
+      <figure><img src="ref-03-stripe.png" alt="Plain cream rounded rectangle.">
+        <figcaption><b>ref-03 · cream layer</b>One. Its edge is the cream stripe, and it seals the tag in. Straight down (−90, 90).</figcaption></figure>
+      <figure><img src="ref-04-frame.png" alt="Graphite window frame with an open screen area and three small dot holes.">
+        <figcaption><b>ref-04 · window frame</b>One. The graphite top layer with the title bar. Straight down (−90, 90).</figcaption></figure>
+      <figure><img src="ref-05-screen.png" alt="Black screen panel with ten asterisk-shaped holes in a 1-2-3-4 triangle.">
+        <figcaption><b>ref-05 · screen</b>One. Black, with the ten asterisk holes. Straight down (−90, 90).</figcaption></figure>
+      <figure><img src="ref-06-glyph.png" alt="One green six-spoke asterisk.">
+        <figcaption><b>ref-06 · asterisk</b>Ten: nine green, one gold on top, all the same size. Straight down (−90, 90).</figcaption></figure>
+      <figure><img src="ref-07-dot.png" alt="One red round dot.">
+        <figcaption><b>ref-07 · title-bar dot</b>Three: red, gold, green. Straight down (−90, 90).</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>Where the build will differ from the pictures</h2>
+    <ul>
+      <li>The screen is flush with the frame, not sunk. A 4 mm plate has room for the tag pocket, the cream layer and one top layer, and no step.</li>
+      <li>Each asterisk's inside corners are rounded by 0.5 mm so the black between the spokes prints cleanly. At this size you will barely see it.</li>
+      <li>The rows sit slightly closer together (6.4 mm) than the asterisks within a row (6.8 mm), as the picture draws them.</li>
+      <li>The separate base picture draws the bit about 1 mm higher, and the cream-layer picture has slightly rounder corners. The build follows the whole-key picture.</li>
+      <li>Six colours need a printer with two AMS units. The print pauses once to drop in the NFC tag.</li>
+    </ul>
+  </section>
+
+  <section class="ask">
+    <h2>Your call</h2>
+    <p>Approve these pictures, or tell me what to change: shape, size, spacing or colour.</p>
+    <p>After approval I write the final contract and start the build.</p>
+  </section>
+</main>
