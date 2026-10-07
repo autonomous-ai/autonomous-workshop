@@ -11,7 +11,7 @@ sources:
   - .venv/lib/python3*/site-packages/build123d/build_common.py (GridLocations, PolarLocations, HexLocations)
   - "toolchain: build123d 0.11.1 on OCP (macOS), every number below measured with small shapes"
 related: [feature-recipes, fdm-minimum-feature-sizes, boolean-pitfalls, unmeshable-faces, sketch-and-extrude-direction, kernel-validity, lightweighting-and-lattices]
-updated: 2026-09-23
+updated: 2026-10-06
 ---
 
 # Text, patterns and surface detail
@@ -59,6 +59,18 @@ Both are exact: Δvolume = glyph area × height to 1e-9. Extruding the cutter
 the wrong way (`amount=+d` for a cut) removes nothing and raises nothing —
 assert the volume change ([[kernel-validity#a-zero-volume-cutter-is-a-silent-no-op]]).
 "HELLO 42" raised on a block took the solid from 6 to 104 faces.
+
+## A glyph in a reference image: trace it, do not type it
+
+A logo or letter in a reference photo is part of the likeness, and its font
+is unknown — `Text()` would substitute one silently (above). Trace it instead:
+mask the glyph's colour inside the frame it sits in, keep the largest blob,
+blur about 1.2 px, contour at 0.5 (`contourpy`, which arrives with
+matplotlib), simplify about 0.5 px, and scale by the same mm-per-pixel as the
+rest of the reference, correcting the axis the photo foreshortens. Keep the
+points in a generated data module with the tracing script beside it, so the
+glyph can be re-derived. A traced serif lambda came out as 71 points; extruded
+as one polygon face it validated and needed no font on any machine.
 
 ## Text on a cylinder: cut through a shell, not to a plane
 

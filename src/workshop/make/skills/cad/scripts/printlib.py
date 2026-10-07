@@ -351,6 +351,48 @@ def tessellate(shape, *, deviation: float = MESH_DEVIATION,
     return points[faces]
 
 
+def tight_box(shape):
+    """((xmin, ymin, zmin), (xmax, ymax, zmax)) of the shape's real extent, in mm.
+
+    OCC bounds a freeform face by the parameter rectangle round its trimming
+    wire, so a B-spline or Bezier face trimmed across its parameter lines still
+    counts the part of its surface the trim removed. A smooth skin cut flat at
+    the desk read min(Z) -3.1 mm that way, and a NURBS sphere cut by a plane
+    reads as the whole sphere. Each side of that loose box is pulled in to the
+    shape's real extreme by an exact distance query against a plane face just
+    outside it. A shape of planes and analytic surfaces is bounded exactly
+    already and skips the queries.
+    """
+    from build123d import Face, GeomType, Plane, Vector
+    from OCP.BRepExtrema import BRepExtrema_DistShapeShape
+
+    box = shape.bounding_box()
+    lo = [box.min.X, box.min.Y, box.min.Z]
+    hi = [box.max.X, box.max.Y, box.max.Z]
+    freeform = {GeomType.BSPLINE, GeomType.BEZIER, GeomType.OFFSET, GeomType.OTHER}
+    if not any(face.geom_type in freeform for face in shape.faces()):
+        return tuple(lo), tuple(hi)
+    centre = [(a + b) / 2 for a, b in zip(lo, hi)]
+    span = 2 * max(b - a for a, b in zip(lo, hi)) + 10.0
+    tight_lo, tight_hi = list(lo), list(hi)
+    for axis in range(3):
+        for sign, bound in ((-1, lo[axis]), (1, hi[axis])):
+            normal = [0.0, 0.0, 0.0]
+            normal[axis] = float(sign)
+            origin = list(centre)
+            origin[axis] = bound + sign * 1.0
+            plane = Face.make_rect(span, span, Plane(Vector(*origin), z_dir=Vector(*normal)))
+            query = BRepExtrema_DistShapeShape(shape.wrapped, plane.wrapped)
+            if not query.IsDone():
+                continue                     # keep the loose (safe) side
+            reach = bound + sign * (1.0 - query.Value())
+            if sign < 0:
+                tight_lo[axis] = reach
+            else:
+                tight_hi[axis] = reach
+    return tuple(tight_lo), tuple(tight_hi)
+
+
 def entry_mesh(path: Path, namespace: str, *, deviation: float = MESH_DEVIATION,
                angular: float = MESH_ANGULAR):
     """Build one printable entry from source -- its printed object, see
@@ -739,6 +781,24 @@ def _self_check() -> int:
                 refused = PRINT_UNION_FUNC in str(error)
             print(f"{'ok  ' if refused else 'FAIL'} a print union that {what} is refused")
             ok &= refused
+
+    # A freeform face trimmed across its parameter lines: OCC's box still holds
+    # the trimmed-off surface, so a part cut flat at Z = 0 reads as below the bed.
+    from build123d import Pos, Rot, Solid, Sphere
+    from OCP.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert
+
+    nurbs = Solid(BRepBuilderAPI_NurbsConvert((Rot(35, 45, 0) * Sphere(10)).wrapped, True).Shape())
+    cut = nurbs & Pos(0, 0, 54) * Box(100, 100, 100)
+    loose = cut.bounding_box().min.Z
+    lo, hi = tight_box(cut)
+    tight = loose < 0 and abs(lo[2] - 4.0) < 1e-4 and abs(hi[2] - 10.0) < 1e-4
+    print(f"{'ok  ' if tight else 'FAIL'} tight_box finds a trimmed NURBS face's real min(Z) "
+          f"(4.000; OCC's box says {loose:.3f}, tight {lo[2]:.4f})")
+    ok &= tight
+    plain = tight_box(shape)
+    exact = np.allclose(plain[1], [10.0, 5.0, 2.5]) and np.allclose(plain[0], [-10.0, -5.0, -2.5])
+    print(f"{'ok  ' if exact else 'FAIL'} tight_box leaves an analytic shape's box as it is")
+    ok &= exact
 
     print("PASS" if ok else "FAIL")
     return 0 if ok else 1

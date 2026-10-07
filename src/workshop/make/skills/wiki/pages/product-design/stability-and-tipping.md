@@ -9,9 +9,12 @@ sources:
   - https://ahfa.us/article-template/quick-answers-to-key-questions-concerning-f205723 (ASTM F2057-23 tests: 10 lb at ≤ 56 in, 0.43 in block + 60 lb, 27 in scope)
   - https://en.wikipedia.org/wiki/Density (steel 7850, lead 11340, brass 8600, zinc 7000, sand 1600–2000 kg/m³)
   - .venv/lib/python3.12/site-packages/build123d/topology/three_d.py (Solid.center, CenterOf.MASS via GProp, density 1)
+  - https://content.iospress.com/articles/work/wor01670 (tablet tilt 0/30/45/60 deg and self-chosen: self-chosen mean about 34 deg preferred, 0 and 60 least; range 20-50 deg at minimum)
+  - https://arxiv.org/pdf/2308.15190 (finger swipes on touchscreens held at 0.5-1.5 N normal force)
+  - https://www.iplab.cs.tsukuba.ac.jp/~ikeda/pdf/asian_chi_2020_ikeda.pdf (tap normal forces 0.1-0.9 N)
   - .venv/lib/python3.12/site-packages/build123d/topology/shape_core.py (Shape.compute_mass, Shape.combined_center)
 related: [filament-properties, toy-safety-constraints, fdm-first-layer-and-warping, perimeters-infill-and-strength, wheeled-vehicles, handheld-ergonomics, perspective-and-hidden-views, exact-constraint-and-kinematic-mounts, counterweights-and-gravity-balance, swivels-and-turntables]
-updated: 2026-10-01
+updated: 2026-10-04
 ---
 
 # Stability and tipping
@@ -67,6 +70,46 @@ E_tip = W * (sqrt(d² + h²) - h)      energy to lift the CoM over the edge
 Doubling `d` roughly doubles both; halving `h` halves the push height a
 child or a sleeve can exert leverage from. A tall, light piece has a tiny
 `E_tip`: a light knock topples it even when its static angle looks fine.
+
+## A touch surface on a desk
+
+A screen people tap and swipe is pushed every time it is used, so a desk
+touchscreen's case is a stability problem before it is a styling one.
+
+- **Loads.** Taps press 0.1–0.9 N normal to the glass; swipes are held at
+  0.5–1.5 N normal, plus fingertip friction along the glass. Design to a 3 N
+  firm press at the far edge of the active area, a stated design choice.
+- **Tilt.** With the angle free, tablet users pick about 34° from the desk and
+  like 0° and 60° least; give at least 20–50° when it adjusts. A fixed tilt
+  near 30° serves most desks.
+- **Keep the screen's plan inside the support polygon.** A press is mostly
+  vertical: if the whole screen projects inside the feet, the vertical part
+  can never tip the case, and only `F sin(tilt)` plus the swipe friction act
+  as the horizontal push in `F_tip = W d / h_F` above.
+- **Hinge a tilting screen at its low edge.** Every press then lands behind the
+  hinge and pushes the screen onto its prop or ratchet. A pivot under the
+  middle turns every press on the front half into a lever that lifts the
+  screen off its support.
+- **Capture the edge of a screen that rests on a support.** A slab propped on
+  a block, stone or kickstand levers its free edge up when pressed beyond the
+  support: with contact at `a` from the edge and a press at `b > a`, the edge
+  lifts once `F (b - a)` beats the slab's own weight moment, which for a light
+  slab is well under 1 N. Pin the edge to the base.
+- **Flush glass.** A raised bezel stops edge swipes. Set the lens flush and keep
+  every ledge, lip or tray below the glass plane.
+- **A ledge for a device leaning on a face.** Make the ledge floor square to
+  the face, so the device's bottom edge sits flat on it (a level floor carries
+  it on one corner, and edge contacts cannot touch). A device of thickness `T`
+  on a face at `θ` from the desk has its front-bottom edge `T cos θ` above its
+  back-bottom edge, so a lip that retains it stands at least `T cos θ` plus the
+  lip height above the groove corner: 8.7 mm plus lip for 10 mm at 30°, 5 mm
+  plus lip at 60°. Concept renders often draw a 3 mm cradle under a 10 mm
+  device; the functional lip then costs side-view likeness, and that is a
+  recorded deviation, not a modelling error.
+- **Two faces, two tip cases.** A stand with a steep and a shallow face tips
+  backward only from the steep one: the press on a steep face is mostly
+  horizontal and high, on a shallow face mostly vertical and inside the feet.
+  Check each face with the device on it and the press at its far edge.
 
 ## How much angle is enough
 

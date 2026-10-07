@@ -60,6 +60,7 @@ from printlib import (  # noqa: E402
     explicit_entries,
     iter_printable_entries,
     purge_project_modules,
+    tight_box,
 )
 
 DEFAULT_BED = (220.0, 220.0)
@@ -119,15 +120,17 @@ def fits_bed(size_x: float, size_y: float, bed: tuple[float, float]) -> bool:
 def measure_entry(path: Path, namespace: str) -> dict:
     """Build one part entry and return its print-orientation measurements."""
     shape = build_entry(path, namespace)
-    box = shape.bounding_box()
+    # OCC's own box counts the trimmed-off surface of a freeform face, so a
+    # smooth part cut flat at the bed reads as below it: see printlib.tight_box.
+    lo, hi = tight_box(shape)
     solids = shape.solids()
     # Compound.volume is 0 when the geometry hangs off children rather than
     # being wrapped directly, which is what AssemblyHelper.compound() returns.
     return {
-        "minZ": box.min.Z,
-        "sizeX": box.size.X,
-        "sizeY": box.size.Y,
-        "sizeZ": box.size.Z,
+        "minZ": lo[2],
+        "sizeX": hi[0] - lo[0],
+        "sizeY": hi[1] - lo[1],
+        "sizeZ": hi[2] - lo[2],
         "volume": float(sum(solid.volume for solid in solids)),
         "solids": len(solids),
         "bodies": body_count(solids),

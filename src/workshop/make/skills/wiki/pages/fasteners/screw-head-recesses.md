@@ -10,7 +10,7 @@ sources:
   - https://meshra.ai/blog/bolt-and-screw-holes-3d-printing (printed counterbore and countersink practice)
   - https://hackaday.com/2017/10/17/sacrificial-bridge-avoids-3d-printed-supports/ (sacrificial bridge)
 related: [metric-screw-clearance-holes, overhangs-and-print-orientation, heat-set-inserts, wall-mounting-and-hanging]
-updated: 2026-09-23
+updated: 2026-10-02
 ---
 
 # Screw head recesses — counterbores and countersinks
@@ -36,6 +36,20 @@ Head height equals the thread diameter. Knurled heads may be larger (M3 up to
 practice: make the bore about 1 mm over the head, and the depth the head height
 for flush (M3 6.5 × 3.0, M4 8.0 × 4.0, M5 9.5 × 5.0). Add depth for a washer or
 to sink the head below the surface.
+
+## Recess datums on curved skins
+
+An enclosure's global rear coordinate is not the local exterior at every
+opening. Intersect the actual B-rep with the proposed screw or opening axis
+at its station, then derive the recess from that skin point. For a screw,
+subtract the standard object's head height and the desired depression to
+find its under-head datum; derive both the shaft and head clearances from
+that same object.
+
+The same rule applies to cable and strap recesses: a cutter starting beyond
+the local skin can silently cut nothing while the smaller through-hole and
+global silhouette still pass. Give the larger recess its own measured
+end-wall or boundary landmark, independently of the through-opening.
 
 ## Button heads, ISO 7380
 

@@ -56,6 +56,14 @@ Parts come from the combined `<name>.step.py`, in **assembly pose**. This is
 deliberate: a `part_*.step.py` returns *print* pose, which is the wrong frame
 for asking whether two things collide on the way together.
 
+A manifest reads one assembly. When a product has alternative poses that
+are each an insertion — a device that rests on either of two faces, a tool in
+either of two holders — make the combined entry a **check assembly** holding
+every alternative at once (confirm with `interfere` that they do not collide),
+prove each with its own conditions, and give each reference its own scene
+entry through `verify_project --likeness-entry`, so the likeness views still
+show one pose.
+
 Every labelled node is addressable, including sub-assemblies — a Compound's
 solids reach its descendants, so `fuselage_nose` moves as one body rather than
 as 60 windows. Where a label repeats, use its dotted path; `--list-parts` marks

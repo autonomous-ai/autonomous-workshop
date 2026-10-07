@@ -210,6 +210,9 @@ flex tail   bend radius 2–3 mm
   on standoffs, with the glass clear of the bezel by a small gap. A breakout
   whose glass is only taped to the PCB is fragile at the flex tail.
 
+A glass plate flush with the shell over a module, in a thin hollow wall, has a
+stack of its own: [[flush-display-plate-stack]].
+
 ## Labels and legends
 
 - Legends on a printed panel: raised or cut text sized from

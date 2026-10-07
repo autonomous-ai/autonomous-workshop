@@ -343,3 +343,5 @@ interrupted thread | interrupted screw | breech lock
 dual lock | mushroom fastener | reclosable fastener
 dzus | quarter-turn fastener | turnlock | cowl fastener
 child resistant | child proof | push and turn
+nfc | ntag | rfid tag | nfc tag | nfc sticker
+inflated | puffy | balloon form | pillow shape

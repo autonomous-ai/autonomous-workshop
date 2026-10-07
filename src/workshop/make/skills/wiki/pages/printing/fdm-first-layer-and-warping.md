@@ -34,6 +34,13 @@ layer height)**; the Hubs FDM article recommends a 45° chamfer or radius on
 edges that touch the build plate. Use a chamfer, not a fillet, on the bed
 side: a fillet's lower edge is an overhang ([[joints#rules-that-are-easy-to-break]]).
 
+A part printed **on its side** has a whole side face as its bed face, so every
+edge round of that face is a bed fillet; the overhang gate flags the slivers
+under each one. Break the edge with an asymmetric chamfer instead, the shorter
+leg on the bed face (`chamfer(side_face.edges(), 0.6, 0.9, reference=side_face)`
+is 34° from vertical), and give the opposite face the same break so the part
+still reads symmetric. A plain 45° chamfer sits on the gate's threshold.
+
 ```python
 BASE_CHAMFER = FIRST_LAYER_H + LAYER_H   # ~0.3 mm at 0.2 + 0.1…0.2
 ```

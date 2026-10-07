@@ -195,6 +195,47 @@ def boxes_apart(a, b, margin: float = 0.0) -> bool:
     )
 
 
+LOCAL_FACES = 200   # obstacles with more faces are cropped to the component's neighbourhood
+
+
+def near_part(obstacle, box, margin: float) -> list:
+    """The solids of `obstacle` within `margin` of the axis box `box`.
+
+    A boolean or a distance against an obstacle costs per face of the
+    obstacle, and a component seated inside a figure passes every bounding-box
+    prefilter: a board of many solids against a 6000-face smooth skin spent
+    30 minutes here. One crop per component, to its own box grown by `margin`,
+    leaves every answer exact -- a body inside the box meets the obstacle only
+    inside it, and every face the crop adds lies at least `margin` from the
+    component -- and turns each later boolean into one against a few dozen
+    faces. Small obstacles, and a crop that throws or does not conserve volume,
+    are returned whole.
+    """
+    if len(obstacle.faces()) <= LOCAL_FACES:
+        return [obstacle]
+    from build123d import Box, Location
+
+    centre = box.center()
+    window = Location((centre.X, centre.Y, centre.Z)) * Box(
+        box.size.X + 2 * margin, box.size.Y + 2 * margin, box.size.Z + 2 * margin)
+    try:
+        local = obstacle & window
+        outside = obstacle - window
+    except Exception:                                  # noqa: BLE001 - crop failed: measure whole
+        return [obstacle]
+
+    def volume(shape):
+        return 0.0 if shape is None else float(sum(s.volume for s in shape.solids()))
+
+    # OCC can return a wrong common without raising (a Bezier skin cut by a box
+    # came back as slivers): the crop and its complement must add up to the
+    # whole, or the whole obstacle is measured instead.
+    total = volume(obstacle)
+    if abs(volume(local) + volume(outside) - total) > max(1e-3, 1e-6 * total):
+        return [obstacle]
+    return [] if local is None else list(local.solids())
+
+
 def clash_volume(component, obstacles: list) -> float:
     """Exact intersection volume against every obstacle, bbox-prefiltered."""
     total = 0.0
@@ -205,14 +246,18 @@ def clash_volume(component, obstacles: list) -> float:
     # the component drops into with clearance all round, and no seat edit
     # answers it because there is nothing there to clear.
     bodies = list(component.solids()) or [component]
+    box = component.bounding_box()
     for obstacle in obstacles:
-        for body in bodies:
-            if boxes_apart(body, obstacle):
-                continue
-            with contextlib.suppress(Exception):
-                meeting = body & obstacle
-                if meeting is not None:
-                    total += float(sum(solid.volume for solid in meeting.solids()))
+        if boxes_apart(component, obstacle):
+            continue
+        for near in near_part(obstacle, box, 1.0):
+            for body in bodies:
+                if boxes_apart(body, near):
+                    continue
+                with contextlib.suppress(Exception):
+                    meeting = body & near
+                    if meeting is not None:
+                        total += float(sum(solid.volume for solid in meeting.solids()))
     return total
 
 
@@ -225,11 +270,16 @@ def nearest_gap(component, obstacles: list, reach: float) -> float | None:
     the shaft does not have.
     """
     best = None
+    box = component.bounding_box()
     for obstacle in obstacles:
         if boxes_apart(component, obstacle, margin=reach):
             continue
         try:
-            gap = float(component.distance_to(obstacle))
+            near = near_part(obstacle, box, reach)
+            gaps = [float(component.distance_to(part)) for part in near]
+            gap = min(gaps) if gaps else None
+            if gap is None or gap >= reach:            # nothing within reach: the exact, slow answer
+                gap = float(component.distance_to(obstacle))
         except Exception:                              # noqa: BLE001
             continue
         best = gap if best is None else min(best, gap)

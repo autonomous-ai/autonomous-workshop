@@ -275,6 +275,11 @@ def _mesh_face_by_face(shape, tolerance: float):
         location = TopLoc_Location()
         mesh = BRep_Tool.Triangulation_s(face, location)
         if mesh is None:
+            # Whole-shape meshing can decline a thin face that the standalone
+            # face mesher handles. Retain the same absolute error contract.
+            BRepMesh_IncrementalMesh(face, tolerance, False, 0.3, True)
+            mesh = BRep_Tool.Triangulation_s(face, location)
+        if mesh is None:
             skipped += 1
             continue
         transform = location.Transformation()
@@ -584,13 +589,63 @@ def compare_tolerance(points: np.ndarray, size: int, requested: float) -> float:
     return min(requested, extent / (4 * size))
 
 
+def tessellate_comparison(shape, tolerance: float):
+    """Mesh with an absolute chordal error in model units, keeping every face.
+
+    build123d's ordinary tessellator uses relative deflection. Passing it an
+    absolute quarter-pixel distance scales that distance by edge size and can
+    falsely flag an unchanged curved STEP. Clear cached relative meshes before
+    asking OCCT for the absolute comparison mesh. A partial mesh cannot prove
+    that an export matches its source.
+    """
+    from OCP.BRepTools import BRepTools
+
+    BRepTools.Clean_s(shape.wrapped)
+    points, faces, skipped, _meshed = _mesh_face_by_face(shape, tolerance)
+    if skipped:
+        # Some source-built faces need their B-rep representation rebuilt,
+        # just as in tessellate(). Still remesh with absolute deflection and
+        # require every face; never compare a silently incomplete silhouette.
+        import tempfile
+        from build123d import export_step, import_step
+
+        with tempfile.TemporaryDirectory(prefix="render-comparison-") as tmp:
+            path = Path(tmp) / "source-roundtrip.step"
+            if not export_step(shape, path):
+                raise RuntimeError("comparison representation rebuild failed")
+            restored = import_step(path)
+            BRepTools.Clean_s(restored.wrapped)
+            points, faces, skipped, _meshed = _mesh_face_by_face(restored, tolerance)
+        print("render_views: comparison rebuilt a face representation through "
+              "a temporary STEP round-trip", file=sys.stderr)
+    if skipped or not faces:
+        raise ValueError(f"comparison mesh omitted {skipped} face(s)")
+    return np.asarray(points, dtype=float), np.asarray(faces, dtype=int)
+
+
 def tessellate_parts(shape, tolerance: float = DEFAULT_TOLERANCE):
-    """One mesh per labelled child, carrying a colour and an id per triangle."""
-    nodes = list(getattr(shape, "children", None) or []) or [shape]
+    """One mesh per leaf, preserving colours inside nested assemblies."""
+    def leaves(node):
+        children = list(getattr(node, "children", None) or [])
+        if children:
+            for child in children:
+                yield from leaves(child)
+        else:
+            yield node
+    nodes = list(leaves(shape))
     points, faces, colours, ids = [], [], [], []
     offset = 0
     for index, node in enumerate(nodes):
         node_points, node_faces = tessellate(node, tolerance)
+        # A leaf tessellates its own location, while an enclosing compound's
+        # transform stays on the ancestor. Preserve that accumulated frame.
+        parent = getattr(node, "parent", None)
+        if parent is not None:
+            trsf = parent.global_location.wrapped.Transformation()
+            rotation = np.array([[trsf.Value(i, j) for j in (1, 2, 3)]
+                                 for i in (1, 2, 3)])
+            translation = np.array([trsf.Value(i, 4) for i in (1, 2, 3)])
+            node_points = node_points @ rotation.T + translation
         points.append(node_points)
         faces.append(node_faces + offset)
         colours.append(np.tile(part_colour(node, index), (len(node_faces), 1)))
@@ -612,6 +667,13 @@ def project_depth(points: np.ndarray, az: float, el: float, roll: float, fov: fl
     rel = points - cam
     depth = np.maximum(-(rel @ c), 1e-6)
     return (rel @ r) / depth, (rel @ u) / depth, depth
+
+
+def display_rgb(linear: np.ndarray) -> np.ndarray:
+    """Encode linear-light build123d colours for an sRGB PNG."""
+    linear = np.clip(linear, 0.0, 1.0)
+    return np.where(linear <= 0.0031308, 12.92 * linear,
+                    1.055 * linear ** (1.0 / 2.4) - 0.055)
 
 
 def shade_view(mesh, az: float, el: float, roll: float = 0.0, fov: float = 0.0,
@@ -695,6 +757,9 @@ def shade_view(mesh, az: float, el: float, roll: float = 0.0, fov: float = 0.0,
             lit = image[edge]
             tone = lit.mean(axis=1, keepdims=True)
             image[edge] = np.where(tone < 0.32, lit * 0.5 + 0.30, lit * 0.42)
+    # Keep the neutral background in its existing display-space tone. Part
+    # colours and illumination were multiplied in linear light above.
+    image[drawn] = display_rgb(image[drawn])
     return image
 
 
@@ -1159,8 +1224,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"--compare-step: no sibling .step for {source.name}", file=sys.stderr)
             return 2
         tol = compare_tolerance(points, args.size, args.tolerance)
-        src_points, src_faces = (points, faces) if tol >= args.tolerance else tessellate(shape, tol)
-        step_points, step_faces = tessellate(build_shape(step_path), tol)
+        src_points, src_faces = tessellate_comparison(shape, tol)
+        step_points, step_faces = tessellate_comparison(build_shape(step_path), tol)
         for label, iou in step_drift(src_points, src_faces, step_points, step_faces, args.size):
             entry = {"view": label, "iou": iou, "ok": iou >= STALE_MIN_IOU, "tolerance": tol}
             failed = failed or not entry["ok"]
@@ -1314,6 +1379,25 @@ def self_check() -> int:
         print(f"{'ok  ' if condition else 'FAIL'} {name}{'  ' + detail if detail else ''}")
         if not condition:
             failures.append(name)
+
+    from build123d import Color, Compound
+    grey = Box(2, 2, 2)
+    grey.color = Color(0.21404114, 0.21404114, 0.21404114)
+    green = Pos(3, 0, 0) * Box(1, 1, 1)
+    green.color = Color(0, 1, 0)
+    nested = Compound(children=[grey, Pos(7, 0, 0) * Compound(children=[green])])
+    leaf_points, leaf_faces, leaf_colours, leaf_ids = tessellate_parts(nested)
+    check("nested review leaves retain their own colours",
+          len(np.unique(leaf_ids)) == 2
+          and any(np.allclose(c, (0, 1, 0)) for c in leaf_colours)
+          and any(np.allclose(c, (0.21404114,) * 3) for c in leaf_colours))
+    green_points = leaf_points[leaf_faces[leaf_ids == 1]].reshape(-1, 3)
+    check("nested review leaves retain ancestor placement",
+          abs(green_points[:, 0].max() - 10.5) < 1e-7)
+    check("linear middle grey encodes to sRGB middle grey",
+          np.allclose(display_rgb(np.array([0.21404114])), [0.5], atol=1e-6))
+    check("the sRGB linear branch preserves dark colour",
+          np.allclose(display_rgb(np.array([0.001])), [0.01292]))
 
     # An L, not a box: a box is symmetric enough that a wrong pose can score
     # 1.0. The notch runs the full depth on purpose -- a blind pocket is
@@ -1476,19 +1560,35 @@ def self_check() -> int:
         pl = _Plane(origin=(0, y, 0), x_dir=(1, 0, 0), z_dir=(0, 1, 0))
         up = [pl.from_local_coords(_V(chord * t, half * 4 * t * (1 - t) + 0.05, 0)) for t in np.linspace(0, 1, 9)]
         lo = [pl.from_local_coords(_V(chord * t, -(half * 4 * t * (1 - t) + 0.05), 0)) for t in np.linspace(0, 1, 9)]
-        return _Wire([_Edge.make_spline(up[::-1]), _Edge.make_spline(lo), _Edge.make_line(lo[-1], up[-1])])
+        return _Wire([_Edge.make_spline(up[::-1]), _Edge.make_line(up[0], lo[0]),
+                      _Edge.make_spline(lo), _Edge.make_line(lo[-1], up[-1])])
 
     blade = _Solid.make_loft([_blade_section(0, 8, 0.45), _blade_section(28, 3, 0.45)], ruled=True)
+    check("the drift fixture has closed sections and valid geometry", blade.is_valid)
     with tempfile.TemporaryDirectory() as tmp:
         step = Path(tmp) / "blade.step"
         _export_step(blade, str(step))
         pts, fcs = tessellate(blade, 0.1)
         tol = compare_tolerance(pts, 480, 0.1)
-        sp, sf = tessellate(blade, tol)
-        rp, rf = tessellate(build_shape(step), tol)
+        sp, sf = tessellate_comparison(blade, tol)
+        rp, rf = tessellate_comparison(build_shape(step), tol)
         worst = min(iou for _v, iou in step_drift(sp, sf, rp, rf, 480))
     check("the comparison tessellates below a pixel", tol <= 28 / (4 * 480) + 1e-9, f"tolerance {tol:.4f}")
     check("a STEP round trip of a thin blade reads as no drift", worst >= STALE_MIN_IOU, f"worst IoU {worst:.4f}")
+
+    # The pixel-derived tolerance is an absolute distance, even on large
+    # curved edges; a cached relative mesh must not survive this call.
+    from build123d import Sphere as _Sphere
+    sphere = _Sphere(60)
+    coarse_points, coarse_faces = tessellate(sphere, 0.025)
+    fine_points, fine_faces = tessellate_comparison(sphere, 0.025)
+    # OCCT's interior triangulation can deviate by twice the boundary setting.
+    # Measure the actual triangle centroids, rather than only an API argument.
+    coarse_error = float((60 - np.linalg.norm(coarse_points[coarse_faces].mean(axis=1), axis=1)).max())
+    fine_error = float((60 - np.linalg.norm(fine_points[fine_faces].mean(axis=1), axis=1)).max())
+    check("comparison replaces a cached relative mesh with absolute deflection",
+          fine_error < 0.05 and fine_error < coarse_error / 2,
+          f"centroid error {coarse_error:.4f} -> {fine_error:.4f} model units")
 
     # Drift must see every body. A source of two separate bodies against a
     # STEP that lost the smaller one reads as drift only when both masks keep

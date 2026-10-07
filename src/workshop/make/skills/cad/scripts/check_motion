@@ -587,6 +587,52 @@ def resolve_parts(names, parts: dict, field: str) -> list[tuple[str, object]]:
     return resolved
 
 
+LOCAL_FACES = 200   # obstacles with more faces are cropped to the sweep's box once
+
+
+def crop_to_sweep(obstacle, boxes, margin: float = 1.0):
+    """`obstacle` cut down to the box round every pose of a sweep.
+
+    Each step's boolean costs per face of the obstacle, and a part that slides
+    out of a figure passes every bounding-box prefilter at every step: a
+    6000-face smooth skin made each step seconds. Every pose lies inside the
+    union of the pose boxes, so overlap with the crop equals overlap with the
+    whole -- exact, paid once per sweep (two booleans: the crop and its
+    complement, whose volumes must add up). Small obstacles, and any crop that
+    throws or loses volume, keep the whole obstacle; None means no material
+    within the sweep's box at all.
+    """
+    if len(obstacle.faces()) <= LOCAL_FACES:
+        return obstacle
+    from build123d import Box, Location
+
+    lo = [min(getattr(b.min, a) for b in boxes) - margin for a in "XYZ"]
+    hi = [max(getattr(b.max, a) for b in boxes) + margin for a in "XYZ"]
+    window = Location(tuple((x + y) / 2 for x, y in zip(lo, hi))) * Box(*(y - x for x, y in zip(lo, hi)))
+    try:
+        local = obstacle & window
+        outside = obstacle - window
+    except Exception:                                  # noqa: BLE001
+        return obstacle
+    if not conserves_volume(obstacle, local, outside):
+        return obstacle
+    return local if local is not None and local.solids() else None   # None: nothing near the path
+
+
+def conserves_volume(whole, inside, outside, rel: float = 1e-6) -> bool:
+    """True when the crop and its complement add back up to the whole.
+
+    OCC can return a wrong common without raising: a 6000-face Bezier skin cut
+    by a box came back as two 5 mm3 slivers, and the sweep against it read
+    clear where the whole skin blocked at the first step. Checked by volume,
+    a failed crop falls back to the whole obstacle: slower, never wrong.
+    """
+    def volume(shape):
+        return 0.0 if shape is None else float(sum(s.volume for s in shape.solids()))
+    total = volume(whole)
+    return abs(volume(inside) + volume(outside) - total) <= max(1e-3, rel * total)
+
+
 def sweep(moving, obstacles, place, steps: int, tol: float, allow_seated: bool) -> dict:
     """Move `moving` through `steps` samples, reporting the first collision.
 
@@ -595,10 +641,14 @@ def sweep(moving, obstacles, place, steps: int, tol: float, allow_seated: bool) 
     not the path -- that is what `interfere` is for.
     """
     first = 1 if allow_seated else 0
+    poses = [(step, place(moving, step / steps)) for step in range(first, steps + 1)]
+    boxes = [moved.bounding_box() for _, moved in poses]
+    obstacles = [(name, crop_to_sweep(obstacle, boxes)) for name, obstacle in obstacles]
     reporter = progresslib.Progress("sweep", steps + 1 - first)
-    for step in range(first, steps + 1):
-        moved = place(moving, step / steps)
+    for step, moved in poses:
         for name, obstacle in obstacles:
+            if obstacle is None:
+                continue
             volume = overlap_volume(moved, obstacle)
             if volume > tol:
                 reporter.finish(f"- collision at step {step}")

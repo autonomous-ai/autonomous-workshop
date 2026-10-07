@@ -9,8 +9,9 @@ sources:
   - "toolchain: build123d 0.10-0.11 on OCP 7.9"
   - "experience: chamfer and section-offset both failed on the bed edges of a lofted flexi chain"
   - "experience: a bevel round a flat-faced limb failed on the fused limb and on one mirrored side"
+  - "experience: a rounded screen tray whose acute rear edge consumed the rim behind the lens"
 related: [construction-strategy, operation-families, kernel-validity, modeling-failure-modes, flexi-chain-joints]
-updated: 2026-09-29
+updated: 2026-10-05
 ---
 
 # Fillet and chamfer pitfalls
@@ -52,6 +53,43 @@ cropped to ~5× shows it.
 Do not rely on the ladder for cosmetic radii. Reshape the profile so the
 intended radius genuinely fits (a knife-edged wafer cannot take any fillet;
 merge it into its neighbour), then verify by cropping the render.
+
+## An acute edge eats r / tan(t / 2) of each face
+
+A round of radius `r` between two faces meeting at interior angle `t` is
+tangent to each face `r / tan(t / 2)` from the edge: `r` at 90 deg, 0.58 r at
+120 deg, and 3.3 r at 34 deg. On the acute rear edge of a tilted tray (top
+face against an undercut), a 2 mm round would have eaten 6.5 mm of the top and
+uncovered a lens pocket with a 2.5 mm rim. Size the round per edge from that
+formula against the face's narrowest feature, and fillet in one
+`BRepFilletAPI_MakeFillet` with a radius per edge (`Add(r, edge)` for each):
+three radii on a convex wedge built in 0.1 s. Skip edges whose two faces are
+tangent (a straight side running into a corner arc); filleting them fails.
+
+**Per-edge radii at a tetrahedron's acute corners pass the B-rep checks and
+fail `check_mesh`.** Sizing each round by its dihedral (radius from a constant
+setback) left three degenerate corner patches: valid and `validate`-clean, but
+the tessellation had boundary edges once its sub-micron slivers were dropped.
+A single radius on every edge of the same body built watertight. Rounds also
+recede an acute corner: 0.8 mm on a 30 deg wedge corner shortened the 80 mm
+extent by about 4 mm, so state that in the spec instead of quoting the sharp
+size.
+
+**A large round meeting a small one at an acute corner can cross itself.**
+The fillet builds, `BRepCheck_Analyzer` passes it, and the self-interference
+check (`BRepAlgoAPI_Check(shape, True, True)`, what `inspect validate` runs)
+fails it: 3 mm side rounds meeting a 0.6 mm round at a 34 deg corner left one
+self-intersecting face per corner; 2 mm sides did not. Run the check on the
+filleted part alone, before it is fused into anything that hides where the
+fault came from.
+
+The same holds for rounding by Minkowski sum (inset the solid by `r`, hull
+spheres of radius `r` at its corners). Hulling spheres alone also leaves an
+oblique face faceted: no sphere vertex lies exactly on a plane tilted to the
+sphere's axis, so the face lands up to `r (1 - cos(pi / n))` low and in many
+slivers. Add every face of the inset solid pushed out by exactly `r` along its
+normal to the hull points; the flat faces are then exact and the spheres only
+fill the rounds.
 
 ## Tangent chains and multi-arc outlines
 
@@ -97,6 +135,14 @@ closer than |delta| to the source polyline, resample, smooth) and build
 bevelled bodies as one multi-section ruled loft so no coincident-face fuse
 exists. The same Null-offset behaviour is why a spline-bounded solid is never
 hollowed or inflated with `offset()` ([[feature-recipes#conformal-surface-decoration]]).
+
+For a cosmetic underside inset, when a constant-distance offset is unnecessary,
+scale the exact planar section about its own bounding-box centre before
+extruding it. Restore its plane datum after scaling. Derive the scale from
+the chosen width reveal and report the proportional reveal on the other axis;
+this preserves the original spline topology but is not a uniform offset or
+a mating-fit proof. Cosmetic shadow reveals are not `cadfits` clearances and
+must not widen the fit table's assembly band.
 
 ## Chamfers on wavy outlines pass validity and fail BOP
 

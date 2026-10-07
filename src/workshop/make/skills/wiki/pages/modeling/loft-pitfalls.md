@@ -1,7 +1,7 @@
 ---
 title: Loft pitfalls
 tags: [loft, section, station, pchip, ruled, spline, smooth-max, blend, overshoot]
-aliases: [multi-section loft, lofted surface, crumpled surface, loft failure, make_loft, surface ripple, loft to a point, loft vertex, pucker, loft end cap, leaf tip]
+aliases: [multi-section loft, loft knot vector, huge step file, loft parameters, lofted surface, crumpled surface, loft failure, make_loft, surface ripple, loft to a point, loft vertex, pucker, loft end cap, leaf tip]
 sources:
   - skills/cad/references/build123d-modeling.md (loft and blending sections; before the move)
   - skills/cad/references/repair-loop.md (loft failure diagnosis; before the move)
@@ -9,7 +9,7 @@ sources:
   - "toolchain: build123d 0.10-0.11 on OCP 7.9"
   - "experience: a head lofted to a vertex puckered its snout; leaves with a fused tip cap broke every later half-cut"
 related: [loft-organic-bodies, operation-families, frames-and-rotations, modeling-failure-modes, boolean-pitfalls]
-updated: 2026-09-28
+updated: 2026-10-05
 ---
 
 # Loft pitfalls
@@ -32,6 +32,18 @@ station and allocate a fixed number of points to each rail-to-rail band, so
 index *i* means the same feature everywhere. Cluster samples toward the rails
 — that is where curvature is worst, so even spacing inside a band leaves the
 sharpest part of the curve least resolved.
+
+## Sections need one parametrisation, or the knots multiply
+
+`Spline(*pts, periodic=True)` parametrises each section by its own chord
+lengths, so N sections carry N different knot vectors, and the loft makes them
+compatible by merging every knot into every section. The surface is fine; the
+file is not: 28 sections of 180 points gave one lofted face a 15 MB STEP and a
+4.6 s build. Passing the same list to every section,
+`Edge.make_spline(pts, periodic=True, parameters=np.linspace(0, 1, len(pts) + 1))`,
+gave 0.58 MB in 2.1 s with the surface unchanged to 0.0004 mm. Sections
+sampled on one set of rails (above) can share one parameter list; a lofted
+part whose STEP runs to megabytes for a handful of faces has this defect.
 
 ## Control curves that ruin the surface
 

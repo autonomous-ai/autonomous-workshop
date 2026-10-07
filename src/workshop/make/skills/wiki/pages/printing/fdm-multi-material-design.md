@@ -10,7 +10,7 @@ sources:
   - "experience: a multi-colour plate of inlays failed overhang and thickness on shared faces; its fused union passed"
   - "skills/cad/scripts/printlib.py"
 related: [printed-part-count, fdm-surface-finish, fdm-layer-height-and-nozzle, overhangs-and-print-orientation, wall-thickness-and-hollowing]
-updated: 2026-09-29
+updated: 2026-10-06
 ---
 
 # Designing for multi-material and multi-colour printing
@@ -31,6 +31,17 @@ A colour boundary designed as a horizontal plane is almost free; the same
 boundary tilted 10° costs a change on every layer it crosses. For raised
 letters on a flat plate, keep the letters a different height band from the
 plate.
+
+**Modelling a per-layer colour part.** Build the print from its primitives
+(the lower-colour plate, the upper-colour plate, any relief) and split nothing
+afterwards: each primitive is one colour region and one labelled solid, so the
+STEP carries colours a multi-material slicer imports as objects, and the print
+entry's `gen_print_union()` returns their union for the mesh gates. A relief
+of the upper colour standing on the lower colour inside a window is a solid of
+its own. An insert sealed at a pause ([[nfc-tags-in-prints]]) goes below the
+colour change with its whole roof in the lower colour, so the pause and the
+filament change are two different heights, both on layer boundaries — assert
+them in source.
 
 ## Purge
 

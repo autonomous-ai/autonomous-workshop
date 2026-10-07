@@ -4,11 +4,11 @@ tags: [likeness, silhouette, iou, camera, handedness, mirror, mask, reference-im
 aliases: [likeness score, silhouette iou, pose search, mirror image model, reference mask, shaded review]
 sources:
   - skills/image-to-cad/scripts/render_views.py and check_likeness.py (pose search, windowed camera, reflection check, hole filling)
-  - skills/image-to-cad/scripts/ref_silhouette.py (flattening rule)
+  - skills/image-to-cad/scripts/ref_silhouette.py (flattening rule; border chroma rule for a light ground)
   - "toolchain: fixed orthographic camera 0.865 vs searched camera 0.974 on one perspective reference, same model (reproducible)"
   - "toolchain: chiral fixture — a mirror-image model scores 0.9859 under a free azimuth search (reproducible in the render_views self-check)"
 related: [likeness-iteration, measuring-reference-photos, organic-likeness, repeated-scene-likeness]
-updated: 2026-09-23
+updated: 2026-10-06
 ---
 
 # Silhouette likeness — what it measures and how it lies
@@ -156,19 +156,72 @@ Two things that look like a shape problem on such a reference and are not:
   Where a line is drawn *over* the subject (a ground plane edge-on across the
   feet), the pixels under it are gone; say so in the README.
 
-The flattener's ground is a luminance band (default 66-212) plus a
-saturation ceiling, flooded from the border. **On a light studio ground above
-the band** — a concept sheet at luma ~235 — nothing qualifies as ground, and
-the "silhouette" is the whole frame (area = image, bbox = the frame). Read the
-border's luma first and set `--lum-band` around it with a tight `--sat-max`
-(`--lum-band 218,245 --sat-max 9` held a white ghost on a 235 grey ground,
-because the drawing's dark outline stroke stops the flood).
+The flattener's band rule (luminance 66-212 plus a saturation ceiling,
+flooded from the border) finds **no ground on a light studio sweep above the
+band** — a concept sheet or a product render at luma ~230 — and returns the
+whole frame. `--ground auto` (the default) notices that the border itself
+fails the band rule and switches to the **border rule**: ground is any pixel
+whose chroma (R−G, B−G) lies within 3.5 of the border's and that is at most 60
+darker than the border's darkest. That separates a warm white print from a cool
+grey sweep by the *sign* of the tint, which saturation (max − min) discards; a
+neutral contact shadow stays ground and a black part stays object. The
+tolerance must clear the JPEG chroma step (a flat ground scatters to √10 ≈ 3.16
+from its median; 3.0 left a maze of ground standing as object that the closing
+glued to the outline), and the chroma must not be smoothed (a 5 px mean grew
+the outline 2 px into the ground and pulled the shadow beside it in). The
+gate's own mask is blind on such a reference (it saw 12 % of one outline), so
+the outline comparison is reported *not comparable* — look at the `-sil.png`
+before scoring — and an outline that reaches the frame edge always fails. For
+a subject with no tint against its ground, set the band by hand: `--ground
+band --lum-band 218,245 --sat-max 9` held a white ghost on a 235 grey ground,
+because the drawing's dark outline stroke stops the flood.
+
+**A warm off-white subject on a near-white ground** (ivory at luma ~220,
+saturation ~17, on a ground at ~254 with soft grey shadows at saturation
+≤ 7) separates by **saturation, not luminance**: `--sat-max 11 --lum-band
+120,256`. A luminance band that excludes the subject also excludes the grey
+contact shadow, which then joins the feet into one blob and, once holes are
+filled, closes the open span under an arch or an A-frame.
 
 Contents are not product. A reference that shows the vessel full — candy
 heaped over a bowl's rim — scores the product against its contents. Clear
 exactly the contents' window in a copy of the flattened silhouette, from a
 script that prints the rows and columns it cleared, and say so in the README;
 never add fake contents to the deliverable to match.
+
+## A subject the same colour as its ground
+
+A brushed-metal or white subject on a grey studio ground has no colour or
+luminance to separate it, so the flattener returns the whole frame or nothing.
+What separates it is its **edges**: Sobel on a lightly blurred luminance,
+threshold near 18 of 255, close three iterations, fill holes, open, keep the
+largest blob. That recovers the outline against the wall exactly, and the
+sky-side and tail-side outline of a vehicle came out within a pixel.
+
+It fails along the **bottom**: the contact shadow and the floor reflection of
+the wheels have strong edges too and glue a fringe to the silhouette. Do not
+threshold darkness to remove them (the shadow under the body is as dark as the
+tyres). Read the lower outline off the image as a short polyline of contact
+points, or as circles for round tyres plus a straight sill line, and take each
+column from the edge-fill top to that polyline. Check the result by laying it
+over the reference in red before trusting a score. All inputs are image pixels
+and read-off constants in a script beside the masks; none is a model number.
+
+## Fit the profile to the mask before building
+
+The silhouette score is a function of a handful of side-profile numbers
+(length, nose height, hood angle, cowl station, roof flat, tail height, ride
+height, wheel radius, axle stations). So instead of building and nudging, run
+a bounded differential-evolution fit of a rasterised polygon of those numbers
+against the normalised reference mask, using the gate's own normalisation
+(height-normalised, width centred), with the hard constraints of the brief
+(a tilted display, a bed size) as bounds. It takes seconds and showed that a
+model at 0.81 would reach 0.94 at a length-to-height ratio the first guess had
+missed by 10 percent. Unbounded, the fit wanders to extremes (a 310 mm body
+with a 23 mm roof flat): the bounds are the design, so choose them first.
+Where a hard constraint contradicts the reference (a screen that forces a
+steeper windshield than the picture shows), the fit finds the least damaging
+compromise; record that deviation in the spec.
 
 ## Filling holes removes through-openings
 

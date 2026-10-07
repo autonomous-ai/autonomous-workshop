@@ -5,8 +5,9 @@ aliases: [is_valid, BRepCheck_Analyzer, BRepAlgoAPI_Check, negative volume, inve
 sources:
   - skills/cad/references/build123d-modeling.md (validity and BOP-check sections; before the move)
   - "toolchain: build123d 0.10 on OCP 7.9 (Part(solid.wrapped) volume, Bnd_Box control-hull bounds)"
+  - "toolchain: OCP 7.9 BRepBndLib.AddOptimal on Bezier and NURBS faces trimmed by a plane"
 related: [boolean-pitfalls, modeling-failure-modes, construction-strategy, mass-properties-and-measurement, unmeshable-faces]
-updated: 2026-09-28
+updated: 2026-10-05
 ---
 
 # Kernel validity checks
@@ -76,6 +77,16 @@ a tray whose furthest vertex, and whose cutting plane, was at 54.6 mm. Sampling
 `face.position_at(u, v)` over the parameter range reads the untrimmed surface
 too. For a trimmed revolve, read extents from `vertices()` or edges, and keep
 the box for untrimmed lofts.
+
+The cause is general: OCC bounds a freeform face by the parameter rectangle
+round its trimming wire, so a B-spline or Bezier face trimmed *across* its
+parameter lines still counts the part of its surface the trim removed. A
+smooth skin of Bezier patches cut flat at Z = 0 read min(Z) -3.1 mm (six
+patches crossing the cut), and a NURBS sphere tilted and cut by a plane reads
+as the whole sphere. Vertices and edges are not enough when the extreme lies
+inside a face; the exact extent is a distance query against a plane just
+outside each side of the loose box (`BRepExtrema_DistShapeShape`), which is
+what the print gates' `printlib.tight_box` does.
 
 ## A zero-volume cutter is a silent no-op
 

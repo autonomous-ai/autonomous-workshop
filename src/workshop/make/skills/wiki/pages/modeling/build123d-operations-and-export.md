@@ -10,7 +10,7 @@ sources:
   - "experience: an assembly measured through a new Compound of its parts exported with its part names gone"
   - "experience: a revolved offset() envelope lost its offset-curve face in the STEP; the drum cut by it read back as an open shell"
 related: [build123d-builder-and-algebra, operation-families, cad-joint-types, step-file-format, sweeps-and-helices, mass-properties-and-measurement]
-updated: 2026-09-29
+updated: 2026-10-04
 ---
 
 # build123d operations, joints and STEP export
@@ -130,6 +130,17 @@ drift render (`render_views --compare-step`) sees the missing area. Convert
 the offset face before using it -- `Face(BRepBuilderAPI_NurbsConvert(face.wrapped,
 True).Shape())` -- which turns every offset curve into a plain B-spline; the
 round trip then returns the solid with every face.
+
+## Three small traps
+
+- `Vector.get_angle(other)` returns **degrees**. Wrapping it in
+  `math.degrees()` turns a 90° rod into one rotated 5157°, and every rod built
+  that way lands at the wrong angle without an error.
+- `offset(open_wire, d)` returns a closed `Wire`, not a `Face`. `extrude` of
+  that wire makes a zero-volume shell, and the first boolean with it fails as
+  "Cannot intersect shape with empty compound". `make_face()` it first.
+- `Location * Vector` raises (`Multiplied(): incompatible function
+  arguments`). Carry a point with `(loc * Location(tuple(p))).position`.
 
 ## A Compound takes the children it is given
 
