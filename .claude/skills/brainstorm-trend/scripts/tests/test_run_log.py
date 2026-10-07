@@ -382,9 +382,14 @@ class RankTrendsTests(unittest.TestCase):
         self.assertEqual([row["name"] for row in rows], [c["name"] for c in _shortlist()])
         self.assertTrue(all(row["interest"] is None for row in rows))
 
+    def test_an_empty_answer_warns(self) -> None:
+        rows, warning = RL.rank_trends(_shortlist(), fetch=lambda keywords: {})
+        self.assertIn("no interest for", warning)
+        self.assertTrue(all(row["interest"] is None for row in rows))
+
     def test_a_keyword_missing_from_the_answer_has_no_interest(self) -> None:
         rows, warning = RL.rank_trends(_shortlist(), fetch=lambda keywords: {"fold": 3.0})
-        self.assertIsNone(warning)
+        self.assertIn("no interest for comet lumen, bears, rockets, robots", warning)
         self.assertEqual(rows[0]["name"], "Fold")
         self.assertEqual([row["interest"] for row in rows[1:]], [None] * 4)
 

@@ -264,11 +264,17 @@ def rank_trends(
         for row in rows:
             row["interest"] = None
         return rows, f"Google Trends lookup failed, shortlist left unranked: {exc}"
+    missing = []
     for row, keyword in zip(rows, keywords):
         value = interest.get(keyword)
         row["interest"] = None if value is None else round(float(value), 1)
+        if value is None:
+            missing.append(keyword)
     rows.sort(key=lambda row: -1.0 if row["interest"] is None else row["interest"], reverse=True)
-    return rows, None
+    warning = (
+        "Google Trends returned no interest for %s" % ", ".join(missing) if missing else None
+    )
+    return rows, warning
 
 
 def _google_trends_interest(keywords: Sequence[str]) -> Mapping[str, float]:

@@ -47,7 +47,17 @@ Pins everywhere.
 """
 
 
+def _run_log(run: Path, drawn=("storyteller", "cam-whisperer"), replacement=None) -> None:
+    run.mkdir(parents=True, exist_ok=True)
+    steps = [{"type": "personalities_drawn", "personalities": list(drawn), "seed": 1}]
+    if replacement:
+        steps.append({"type": "gate_rejected", "replacement_personality": replacement})
+    (run / "run.json").write_text(json.dumps({"steps": steps}))
+
+
 def _slot(run: Path, slot: str, text: str = CONTRACT, preview: str = "preview.png") -> None:
+    if not (run / "run.json").exists():
+        _run_log(run)
     (run / slot).mkdir(parents=True)
     (run / slot / "CONTRACT.md").write_text(text)
     (run / slot / preview).write_bytes(b"image-" + slot.encode())
@@ -77,7 +87,7 @@ class PacketTextTests(unittest.TestCase):
 
 
 class NamedPersonalityTests(unittest.TestCase):
-    def test_finds_a_pool_name_or_hyphenated_id_and_the_word_personality(self) -> None:
+    def test_finds_a_name_or_hyphenated_id_and_the_word_personality(self) -> None:
         text = "A Cam Whisperer build, cam-whisperer style, by this personality."
         self.assertEqual(
             BP.named_personalities(text, POOL),
@@ -86,6 +96,17 @@ class NamedPersonalityTests(unittest.TestCase):
 
     def test_an_ordinary_lowercase_word_is_not_a_name(self) -> None:
         self.assertEqual(BP.named_personalities("the walker on the hill", POOL), [])
+
+
+class ContestantTests(unittest.TestCase):
+    def test_the_contest_is_the_draw_and_every_replacement(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            run = Path(directory)
+            _run_log(run, replacement="walker")
+            self.assertEqual(
+                [entry["id"] for entry in BP.contestants(run, POOL)],
+                ["storyteller", "cam-whisperer", "walker"],
+            )
 
 
 class BuildTests(unittest.TestCase):
@@ -108,6 +129,24 @@ class BuildTests(unittest.TestCase):
             _slot(run, "candidate-2")
             BP.build_packets(SCHEDULE, run, out, POOL)
             self.assertNotIn("Storyteller", (out / "match-00" / "A.md").read_text())
+
+    def test_a_name_outside_the_contest_or_in_the_title_is_fine(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            run, out = Path(directory) / "run", Path(directory) / "packets"
+            walking = CONTRACT.replace("# Daybreak", "# Desk Storyteller").replace(
+                " Designed by the Storyteller.", "").replace("The one seam", "A Walker gait")
+            _slot(run, "candidate-1", walking)
+            _slot(run, "candidate-2", walking)
+            self.assertEqual(len(BP.build_packets(SCHEDULE, run, out, POOL)), 2)
+
+    def test_existing_packets_are_never_overwritten(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            run, out = Path(directory) / "run", Path(directory) / "packets"
+            _slot(run, "candidate-1")
+            _slot(run, "candidate-2")
+            out.mkdir()
+            with self.assertRaisesRegex(BP.PacketError, "already exists"):
+                BP.build_packets(SCHEDULE, run, out, POOL)
 
     def test_a_section_naming_a_personality_refuses_every_packet(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -132,6 +171,7 @@ class CliTests(unittest.TestCase):
     def test_refusal_exits_2_with_every_reason(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             run, out = Path(directory) / "run", Path(directory) / "packets"
+            _run_log(run, drawn=("storyteller", "walker"))
             _slot(run, "candidate-1", CONTRACT.replace("The one seam", "A Storyteller seam"))
             _slot(run, "candidate-2", CONTRACT.replace("The one seam", "A Walker seam"))
             schedule = Path(directory) / "schedule.json"
@@ -144,6 +184,17 @@ class CliTests(unittest.TestCase):
             self.assertEqual(result.returncode, 2)
             self.assertIn("candidate-1 names Storyteller", result.stderr)
             self.assertIn("candidate-2 names Walker", result.stderr)
+
+    def test_a_missing_schedule_exits_2_without_a_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            result = subprocess.run(
+                [sys.executable, str(SCRIPTS_ROOT / "blind_packets.py"),
+                 "--schedule", str(Path(directory) / "none.json"),
+                 "--run-dir", directory, "--out", str(Path(directory) / "p")],
+                capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 2)
+            self.assertNotIn("Traceback", result.stderr)
 
 
 if __name__ == "__main__":

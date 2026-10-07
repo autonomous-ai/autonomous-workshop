@@ -9,10 +9,13 @@ The rest of a contract stays out, so an introduction that says who designed
 it never reaches a judge.
 
 A packet that still names a personality would unblind its judge, so the
-build refuses before writing anything when a kept section carries a pool
-personality's name (``Cam Whisperer``, matched as written), its hyphenated
-id (``cam-whisperer``), or the word ``personality``. Ordinary lowercase words
-such as "walker" or "spinner" stay usable. Deterministic tooling only, per
+build refuses before writing anything when a kept section carries the name
+of a personality in this contest (``Cam Whisperer``, matched as written),
+its hyphenated id (``cam-whisperer``), or the word ``personality``. The
+contest is the run's draw and its replacements, read from ``run.json``; the
+title is the toy's own name and is not searched. So a "Desk Walker" title,
+or "Spinner" in a contest without the Spinner, stays usable, as do ordinary
+lowercase words such as "walker". Deterministic tooling only, per
 repo AGENTS.md: no model calls and no agent orchestration.
 
     blind_packets.py --schedule schedule.json --run-dir RUN --out PACKETS
@@ -93,6 +96,26 @@ def named_personalities(text: str, pool: Sequence[Mapping[str, Any]]) -> List[st
     return found
 
 
+def contestants(
+    run_dir: Path, pool: Sequence[Mapping[str, Any]]
+) -> List[Mapping[str, Any]]:
+    """The pool entries this run drew or drew as replacements, per its
+    ``run.json``."""
+
+    run = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
+    ids: List[str] = []
+    for step in run.get("steps", []):
+        if step.get("type") == "personalities_drawn":
+            ids.extend(step.get("personalities", []))
+        elif step.get("type") == "gate_rejected" and step.get("replacement_personality"):
+            ids.append(step["replacement_personality"])
+    by_id = {entry["id"]: entry for entry in pool}
+    unknown = [item for item in ids if item not in by_id]
+    if unknown:
+        raise PacketError(["run.json names personalities not in the pool: %s" % ", ".join(unknown)])
+    return [by_id[item] for item in ids]
+
+
 def _draft(run_dir: Path, slot: str, pool: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
     reasons: List[str] = []
     text = ""
@@ -102,7 +125,8 @@ def _draft(run_dir: Path, slot: str, pool: Sequence[Mapping[str, Any]]) -> Dict[
         reasons.append("%s has no CONTRACT.md" % slot)
     except PacketError as exc:
         reasons.extend("%s: %s" % (slot, reason) for reason in exc.reasons)
-    for name in named_personalities(text, pool):
+    sections = text.split("\n", 1)[1] if "\n" in text else ""
+    for name in named_personalities(sections, pool):
         reasons.append("%s names %s" % (slot, name))
     previews = [run_dir / slot / name for name in PREVIEW_NAMES if (run_dir / slot / name).is_file()]
     if not previews:
@@ -116,9 +140,13 @@ def build_packets(
     out_dir: Path,
     pool: Sequence[Mapping[str, Any]],
 ) -> List[Path]:
-    """Write one packet directory per scheduled match; refuse, writing
-    nothing, when any draft cannot go to a judge."""
+    """Write one packet directory per scheduled match under ``out_dir``,
+    which must not exist yet; refuse, writing nothing, when any draft cannot
+    go to a judge."""
 
+    if out_dir.exists():
+        raise PacketError(["%s already exists; packets are never overwritten" % out_dir])
+    pool = contestants(run_dir, pool)
     matches = list(schedule["matches"])
     slots: List[str] = []
     for match in matches:
@@ -130,16 +158,22 @@ def build_packets(
     if reasons:
         raise PacketError(reasons)
 
-    written: List[Path] = []
+    # Build beside the target and rename, so a failed write leaves no
+    # half-built packets for a judge to read.
+    staging = out_dir.with_name(out_dir.name + ".partial")
+    shutil.rmtree(staging, ignore_errors=True)
+    names: List[str] = []
     for match in matches:
-        packet = out_dir / ("match-%02d" % match["index"])
-        packet.mkdir(parents=True, exist_ok=True)
+        name = "match-%02d" % match["index"]
+        packet = staging / name
+        packet.mkdir(parents=True)
         for side, slot in (("A", match["a"]), ("B", match["b"])):
             draft = drafts[slot]
             (packet / ("%s.md" % side)).write_text(draft["text"], encoding="utf-8")
             shutil.copyfile(draft["preview"], packet / (side + draft["preview"].suffix))
-        written.append(packet)
-    return written
+        names.append(name)
+    staging.rename(out_dir)
+    return [out_dir / name for name in names]
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -157,6 +191,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     except PacketError as exc:
         for reason in exc.reasons:
             print("blind-packets: %s" % reason, file=sys.stderr)
+        return 2
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        print("blind-packets: %s: %s" % (type(exc).__name__, exc), file=sys.stderr)
         return 2
     print(json.dumps([str(path) for path in written], indent=2))
     return 0
