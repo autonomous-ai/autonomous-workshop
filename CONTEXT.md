@@ -49,6 +49,18 @@ its Trend rather than a generic toy with the Trend's name on it. A
 trend-inspired toy without one is rejected, whatever it looks like.
 _Avoid_: Theme Hook, trend fit, reference
 
+**Buyer**:
+Who a toy is made for: the tech and office workers who visit autonomous.ai. A
+toy lives on their desk, so it is an adult's desk toy, not a child's toy.
+_Avoid_: Customer, audience, user, kid
+
+**Preview Image**:
+One generated image of a draft toy, made before the draft is judged so its
+judges can see it. It is never a reference image or a concept image and proves
+nothing about the toy; a winning draft's Preview Image becomes a reference only
+after it passes the same reconciliation as any other.
+_Avoid_: Hero, concept art, thumbnail
+
 **Signature Motion**:
 The one movement a toy's play centres on, made by parts in contact or sharing
 space over time — a crank that flaps wings, a pull that walks legs. A toy whose
