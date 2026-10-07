@@ -11,7 +11,7 @@ TOOL = (
     REPOSITORY
     / ".claude"
     / "skills"
-    / "brainstorm-reskin"
+    / "brainstorm-trend"
     / "scripts"
     / "round_robin.py"
 )

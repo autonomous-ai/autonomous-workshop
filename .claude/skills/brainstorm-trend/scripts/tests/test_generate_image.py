@@ -20,6 +20,7 @@ from generate_image import (  # noqa: E402
     OpenRouterError,
     generate_image,
     load_openrouter_config,
+    main,
     parse_env_file,
 )
 
@@ -67,7 +68,7 @@ CONFIG = OpenRouterConfig(api_key="sk-or-secret-value", model="fake/image-model"
 def test_generate_image_writes_bounded_png(tmp_path):
     image_bytes = _png_bytes(64, 32)
     transport = _fake_transport(_chat_completions_response(image_bytes))
-    output_path = tmp_path / "ref-01-hero.png"
+    output_path = tmp_path / "preview.png"
 
     result = generate_image(
         "a lone wizard, fully inside the frame",
@@ -96,21 +97,26 @@ def test_generate_image_writes_bounded_png(tmp_path):
 def test_generate_image_renames_output_to_match_media_type(tmp_path):
     image_bytes = _png_bytes(10, 10)
     transport = _fake_transport(_chat_completions_response(image_bytes))
-    output_path = tmp_path / "ref-01-hero.jpg"
+    output_path = tmp_path / "preview.jpg"
 
     result = generate_image("subject", output_path, config=CONFIG, transport=transport)
 
-    assert result.path == tmp_path / "ref-01-hero.png"
+    assert result.path == tmp_path / "preview.png"
     assert result.path.exists()
     assert not output_path.exists()
 
 
-def test_generate_image_rejects_oversized_image(tmp_path):
-    image_bytes = _png_bytes(801, 800)
+def test_generate_image_shrinks_an_oversized_image_to_the_limit(tmp_path):
+    image_bytes = _png_bytes(1024, 512)
     transport = _fake_transport(_chat_completions_response(image_bytes))
 
-    with pytest.raises(OpenRouterError, match="801x800"):
-        generate_image("subject", tmp_path / "out.png", config=CONFIG, transport=transport)
+    result = generate_image("subject", tmp_path / "out.png", config=CONFIG, transport=transport)
+
+    assert (result.width, result.height) == (800, 400)
+    with Image.open(result.path) as written:
+        assert written.format == "PNG"
+        assert written.size == (800, 400)
+    assert result.size == result.path.stat().st_size
 
 
 def test_generate_image_rejects_http_error_without_leaking_key(tmp_path):
@@ -250,3 +256,34 @@ def test_config_repr_never_reveals_the_key():
     assert "super-secret-value" not in repr(config)
     assert "super-secret-value" not in str(config)
     assert "vendor/model" in repr(config)
+
+
+def test_main_writes_the_image_and_prints_its_facts_without_the_key(tmp_path, monkeypatch, capsys):
+    monkeypatch.delenv(OPENROUTER_API_KEY_NAME, raising=False)
+    monkeypatch.delenv(OPENROUTER_IMAGE_MODEL_NAME, raising=False)
+    env = tmp_path / ".env"
+    env.write_text("%s=sk-or-secret-value\n%s=fake/image-model\n" % (OPENROUTER_API_KEY_NAME, OPENROUTER_IMAGE_MODEL_NAME))
+    prompt = tmp_path / "prompt.txt"
+    prompt.write_text("one toy whale, fully inside the frame")
+    transport = _fake_transport(_chat_completions_response(_png_bytes(40, 40)))
+
+    code = main(["--prompt-file", str(prompt), "--out", str(tmp_path / "preview.jpg"), "--env", str(env)], transport=transport)
+
+    captured = capsys.readouterr()
+    assert code == 0
+    facts = json.loads(captured.out)
+    assert facts["path"] == str(tmp_path / "preview.png")
+    assert facts["model"] == "fake/image-model"
+    assert (tmp_path / "preview.png").is_file()
+    assert "sk-or-secret-value" not in captured.out + captured.err
+
+
+def test_main_exits_2_when_the_key_is_missing(tmp_path, monkeypatch, capsys):
+    monkeypatch.delenv(OPENROUTER_API_KEY_NAME, raising=False)
+    prompt = tmp_path / "prompt.txt"
+    prompt.write_text("one toy")
+
+    code = main(["--prompt-file", str(prompt), "--out", str(tmp_path / "preview.png"), "--env", str(tmp_path / "none")])
+
+    assert code == 2
+    assert OPENROUTER_API_KEY_NAME in capsys.readouterr().err
