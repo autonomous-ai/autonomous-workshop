@@ -1,14 +1,21 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://autonomous.ai/schemas/inventor/brainstorm-reskin-run-v1.json",
-  "title": "brainstorm-reskin run log",
-  "description": "Append-only record of one brainstorm-reskin run, written to brainstorm-reskin/<game>-<date>/run.json. Never contains a credential or API key.",
+  "$id": "https://autonomous.ai/schemas/inventor/brainstorm-trend-run-v1.json",
+  "title": "brainstorm-trend run log",
+  "description": "Append-only record of one brainstorm-trend run, written to brainstorm-trend/<trend>-<date>/run.json. Never contains a credential or API key.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["game", "theme_hint", "seed", "image_model", "started_at", "steps"],
+  "required": ["trend", "chosen_by", "shortlist", "seed", "image_model", "started_at", "steps"],
   "properties": {
-    "game": {"type": "string", "minLength": 1, "maxLength": 200},
-    "theme_hint": {"type": ["string", "null"], "maxLength": 500},
+    "trend": {"$ref": "#/$defs/trend"},
+    "chosen_by": {"type": "string", "enum": ["given", "human"]},
+    "shortlist": {
+      "description": "The researched Trends the person picked from; null when they named the Trend themselves.",
+      "type": ["array", "null"],
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {"$ref": "#/$defs/trend"}
+    },
     "seed": {"type": "integer"},
     "image_model": {"type": "string", "minLength": 1, "maxLength": 200},
     "started_at": {"type": "string", "format": "date-time"},
@@ -18,6 +25,28 @@
     }
   },
   "$defs": {
+    "trend": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "keyword": {"type": "string", "minLength": 1, "maxLength": 100},
+        "interest": {"type": ["number", "null"]},
+        "summary": {"type": "string", "maxLength": 1000},
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["url", "published"],
+            "properties": {
+              "url": {"type": "string", "minLength": 1},
+              "title": {"type": "string"},
+              "published": {"type": "string", "format": "date"}
+            }
+          }
+        }
+      }
+    },
     "step": {
       "type": "object",
       "required": ["type", "at"],
@@ -44,7 +73,7 @@
             "required": ["type", "at", "personalities", "seed"],
             "properties": {
               "personalities": {
-                "type": "array", "minItems": 5, "maxItems": 5,
+                "type": "array", "minItems": 6, "maxItems": 6,
                 "items": {"type": "string", "minLength": 1}
               },
               "seed": {"type": "integer"}
@@ -54,12 +83,12 @@
         {
           "if": {"properties": {"type": {"const": "contract_generated"}}},
           "then": {
-            "required": ["type", "at", "agent_id", "personality", "contract_path", "hero_path"],
+            "required": ["type", "at", "agent_id", "personality", "contract_path", "preview_path"],
             "properties": {
               "agent_id": {"type": "string", "minLength": 1},
               "personality": {"type": "string", "minLength": 1},
               "contract_path": {"type": "string", "minLength": 1},
-              "hero_path": {"type": "string", "minLength": 1}
+              "preview_path": {"type": "string", "minLength": 1}
             }
           }
         },

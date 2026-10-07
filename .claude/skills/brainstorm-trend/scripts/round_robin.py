@@ -1,4 +1,4 @@
-"""Deterministic round-robin scheduling and scoring for brainstorm-reskin.
+"""Deterministic round-robin scheduling and scoring for brainstorm-trend.
 
 Pure functions only: no model calls, no randomness, no agent orchestration,
 per the repository's `AGENTS.md`. The orchestrating agent dispatches each
@@ -165,7 +165,7 @@ def _load_json(path: str) -> Any:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Round-robin schedule and score for brainstorm-reskin."
+        description="Round-robin schedule and score for brainstorm-trend."
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 

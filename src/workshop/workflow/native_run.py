@@ -2883,7 +2883,10 @@ def _made_interfaces(product: Mapping[str, Any]) -> list[dict[str, Any]]:
         if (
             not isinstance(identifier, str) or not 1 <= len(identifier) <= 200
             or identifier in seen
-            or not isinstance(components, list) or len(components) < 2
+            # made.json product data reaches the host frozen (tuples, not
+            # lists), so any non-string sequence is accepted (issue #105).
+            or isinstance(components, (str, bytes)) or not isinstance(components, Sequence)
+            or len(components) < 2
             or not all(isinstance(entry, str) and 1 <= len(entry) <= 200 for entry in components)
             or len(set(components)) != len(components)
             or item["check"] != _INTERFACE_PROOFS[kind]
@@ -2894,7 +2897,9 @@ def _made_interfaces(product: Mapping[str, Any]) -> list[dict[str, Any]]:
         ):
             raise ContractError("Made interface is invalid")
         seen.add(identifier)
-        interfaces.append({key: item[key] for key in sorted(expected)})
+        record = {key: item[key] for key in sorted(expected)}
+        record["components"] = list(components)
+        interfaces.append(record)
     return interfaces
 
 
