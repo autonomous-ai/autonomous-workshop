@@ -34,6 +34,7 @@ The scripts live in `.claude/skills/brainstorm-trend/scripts/`:
 | `draw_personalities.py` | the seeded draw and its replacements |
 | `generate_image.py` | one image via OpenRouter, reading `.env` |
 | `gate_contract.py` | format limits, the three prose sections, a coupled Interface |
+| `blind_packets.py` | the judges' A/B packets, refusing a named personality |
 | `round_robin.py` | `schedule` and `score` |
 
 Log every step as it happens with `run_log.py append`; the step names and
@@ -144,14 +145,25 @@ stop.
 
 Write the surviving slot ids to a JSON list and run `round_robin.py schedule
 --contestants <list>`; save its output as `schedule.json` in the run
-directory. For every match, launch a **fresh** judge subagent, so no judge sees two
-matches; judges of independent matches may run in parallel. Each judge gets
-the match's two drafts as A and B, in the scheduled order, with each
-contract's prose and hero image, and nothing about the personalities or the
-other drafts. It judges on three criteria:
+directory. Build the judges' packets:
+
+    uv run python .claude/skills/brainstorm-trend/scripts/blind_packets.py \
+      --schedule <run>/schedule.json --run-dir <run> --out <run>/packets
+
+Each `packets/match-NN/` holds the match's two drafts as A and B, in the
+scheduled order: the contract's title, Trend Hook, Signature Motion and
+Palette, and its Preview Image. The script refuses, writing nothing, when a
+draft names its personality; send that designer back to reword the named
+section, gate the draft again, and rebuild.
+
+For every match, launch a **fresh** judge subagent on Sonnet (`model:
+sonnet`), so no judge sees two matches; judges of independent matches may
+run in parallel. Give each judge only its packet directory and the Buyer:
+the tech and office workers who visit autonomous.ai, buying a toy for their
+desk. It judges on three criteria:
 
 - **originality**: how unlike existing toys it is;
-- **beauty**: how good it looks on a shelf and in the hand;
+- **beauty**: how good it looks on a desk and in the hand;
 - **motion**: how satisfying the Signature Motion is to play with, again and
   again.
 
