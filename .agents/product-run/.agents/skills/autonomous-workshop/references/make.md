@@ -413,8 +413,12 @@ are separate. Frozen older runs retain their materialized rules and tools.
    ```
 
    It refuses while a Component it joins is not locked at its current
-   geometry, and runs the coupled motion check on just those Components over
-   the sealed pose table. It builds a Component once even when the
+   geometry, places just those Components and checks, in order, that they do
+   not interfere where they are placed, then the coupled motion over the
+   sealed pose table together with every insertion path in
+   `measure/motion.json` that moves only these Components among themselves
+   (name the parts by their Interface references). A clash stops the check
+   before its motion sweep (issue #108). It builds a Component once even when the
    Interface names two of its instances, and places each instance as its own
    labelled part. On a failure it unlocks the contract's yielding Component
    (for `wing#2`, the wing) and names it; send that worker only the
@@ -647,9 +651,10 @@ are separate. Frozen older runs retain their materialized rules and tools.
    views and every `compare-NN.png`, even when no reference image exists. Pending or inconclusive visual
    feedback is not a pass. These self-checks do not replace independent review.
    Run only additional narrow checks affected by an edit. `make_round` gates
-   every part that builds with `check_thickness` and `check_overhang` at the
-   fixed 0.4 mm nozzle standard, so a wall or overhang defect surfaces in the
-   round that caused it rather than at final verification.
+   every part that builds with `check_thickness`, `check_overhang` and
+   `check_mesh` at the fixed 0.4 mm nozzle standard, so a wall, overhang or
+   non-manifold defect surfaces in the round that caused it rather than at
+   final verification.
 6. Render the exact STEP to `<cad-project>/snap/iso.png` (at least 800×800 RGB)
    and `<cad-project>/snap/signature.png` (at least 1200×800 RGB). When the
    promise changes product geometry or state, generate distinct exact-state

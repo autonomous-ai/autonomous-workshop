@@ -260,10 +260,14 @@ component geometry.
   `--overhang-angle` is the slope from vertical the printer bridges unsupported.
 - Only parts whose written STEP bytes changed since the previous round are
   reported; `--all-parts` reports every part. The first round reports all.
-- Every part that builds is gated from source by `check_thickness` and
-  `check_overhang`, which tessellate the entry in the gate and write no mesh.
-  A part that did not build is reported as a gate failure, not a skip: there is
-  no solid to measure. A round passes only when both gates pass on every part,
+- Every part that builds is gated from source by `check_thickness`,
+  `check_overhang` and, since issue #108, `check_mesh` (mesh validity: an
+  invalid solid, open or non-manifold edges, flipped winding, the project's
+  declared `--bed`, else the final verifier's default). All three tessellate
+  the entry in the gate and write no mesh. A non-manifold part fails with
+  each edge named (the `mesh` line and `print.<role>.mesh.edges`). A part
+  that did not build is reported as a gate failure, not a skip: there is no
+  solid to measure. A round passes only when every gate passes on every part,
   so `built` and `printable at this nozzle` stay separate verdicts.
 - A round's builds all run at once (issue #101): `gen --write`, the
   reproduction build and `brepbundle.py build`, which builds the part once
@@ -540,14 +544,21 @@ rules apply. Contracts without it keep the rules above unchanged.
 
   It refuses (exit 2) a separable or static Interface and any Component not
   locked at its current geometry, builds those Components only, places them
-  through `assembly_pose(shape, None)` and runs `check_motion`'s
+  through `assembly_pose(shape, None)` and checks, in order (issue #108):
+  interference, `inspect interfere` on the placed Components (the `clash`
+  line; a clash stops the check here); then one `check_motion` run of
   `coupled_motion_collision` over the sealed pose table (or the
   `measure/motion.json` condition its `poses_from` names), with the
-  non-moving Components as obstacles. Each instance an Interface names is
+  non-moving Components as obstacles, together with the insertion paths:
+  every `linear_motion_collision`, `rotation_motion_collision`,
+  `clear_path_proxy` or `assembly_sequence` in `measure/motion.json` whose
+  parts are all this Interface's Components, named by their references
+  (the `insert` line). One that names any other part stays for assembly. Each instance an Interface names is
   its own child, labelled `<id>#<n>`, which the pose table's movers name;
   locking, staleness and the unlock belong to its Component, built once, so
   a failure yielding `wing#2` unlocks the wing. Rounds live under
-  `measure/interface-rounds/<id>/`. A failure unlocks the yielding
+  `measure/interface-rounds/<id>/`. A failure (a clash, a collision over
+  the pose table or a blocked insertion path) unlocks the yielding
   Component with the check's evidence; its repair is never a shape round.
   A check stays current until a Component it joins changes identity or one
   of their Geometry Sources changes (`sources` in its state).
@@ -787,9 +798,11 @@ Every gate `make_round` runs, exactly as it runs it. `$C` is
 | Step | Invocation | Reads |
 |---|---|---|
 | build a part | `"$WORKSHOP_PYTHON" $C/gen part_<role>.step.py --write --json` | exit code, and the sibling `part_<role>.step` it writes |
+| print gates | `"$WORKSHOP_PYTHON" $C/check_thickness part_<role>.step.py --nozzle N --report <round>/thickness-<role>.md`, `$C/check_overhang ... --angle A --report <round>/overhang-<role>.md`, `$C/check_mesh part_<role>.step.py --bed WxDxH` | each `RESULT:` line and exit code; `check_mesh`'s `[edge ]` rows name non-manifold edges |
 | build a sample | `PYTHONPATH=<project> "$WORKSHOP_PYTHON" $C/gen samples/<name>.step.py --write --json`, then both print gates | exit codes and gate verdicts |
 | keep-out envelope | `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/check_envelope part_<role>.step.py --envelope <round>/envelope-<id>.json --role inside\|outside --json` | `ok` and the per-pose volumes outside or inside the envelope |
-| interface check | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/interface-rounds/<id>/rNNNN/motion.json --json` | the one `coupled_motion_collision` condition's `status` |
+| interface interference | `"$WORKSHOP_PYTHON" $C/inspect interfere measure/interface-rounds/<id>/rNNNN/interface_<id>.step.py --format json` | `ok` and each clash's parts and volume |
+| interface check | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/interface-rounds/<id>/rNNNN/motion.json --json` | the `coupled_motion_collision` condition's and each insertion path's `status` |
 | motion | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/motion.json --json` | `status` per condition: `pass`, `fail`, `inconclusive` |
 | inspection views | `"$WORKSHOP_PYTHON" $C/render_review <selected entry.step.py> --view iso --view front --view left --view top --view iso_front --view iso_back --view iso_left --view iso_right --view iso_bottom [--view=AZ,EL ...] --sheet -o <round>/visual` | `sheet.png` (every view, labelled) plus each exact shaded PNG; the reference-camera views are composed into `compare-NN.png` beside each reference |
 | final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --strict-fit --print-gates [--image-derived] --report <project>/measure/verification-pipeline.md` | exit 0 = verifier passed; host gate still required |

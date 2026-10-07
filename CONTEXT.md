@@ -466,7 +466,9 @@ _Avoid_: Clearance box, bounding box
 **Coupled Interface**:
 An Interface whose Components must move together or pass through the same
 space at different times: gears, cams, linkages. It is checked on its locked
-Components alone by the coupled motion check over its pose table. On failure
+Components alone: no interference where they are placed, then the coupled
+motion check over its pose table and every insertion path between just those
+Components. On failure
 the Design Contract's yielding Component is unlocked and repairs, and that
 repair is not a Shape Round.
 _Avoid_: Mechanism check, mesh check

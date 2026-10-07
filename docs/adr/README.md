@@ -44,3 +44,4 @@ ADR. Small factual corrections that do not change the decision are allowed.
 - [0085: An invisible Contract Amendment may be made inside a run, confirmed by a fresh reader](0085-in-run-contract-amendments-for-invisible-fixes.md)
 - [0086: Spark Make expands the Wish before building](0086-spark-make-expands-the-wish.md)
 - [0087: Make rounds review one sheet and judge plan and reference apart](0087-make-round-review-sheet-and-split-verdict.md)
+- [0088: Catch mesh validity, interference and insertion before assembly](0088-catch-mesh-interference-and-insertion-before-assembly.md)

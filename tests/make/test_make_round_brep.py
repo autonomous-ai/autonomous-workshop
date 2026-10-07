@@ -148,9 +148,9 @@ class KeptBuildRoundTest(unittest.TestCase):
             identity = summary["identity"]
             self.assertEqual(identity, identity_of(project / "part_wing.step.py"))
             checks = [(command, kwargs) for command, kwargs in self.calls
-                      if Path(command[1]).name in ("check_thickness", "check_overhang", "check_envelope",
-                                                   "render_review")]
-            self.assertEqual(len(checks), 5)
+                      if Path(command[1]).name in ("check_thickness", "check_overhang", "check_mesh",
+                                                   "check_envelope", "render_review")]
+            self.assertEqual(len(checks), 6)
             for command, kwargs in checks:
                 with self.subTest(tool=Path(command[1]).name):
                     env = kwargs["extra_env"]
@@ -165,8 +165,8 @@ class KeptBuildRoundTest(unittest.TestCase):
                              {"instance-1": read_back(identity_of(project / "part_wing.step.py", 1)),
                               "instance-2": read_back(identity_of(project / "part_wing.step.py", 2))})
             self.assertEqual(sorted(record["reads"]), ["envelope wing-fold wing#1", "envelope wing-fold wing#2",
-                                                       "overhang-wing", "render", "thickness-wing"])
-            for check in ("overhang-wing", "thickness-wing", "render"):
+                                                       "mesh-wing", "overhang-wing", "render", "thickness-wing"])
+            for check in ("mesh-wing", "overhang-wing", "thickness-wing", "render"):
                 self.assertEqual(record["reads"][check],
                                  [{"entry": "part_wing.step.py", "bundle": "base",
                                    "identity": read_back(identity)}])
