@@ -24,7 +24,7 @@
       "wish_id": "wish-20261007-050112-49084163",
       "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261007-050112-49084163/workspace",
       "toy_dir": null,
-      "status": "waiting",
+      "status": "active",
       "brief": null,
       "finding_ids": []
     }
@@ -45,18 +45,12 @@
   },
   "loop": {
     "schema": 1,
-    "state": "awaiting-owner",
+    "state": "watching",
     "attempt": 2,
     "wish_id": "wish-20261007-050112-49084163",
-    "source_commit": "70252da1 (local detached merge of autonomous-toys 99ca5d5b with origin/main bd069e37; origin/main lacks the wyn-seal Inventor)",
-    "awaiting": {
-      "reasons": [
-        "harness defect in check_thickness needs a fix on main (owner asks before anything reaches main), or the owner picks the contract-margin alternative"
-      ],
-      "review_page": null,
-      "since": "2026-10-07T05:16:00Z"
-    },
-    "updated": "2026-10-07T05:16:00Z"
+    "source_commit": "22e31e8b (local merge of autonomous-toys with origin/main 38dbbecf)",
+    "awaiting": null,
+    "updated": "2026-10-07T06:45:00Z"
   },
   "stops": [
     {
@@ -110,7 +104,7 @@
         "repeated_print_defects": 2
       },
       "budget_raised": false,
-      "resolution": "awaiting owner: (A) fix the gate comparison on main and resume, or (B) contract margin: plate 4.0 with 1.0 layers (draft build-a-toy/drafts/amend-b-4mm-CONTRACT.md, invisible, needs relaunch since extents change)"
+      "resolution": "owner chose (A) 2026-10-07: fix check_thickness on main (#114), then resume attempt 2 with --refresh-tools; merged 38dbbecf, resumed 06:44 with --refresh-tools from ptk-a1 at 22e31e8b (refresh also rebound main's #108-#110 changes in cad, make-round and autonomous-workshop: 12 files)"
     }
   ],
   "contract_contradictions": [
@@ -137,7 +131,16 @@
     }
   ],
   "in_run_amendments": [],
-  "harness_issues": [],
+  "harness_issues": [
+    {
+      "number": 114,
+      "title": "check_thickness fails a wall exactly at the minimum by float rounding",
+      "opened_by_loop": true,
+      "attempt": 2,
+      "status": "merged",
+      "merge_commit": "38dbbecf"
+    }
+  ],
   "cost_units": {
     "cap": 100,
     "by_attempt": {
