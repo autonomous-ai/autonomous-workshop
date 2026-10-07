@@ -119,6 +119,34 @@ class ArtifactTest(unittest.TestCase):
         self.assertIn("token.step.py", paths)
         self.assertNotIn("token.json", paths)
 
+    def test_make_round_ledgers_stay_where_make_round_writes_them(self):
+        """Issue #111: only make_round's ledgers at their own paths are kept."""
+        kept = (
+            "cad/measure/blocked-reports.jsonl",
+            "cad/measure/contract-amendments.jsonl",
+            "cad/measure/shared-helper-freezes.jsonl",
+            "cad/measure/component-rounds/wing/unlocks.jsonl",
+        )
+        dropped = (
+            "notes/blocked-reports.jsonl",
+            "cad/measure/rounds/r0001/log.jsonl",
+            "cad/measure/component-rounds/wing/r0001/unlocks.jsonl",
+            "cad/unlocks.jsonl",
+            "cad/measure/transcript.jsonl",
+        )
+        for relative in kept + dropped:
+            path = self.root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('{"event":"x"}\n', encoding="utf-8")
+        paths = {entry.path for entry in build_artifact_manifest(self.root).entries}
+        for relative in kept:
+            self.assertIn(relative, paths)
+        for relative in dropped:
+            self.assertNotIn(relative, paths)
+        artifact_module.assert_packable_content(kept[0], b'{"event":"x"}\n')
+        with self.assertRaises(ArtifactError):
+            artifact_module.assert_packable_content(dropped[0], b'{"event":"x"}\n')
+
     def test_explicit_excludes_cover_directories_and_relative_files(self):
         generated = self.root / "generated"
         generated.mkdir()

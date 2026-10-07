@@ -38,6 +38,12 @@ root's ``Stop`` event and refuses the turn end while the current Make
 attempt holds an open Blocked Report, unless the turn ends on a recorded
 need. ``blocked_reports`` reads the ledger; the host imports it from here.
 
+A command that names make_round fails closed when the hook cannot see its
+call (issue #113): it is refused when it holds a heredoc, cannot be parsed,
+or parses to no call while doing more than read the script (``sed``,
+``grep``, ``cat`` and the like). make_round itself refuses a component round
+without a nonce in a guarded run.
+
 The hook decides who may run make_round, not who may spawn whom. It runs as a
 standalone script with the standard library only; it makes no model call.
 """
@@ -86,6 +92,18 @@ AMENDMENT_STATUS = "--contract-amendments"
 BLOCKED_REPORTS_NAME = "blocked-reports.jsonl"
 MAX_BLOCKED_LEDGER_BYTES = 1024 * 1024
 OPEN_BLOCKED = frozenset({"open", "waiting"})
+
+# Programs that only read a file they name (issue #113). A command naming
+# make_round in any other way, with no call the guard can parse, is refused:
+# a call the guard cannot see would run without a worker nonce.
+_READERS = frozenset({
+    "cat", "head", "tail", "less", "more", "grep", "egrep", "fgrep", "rg", "sed",
+    "wc", "nl", "ls", "stat", "file", "diff", "cmp", "sha256sum", "md5sum",
+})
+_UNSEEN = (
+    "this command names make_round but %s; run make_round as its own plain Bash "
+    "command, never in the same command as a file edit or a heredoc"
+)
 
 Issuer = Callable[[Mapping[str, Any], str], str]
 
@@ -171,6 +189,21 @@ def make_round_calls(command: str) -> Optional[list[list[str]]]:
     return calls
 
 
+def _only_reads(command: str) -> bool:
+    """Whether every part of the command that names make_round only reads
+    the script (``sed``, ``grep``, ``cat`` and the like), so it runs nothing."""
+
+    try:
+        segments = _segments(command)
+    except ValueError:
+        return False
+    naming = [segment for segment in segments if any(SCRIPT_NAME in token for token in segment)]
+    return bool(naming) and all(
+        (tokens := _strip_prefix(segment)) and os.path.basename(tokens[0]) in _READERS
+        for segment in naming
+    )
+
+
 def _option(arguments: list[str], name: str) -> Optional[str]:
     for index, argument in enumerate(arguments):
         if argument == name and index + 1 < len(arguments):
@@ -206,11 +239,18 @@ def decide(event: Mapping[str, Any], *, issue: Issuer) -> Optional[dict[str, Any
     if key is None or SCRIPT_NAME not in tool_input[key]:
         return None
     command = tool_input[key]
+    if "<<" in command:
+        # A heredoc body is not shell: lexing it as shell can hide a call
+        # (issue #113). Edit files with the edit tool, or in a command of
+        # their own.
+        return _deny(_UNSEEN % "holds a heredoc")
     calls = make_round_calls(command)
     if calls is None:
-        return _deny("this command names make_round but cannot be parsed; run make_round as one plain command")
+        return _deny(_UNSEEN % "cannot be parsed")
     if not calls:
-        return None
+        if _only_reads(command):
+            return None
+        return _deny(_UNSEEN % "holds no make_round call the guard can see")
     if len(calls) > 1:
         return _deny("run one make_round call per command")
     arguments = calls[0]

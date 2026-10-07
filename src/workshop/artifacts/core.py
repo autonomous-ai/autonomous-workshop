@@ -78,6 +78,14 @@ DEFAULT_EXCLUDED_SUFFIXES = (
     ".sqlite3-journal",
 )
 DEFAULT_EXCLUDED_PREFIXES = (".env", "auth.", "credential.", "credentials.", "secrets.")
+# Issue #111: the ledgers make_round appends to inside a CAD project stay in an
+# artifact where it writes them, although other ``.jsonl`` files are excluded,
+# so the stage finalizer seals them and the host's checks read the same bytes.
+# Kept in step with ``_is_make_round_ledger`` in the stage finalizer.
+MAKE_ROUND_MEASURE_LEDGERS = frozenset(
+    ("blocked-reports.jsonl", "contract-amendments.jsonl", "shared-helper-freezes.jsonl")
+)
+MAKE_ROUND_UNLOCK_LEDGER = "unlocks.jsonl"
 ARTIFACT_DEBRIS_SUFFIXES = (
     ".backup",
     ".bak",
@@ -665,6 +673,22 @@ def artifact_manifest_from_mapping(value: Any) -> ArtifactManifest:
     return manifest
 
 
+def is_make_round_ledger(relative_path: str) -> bool:
+    """Whether a relative POSIX path is a make_round ledger where make_round
+    writes it: ``measure/<ledger>.jsonl`` or a Component's
+    ``measure/component-rounds/<id>/unlocks.jsonl`` (issue #111)."""
+
+    parts = tuple(relative_path.split("/"))
+    if len(parts) >= 2 and parts[-2] == "measure" and parts[-1] in MAKE_ROUND_MEASURE_LEDGERS:
+        return True
+    return (
+        len(parts) >= 4
+        and parts[-1] == MAKE_ROUND_UNLOCK_LEDGER
+        and parts[-3] == "component-rounds"
+        and parts[-4] == "measure"
+    )
+
+
 def _excluded(relative: Path, extra_excludes: Set[str]) -> bool:
     parts = relative.parts
     if any(part.lower() in DEFAULT_EXCLUDED_DIRS for part in parts[:-1]):
@@ -676,8 +700,10 @@ def _excluded(relative: Path, extra_excludes: Set[str]) -> bool:
         return True
     if lowered in DEFAULT_EXCLUDED_FILES:
         return True
-    if lowered.startswith(DEFAULT_EXCLUDED_PREFIXES) or lowered.endswith(DEFAULT_EXCLUDED_SUFFIXES):
+    if lowered.startswith(DEFAULT_EXCLUDED_PREFIXES):
         return True
+    if lowered.endswith(DEFAULT_EXCLUDED_SUFFIXES):
+        return not is_make_round_ledger(relative_name)
     return False
 
 

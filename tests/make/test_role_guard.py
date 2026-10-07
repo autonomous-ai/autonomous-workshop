@@ -130,6 +130,40 @@ class ComponentNonceTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "not run by a component-worker"):
             self._verify()
 
+    def _state(self, role, round_index):
+        state = self.project / "measure/component-rounds" / role / "make-round-state.json"
+        state.parent.mkdir(parents=True, exist_ok=True)
+        state.write_text(json.dumps({"round": round_index, "scope": "component:%s" % role}))
+        return state
+
+    def test_a_recorded_round_whose_summary_is_missing_is_refused(self):
+        """Issue #113: rounds moved out of the product tree are not skipped."""
+        for index, nonce in enumerate(("01" * 16, "02" * 16, "03" * 16), 1):
+            _issue(self.host, nonce, "part_arm-right.step.py")
+            _summary(self.project, "arm-right", index, nonce)
+        _issue(self.host, NONCE, "part_wing.step.py")
+        _summary(self.project, "wing", 1, NONCE)
+        self._state("wing", 1)
+        self._state("arm-right", 5)
+        with self.assertRaises(ContractError) as raised:
+            self._verify()
+        self.assertIn("arm-right r0004, arm-right r0005", str(raised.exception))
+        self.assertIn("summary.json", str(raised.exception))
+
+    def test_a_complete_set_of_recorded_rounds_passes(self):
+        for index, nonce in enumerate(("01" * 16, "02" * 16), 1):
+            _issue(self.host, nonce, "part_wing.step.py")
+            _summary(self.project, "wing", index, nonce)
+        self._state("wing", 2)
+        self._verify()
+
+    def test_an_unreadable_round_state_is_refused(self):
+        _issue(self.host, NONCE, "part_wing.step.py")
+        _summary(self.project, "wing", 1, NONCE)
+        self._state("wing", 1).write_text("{not json")
+        with self.assertRaisesRegex(ContractError, "make-round-state.json"):
+            self._verify()
+
     def test_a_project_without_component_rounds_has_nothing_to_check(self):
         self._verify()
 

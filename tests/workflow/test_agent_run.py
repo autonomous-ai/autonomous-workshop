@@ -13,7 +13,12 @@ import workshop.workflow.agent_run as agent_run_module
 from workshop.contributors.extensions import fingerprint_extension_skill
 from workshop.errors import ArtifactError, ContractError, StateConflict, TransitionError
 from workshop.make.role_agents import make_role_agent_files
-from workshop.make.role_guard import installed_make_round_guard, make_round_guard_bytes
+from workshop.make.role_guard import (
+    MAKE_ROUND_GUARD_MARKER,
+    installed_make_round_guard,
+    make_round_guard_bytes,
+    make_round_guard_marker_bytes,
+)
 from workshop.runtime.agent_assets import parse_inventor_custom_agent_bytes
 from workshop.runtime.agent_projection import claude_agent_bytes
 from workshop.runtime.managers import manager_project_bytes, manager_spec
@@ -977,6 +982,11 @@ class AgentRunTest(unittest.TestCase):
                 )
                 self.assertEqual(script.read_bytes(), make_round_guard_bytes())
                 self.assertFalse(any(run.run_root.rglob("make_round_guard.py")))
+                # Issue #113: a sealed run-root marker tells make_round the
+                # run is guarded.
+                marker = run.run_root / MAKE_ROUND_GUARD_MARKER
+                self.assertEqual(marker.read_bytes(), make_round_guard_marker_bytes())
+                self.assertIn(MAKE_ROUND_GUARD_MARKER, checkpoint.input_sha256s)
                 # Issue #77: only Claude Code records reviewer evidence.
                 self.assertEqual(
                     checkpoint.component_reviewer_binding, manager_id == "claude"
@@ -993,6 +1003,15 @@ class AgentRunTest(unittest.TestCase):
         self.assertIsNone(run.snapshot().make_round_guard_sha256)
         self.assertFalse(run.snapshot().component_reviewer_binding)
         self.assertIsNone(installed_make_round_guard(run.host_state_root))
+        self.assertFalse((run.run_root / MAKE_ROUND_GUARD_MARKER).exists())
+
+    def test_snapshot_refuses_a_removed_guard_marker(self):
+        run = self.create(make_role_agents=make_role_agent_files(), make_round_guard=True)
+        marker = run.run_root / MAKE_ROUND_GUARD_MARKER
+        marker.parent.chmod(0o700)
+        marker.unlink()
+        with self.assertRaises((StateConflict, ArtifactError)):
+            run.snapshot()
 
     def test_snapshot_refuses_a_tampered_or_removed_guard(self):
         run = self.create(make_role_agents=make_role_agent_files(), make_round_guard=True)

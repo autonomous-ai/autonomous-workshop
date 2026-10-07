@@ -84,6 +84,15 @@ class MakeRoleAgentFilesTest(unittest.TestCase):
         ):
             self.assertIn(phrase, worker)
 
+    def test_worker_runs_make_round_as_its_own_command(self):
+        """Issue #113: a round run beside a file edit hid from the guard."""
+        worker = " ".join(tomllib.loads(
+            make_role_agent_files()[COMPONENT_WORKER].decode("utf-8")
+        )["developer_instructions"].split())
+        for phrase in ("as its own Bash command", "never in the same command as a file edit",
+                       "a heredoc"):
+            self.assertIn(phrase, worker)
+
     def test_reviewer_is_the_only_image_reader_and_answers_in_the_review_shape(self):
         reviewer = tomllib.loads(
             make_role_agent_files()[COMPONENT_REVIEWER].decode("utf-8")

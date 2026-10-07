@@ -1378,6 +1378,97 @@ class StageProposalToolTest(unittest.TestCase):
             "playtest",
         )
 
+    def _make_round_ledgers(self):
+        """A product whose CAD project holds every ledger make_round writes,
+        the Blocked Report ledger written by make_round itself (issue #111)."""
+        from tests.make.test_make_round import load_module
+
+        wish_sha256 = self.wish_sha256
+        product_root, _, _, _ = self.create_product()
+        review_path = product_root / "cad/project/snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_text())
+        review["review_rounds"] = 4
+        review_path.write_bytes(canonical_json(review))
+        project = product_root / "cad/project"
+        (project / "part_body.step.py").write_text("def gen_step(): return 'body'\n")
+        self.materialize_make_round()
+        module = load_module()
+        drafts = self.run_root / "drafts"
+        drafts.mkdir(exist_ok=True)
+        (drafts / "blocked.json").write_text(json.dumps(
+            {"rows": ["The body is one piece."], "reason": "The peg cannot print."}))
+        (drafts / "answer.json").write_text(json.dumps(
+            {"report": 1, "decision": "Print the peg on its side."}))
+        with redirect_stdout(StringIO()):
+            self.assertEqual(module.main([str(project), "--component", "part_body.step.py",
+                                          "--report-blocked", str(drafts / "blocked.json")]), 0)
+            self.assertEqual(module.main([str(project), "--clear-blocked", str(drafts / "answer.json")]), 0)
+        measure = project / "measure"
+        # The other ledgers, at the exact paths make_round appends them to.
+        (measure / module.HELPER_FREEZE_LOG).write_text('{"round":1}\n')
+        (measure / module.AMENDMENT_LEDGER_NAME).write_text("")
+        unlocks = measure / module.COMPONENT_ROUNDS_DIR / "body" / "unlocks.jsonl"
+        unlocks.parent.mkdir(parents=True)
+        unlocks.write_text('{"kind":"assembly"}\n')
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        return product_root, project, wish_sha256
+
+    def _propose_make(self, expected=0):
+        return self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "cad/project/validation/cad-build.json",
+            expected=expected,
+        )
+
+    def test_make_seals_the_ledgers_make_round_writes_where_it_wrote_them(self):
+        """Issue #111: no manual move; the host reads the same sealed files."""
+        from workshop.make.blocked_reports import verify_no_open_blocked_reports
+
+        product_root, project, wish_sha256 = self._make_round_ledgers()
+        self._propose_make()
+        made_document, _ = self.assert_canonical_file("artifacts/make/r0001/made.json")
+        made = NativeMade.from_mapping(made_document)
+        made.validate_product_tree(self.run_root)
+        sealed = {entry.path for entry in made.product_manifest.entries}
+        for ledger in (
+            "cad/project/measure/blocked-reports.jsonl",
+            "cad/project/measure/contract-amendments.jsonl",
+            "cad/project/measure/shared-helper-freezes.jsonl",
+            "cad/project/measure/component-rounds/body/unlocks.jsonl",
+        ):
+            self.assertIn(ledger, sealed)
+        self.assertEqual(
+            made.product_manifest.to_dict(),
+            build_artifact_manifest(product_root, created_at="content-addressed").to_dict(),
+        )
+        reports = verify_no_open_blocked_reports(project, wish_sha256=wish_sha256)
+        self.assertEqual([(item["component"], item["status"]) for item in reports], [("body", "decided")])
+
+    def test_make_still_refuses_any_other_jsonl_in_the_product(self):
+        _, project, _ = self._make_round_ledgers()
+        for stray in ("notes/blocked-reports.jsonl", "measure/rounds/r0001/log.jsonl",
+                      "measure/component-rounds/body/r0001/unlocks.jsonl"):
+            with self.subTest(stray=stray):
+                path = project / stray
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("{}\n")
+                rejected = self._propose_make(expected=2)
+                self.assertIn("path excluded by manifest policy", rejected.stderr)
+                path.unlink()
+
     def _run_make_with_component_identities(self, component_identities, toolchain, *, expected=0):
         product_root, _, _, _ = self.create_product()
         review_path = product_root / "cad/project/snap/SIGNATURE-REVIEW.json"
