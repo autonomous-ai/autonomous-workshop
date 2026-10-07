@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "2003e633ba96b1b950fcaeadde13cda63b9efa74f5e5a18f764c96bd764a9e8f",
+      "kind": "codex-skill",
+      "name": "wyn-seal-inventor",
+      "path": "skills/wyn-seal-inventor"
+    }
+  ],
+  "id": "wyn-seal",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

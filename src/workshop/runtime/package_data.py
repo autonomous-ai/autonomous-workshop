@@ -47,6 +47,7 @@ BUNDLED_INVENTOR_IDS = (
     "trend-lab",
     "vela-bloom",
     "wren-coil",
+    "wyn-seal",
 )
 BUNDLED_INVENTOR_FILES = ("TASTE.md", "inventor.json")
 _PRODUCT_RUN_DOMAIN_SKILL_PATHS = (

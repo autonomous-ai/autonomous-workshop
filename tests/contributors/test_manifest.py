@@ -92,6 +92,7 @@ class RegistryTest(unittest.TestCase):
                 "trend-lab",
                 "vela-bloom",
                 "wren-coil",
+                "wyn-seal",
             ],
         )
         for manifest in manifests:
