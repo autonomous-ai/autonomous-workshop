@@ -119,6 +119,17 @@ early-proof or recovery turn, takes precedence over them.
   than writing a small number. Never put a `sleep` between polls. Wait for a
   child with one `wait_agent` at a long timeout (`timeout_ms: 300000`) rather
   than repeated 10-second waits.
+- On Claude Code, `Bash` blocks until its command exits: run a long command
+  in the foreground with `timeout: 600000`; it returns as soon as the command
+  ends. A command you start with `run_in_background` records its exit status,
+  `<command> > "$TMPDIR/<job>.log" 2>&1; echo $? > "$TMPDIR/<job>.exit"`,
+  and you wait for it with one foreground `Bash` call with `timeout: 600000`:
+  `"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/wait_for.py
+  --exit-file "$TMPDIR/<job>.exit" --log "$TMPDIR/<job>.log"`. It checks
+  locally every 30 seconds, returns as soon as the job has ended with its
+  exit status and the log's last lines, and returns after 570 seconds at the
+  latest (ADR 0077, issue #112). Never wait with a fixed `sleep`, and never
+  queue several waits in one turn: run one, read what it returns, then decide.
 - Keep tool output bounded: read round summaries, not full logs, and open a
   log only for the failure the summary cannot place.
 
@@ -351,12 +362,15 @@ are separate. Frozen older runs retain their materialized rules and tools.
    `timeout: 600000`:
 
    ```bash
-   "$WORKSHOP_PYTHON" -c "import time; time.sleep(300)"
+   "$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/wait_for.py --timeout 300
    ```
 
-   Read every notification it returns with, record each answer, and repeat
-   until every running worker and reviewer has reported. This is the long
-   wait, not a poll: never run a shorter one.
+   Add `--exit-file "$TMPDIR/<job>.exit"` for every background command of
+   yours still running, so the wait returns as soon as such a command ends
+   instead of after the full 300 seconds. Read every notification it returns
+   with, record each answer, and repeat until every running worker and
+   reviewer has reported. This is the long wait, not a poll: never run a
+   shorter one. Never queue several waits in one turn.
 
    Workers never edit a shared file such as `params.py` or
    `features/forms.py`; they ask you. Edit it yourself, then send back
