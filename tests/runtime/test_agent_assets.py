@@ -466,10 +466,38 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
                 "An ended turn is not a wait",
                 "On Claude Code",
                 "`timeout: 600000`",
-                'time.sleep(300)"',
+                "scripts/wait_for.py",
             ):
                 with self.subTest(name=name, required=required):
                     self.assertIn(required, text)
+
+    def test_claude_code_waits_end_when_the_awaited_job_ends(self):
+        # Issue #112: a fixed sleep keeps waiting after the job has ended.
+        def text(*parts):
+            return " ".join(REPOSITORY.joinpath(*parts).read_text(encoding="utf-8").split())
+
+        make = text(".agents/product-run/.agents/skills/autonomous-workshop/references/make.md")
+        constitution = text(".agents/product-run/AGENTS.md")
+        make_round = text("src/workshop/make/skills/make-round/SKILL.md")
+        for name, body in (("make", make), ("constitution", constitution), ("make-round", make_round)):
+            with self.subTest(name=name):
+                self.assertNotIn("time.sleep(300)", body)
+                self.assertIn("wait_for.py", body)
+                self.assertIn("On Claude Code", body)
+                self.assertIn("returns as soon as", body)
+        for name, body in (("make", make), ("constitution", constitution)):
+            for required in (
+                "--exit-file",
+                "--timeout 300",
+                "Never queue several waits in one turn",
+                "echo $? >",
+            ):
+                with self.subTest(name=name, required=required):
+                    self.assertIn(required, body)
+        self.assertTrue(
+            (REPOSITORY / ".agents/product-run/.agents/skills/autonomous-workshop"
+             / "scripts/wait_for.py").is_file()
+        )
 
     def test_the_reviewer_reads_the_contract_from_its_packet_and_lists_reference_conflicts(self):
         # ADR 0084: the Design Contract wins over a reference image.

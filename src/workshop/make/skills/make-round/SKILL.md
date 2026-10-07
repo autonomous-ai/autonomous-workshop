@@ -131,6 +131,14 @@ calls were reassembling by hand.
   into a poll: it is an output budget there, and as a yield it is worse than
   the 10000 ms default. Omit `yield_time_ms` before writing a small one. Never
   put a `sleep` between polls: each poll re-sends the whole session.
+  On Claude Code, run `make_round` in the foreground with `Bash`
+  `timeout: 600000`; it returns as soon as the round exits. A round started
+  with `run_in_background` writes its exit status
+  (`... > "$TMPDIR/round.log" 2>&1; echo $? > "$TMPDIR/round.exit"`) and is
+  waited for with one `"$WORKSHOP_PYTHON"
+  .agents/skills/autonomous-workshop/scripts/wait_for.py --exit-file
+  "$TMPDIR/round.exit" --log "$TMPDIR/round.log"` call, which returns as soon
+  as the round ends; never a fixed `sleep`.
 - Do not read the cad scripts to learn their flags. The
   exact invocations are below; they are the same programs the host gates
   run, unchanged.

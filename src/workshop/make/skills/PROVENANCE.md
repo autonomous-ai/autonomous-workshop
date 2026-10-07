@@ -2011,3 +2011,13 @@ A Workshop-local change (issue #103) to the vendored `cad` skill's
 `features/print_details.py`) is not counted by `oversized-library`; a modified
 copy still is. This changes the `cad` fingerprint; materialized runs keep their
 copied bytes until `workshop resume --refresh-tools`.
+
+## Local change: make-round waits end when the round ends on Claude Code (2026-10-07)
+
+A Workshop-local change to Workshop's own `make-round` (issue #112). The
+Rules section's waiting rule gains its Claude Code form: run `make_round` in
+the foreground with `Bash` `timeout: 600000`, and wait for a round started in
+the background with the product-run `wait_for.py` helper, which returns as
+soon as the round's recorded exit status appears, never with a fixed
+`sleep`. The Codex wording is unchanged. This changes the `make-round`
+fingerprint; materialized runs keep their copied bytes.

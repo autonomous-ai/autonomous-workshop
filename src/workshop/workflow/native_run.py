@@ -12057,7 +12057,9 @@ def _reconcile_refreshed_token_budget(paths, run, checkpoint):
     _save_lifetime_budget(paths, checkpoint, budget)
 
 
-def refresh_native_run_tools(product_id: str, *, reason: str) -> Mapping[str, Any]:
+def refresh_native_run_tools(
+    product_id: str, *, reason: str, dry_run: bool = False
+) -> Mapping[str, Any]:
     """Refresh one run's host-owned deterministic tools from this install.
 
     Domain skills (the CAD verifier among them) are immutable to the native
@@ -12067,6 +12069,11 @@ def refresh_native_run_tools(product_id: str, *, reason: str) -> Mapping[str, An
     byte-for-byte from the installed skill source, the manifest is rebound in a
     new checkpoint revision, and an owner-only ledger line records the change.
     The native session, round budget, and every sealed artifact are untouched.
+
+    Every receipt lists each changed file with its previous and new hash
+    (issue #107). With ``dry_run`` the same listing is computed under the
+    lock and nothing is written, so an operator sees what a refresh would
+    bring before it brings it.
     """
 
     paths = native_run_paths(product_id)
@@ -12075,15 +12082,39 @@ def refresh_native_run_tools(product_id: str, *, reason: str) -> Mapping[str, An
         return _refresh_native_run_tools_locked(
             product_id, paths, run, reason=reason,
             domain_skill_roots=product_run_domain_skill_roots(),
+            dry_run=dry_run,
         )
 
 
 def _refresh_native_run_tools_locked(
     product_id, paths, run, *, reason, domain_skill_roots,
     refresh_review=True, motion_skill_root=None, finalizer_skill_root=None,
+    dry_run=False,
 ):
     """Refresh and rebind the same session while the caller holds its run lock."""
     before = run.snapshot()
+    token_budget_skill_root = (
+        product_run_agent_assets().skill_root
+        if refresh_review and TOKEN_BUDGET_CAPABILITY_PATH in before.input_sha256s else None
+    )
+    if dry_run:
+        preview = run.refresh_domain_skill_tools(
+            domain_skill_roots, reason=reason,
+            motion_skill_root=motion_skill_root,
+            finalizer_skill_root=finalizer_skill_root,
+            token_budget_skill_root=token_budget_skill_root,
+            dry_run=True,
+        )
+        return {
+            "product_id": product_id,
+            "action": "tools-would-change" if preview else "tools-current",
+            "dry_run": True,
+            "previous_checkpoint_sha256": before.checkpoint_sha256,
+            "checkpoint_sha256": before.checkpoint_sha256,
+            "changed_paths": [item["path"] for item in preview],
+            "changes": [dict(item) for item in preview],
+            "session_rebound": False,
+        }
     # Finish an interrupted prior refresh before creating another input
     # checkpoint, so its exact correction evidence remains the predecessor.
     _reconcile_refreshed_token_budget(paths, run, before)
@@ -12091,10 +12122,7 @@ def _refresh_native_run_tools_locked(
         domain_skill_roots, reason=reason,
         motion_skill_root=motion_skill_root,
         finalizer_skill_root=finalizer_skill_root,
-        token_budget_skill_root=(
-            product_run_agent_assets().skill_root
-            if refresh_review and TOKEN_BUDGET_CAPABILITY_PATH in before.input_sha256s else None
-        ),
+        token_budget_skill_root=token_budget_skill_root,
     )
     after = run.snapshot()
     _reconcile_refreshed_token_budget(paths, run, after)
@@ -12139,9 +12167,11 @@ def _refresh_native_run_tools_locked(
     return {
         "product_id": product_id,
         "action": "tools-refreshed" if changes else "tools-current",
+        "dry_run": False,
         "previous_checkpoint_sha256": before.checkpoint_sha256,
         "checkpoint_sha256": after.checkpoint_sha256,
         "changed_paths": [item["path"] for item in changes],
+        "changes": [dict(item) for item in changes],
         "session_rebound": session_rebound,
     }
 

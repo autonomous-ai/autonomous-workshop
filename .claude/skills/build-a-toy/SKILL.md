@@ -382,6 +382,32 @@ the images do not show) is applied without asking: set `approved` to
 
 The next attempt then runs from a fresh worktree at the new `origin/main`.
 
+### Delivering a fix to a running run
+
+A merged tool fix reaches a stopped run that should continue, not restart,
+only through `workshop resume --refresh-tools`. That rewrites every host tool
+the run carries from the checkout the command runs in, so a refresh from
+`main` also brings every other tool change merged since the run started, and
+those can stop the run (Broken God attempt 18 lost every locked Component's
+review to unrelated sheet-review gates). Never refresh a running run from
+`main`. Refresh from the run's own source commit plus only the fix:
+
+1. Make a branch at the run's source commit, the `loop.source_commit` of its
+   attempt:
+   `git worktree add -b refresh/<wish-id> <dir> <source_commit>`.
+2. Cherry-pick only the fix's commits onto it (`git cherry-pick <sha>...`).
+   Resolve a conflict toward the source commit; never pull in a second
+   change to make the fix apply.
+3. From that worktree, list what the refresh would change without
+   rewriting anything, naming the skill tree the fix touches:
+   `uv run workshop resume <wish-id> --refresh-tools --dry-run --refresh-tree <tree>`.
+   Every changed file is listed by path with its old and new sha256. A
+   `WARNING` names any tree beyond the named one; if a listed change is not
+   part of the fix, fix the branch and list again.
+4. Refresh and resume from the same worktree with Step 3's resume command
+   plus `--refresh-tools --refresh-tree <tree>`, and record the branch, its
+   commits and the listed files on the stop the fix answers.
+
 ### When the loop stops and asks
 
 `ledger.py next` prints `ask-owner`, with every reason that holds, when:

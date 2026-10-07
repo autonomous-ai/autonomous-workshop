@@ -191,11 +191,21 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   value; it is the `max_output_tokens` half of the `exec` pragma example.
   Never sleep between polls. Wait for a child agent the same way: one
   `wait_agent` at a long timeout (`timeout_ms: 300000`), never repeated short
-  waits, `list_agents` polling, or a `sleep` between them. A runtime whose shell tool blocks until
-  the command exits, such as Claude Code's `Bash`, needs only a long timeout and
-  no polling at all. This rule is repeated in `references/make.md`; it lives
-  here because a compaction drops that file from the session and this file
-  survives.
+  waits, `list_agents` polling, or a `sleep` between them. On Claude Code,
+  `Bash` blocks until its command exits: run a long command in the foreground
+  with `timeout: 600000`, and it returns as soon as the command ends. If you
+  start one with `run_in_background` instead, make it record its exit status,
+  `<command> > "$TMPDIR/<job>.log" 2>&1; echo $? > "$TMPDIR/<job>.exit"`,
+  and wait for it with one foreground `Bash` call with `timeout: 600000`:
+  `"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/wait_for.py
+  --exit-file "$TMPDIR/<job>.exit" --log "$TMPDIR/<job>.log"`. It checks
+  locally every 30 seconds without a model request, returns as soon as the
+  job has ended with its exit status and the log's last lines, and returns
+  after 570 seconds at the latest; run it again only if the job is still
+  running. Never wait with a fixed `sleep`, and never queue several waits in
+  one turn: run one, read what it returns, then decide. This rule is
+  repeated in `references/make.md`; it lives here because a compaction drops
+  that file from the session and this file survives.
 - Never end your turn while a Component Worker or a Component Reviewer
   request is still running. Wait for it with the long wait, record what it
   returns, and end your turn only on a stage proposal, a recorded need, or a
@@ -203,10 +213,14 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   agent reports, and its round is lost. On Claude Code, a background agent's
   result arrives as a notification only after your current tool call
   returns; when nothing is left to do but wait, run one foreground `Bash`
-  wait with `timeout: 600000`, `"$WORKSHOP_PYTHON" -c "import time;
-  time.sleep(300)"`, read every notification it returns with, and repeat
-  until each running agent has reported. This rule is repeated in
-  `references/make.md` for the same reason as the waiting rule above.
+  wait with `timeout: 600000`, `"$WORKSHOP_PYTHON"
+  .agents/skills/autonomous-workshop/scripts/wait_for.py --timeout 300`,
+  adding `--exit-file "$TMPDIR/<job>.exit"` for every background command of
+  yours still running, so the wait returns as soon as such a command ends.
+  Read every notification it returns with, and repeat until each running
+  agent has reported. Never queue several waits in one turn. This rule is
+  repeated in `references/make.md` for the same reason as the waiting rule
+  above.
 - A Component Worker that is blocked records a Blocked Report with
   `make_round --report-blocked`. Clear every one at once, only with
   `make_round <cad-project> --clear-blocked`: a decision the worker

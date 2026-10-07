@@ -16,6 +16,13 @@
 - Amended by: ADR 0081's issue #97 section (2026-10-04): the Manager's
   Blocked Report rulings travel in the review packet and bind the Component
   Reviewer; the fixed review request is unchanged.
+- Amended by: issue #112 (2026-10-07), for Claude Code only: a 300000 ms
+  wait there ends when the awaited job ends, as a Codex poll does. The
+  Manager waits with the run-local `scripts/wait_for.py`, which checks
+  locally every 30 s and returns as soon as a watched exit status, file or
+  process says the job ended, or after 570 s at the latest; a wait for agent
+  notifications uses it with `--timeout 300`. A fixed `time.sleep(300)` is
+  no longer the Claude Code wait. Codex wording is unchanged.
 
 ## Context
 
