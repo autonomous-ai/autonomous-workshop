@@ -12,8 +12,9 @@ sources:
   - https://formlabs.com/blog/what-is-cmf-color-material-finish-opportunities-for-3d-printing/ (CMF decides whether a product feels cheap or premium)
   - https://www.kidsamusementrides.com/the-carousel-horse-a-complete-guide-to-history-design-amusement-ride-magic/ (carousel figures: jumpers, the carved romance side, jewels, armour and drapery)
   - https://carouselworkshop.com/illion-s-jumper-carousel-horse-roached-mane-inner-row.html (a carved jumper: harness, rosettes, deeply carved mane)
+  - "experience: a sliced-sphere case framing a square 84 mm display in a round 125 mm face was rejected as ugly; a barchan-dune case whose 34 deg face held the same display needed a 21 cm deep body and read as a blob"
 related: [form-and-finish-heuristics, fdm-surface-finish, colour-matching, fdm-multi-material-design, stability-and-tipping, handheld-ergonomics, printed-part-count, fillet-chamfer-pitfalls]
-updated: 2026-09-29
+updated: 2026-10-04
 ---
 
 # Designing a product to look good
@@ -206,6 +207,8 @@ colours and jewelled where the straps cross:
 | Ugly bed face | support scars or the seam on the side people see | A-surfaces up or sideways; designed seam line |
 | Glove wing, finger tail | feathers or strands fanning each their own way from one root | rows on the lead feathers' lines; strands parallel |
 | Plain figure | a correct body in one colour, judged ugly | a carved harness in a metal colour, jewels at the crossings, one accent |
+| Frame fights the payload | a square screen in a round face: wide dead corners, a body far larger than what it carries | frame the payload in its own shape; size the host form from the payload, not the reverse |
+| Archetype lost at size | the form whose identity needs a long gentle slope, a wide crescent or a slender leg, squeezed to the size a fixed part forces, reads as a blob | before selecting, size the concept around the fixed part and check its identifying proportions survive; drop it if they do not |
 
 No gate catches any of these. They are caught by a design review of shaded
 renders and silhouettes against the direction, done as rounds with the finding

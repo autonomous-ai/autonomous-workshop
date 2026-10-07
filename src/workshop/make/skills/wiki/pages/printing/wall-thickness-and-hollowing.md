@@ -10,7 +10,7 @@ sources:
   - "experience: sub-nozzle walls, knife edges and over-hollowed parts that passed validate, interfere, check_fit and check_mesh"
   - "experience: sawtooth tips, a D-flat key and a sloped rib foot each failed the thickness gate as walls; lands, a square rib and a reversed slope cleared them"
 related: [overhangs-and-print-orientation, printed-part-count, joints, resin-printing-design, print-time-and-material-estimation, ribs-and-stiffening, lightweighting-and-lattices, push-to-turn-indexer]
-updated: 2026-09-29
+updated: 2026-10-04
 ---
 
 # Wall thickness and hollowing
@@ -234,3 +234,14 @@ A project that ships a hollowed part states the wall it was shelled at beside
 the measurement that checked it; a volume in a chat log is not a record.
 
 How nozzle, line width and layer height set the wall: [[fdm-layer-height-and-nozzle]]; published wall limits side by side: [[fdm-design-rule-tables]].
+
+## Two cavities closer than twice the wall break the offset
+
+`offset(part, -wall)` is the core of every hollow here. On a body with several
+cavities cut into it (wheel arches and an open engine bay) the offset collapses
+when two cavity faces are closer than `2 * wall`: a 3 mm web between a bay and an
+arch at a 2.4 mm wall returned a core of 68 000 mm3 for a body of 1 600 000 mm3,
+with no exception, and the "hollow" was nearly solid. A web of 6 mm worked.
+Compute the core once without the cavities and once with them and compare the two
+volumes (they differ by roughly the cavity volumes, not by a factor of twenty),
+and keep every web at `2.5 * wall` or more.

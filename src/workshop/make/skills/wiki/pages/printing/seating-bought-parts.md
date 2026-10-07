@@ -105,3 +105,13 @@ component moves.
   measurement.
 
 Inserts, nut traps and printed threads: [[printed-threads-and-bosses]].
+
+## A pocket square to a leaning face dives
+
+A socket cut square to a face that leans `θ` from vertical (a drafted or
+tapered side) runs downhill: over a depth `d` its floor drops `d sin θ`. A
+7.4 mm connector opening cut square to a 9° side face dropped 1.2 mm and left
+a 0.4 mm floor over a tie whose nominal wall was 1.5 mm; the thickness gate
+found it, nothing else did ([[wall-thickness-and-hollowing]]). Cut a socket along the axis its part is inserted
+(usually level), and check the wall at the far end of the cut, not at the
+mouth.

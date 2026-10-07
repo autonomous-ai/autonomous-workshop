@@ -8,7 +8,7 @@ sources:
   - https://www.allaboutcircuits.com/industry-articles/six-steps-for-designing-a-custom-3d-printed-electronics-enclosure/
   - https://www.3d-demand.com/blog/3d-printed-enclosures-electronics-guide
 related: [microcontroller-boards, wire-gauge-and-connectors, lipo-cells-and-housing, toy-battery-compartments, wall-thickness-and-hollowing, seating-bought-parts, thermal-design-for-enclosures, buttons-knobs-and-front-panels, sealing-and-ingress-protection]
-updated: 2026-09-23
+updated: 2026-10-02
 ---
 
 # Designing printed enclosures for electronics
@@ -18,6 +18,23 @@ buttons and sensors through, sheds heat, and opens for service. The starting
 numbers below are from enclosure design guides. Every bought part's position
 still comes from its STEP ([[seating-bought-parts]]), and every mate from
 `cadfits`.
+
+## Exterior redesign with retained electronics
+
+When the brief explicitly limits work to the exterior and preserves firmware,
+freeze the existing display, touch/control and connector contracts before
+choosing a new silhouette. A circular display does not require a circular
+housing. Do not select a replacement development board merely because its
+screen has the same nominal size: pin assignments and peripherals can change
+the firmware contract.
+
+An inert display illustration and standard fasteners in a concept assembly
+do not establish functional integration or closure retention. State which
+component clearances were actually checked, and keep full PCB mounting,
+acoustic paths, cable overmould access, thermal behaviour and closure strength
+as explicit unverified items until their geometry and applicable gates exist.
+An original complete-device assembly includes its old housing; fitting that
+whole assembly is a different claim from seating a retained LCD or board.
 
 ## Walls and clearances
 

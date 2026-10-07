@@ -1,5 +1,127 @@
 # Shared skill provenance
 
+## Resync to upstream `f432984`: freeform obstacles cropped, exact trimmed-face extents, sRGB review shading (2026-10-07)
+
+- Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
+  `f432984c558126419a5914d86dff7e6151eed336` (2026-10-07), resynced from
+  `b67636e`. That is 23 upstream commits touching 47 files. The merge is the
+  same three-way merge as before: the locked `b67636e` bytes are the base, the
+  Workshop tree is one side and upstream `HEAD` the other. `cad`,
+  `image-to-cad`, `product-design` and `wiki` move. `design-reference`,
+  `electromechanical-integration` and `step-parts` came out byte-identical, so
+  their locks move to the new commit only. `make-round` and `print-details`
+  are unchanged. `toy-archive` and the reverse-engineering pair stay out; none
+  of them changed upstream in this range.
+- **What upstream brought.** `cad`:
+  - `check_fit` measures with the new `printlib.tight_box`. OCC bounds a
+    B-spline or Bezier face by the parameter rectangle round its trimming
+    wire, so a smooth part cut flat at the bed read min(Z) -3.1 mm and failed
+    the print datum. `tight_box` pulls each side of that loose box in with an
+    exact distance query against a plane just outside it. A shape with no
+    freeform face skips the queries.
+  - `check_mount` and `check_motion` crop an obstacle of more than 200 faces
+    once before measuring: to the component's box grown by the margin in
+    `check_mount`, and to the box round every sampled pose in `check_motion`'s
+    linear and rotary sweep. A many-solid board seated in a 6000-face Bezier
+    skin went from over 30 minutes to 5 min 45 s. A crop is used only when it
+    and its complement add back up to the whole volume (1e-6 relative);
+    otherwise the whole obstacle is measured.
+  - `check_spec_format` accepts one spec document as its positional argument.
+    Before, it silently scanned nothing.
+  - The references add a check assembly for alternative insertion poses
+    (`motion-manifests.md`) and the cost of a freeform obstacle
+    (`run-cost.md`).
+- `image-to-cad`:
+  - `render_views --compare-step` meshes both sides with absolute deflection.
+    It clears cached relative meshes first, and refuses a comparison that
+    omitted a face.
+  - Shaded views are sRGB-encoded after lighting. Before, an ivory part read
+    brown.
+  - `tessellate_parts` walks nested assemblies to their leaves and keeps each
+    leaf's colour and ancestor placement.
+  - `ref_silhouette --ground auto` (the default) switches to a border-tint rule
+    when the frame border is not ground by the luminance band, so a white
+    subject on a pale sweep separates. `likeness-gate.md` documents it.
+- `product-design`'s template asks for a parameter's old and new values before
+  its backticked name, because `check_spec_numbers` reads "`NAME` 4.2 → 5.6"
+  as a claim about the current source.
+- `wiki` adds seven pages:
+  - `electronics/flush-display-plate-stack`
+  - `electronics/nfc-tags-in-prints`
+  - `mechanisms/volvelle-two-state-display`
+  - `modeling/inflated-forms`
+  - `modeling/low-poly-sculpt-from-a-field`
+  - `modeling/shapely-cutters`
+  - `modeling/smooth-skin-from-a-field`
+
+  It also edits 28 others and `synonyms.txt`, and now has 200 pages.
+
+Merge decisions where both sides had changed the same lines:
+
+- `check_motion` `sweep`: upstream computes every pose first so that it can
+  crop the obstacles to their union. Workshop's progress reporter, its
+  `reporter.finish` on a collision and its per-step `--deadline` check are
+  kept. The reporter starts after the crop, so its pace and estimate measure
+  sampled steps only. The crop's two Booleans run before the first sample,
+  and the deadline is checked between samples, so an over-budget crop is first
+  reported after step 1. Workshop's coupled-motion sweep does not crop, and is
+  unchanged.
+- `printlib` self-check: both sides appended fixtures at the end. Workshop's
+  two refused print-union stand-ins stay inside the temporary-project block,
+  and upstream's two `tight_box` fixtures follow it.
+- `check_fit`, `check_mount`, `render_views.py`, `run-cost.md`,
+  `motion-manifests.md` and `likeness-gate.md` carry Workshop changes
+  elsewhere in the file. They merged cleanly, and each was read after the
+  merge.
+
+Workshop review of the new behaviour:
+
+- **The crop never comes without its guard.** Upstream's first crop
+  (`f421d0b`) produced a false pass. OCC cut a skin into two 5 mm3 slivers
+  without raising, and a blocked sweep read clear. The volume-conservation
+  guard (`b4d4a3e`) landed before this snapshot, so Workshop takes the two
+  together. A crop that fails the sum is slower, never wrong.
+- **`tight_box` can only shrink a reported extent.** A failed distance query
+  keeps the loose side. No host code measures bed extents independently, so
+  nothing can now disagree with `check_fit`.
+- **The drift check fails closed.** If a source face cannot be meshed with
+  absolute deflection, even after the STEP round trip, `render_views` exits
+  non-zero, and so does the image-derived final of `verify_project`. Before,
+  it compared a silhouette that might be partial.
+- **The shaded PNGs are display only.** No host code reads
+  `snap/<view>-shaded.png`. The silhouette masks the likeness gate scores are
+  still meshed by `tessellate`, so the sRGB and nested-leaf changes do not
+  move any likeness score.
+- **`ref_silhouette`'s verdict is not a gate.** It newly reports "not
+  comparable" (`ok: true`) when its own mask sees under half the flattened
+  outline. That is a self-check of a preprocessing tool. The flattened file is
+  still scored by the unchanged `check_likeness`, and no Workshop code reads
+  the record. An outline that reaches the frame edge now always fails.
+- No path adaptation was needed: the new prose names no script outside the
+  vendored trees. The libraries the new pages name — `shapely`, `contourpy`
+  through `matplotlib`, and `scipy` — import in the Workshop venv.
+
+Verified here:
+
+- `verify_skill_locks` matches nine trees.
+- Each changed script's self-check passes: `printlib`, `check_motion`,
+  `check_spec_format`, `render_views` and `ref_silhouette`.
+  `check_fit` and `check_mount` have none.
+- `verify_project --self-check` and `wiki --self-check` pass.
+- `wiki lint` reports 200 pages, 0 errors.
+
+Consequences for existing runs:
+
+- **Materialized instruction bytes changed.** The `cad`, `image-to-cad`,
+  `product-design` and `wiki` fingerprints move. A run parked before this
+  change must be restarted rather than resumed; resume fails closed on the
+  materialized-instruction-hash mismatch.
+  `workshop resume --refresh-tools` rewrites the skills a run already carries.
+- A run that keeps its frozen tool bytes keeps its old `check_fit`,
+  `check_mount` and `check_motion` behaviour. The host reruns the run's own
+  materialized `verify_project` (`native_gate.NATIVE_CAD_VERIFIER_PATH`), so
+  its sealed verdicts still reproduce.
+
 ## Resync to upstream `b67636e`: build123d libraries that downgrade the toolchain (2026-10-01)
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at

@@ -70,7 +70,10 @@ face seal, `static_gland_profile(axial=False)` for a static radial seal,
 `dynamic_gland_profile()` for a moving one, and `gland_width_for(...)`. Take
 the groove width, depth and radii from that profile, never from a table typed
 into the parameter block ([[element-libraries]],
-[[fit-derivation]]). This page holds the *why*, so you can check the profile
+[[fit-derivation]]). The ring's `gland_width`, `gland_depth` and
+`gland_radius` attributes read `None` until one of those profile methods has
+been called on it; call `static_gland_profile()` first, or arithmetic on them
+fails with a `NoneType` error. This page holds the *why*, so you can check the profile
 against a printed part and choose the ring:
 
 ```text

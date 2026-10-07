@@ -215,7 +215,10 @@ Delete a block only when its trigger is absent, and say so in one line.>
 
 <One row per finding, filled after `$cad` builds. At least two rounds for a
 visible product unless round 1 finds nothing; the same finding surviving three
-rounds of detail edits means the primary form or the concept changes.>
+rounds of detail edits means the primary form or the concept changes. Write a
+parameter's old and new values before its name — "plate 4.2 → 5.6 mm
+[assumed] (`BIT_T`)" — never "`BIT_T` 4.2 → 5.6": a backticked name followed
+by a number is a claim `check_spec_numbers` holds to the current source.>
 
 | Round | View | Finding | Checklist item | Source change | Result |
 |---|---|---|---|---|---|

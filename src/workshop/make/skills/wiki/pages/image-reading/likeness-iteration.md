@@ -7,7 +7,7 @@ sources:
   - skills/image-to-cad/scripts/render_views.py (pose replay)
   - "toolchain: search 59.2 s vs replay 7.8 s with identical IoU on a six-part model, three references (reproducible)"
 related: [silhouette-likeness, image-types-and-views]
-updated: 2026-09-23
+updated: 2026-10-04
 ---
 
 # Converging a likeness loop
@@ -100,3 +100,35 @@ Read the *shape* of the curve, not only its maximum:
   less than 0.001: other features set the envelope and the rear sat inside it.
   A shape the references cannot see is not evidence for a feature; modelling
   one anyway is invention with a number attached.
+
+## When the sweeps go flat, read the residual blobs
+
+Eleven knob sweeps (wing height, tail, track, tyre width, bumper) moved a
+three-quarter score by under 0.003 each; what moved it by 0.03 in total was found
+by labelling the silhouette difference. Overlay the normalised render on the
+normalised reference (the gate's own `normalise`, centred), colour render-only and
+reference-only pixels, label connected components and sort by area: the top
+blobs name the feature (a tyre sitting 40 px off, a wing tip drooping, an
+underbody that hangs too low) where a band ratio only names a height. Then
+sweep the knob the blob points at. On a low, wide car the levers that mattered
+were ride height, depth of the skirts, tyre diameter and the shape of the rear
+fender; the ones that did not were global length and width.
+
+Three other things the same run taught:
+
+- **Search the lens per view.** A close, low photograph needs a wide lens in
+  the search list (an 85 degree cone fitted the front view; the rear view of the
+  same truck kept preferring 25 degrees). Passing only the default lenses left
+  0.015 on the table. Both views can be given different lenses by one
+  `--search-fov 25,85`; the search keeps the best per view.
+- **Declare the camera that took the photo, including a negative elevation.**
+  A camera at bumper height looks up at the car: `@-132,-10` puts the coarse
+  grid on the true optimum, while `@-145,10` missed it by a grid step.
+- **Pose replay hides what a coarse search misses.** A local refinement around a
+  stored pose scored 0.906 where the full coarse search returned 0.886 for the
+  same shape; always finish with the full search the gate itself runs.
+
+A sweep harness is cheap to write in process: patch the parameter module's text
+(a regex per `NAME = value`), purge the project's modules from `sys.modules`,
+exec the patched text as `params`, rebuild, tessellate, refine the stored pose
+by +-6 degrees and score. One point cost 33 s on a 55-part truck.

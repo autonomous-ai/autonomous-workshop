@@ -88,6 +88,16 @@ as they are. The script reports how far the new outline sits from the tool's
 own mask over the rows a contact shadow cannot reach, and exits non-zero if the
 outline moved — quote that report. It cannot handle a cluttered background.
 
+A white subject on a pale sweep is the other way the mask fails: the ground is
+brighter than the default band, so the band rule finds no ground and returns
+the whole frame. `--ground auto` (the default) notices that the frame border is
+not ground by the band rule and switches to the border rule, which separates
+the two by the sign of their tint (a warm white against a cool grey). The
+record names the rule that ran. When the tool's own mask sees under half the
+flattened outline, the comparison is reported `not comparable` instead of
+failing — look at the `-sil.png` yourself before scoring against it — and an
+outline that reaches the frame edge always fails.
+
 ### Score the pairs
 
 `render_views.py` prints the command:

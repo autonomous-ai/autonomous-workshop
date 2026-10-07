@@ -9,8 +9,9 @@ sources:
   - "toolchain: OCC booleans on near-coincident B-spline faces collapse to zero intersection (reproducible)"
   - "toolchain: fusing rotated copies of one loft returns a null shape (reproducible)"
   - "experience: polygon-approximated arc prisms against lofted segments ran minutes; true cylinders seconds"
+  - "experience: a sliver cleanup returned 1349 pieces, two of them real; filtering by area took the tray from over ten minutes to 0.4 s"
 related: [kernel-validity, construction-strategy, loft-pitfalls, feature-recipes, text-patterns-and-surface-detail]
-updated: 2026-09-29
+updated: 2026-10-05
 ---
 
 # Boolean pitfalls
@@ -18,6 +19,15 @@ updated: 2026-09-29
 OCC booleans fail worst on inputs that nearly agree: coincident, tangent, or
 near-copies of each other. Many of the failures below exit 0 and validate
 clean.
+
+## `intersect` returns a list
+
+**`a.intersect(b)` returns a `ShapeList`, not a shape.** Chaining
+  `.intersect(...).intersect(...)` fails with `'ShapeList' object has no
+  attribute 'intersect'`. Use the `&` operator (`a & b & c`), which returns a
+  shape you can test with `solids()`. Three extruded prisms from the side,
+  section and plan intersected this way give a faceted vehicle hull in
+  milliseconds, and `cadprint.hollow` shells a planar hull in under 0.1 s.
 
 ## Overshoot the tool
 
@@ -92,6 +102,16 @@ removed — or a stray disjoint sliver is left floating inside the part. Only
 visual review catches it. Build shallow domes as a single revolved profile
 (`RadiusArc` in the section) instead of near-tangent boolean stacks; it is
 also crisper.
+
+## A boss level with a rod's crest poisons later features
+
+A boss, bead or plate fused to a round rod with its top at exactly the rod's
+crest height (an eye at the end of a stick, a bit plate as thick as the stick)
+leaves the two surfaces tangent along a line. The fuse succeeds, but a hole
+cut there gets a rim split across both surfaces, and the rim fillet then fails
+with `BRep_API: command not done`. Make the joined form stand clearly proud of
+the crest (a bead 1 mm higher) or sit clearly below it (a plate 0.8 of the
+rod's diameter, whose top plane cuts the rod in two clean lines); never equal.
 
 ## Near-coincident surfaces collapse the boolean
 
@@ -178,15 +198,8 @@ additively.
 
 ## Arcs drawn as polygons make cutters slow
 
-A cutter extruded from a polygon that approximates arcs (a `shapely` buffer,
-a circle as 64 segments) cuts a B-spline body in minutes where the same cut
-with true circles takes seconds: every facet is a planar face the kernel
-intersects with the spline. Eight lofted segments trimmed by 64-sided arc
-prisms had not finished after two minutes; with `Cylinder` arcs and
-straight-sided wedges the same eight took two seconds. Build every arc as a
-circle, and keep polygons for straight-sided regions; when one must be grown,
-mitre it (`buffer(d, join_style=2)`) so it keeps its vertex count instead of
-gaining an arc at each corner.
+Moved: cutters built from `shapely` polygons — faceted arcs, zero-area shards,
+which way the prism runs — are [[shapely-cutters]].
 
 ## A fuse can come back empty: assert every step
 

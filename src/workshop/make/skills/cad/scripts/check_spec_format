@@ -331,6 +331,21 @@ def self_check() -> int:
         print(f"{'ok  ' if hit else 'FAIL'} a missing --doc is a finding: exit {got}")
         ok &= hit
 
+        for label, body, want in [
+            ("a positional document is checked", "## 5. Size\n\n| Width | 30 mm | [observed] |\n", 0),
+            ("a positional document cannot silently skip findings", "## 5. Size\n\n| Width | 30 mm | from photo |\n", 1),
+        ]:
+            doc.write_text(body, encoding="utf-8")
+            previous = sys.argv
+            try:
+                sys.argv = [__file__, str(doc), "--only", "untagged-dimension"]
+                got = main()
+            finally:
+                sys.argv = previous
+            hit = got == want
+            ok &= hit
+            print(f"{'ok  ' if hit else 'FAIL'} {label}: exit {got}, wanted {want}")
+
     # The shipped templates are the canonical shape: every check except the
     # placeholder one (they are templates, so their brackets are unfilled by
     # design) must pass both, or the gate would fail every spec built from
@@ -355,7 +370,8 @@ def self_check() -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("project", nargs="?", type=Path)
+    parser.add_argument("project", nargs="?", type=Path,
+                        help="project directory or one spec document")
     parser.add_argument("--doc", action="append", type=Path, default=None,
                         help="a document to scan; defaults to the project's *_spec.md")
     parser.add_argument("--only", action="append", choices=CHECKS, default=None,
@@ -375,6 +391,11 @@ def main() -> int:
         parser.error("a project directory or --doc is required")
 
     project = args.project.resolve()
+    if project.is_file():
+        print("1 document(s)")
+        return check([project], args.only)
+    if not project.is_dir():
+        parser.error(f"project directory or document does not exist: {project}")
     documents = sorted(project.glob("*_spec.md"))
     if not documents:
         print(f"check_spec_format: {project} has no *_spec.md")

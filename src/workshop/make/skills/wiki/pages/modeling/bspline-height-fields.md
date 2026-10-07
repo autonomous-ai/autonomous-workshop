@@ -5,8 +5,9 @@ aliases: [GeomAPI_PointsToBSplineSurface, Geom_BSplineSurface, 2.5D surface, rel
 sources:
   - "toolchain: GeomAPI_PointsToBSplineSurface least-squares fit rings on a steep-in-flat height grid (reproducible)"
   - The NURBS Book (Piegl and Tiller), convex hull property of B-spline surfaces
+  - "experience: 12 constant-depth groove booleans on a 89 x 113-pole dune surface ran over 7 minutes unfinished; the same ripples in the pole heights built the whole body in 26 s"
 related: [kernel-validity, boolean-pitfalls, loft-pitfalls]
-updated: 2026-09-23
+updated: 2026-10-04
 ---
 
 # B-spline surfaces from height grids
@@ -55,5 +56,41 @@ Assert the face's Z bounding box lies inside the grid's own range. That assert
 is what turns this from a silent 77 % error into a build failure. Measure the
 bounding box with `BRepBndLib.AddOptimal_s`, not the control-hull `Add`
 ([[kernel-validity#bounding-boxes-over-report-on-b-spline-faces]]).
+
+## Flat where the net is flat
+
+A cubic patch depends on the poles within two spans of it. Where all of those
+poles lie on one plane, the surface lies **exactly** in that plane (the convex
+hull again). An organic surface can therefore carry a truly flat face for a
+flush part, a display lens or a label, inside its freeform: make the height
+function planar there, and keep the flush feature at least two pole spacings
+from any kink (a ridge, a toe), because the net rounds every kink over about
+two spacings each side.
+
+## Texture belongs in the net
+
+Ripples, flutes and grooves on a height field cost nothing when they are added
+to the pole heights, and a great deal as booleans: twelve groove cuts against
+a 9 800-pole surface ran over seven minutes without finishing, while the same
+ripples in the net built the whole body in 26 s. The net smooths what it
+carries, by a gain at the poles of
+
+```text
+g(n) = (4 + 2 cos(2 pi / n)) / 6      n = poles per wavelength
+       n = 4: 0.67   n = 5: 0.77   n = 8: 0.90
+```
+
+so scale the pole amplitude by `1 / g`, and keep `n >= 4`: below that the
+texture aliases or vanishes. Through-slots (a grille) are still booleans; cut
+them as a few straight prisms, not as surface-following grooves.
+
+## A solid from the face
+
+`split(box, face, keep=Keep.BOTTOM)` turns the face into a solid when the face
+overruns the box on every side; make the pole domain a few millimetres larger
+than the box. A constant-depth skin made as `outer - Pos(0, 0, -d) * outer`
+fails when the two solids share their side walls; build the subtracted copy
+with a wider footprint so only the top surfaces nearly agree
+([[boolean-pitfalls]]).
 
 Degree, knots and continuity in general: [[nurbs-bspline-basics]].

@@ -8,7 +8,7 @@ sources:
   - "experience: dimensions read on the wrong view's ruler, which no downstream gate caught"
   - "experience: a cream egg on a cream ground defeated both toolchain masks; red-minus-blue after a median filter separated it"
 related: [image-types-and-views, perspective-and-hidden-views, silhouette-likeness]
-updated: 2026-09-29
+updated: 2026-10-05
 ---
 
 # Measuring reference photos
@@ -48,6 +48,17 @@ the image, trust your eyes and say the tool disagreed.
   band under the subject a higher threshold than the lit side, and cut below
   the lowest point the grid overlay shows. Keep such a probe as a documented
   script beside the reference.
+  When the ground is itself warm (a pink-beige studio sweep), red minus blue
+  stops separating: both read 25-45. The hue ratio (G-B)/(R-B) still does --
+  an ivory or yellow subject reads about 0.45 at every brightness, a pink-beige
+  ground about 0.35 -- and an Otsu split of its median-filtered map finds the
+  threshold. The median pushes that mask's edge 3-5 px outward all round,
+  which on a figure costs about 3 points of IoU, so re-classify a band of
+  about 10 px either side of the edge pixel by pixel against a smooth
+  background estimated from the pixels outside the band (normalised
+  convolution). A glossy desk still returns a contact shadow and a reflection
+  that no colour rule removes: read the top of the dark contact line as a
+  polyline and cut there.
 - **Line art defeats the mask, and not obviously.** A denoise pass deletes
   1–2 px strokes, so a white-interior sheet reports no object on some panels
   and a plausible bbox on the ones it half-holds. Flood-fill the white

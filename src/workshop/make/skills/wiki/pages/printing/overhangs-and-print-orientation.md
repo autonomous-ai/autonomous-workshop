@@ -8,6 +8,7 @@ sources:
   - "experience: parts that were sound, watertight and thick enough but could not print unsupported"
   - "toolchain: tessellated 45 degree cones land facets at 44.7 degrees (reproducible)"
   - "experience: a flat-topped egg crown, bayonet grooves in a rim band and a chamfered rim all failed the overhang gate until reshaped as described"
+  - "experience: a wedge base with a stop rail and sunk pads on 60 and 30 deg faces failed overhang until the walls leaned and the underside pad moved outside the body"
   - "experience: lever pockets beside a pushrod in a carved figure's split halves joined the socket's and channel's ceilings into one over-long bridge"
 related: [wall-thickness-and-hollowing, joints, printed-part-count]
 updated: 2026-09-30
@@ -175,6 +176,25 @@ Part them, and give each part walls at both ends of its span:
   where it enters the centre, under a ceiling a step lower than both, and
   thicken it only where its pocket stands two cells clear of them
   ([[automata-patterns#pattern-legs-that-swing-with-the-wings]]).
+
+## Features on a tilted face, and layers on the bed face
+
+A stop rail or a sunk pad on a face inclined `t` from the horizontal has a
+down-slope wall whose normal points `t` below the horizontal. Past `t = 45 deg`
+that wall is an overhang: on a 60 deg face a square-walled 3 mm rail and a
+0.8 mm pocket both failed. Lean the wall out of the face by at least `t - 45 deg`
+(30 deg gives margin): the rail's down-slope wall ramps, the pocket's walls
+draft in toward the floor. Only the walls that face down-slope need it; the
+wall that retains the load keeps its square face.
+
+End a ramped rail with walls square to its run, not with the slanted outline of
+the region it sits in: a ramp cut by a slanted outline leaves a 0.3 mm wedge at
+each end that the thickness gate reads as a wall.
+
+A layer sunk into the bed face (an anti-slip pad let into the underside) makes
+the recess's ceiling a bridge over air across its whole width, so a 62 mm
+triangle failed the 12 mm bridge limit. Put the layer under the flat base
+instead and let the body keep its Z=0 datum.
 
 ## Do not design at the limit
 

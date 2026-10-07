@@ -58,6 +58,19 @@ obstacle solid the component's bbox reaches, plus two per hole. Its figure, like
 `CADGEN_WARM=1` cannot remove from a standalone gate, so one call is ~3.4 s in
 practice.
 
+A freeform obstacle breaks that scaling unless it is cropped: every boolean
+and distance costs per face of the obstacle, and a component seated *inside* a
+figure passes every bounding-box prefilter. A many-solid board in a
+6000-face Bezier skin ran over 30 minutes in `check_mount`, and each sweep step
+of `check_motion` cost seconds. Both gates now cut an obstacle of more than
+200 faces once to the component's (or the whole sweep's) box plus a margin
+before measuring, which leaves every answer exact; the same project then took
+5 min and 45 s. Each crop is two booleans, the crop and its complement, and is
+used only when their volumes add up to the whole: OCC once returned a box cut
+of such a skin as two slivers without raising, and a sweep against it read
+clear where the whole skin blocked. A crop that fails the sum falls back to
+the whole obstacle.
+
 ## Where the pixel-bound commands go
 
 `render_views` is dominated by one import — `import build123d` alone is 5.2 s of

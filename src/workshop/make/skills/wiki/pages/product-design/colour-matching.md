@@ -10,7 +10,7 @@ sources:
   - https://www.pixelz.com/blog/need-accurate-color-let-grey-cards-white-balancing-come-rescue/
   - https://fastershape.com/blogs/random/understanding-filament-color-transmission-for-lamp-and-light-design
 related: [form-and-finish-heuristics, measuring-reference-photos, organic-likeness, post-processing-and-finishing]
-updated: 2026-09-23
+updated: 2026-10-02
 ---
 
 # Colour matching and colour systems
@@ -86,6 +86,20 @@ Choose the colour from stock filaments rather than an arbitrary RGB, name
 it, and assign it per region (the repository's `cadfilament` helper exists for
 this). Colour regions are a likeness decision; see [[organic-likeness]] for
 region splitting on figures.
+
+Software review renderers must keep the colour and coordinate contracts:
+
+- `cadgen.srgb` and `cadfilament.filament` give linear-light channels. Apply
+  lighting in linear light, then encode sRGB before writing PNG pixels;
+  writing the linear values directly makes ivory brown and darkens colours.
+- Traverse coloured leaves inside nested assemblies. A module-level fallback
+  colour can otherwise replace black glass and coloured artwork.
+- A leaf's tessellation carries its own transform. Apply the accumulated
+  ancestor placement too; dropping it can draw a display at the origin while
+  the whole-assembly silhouette still passes.
+
+Colour and placement regression fixtures must include a transformed nested
+compound, not just coloured top-level primitives.
 
 Splitting a part so each colour can be painted separately:
 [[post-processing-and-finishing]].
