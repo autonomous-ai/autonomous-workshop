@@ -269,6 +269,14 @@ class FeatureNamingTest(unittest.TestCase):
         self.assertRegex(done.stdout, r"at face plane@\(-?\d+,-?\d+,-?\d+\) -- face \d+ \(plane, ")
         self.assertIn("no print-details feature within 1 mm", report)
 
+    def test_a_wall_exactly_at_the_minimum_passes(self):
+        # A 0.8 mm tile reads one march step low, exactly at the gate's limit;
+        # float rounding must not tip that reading under it.
+        done, _ = self.gate("check_thickness", "min_tile", (
+            "def gen_step():\n"
+            "    return Pos(0, 0, 0.4) * Box(2.0, 2.0, 0.8)\n"), "--nozzle", "0.4")
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+
     def test_a_passing_entry_keeps_its_verdict(self):
         body = ("pd = print_details.Details(nozzle=0.4)\n"
                 "def gen_step():\n"

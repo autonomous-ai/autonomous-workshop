@@ -2064,3 +2064,12 @@ overhang gates, and `--interface` runs `inspect interfere` on the placed
 Components before one `check_motion` run of the pose table and the
 Interface's insertion paths. This changes the `cad` and `make-round`
 fingerprints; materialized runs keep their copied bytes.
+
+## Local change: a wall at the minimum passes the thickness gate (2026-10-07)
+
+A Workshop-local change (issue #114) to the vendored `cad` skill's
+`check_thickness`. Every thin comparison now reads one `thin_limit(min_wall,
+pitch)`: one march step under the minimum, less 1e-9 mm. Before this, a 0.8 mm
+wall at a 0.4 mm nozzle read 0.7333333333333333 against a limit of
+0.7333333333333334 and failed by float rounding. This changes the `cad`
+fingerprint; materialized runs keep their copied bytes.

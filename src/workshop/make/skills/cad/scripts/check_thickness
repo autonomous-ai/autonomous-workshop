@@ -353,6 +353,17 @@ def _prism(x0, x1, half_width, height):
     return [[list(v) for v in t] for t in quads]
 
 
+def thin_limit(min_wall, pitch):
+    """The reading below which a wall fails: one march step under the minimum.
+
+    A wall at the minimum reads one step low on the grid, so it lands exactly on
+    this limit. The march and the subtraction round differently in binary (0.8
+    reads 0.7333333333333333 against a limit of 0.7333333333333334 at a 0.1333
+    pitch), so the limit carries a margin far below the 0.05 mm resolution.
+    """
+    return min_wall - pitch / 2 - 1e-9
+
+
 def _measure(tris, min_wall, wall, pitch):
     from scipy.ndimage import distance_transform_edt
     verts, faces = weld(np.array(tris, dtype=float))
@@ -362,7 +373,7 @@ def _measure(tris, min_wall, wall, pitch):
     thickness, entered = march(inside, origin, pitch, points, directions, span)
     good = entered & np.isfinite(thickness)
     reach = distance_transform_edt(inside, sampling=pitch)
-    thin = thickness[good] < min_wall - pitch / 2
+    thin = thickness[good] < thin_limit(min_wall, pitch)
     regions, found = ([], 0)
     if thin.any():
         regions, found = thin_regions(points[good], weights[good], thickness[good], thin,
@@ -371,7 +382,7 @@ def _measure(tris, min_wall, wall, pitch):
     return {
         "median": float(np.median(thickness[good])),
         "regions": regions,
-        "thin_share": float(weights[good][thickness[good] < min_wall - pitch / 2].sum()
+        "thin_share": float(weights[good][thickness[good] < thin_limit(min_wall, pitch)].sum()
                             / weights[good].sum()),
         "hollow": float((reach > wall + pitch / 2).sum()) * pitch ** 3,
         "solid": float(inside.sum()) * pitch ** 3,
@@ -597,9 +608,9 @@ def main():
     # instrument, not the geometry. Fail on what is below the limit by more
     # than the instrument can explain, and say so in the label.
     step = pitch / 2
-    thin = thickness < min_wall - step
+    thin = thickness < thin_limit(min_wall, pitch)
     thin_area = float(weights[thin].sum())
-    marginal = int(((thickness >= min_wall - step) & (thickness < min_wall)).sum())
+    marginal = int(((thickness >= thin_limit(min_wall, pitch)) & (thickness < min_wall)).sum())
     regions, region_count = ([], 0)
     if thin.any():
         regions, region_count = thin_regions(points, weights, thickness, thin,
