@@ -1,0 +1,6 @@
+Edit the attached image of a flat graphite key seen straight from above. Keep the same view, background, light, materials and colours. Keep the shaft and the bit with three teeth EXACTLY as they are: same width, same length, same shape.
+
+Make the window bow at the top smaller and shaped like a typical terminal-window app icon: a landscape rounded rectangle 4:3, about 1.33 times as wide as it is tall. Its width is about 6 times the shaft's width (narrower than now), and its height about three quarters of its width (much less tall than now). It has a slim title bar strip at the top, about one sixth of the bow's height, with the same three round dots (cranberry red, gold, green) near its left end, and thin even graphite borders round the black screen. The black screen is flush.
+
+Keep the screen art, scaled down to fit: a Christmas tree of exactly 10 identical typed asterisks in 4 rows (1 gold on top, then 2, 3 and 4 green), each row offset half a step like stacked balls, centred on the screen both ways. The tree fills about 84% of the screen's height and about 63% of its width. Each asterisk has 6 straight blunt spokes with thick strokes (a vertical stroke and two diagonal strokes); never snowflakes.
+The whole key stays fully inside the frame with a margin. No text, no other objects.

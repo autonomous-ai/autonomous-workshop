@@ -36,6 +36,92 @@ Inventor decisions:
   draws it (the owner's text grid has equal row and column steps; 6.4 against
   6.8 is the image's reading of it).
 
+## Revision 1 (owner, 2026-10-07): a smaller, terminal-icon bow
+
+Owner at Stage 4: the bow looks too big and does not have a usual terminal
+icon's proportions; make it smaller. Everything in Stage 3b to 3c below this
+section describes the first set (bow 42.0 x 38.8) and is superseded by the
+tables here.
+
+Inventor decisions:
+- The tree sets the floor. With 0.9 spokes (0.8 min_wall plus the float margin)
+  and 1.6 webs, the smallest printable tree is a 4.0 glyph at 5.8 in a row and
+  4.8 between rows: 21.3 x 18.4 (`measure/spec.py`). The screen holds it with
+  1.8 margins; the bow is 38.0 x 30.4 (60% of the first bow's area).
+- 4:3 was asked of the model; eight edits never drew it below about 1.25, so
+  the bow takes the image's 5:4, also a usual terminal-icon proportion.
+- The shaft and bit follow the new image, which drew them about 12% smaller
+  in proportion to the smaller bow: shaft 6.0, teeth 8.9 / 11.5 / 10.8. The key
+  is 70.6 long, 9 mm shorter than today's Key.
+
+Provenance: ref-01 from t02a by p03 (t03c, 1 of 4), then p04 (t04d, 1 of 4).
+ref-02 by q02 from t04d (q02d, 1 of 6). ref-04 by e04 from t04d (q04a, 1 of
+3). ref-05 by d05 from t04d's bow, cropped and enlarged (q05a, 1 of 3).
+ref-03 by n03 from ref-04 (q03a, 1 of 3). ref-06 and ref-07 are unchanged:
+their shapes did not change. view-desk by v02 from t04d (w02b).
+
+### ref-01 (assembly, t04d, 0.1743 mm/px from the 38.0 bow)
+
+| Check | Contract | Image | Verdict |
+|---|---|---|---|
+| Bow | 38.0 x 30.4, W/H 1.25 | 38.0 x 30.33, 1.253 | agrees |
+| Bow corners | R3.5 | R3.5 | agrees |
+| Key end | -40.2 | -40.09 | agrees |
+| Shaft | -3.0..3.0 | -3.14..2.79 | agrees |
+| Bit right edge by Y range | 8.9 / 5.6 / 11.5 / 7.2 / 10.8 | 8.9 / 5.6 / 11.5 / 7.15 / 10.8 | agrees |
+| Bit Y steps | -17.0, -22.5, -23.6, -28.4, -30.6, -35.6 | -17.0, -22.4, -23.5, -28.3, -30.6, -35.9 | agrees |
+| Window | X -17.0..17.0, Y 3.3..25.3 | X -16.91..17.08, Y 3.31..25.28 | agrees |
+| Dots | X -14.5, -10.6, -6.7, Y 27.9, Ø2.0 | X -14.47, -10.57, -6.65, Y 27.39, Ø2.27 | agrees (Y 0.5) |
+| Glyph count and colours | 1 gold, 9 green | 1 gold, 9 green | agrees |
+| Rows Y | 21.5, 16.7, 11.9, 7.1 | 21.41, 16.72, 11.88, 7.10 | agrees |
+| Row X | ±2.9; -5.8, 0, 5.8; -8.7, -2.9, 2.9, 8.7 | -2.58, 3.25; -5.40, 0.35, 6.09; -8.64, -2.85, 2.96, 8.93 | agrees (0.42 worst) |
+| Glyph size | 3.91 x 4.0 | 3.66-3.83 x 4.01-4.18 | agrees |
+| Tree centre | (0, 14.3) | (0.15, 14.2) | agrees |
+
+### ref-02 (base, q02d)
+
+| Check | Contract | Image | Verdict |
+|---|---|---|---|
+| Bow height / key end | 30.4 / -40.2 | 29.83 / -40.60 | agrees |
+| Pocket | X -11.15..11.15, Y 8.35..20.25 | X -11.20..11.03, Y 8.29..20.72 | agrees |
+| Shaft | -3.0..3.0 | -3.24..2.74 | agrees |
+| Bit right edge | 8.9 / 5.6 / 11.5 / 7.2 / 10.8 | 8.9-9.0 / 5.6 / 11.5-11.7 / 7.05-7.55 / 10.9 | agrees |
+
+### ref-03 (stripe, q03a), ref-04 (frame, q04a), ref-05 (screen, q05a)
+
+| Image | Check | Contract | Image | Verdict |
+|---|---|---|---|---|
+| ref-03 | W/H, corners | 1.25, R3.5 | 1.249, R3.75 | agrees |
+| ref-04 | W/H | 1.25 | 1.260 | agrees |
+| ref-04 | Window | X -17.0..17.0, Y 3.3..25.3 | X -16.82..17.00, Y 3.16..24.95 | agrees |
+| ref-04 | Borders side / bottom / title | 2.0 / 3.3 / 5.1 | 2.09 / 3.16 / 5.45 | agrees |
+| ref-04 | Dot holes | X -14.5, -10.6, -6.7, Y 27.9, Ø2.0 | X -14.44, -10.46, -6.68, Y 27.46, Ø2.27-2.44 | agrees |
+| ref-05 | W/H | 34.0 / 22.0 = 1.545 | 1.595 | agrees (3.2%) |
+| ref-05 | 10 hole centres | as R07 | worst 0.22 off | agrees |
+| ref-05 | Hole size | 3.91 x 4.0 | 3.51-3.58 x 3.82-3.89 | agrees |
+
+ref-06 (glyph) against the new 3.91 x 4.0 glyph: W/H 0.892 against 0.978,
+0.34 at this size; spokes 18% of the height, 0.73 against 0.9: agrees. ref-07
+unchanged (Ø2.0). All cameras stay [-90, 90].
+
+### Stage 3c on the revised numbers
+
+| Feature | Size | Minimum | Verdict |
+|---|---|---|---|
+| Glyph spoke | 0.9 wide | 0.8 (min_wall) | passes |
+| Glyph spoke end | flat land 0.9 | 0.8 | passes |
+| Screen between two glyph holes | 1.70 least | 1.6 (min_web) | passes |
+| Glyph hole to window edge | 1.8 | 1.6 | passes |
+| Screen tips between spokes (R0.5 inside corners) | 0.03 mm² under 0.8 | taper budget 2% | passes |
+| Dots | Ø2.0 | 2.0 (min_feature) | passes |
+| Between dot holes / dot hole to window / to outline | 1.9 / 1.6 / 1.5 | 1.6 / 1.6 / 0.8 | passes |
+| Frame border | 2.0 least | 0.8 | passes |
+| Bit notch 1 | 1.1 wide, 3.3 deep | 0.5 | passes |
+| Pocket wall in plan | 7.85 least | 0.8 | passes |
+| Pocket roof bridge | 11.9 | 12 | passes |
+| Keep-out: pocket + 2.0 inside the window | holds | Taste | passes |
+| Every body | 1.0 thick | 0.8 | passes |
+
 ## Stage 3: image provenance
 
 All images AI-edited with OpenRouter `openai/gpt-5.4-image-2`, the base image
