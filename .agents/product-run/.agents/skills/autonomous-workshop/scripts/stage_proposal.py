@@ -160,6 +160,14 @@ EXCLUDED_SUFFIXES = (
     ".sqlite3-journal",
 )
 EXCLUDED_PREFIXES = (".env", "auth.", "credential.", "credentials.", "secrets.")
+# Issue #111: the ledgers make_round appends to inside a CAD project are sealed
+# where it writes them, although other ``.jsonl`` files stay excluded: the
+# Blocked Reports, Contract Amendments and Shared Helper freezes under
+# ``measure/``, and each Component's ``measure/component-rounds/<id>/unlocks.jsonl``.
+MAKE_ROUND_MEASURE_LEDGERS = frozenset(
+    ("blocked-reports.jsonl", "contract-amendments.jsonl", "shared-helper-freezes.jsonl")
+)
+MAKE_ROUND_UNLOCK_LEDGER = "unlocks.jsonl"
 ARTIFACT_DEBRIS_SUFFIXES = (
     ".backup",
     ".bak",
@@ -758,6 +766,21 @@ def _existing_directory(root: Path, value: str, label: str) -> tuple[PurePosixPa
     return relative, selected
 
 
+def _is_make_round_ledger(parts: tuple[str, ...]) -> bool:
+    """Whether a path is one of the ledgers make_round appends to, exactly
+    where it writes it (issue #111). Kept in step with
+    ``is_make_round_ledger`` in workshop/artifacts/core.py."""
+
+    if len(parts) >= 2 and parts[-2] == "measure" and parts[-1] in MAKE_ROUND_MEASURE_LEDGERS:
+        return True
+    return (
+        len(parts) >= 4
+        and parts[-1] == MAKE_ROUND_UNLOCK_LEDGER
+        and parts[-3] == "component-rounds"
+        and parts[-4] == "measure"
+    )
+
+
 def _path_is_excluded(relative: PurePosixPath) -> bool:
     if any(part.casefold() in EXCLUDED_DIRS for part in relative.parts[:-1]):
         return True
@@ -765,7 +788,7 @@ def _path_is_excluded(relative: PurePosixPath) -> bool:
     return (
         lowered in EXCLUDED_FILES
         or lowered.startswith(EXCLUDED_PREFIXES)
-        or lowered.endswith(EXCLUDED_SUFFIXES)
+        or (lowered.endswith(EXCLUDED_SUFFIXES) and not _is_make_round_ledger(relative.parts))
     )
 
 
