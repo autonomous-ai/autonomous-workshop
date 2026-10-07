@@ -161,6 +161,15 @@ def main():
     for status, label, detail in checks:
         print(f"  {status}  {label:34s} {detail}")
         hard_fail |= status == "FAIL"
+        if label == "manifold edges" and status != "PASS":
+            # Workshop #108: name each edge, so a component round's repair
+            # input says where the defect is.
+            for index, edge in enumerate(m["nonmanifold_at"], 1):
+                a, b = (", ".join(f"{v:.2f}" for v in edge[end]) for end in ("a", "b"))
+                print(f"        {index}. [edge ] ({a}) - ({b})  {edge['faces']} faces")
+            hidden = m["nonmanifold_edges"] - len(m["nonmanifold_at"])
+            if hidden > 0:
+                print(f"        ... and {hidden} more")
     print("RESULT:", "NOT PRINTABLE AS-IS" if hard_fail else "printable")
     return 1 if hard_fail else 0
 

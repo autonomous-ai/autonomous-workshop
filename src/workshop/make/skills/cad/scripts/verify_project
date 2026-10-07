@@ -178,6 +178,9 @@ def _remove_generation_cache(cache: Path, *, preserve_measurements: bool = False
         if any((root / name).is_symlink() for name in directories):
             raise original
 SIGNATURE_REVIEW_RELATIVE = Path("snap/SIGNATURE-REVIEW.json")
+# Where the image-derived final run writes its orthogonal silhouettes: never
+# a file a review or the finalizer binds (issue #109).
+VERIFICATION_VIEWS_RELATIVE = Path("measure/verification-views")
 SIGNATURE_REVIEW_FIELDS = {
     "schema_version",
     "kind",
@@ -1433,9 +1436,9 @@ def _run_preflight_audits(
 # A full sweep on a project that has not changed since its last terminal
 # (PASS or FAIL) verdict re-emits that verdict instead of recomputing it. The
 # closure below is the sweep's entire hash-relevant input: the built STEP
-# bytes for every entry, the tool source bytes a rebuild or inspection would
-# read, the exact CLI arguments, the signature review, and the README/spec
-# file map. An UNVERIFIED verdict is never reused -- see main()'s call site.
+# bytes for every entry, the project's Geometry Sources (issue #110), the tool
+# source bytes a rebuild or inspection would read, the exact CLI arguments,
+# the signature review, and the README/spec file map. An UNVERIFIED verdict is never reused -- see main()'s call site.
 
 _RESULT_LINE_RE = re.compile(
     r"^- Result: \*\*(PASS|FAIL|UNVERIFIED)\b.*\(exit (-?\d+)\)\s*$", re.MULTILINE
@@ -1460,6 +1463,7 @@ def _sweep_tool_paths(*, image_derived: bool) -> list[Path]:
         SCRIPTS_DIR / "inspect",
         SCRIPTS_DIR / "motion_policy.py",
         SCRIPTS_DIR / "motion_presentation.py",
+        SCRIPTS_DIR / "geometry_sources.py",
         POWER_SCRIPTS_DIR / "check_power",
         CADGEN_PACKAGE_DIR,
     ]
@@ -1513,6 +1517,9 @@ def _sweep_closure_sha256(
             for path in (project / "README.md", *sorted(project.glob("*_spec.md")))
             if path.is_file()
         }
+        # The project's Geometry Sources (issue #110): a measurement, audit,
+        # note or render beside them never forces a new sweep.
+        sources = runpy.run_path(str(SCRIPTS_DIR / "geometry_sources.py"))["geometry_sources"](project)
     except OSError:
         return None
     tool_hash = _tool_closure_sha256(tool_paths)
@@ -1520,6 +1527,7 @@ def _sweep_closure_sha256(
         return None
     payload = {
         "steps": step_bytes,
+        "sources": sources,
         "docs": doc_bytes,
         "tools": tool_hash,
         "argv": list(raw_argv),
@@ -1973,7 +1981,10 @@ def _final(
         return 1
 
     if image_derived:
-        snap_dir = project / "snap"
+        # Never snap/: its iso.png is the Hero the signature review binds by
+        # hash and the Make finalizer requires in full colour. The silhouettes
+        # are verification evidence and live beside the report (issue #109).
+        views_dir = project / VERIFICATION_VIEWS_RELATIVE
         render_args: list[str | Path] = [
             sys.executable,
             IMAGE_SCRIPTS_DIR / "render_views.py",
@@ -1989,7 +2000,7 @@ def _final(
                 # a non-zero exit is drift between the source and its STEP.
                 "--compare-step",
                 "--json",
-                "-o", _path_arg(snap_dir, runner.cwd),
+                "-o", _path_arg(views_dir, runner.cwd),
             ]
         )
         if not _run_or_stop(runner, render_args):

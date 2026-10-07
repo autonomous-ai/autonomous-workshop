@@ -258,39 +258,37 @@ def file_hash(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def geometry_sources_tool() -> dict:
+    """cad/scripts/geometry_sources.py: the one definition of a CAD Project's
+    Geometry Sources (issue #110), shared with the motion evidence and the
+    final verifier."""
+    global _GEOMETRY_SOURCES
+    if _GEOMETRY_SOURCES is None:
+        _GEOMETRY_SOURCES = runpy.run_path(
+            str(Path(__file__).resolve().parents[2] / "cad/scripts/geometry_sources.py"))
+    return _GEOMETRY_SOURCES
+
+
+_GEOMETRY_SOURCES = None
+# Directories whose documents and STEP files bind no packet: evidence,
+# audits, notes and renders never make a shape check stale (issue #110).
+NOT_BOUND = frozenset({"rounds", "__cadgen__", "__pycache__", ".git", ".venv", "measure", "notes"})
+
+
 def source_hashes(project):
-    """Bind helpers and design constraints as well as entry generators: the
-    assembly packet depends on every file of the project."""
-    return {
-        p.relative_to(project).as_posix(): file_hash(p)
-        for p in sorted(project.rglob("*"))
-        if p.is_file() and p.suffix in (".py", ".md", ".json", ".step", ".stp")
-        and not any(v in ("rounds", "__cadgen__", "__pycache__", ".git", ".venv")
-                    for v in p.relative_to(project).parts)
-        and (p.suffix in (".py", ".step", ".stp") or not any(
-            v in ("measure", "snap", "review") for v in p.relative_to(project).parts))
-    }
-
-
-def _module_files(project: Path, base: Path, dotted: str, level: int) -> list[Path]:
-    """The project files ``import`` of ``dotted`` at relative ``level`` from a
-    module in ``base`` executes: each package's ``__init__.py`` and the module
-    itself. A name outside the project (cadgen, the standard library) has none."""
-
-    root = project if level == 0 else base
-    for _ in range(max(0, level - 1)):
-        root = root.parent
-    files = []
-    parts = [part for part in dotted.split(".") if part]
-    for index, part in enumerate(parts):
-        root = root / part
-        if (root / "__init__.py").is_file():
-            files.append(root / "__init__.py")
-        elif index == len(parts) - 1 and root.with_suffix(".py").is_file():
-            files.append(root.with_suffix(".py"))
-        elif not root.is_dir():
-            break
-    return [path for path in files if project in path.resolve().parents]
+    """What the assembly packet binds: the project's Geometry Sources, the
+    STEP files the entries build or import, and the design documents its
+    reviewer reads. A measurement, audit, note or render never changes it."""
+    project = Path(project).resolve()
+    bound = dict(geometry_sources_tool()["geometry_sources"](project))
+    for p in sorted(project.rglob("*")):
+        parts = p.relative_to(project).parts
+        if not p.is_file() or any(v in NOT_BOUND for v in parts):
+            continue
+        if p.suffix in (".step", ".stp") or (p.suffix in (".md", ".json")
+                                              and not any(v in ("snap", "review") for v in parts)):
+            bound[p.relative_to(project).as_posix()] = file_hash(p)
+    return dict(sorted(bound.items()))
 
 
 def imported_helpers(project: Path, source: Path) -> dict[str, str]:
@@ -302,48 +300,16 @@ def imported_helpers(project: Path, source: Path) -> dict[str, str]:
     Component does not import or on another Component's files (ADR 0081).
     """
 
-    import ast
-
-    project = project.resolve()
-    found: dict[Path, None] = {}
-    pending = [source.resolve()]
-    seen = set()
-    while pending:
-        module = pending.pop()
-        if module in seen:
-            continue
-        seen.add(module)
-        try:
-            tree = ast.parse(module.read_text(encoding="utf-8"))
-        except (OSError, SyntaxError, UnicodeError, ValueError):
-            continue
-        for node in ast.walk(tree):
-            targets = []
-            if isinstance(node, ast.Import):
-                targets = [(alias.name, 0) for alias in node.names]
-            elif isinstance(node, ast.ImportFrom):
-                stem = node.module or ""
-                targets = [(stem, node.level)]
-                # ``from features import forms`` may name a submodule.
-                targets += [((stem + "." if stem else "") + alias.name, node.level)
-                            for alias in node.names if alias.name != "*"]
-            for dotted, level in targets:
-                for path in _module_files(project, module.parent, dotted, level):
-                    resolved = path.resolve()
-                    if resolved != source.resolve() and resolved not in found:
-                        found[resolved] = None
-                        pending.append(resolved)
-    return {path.relative_to(project).as_posix(): file_hash(path) for path in sorted(found)}
+    return geometry_sources_tool()["imported_helpers"](project, source)
 
 
 def component_sources(project: Path, role: str) -> dict[str, str]:
-    """What a component round binds: its own source and STEP and the Shared
-    Helpers it imports (ADR 0081)."""
+    """What a component round binds: its Geometry Sources (its own source and
+    the Shared Helpers it imports, ADR 0081, issue #110) and its STEP."""
 
     project = project.resolve()
-    source = project / ("part_%s.step.py" % role)
-    bound = imported_helpers(project, source) if source.is_file() else {}
-    for path in (source, project / ("part_%s.step" % role), project / ("part_%s.stp" % role)):
+    bound = dict(geometry_sources_tool()["component_geometry_sources"](project, role))
+    for path in (project / ("part_%s.step" % role), project / ("part_%s.stp" % role)):
         if path.is_file():
             bound[path.name] = file_hash(path)
     return dict(sorted(bound.items()))
@@ -1069,6 +1035,9 @@ def reproduction_check(python: str, part: Path, project: Path, out: Path, identi
 
 # A region row of either print gate, `N. [kind] ...`, and the line under it
 # naming its feature: `at feature <key> -- ...` or `at face <key> -- ...`.
+# The gates every built part runs in a round, from source: wall thickness,
+# overhang and, since issue #108, mesh validity (non-manifold edges among it).
+PRINT_GATES = ("thickness", "overhang", "mesh")
 REGION_ROW = re.compile(r"\d+\.\s+\[([a-z ]+)\]")
 REGION_FEATURE = re.compile(r"at (feature|face) (\S+) -- ")
 
@@ -1100,9 +1069,9 @@ def repeated_defects(previous: dict | None, current: dict) -> list[str]:
     not the failure rate: repeats are blind repair."""
     if not isinstance(previous, dict) or previous.get("verdict") != "FAIL":
         return []
-    before = {key for gate in ("thickness", "overhang")
+    before = {key for gate in PRINT_GATES
               for key in ((previous.get(gate) or {}).get("defects") or [])}
-    return [key for gate in ("thickness", "overhang")
+    return [key for gate in PRINT_GATES
             for key in ((current.get(gate) or {}).get("defects") or []) if key in before]
 
 
@@ -1160,6 +1129,32 @@ def parse_overhang(stdout: str) -> dict:
             "defects": print_defects(stdout, "overhang")}
 
 
+MESH_EDGE_ROW = re.compile(r"\d+\.\s+\[edge\s*\]\s+(.+)$")
+
+
+def parse_mesh(stdout: str, returncode: int) -> dict:
+    """The verdict and the named defects from a check_mesh run (issue #108).
+
+    Exit 0 is a pass, as the final verifier reads it; 1 failed (an invalid
+    solid, an open, non-manifold or wrongly wound mesh, or a part too big for
+    the bed); 4 is an Unmeasurable Mesh. Each non-manifold edge the gate names
+    is kept as the repair input."""
+    fails, edges = [], []
+    for line in stdout.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("FAIL"):
+            fails.append(" ".join(stripped.split()[1:])[:80])
+        match = MESH_EDGE_ROW.match(stripped)
+        if match:
+            edges.append(match.group(1).strip())
+    verdict = "PASS" if returncode == 0 else "FAIL"
+    if verdict == "FAIL" and not fails:
+        fails.append("INVALID SOLID" if "RESULT: INVALID SOLID" in stdout else
+                     "check_mesh exit %d" % returncode)
+    return {"verdict": verdict, "failures": fails[:4], "edges": edges,
+            "defects": ["edge@" + edge.split("  ")[0].replace(" ", "") for edge in edges]}
+
+
 # A print gate's exit status when the B-rep is valid but its mesh stays open
 # after the finer retry (printlib.printed_mesh): nothing was measured, and it
 # is not a print failure. It still never passes a round.
@@ -1175,7 +1170,7 @@ def unmeasurable(parsed: dict, stdout: str) -> dict:
     return parsed
 
 
-def print_context(cad: Path, nozzle: float, angle: float) -> dict | None:
+def print_context(cad: Path, nozzle: float, angle: float, bed: str | None = None) -> dict | None:
     """Inputs to this print measurement, without importing numerical libraries.
 
     An unavailable identity disables reuse; it never supplies passing evidence.
@@ -1189,6 +1184,7 @@ def print_context(cad: Path, nozzle: float, angle: float) -> dict | None:
             for name, path in (
                 ("check_thickness", cad / "check_thickness"),
                 ("check_overhang", cad / "check_overhang"),
+                ("check_mesh", cad / "check_mesh"),
                 ("meshlib.py", cad / "meshlib.py"),
                 ("printlib.py", cad / "printlib.py"),
                 ("make_round", Path(__file__)),
@@ -1198,18 +1194,30 @@ def print_context(cad: Path, nozzle: float, angle: float) -> dict | None:
     except (OSError, PackageNotFoundError):
         return None
     return {
-        "nozzle": nozzle, "overhang_angle": angle, "sources": sources,
+        "nozzle": nozzle, "overhang_angle": angle, "bed": bed, "sources": sources,
         "packages": packages,
         "python": str(Path(sys.executable).resolve()), "python_version": sys.version,
         "platform": sys.platform,
     }
 
 
+def round_bed(project: Path) -> str:
+    """The bed the mesh gate checks a part against: the project's declared
+    ``--bed``, else the final verifier's default, read from verify_project so
+    a round and final verification agree (issue #108)."""
+    try:
+        verifier = runpy.run_path(str(Path(__file__).resolve().parents[2] / "cad/scripts/verify_project"))
+        bed = verifier["_declared_bed"](project) or verifier["DEFAULT_BED"]
+    except Exception:  # noqa: BLE001 - outside a skill tree the verifier's default stands
+        bed = (220.0, 220.0, 220.0)
+    return "x".join("%g" % value for value in bed)
+
+
 def reusable_print(item: dict | None) -> bool:
-    """Only a recorded PASS of both gates, with its original tool logs, reuses."""
+    """Only a recorded PASS of every gate, with its original tool logs, reuses."""
     if not isinstance(item, dict) or item.get("verdict") != "PASS":
         return False
-    if not {"thickness", "overhang", "measured_round", "logs"} <= item.keys():
+    if not {"thickness", "overhang", "mesh", "measured_round", "logs"} <= item.keys():
         return False
     if not isinstance(item["logs"], dict) or not item["logs"]:
         return False
@@ -1221,7 +1229,7 @@ def reusable_print(item: dict | None) -> bool:
             return False
     return all(
         isinstance(item.get(gate), dict) and item[gate].get("verdict") == "PASS"
-        for gate in ("thickness", "overhang")
+        for gate in PRINT_GATES
     )
 
 
@@ -1338,6 +1346,12 @@ def render_summary(summary: dict) -> str:
         area = "" if over.get("overhang_mm2") is None else "  largest %.0f mm2" % over["overhang_mm2"]
         why = ("  " + "; ".join(over["failures"])) if over["verdict"] in failing and over["failures"] else ""
         lines.append("  over  %-4s %-28s%s%s%s" % (over["verdict"], role, area, why, at_features(over)))
+        mesh = gates.get("mesh")
+        if mesh is not None:
+            why = ("  " + "; ".join(mesh["failures"])) if mesh["verdict"] in failing and mesh["failures"] else ""
+            lines.append("  mesh  %-4s %-28s%s" % (mesh["verdict"], role, why))
+            for edge in (mesh.get("edges") or [])[:4]:
+                lines.append("    non-manifold edge %s" % edge)
     for role, keys in sorted((summary.get("repeated_print_defects") or {}).items()):
         lines.append("  again FAIL %-28s  failed last round too: %s; repair from the report's feature column"
                      % (role, ", ".join(keys[:4])))
@@ -3926,6 +3940,17 @@ def component_identity(project: Path, role: str, out: Path, cad: Path) -> str | 
     return parse_identity(done.stdout) or file_hash(step)
 
 
+def interface_sources(project: Path, roles) -> dict[str, str]:
+    """The Geometry Sources of an Interface's Components (issue #110): each
+    one's source and the Shared Helpers it imports. Its check goes stale when
+    one of these changes, never for a measurement, audit, note or render."""
+
+    bound: dict[str, str] = {}
+    for role in roles:
+        bound.update(geometry_sources_tool()["component_geometry_sources"](project, role))
+    return dict(sorted(bound.items()))
+
+
 def locked_at(project: Path, role: str, digest: str | None) -> str:
     """Why one Component is not locked at its current identity, or ""."""
 
@@ -4032,6 +4057,85 @@ def interface_condition(project: Path, interface: dict) -> dict:
     return {"id": interface["id"], "check": "coupled_motion_collision", "expect": "clear", "inputs": inputs}
 
 
+# The motion.json checks that state how parts come together: an insertion,
+# a swing into place, a path a pin or finger must reach, or an ordered
+# sequence of them (issue #108).
+INSERTION_CHECKS = frozenset({"linear_motion_collision", "rotation_motion_collision", "clear_path_proxy",
+                              "assembly_sequence"})
+
+
+def condition_parts(condition: dict) -> set:
+    """Every part one motion condition names: what moves and what it must
+    clear, through an assembly_sequence's steps too."""
+
+    inputs = condition.get("inputs") if isinstance(condition, dict) else None
+    if not isinstance(inputs, dict):
+        return set()
+    names = set()
+    if isinstance(inputs.get("moving_part"), str):
+        names.add(inputs["moving_part"])
+    names.update(name for name in inputs.get("obstacle_parts") or () if isinstance(name, str))
+    names.update(mover["part"] for mover in inputs.get("movers") or ()
+                 if isinstance(mover, dict) and isinstance(mover.get("part"), str))
+    if condition.get("check") == "assembly_sequence":
+        for step in inputs.get("steps") or ():
+            names |= condition_parts(step)
+    return names
+
+
+def insertion_conditions(project: Path, interface: dict) -> list[dict]:
+    """The insertion paths of ``measure/motion.json`` that this Interface's
+    check runs: each insertion, swing, reach or assembly sequence that moves
+    only the Interface's own Components among themselves, named by their
+    Interface references (issue #108). One that names any other part stays
+    for assembly and final verification."""
+
+    manifest_path = project / "measure" / "motion.json"
+    if not manifest_path.is_file():
+        return []
+    try:
+        conditions = json.loads(manifest_path.read_text(encoding="utf-8"))["conditions"]
+    except (OSError, ValueError, KeyError, TypeError):
+        raise ValueError("measure/motion.json cannot be read for the insertion paths of %s" % interface["id"]) from None
+    components = set(interface["components"])
+    chosen = []
+    for condition in conditions if isinstance(conditions, list) else ():
+        if (isinstance(condition, dict) and condition.get("check") in INSERTION_CHECKS
+                and condition.get("id") != interface.get("poses_from")):
+            parts = condition_parts(condition)
+            if parts and parts <= components:
+                chosen.append(condition)
+    return chosen
+
+
+def parse_interference(stdout: str, returncode: int) -> dict:
+    """``inspect interfere`` on the Interface's placed Components: ``pass``,
+    ``fail`` with each clash named, or ``inconclusive``."""
+
+    payload = None
+    for line in (stdout or "").splitlines():
+        if line.lstrip().startswith("{"):
+            try:
+                payload = json.loads(line)
+            except ValueError:
+                payload = None
+    if not isinstance(payload, dict) or not isinstance(payload.get("clashes", []), list):
+        return {"verdict": "inconclusive", "returncode": returncode, "clashes": [],
+                "detail": "inspect interfere exit %d gave no result" % returncode}
+    clashes = [{"a": (clash.get("a") or {}).get("name", ""), "b": (clash.get("b") or {}).get("name", ""),
+                "volume_mm3": clash.get("volume")} for clash in payload.get("clashes") or ()
+               if isinstance(clash, dict)]
+    if clashes:
+        detail = "; ".join("%s x %s %.2f mm3" % (c["a"], c["b"], float(c["volume_mm3"] or 0)) for c in clashes[:4])
+        return {"verdict": "fail", "returncode": returncode, "clashes": clashes,
+                "detail": "%d clash(es) at the assembly placement: %s" % (len(clashes), detail)}
+    if payload.get("ok") is True and returncode == 0:
+        return {"verdict": "pass", "returncode": 0, "clashes": [], "detail": "no interpenetration at the assembly placement"}
+    reason = "; ".join(str((error or {}).get("message", error)) for error in payload.get("errors") or ())
+    return {"verdict": "inconclusive", "returncode": returncode, "clashes": [],
+            "detail": "inspect interfere exit %d: %s" % (returncode, reason or payload.get("status") or "incomplete")}
+
+
 def interface_check(project: Path, interface_id: str, args, cad: Path) -> int:
     """``--interface ID``: the coupled motion check of one Coupled Interface on
     its locked Components (ADR 0082). A failure unlocks the yielding
@@ -4071,6 +4175,9 @@ def interface_check(project: Path, interface_id: str, args, cad: Path) -> int:
         shutil.rmtree(out)
         print("make_round: interface %s: %s" % (interface_id, "; ".join(hooks)), file=sys.stderr)
         return 2
+    # What the check judges: read before the builds, so an edit while it runs
+    # leaves it stale rather than current (issue #110).
+    sources = interface_sources(project, roles)
     # Issue #101: the Components are built at the same time.
     with ThreadPoolExecutor(max_workers=max(1, min(round_jobs(), len(roles)))) as pool:
         identities = dict(zip(roles, pool.map(lambda role: component_identity(project, role, out, cad), roles)))
@@ -4082,6 +4189,7 @@ def interface_check(project: Path, interface_id: str, args, cad: Path) -> int:
         return 2
     try:
         condition = interface_condition(project, interface)
+        insertion = insertion_conditions(project, interface)
     except ValueError as exc:
         shutil.rmtree(out)
         print("make_round: %s" % exc, file=sys.stderr)
@@ -4089,30 +4197,50 @@ def interface_check(project: Path, interface_id: str, args, cad: Path) -> int:
     entry = out / ("interface_%s.step.py" % interface_id.replace("-", "_"))
     entry.write_text(INTERFACE_ENTRY % {"id": interface_id, "project": str(project), "components": components},
                      encoding="utf-8")
+    # Issue #108: first, nothing interpenetrates where the Components are
+    # placed; a clash stops the check before its motion sweep.
+    done = run([sys.executable, str(cad / "inspect"), "interfere", entry.relative_to(project).as_posix(),
+                "--format", "json"], cwd=project, log=out / "interference.log")
+    interference = parse_interference(done.stdout, done.returncode)
     manifest = out / "motion.json"
-    manifest.write_text(json.dumps({"assembly": entry.relative_to(project).as_posix(), "conditions": [condition]},
+    manifest.write_text(json.dumps({"assembly": entry.relative_to(project).as_posix(),
+                                    "conditions": [condition, *insertion]},
                                    indent=1, sort_keys=True) + "\n", encoding="utf-8")
-    done = run([sys.executable, str(cad / "check_motion"), str(project), "--manifest", str(manifest), "--json"],
-               cwd=project, log=out / "motion.log")
-    motion = parse_motion(done.stdout, done.returncode, done.stderr)
-    passed = motion["verdict"] == "pass"
+    if interference["verdict"] == "pass":
+        # Then the pose table, and every insertion path between just these
+        # Components, in one check_motion run.
+        done = run([sys.executable, str(cad / "check_motion"), str(project), "--manifest", str(manifest), "--json"],
+                   cwd=project, log=out / "motion.log")
+        motion = parse_motion(done.stdout, done.returncode, done.stderr)
+    else:
+        motion = {"verdict": "not-run", "detail": "the Components interfere where they are placed",
+                  "returncode": None, "conditions": []}
+    passed = interference["verdict"] == "pass" and motion["verdict"] == "pass"
     summary = {"round": number, "scope": "interface:%s" % interface_id, "project": str(project),
                "interface": interface_id, "kind": COUPLED, "components": components,
-               "yielding": interface.get("yielding"), "identities": identities, "motion": motion,
+               "yielding": interface.get("yielding"), "identities": identities, "interference": interference,
+               "insertion": [item.get("id") for item in insertion], "motion": motion,
                "ok": passed, "unlocked": None, "out": str(out)}
-    if motion["verdict"] == "fail":
-        summary["unlocked"] = interface_unlock(project, interface, number, out, motion)
+    if interference["verdict"] == "fail":
+        summary["unlocked"] = interface_unlock(project, interface, number, out, interference, "interference")
+    elif motion["verdict"] == "fail":
+        failed = {item["id"] for item in motion["conditions"] if item["status"] == "fail"}
+        check = "insertion" if failed and failed <= set(summary["insertion"]) else "motion"
+        summary["unlocked"] = interface_unlock(project, interface, number, out, motion, check)
     (out / "summary.json").write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     steps = {role: file_hash(project / ("part_%s.step" % role)) for role in roles
              if (project / ("part_%s.step" % role)).is_file()}
     state_path.write_text(json.dumps({"round": number, "last_out": str(out), "identities": identities,
-                                      "steps": steps, "ok": passed, "verdict": motion["verdict"]},
+                                      "steps": steps, "sources": sources, "ok": passed,
+                                      "verdict": motion["verdict"] if interference["verdict"] == "pass"
+                                      else interference["verdict"]},
                                      indent=1, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(summary, sort_keys=True) if args.json else render_interface_summary(summary))
     return 0 if passed else 1
 
 
-def interface_unlock(project: Path, interface: dict, number: int, out: Path, motion: dict) -> str:
+def interface_unlock(project: Path, interface: dict, number: int, out: Path, result: dict,
+                     check: str = "motion") -> str:
     """Unlock the contract's yielding Component of a failed Interface check,
     with the check's evidence as its repair input. Its rounds after the
     unlock are admitted and are never Shape Rounds (ADR 0081, ADR 0082)."""
@@ -4123,10 +4251,17 @@ def interface_unlock(project: Path, interface: dict, number: int, out: Path, mot
     state_path, round_root = state_and_round_root(project, "part_%s.step.py" % role)
     state = json.loads(state_path.read_text(encoding="utf-8"))
     policy = component_policy(state, round_root)
+    if check == "interference":
+        evidence = {"round": str(out), "interference_log_sha256": file_hash(out / "interference.log"),
+                    "detail": result["detail"], "clashes": result["clashes"]}
+        what = "interference check"
+    else:
+        evidence = {"round": str(out), "motion_log_sha256": file_hash(out / "motion.log"),
+                    "detail": result["detail"], "conditions": result["conditions"]}
+        what = "insertion check" if check == "insertion" else "coupled motion check"
     unlock = {"kind": "interface", "interface": interface["id"], "interface_round": number,
-              "evidence": {"round": str(out), "motion_log_sha256": file_hash(out / "motion.log"),
-                           "detail": motion["detail"], "conditions": motion["conditions"]},
-              "reason": "Interface %s failed its coupled motion check: %s" % (interface["id"], motion["detail"])}
+              "evidence": evidence,
+              "reason": "Interface %s failed its %s: %s" % (interface["id"], what, result["detail"])}
     state["policy"] = {**policy, "unlocks": [*(policy.get("unlocks") or []), unlock]}
     with (round_root / "unlocks.jsonl").open("a", encoding="utf-8") as ledger:
         ledger.write(json.dumps(unlock, sort_keys=True) + "\n")
@@ -4137,8 +4272,13 @@ def interface_unlock(project: Path, interface: dict, number: int, out: Path, mot
 def render_interface_summary(summary: dict) -> str:
     motion = summary["motion"]
     lines = ["make_round r%04d  %s  %s  %s" % (summary["round"], summary["scope"], summary["project"],
-                                               " + ".join(summary["components"])),
-             "  move  %-4s %s" % (motion["verdict"].upper()[:4], motion["detail"][:160])]
+                                               " + ".join(summary["components"]))]
+    interference = summary.get("interference")
+    if interference is not None:
+        lines.append("  clash %-4s %s" % (interference["verdict"].upper()[:4], interference["detail"][:160]))
+    if summary.get("insertion"):
+        lines.append("  insert %s (from measure/motion.json)" % ", ".join(summary["insertion"]))
+    lines.append("  move  %-4s %s" % (motion["verdict"].upper()[:4], motion["detail"][:160]))
     if summary.get("unlocked"):
         lines.append("  unlock part_%s.step.py (the yielding Component); send this round to its worker"
                      % summary["unlocked"])
@@ -4168,10 +4308,14 @@ def interface_report(project: Path, interfaces: list | None, digests: dict) -> l
                 check = "fail"
             elif any(digests.get(role) is None or digests.get(role) not in (
                     (state.get("identities") or {}).get(role), (state.get("steps") or {}).get(role))
-                     for role in reference_roles(item["components"])):
+                     for role in reference_roles(item["components"])) or (
+                    state.get("sources") is not None
+                    and state["sources"] != interface_sources(project, reference_roles(item["components"]))):
                 # Either recorded form names the same geometry: the B-rep
                 # identity gen reported, or the STEP a reader without a fresh
-                # build can only hash (ADR 0073).
+                # build can only hash (ADR 0073). A check that recorded its
+                # Geometry Sources is also stale once one of them changes,
+                # and only then (issue #110).
                 check = "stale"
             else:
                 check = "pass"
@@ -4554,7 +4698,8 @@ def make_round(args) -> int:
     # 2b. gate the parts that built, from source. Reuse only a passing pair
     # measured from the same bytes under the same conditions: a failed or
     # legacy entry is re-measured even when its STEP did not change.
-    context = print_context(cad, args.nozzle, args.overhang_angle)
+    bed = round_bed(project)
+    context = print_context(cad, args.nozzle, args.overhang_angle, bed)
     previous_print = state.get("print") or {}
     same_context = context is not None and context == state.get("print_context")
     printing: dict[str, dict] = {}
@@ -4572,11 +4717,14 @@ def make_round(args) -> int:
         part = next(p for p in parts if p.name.removeprefix("part_").removesuffix(".step.py") == role)
         env = check_env(role)
         for gate, extra in (
-            ("thickness", ["--nozzle", str(args.nozzle)]),
-            ("overhang", ["--angle", str(args.overhang_angle)]),
+            ("thickness", ["--nozzle", str(args.nozzle), "--report", str(out / ("thickness-%s.md" % role))]),
+            ("overhang", ["--angle", str(args.overhang_angle), "--report", str(out / ("overhang-%s.md" % role))]),
+            # Issue #108: mesh validity (non-manifold edges, an open or wrongly
+            # wound mesh, the bed) needs only the part, so it fails here
+            # rather than first at assembly or final verification.
+            ("mesh", ["--bed", bed]),
         ):
-            job = {"command": [python, str(cad / ("check_" + gate)), str(part), *extra,
-                               "--report", str(out / ("%s-%s.md" % (gate, role)))],
+            job = {"command": [python, str(cad / ("check_" + gate)), str(part), *extra],
                    "cwd": project, "log": out / ("%s-%s.log" % (gate, role))}
             if env:
                 job["extra_env"] = env
@@ -4598,7 +4746,8 @@ def make_round(args) -> int:
         logs = {}
         gates = {}
         for gate, (log, done) in runs.items():
-            parsed = (parse_thickness if gate == "thickness" else parse_overhang)(done.stdout)
+            parsed = (parse_mesh(done.stdout, done.returncode) if gate == "mesh" else
+                      (parse_thickness if gate == "thickness" else parse_overhang)(done.stdout))
             if done.returncode == 3:
                 parsed["verdict"] = "UNVERIFIED"
                 parsed["failures"] = ["geometry analysis cancelled or its time allowance exhausted"]
@@ -4620,6 +4769,7 @@ def make_round(args) -> int:
             "verdict": next((v for v in ("FAIL", "UNMEASURABLE", "UNVERIFIED") if v in verdicts), "PASS"),
             "thickness": gates["thickness"],
             "overhang": gates["overhang"],
+            "mesh": gates["mesh"],
             "measured_round": round_index,
             "logs": logs,
         }
@@ -4635,6 +4785,7 @@ def make_round(args) -> int:
             "verdict": "FAIL",
             "thickness": {"verdict": "FAIL", "thinnest_mm": None, "failures": ["build failed"]},
             "overhang": {"verdict": "FAIL", "overhang_mm2": None, "failures": ["build failed"]},
+            "mesh": {"verdict": "FAIL", "edges": [], "failures": ["build failed"]},
             "measured_round": round_index,
             "logs": {},
         }
@@ -4879,9 +5030,18 @@ def self_check() -> int:
             "verdict": "PASS", "measured_round": 2,
             "thickness": {"verdict": "PASS", "thinnest_mm": 1.2, "failures": []},
             "overhang": {"verdict": "PASS", "overhang_mm2": None, "failures": []},
+            "mesh": {"verdict": "PASS", "edges": [], "failures": []},
             "logs": {str(log): digest},
         }
-        check(reusable_print(record), "a passing pair with intact logs is reusable")
+        check(reusable_print(record), "a passing set with intact logs is reusable")
+        check(not reusable_print({key: value for key, value in record.items() if key != "mesh"}),
+              "a record without the mesh gate is measured again (issue #108)")
+        edge = parse_mesh("  FAIL  manifold edges   1 edges shared by >2 faces (up to 4)\n"
+                          "        1. [edge ] (1.00, 2.00, 0.00) - (1.00, 2.00, 5.00)  4 faces\n"
+                          "RESULT: NOT PRINTABLE AS-IS\n", 1)
+        check(edge["verdict"] == "FAIL" and edge["edges"] == ["(1.00, 2.00, 0.00) - (1.00, 2.00, 5.00)  4 faces"],
+              "a non-manifold mesh fails and names its edge")
+        check(parse_mesh("", 4)["verdict"] == "FAIL", "a mesh gate that did not pass is never a pass")
         check(not reusable_print({**record, "verdict": "FAIL"}), "a failed record is never reused")
         check(
             not reusable_print({**record, "overhang": {"verdict": "FAIL", "failures": []}}),

@@ -13,7 +13,8 @@
 - Amends: ADR 0080 (what the root writes before spawning workers, and how
   long a worker lives) and ADR 0081 (a third unlock reason)
 - Issue: #78 (spec C of the series begun in #76); amended by #80
-  (Interfaces between instances of one Unique Geometry)
+  (Interfaces between instances of one Unique Geometry); decision 5 amended by
+  ADR 0088 (#108: interference and insertion paths in the interface check)
 
 ## Context
 

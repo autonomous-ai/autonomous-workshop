@@ -2033,3 +2033,34 @@ its own plain Bash command; `--record-review`, `--record-unlock`,
 marker runs component rounds as before. `SKILL.md` says to run `make_round` as
 its own command, never beside a file edit or heredoc. This changes the
 `make-round` fingerprint; materialized runs keep their copied bytes.
+
+## Local change: final verification never writes a review-bound snap (2026-10-07)
+
+A Workshop-local change (issue #109) to the vendored `cad` skill's
+`verify_project`. `--image-derived` writes its orthogonal silhouettes to
+`measure/verification-views/` instead of `snap/`, so the composed Hero
+`snap/iso.png` the signature review binds by hash stays byte-identical. This
+changes the `cad` fingerprint; materialized runs keep their copied bytes.
+
+## Local change: Geometry Sources, defined once (2026-10-07)
+
+A Workshop-local change (issue #110). The vendored `cad` skill gains
+`scripts/geometry_sources.py`: a CAD Project's Geometry Sources are its
+entries and the project modules they import. `motion_presentation.py` binds
+them instead of every project `.py` file, `verify_project`'s sweep reuse key
+includes them, and Workshop's own `make-round` reads them for component and
+assembly packets and records them in each `--interface` check. An audit,
+note, sample or render no longer stales a shape check. This changes the
+`cad` and `make-round` fingerprints; materialized runs keep their copied
+bytes.
+
+## Local change: mesh validity, interference and insertion before assembly (2026-10-07)
+
+A Workshop-local change (issue #108, ADR 0088). The vendored `cad` skill's
+`check_mesh` names each non-manifold edge (`meshlib.summarize` returns
+`nonmanifold_at`); its verdicts and exit codes are unchanged. Workshop's own
+`make-round` runs `check_mesh` in every round beside the thickness and
+overhang gates, and `--interface` runs `inspect interfere` on the placed
+Components before one `check_motion` run of the pose table and the
+Interface's insertion paths. This changes the `cad` and `make-round`
+fingerprints; materialized runs keep their copied bytes.

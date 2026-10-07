@@ -130,5 +130,46 @@ class InterfaceEntryInstanceTest(unittest.TestCase):
         self.assertAlmostEqual(children["core"].bounding_box().center().Y, 20.0, places=3)
 
 
+class InterfaceInterferenceTest(unittest.TestCase):
+    """Issue #108: the interface check's interference step, run as make_round
+    runs it, on real B-reps placed by the generated entry."""
+
+    def _interfere(self, core_offset):
+        spec = importlib.util.spec_from_loader("make_round_script", loader=None)
+        make_round = importlib.util.module_from_spec(spec)
+        make_round.__file__ = str(SCRIPTS / "make_round")
+        exec(compile((SCRIPTS / "make_round").read_text(encoding="utf-8"), make_round.__file__, "exec"),
+             make_round.__dict__)
+        cad = SCRIPTS.parents[1] / "cad" / "scripts"
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            # cadgen builds only an entry whose gen_step takes no argument, so
+            # the wing builds identical copies here.
+            (project / "part_wing.step.py").write_text(TWIN)
+            (project / "part_core.step.py").write_text(
+                "from build123d import Align, Box, Pos\n"
+                "def gen_step(): return Box(4, 4, 4, align=(Align.MIN, Align.MIN, Align.MIN))\n"
+                "def assembly_pose(shape, pose): return Pos(%r, 2, 0) * shape\n" % core_offset)
+            out = project / "measure/interface-rounds/wing-core/r0001"
+            out.mkdir(parents=True)
+            entry = out / "interface_wing_core.step.py"
+            entry.write_text(make_round.INTERFACE_ENTRY % {
+                "id": "wing-core", "project": str(project), "components": ["wing#1", "core"]})
+            done = subprocess.run([sys.executable, str(cad / "inspect"), "interfere",
+                                   entry.relative_to(project).as_posix(), "--format", "json"],
+                                  cwd=project, capture_output=True, text=True, timeout=300)
+        return make_round.parse_interference(done.stdout, done.returncode)
+
+    def test_overlapping_components_fail_with_the_clash_named(self):
+        result = self._interfere(8)  # the core's x 8..12 enters the wing's x 0..10
+        self.assertEqual(result["verdict"], "fail", result)
+        self.assertEqual({result["clashes"][0]["a"], result["clashes"][0]["b"]}, {"wing#1", "core"})
+        self.assertAlmostEqual(result["clashes"][0]["volume_mm3"], 32.0, places=3)
+
+    def test_components_that_only_meet_pass(self):
+        result = self._interfere(10)  # face contact at x 10 is contact, not a clash
+        self.assertEqual(result["verdict"], "pass", result)
+
+
 if __name__ == "__main__":
     unittest.main()

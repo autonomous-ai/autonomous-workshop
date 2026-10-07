@@ -121,7 +121,7 @@ def _install_gate_identity(project):
     """
     scripts = project / "cad" / "scripts"
     scripts.mkdir(parents=True, exist_ok=True)
-    for name in ("check_thickness", "check_overhang", "meshlib.py", "printlib.py"):
+    for name in ("check_thickness", "check_overhang", "check_mesh", "meshlib.py", "printlib.py"):
         (scripts / name).write_text("# fixture %s\n" % name, encoding="utf-8")
 
 
@@ -481,7 +481,7 @@ class MakeRoundTest(unittest.TestCase):
                 self.assertEqual(result["ok"], status == "pass")
 
     def test_stale_or_contradictory_visual_feedback_cannot_pass(self):
-        for change in ("source", "proof_helper", "imported_step", "image", "packet", "wrong_round", "contradiction"):
+        for change in ("source", "imported_helper", "imported_step", "image", "packet", "wrong_round", "contradiction"):
             with self.subTest(change=change), tempfile.TemporaryDirectory() as tmp:
                 project = Path(tmp)
                 module, summary = self._round(project)
@@ -490,10 +490,10 @@ class MakeRoundTest(unittest.TestCase):
                 packet = json.loads(packet_path.read_text())
                 if change == "source":
                     (project / "toy.step.py").write_text("changed")
-                elif change == "proof_helper":
-                    helper = project / "review/early-proof/proof.py"
-                    helper.parent.mkdir(parents=True)
-                    helper.write_text("changed helper")
+                elif change == "imported_helper":
+                    # A module the entry now imports is one of its Geometry Sources.
+                    (project / "proof.py").write_text("SIZE = 2\n")
+                    (project / "toy.step.py").write_text("import proof\ndef gen_step(): pass\n")
                 elif change == "imported_step":
                     (project / "component.step").write_text("changed imported geometry")
                 elif change == "image":
@@ -509,6 +509,18 @@ class MakeRoundTest(unittest.TestCase):
                     path.write_text(json.dumps(feedback))
                 with self.assertRaises(ValueError):
                     module.record_visual(project, path)
+
+    def test_a_proof_helper_no_entry_imports_leaves_the_assembly_packet_current(self):
+        # Issue #110: only Geometry Sources stale a shape check; a review
+        # helper or an audit beside the geometry does not.
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module, summary = self._round(project)
+            path = self._feedback(project, summary)
+            for relative in ("review/early-proof/proof.py", "measure/check_spec.py", "notes/why.md"):
+                (project / relative).parent.mkdir(parents=True, exist_ok=True)
+                (project / relative).write_text("changed helper\n")
+            self.assertTrue(module.record_visual(project, path)["ok"])
 
     def test_render_failure_and_premature_full_do_not_pass(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -617,7 +629,7 @@ class MakeRoundTest(unittest.TestCase):
             # The one-piece entry is its own print target.
             self.assertEqual(summary["print"]["toy"]["verdict"], "PASS")
             self.assertEqual(
-                calls, ["gen", "check_thickness", "check_overhang", "render_review"]
+                calls, ["gen", "check_thickness", "check_overhang", "check_mesh", "render_review"]
             )
 
     def test_every_built_part_is_gated_from_source_and_reported(self):
@@ -2334,6 +2346,23 @@ class InterfaceTest(unittest.TestCase):
             if log is not None:
                 Path(log).write_text(stdout, encoding="utf-8")
             return subprocess.CompletedProcess(command, code, stdout, "")
+        if tool == "check_mesh":
+            # Issue #108: the mesh validity gate, in check_mesh's own words.
+            name = Path(command[2]).name
+            if name in faults.get("mesh", ()):
+                stdout = ("%s: 24 triangles, 14 vertices\n"
+                          "  PASS  watertight (no open edges)         0 boundary edges\n"
+                          "  FAIL  manifold edges                     1 edges shared by >2 faces (up to 4)\n"
+                          "        1. [edge ] (10.00, 10.00, 0.00) - (10.00, 10.00, 10.00)  4 faces\n"
+                          "RESULT: NOT PRINTABLE AS-IS\n" % name), 1
+            else:
+                stdout = ("%s: 12 triangles, 8 vertices\n"
+                          "  PASS  manifold edges                     0 edges shared by >2 faces\n"
+                          "RESULT: printable\n" % name), 0
+            log = kwargs.get("log")
+            if log is not None:
+                Path(log).write_text(stdout[0], encoding="utf-8")
+            return subprocess.CompletedProcess(command, stdout[1], stdout[0], "")
         if tool == "check_envelope":
             role = command[command.index("--role") + 1]
             name = Path(command[2]).name
@@ -2346,14 +2375,30 @@ class InterfaceTest(unittest.TestCase):
                        ("12.5 mm3 lies outside the envelope in pose spread" if role == "inside"
                         else "8.0 mm3 enters the envelope of pose folded")}
             return subprocess.CompletedProcess(command, 0 if ok else 1, json.dumps(payload) + "\n", "")
+        if tool == "inspect":
+            # Issue #108: interference at the assembly placement.
+            clash = faults.get("interfere")
+            payload = {"ok": not clash, "entry": command[3], "tolerance": 1.0, "errors": [],
+                       "clashCount": 1 if clash else 0,
+                       "clashes": [{"a": {"ref": "o1.1", "name": "body"}, "b": {"ref": "o1.2", "name": "arm"},
+                                    "volume": 3.25}] if clash else [],
+                       "stats": {"pairs_tested": 1}}
+            Path(kwargs["log"]).write_text(json.dumps(payload), encoding="utf-8")
+            return subprocess.CompletedProcess(command, 2 if clash else 0, json.dumps(payload), "")
         if tool == "check_motion":
             status = faults.get("motion", "pass")
-            payload = {"ok": status == "pass", "results": [
+            manifest = json.loads(Path(command[command.index("--manifest") + 1]).read_text())
+            failing = faults.get("motion_fail_ids", ())
+            payload = {"ok": status == "pass" and not failing, "results": [
                 {"id": "gear-mesh", "status": status,
                  "detail": "clear" if status == "pass" else "collision at step 3 between arm and body (2.1 mm3)"}]}
+            for condition in manifest["conditions"][1:]:
+                failed = condition["id"] in failing
+                payload["results"].append({"id": condition["id"], "status": "fail" if failed else "pass",
+                                           "detail": "blocked at step 2 by body (4.0 mm3)" if failed else "clear"})
             # run() always leaves the tool's log; the unlock cites its hash.
             Path(kwargs["log"]).write_text(json.dumps(payload), encoding="utf-8")
-            return subprocess.CompletedProcess(command, 0 if status == "pass" else 1, json.dumps(payload), "")
+            return subprocess.CompletedProcess(command, 0 if payload["ok"] else 1, json.dumps(payload), "")
         return subprocess.CompletedProcess(command, 0, '{"ok":true}\n', "")
 
     def _main(self, project, argv):
@@ -2574,6 +2619,45 @@ class InterfaceTest(unittest.TestCase):
             _, summary = self._component(project, "arm")
             self.assertTrue(summary["checks_ok"])
 
+    # -- mesh validity in the component round (issue #108)
+
+    def test_a_component_round_runs_the_mesh_gate_beside_the_print_gates(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self.calls.clear()
+            code, summary = self._component(project, "body")
+            self.assertEqual((code, summary["checks_ok"]), (1, True))
+            self.assertEqual(summary["print"]["body"]["mesh"]["verdict"], "PASS")
+            mesh = [command for command, _ in self.calls if Path(command[1]).name == "check_mesh"]
+            self.assertEqual(len(mesh), 1)
+            self.assertEqual(Path(mesh[0][2]).name, "part_body.step.py")
+            self.assertIn("--bed", mesh[0])
+            self.assertIn("mesh  PASS body", self.module.render_summary(summary))
+
+    def test_a_non_manifold_component_fails_its_round_and_names_the_edges(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self.faults["mesh"] = {"part_body.step.py"}
+            code, summary = self._component(project, "body")
+            self.assertEqual(code, 1)
+            self.assertFalse(summary["checks_ok"])
+            self.assertEqual(summary["visual"]["status"], "not-rendered")
+            mesh = summary["print"]["body"]["mesh"]
+            self.assertEqual(mesh["verdict"], "FAIL")
+            self.assertEqual(mesh["edges"], ["(10.00, 10.00, 0.00) - (10.00, 10.00, 10.00)  4 faces"])
+            self.assertEqual(summary["print"]["body"]["verdict"], "FAIL")
+            text = self.module.render_summary(summary)
+            self.assertIn("mesh  FAIL body", text)
+            self.assertIn("non-manifold edge (10.00, 10.00, 0.00) - (10.00, 10.00, 10.00)", text)
+            # A failed mesh is never reused as print evidence.
+            self.assertFalse(self.module.reusable_print(summary["print"]["body"]))
+            # The repair passes.
+            self.faults["mesh"] = set()
+            (project / "part_body.step.py").write_text(
+                "import params\nfrom features.joints import PEG_D\ndef gen_step(): return 'body 2'\n")
+            code, summary = self._component(project, "body")
+            self.assertTrue(summary["checks_ok"])
+
     def test_a_change_to_the_inside_component_does_not_stale_the_outside_one(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = self._project(tmp)
@@ -2627,7 +2711,90 @@ class InterfaceTest(unittest.TestCase):
             self.assertEqual(summary["identities"]["body"],
                              hashlib.sha256((project / "part_body.step").read_bytes()).hexdigest())
             tools = [Path(command[1]).name for command, _ in self.calls]
-            self.assertEqual(tools, ["gen", "gen", "check_motion"])
+            self.assertEqual(tools, ["gen", "gen", "inspect", "check_motion"])
+
+    # -- interference and insertion order in the interface check (issue #108)
+
+    INSERTION = {"assembly": "toy.step.py", "conditions": [
+        {"id": "arm-inserts", "check": "linear_motion_collision", "expect": "clear",
+         "inputs": {"moving_part": "arm", "obstacle_parts": ["body"], "translation": [0, 0, 20], "steps": 8,
+                    "allow_seated_contact": True}},
+        {"id": "arm-then-tail", "check": "assembly_sequence", "inputs": {"steps": [
+            {"check": "linear_motion_collision", "inputs": {"moving_part": "tail", "obstacle_parts": ["body"],
+                                                            "translation": [0, 5, 0], "steps": 4}}]}},
+        {"id": "body-spins", "check": "rotation_motion_collision",
+         "inputs": {"moving_part": "body", "obstacle_parts": ["base"], "axis_point": [0, 0, 0],
+                    "axis_direction": [0, 0, 1], "start_deg": 0, "end_deg": 30, "steps": 4}},
+    ]}
+
+    def test_an_interface_check_runs_interference_then_its_insertion_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            (project / "measure").mkdir(exist_ok=True)
+            (project / "measure/motion.json").write_text(json.dumps(self.INSERTION))
+            self._locked_pair(project)
+            self.calls.clear()
+            self.assertEqual(self._main(project, ["--interface", "gear-mesh"]), 0, self.stderr)
+            out = project / "measure/interface-rounds/gear-mesh/r0001"
+            tools = [Path(command[1]).name for command, _ in self.calls]
+            self.assertEqual(tools, ["gen", "gen", "inspect", "check_motion"])
+            inspect = next(command for command, _ in self.calls if Path(command[1]).name == "inspect")
+            self.assertEqual(inspect[2:4], ["interfere", "measure/interface-rounds/gear-mesh/r0001/interface_gear_mesh.step.py"])
+            manifest = json.loads((out / "motion.json").read_text())
+            # Only the insertion paths that move this Interface's Components
+            # among themselves join its check; the others stay for assembly.
+            self.assertEqual([c["id"] for c in manifest["conditions"]], ["gear-mesh", "arm-inserts"])
+            self.assertEqual(manifest["conditions"][1], self.INSERTION["conditions"][0])
+            summary = json.loads((out / "summary.json").read_text())
+            self.assertEqual(summary["interference"]["verdict"], "pass")
+            self.assertEqual(summary["insertion"], ["arm-inserts"])
+            text = self.stdout
+            self.assertIn("clash PASS", text)
+            self.assertIn("insert arm-inserts", text)
+
+    def test_interference_between_its_components_fails_the_check_and_unlocks_the_yielding_one(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self._locked_pair(project)
+            self.faults["interfere"] = True
+            self.calls.clear()
+            self.assertEqual(self._main(project, ["--interface", "gear-mesh"]), 1)
+            out = project / "measure/interface-rounds/gear-mesh/r0001"
+            summary = json.loads((out / "summary.json").read_text())
+            self.assertFalse(summary["ok"])
+            self.assertEqual(summary["interference"]["verdict"], "fail")
+            self.assertIn("body x arm 3.25 mm3", summary["interference"]["detail"])
+            # A clash stops the check before its motion sweep.
+            self.assertNotIn("check_motion", [Path(command[1]).name for command, _ in self.calls])
+            self.assertEqual(summary["motion"]["verdict"], "not-run")
+            self.assertEqual(summary["unlocked"], "arm")
+            arm = json.loads((project / "measure/component-rounds/arm/make-round-state.json").read_text())
+            unlock = arm["policy"]["unlocks"][-1]
+            self.assertEqual((unlock["kind"], unlock["interface"]), ("interface", "gear-mesh"))
+            self.assertIn("interference", unlock["reason"])
+            self.assertEqual(unlock["evidence"]["interference_log_sha256"],
+                             hashlib.sha256((out / "interference.log").read_bytes()).hexdigest())
+            self.assertIn("clash FAIL", self.stdout)
+            interfaces, _ = self.module.contract_interfaces(project)
+            self.assertEqual(self.module.interface_failures(project, interfaces, summary["identities"]),
+                             ["interface gear-mesh failed its latest --interface check"])
+
+    def test_a_blocked_insertion_path_fails_the_check_and_unlocks_the_yielding_one(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            (project / "measure").mkdir(exist_ok=True)
+            (project / "measure/motion.json").write_text(json.dumps(self.INSERTION))
+            self._locked_pair(project)
+            self.faults["motion_fail_ids"] = {"arm-inserts"}
+            self.assertEqual(self._main(project, ["--interface", "gear-mesh"]), 1)
+            summary = json.loads((project / "measure/interface-rounds/gear-mesh/r0001/summary.json").read_text())
+            self.assertFalse(summary["ok"])
+            self.assertEqual(summary["interference"]["verdict"], "pass")
+            self.assertIn("arm-inserts=fail", summary["motion"]["detail"])
+            arm = json.loads((project / "measure/component-rounds/arm/make-round-state.json").read_text())
+            unlock = arm["policy"]["unlocks"][-1]
+            self.assertIn("insertion", unlock["reason"])
+            self.assertIn("blocked at step 2", unlock["evidence"]["detail"])
 
     def test_a_failed_check_unlocks_only_the_yielding_component_with_its_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -2692,6 +2859,67 @@ class InterfaceTest(unittest.TestCase):
             (project / "measure/interface-rounds/gear-mesh/make-round-state.json").write_text(json.dumps(state))
             self.assertEqual(self.module.interface_failures(project, interfaces, steps), [])
 
+    # -- Geometry Sources (issue #110)
+
+    NOT_GEOMETRY = {"measure/check_landmarks.py": "raise SystemExit(0)\n",
+                    "measure/check_spec.py": "import params\nraise SystemExit(0)\n",
+                    "measure/broken_god_spec.json": "{}\n", "notes/why.md": "# why\n",
+                    "notes/scratch.py": "X = 1\n"}
+
+    def _add(self, project, files):
+        for relative, text in files.items():
+            (project / relative).parent.mkdir(parents=True, exist_ok=True)
+            (project / relative).write_text(text)
+
+    def test_files_beside_the_geometry_leave_an_interface_check_current(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            self._locked_pair(project)
+            self.assertEqual(self._main(project, ["--interface", "gear-mesh"]), 0, self.stderr)
+            state_path = project / "measure/interface-rounds/gear-mesh/make-round-state.json"
+            state = json.loads(state_path.read_text())
+            self.assertEqual(sorted(state["sources"]), ["features/__init__.py", "features/joints.py", "params.py",
+                                                        "part_arm.step.py", "part_body.step.py"])
+            interfaces, _ = self.module.contract_interfaces(project)
+            current = dict(state["identities"])
+            self._add(project, self.NOT_GEOMETRY)
+            self._add(project, {path: text + "# edited\n" for path, text in self.NOT_GEOMETRY.items()})
+            self.assertEqual(self.module.interface_failures(project, interfaces, current), [])
+
+    def test_an_edited_imported_helper_or_component_source_makes_an_interface_check_stale(self):
+        for path in ("features/joints.py", "params.py", "part_arm.step.py"):
+            with self.subTest(path=path), tempfile.TemporaryDirectory() as tmp:
+                project = self._project(tmp)
+                self._locked_pair(project)
+                self.assertEqual(self._main(project, ["--interface", "gear-mesh"]), 0, self.stderr)
+                state = json.loads((project / "measure/interface-rounds/gear-mesh/make-round-state.json").read_text())
+                interfaces, _ = self.module.contract_interfaces(project)
+                (project / path).write_text((project / path).read_text() + "# edited\n")
+                # The same B-rep identities: only the Geometry Sources moved.
+                self.assertEqual(self.module.interface_failures(project, interfaces, dict(state["identities"])),
+                                 ["interface gear-mesh is stale: a Component it joins changed after its check"])
+
+    def test_files_beside_the_geometry_leave_a_component_packet_current(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            _code, summary = self._component(project, "body")
+            self.assertEqual(summary["visual"]["status"], "pending")
+            self.assertIsNone(self.module.packet_error(summary["visual"], project, "body"))
+            self._add(project, self.NOT_GEOMETRY)
+            self.assertIsNone(self.module.packet_error(summary["visual"], project, "body"))
+            (project / "features/joints.py").write_text("PEG_D = 4.2  # wiki: joints-and-fits\nassert PEG_D >= 3\n")
+            self.assertEqual(self.module.packet_error(summary["visual"], project, "body"),
+                             "stale CAD sources or design constraints")
+
+    def test_files_beside_the_geometry_leave_the_assembly_packet_sources_unchanged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp)
+            before = self.module.source_hashes(project)
+            self._add(project, self.NOT_GEOMETRY)
+            self.assertEqual(self.module.source_hashes(project), before)
+            (project / "features/joints.py").write_text("PEG_D = 4.2  # wiki: joints-and-fits\nassert PEG_D >= 3\n")
+            self.assertNotEqual(self.module.source_hashes(project), before)
+
     def test_the_new_modes_take_no_component_or_assembly_options(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = self._project(tmp, freeze=False)
@@ -2755,7 +2983,7 @@ class InterfaceInstanceTest(unittest.TestCase):
             self.assertEqual(list(summary["identities"]), ["wing"])
             self.assertIn("wing#1 + wing#2", self.stdout)
             # One Component, one build.
-            self.assertEqual([Path(command[1]).name for command, _ in self.calls], ["gen", "check_motion"])
+            self.assertEqual([Path(command[1]).name for command, _ in self.calls], ["gen", "inspect", "check_motion"])
             interfaces, _ = self.module.contract_interfaces(project)
             report = self.module.interface_report(project, interfaces, dict(summary["identities"]))
             self.assertEqual(report[0], {"id": "wing-sector-mesh", "kind": "coupled", "components": ["wing#1", "wing#2"],

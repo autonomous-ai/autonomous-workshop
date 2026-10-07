@@ -43,10 +43,11 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
                 if tool == "check_motion":
                     log.write_text(stdout + stderr)
                     return subprocess.CompletedProcess(command, returncode, stdout, stderr)
-                if tool in ("check_thickness", "check_overhang"):
+                if tool in ("check_thickness", "check_overhang", "check_mesh"):
                     # These fixtures are about motion evidence; keep the print
                     # gates green so a motion verdict is the only variable.
-                    gate_out, code = _gate_output(tool, fails=False)
+                    gate_out, code = (_gate_output(tool, fails=False) if tool != "check_mesh"
+                                      else ("RESULT: printable\n", 0))
                     log.write_text(gate_out)
                     return subprocess.CompletedProcess(command, code, gate_out, "")
                 raise AssertionError("Unexpected real-tool request: " + tool)
@@ -67,7 +68,8 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
             self.assertEqual(code, 1)
             self.assertEqual(
             calls,
-            ["gen", "check_thickness", "check_overhang", *(["check_motion"] if check_motion else []), "render_review"],
+            ["gen", "check_thickness", "check_overhang", "check_mesh", *(["check_motion"] if check_motion else []),
+             "render_review"],
         )
             pending = json.loads(output.getvalue())
             self.assertFalse(pending["ok"])

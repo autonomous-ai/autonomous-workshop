@@ -127,6 +127,10 @@ def boundary_directed(counts, inverse, directed):
     return directed[order[starts[counts == 1]]]
 
 
+# How many non-manifold edges a report names (Workshop #108).
+NONMANIFOLD_SHOWN = 8
+
+
 def summarize(verts, faces, sliver_height=SLIVER_HEIGHT):
     """Every number `check_mesh` reports and `repair_mesh` compares against."""
     area, height, longest = sliver_metrics(verts, faces)
@@ -144,6 +148,15 @@ def summarize(verts, faces, sliver_height=SLIVER_HEIGHT):
                 flipped, int(counts.max()))
 
     boundary, nonmanifold, flipped, max_shared = edge_counts(kept)
+    nonmanifold_at = []
+    if nonmanifold:
+        # Where they are (Workshop #108): the repair input names each edge.
+        keys, _inverse, counts, _directed = edge_table(kept)
+        rows = sorted((tuple(np.round(verts[a], 2)), tuple(np.round(verts[b], 2)), int(n))
+                      for (a, b), n in zip(keys[counts > 2], counts[counts > 2]))
+        rows = [tuple(sorted(row[:2])) + row[2:] for row in rows]
+        nonmanifold_at = [{"a": [float(v) for v in a], "b": [float(v) for v in b], "faces": n}
+                          for a, b, n in sorted(rows)[:NONMANIFOLD_SHOWN]]
     boundary_all = edge_counts(faces)[0]
 
     pinched = 0
@@ -184,6 +197,7 @@ def summarize(verts, faces, sliver_height=SLIVER_HEIGHT):
         "boundary_loops": loops,
         "boundary_z": boundary_z,
         "nonmanifold_edges": nonmanifold,
+        "nonmanifold_at": nonmanifold_at,
         "max_faces_per_edge": max_shared,
         "pinched_vertices": pinched,
         "flipped": flipped,

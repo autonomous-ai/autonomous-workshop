@@ -17,8 +17,11 @@ functional electrical load. The mode requires one explicit classification;
 
 The mode runs spec/source reconciliation (`measure/check_spec.py`), landmark
 coverage (`measure/check_landmarks.py`), the orthogonal front/right/top/iso
-review set under `snap/`, and `render_views.py --compare-step`; a drift finding
-means the exported STEP is not the geometry the source currently builds.
+silhouettes under `measure/verification-views/`, and `render_views.py
+--compare-step`; a drift finding means the exported STEP is not the geometry
+the source currently builds. The run never writes under `snap/`: `snap/iso.png`
+is the Hero the signature review binds by hash, so verifying leaves it, and
+every other review-bound image, byte-identical (issue #109).
 
 No silhouette score is computed and no IoU floor gates delivery: the likeness
 gate and its `--likeness-ref`, `--likeness-min`, `--likeness-accept-mismatch`,
