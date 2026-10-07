@@ -1,0 +1,14 @@
+Edit the attached product photo of a flat graphite key whose bow is a small terminal window. Keep exactly the same object, materials and style: matte PLA, rounded graphite window with a title bar and three round dots on the left of the title bar (cranberry red, gold yellow, pine green), a black screen, a slim graphite shaft and the same stepped bit with two teeth on one side.
+
+Change the view and the screen art:
+
+1. View: straight down from directly above, orthographic, like a flat product scan. The key lies flat, bow at the TOP of the image, shaft pointing straight DOWN, bit at the bottom with its teeth on the RIGHT side of the shaft. The whole key fits well inside the frame with a margin on every side. Plain light warm background #f5f0e6, soft even light, only a very faint shadow.
+2. The black screen is flush and flat, filling the window below the title bar, with an even graphite border.
+3. On the screen, centred horizontally and vertically, draw a Christmas tree made ONLY of typed asterisk characters "*", in exactly 4 rows, like monospace text:
+   row 1: 1 asterisk (yellow-gold)
+   row 2: 2 asterisks (green)
+   row 3: 3 asterisks (green)
+   row 4: 4 asterisks (green)
+   Every asterisk is identical in size and shape: a plain typed asterisk with 6 straight, blunt spokes radiating from the centre (one vertical stroke and two diagonal strokes crossing), like the "*" glyph of a monospace font. NOT snowflakes, no branches, no star shape. The top one is the same size and shape as the others and differs only in colour.
+   Each row is offset by half a step from the next, so the asterisks stack like balls in a triangle: the row spacing equals the spacing between asterisks within a row. 10 asterisks in total, nothing else on the screen. Remove the old five-point star.
+No text, no labels, no other objects.
