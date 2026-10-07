@@ -178,6 +178,9 @@ def _remove_generation_cache(cache: Path, *, preserve_measurements: bool = False
         if any((root / name).is_symlink() for name in directories):
             raise original
 SIGNATURE_REVIEW_RELATIVE = Path("snap/SIGNATURE-REVIEW.json")
+# Where the image-derived final run writes its orthogonal silhouettes: never
+# a file a review or the finalizer binds (issue #109).
+VERIFICATION_VIEWS_RELATIVE = Path("measure/verification-views")
 SIGNATURE_REVIEW_FIELDS = {
     "schema_version",
     "kind",
@@ -1973,7 +1976,10 @@ def _final(
         return 1
 
     if image_derived:
-        snap_dir = project / "snap"
+        # Never snap/: its iso.png is the Hero the signature review binds by
+        # hash and the Make finalizer requires in full colour. The silhouettes
+        # are verification evidence and live beside the report (issue #109).
+        views_dir = project / VERIFICATION_VIEWS_RELATIVE
         render_args: list[str | Path] = [
             sys.executable,
             IMAGE_SCRIPTS_DIR / "render_views.py",
@@ -1989,7 +1995,7 @@ def _final(
                 # a non-zero exit is drift between the source and its STEP.
                 "--compare-step",
                 "--json",
-                "-o", _path_arg(snap_dir, runner.cwd),
+                "-o", _path_arg(views_dir, runner.cwd),
             ]
         )
         if not _run_or_stop(runner, render_args):
