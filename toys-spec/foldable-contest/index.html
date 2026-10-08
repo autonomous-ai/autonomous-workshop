@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Foldable Contest Ideas</title>
+<style>
+/* Layout: one card per idea, preview image on top, ranked by contest points. */
+:root{
+  --bg:#eef0ec; --paper:#fbfcfa; --ink:#1f2a33; --muted:#5d6b73; --line:#d5dbd6; --accent:#b8741a;
+  --display:"Fraunces",Georgia,serif; --body:"Be Vietnam Pro",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#151b20;--paper:#1d252b;--ink:#e6ebe8;--muted:#9aa8ae;--line:#2f3a41;--accent:#e3a443;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#151b20;--paper:#1d252b;--ink:#e6ebe8;--muted:#9aa8ae;--line:#2f3a41;--accent:#e3a443;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--body);padding-inline:16px;padding-block:28px 48px}
+.wrap{max-width:1120px;margin:0 auto;display:grid;gap:24px}
+h1{font:600 2rem/1.15 var(--display);margin:0;text-wrap:balance}
+.lede{color:var(--muted);max-width:65ch;margin:6px 0 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+article{background:var(--paper);border:1px solid var(--line);border-radius:6px;overflow:hidden;display:flex;flex-direction:column}
+article img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:cover;background:#f5f0e6}
+.body{padding:12px 14px 16px;display:grid;gap:6px;min-width:0}
+.head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+h2{font:600 1.2rem/1.2 var(--display);margin:0}
+.pts{font:12px/1 var(--mono);color:var(--accent);white-space:nowrap}
+.who{font:12px/1.4 var(--mono);color:var(--muted)}
+p{margin:0}
+.note{color:var(--muted);font-size:14px}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Be+Vietnam+Pro:wght@400;600&family=JetBrains+Mono&display=swap">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Sáu ý tưởng từ cuộc thi "điện thoại gập"</h1>
+    <p class="lede">Ảnh preview gốc của từng bản dự thi, xếp theo điểm của giám khảo. Daybreak thắng 10 điểm; năm ý tưởng còn lại ở dưới.</p>
+  </header>
+  <section class="grid">
+    <article><img src="candidate-4/preview.png" alt="Daybreak"><div class="body"><div class="head"><h2>Daybreak</h2><span class="pts">#1 · 10 điểm</span></div><span class="who">Storyteller</span><p>Mở như cuốn sách: hai lá thành phong cảnh bình minh, mặt trời nhô lên giữa gáy.</p><p class="note">Bản đang làm.</p></div></article>
+    <article><img src="candidate-1/preview.png" alt="Crease Moth"><div class="body"><div class="head"><h2>Crease Moth</h2><span class="pts">#2 · 7 điểm</span></div><span class="who">Transformer</span><p>Một tấm đứng thẳng. Ấn đỉnh xuống bằng một ngón tay, hai cánh bật ra nằm phẳng thành con bướm đêm có mắt trên cánh.</p><p class="note">Một cú ấn, hình dạng đổi hẳn. Cơ cấu thanh răng giống Daybreak.</p></div></article>
+    <article><img src="candidate-5/preview.png" alt="Hugfold"><div class="body"><div class="head"><h2>Hugfold</h2><span class="pts">#3 · 6 điểm</span></div><span class="who">Chunky Kawaii</span><p>Bé đầu tròn, thân là cuốn sách. Kéo hai tay ra, thân mở thành bụng có trái tim; gập lại thì tự ôm.</p><p class="note">Dễ thương, nhiều cảm xúc. Bụng có "màn hình mờ" nên cần bỏ chi tiết giống điện thoại.</p></div></article>
+    <article><img src="candidate-3/preview.png" alt="Daybreak Fold"><div class="body"><div class="head"><h2>Daybreak Fold</h2><span class="pts">#4 · 5 điểm</span></div><span class="who">Hand-Crank Theatre</span><p>Sân khấu quay tay: quay tay quay, tấm gập mở ra; gần phẳng thì mặt trời mới nhô lên sau phông.</p><p class="note">Có nhịp hai hồi, nhưng trông như máy móc văn phòng.</p></div></article>
+    <article><img src="candidate-6/preview.png" alt="Trailfold"><div class="body"><div class="head"><h2>Trailfold</h2><span class="pts">#5 · 2 điểm</span></div><span class="who">Rugged</span><p>Bản đồ địa hình dày dặn: nhấc một tab, hai lá mở cùng nhau thành bản đồ đường đồng mức.</p><p class="note">Bánh răng lộ ở hai đầu gáy, nhìn thấy cơ cấu chạy.</p></div></article>
+    <article><img src="candidate-2/preview.png" alt="Tip Fold"><div class="body"><div class="head"><h2>Tip Fold</h2><span class="pts">#6 · 0 điểm</span></div><span class="who">Gravity Runner</span><p>Thả bi thép vào muỗng, sức nặng lật lá trước xuống 180°, bi lăn vào đĩa.</p><p class="note">Hai tấm xám trông rất giống điện thoại gập.</p></div></article>
+  </section>
+</div>
+</body>
+</html>

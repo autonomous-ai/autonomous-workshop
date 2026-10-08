@@ -1,0 +1,41 @@
+{
+  "standings": [
+    {
+      "contestant": "candidate-4",
+      "points": 10.0,
+      "rank": 1,
+      "tied_with": []
+    },
+    {
+      "contestant": "candidate-1",
+      "points": 7.0,
+      "rank": 2,
+      "tied_with": []
+    },
+    {
+      "contestant": "candidate-5",
+      "points": 6.0,
+      "rank": 3,
+      "tied_with": []
+    },
+    {
+      "contestant": "candidate-3",
+      "points": 5.0,
+      "rank": 4,
+      "tied_with": []
+    },
+    {
+      "contestant": "candidate-6",
+      "points": 2.0,
+      "rank": 5,
+      "tied_with": []
+    },
+    {
+      "contestant": "candidate-2",
+      "points": 0.0,
+      "rank": 6,
+      "tied_with": []
+    }
+  ],
+  "unresolved_ties": []
+}
