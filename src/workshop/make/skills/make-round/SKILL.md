@@ -396,8 +396,10 @@ ruling of the packet, and a disagreeing review whose only findings are
 Reference Conflicts or Ruling Disputes (such a review agrees). Where the Workshop host names the runtime
 (`WORKSHOP_REVIEWER_RUNTIME`, set on Claude Code), `reviewer` must be the
 reviewer's native agent id in that runtime's format (17 lowercase hex
-characters), the Component's first review binds it in the component state as
-`reviewer_id`, and a review naming another id is refused with the bound one.
+characters), the Component's first review in this run binds it in the
+component state as `reviewer_id` with the run's Wish hash, and a review naming
+another id is refused with the bound one. A binding cloned from another run
+(`workshop fix`) binds nothing here (issue #119).
 `make_round` cannot prove who the reviewer was; the host does, at Make
 acceptance, from the guard's record of which agent the runtime started and
 which packet images it read. The Manager must not write, edit or filter the

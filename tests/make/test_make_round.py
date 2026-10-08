@@ -2175,6 +2175,38 @@ class ReviewerBindingTest(unittest.TestCase):
             self.assertEqual(code, 0)
             self.assertEqual(self._state(project)["reviewer_id"], self.FIRST)
 
+    def test_a_binding_cloned_from_another_run_binds_nothing_here(self):
+        # Issue #119: workshop fix clones component state from its source run,
+        # whose reviewer thread can never answer in the new run.
+        foreign = {"reviewer_id": self.FIRST, "reviewer_wish": "f" * 64}
+        legacy = {"reviewer_id": self.FIRST}
+        for name, cloned in (("foreign", foreign), ("legacy", legacy)):
+            with self.subTest(binding=name), tempfile.TemporaryDirectory() as tmp:
+                project = self._contract_root(tmp)
+                module, calls = load_module(), []
+                _, summary = self._component(module, project, calls)
+                path = project / "measure/component-rounds/body/make-round-state.json"
+                state = self._state(project)
+                state.pop("reviewer_wish", None)
+                state.update(cloned)
+                path.write_text(json.dumps(state))
+                # A rerun carries the cloned binding forward with its Wish.
+                _, summary = self._component(module, project, calls, edit=False)
+                self.assertEqual({k: self._state(project).get(k) for k in cloned}, cloned)
+                self.assertEqual("reviewer_wish" in self._state(project), "reviewer_wish" in cloned)
+                self._review(module, project, summary, reviewer=self.SECOND, agrees=False,
+                             reason="The arm is too thin.", differences=self.DIFFERS)
+                wish = module._wish_binding(project)
+                self.assertIsNotNone(wish)
+                self.assertEqual(self._state(project)["reviewer_id"], self.SECOND)
+                self.assertEqual(self._state(project)["reviewer_wish"], wish)
+                _, summary = self._component(module, project, calls)
+                self.assertEqual(self._state(project)["reviewer_id"], self.SECOND)
+                review = write_review(project, summary, reviewer=self.FIRST)
+                code = self._main(module, project, ["--component", "part_body.step.py", "--record-review", str(review)], calls)
+                self.assertEqual(code, 2)
+                self.assertIn("bound to reviewer %s" % self.SECOND, self.stderr)
+
     def test_without_a_binding_runtime_the_reviewer_stays_a_name(self):
         with mock.patch.dict("os.environ", {"WORKSHOP_REVIEWER_RUNTIME": ""}), \
                 tempfile.TemporaryDirectory() as tmp:

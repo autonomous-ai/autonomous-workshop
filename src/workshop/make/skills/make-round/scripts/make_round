@@ -685,11 +685,12 @@ def record_review(project: Path, review_path, component: str) -> dict:
         raise ValueError("a review needs the reviewer's name")
     if reviewer.strip().lower() in MANAGER_NAMES:
         raise ValueError("the Workshop Manager cannot review its own component")
-    bound = reviewer_binding(state, reviewer)
+    wish = _wish_binding(project)
+    bound = reviewer_binding(state, reviewer, wish=wish)
     if not isinstance(review["reason"], str) or not 1 <= len(review["reason"].strip()) <= MAX_REASON:
         raise ValueError("a review needs a reason of 1 to %d characters" % MAX_REASON)
     if mismatch:
-        return record_camera_mismatch(state, state_path, summary, summary_path, out, review, bound)
+        return record_camera_mismatch(state, state_path, summary, summary_path, out, review, bound, wish)
     if type(review["agrees"]) is not bool:
         raise ValueError("a review's agrees must be true or false")
     check_verdicts(review, visual, review["agrees"], "an agreeing review")
@@ -749,7 +750,7 @@ def record_review(project: Path, review_path, component: str) -> dict:
     summary_path.write_text(json.dumps(summary, sort_keys=True, indent=1) + "\n")
     state["policy"] = policy
     if bound is not None:
-        state["reviewer_id"] = bound
+        state.update(reviewer_id=bound, reviewer_wish=wish)
     state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return summary
 
@@ -785,7 +786,7 @@ def reference_conflicts(review: dict, summary: dict, project: Path) -> list[dict
     return recorded
 
 
-def record_camera_mismatch(state, state_path, summary, summary_path, out, review, bound) -> dict:
+def record_camera_mismatch(state, state_path, summary, summary_path, out, review, bound, wish) -> dict:
     """Record a reviewer's camera mismatch (ADR 0083): the side of the model
     that faces the Reference Camera is not the side the reference shows.
 
@@ -825,18 +826,19 @@ def record_camera_mismatch(state, state_path, summary, summary_path, out, review
     (out / "camera-mismatch.json").write_text(json.dumps(review, sort_keys=True, indent=2) + "\n")
     summary_path.write_text(json.dumps(summary, sort_keys=True, indent=1) + "\n")
     if bound is not None:
-        state["reviewer_id"] = bound
+        state.update(reviewer_id=bound, reviewer_wish=wish)
         state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return summary
 
 
-def reviewer_binding(state: dict, reviewer: str, runtime: str | None = None) -> str | None:
+def reviewer_binding(state: dict, reviewer: str, runtime: str | None = None, wish: str | None = None) -> str | None:
     """The native reviewer id a review binds the Component to, or None where
     the runtime gives no such id (issue #77).
 
     The id must have the runtime's format, so a name or a placeholder is
-    refused. The Component's first review binds it; a review naming another
-    id is refused with the bound one, so the Manager asks that thread again.
+    refused. The Component's first review in this run binds it; a review
+    naming another id is refused with the bound one, so the Manager asks that
+    thread again. ``wish`` is the run's ``_wish_binding``.
     """
 
     runtime = os.environ.get(REVIEWER_RUNTIME_ENV) if runtime is None else runtime
@@ -847,12 +849,27 @@ def reviewer_binding(state: dict, reviewer: str, runtime: str | None = None) -> 
         raise ValueError(
             "reviewer must be the component-reviewer's native agent id (%s), exactly as the "
             "runtime returned it when the reviewer was spawned; got %r" % (shape, reviewer[:40]))
-    bound = state.get("reviewer_id")
+    bound = bound_reviewer(state, wish)
     if bound is not None and bound != reviewer:
         raise ValueError(
             "this Component's reviews are bound to reviewer %s; send the review request to "
             "that reviewer's thread and record its answer under that id" % bound)
     return reviewer
+
+
+def bound_reviewer(state: dict, wish: str | None) -> str | None:
+    """The reviewer id this run bound the Component to, or None.
+
+    A binding belongs to the run that recorded it (issue #119): ``workshop
+    fix`` clones a Component's state from its source run, whose reviewer
+    thread can never answer here. A binding recorded under another Wish, or a
+    legacy one with no Wish, binds nothing; the host's role guard still allows
+    one proven reviewer per Component in this run.
+    """
+
+    if "reviewer_wish" not in state or state["reviewer_wish"] != wish:
+        return None
+    return state.get("reviewer_id")
 
 
 def lock_record(policy: dict) -> dict | None:
@@ -5060,9 +5077,12 @@ def make_round(args) -> int:
     }
     if component is not None:
         state.update(shape_rounds=next_policy["shape_rounds"], policy=next_policy)
-        # The Component's reviewer binding outlives its rounds (issue #77).
+        # The Component's reviewer binding outlives its rounds (issue #77),
+        # with the Wish it was recorded under (issue #119).
         if previous_state.get("reviewer_id") is not None:
             state["reviewer_id"] = previous_state["reviewer_id"]
+            if "reviewer_wish" in previous_state:
+                state["reviewer_wish"] = previous_state["reviewer_wish"]
     state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(summary, sort_keys=True) if args.json else render_summary(summary))
     # Pending or failed visual evidence cannot report a complete round; a
@@ -5287,8 +5307,14 @@ def self_check() -> int:
           == ["inside", "outside"] and reference_roles(["wing#1", "wing#2", "body"]) == ["wing", "body"],
           "instances of one geometry on both sides of an envelope are both checked in its round")
     check(reviewer_binding({}, "a1f355b61d99918ed", "claude") == "a1f355b61d99918ed"
-          and refused({"reviewer_id": "a1f355b61d99918ed"}, "a7740f58e37677176", "claude"),
+          and refused({"reviewer_id": "a1f355b61d99918ed", "reviewer_wish": None}, "a7740f58e37677176", "claude")
+          and not refused({"reviewer_id": "a1f355b61d99918ed", "reviewer_wish": "w"}, "a7740f58e37677176", "claude"),
           "a Component's first reviewer id binds it; another id is refused")
+    check(reviewer_binding({"reviewer_id": "a1f355b61d99918ed", "reviewer_wish": "v"}, "a7740f58e37677176",
+                           "claude", wish="w") == "a7740f58e37677176"
+          and reviewer_binding({"reviewer_id": "a1f355b61d99918ed"}, "a7740f58e37677176", "claude",
+                               wish="w") == "a7740f58e37677176",
+          "a reviewer binding from another run, or with no run, binds nothing here")
     with tempfile.TemporaryDirectory() as tmp:
         project = Path(tmp)
         (project / "measure").mkdir()
