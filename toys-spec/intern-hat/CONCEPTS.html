@@ -1,27 +1,47 @@
-<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Intern Christmas Hats</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Figtree:wght@400;500&display=swap">
 <style>
-:root{--bg:#f6f3ee;--fg:#1d1b19;--muted:#6b645c;--card:#fff;--line:#e3ddd4}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151413;--fg:#f1ece4;--muted:#a49b90;--card:#1f1d1b;--line:#33302c}}
-:root[data-theme="dark"]{--bg:#151413;--fg:#f1ece4;--muted:#a49b90;--card:#1f1d1b;--line:#33302c}
-body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif}
-main{max-width:1200px;margin:0 auto;padding:24px 16px}
-h1{font-size:24px;margin:0 0 4px}p.sub{color:var(--muted);margin:0 0 20px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
-figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-figure img{width:100%;display:block;aspect-ratio:1;object-fit:cover}
-figcaption{padding:10px 12px}figcaption b{display:block}figcaption span{color:var(--muted);font-size:13px}
-</style></head><body><main>
-<h1>Intern Christmas hats</h1>
-<p class="sub">8 ideas for a hat that sits tilted on the glowing tip (35 mm base, 32 mm tall), leaving part of the light showing.</p>
-<div class="grid">
-<figure><img src="concepts/h1_santa-slouch.jpg" alt="H1"><figcaption><b>H1 Santa Slouch</b><span>Classic red hat; the pompom rests on the body</span></figcaption></figure>
-<figure><img src="concepts/h2_elf-cap.jpg" alt="H2"><figcaption><b>H2 Elf Cap</b><span>Green cap, zig-zag cuff, gold bell</span></figcaption></figure>
-<figure><img src="concepts/h3_holly-beret.jpg" alt="H3"><figcaption><b>H3 Holly Beret</b><span>Cranberry beret at an angle with holly</span></figcaption></figure>
-<figure><img src="concepts/h4_pixel-hat.jpg" alt="H4"><figcaption><b>H4 Pixel Santa Hat</b><span>8-bit voxel hat, matches the Pixel Tree Key</span></figcaption></figure>
-<figure><img src="concepts/h5_candy-stocking.jpg" alt="H5"><figcaption><b>H5 Candy-Cane Stocking</b><span>Striped tail runs down an edge of the body</span></figcaption></figure>
-<figure><img src="concepts/h6_tree-cone.jpg" alt="H6"><figcaption><b>H6 Tree Cone</b><span>Three-tier fir tree with a gold star</span></figcaption></figure>
-<figure><img src="concepts/h7_antler-beanie.jpg" alt="H7"><figcaption><b>H7 Antler Beanie</b><span>Knit beanie with small antlers (sits nearly straight)</span></figcaption></figure>
-<figure><img src="concepts/h8_gift-bow.jpg" alt="H8"><figcaption><b>H8 Gift Bow Cap</b><span>Cranberry cap with a gold ribbon and bow</span></figcaption></figure>
-</div></main></body></html>
+/* Layout: one column of rounds, newest first; each round is a 4-up grid of square photo cards */
+:root{--bg:#f4f2ef;--fg:#1c1b1f;--muted:#68646d;--card:#ffffff;--line:#e2dee6;--flaw:#a3321f;
+--display:"Bricolage Grotesque",system-ui,sans-serif;--body:"Figtree",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141316;--fg:#efedf2;--muted:#a19ca8;--card:#1e1d21;--line:#322f37;--flaw:#f08a74;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141316;--fg:#efedf2;--muted:#a19ca8;--card:#1e1d21;--line:#322f37;--flaw:#f08a74;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--body)}
+main{max-width:1240px;margin:0 auto;padding-block:28px 48px;padding-inline:16px;display:grid;gap:36px}
+header h1{font:700 28px/1.15 var(--display);margin:0;text-wrap:balance}
+header p{color:var(--muted);margin:6px 0 0;max-width:65ch}
+section{display:grid;gap:14px}
+h2{font:600 18px/1.3 var(--display);margin:0}
+h2 small{font:400 14px var(--body);color:var(--muted);margin-left:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+figure img{width:100%;max-width:100%;aspect-ratio:1;object-fit:cover;display:block}
+figcaption{padding:10px 12px 12px;display:grid;gap:2px;min-width:0}
+figcaption b{font:600 15px var(--display)}
+figcaption span{color:var(--muted);font-size:13.5px}
+figcaption .sz{font-size:12px;letter-spacing:.02em}
+figcaption .flaw{color:var(--flaw)}
+</style>
+<main>
+<header><h1>Mũ Giáng sinh cho Intern</h1>
+<p>Mũ đội lệch trên chóp đèn (kim tự tháp đáy 35 mm, cao 32 mm), để một phần đèn vẫn sáng và không che nút. Vòng mới nhất ở trên cùng.</p></header>
+<section><h2>Vòng 2: nhiều màu hơn <small>M1–M8</small></h2><div class="grid">
+<figure><img src="concepts/round2/m1_patchwork-santa.png" alt="M1 Patchwork Santa" loading="lazy"><figcaption><b>M1 Patchwork Santa</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ Noel ghép mảnh đỏ, xanh lá, vàng, xanh ngọc, hồng; quả bông len nhiều màu</span><span class="flaw">Lỗi ảnh: trông như vải, in PLA sẽ thành vỏ cứng</span></figcaption></figure>
+<figure><img src="concepts/round2/m2_fairisle-knit.png" alt="M2 Fair-Isle Knit" loading="lazy"><figcaption><b>M2 Fair-Isle Knit</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ len sọc ngang đỏ, xanh, kem, vàng với hoạ tiết tuần lộc và cây thông</span><span class="flaw">Lỗi ảnh: trông như len, in PLA sẽ thành vỏ cứng</span></figcaption></figure>
+<figure><img src="concepts/round2/m3_harlequin-elf.png" alt="M3 Harlequin Elf" loading="lazy"><figcaption><b>M3 Harlequin Elf</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ hai chóp ghép ô đỏ, xanh, vàng, tím, mỗi chóp có chuông</span><span class="flaw">Lỗi ảnh: giống mũ hề nhiều hơn mũ Noel</span></figcaption></figure>
+<figure><img src="concepts/round2/m4_fairy-light-hat.png" alt="M4 Fairy-Light Hat" loading="lazy"><figcaption><b>M4 Fairy-Light Hat</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ xanh thông quấn dây đèn bóng nhỏ nhiều màu, ngôi sao vàng trên đỉnh</span><span class="flaw">Lỗi ảnh: tạo lại 1 lần vì lần đầu che gần hết đèn</span></figcaption></figure>
+<figure><img src="concepts/round2/m5_gingerbread-roof.png" alt="M5 Gingerbread Roof" loading="lazy"><figcaption><b>M5 Gingerbread Roof</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mái nhà bánh gừng, kem trắng chảy, kẹo dẻo màu và kẹo bạc hà</span><span class="flaw">Lỗi ảnh: che phần lớn chóp, đèn chỉ lộ ở mép dưới</span></figcaption></figure>
+<figure><img src="concepts/round2/m6_candy-shop.png" alt="M6 Candy Shop" loading="lazy"><figcaption><b>M6 Candy Shop</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ sọc xoắn đỏ, xanh bạc hà, trắng, vàng chanh; quả bông là kẹo mút xoắn</span></figcaption></figure>
+<figure><img src="concepts/round2/m7_pixel-lights.png" alt="M7 Pixel Lights" loading="lazy"><figcaption><b>M7 Pixel Lights</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ Noel pixel 8-bit, viền trắng điểm các pixel đèn nhiều màu</span><span class="flaw">Lỗi ảnh: đèn màu trên viền khá nhỏ</span></figcaption></figure>
+<figure><img src="concepts/round2/m8_bauble-cluster.png" alt="M8 Bauble Cluster" loading="lazy"><figcaption><b>M8 Bauble Cluster</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ kết từ chùm quả châu nhỏ đỏ, vàng, xanh ngọc, hồng, bạc, ruy băng xoăn</span><span class="flaw">Lỗi ảnh: khối nhiều chi tiết nhỏ, khó in</span></figcaption></figure>
+</div></section>
+<section><h2>Vòng 1 <small>H1–H8</small></h2><div class="grid">
+<figure><img src="concepts/h1_santa-slouch.jpg" alt="H1 Santa Slouch" loading="lazy"><figcaption><b>H1 Santa Slouch</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ Noel đỏ viền kem, quả bông tựa xuống thân</span></figcaption></figure>
+<figure><img src="concepts/h2_elf-cap.jpg" alt="H2 Elf Cap" loading="lazy"><figcaption><b>H2 Elf Cap</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ yêu tinh xanh, viền đỏ răng cưa, chuông vàng</span></figcaption></figure>
+<figure><img src="concepts/h3_holly-beret.jpg" alt="H3 Holly Beret" loading="lazy"><figcaption><b>H3 Holly Beret</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ nồi đỏ đội nghiêng, cài nhánh nhựa ruồi</span></figcaption></figure>
+<figure><img src="concepts/h4_pixel-hat.jpg" alt="H4 Pixel Santa Hat" loading="lazy"><figcaption><b>H4 Pixel Santa Hat</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ Noel pixel 8-bit, cùng bộ với Pixel Tree Key</span></figcaption></figure>
+<figure><img src="concepts/h5_candy-stocking.jpg" alt="H5 Candy-Cane Stocking" loading="lazy"><figcaption><b>H5 Candy-Cane Stocking</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ dài sọc đỏ kem, đuôi chạy dọc cạnh thân</span></figcaption></figure>
+<figure><img src="concepts/h6_tree-cone.jpg" alt="H6 Tree Cone" loading="lazy"><figcaption><b>H6 Tree Cone</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ hình cây thông 3 tầng, sao vàng</span></figcaption></figure>
+<figure><img src="concepts/h7_antler-beanie.jpg" alt="H7 Antler Beanie" loading="lazy"><figcaption><b>H7 Antler Beanie</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ len có gạc tuần lộc nhỏ</span><span class="flaw">Lỗi ảnh: đội gần như thẳng, không lệch</span></figcaption></figure>
+<figure><img src="concepts/h8_gift-bow.jpg" alt="H8 Gift Bow Cap" loading="lazy"><figcaption><b>H8 Gift Bow Cap</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ đỏ ngắn quấn ruy băng vàng có nơ</span></figcaption></figure>
+</div></section></main>

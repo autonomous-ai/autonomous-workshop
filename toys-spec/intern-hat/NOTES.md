@@ -1,6 +1,7 @@
 # Intern: Christmas hat for the glowing tip
 
 Concept images only, for picking a direction; no contract yet.
+Selection page: `CONCEPTS.html` (private artifact https://claude.ai/artifact/QSLVb8nmhpLqKuvYFNps9j).
 
 The Intern (autonomous.ai/intern) is a matte black square pyramid, about
 120 mm (4.7 in) tall, with engraved circuit lines, a round button on the front
@@ -24,7 +25,11 @@ that tip.
 - It may drape onto the body but must not cover the front button.
 - Grown-up gift style, no faces and no snowflakes, in matte PLA.
 
-## Concepts (`concepts/`), 2026-10-08
+## Rejections
+
+- **2026-10-08, round 1 (H1–H8):** "mấy cái này nhìn hơi đơn điệu". Each hat used one or two colours. Every later round needs at least four bright colours per hat.
+
+## Round 1 (`concepts/`), 2026-10-08
 
 | ID | Name | Idea |
 |---|---|---|
@@ -48,5 +53,36 @@ Flags:
 
 `sheet.jpg` shows all eight. Images were made with OpenRouter
 `openai/gpt-5.4-image-2`, using a crop of the Intern product photo and the
-owner's sketch as references. H6 and H8 were regenerated once because the
+owner's sketch as references. (The product photo came from the web and should
+only have been looked at, not attached; later rounds attach H1 instead.) H6 and H8 were regenerated once because the
 first images had wrong logo text.
+
+## Round 2: more colour (`concepts/round2/`), 2026-10-08
+
+The owner's ask: "Tôi muốn một concept nào đó nhiều màu sắc hơn, mấy cái này
+nhìn hơi đơn điệu". Each hat has at least four saturated colours.
+
+| ID | Name | Idea |
+|---|---|---|
+| M1 | Patchwork Santa | A Santa hat of red, green, gold, teal and pink patches with a mixed-yarn pompom |
+| M2 | Fair-Isle Knit | Knit bands of red, green, cream, gold and blue with reindeer and tree motifs |
+| M3 | Harlequin Elf | A two-point hat in red, green, gold and purple diamonds, with a bell on each point |
+| M4 | Fairy-Light Hat | A pine-green hat wrapped in multi-colour bulbs, with a gold star |
+| M5 | Gingerbread Roof | A gingerbread roof with white icing, gumdrops and a peppermint |
+| M6 | Candy Shop | Red, mint, white and lemon spiral stripes, with a lollipop pompom |
+| M7 | Pixel Lights | A voxel Santa hat whose band is dotted with multi-colour pixel lights |
+| M8 | Bauble Cluster | A cap formed from mini baubles in six colours, with a curly gold ribbon |
+
+Source: every image was generated from its text prompt with `--ref` set to
+round 1's `h1_santa-slouch.jpg` (the device to keep) and
+`source/owner-sketch.png` (how the hat sits), through
+`.claude/skills/brainstorm-trend/scripts/generate_image.py`.
+
+Flaws:
+- M4 was regenerated once, because the first image covered almost all of the
+  tip.
+- M5 still covers most of the tip.
+- M3 reads more like a jester than Christmas.
+- M7's coloured lights are small.
+- M8 has many small parts and is hard to print.
+- M1 and M2 look like fabric, which becomes a rigid shell in PLA.
