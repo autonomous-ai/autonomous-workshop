@@ -628,7 +628,14 @@ are separate. Frozen older runs retain their materialized rules and tools.
    This refuses assembly review when a component has no passing isolated round
    or its freshly built STEP changed afterward, and, under an Interfaces
    section, when a Coupled Interface has no current passing `--interface`
-   check. If an assembly repair
+   check. Every assembly round also runs the interference check final
+   verification runs, `inspect interfere` on the entry at its default
+   tolerance. Its `clash` line names each pair of Components that
+   interpenetrate where they are placed, with the volume and the X/Y/Z box,
+   and any clash fails the round. The entry must load its parts through
+   cadgen's build. An entry that cannot import or build them for the check
+   fails the round with that error, so fix it before the blind review is
+   spent. If an assembly repair
    changes a component, first record why: cite the assembly round and the
    finding you recorded there with `--record-visual`,
    `{"assembly_round", "finding", "reason"}`, and run the same `--component`
