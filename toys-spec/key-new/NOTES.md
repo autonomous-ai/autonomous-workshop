@@ -153,3 +153,13 @@ Flags:
   the kawaii round; pixel sprites may read as retro-game instead. Ask the
   owner.
 - P6's cloud has a face that was not asked for.
+
+## Round 8: pixel animals without Christmas (`concepts/round8/`), 2026-10-08
+
+The round 3 animals are redrawn in X1's pixel style, in their own pastel
+colours, with no Christmas details: A1 Sloth, A2 Snail, A3 Cat, A4 Cloud, A5
+Mushroom, A6 Bunny, A7 Whale, A8 Moon. Each image was generated from two
+inputs, the round 3 image and X1 as the style reference. `sheet.jpg` shows all
+eight side by side.
+
+Flag: A8's crescent leaves a small tap area.
