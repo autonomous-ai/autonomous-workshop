@@ -50,6 +50,10 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
                                       else ("RESULT: printable\n", 0))
                     log.write_text(gate_out)
                     return subprocess.CompletedProcess(command, code, gate_out, "")
+                if tool == "inspect" and command[2] == "interfere":
+                    # Issue #118: the assembly's interference check; clean
+                    # here, so a motion verdict stays the only variable.
+                    return subprocess.CompletedProcess(command, 0, '{"ok":true,"clashes":[]}\n', "")
                 raise AssertionError("Unexpected real-tool request: " + tool)
 
             args = SimpleNamespace(
@@ -66,8 +70,10 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
             ):
                 code = module.make_round(args)
             self.assertEqual(code, 1)
+            # The interference check runs beside motion and the render.
+            self.assertEqual(calls.count("inspect"), 1)
             self.assertEqual(
-            calls,
+            [tool for tool in calls if tool != "inspect"],
             ["gen", "check_thickness", "check_overhang", "check_mesh", *(["check_motion"] if check_motion else []),
              "render_review"],
         )

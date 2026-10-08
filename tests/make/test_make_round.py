@@ -172,6 +172,8 @@ class MakeRoundTest(unittest.TestCase):
         argv=None,
         calls=None,
         round_name="r0001",
+        interfere=None,
+        exit_code=1,
     ):
         module = load_module()
         (project / "toy.step.py").write_text("def gen_step(): pass\n")
@@ -185,6 +187,10 @@ class MakeRoundTest(unittest.TestCase):
                 Path(command[2]).with_name(Path(command[2]).name[:-3]).write_bytes(b"step")
             if tool == "render_review" and not render_fails:
                 fake_render_review(command)
+            if tool == "inspect" and interfere is not None:
+                stdout, code = interfere
+                Path(kwargs["log"]).write_text(stdout, encoding="utf-8")
+                return subprocess.CompletedProcess(command, code, stdout, "")
             if tool in ("check_thickness", "check_overhang"):
                 stdout, code = _gate_output(
                     tool,
@@ -207,7 +213,7 @@ class MakeRoundTest(unittest.TestCase):
             return subprocess.CompletedProcess(command, 1 if failed else 0,
                                                '{"ok":true}\n', build_stderr if failed else "")
         with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(module, "skills_root", return_value=project), mock.patch.object(module, "run", side_effect=fake_run):
-            self.assertEqual(module.main(argv or [str(project)]), 1)
+            self.assertEqual(module.main(argv or [str(project)]), exit_code)
         summary = json.loads((project / "measure/rounds" / round_name / "summary.json").read_text())
         return module, summary
 
@@ -628,8 +634,10 @@ class MakeRoundTest(unittest.TestCase):
             self.assertEqual(summary["build"]["toy"]["verdict"], "PASS")
             # The one-piece entry is its own print target.
             self.assertEqual(summary["print"]["toy"]["verdict"], "PASS")
-            self.assertEqual(
-                calls, ["gen", "check_thickness", "check_overhang", "check_mesh", "render_review"]
+            # Issue #118: final verification's interference check runs on the
+            # entry too; it runs beside the render, so the order is free.
+            self.assertCountEqual(
+                calls, ["gen", "check_thickness", "check_overhang", "check_mesh", "inspect", "render_review"]
             )
 
     def test_every_built_part_is_gated_from_source_and_reported(self):
@@ -949,6 +957,102 @@ class MakeRoundTest(unittest.TestCase):
             self.assertFalse(result["ok"])
             self.assertEqual(result["build"]["wheel"]["verdict"], "FAIL")
 
+
+    # Issue #118: an assembly round runs final verification's interference check.
+    CLASH = json.dumps({
+        "ok": False, "entry": "toy", "tolerance": 1.0, "clashCount": 2, "errors": [],
+        "clashes": [
+            {"a": {"ref": "o1.2", "name": "legs_pelvis_gray"}, "b": {"ref": "o1.7", "name": "arm_left_gray"},
+             "volume": 120.17828304579271,
+             "bounds": {"min": [19.432003743420644, -4.0000006, 71.49152686486907],
+                        "max": [24.0000006, 4.8626087301133785, 129.0000006]}},
+            {"a": {"ref": "o1.3", "name": "chest_cage_gray"}, "b": {"ref": "o1.6", "name": "crest_helm_gray"},
+             "volume": 17.410180751106243,
+             "bounds": {"min": [-5.135416844083811, -2.0000005999999857, 197.49999880000001],
+                        "max": [5.135416844083818, 0.977036397141852, 200.00158045976676]}},
+        ]})
+    UNBUILT = json.dumps({"ok": False, "errors": [{"type": "ModuleNotFoundError", "message": "No module named 'params'"}]})
+
+    def test_an_assembly_round_runs_final_verifications_interference_check(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            calls = []
+            module, summary = self._round(project, calls=calls)
+            self.assertTrue(summary["checks_ok"])
+            self.assertEqual(summary["interference"]["verdict"], "pass")
+            inspect = [command for command in calls if Path(command[1]).name == "inspect"]
+            self.assertEqual(len(inspect), 1)
+            # The tool and request verify_project's inspect batch sends
+            # (["interfere", entry]) at its default tolerance.
+            self.assertEqual(inspect[0][2:], ["interfere", "toy.step.py", "--format", "json"])
+            self.assertNotIn("--tolerance", inspect[0])
+
+    def test_verify_project_runs_the_same_interference_request(self):
+        roots = product_run_domain_skill_roots()
+        text = (roots["cad"] / "scripts" / "verify_project").read_text(encoding="utf-8")
+        self.assertIn('{"id": "interfere:assembly", "argv": ["interfere", entry]}', text)
+
+    def test_a_clash_between_components_fails_the_assembly_round_and_names_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module, summary = self._round(project, interfere=(self.CLASH, 2))
+            self.assertFalse(summary["checks_ok"])
+            self.assertFalse(summary["ok"])
+            interference = summary["interference"]
+            self.assertEqual(interference["verdict"], "fail")
+            self.assertEqual([(c["a"], c["b"]) for c in interference["clashes"]],
+                             [("legs_pelvis_gray", "arm_left_gray"), ("chest_cage_gray", "crest_helm_gray")])
+            self.assertEqual(interference["clashes"][0]["at"],
+                             {"min": [19.43, -4.0, 71.49], "max": [24.0, 4.86, 129.0]})
+            self.assertIn("legs_pelvis_gray x arm_left_gray 120.18 mm3 at X 19.43..24 Y -4..4.86 Z 71.49..129",
+                          interference["detail"])
+            self.assertIn("chest_cage_gray x crest_helm_gray 17.41 mm3", interference["detail"])
+            text = module.render_summary(summary)
+            self.assertIn("clash FAIL", text)
+            self.assertIn("Z 197.5..200", text)
+            # A clean visual pass cannot carry a clashing assembly to --full.
+            feedback = self._feedback(project, summary)
+            with mock.patch.object(module, "run") as runner:
+                with self.assertRaisesRegex(ValueError, "clean round and visual pass"):
+                    module.record_visual(project, feedback, full=True)
+                runner.assert_not_called()
+
+    def test_an_assembly_entry_that_cannot_build_its_parts_fails_the_round_loudly(self):
+        for label, interfere in (("import error", (self.UNBUILT, 2)), ("no result", ("", 1)),
+                                 ("timeout", ("", 124))):
+            with self.subTest(label), tempfile.TemporaryDirectory() as tmp:
+                project = Path(tmp)
+                module, summary = self._round(project, interfere=interfere)
+                self.assertFalse(summary["checks_ok"])
+                self.assertEqual(summary["interference"]["verdict"], "error")
+                self.assertIn("could not be checked for interference", summary["interference"]["detail"])
+                if label == "import error":
+                    self.assertIn("No module named 'params'", summary["interference"]["detail"])
+                self.assertIn("clash ERRO", module.render_summary(summary))
+
+    def test_an_unfinished_interference_check_is_unverified_as_final_verification_reads_it(self):
+        unfinished = json.dumps({"ok": False, "status": "unverified", "errors": [], "clashCount": 0,
+                                 "unverified": ["geometry inspection time allowance exhausted"]})
+        with tempfile.TemporaryDirectory() as tmp:
+            module, summary = self._round(Path(tmp), interfere=(unfinished, 3))
+            self.assertTrue(summary["checks_ok"])
+            self.assertEqual(summary["interference"]["verdict"], "unverified")
+            self.assertEqual(summary["geometry_status"], "unverified")
+            self.assertFalse(summary["print_ready_claim"])
+
+    def test_a_part_that_did_not_build_leaves_the_assembly_unchecked_not_passed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            calls = []
+            module, summary = self._round(Path(tmp), build_fails=True, calls=calls)
+            self.assertFalse(summary["checks_ok"])
+            self.assertEqual(summary["interference"]["verdict"], "not-run")
+            self.assertNotIn("inspect", [Path(command[1]).name for command in calls])
+
+    def test_the_interference_check_runs_in_order_with_one_job(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, {"MAKE_ROUND_JOBS": "1"}):
+            module, summary = self._round(Path(tmp), interfere=(self.CLASH, 2))
+            self.assertEqual(summary["interference"]["verdict"], "fail")
+            self.assertFalse(summary["checks_ok"])
 
     def test_skill_is_registered_with_its_tool_card(self):
         root = product_run_domain_skill_roots()["make-round"]

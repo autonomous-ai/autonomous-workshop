@@ -2204,3 +2204,20 @@ pitch)`: one march step under the minimum, less 1e-9 mm. Before this, a 0.8 mm
 wall at a 0.4 mm nozzle read 0.7333333333333333 against a limit of
 0.7333333333333334 and failed by float rounding. This changes the `cad`
 fingerprint; materialized runs keep their copied bytes.
+
+## Local change: assembly interference in every assembly round; the generator's import path holds through gen_step() (2026-10-08)
+
+A Workshop-local change (issue #118). The vendored `cad` skill's cadgen
+generator loader (`_internal/generation_runner.py`) used to drop the
+generator's own folder from `sys.path` as soon as the module body ran. It
+now keeps that folder on the path until `gen_step()` returns
+(`generator_import_path`), then restores the original path. An assembly
+entry that loads its parts inside `gen_step()` failed every `gen` and
+`inspect` build on the parts' `import params`, even though `render_review`
+and `check_motion` built it. Workshop's own `make-round` now runs
+`inspect interfere <entry> --format json` in every assembly round, the
+request `verify_project` sends as `interfere:assembly`, at its default
+tolerance. A clash fails the round and is named by pair, volume and
+location. An entry that cannot be built for the check also fails the round,
+with its error. This changes the `cad` and `make-round` fingerprints;
+materialized runs keep their copied bytes.
