@@ -131,3 +131,25 @@ session, with three changes:
 - Draw the top star as a yellow `*` the same size as the others.
 - Use 4 rows in total, including the star: 1, 2, 3 and 4 glyphs with a space between glyphs (`   *` / `  * *` / ` * * *` / `* * * *`), 10 glyphs in all.
 Draw the green `*` as typed asterisks, not snowflakes.
+
+## Round 7: pixel art (`concepts/round7/`), 2026-10-08
+
+The owner wants more Christmas and tech keys in X1 Pixel Tree's pixel style.
+Each image was generated from two inputs, the source concept and
+`round5/x01_pixel-tree.jpg` as the style reference:
+
+- P1 Pixel ASCII Tree. The source was the owner's pasted straight-on S2
+  render, with the tree in 1-2-3-4 rows. It was regenerated once, because the
+  first pass drew plus signs in the wrong row counts. It now shows a gold `*`
+  on top, then 2, 3 and 4 green `*`, centred.
+- P2 Pixel Fairy Lights, from round 6's S3. The `>_` prompt came out small and
+  faint.
+- P3–P10: round 3 (sloth, snail, cat, cloud, mushroom, bunny, whale, moon)
+  redrawn as pixel sprites with a Christmas detail (a Santa hat, scarf, holly
+  or gold sparkles).
+
+Flags:
+- P3–P10 keep small pixel faces from round 3. Faces were judged childish in
+  the kawaii round; pixel sprites may read as retro-game instead. Ask the
+  owner.
+- P6's cloud has a face that was not asked for.
