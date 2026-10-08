@@ -2,10 +2,10 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Figtree:wght@400;500&display=swap">
 <style>
 /* Layout: one column of rounds, newest first; each round is a 4-up grid of square photo cards */
-:root{--bg:#f4f2ef;--fg:#1c1b1f;--muted:#68646d;--card:#ffffff;--line:#e2dee6;--flaw:#a3321f;
+:root{--bg:#f4f2ef;--fg:#1c1b1f;--muted:#68646d;--card:#ffffff;--line:#e2dee6;--flaw:#a3321f;--chosen:#1f6b45;--chosen-fg:#ffffff;
 --display:"Bricolage Grotesque",system-ui,sans-serif;--body:"Figtree",system-ui,sans-serif}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141316;--fg:#efedf2;--muted:#a19ca8;--card:#1e1d21;--line:#322f37;--flaw:#f08a74;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#141316;--fg:#efedf2;--muted:#a19ca8;--card:#1e1d21;--line:#322f37;--flaw:#f08a74;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141316;--fg:#efedf2;--muted:#a19ca8;--card:#1e1d21;--line:#322f37;--flaw:#f08a74;--chosen:#6fd3a0;--chosen-fg:#0e1f16;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141316;--fg:#efedf2;--muted:#a19ca8;--card:#1e1d21;--line:#322f37;--flaw:#f08a74;--chosen:#6fd3a0;--chosen-fg:#0e1f16;color-scheme:dark}
 body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--body)}
 main{max-width:1240px;margin:0 auto;padding-block:28px 48px;padding-inline:16px;display:grid;gap:36px}
 header h1{font:700 28px/1.15 var(--display);margin:0;text-wrap:balance}
@@ -21,10 +21,22 @@ figcaption b{font:600 15px var(--display)}
 figcaption span{color:var(--muted);font-size:13.5px}
 figcaption .sz{font-size:12px;letter-spacing:.02em}
 figcaption .flaw{color:var(--flaw)}
+.rec{justify-self:start;font:600 11.5px var(--body);letter-spacing:.04em;text-transform:uppercase;color:var(--chosen-fg);background:var(--chosen);padding:2px 8px;border-radius:99px}
+figure.chosen{border-color:var(--chosen)}
 </style>
 <main>
 <header><h1>Mũ Giáng sinh cho Intern</h1>
 <p>Mũ đội lệch trên chóp đèn (kim tự tháp đáy 35 mm, cao 32 mm), để một phần đèn vẫn sáng và không che nút. Vòng mới nhất ở trên cùng.</p></header>
+<section><h2>Vòng 4: mũ Noel truyền thống + chi tiết tech <small>T1–T8</small></h2><div class="grid">
+<figure><img src="concepts/round4/t1_circuit-band.png" alt="T1 Circuit Band" loading="lazy"><figcaption><b>T1 Circuit Band</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Viền lông trắng có đường mạch vàng nổi, quả bông là con chip vàng nhỏ</span></figcaption></figure>
+<figure><img src="concepts/round4/t2_led-pompom.png" alt="T2 LED Pompom" loading="lazy"><figcaption><b>T2 LED Pompom</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Quả bông thay bằng bóng LED nhỏ có chân dây</span><span class="flaw">Lỗi ảnh: bóng LED khá nhỏ</span></figcaption></figure>
+<figure><img src="concepts/round4/t3_usb-tip.png" alt="T3 USB-C Tip" loading="lazy"><figcaption><b>T3 USB-C Tip</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Đuôi mũ kết thúc bằng đầu cắm USB-C thay cho quả bông</span></figcaption></figure>
+<figure><img src="concepts/round4/t4_keycap-pompom.png" alt="T4 Keycap Pompom" loading="lazy"><figcaption><b>T4 Keycap Pompom</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Quả bông thay bằng một keycap bàn phím cơ màu trắng</span><span class="flaw">Lỗi ảnh: keycap khá nhỏ</span></figcaption></figure>
+<figure><img src="concepts/round4/t5_wifi-antenna.png" alt="T5 Antenna" loading="lazy"><figcaption><b>T5 Antenna</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Ăng-ten router đen cắm thẳng lên trên mũ</span><span class="flaw">Lỗi ảnh: tạo lại 1 lần vì lần đầu ăng-ten trông như con chim</span></figcaption></figure>
+<figure><img src="concepts/round4/t6_headset-santa.png" alt="T6 Headset Santa" loading="lazy"><figcaption><b>T6 Headset Santa</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ Noel đeo tai nghe có mic, như trợ lý trực tổng đài (Intern là trợ lý giọng nói)</span></figcaption></figure>
+<figure><img src="concepts/round4/t7_fiber-pompom.png" alt="T7 Fiber-Optic Pompom" loading="lazy"><figcaption><b>T7 Fiber-Optic Pompom</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Quả bông là chùm sợi quang, đầu sợi sáng xanh</span><span class="flaw">Lỗi ảnh: sợi quang mảnh, khó in bằng PLA</span></figcaption></figure>
+<figure><img src="concepts/round4/t8_cursor-charm.png" alt="T8 Cursor Charm" loading="lazy"><figcaption><b>T8 Cursor Charm</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Đuôi mũ treo con trỏ chuột thay cho quả bông</span></figcaption></figure>
+</div></section>
 <section><h2>Vòng 3: ống khói <small>F1–F8</small></h2><div class="grid">
 <figure><img src="concepts/round3/f1_brick-chimney.png" alt="F1 Brick Chimney" loading="lazy"><figcaption><b>F1 Brick Chimney</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Ống khói gạch đỏ có tuyết trên miệng, đội nghiêng như mũ</span></figcaption></figure>
 <figure><img src="concepts/round3/f2_santa-boots.png" alt="F2 Santa Stuck" loading="lazy"><figcaption><b>F2 Santa Stuck</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Ông già Noel kẹt trong ống khói, chỉ thò hai chân đi ủng lên trên</span></figcaption></figure>
@@ -33,7 +45,7 @@ figcaption .flaw{color:var(--flaw)}
 <figure><img src="concepts/round3/f5_stocking-chimney.png" alt="F5 Stocking Chimney" loading="lazy"><figcaption><b>F5 Stocking Chimney</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Ống khói đá kem treo chiếc tất Noel đỏ, có nhánh nhựa ruồi</span></figcaption></figure>
 <figure><img src="concepts/round3/f6_gift-delivery.png" alt="F6 Gift Delivery" loading="lazy"><figcaption><b>F6 Gift Delivery</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Ống khói gạch với hộp quà đang thả dở xuống miệng</span></figcaption></figure>
 <figure><img src="concepts/round3/f7_beacon-chimney.png" alt="F7 Beacon Chimney" loading="lazy"><figcaption><b>F7 Beacon Chimney</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Ống khói rỗng, ánh đèn xanh từ chóp hắt lên qua miệng ống</span><span class="flaw">Lỗi ảnh: luồng sáng bốc lên là hiệu ứng ảnh; thực tế chỉ thấy miệng ống sáng</span></figcaption></figure>
-<figure><img src="concepts/round3/f8_pixel-chimney.png" alt="F8 Pixel Chimney" loading="lazy"><figcaption><b>F8 Pixel Chimney</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Ống khói gạch pixel 8-bit với khói pixel bậc thang</span><span class="flaw">Lỗi ảnh: tạo lại 1 lần vì lần đầu đội thẳng; lần hai lại nằm lệch hẳn ra cạnh chóp, không trùm đỉnh</span></figcaption></figure>
+<figure class="chosen"><img src="concepts/round3/f8_pixel-chimney.png" alt="F8 Pixel Chimney" loading="lazy"><figcaption><span class="rec">Đã chọn</span><b>F8 Pixel Chimney</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Ống khói gạch pixel 8-bit với khói pixel bậc thang</span><span class="flaw">Ảnh đã tạo lại để ống khói trùm lên đỉnh chóp; giờ đội gần như thẳng, ít nghiêng</span></figcaption></figure>
 </div></section>
 <section><h2>Vòng 2: nhiều màu hơn <small>M1–M8</small></h2><div class="grid">
 <figure><img src="concepts/round2/m1_patchwork-santa.png" alt="M1 Patchwork Santa" loading="lazy"><figcaption><b>M1 Patchwork Santa</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ Noel ghép mảnh đỏ, xanh lá, vàng, xanh ngọc, hồng; quả bông len nhiều màu</span><span class="flaw">Lỗi ảnh: trông như vải, in PLA sẽ thành vỏ cứng</span></figcaption></figure>
@@ -51,7 +63,7 @@ figcaption .flaw{color:var(--flaw)}
 <figure><img src="concepts/h3_holly-beret.jpg" alt="H3 Holly Beret" loading="lazy"><figcaption><b>H3 Holly Beret</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ nồi đỏ đội nghiêng, cài nhánh nhựa ruồi</span></figcaption></figure>
 <figure><img src="concepts/h4_pixel-hat.jpg" alt="H4 Pixel Santa Hat" loading="lazy"><figcaption><b>H4 Pixel Santa Hat</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ Noel pixel 8-bit, cùng bộ với Pixel Tree Key</span></figcaption></figure>
 <figure><img src="concepts/h5_candy-stocking.jpg" alt="H5 Candy-Cane Stocking" loading="lazy"><figcaption><b>H5 Candy-Cane Stocking</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ dài sọc đỏ kem, đuôi chạy dọc cạnh thân</span></figcaption></figure>
-<figure><img src="concepts/h6_tree-cone.jpg" alt="H6 Tree Cone" loading="lazy"><figcaption><b>H6 Tree Cone</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ hình cây thông 3 tầng, sao vàng</span></figcaption></figure>
-<figure><img src="concepts/h7_antler-beanie.jpg" alt="H7 Antler Beanie" loading="lazy"><figcaption><b>H7 Antler Beanie</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ len có gạc tuần lộc nhỏ</span><span class="flaw">Lỗi ảnh: đội gần như thẳng, không lệch</span></figcaption></figure>
+<figure class="chosen"><img src="concepts/h6_tree-cone.jpg" alt="H6 Tree Cone" loading="lazy"><figcaption><span class="rec">Đã chọn</span><b>H6 Tree Cone</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ hình cây thông 3 tầng, sao vàng</span></figcaption></figure>
+<figure class="chosen"><img src="concepts/h7_antler-beanie.jpg" alt="H7 Antler Beanie" loading="lazy"><figcaption><span class="rec">Đã chọn</span><b>H7 Antler Beanie</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ len có gạc tuần lộc nhỏ</span><span class="flaw">Lỗi ảnh: đội gần như thẳng, không lệch</span></figcaption></figure>
 <figure><img src="concepts/h8_gift-bow.jpg" alt="H8 Gift Bow Cap" loading="lazy"><figcaption><b>H8 Gift Bow Cap</b><span class="sz">Mũ cho chóp đáy 35 mm, cao ~30–45 mm</span><span>Mũ đỏ ngắn quấn ruy băng vàng có nơ</span></figcaption></figure>
 </div></section></main>

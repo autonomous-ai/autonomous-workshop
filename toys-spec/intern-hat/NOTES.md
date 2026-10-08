@@ -112,3 +112,36 @@ Flaws:
   mouth would glow.
 - F8 was regenerated once, because the first image sat straight. The second
   image floats beside the tip instead of covering the apex.
+
+## Owner decisions, 2026-10-08
+
+- **Chosen: H6 Tree Cone, H7 Antler Beanie and F8 Pixel Chimney.**
+- F8 was regenerated, because "cái ảnh nó nhìn kiểu ống khói nằm ngoài hoàn
+  toàn". The new image used `--ref` set to the previous F8 (the concept to
+  keep) and H1 (the correct over-the-apex fit). The chimney's open bottom now
+  slips over the apex. It sits almost upright, with little tilt.
+
+## Round 4: traditional Santa hat with one tech detail (`concepts/round4/`), 2026-10-08
+
+The owner's ask: "thử theo hướng khác thú vị hơn, kết hợp mũ giáng sinh
+truyền thống với một trang trí kiểu tech". Each hat is a red Santa hat with a
+white band and pompom, plus one tech detail.
+
+| ID | Name | Tech detail |
+|---|---|---|
+| T1 | Circuit Band | Gold circuit traces on the band; the pompom is a tiny gold chip |
+| T2 | LED Pompom | A small LED bulb on a wire leg replaces the pompom |
+| T3 | USB-C Tip | The tip ends in a USB-C plug |
+| T4 | Keycap Pompom | A blank mechanical keycap replaces the pompom |
+| T5 | Antenna | A router antenna sticks up from the hat |
+| T6 | Headset Santa | A headset with a boom mic, because the Intern is a voice assistant |
+| T7 | Fiber-Optic Pompom | A burst of glowing fiber-optic strands |
+| T8 | Cursor Charm | A mouse-pointer cursor hangs from the tip |
+
+Source: text prompts with `--ref` set to `concepts/h1_santa-slouch.jpg` and
+`source/owner-sketch.png`.
+
+Flaws:
+- T5 was regenerated once, because the first antenna looked like a bird.
+- T2's bulb and T4's keycap are small.
+- T7's thin strands are hard to print in PLA.
