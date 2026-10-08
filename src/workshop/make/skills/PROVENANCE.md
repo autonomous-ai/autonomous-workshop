@@ -2314,3 +2314,13 @@ tolerance. A clash fails the round and is named by pair, volume and
 location. An entry that cannot be built for the check also fails the round,
 with its error. This changes the `cad` and `make-round` fingerprints;
 materialized runs keep their copied bytes.
+
+## Local change: a component reviewer binding belongs to its run (2026-10-08)
+
+A Workshop-local change (issue #119) to Workshop's own `make-round`. A
+Component's `reviewer_id` is stored with `reviewer_wish`, the sha256 of the
+run's `WISH.json`, and reruns carry both forward. A binding recorded under
+another Wish, or a legacy one with no Wish, binds nothing, so a `workshop fix`
+run that cloned its source's component state lets its own first reviewer bind;
+a second reviewer in the same run is still refused. This changes the
+`make-round` fingerprint; materialized runs keep their copied bytes.
