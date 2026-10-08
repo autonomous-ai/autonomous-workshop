@@ -40,6 +40,7 @@ before building cutters.
 A `Face` made from a polygon takes its normal from the polygon's winding, and a
 clipped or differenced polygon can come back wound either way: `extrude(face,
 h)` then runs down into the part instead of up out of it, and a groove becomes
-a closed void under the surface that only the shell count shows. Pass
+a closed void under the surface that only the shell count shows, and an
+`intersect` with it comes back `None` (empty), not an error. Pass
 `dir=(0, 0, 1)` in the one helper every cutter goes through
 ([[sketch-and-extrude-direction#state-the-extrude-direction]]).

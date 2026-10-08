@@ -42,8 +42,12 @@ offset of the component hugs it more closely and cannot be assembled at all
 whenever the component is wider anywhere than it is at its mouth.
 
 `seat_for` does not know where the bracket's surface is, so `mouth` extends the
-cavity back along the insertion direction to break through it. A blind seat
-(the default) is correct geometry and frequently leaves a skin the slicer
+cavity to break through it. The prism is the same either way along `insert`;
+only the mouth has a side, and it is the **+insert** side. So when a seat has a
+mouth, point `insert` out of the opening, toward where the component comes
+from: (0, 0, 1) for a part dropped in from above. Pointed the way the part
+travels, the mouth lands on the floor and the opening keeps its skin. A blind
+seat (the default) is correct geometry and frequently leaves a skin the slicer
 prints and the servo cannot pass.
 
 What this cannot answer
@@ -203,11 +207,12 @@ def seat_for(component, fit: str | float = cadfits.DEFAULT_FIT, *,
              insert=(0, 0, 1), mouth: float = 0.0,
              sections: int = DEFAULT_SECTIONS,
              max_sections: int = MAX_SECTIONS):
-    """The cavity to subtract so `component` drops in along `insert`.
+    """The cavity to subtract so `component` goes in along the `insert` axis.
 
-    The component's silhouette along the insertion direction, grown by the
+    The component's silhouette along the insertion axis, grown by the
     per-side clearance for `fit`, swept through the component's own extent plus
-    that clearance at each end, plus `mouth` more on the entry side.
+    that clearance at each end, plus `mouth` more on the **+insert** side: point
+    `insert` out of the opening, toward where the component comes from.
 
     Verified to contain the component it came from, refining until it does.
     """
@@ -463,6 +468,11 @@ def _self_check() -> int:
           math.isclose(seat.volume, want, rel_tol=1e-9), f"{seat.volume:.4f} vs {want:.4f}")
     check("box seat contains its component",
           outside_volume(seat, block) <= CONTAIN_TOL_MM3)
+    mouth_box = seat_for(block, "slip", insert=(0, 0, 1), mouth=5).bounding_box()
+    check("the mouth lies on the +insert side",
+          math.isclose(mouth_box.max.Z, 15 + slip + 5, abs_tol=1e-6)
+          and math.isclose(mouth_box.min.Z, -15 - slip, abs_tol=1e-6),
+          f"Z {mouth_box.min.Z:.3f}..{mouth_box.max.Z:.3f}")
     check("mouth extends the seat by exactly its length",
           math.isclose(seat_for(block, "slip", mouth=5).volume,
                        seat.volume + (10 + 2 * slip) * (20 + 2 * slip) * 5,

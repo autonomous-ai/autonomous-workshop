@@ -3,6 +3,7 @@ title: Overhangs and print orientation
 tags: [overhang, orientation, bridge, ledge, support, teardrop, chamfer, build-direction, fdm]
 aliases: [print pose, which way up, unsupported, droop, sag, 45 degree rule, support material]
 sources:
+  - "experience: a battery door's flange rebate in a bed face, a drop-in slot over a round hole, a 0.9 mm ledge that read as 1.2"
   - "experience: support-free figurines: a horse chin, raised chest emblems and stacked arm segments all failed check_overhang"
   - skills/cad/scripts/check_overhang
   - "experience: parts that were sound, watertight and thick enough but could not print unsupported"
@@ -10,8 +11,9 @@ sources:
   - "experience: a flat-topped egg crown, bayonet grooves in a rim band and a chamfered rim all failed the overhang gate until reshaped as described"
   - "experience: a wedge base with a stop rail and sunk pads on 60 and 30 deg faces failed overhang until the walls leaned and the underside pad moved outside the body"
   - "experience: lever pockets beside a pushrod in a carved figure's split halves joined the socket's and channel's ceilings into one over-long bridge"
+  - "experience: a token's rounded back and hole rims: filleted bed rims and thin bed-round bands failed the gate until reshaped as teardrops"
 related: [wall-thickness-and-hollowing, joints, printed-part-count]
-updated: 2026-09-30
+updated: 2026-10-07
 ---
 
 # Overhangs and print orientation
@@ -196,6 +198,22 @@ the recess's ceiling a bridge over air across its whole width, so a 62 mm
 triangle failed the 12 mm bridge limit. Put the layer under the flat base
 instead and let the body keep its Z=0 datum.
 
+A door-flange rebate round an opening in the bed face is worse: its ceiling
+hangs off the outer wall alone. Lay the flange on the bed face instead.
+
+## A ledge is measured on a grid, and a slot from a hole's top leaves shelves
+
+A voxel gate rounds a ledge's reach to its grid: a 0.9 mm flat ledge read as
+1.2 mm at a 0.4 mm grid and failed a 1.0 mm ledge limit. Give a stop or a lip
+a sloped underside at the print slope instead of designing a flat ledge near
+the limit.
+
+A drop-in slot cut upward from a round hole's top meets the hole on a narrow
+chord and leaves a shelf a tenth of a millimetre thick each side. Start the
+slot's straight sides at the hole's centre, where they are tangent to it — or,
+when the part can go in along the hole's axis, drop the slot and keep the hole
+round: its top is a short bridge.
+
 ## Do not design at the limit
 
 A cone that flares one millimetre out per millimetre up is a 45° overhang —
@@ -203,6 +221,24 @@ exactly the threshold — and the flat facets a tessellator lays on it land at
 44.7°, on the wrong side. The same goes for a 45° buttress or a chamfer sized
 to the limit. Give the angle somewhere to go: 1.3 mm of rise per mm of flare is
 52° and passes at any tessellation tolerance.
+
+The margin has to cover the gate's mesh as well as the drawing. At 0.02 mm
+chords, a ruled band only 0.06-0.08 mm wide in plan, meshed with triangles 10-15 mm
+long along a gently curved outline, came out up to 25° flatter than drawn: a
+40° band read as 55-60° from vertical. Keep any band near the limit wide in plan
+(0.2 mm and more), and keep the drawing 15° under the limit.
+
+## Rounding the edge on the bed face
+
+A round on the bed edge is a fillet whose last few degrees face the bed. Round
+it as a teardrop instead: the arc runs from the wall to 30° from vertical, and
+its tangent line carries on to the bed. On a 0.8 mm round the back's outline
+sits 0.34 mm in and the line rises 0.4 mm; the 0.2 mm layers step those
+0.8 mm anyway, so one band for the arc and one for the line read as round.
+A hole's rim on the bed face is the same edge turned inward: a 0.5 mm fillet
+there faced the bed over 4 mm². Cut the hole with one revolve of the hole and
+its 30° flare, so the round meets the bore inside the cutter, and fillet only
+the rim on the top face.
 
 ## What geometry cannot tell you
 

@@ -8,8 +8,9 @@ sources:
   - https://codeberg.org/Zolko/Asm4_documentation Resources/Tutorial3 (FreeCAD Jansen walker: link lengths x10 mm, layer offsets, 15-leg phasing)
   - "experience: walkers whose legs were posed once for every phase, and axles driven by one rod"
   - "experience: an eccentric-driven rocker whose pin was placed for a 90 deg mid-swing transmission"
+  - "experience: a printed crank-and-guide walker whose guide pin reached its slot ends and whose thin legs leaned on their pins"
 related: [mechanism-design, automata-patterns, mechanism-verification, scissor-and-pantograph-linkages, rod-ends-and-clevises]
-updated: 2026-10-01
+updated: 2026-10-07
 ---
 
 # Linkages
@@ -130,6 +131,26 @@ collide with each other and walk a pace, not a trot.
 Stance feet must be **lower** than swing feet through mid-stride or the body
 rocks instead of walking; set the foot sole so its lowest point lands on
 Z = 0 in the reference pose.
+
+A crank-and-guide leg has two printed bearings in one flat plate, and both
+are amplified at the foot by the lever ratio:
+
+- **The slot needs travel past the stroke for the play in series.** The pin
+  reaches `2 × throw` of travel only on paper: the hip journal, the crank pin
+  in the leg bore and the guide pin across the slot each add their radial
+  clearance in the same line, and a printed slot comes out short. A margin
+  under that sum lets the pin hit the slot end at the top and bottom of the
+  stroke — a hard stop the crank must push through.
+- **The leg leans by its clearance over its thickness.** A plate `t` thick on
+  pins with diametral clearance `c` tilts `atan(c / t)`; at a foot `L` below,
+  that is `L c / t` of sideways wander, and a leaning plate bears edge-on on
+  both pins. 0.4 mm over 4.5 mm is 5°, 8 mm at a 90 mm foot.
+
+```python
+play = r_clear_hip + r_clear_crank_pin + r_clear_slot
+assert SLOT_MARGIN - play >= 0.3, "guide pin reaches the slot end"
+assert LEG_T >= 6.0 and FOOT_DEPTH * PIN_CLEAR / LEG_T <= 6.0, "the leg leans on its pins"
+```
 
 ### The Jansen leg
 

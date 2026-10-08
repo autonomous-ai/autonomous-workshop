@@ -5,8 +5,9 @@ aliases: [battery sizes, coin cell, button cell, alkaline, li-ion cell, battery 
 sources:
   - https://en.wikipedia.org/wiki/List_of_battery_sizes
   - https://learn.adafruit.com/li-ion-and-lipoly-batteries/voltages
+  - https://data.energizer.com/pdfs/e92.pdf (AAA alkaline: 150-300 mOhm fresh, capacity against drain, service curves)
 related: [lipo-cells-and-housing, toy-battery-compartments, power-path-design, energy-drive, led-sizing]
-updated: 2026-09-23
+updated: 2026-10-07
 ---
 
 # Battery cells and packs
@@ -73,6 +74,26 @@ rates, and a cell under motor-type current delivers less; take the derating
 from the cell's datasheet discharge curve at the real current. Record the
 estimate as an open item: no rigid gate measures runtime
 ([[power-path-design]]).
+
+## An alkaline cell in a model
+
+To run a motor down rather than quote a capacity, model each cell from its
+datasheet:
+
+- **open-circuit voltage against depth of discharge**: read the gentlest
+  service curve (the AAA E92's 50 mA curve runs 1.50 → 1.33 V at a fifth,
+  1.27 at half, 1.20 at two thirds, 1.0 V at 93 %, 0.8 V at the end) and add
+  that curve's own current times the resistance;
+- **internal resistance**: 150–300 mΩ fresh for an AAA alkaline, rising
+  steeply toward the end (model it growing with the cube of the depth);
+- **capacity against drain**: the bar chart of service to 0.8 V at a few
+  continuous currents (an AAA alkaline: about 1,150 mAh at 25 mA, 940 at
+  100 mA, 670 at 250 mA, 430 at 500 mA); depth is charge drawn over the
+  capacity at the load's mean current.
+
+The load then sees `E(depth) − I × R(depth)` per cell, and the run ends where
+the load's peak demand meets what the motor can give, which on a friction-heavy
+mechanism comes before the cells reach 0.8 V.
 
 ## Choosing
 
