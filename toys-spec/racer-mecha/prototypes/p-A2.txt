@@ -1,0 +1,11 @@
+Redesign of the attached concept: an ORIGINAL transforming mecha toy (no logos, no text, no existing franchise). Plain warm off-white background (#f5f0e6). LEFT: Formula-style open-wheel racing car, three-quarter front view. RIGHT: the same toy as a standing chunky heroic robot, same scale, three-quarter front view. Racing red, white and black, multi-colour 3D-printed collectible, about 20 cm tall, crisp panel lines, matte plastic, soft studio light.
+
+The transformation must be physically consistent - every car part is reused, nothing removed:
+- The car stands up on its tail. The robot's top = the car's front axle; the robot's feet = the car's tail.
+- Nose cone + front wing fold down 180 degrees onto the robot's chest: the red-and-white nose runs down the centre of the chest, nose tip pointing down, and the front wing becomes a wide armour plate across the belly.
+- Front wheels stay on the front axle and become the shoulders, one wheel on each shoulder, tyre facing sideways.
+- The arms are the front halves of the two sidepods (the radiator-inlet blocks beside the cockpit); fists fold out of them.
+- The head is a small helmeted head with a blue visor that flips up from a pocket under the nose root, between the shoulder wheels.
+- The rear half of the car splits down the centre into the two legs: each leg is one rear sidepod plus half the floor; one rear wheel sits on the OUTER side of each lower leg (calf); the gearbox/diffuser halves fold forward 90 degrees to become the feet.
+- The engine cover spine with the airbox and the big rear wing swings up 180 degrees onto the robot's back like a backpack, so the rear wing rises behind the head above the shoulders.
+- The cockpit with its halo is hidden on the robot's back under the backpack.
