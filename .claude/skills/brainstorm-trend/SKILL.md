@@ -111,11 +111,11 @@ Launch six subagents in one message, one per slot, each with this brief:
     does;
   - `## Palette`: one line per Unique Geometry, its id and the one filament
     colour every Component of it prints in.
-- Generate one Preview Image: the assembled toy in its Display Pose, one
+- Generate one Concept Image: the assembled toy in its Display Pose, one
   subject fully inside the frame, in the Palette's colours, by writing a prompt to `<slot>/prompt.txt`
   and running `generate_image.py --prompt-file <slot>/prompt.txt --out
-  <slot>/preview.png`. Report the path it prints.
-- Return the contract path, the Preview Image path, and one sentence on the toy.
+  <slot>/concept.png`. Report the path it prints.
+- Return the contract path, the Concept Image path, and one sentence on the toy.
 
 Log `contract_generated` for each as it returns.
 
@@ -124,9 +124,9 @@ Log `contract_generated` for each as it returns.
 For each draft, run `gate_contract.py <slot>/CONTRACT.md`, then read the
 contract and judge three things the script cannot:
 
-- the Trend Hook is genuinely countable or pointable in the Preview Image;
+- the Trend Hook is genuinely countable or pointable in the Concept Image;
 - the Signature Motion is the toy's play, not decoration;
-- the contract and Preview Image carry none of the Trend owners' names, characters,
+- the contract and Concept Image carry none of the Trend owners' names, characters,
   logos or trade dress.
 
 A draft that fails any check is rejected. Log `gate_rejected` with every
@@ -152,7 +152,7 @@ directory. Build the judges' packets:
 
 Each `packets/match-NN/` holds the match's two drafts as A and B, in the
 scheduled order: the contract's title, Trend Hook, Signature Motion and
-Palette, and its Preview Image. The script refuses, writing nothing, when a
+Palette, and its Concept Image. The script refuses, writing nothing, when a
 draft names its personality; send that designer back to reword the named
 section, gate the draft again, and rebuild.
 
@@ -187,7 +187,7 @@ reports an unresolved tie, choose between the tied drafts yourself and log
 
 Continue the winning draft through `design-a-toy` Stage 3 to Stage 5, in its
 directory, with the winning personality still deciding trade-offs and
-`inventor: trend-lab`. The Preview Image may become the assembly reference
+`inventor: trend-lab`. The Concept Image may become the assembly reference
 only if it passes Stage 3b. Stage 4 is the human's one approval gate: wait for it,
 then log `human_approval`. Stage 5 hands the `CONTRACT.md` to `build-a-toy`.
 
