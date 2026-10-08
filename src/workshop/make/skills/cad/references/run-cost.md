@@ -171,6 +171,17 @@ do not tell you when a round was wasted.
   axis fail the box test and cost nothing. Measured on a plate linkage — 43
   movers, 21 obstacles, 180 samples plus three driven passes — 38 min and
   about 8 GB resident, the largest single gate of its suite.
+- **A part entry builds its own part, not the assembly.** A shared
+  `print_part(name)` that pulls one memoised dict of every reference part is
+  cheap in one interpreter and expensive under the runner: the warm daemon
+  evicts first-party modules between targets, so the memo is gone and each
+  of N part entries rebuilds the whole assembly. Measured on a 45-entry
+  project whose assembly builds in under a minute: 40 min of `gen`, about
+  50 s per entry, each rebuilding the body and its bought-part seats to print
+  a pin. With a builder per name — an entry that needs a neighbour (a cutter,
+  a mating seat) builds only that neighbour — the same 45 entries took 2.6 min.
+  Prove the switch by diffing every entry's solid count, volume and bounding
+  box against the STEP files written before it.
 - **Do not rebuild a body whose inputs did not change.** A generator that
   builds many independent bodies (station-stack sculpts, lofted segments,
   inlay sets) pays for all of them on every `gen`, serially, and deleting

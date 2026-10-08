@@ -47,12 +47,16 @@ design reasoning behind seats: `skills/wiki/pages/printing/seating-bought-parts.
 through, because an exact offset would leave an undercut the rigid part cannot
 pass (`wiki show seating-bought-parts#a-seat-is-a-prism-along-the-insertion-direction`).
 
-- `insert` — the direction the component travels in. The seat is prismatic
-  along it.
-- `mouth` — how far to extend the cavity back past the component, to break
-  through the bracket's surface. **The default of 0 is a blind pocket**, which
-  is correct geometry and frequently leaves a skin the slicer prints and the
-  component cannot pass.
+- `insert` — the axis the component travels along. The seat is prismatic
+  along it, and the sign matters only for the mouth: **the mouth is on the
+  +insert side**, so point `insert` out of the opening, toward where the part
+  comes from — (0, 0, 1) for a part dropped in from above. Pointed the way the
+  part travels, the mouth lands on the floor, the opening keeps a skin as thin
+  as the clearance, and only `check_motion` sees the part cannot go in.
+- `mouth` — how far to extend the cavity past the component on that side, to
+  break through the bracket's surface. **The default of 0 is a blind pocket**,
+  which is correct geometry and frequently leaves a skin the slicer prints and
+  the component cannot pass.
 - `fit` — a `cadfits` class. `slip` (0.20/side) is the default. An interference
   class is refused: a bought part does not compress.
 
@@ -183,6 +187,33 @@ ears forgotten:
     typed by hand  clash 232.474 mm3 -- the ears                        exit 1
 
 The last two are the ones every other gate in the toolchain passes.
+
+## One row per state the part is checked in
+
+A row measures its component against its own `parts`, so a component that meets
+different neighbours at different assembly steps, or rests on one by design,
+gets a row for each state rather than one row that is wrong for all of them:
+
+- **Screwed on the bench, then installed.** A gearmotor bolted to its bracket
+  before the bracket goes into the body is checked for `bolt-access` against
+  the bracket alone; in the finished assembly the screw line runs into the
+  worm, the walls and the lid on both sides, and the gate reads the bench
+  screws as walled in. A second row with `"bolts": false` measures the
+  installed clearance.
+- **A pressed fit on a bought shaft.** A printed hub pressed onto the motor's
+  shaft at the `snug` fit reads back exactly the floor. Give it its own row
+  with half the pressed clearance as the floor: zero is still a clash.
+- **Resting on a face by design.** A cell holder that stands on its door has
+  zero clearance to the door, and that contact is the seat. One row with
+  `"min_clearance": 0.0` against the door alone proves the door does not
+  intrude; the holder's walls keep their clearance in another row.
+
+Every row names the same `component` and checksum; a power manifest's
+`mount_id` points at the row for the installed state.
+
+A swept clearance envelope (a wire loom) that the model is cut from needs the
+cutter grown at the envelope's ends as well as its radius: a leg that stops at
+a wall otherwise meets it flush, and reads zero clearance.
 
 ## What it cannot answer
 

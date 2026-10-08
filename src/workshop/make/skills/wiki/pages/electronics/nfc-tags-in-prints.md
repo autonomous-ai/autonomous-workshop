@@ -3,13 +3,14 @@ title: NFC tags sealed in a print
 tags: [nfc, ntag213, ntag215, rfid, tag, transponder, pause, embed, keychain]
 aliases: [nfc sticker, nfc tag, ntag, rfid tag, nfc inlay, tap to unlock, tap to pay, nfc keychain, nfc token, nfc coin]
 sources:
+  - "https://rfid.it/en/avery-dennison/404-hf-midas-wet-inlay-nxp-ntag213-12x19.html (Midas NTAG213 12 x 19 mm, ref 3002647, 10 x 17 antenna, 157 um)"
   - https://rfid.it/en/avery-dennison/403-nfc-stickers-ntag213-round-o18mm.html (Circus NTAG213 mini: 18 +/-0.2 mm label, 16 mm antenna, 136 um overall excluding the IC, clear PET and aluminium, not for metal surfaces)
   - https://github.com/autonomous-ai/autonomous-key (an app that pairs by the tag's factory UID accepts any NTAG213/215/216)
   - https://makerworld.com/models/1058791 (keychain with a print pause built in for an NTAG chip)
   - https://www.digitaltransactions.net/cash-app-tags-debut-starting-with-a-wand/ (a commercial NFC wand, 4.29 x 1.71 in)
   - "experience: a tag on the mid-plane of a 13 mm thick two-half token sat 5.3 mm under one face and 13.7 mm under the other face's ornament; sealed under the tap face it sits 1.75 mm deep"
 related: [magnets-and-strap-slots, wall-thickness-and-hollowing, overhangs-and-print-orientation, electrical-component-selection, printed-part-count]
-updated: 2026-10-05
+updated: 2026-10-08
 ---
 
 # NFC tags sealed in a print
@@ -46,6 +47,14 @@ of them.
   over the antenna — because nobody knows where the antenna is.
 - Plastic does not shield it; the distance does. Thick infill over the tag is
   harmless, a thick part is not.
+- **A through-opening and the tag compete for the same middle.** A concept
+  with an open mouth or door at the centre of a flat charm leaves no disc for
+  a round tag plus its wall (an 18 mm sticker in a slip pocket with 1.6 walls
+  needs a solid Ø21.8). Check the pocket-plus-wall envelope against every
+  opening before accepting the layout. A rectangular 12 × 19 inlay (Avery
+  Dennison Midas NTAG213, 10 × 17 antenna, about the area of an 18 mm round
+  tag's 16 mm antenna) fits the band above such an opening; otherwise the
+  opening becomes a recess.
 
 ## Sealing it: pause and embed
 

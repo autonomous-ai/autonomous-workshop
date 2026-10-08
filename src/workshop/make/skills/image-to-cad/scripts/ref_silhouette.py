@@ -73,6 +73,30 @@ rule while the border itself is ground-like by it, and the border rule when it
 is not -- the case where the band rule cannot see the ground at all.  The
 record says which rule ran.
 
+A COLOURED SUBJECT IN ITS OWN CONTACT SHADOW IS A THIRD RULE.  A brown, red or
+green part photographed on a pale sweep under a key light throws a contact
+shadow that is dark: far darker than the border, so the border rule's
+`LUM_DROP` keeps it as object, and below the band rule's luminance floor, so
+the band rule keeps it too.  Both outlines then carry a crescent of shadow
+along every edge facing away from the light -- measured 10-15 % of the area on
+one oblique product shot, which reads as "the model is too thin" on every
+lower edge.  What the shadow never has is the subject's *tint relative to its
+own brightness*: `--ground tint` calls a pixel ground-like when its relative
+saturation (max - min) / max is at or under `--tint-sat`, at any luminance.
+On that shot the subject sat at 0.46-0.77 (lit face to deepest groove) and
+every shadow pixel at 0.31 or under.  A neutral subject (grey, white, black,
+chrome) has no tint to keep and is lost: use band or border there.
+
+The default is a measured split, not a constant: read both sides before you
+trust it.  A dark, low-chroma subject sits close to it -- a forest-green part
+measured 0.35 on its lit face and 0.30-0.41 down its walls, and the default
+0.34 kept only a tenth of it -- while its grey contact shadow stayed at 0.15
+and the ground at 0.06.  `--tint-sat` midway between the subject's darkest
+lit tone and the shadow's most tinted pixel (0.2 there) brought the outline
+back to a 2 px median against the tool mask.  The record's
+`outline_agreement` says which way it went: a flattened area that is a
+fraction of the tool mask's is a subject the rule called ground.
+
 This is the same remedy the skill already prescribes for line art -- make the
 reference measurable, then measure it with the *unchanged* instrument.  It is a
 script rather than a per-project probe so that every project flattens the same
@@ -115,6 +139,7 @@ SAT_MAX = 20            # a ground pixel is neutral
 LUM_LO, LUM_HI = 66, 212
 CHROMA_TOL = 3.5        # border rule: ground chroma distance; JPEG scatters a flat ground to 3.16
 LUM_DROP = 60           # border rule: a ground pixel is at most this much darker than the border's darkest
+TINT_SAT = 0.34         # tint rule: a ground pixel's (max - min) / max is at most this, at any luminance
 BORDER_PX = 8
 SUFFIX = "-sil"
 VERIFY_FRACTION = 0.66  # rows a contact shadow cannot reach
@@ -140,10 +165,13 @@ def pick_ground(rgb: np.ndarray, sat_max: float = SAT_MAX,
 
 def ground_mask(rgb: np.ndarray, ground: str, sat_max: float = SAT_MAX,
                 lum_lo: float = LUM_LO, lum_hi: float = LUM_HI,
-                chroma_tol: float = CHROMA_TOL) -> np.ndarray:
+                chroma_tol: float = CHROMA_TOL, tint_sat: float = TINT_SAT) -> np.ndarray:
     """Pixels that look like the ground, by the chosen rule (not yet connected)."""
     rgb = rgb.astype(float)
     lum = rgb.mean(2)
+    if ground == "tint":
+        hi = rgb.max(2)
+        return hi - rgb.min(2) <= tint_sat * np.maximum(hi, 1.0)
     if ground == "band":
         sat = rgb.max(2) - rgb.min(2)
         return (sat <= sat_max) & (lum >= lum_lo) & (lum <= lum_hi)
@@ -156,11 +184,12 @@ def ground_mask(rgb: np.ndarray, ground: str, sat_max: float = SAT_MAX,
 
 def flatten(rgb: np.ndarray, sat_max: float = SAT_MAX,
             lum_lo: float = LUM_LO, lum_hi: float = LUM_HI,
-            ground: str = "band", chroma_tol: float = CHROMA_TOL) -> np.ndarray:
+            ground: str = "band", chroma_tol: float = CHROMA_TOL,
+            tint_sat: float = TINT_SAT) -> np.ndarray:
     """Boolean object mask: everything not connected-to-the-border ground."""
     if ground == "auto":
         ground = pick_ground(rgb, sat_max, lum_lo, lum_hi)
-    ground_like = ground_mask(rgb, ground, sat_max, lum_lo, lum_hi, chroma_tol)
+    ground_like = ground_mask(rgb, ground, sat_max, lum_lo, lum_hi, chroma_tol, tint_sat)
     lum = rgb.mean(2)
     lab, _ = ndimage.label(ground_like)
     edge = np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]])
@@ -233,12 +262,12 @@ def verify(obj: np.ndarray, tool: np.ndarray) -> dict:
 
 
 def run(paths, out_dir, suffix, sat_max, band, threshold, ground="auto",
-        chroma_tol=CHROMA_TOL):
+        chroma_tol=CHROMA_TOL, tint_sat=TINT_SAT):
     records = []
     for p in paths:
         rgb = np.asarray(Image.open(p).convert("RGB"))
         rule = pick_ground(rgb, sat_max, band[0], band[1]) if ground == "auto" else ground
-        obj = flatten(rgb, sat_max, band[0], band[1], rule, chroma_tol)
+        obj = flatten(rgb, sat_max, band[0], band[1], rule, chroma_tol, tint_sat)
         ys, xs = np.nonzero(obj)
         tool = _tool_mask(p, threshold)
         ty, tx = np.nonzero(tool)
@@ -277,6 +306,20 @@ def _light_fixture():
     img[40:150, 60:180] = (233, 229, 226)   # warm white subject at ground luminance
     img[60:90, 70:110] = (46, 45, 46)       # a black inlay inside it
     img[130:150, 60:180] = (200, 195, 190)  # its shaded lower edge
+    return img
+
+
+def _tinted_fixture():
+    """A brown subject on a pale warm sweep, in its own dark neutral contact shadow."""
+    img = np.zeros((200, 240, 3), np.uint8)
+    img[:] = (240, 237, 232)                 # pale warm sweep, above the band rule's ceiling
+    img[150:170, 0:200] = (175, 165, 155)    # soft shadow, reaches the border
+    img[40:150, 60:180] = (128, 88, 69)      # the lit brown face
+    img[130:150, 60:180] = (89, 56, 37)      # its wall, darker but still brown
+    img[139:141, 60:180] = (47, 24, 11)      # a groove round the wall, darkest
+    img[60:70, 80:120] = (183, 139, 115)     # a highlight on the face, least saturated part
+    img[150:160, 70:190] = (78, 66, 54)      # dark contact shadow hugging the lower edge
+    img[40:150, 180:192] = (91, 79, 67)      # ... and the edge facing away from the light
     return img
 
 
@@ -342,6 +385,25 @@ def self_check() -> int:
     kept = pick_ground(img) == "band"
     print(f"{'ok  ' if kept else 'FAIL'} auto keeps the band rule on a mid-grey ground")
     ok &= kept
+
+    # a brown subject in its own dark contact shadow: band and border both keep
+    # the shadow as object (it is darker than either rule's ground); the tint
+    # rule drops it and keeps the subject, its groove and its highlight
+    tinted = _tinted_fixture()
+    tsub = np.zeros(tinted.shape[:2], bool)
+    tsub[40:150, 60:180] = True
+    tshadow = np.zeros(tinted.shape[:2], bool)
+    tshadow[150:160, 70:190] = tshadow[40:150, 180:192] = True
+    leaks = {rule: int((tshadow & flatten(tinted, ground=rule)).sum()) for rule in ("band", "border")}
+    tobj = flatten(tinted, ground="tint")
+    tmiss, tleak = int((tsub & ~tobj).sum()), int((tshadow & tobj).sum())
+    tys, txs = np.nonzero(tobj)
+    ttight = (tys.min(), tys.max(), txs.min(), txs.max()) == (40, 149, 60, 179)
+    good = min(leaks.values()) > 0 and tmiss == 0 and tleak == 0 and ttight
+    print(f"{'ok  ' if good else 'FAIL'} a dark contact shadow leaks into band ({leaks['band']} px) "
+          f"and border ({leaks['border']} px); the tint rule drops it: {tmiss} px missing, "
+          f"{tleak} px leaked, bbox y{tys.min()}..{tys.max()} x{txs.min()}..{txs.max()}")
+    ok &= good
 
     # the first light reference was written as a full-frame "object" and only
     # the comparison happened to object; an outline at the frame edge must fail
@@ -411,10 +473,14 @@ def main(argv=None):
                     help="a ground pixel is this neutral or more (default 20)")
     ap.add_argument("--lum-band", default=f"{LUM_LO},{LUM_HI}",
                     help="ground luminance band LO,HI (default 66,212)")
-    ap.add_argument("--ground", choices=("auto", "band", "border"), default="auto",
+    ap.add_argument("--ground", choices=("auto", "band", "border", "tint"), default="auto",
                     help="ground rule: band (neutral, mid luminance), border (chroma "
-                         "of the frame border), or auto (default: band unless the "
-                         "border fails it)")
+                         "of the frame border), tint (low relative saturation at any "
+                         "luminance: a coloured subject in its own dark contact "
+                         "shadow), or auto (default: band unless the border fails it)")
+    ap.add_argument("--tint-sat", type=float, default=TINT_SAT,
+                    help="tint rule: ground relative saturation (max-min)/max at most "
+                         "this (default 0.34)")
     ap.add_argument("--chroma-tol", type=float, default=CHROMA_TOL,
                     help="border rule: ground chroma distance (default 3)")
     ap.add_argument("--threshold", type=float, default=28.0,
@@ -431,7 +497,7 @@ def main(argv=None):
     if a.out:
         Path(a.out).mkdir(parents=True, exist_ok=True)
     records = run(a.images, a.out, a.suffix, a.sat_max, band, a.threshold,
-                  a.ground, a.chroma_tol)
+                  a.ground, a.chroma_tol, a.tint_sat)
 
     if a.json:
         print(json.dumps(

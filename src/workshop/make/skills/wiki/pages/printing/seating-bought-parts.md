@@ -6,8 +6,9 @@ sources:
   - skills/cad/scripts/cadmount.py (seat_for, envelope_for, bolt_holes, bolt_pattern)
   - skills/cad/references/bought-parts.md
   - "toolchain: OCC offset(+0.3) on the step.parts sg90_micro_servo STEP drops the hub and spline and returns a solid 2.9 mm shorter (reproducible)"
+  - "experience: a seat whose mouth was cut on the floor side, leaving a skin over the well"
 related: [printed-part-count, fit-derivation, joints]
-updated: 2026-09-23
+updated: 2026-10-07
 ---
 
 # Seating a purchased part
@@ -49,7 +50,9 @@ mouth has an undercut, and rigid parts do not bend into one.
 
 - Extend the cavity back past the component (a *mouth*) to break through the
   bracket's surface. A blind pocket is correct geometry and frequently leaves a
-  skin the slicer prints and the component cannot pass.
+  skin the slicer prints and the component cannot pass. The mouth goes on the
+  side the part comes in from; a mouth on the floor side leaves the skin, as
+  thin as the clearance, and only an insertion sweep sees it.
 - Use a running fit (`slip`, 0.20 per side) by default; never an interference
   class — a bought part does not compress.
 - A bounding-box envelope is looser and cannot miss a feature: the answer when a

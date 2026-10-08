@@ -3,6 +3,7 @@ title: Designing for multi-material and multi-colour printing
 tags: [multi-material, multi-colour, mmu, ams, purge, wipe-tower, color-change, filament-change]
 aliases: [multicolor, multi color, colour change, color print, tool change, purge volume, prime tower, wipe tower, filament swap, inlay, colour region, shared face]
 sources:
+  - "experience: ten multi-colour key plates reviewed against their concept tiles"
   - "experience: re-fused colour regions of a flush inlay left one open edge; the union of primitives was watertight"
   - https://forum.prusa3d.com/forum/original-prusa-i3-mmu2s-mmu2-general-discussion-announcements-and-releases/tips-for-faster-prints-and-less-purge/
   - https://help.prusa3d.com/article/wipe-tower_125010
@@ -10,7 +11,7 @@ sources:
   - "experience: a multi-colour plate of inlays failed overhang and thickness on shared faces; its fused union passed"
   - "skills/cad/scripts/printlib.py"
 related: [printed-part-count, fdm-surface-finish, fdm-layer-height-and-nozzle, overhangs-and-print-orientation, wall-thickness-and-hollowing]
-updated: 2026-10-06
+updated: 2026-10-08
 ---
 
 # Designing for multi-material and multi-colour printing
@@ -74,6 +75,14 @@ The wipe tower's density adapts per layer, from sparse to dense, with the
 number of changes. PrusaSlicer's "no sparse layers" skips tower layers that
 have no tool change: in Prusa's test it cut print time by 3.16 % and
 tower filament by 16.17 %.
+
+**Relief in the body's own colour does not read on black or white.** A
+concept drawn as lit same-colour relief (whiskers on a black cat, a moustache
+on a white beard, a wand on a purple pot) lost the detail in the review render
+and barely shows on the print: give it a contrasting colour, or 1.0 mm of
+height. A light colour over a dark body needs three layers or more to keep its
+hue; where a sealed insert caps a flush inlay at two layers, sink a 0.4 mm
+recess with a 0.6 mm light floor instead, which keeps the same roof.
 
 ## Inlays fool the mesh gates; measure the union
 

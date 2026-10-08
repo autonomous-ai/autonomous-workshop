@@ -8,7 +8,7 @@ sources:
   - "experience: a head-and-tail drive added to a finished walker, where the strap's closed ring decided the assembly order"
   - "experience: legs added to a push-along flapper's pushrod inside a carved split body"
 related: [mechanism-design, linkages, cams-intermittent, energy-drive, swivels-and-turntables]
-updated: 2026-10-01
+updated: 2026-10-07
 ---
 
 # Automaton patterns
@@ -56,6 +56,11 @@ then fit the figure over it.
   placed from its own crank phase by the kinematics module.
 - Retention: shoulder pins for crank and guide joints, their heads held down
   by the lid, the lid held by detents — the chain closes at the body.
+- Hip journals at least 1.5 d long — a pressed-in printed bushing where the
+  body wall is thinner ([[shafts-and-bearings#a-journal-the-load-hangs-from]]);
+  the wheel's end thrust on small rings; every static joint of the crankshaft
+  glued and every running one greased. Size the motor joint by joint at the
+  cycle's peak ([[energy-drive#a-walkers-budget-price-every-joint-at-the-cycles-peak]]).
 - Motion manifest generated from the kinematics: coupled half-cycle sweeps
   against the body and guide pins, one fine tooth-pitch sweep, a clear path
   for any band corridor, the full assembly order, and a `blocked` capture per
