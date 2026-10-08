@@ -311,14 +311,42 @@ def _carried_summaries(run_root: Path) -> set[str]:
     return digests
 
 
-def _missing_round_summaries(rounds: Path) -> list[str]:
+def _carried_round_gaps(run_root: Path) -> set[str]:
+    """``"<id> rNNNN"`` of every Component round folder the revision source
+    sealed without a ``summary.json`` (issue #120): a round interrupted in
+    the source run, which a correction carries as it was."""
+
+    archive_path = Path(run_root) / REVISION_SOURCE
+    if archive_path.is_symlink() or not archive_path.is_file():
+        return set()
+    folders: dict[str, bool] = {}
+    try:
+        with zipfile.ZipFile(archive_path) as archive:
+            for info in archive.infolist():
+                parts = info.filename.split("/")
+                if _COMPONENT_ROUNDS[-1] not in parts or info.is_dir():
+                    continue
+                at = parts.index(_COMPONENT_ROUNDS[-1])
+                if len(parts) < at + 4 or not re.fullmatch(r"r[0-9]{4}", parts[at + 2]):
+                    continue
+                label = "%s %s" % (parts[at + 1], parts[at + 2])
+                folders[label] = folders.get(label, False) or (
+                    len(parts) == at + 4 and parts[-1] == "summary.json"
+                )
+    except (OSError, zipfile.BadZipFile) as exc:
+        raise StateConflict("the sealed revision source is unreadable") from exc
+    return {label for label, summarized in folders.items() if not summarized}
+
+
+def _missing_round_summaries(rounds: Path, carried_gaps: frozenset[str] = frozenset()) -> list[str]:
     """Every Component round its ``make-round-state.json`` records with no
     ``summary.json`` in the product tree (issue #113).
 
     A Component's state records its latest round; every round up to it
     wrote a summary, and a refused round records nothing. A summary moved
     out of the tree hides that round from the nonce check, so it is missing
-    evidence, never a round to skip.
+    evidence, never a round to skip. The one exception is a gap the sealed
+    revision source itself carries (``carried_gaps``, issue #120).
     """
 
     missing = []
@@ -340,6 +368,7 @@ def _missing_round_summaries(rounds: Path) -> list[str]:
             "%s r%04d" % (role, number)
             for number in range(1, latest + 1)
             if not (state_path.parent / ("r%04d" % number) / "summary.json").is_file()
+            and "%s r%04d" % (role, number) not in carried_gaps
         )
     return missing
 
@@ -368,7 +397,7 @@ def verify_component_round_nonces(
     """
 
     rounds = Path(project).joinpath(*_COMPONENT_ROUNDS)
-    missing = _missing_round_summaries(rounds)
+    missing = _missing_round_summaries(rounds, frozenset(_carried_round_gaps(run_root)))
     if missing:
         raise ContractError(
             "Component round %s is recorded in make-round-state.json but its "

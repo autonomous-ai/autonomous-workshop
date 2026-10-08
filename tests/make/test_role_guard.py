@@ -150,6 +150,29 @@ class ComponentNonceTest(unittest.TestCase):
         self.assertIn("arm-right r0004, arm-right r0005", str(raised.exception))
         self.assertIn("summary.json", str(raised.exception))
 
+    def test_a_round_gap_the_revision_source_carries_is_not_missing(self):
+        """Issue #120: a round interrupted in the source run has no summary
+        in the sealed revision source either; a correction carries it as it
+        was. A gap the source does not carry still refuses."""
+        for index in (1, 3):
+            nonce = "%02d" % index * 16
+            _issue(self.host, nonce, "part_wing.step.py")
+            _summary(self.project, "wing", index, nonce)
+        self._state("wing", 4)
+        archive = io.BytesIO()
+        prefix = "make/verification/reports/component-rounds/wing/"
+        with zipfile.ZipFile(archive, "w") as handle:
+            handle.writestr(prefix + "r0002/gen-wing.log", "interrupted\n")
+            handle.writestr(prefix + "r0003/summary.json", "{}\n")
+        (self.run_root / "revision-source.zip").write_bytes(archive.getvalue())
+        with self.assertRaises(ContractError) as raised:
+            self._verify()
+        self.assertIn("wing r0004", str(raised.exception))
+        self.assertNotIn("wing r0002", str(raised.exception))
+        _issue(self.host, "04" * 16, "part_wing.step.py")
+        _summary(self.project, "wing", 4, "04" * 16)
+        self._verify()
+
     def test_a_complete_set_of_recorded_rounds_passes(self):
         for index, nonce in enumerate(("01" * 16, "02" * 16), 1):
             _issue(self.host, nonce, "part_wing.step.py")
