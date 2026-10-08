@@ -28,6 +28,7 @@ that tip.
 ## Rejections
 
 - **2026-10-08, round 1 (H1–H8):** "mấy cái này nhìn hơi đơn điệu". Each hat used one or two colours. Every later round needs at least four bright colours per hat.
+- **2026-10-08, round 2 (M1–M8):** "Thôi nhìn ghê quá, bỏ hết constraint về nhiều màu hay ít màu đi." Too garish. Every rule about colour count is dropped: later rounds set no colour requirement and exclude a garish candy-coloured overload.
 
 ## Round 1 (`concepts/`), 2026-10-08
 
@@ -86,3 +87,28 @@ Flaws:
 - M7's coloured lights are small.
 - M8 has many small parts and is hard to print.
 - M1 and M2 look like fabric, which becomes a rigid shell in PLA.
+
+## Round 3: chimney (`concepts/round3/`), 2026-10-08
+
+The owner's ask: "Giờ xem thử idea theo hướng ống khói thử xem". Each topper is
+a chimney sitting tilted on the tip, with no colour requirement.
+
+| ID | Name | Idea |
+|---|---|---|
+| F1 | Brick Chimney | A red-brick stack with a snow cap, worn at an angle like a hat |
+| F2 | Santa Stuck | Santa's boots and legs stick up out of the chimney; no face |
+| F3 | Smoke Puff | A grey stone chimney with a solid curl of white smoke |
+| F4 | Rooftop Corner | A snowy tiled roof piece following the pyramid's slope, with a small chimney |
+| F5 | Stocking Chimney | A cream stone chimney with a red stocking and holly |
+| F6 | Gift Delivery | A brick chimney with a present wedged in its top |
+| F7 | Beacon Chimney | An open hollow flue, so the tip's light glows out of the top |
+| F8 | Pixel Chimney | A voxel brick chimney with stepped pixel smoke |
+
+Source: text prompts with `--ref` set to `concepts/h1_santa-slouch.jpg` and
+`source/owner-sketch.png`, as in round 2.
+
+Flaws:
+- F7's rising light beam is a photo effect. In reality only the chimney's
+  mouth would glow.
+- F8 was regenerated once, because the first image sat straight. The second
+  image floats beside the tip instead of covering the apex.
