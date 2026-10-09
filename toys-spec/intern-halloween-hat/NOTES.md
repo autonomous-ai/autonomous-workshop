@@ -94,3 +94,8 @@ Flags:
 - G3's seams and rivets are faint, and its antenna is thin.
 - G5's cable and leaf are thin and would be hard to print.
 - G7's fins are thin; a print needs them thicker.
+
+**2026-10-09:** the owner switched the Halloween hat to the Lamp: "Giờ đổi
+lại lần nữa là làm cho lamp chứ không làm cho intern. Cái idea G4, G6, J1 tôi
+thấy ok, chuyển nó qua cho lamp". J1, G4 and G6 are marked chosen and continue
+in `../lamp-halloween-hat/` as N1–N3. The Intern Halloween hat stops here.
