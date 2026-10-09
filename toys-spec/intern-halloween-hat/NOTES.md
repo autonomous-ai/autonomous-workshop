@@ -25,8 +25,8 @@ tip, with the face cut through so the tip's light shines out.
   through so the tip's light shines out; the face looks forward, the same way
   as the front button.
 - The front button stays uncovered.
-- Two coverages, as the owner asked: the top two-thirds of the tip (the bottom
-  ~10 mm band stays visible and lit), or the whole tip down to the body.
+- Coverage: the top two-thirds of the tip; the bottom ~10 mm band stays
+  visible and lit. (Round 1 also tried the whole tip; the owner dropped it.)
 - Grown-up gift style, matte, not garish. No snowflakes or Christmas elements.
   The carved jack-o'-lantern face is the one face allowed; it is part of the
   ask.
@@ -35,6 +35,9 @@ tip, with the face cut through so the tip's light shines out.
 
 - Carried over from the Intern Christmas hat: no garish candy-coloured
   overload.
+- **2026-10-09, round 1:** full coverage (J5–J8) is out: "phủ toàn bộ thì nó
+  bị to quá" (too big). Every later hat covers only the top two-thirds of the
+  tip and stays about 40–45 mm wide.
 
 ## Round 1: pumpkin hats (`concepts/round1/`), 2026-10-09
 
@@ -63,3 +66,31 @@ Flags:
 - J5 and J7 are larger than planned (about 70 mm).
 - J7's thin tendrils would be hard to print.
 - How the hat stays on (friction on the tip's faces or a clip) is still open.
+
+**2026-10-09:** the owner chose the two-thirds coverage: "Chắc lấy 2/3 đi,
+phủ toàn bộ thì nó bị to quá". J5–J8 are out (see Rejections).
+
+## Round 2: tech pumpkins (`concepts/round2/`), 2026-10-09
+
+The owner's ask: "thử lấy bí ngô theo theme tech xem sao". Every concept
+covers the top two-thirds of the tip.
+
+| ID | Name | Idea |
+|---|---|---|
+| G1 | Circuit Pumpkin | Ribbed orange pumpkin engraved with circuit traces and vias like the body |
+| G2 | Dot Matrix | Face made only of a grid of small square holes, like a dot-matrix LED display |
+| G3 | Robot Pumpkin | Panel seams and rivets, a short antenna stem, slot eyes and a grille mouth |
+| G4 | Low-poly | Faceted triangular low-poly pumpkin like a 3D model |
+| G5 | USB Stem | Stem is a coiled cable ending in a USB-C plug, with a circuit-board leaf |
+| G6 | Terminal Face | Chevron eyes like > and <, and an underscore cursor mouth |
+| G7 | Heatsink | Ribs are burnt-orange anodised heatsink fins; the stem is a fan hub |
+| G8 | Cyber Visor | A dark smoked visor band across the front; the eyes are two lit bars |
+
+Source: text prompts with `--ref` set to `concepts/round1/j1_classic-jack.png`
+(our own image), kept for the device, the camera and the two-thirds coverage
+and size. None needed regenerating.
+
+Flags:
+- G3's seams and rivets are faint, and its antenna is thin.
+- G5's cable and leaf are thin and would be hard to print.
+- G7's fins are thin; a print needs them thicker.
