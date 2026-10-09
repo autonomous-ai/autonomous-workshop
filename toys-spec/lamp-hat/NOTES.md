@@ -39,6 +39,9 @@ module.
 
 - Carried over from the Intern hat: round 2's colourful hats were "nhìn ghê
   quá" (too garish).
+- **2026-10-09, round 1:** L3 Slouchy Santa is out: "L3 thì có một teammate
+  làm rồi" (a teammate already made it). Later rounds exclude a classic red
+  Santa hat with a white fur band.
 
 ## Round 1: 8-bit chimney + soft concepts (`concepts/round1/`), 2026-10-09
 
@@ -69,3 +72,32 @@ Flags:
 - All the hats are drawn as fabric, knit or soft foam. Printed in PLA, they
   become rigid shells with that texture.
 - How the hat holds on to the module (clip, slide or magnet) is still open.
+
+**2026-10-09:** the owner said L1 Pixel Chimney and L7 Plush Tree "trông ok";
+both are marked chosen.
+
+## Round 2: more pixel and plush ideas (`concepts/round2/`), 2026-10-09
+
+The owner's ask: "Giờ gợi ý thêm 8 cái khác nữa xem" (suggest 8 more). This
+round builds on the two chosen styles. W1–W3 attach L1 as the 8-bit style
+reference, and W4–W8 attach L7 as the plush style reference. Every image also
+attaches `source/head-dock-render.png` as the fit reference.
+
+| ID | Name | Idea |
+|---|---|---|
+| W1 | Pixel Tree | A stepped 8-bit fir tree with pixel baubles and a pixel star |
+| W2 | Pixel Gift | A voxel present with a cream pixel ribbon and bow |
+| W3 | Pixel Cabin | A tiny voxel gingerbread cabin with a snowy roof, lit window and chimney |
+| W4 | Plush Gift | A puffy quilted present with a plump ribbon and soft bow |
+| W5 | Plush Star | A plump gold star standing upright as a tree topper (the lamp is the tree) |
+| W6 | Soft Antlers | Chubby felt antlers and two small ears, with no face |
+| W7 | Plush Wreath | A puffy wreath standing upright like a halo, with berries and a bow |
+| W8 | Mistletoe | A mistletoe bunch hanging from a soft curved stalk |
+
+Flags:
+- Every hat in this round came out small, about 40–70 mm rather than 60–90 mm.
+- W4 sits back toward the neck.
+- W7 was regenerated once, because the first wreath lay flat. It is still
+  small.
+- W8 was regenerated once, because the first image had no stalk. The base of
+  the stalk now looks like a coil spring.
