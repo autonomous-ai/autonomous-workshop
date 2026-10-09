@@ -42,6 +42,12 @@ module.
 - **2026-10-09, round 1:** L3 Slouchy Santa is out: "L3 thì có một teammate
   làm rồi" (a teammate already made it). Later rounds exclude a classic red
   Santa hat with a white fur band.
+- **2026-10-09, round 2:** W5–W8 are out: "Vẫn đang làm kiểu có cục module
+  vuông gắn lên đèn rồi nón gắn lên trên, nên w5 tới w8 chắc chắn không làm
+  được". A star, antlers, a wreath or a stalk cannot hold onto the square
+  module. Every hat must be a hollow shell with a chunky closed base (at least
+  32 x 38 mm) that slips over the module and hides it. No thin stalks, rings
+  or open shapes.
 
 ## Round 1: 8-bit chimney + soft concepts (`concepts/round1/`), 2026-10-09
 
@@ -101,3 +107,21 @@ Flags:
   small.
 - W8 was regenerated once, because the first image had no stalk. The base of
   the stalk now looks like a coil spring.
+
+### W5–W8 replaced by W9–W12, 2026-10-09
+
+The owner dropped W5–W8 (see Rejections), so they were removed from the page.
+Their images stay in `concepts/round2/`. The replacements attach the same
+references as W4–W8 (the head render plus L7), and their prompts add the
+hollow-shell mounting rule:
+
+| ID | Name | Idea |
+|---|---|---|
+| W9 | Plush Bauble | A fat cranberry ornament ball with quilted gold bands and a gold cap |
+| W10 | Cocoa Mug | A soft cream mug with a red band, marshmallows and a candy cane |
+| W11 | Plush Stocking | A puffy red stocking with a cream cuff and a gift peeking out |
+| W12 | Plush Bell | A plump gold bell with a red bow and holly |
+
+Flags:
+- W9's ball meets the shade on only a small area, so it needs a flat base.
+- W12 is squat and reads more as a dome than as a bell.
