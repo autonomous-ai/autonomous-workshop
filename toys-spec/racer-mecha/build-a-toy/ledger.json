@@ -1,0 +1,9 @@
+{
+  "contract": "toys-spec/racer-mecha/CONTRACT.md",
+  "title": "Racer Mecha",
+  "inventor": "rowan-vale",
+  "rounds": [],
+  "contract_versions": {
+    "v1": {"status": "approved", "notes": "Images approved by the owner 2026-10-12 (design-a-toy Stage 4); see NOTES.md", "backups": []}
+  }
+}
