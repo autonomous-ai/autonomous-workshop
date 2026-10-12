@@ -22,10 +22,10 @@
       "wish_id": "wish-20261012-054637-a6c52bd4",
       "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261012-054637-a6c52bd4/workspace",
       "toy_dir": null,
-      "final_status": "waiting (Contract Contradiction need; stop_category unclassified)",
+      "final_status": "active",
       "brief": null,
       "finding_ids": [],
-      "notes": "Owner chose --agent claude --model claude-opus-5-5 --effort medium. Started 2026-10-12T05:46Z; References: 11 (matches); --check-motion true; 08:32Z stopped: 9/10 Components locked (torso open), 86.9M/100M tokens. In-run amendments 1 and 2 (R06) refused by Contract Reviewer; fixed at the root as amend-a."
+      "notes": "Owner chose --agent claude --model claude-opus-5-5 --effort medium. Started 2026-10-12T05:46Z; References: 11 (matches); --check-motion true; 08:32Z stopped: 9/10 Components locked (torso open), 86.9M/100M tokens. In-run amendments 1 and 2 (R06) refused by Contract Reviewer; fixed at the root as amend-a.; 09:07Z resumed with --amend-contract (owner-contract-amendment applied) and --max-tokens 200000000 (owner approved, raised from 100000000 at 87.2M used)"
     }
   ],
   "contract_versions": {
@@ -56,7 +56,7 @@
       "approved": "not-needed",
       "applied": true,
       "reaudit": "toys-spec/racer-mecha/build-a-toy/drafts/amend-a-notes.md",
-      "resume": null,
+      "resume": "resumed",
       "design_check": {
         "name": "Stage 3d: global clearance rows list Interface-declared contacts",
         "issue": null,
@@ -76,7 +76,7 @@
       "approved": "not-needed",
       "applied": true,
       "reaudit": "toys-spec/racer-mecha/build-a-toy/drafts/amend-a-notes.md",
-      "resume": null,
+      "resume": "resumed",
       "design_check": {
         "name": "Stage 3d: measure every non-display pose envelope from the pose model",
         "issue": null,
