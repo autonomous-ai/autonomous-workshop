@@ -1,0 +1,187 @@
+{
+  "round": 0,
+  "wish_id": "wish-20261012-054637-a6c52bd4",
+  "toy_dir": "toys/rowan-vale-racer-mecha-v01",
+  "mapping": {
+    "torso": [
+      "part_torso"
+    ],
+    "nose": [
+      "part_nose"
+    ],
+    "head": [
+      "part_head"
+    ],
+    "arm-shell": [
+      "part_arm-shell"
+    ],
+    "forearm": [
+      "part_forearm"
+    ],
+    "thigh": [
+      "part_thigh"
+    ],
+    "shin": [
+      "part_shin"
+    ],
+    "spine": [
+      "part_spine"
+    ],
+    "front-wheel": [
+      "part_front-wheel"
+    ],
+    "rear-wheel": [
+      "part_rear-wheel"
+    ]
+  },
+  "count_evidence": "leaf occurrence names in assembled.step (arm_shell_1/2, forearm_1/2, thigh_1/2, shin_1/2, front_wheel_1/2, rear_wheel_1/2; torso, nose, head, spine once each)",
+  "motion_evidence": "CAD-GATE.json row 26: check_motion --manifest measure/motion.json --deadline 900, rc=0; the final verification passed",
+  "requirements_evidence": "make/verification/renders/SIGNATURE-REVIEW.json: 21 rows with matches true, in contract order",
+  "findings": [
+    {
+      "id": "wall:torso",
+      "contract": 3.0,
+      "measured": "0.75 mm; 8 wall regions, e.g. 1.25 around the hip bores and 1.75 at the halo plane",
+      "evidence": "detect/thickness/thickness-torso.md (check_thickness --nozzle 0.4 --min-wall 3.0 on a copy of make/source/cad)",
+      "unverified": false
+    },
+    {
+      "id": "wall:nose",
+      "contract": 2.0,
+      "measured": "0.33 mm thinnest; 1 wall region of 1.0 mm at (7.5,-14.2,84.5), next to the knuckle",
+      "evidence": "detect/thickness/thickness-nose.md (check_thickness --nozzle 0.4 --min-wall 2.0 on a copy of make/source/cad)",
+      "unverified": false
+    },
+    {
+      "id": "wall:head",
+      "contract": 3.0,
+      "measured": "1.50 mm; 2 wall regions of 2.0-2.25 mm, the neck post's sides beside the 3.4 slot (8 - 3.4 = 2.3, forced by the contract)",
+      "evidence": "detect/thickness/thickness-head.md (check_thickness --nozzle 0.4 --min-wall 3.0 on a copy of make/source/cad)",
+      "unverified": false
+    },
+    {
+      "id": "extents:thigh",
+      "contract": [
+        25,
+        22,
+        28.5
+      ],
+      "measured": [
+        25.0,
+        22.0,
+        28.2
+      ],
+      "evidence": "inspect entryFacts.size of detect/step/part_thigh.step",
+      "unverified": false
+    },
+    {
+      "id": "wall:thigh",
+      "contract": 3.0,
+      "measured": "1.00 mm; 3 wall regions of 1.0-1.25 around the hip-tongue and knee bores (contract tongue 8 deep around a 3.1 bore forces 2.45)",
+      "evidence": "detect/thickness/thickness-thigh.md (check_thickness --nozzle 0.4 --min-wall 3.0 on a copy of make/source/cad)",
+      "unverified": false
+    },
+    {
+      "id": "extents:shin",
+      "contract": [
+        31,
+        27,
+        84.5
+      ],
+      "measured": [
+        31.0,
+        28.0,
+        84.5
+      ],
+      "evidence": "inspect entryFacts.size of detect/step/part_shin.step",
+      "unverified": false
+    },
+    {
+      "id": "wall:shin",
+      "contract": 3.0,
+      "measured": "1.25 mm; 1 wall region around the knee bore at the shin top",
+      "evidence": "detect/thickness/thickness-shin.md (check_thickness --nozzle 0.4 --min-wall 3.0 on a copy of make/source/cad)",
+      "unverified": false
+    },
+    {
+      "id": "likeness:ref-01-racer-mecha",
+      "contract": 0.9,
+      "measured": 0.8748,
+      "evidence": "detect/likeness/ref-01-racer-mecha.json (render_views --match --search-fov 0,25,40); component STEPs are scored in their print stance, and ADR 0076 removed IoU from Workshop: the run's independent Component Reviewer agreed on every Component with no Component Acceptance",
+      "unverified": false,
+      "advisory_adr_0076": true
+    },
+    {
+      "id": "likeness:ref-04-head",
+      "contract": 0.9,
+      "measured": 0.7896,
+      "evidence": "detect/likeness/ref-04-head.json (render_views --match --search-fov 0,25,40); component STEPs are scored in their print stance, and ADR 0076 removed IoU from Workshop: the run's independent Component Reviewer agreed on every Component with no Component Acceptance",
+      "unverified": false,
+      "advisory_adr_0076": true
+    },
+    {
+      "id": "likeness:ref-09-spine",
+      "contract": 0.9,
+      "measured": 0.5859,
+      "evidence": "detect/likeness/ref-09-spine.json (render_views --match --search-fov 0,25,40); component STEPs are scored in their print stance, and ADR 0076 removed IoU from Workshop: the run's independent Component Reviewer agreed on every Component with no Component Acceptance",
+      "unverified": false,
+      "advisory_adr_0076": true
+    }
+  ],
+  "passed": [
+    "envelope",
+    "extents:torso",
+    "count:torso",
+    "extents:nose",
+    "count:nose",
+    "extents:head",
+    "count:head",
+    "extents:arm-shell",
+    "count:arm-shell",
+    "wall:arm-shell",
+    "extents:forearm",
+    "count:forearm",
+    "wall:forearm",
+    "count:thigh",
+    "count:shin",
+    "extents:spine",
+    "count:spine",
+    "wall:spine",
+    "extents:front-wheel",
+    "count:front-wheel",
+    "wall:front-wheel",
+    "extents:rear-wheel",
+    "count:rear-wheel",
+    "wall:rear-wheel",
+    "likeness:ref-02-torso",
+    "likeness:ref-03-nose",
+    "likeness:ref-05-arm-shell",
+    "likeness:ref-06-forearm",
+    "likeness:ref-07-thigh",
+    "likeness:ref-08-shin",
+    "likeness:ref-10-front-wheel",
+    "likeness:ref-11-rear-wheel",
+    "motion",
+    "requirement:R01",
+    "requirement:R02",
+    "requirement:R03",
+    "requirement:R04",
+    "requirement:R05",
+    "requirement:R06",
+    "requirement:R07",
+    "requirement:R08",
+    "requirement:R09",
+    "requirement:R10",
+    "requirement:R11",
+    "requirement:R12",
+    "requirement:R13",
+    "requirement:R14",
+    "requirement:R15",
+    "requirement:R16",
+    "requirement:R17",
+    "requirement:R18",
+    "requirement:R19",
+    "requirement:R20",
+    "requirement:R21"
+  ]
+}
