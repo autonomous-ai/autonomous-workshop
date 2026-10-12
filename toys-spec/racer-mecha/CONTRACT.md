@@ -142,7 +142,7 @@ fingers split by three vertical grooves, crossed by two knuckle grooves. Prints 
 
 **Thigh.** A block 25 wide (X 0.5 to 25.5) x 22 deep (Y -13 to 9), Z 77.5 to
 92, stepping in to Y -10 to 6 up to Z 95, topped by a hip tongue 10 wide (X 4
-to 14) x 8 deep (Y -6 to 2) to Z 102, rounded R4 about the hip axis Y -2,
+to 14) x 7.4 deep (Y -5.7 to 1.7) to Z 102, rounded R3.7 about the hip axis Y -2,
 Z 102. A knee slot X 7.5 to 22.5, Y -8.5 to 4.5, Z 77.5 to 85 with a
 pointed-arch top, and a wedge notch across the back of the knee: open on
 the bottom face from Y -0.5 to the back face (Y 9), its roof rising at 52
@@ -151,7 +151,8 @@ degrees to Z 89 at the back face. Prints standing on its bottom face (Z 77.5).
 **Shin.** A block 29.5 wide (X 0.5 to 30) x 22 deep, Z 27 to 72, its top
 tapering in to X 2.5 to 28 and Y -9 to 5 up to Z 76, topped by a knee tongue
 14 wide (X 8 to 22) x 8 deep, rounded R4 about the knee axis Y -2, Z 80.5.
-The front carries a raised knee pad 16 wide x 10 tall x 1.0 proud and a
+The block runs Y -13 to 9; the front carries a raised knee pad 16 wide x
+10 tall x 1.0 proud (to Y -14) and a
 white stripe panel. Below
 it the boot, 29 wide (X 2.5 to 31.5), Y -13 to 9, Z 0 to 27, with a heel out
 to Y 14 over X 11 to 31.5; under the shin's inboard edge (X 0.5 to 2.5) the
@@ -241,8 +242,15 @@ designed at most 38 degrees from vertical (a 52 degree rise), the
 print-details design limit, inside the gate's 45.
 
 Load-bearing sections are at least 3 mm: torso walls 3.0, arm shell walls
-2.5 beside a 3.0 front wall, every tongue 8 deep, the neck post 8, the boom
-20. A drop lands on a shoulder wheel or a boot; the wheels and the head are
+2.5 beside a 3.0 front wall, every tongue at least 7.4 deep, the neck post 8, the boom
+20. The one exception is the material around a dowel bore, which the
+joints above size: above a teardrop bore (its faces 38 degrees from
+vertical) inside a Ø7 cheek or knuckle 1.1 is left on the torso and 0.95 on
+the nose; between a bore at Z 102 or Z 80.5 and the bottom face 3 below it,
+1.55 on the torso and the thigh; beside the neck post's 3.4 slot 2.3; around
+an R3.7 or R4 tongue's Ø3.1 bore 2.15 or 2.45. So the torso holds a 1.1 floor, the nose 0.9,
+the thigh 1.4 and the head and shin 1.9, and nothing on them is thinner than
+these joints force. A drop lands on a shoulder wheel or a boot; the wheels and the head are
 the first to come loose, and each presses back on its dowel. The robot
 stands unsupported: its centre of mass lies within 0.5 mm of the boots'
 centre line, 13.3 behind their toes and 8.7 ahead of their heels.
@@ -267,13 +275,13 @@ centre line, 13.3 behind their toes and 8.7 ahead of their heels.
     {"file": "ref-11-rear-wheel.png", "shows": "geometry:rear-wheel", "camera": [0, 0]}
   ],
   "geometries": [
-    {"id": "torso", "name": "Torso", "count": 1, "extents_mm": [61, 45, 93], "wall_min_mm": 3.0},
-    {"id": "nose", "name": "Nose and front wing", "count": 1, "extents_mm": [54, 22.5, 84.5], "wall_min_mm": 2.0},
-    {"id": "head", "name": "Head", "count": 1, "extents_mm": [19, 16, 54], "wall_min_mm": 3.0},
+    {"id": "torso", "name": "Torso", "count": 1, "extents_mm": [61, 45, 93], "wall_min_mm": 1.1},
+    {"id": "nose", "name": "Nose and front wing", "count": 1, "extents_mm": [54, 22.5, 84.5], "wall_min_mm": 0.9},
+    {"id": "head", "name": "Head", "count": 1, "extents_mm": [19, 16, 54], "wall_min_mm": 1.9},
     {"id": "arm-shell", "name": "Upper arm shell", "count": 2, "extents_mm": [20, 22, 45], "wall_min_mm": 2.5},
     {"id": "forearm", "name": "Forearm and fist", "count": 2, "extents_mm": [14, 15, 34.5], "wall_min_mm": 3.0},
-    {"id": "thigh", "name": "Thigh", "count": 2, "extents_mm": [25, 22, 28.5], "wall_min_mm": 3.0},
-    {"id": "shin", "name": "Shin and boot", "count": 2, "extents_mm": [31, 27, 84.5], "wall_min_mm": 3.0},
+    {"id": "thigh", "name": "Thigh", "count": 2, "extents_mm": [25, 22, 28.2], "wall_min_mm": 1.4},
+    {"id": "shin", "name": "Shin and boot", "count": 2, "extents_mm": [31, 28, 84.5], "wall_min_mm": 1.9},
     {"id": "spine", "name": "Spine and rear wing", "count": 1, "extents_mm": [83, 19, 122], "wall_min_mm": 3.0},
     {"id": "front-wheel", "name": "Front wheel", "count": 2, "extents_mm": [38, 38, 16], "wall_min_mm": 2.0},
     {"id": "rear-wheel", "name": "Rear wheel", "count": 2, "extents_mm": [34, 34, 12], "wall_min_mm": 2.0}
@@ -336,7 +344,7 @@ centre line, 13.3 behind their toes and 8.7 ahead of their heels.
      "poses": {"steps": 10, "movers": [
        {"component": "forearm#2", "rotation": {"axis_point": [-40.5, -2, 124], "axis_direction": [1, 0, 0], "start_deg": 0, "end_deg": 180}}]}},
     {"id": "hip-1", "kind": "coupled", "components": ["thigh#1", "shin#1", "rear-wheel#1", "torso"],
-     "text": "Thigh 1's rounded tongue (X 4 to 14, Y -6 to 2) sits in the torso's hip slot (X 3.5 to 14.5, Y -9 to 5, up to Z 108); a 3 x 20 dowel pressed along X through the slot walls at Y -2, Z 102 turns it on a 3.1 bore. The thigh's stepped top stays 0.8 below the torso from 20 degrees forward to 20 back.",
+     "text": "Thigh 1's tongue (X 4 to 14, Y -5.7 to 1.7, rounded R3.7 about the hip axis so it stays 0.5 under the slot's pointed-arch roof) sits in the torso's hip slot (X 3.5 to 14.5, Y -9 to 5, up to Z 108); a 3 x 20 dowel pressed along X through the slot walls at Y -2, Z 102 turns it on a 3.1 bore. The thigh's stepped top stays 0.8 below the torso from 20 degrees forward to 20 back.",
      "yielding": "thigh#1",
      "poses": {"steps": 10, "movers": [
        {"component": "thigh#1", "rotation": {"axis_point": [0, -2, 102], "axis_direction": [1, 0, 0], "start_deg": -20, "end_deg": 20}},
