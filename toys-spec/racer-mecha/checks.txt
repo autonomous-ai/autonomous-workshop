@@ -1,5 +1,5 @@
 Transformation sweeps, robot pose (0%) to car-standing (100%); gap mm (<0 = overlap area)
-  nose       worst    0.50 vs torso at 69%
+  nose       worst    1.00 vs torso at 0%
   head       worst    0.50 vs torso at 86%
   spine      worst    0.50 vs torso at 100%
   forearm#1  worst    0.50 vs arm-shell#1 at 0%
@@ -14,16 +14,14 @@ Posing sweeps from the Display Pose
   thigh#1       -20 deg worst    0.84 vs torso at 100%
   thigh#2       -20 deg worst    0.84 vs torso at 100%
 Static clearances in the Display Pose (pairs closer than 0.5 that are not joined)
-  torso / nose: 0.50
 Car-standing pose: pairs closer than 0.5 (all moves applied)
-  torso / nose: 0.50
 Car on the ground (ground plane is the lowest wheel point; car 'down' is -Y):
-  nose         lowest Y  -19.70  clearance -0.70
   wheel#1      lowest Y  -19.00  clearance  0.00
   wheel#3      lowest Y  -19.00  clearance  0.00
   wheel#2      lowest Y  -19.00  clearance  0.00
   wheel#4      lowest Y  -19.00  clearance  0.00
   torso        lowest Y  -17.50  clearance  1.50
+  nose         lowest Y  -17.50  clearance  1.50
   arm-shell#1  lowest Y  -13.00  clearance  6.00
   thigh#1      lowest Y  -13.00  clearance  6.00
   shin#1       lowest Y  -13.00  clearance  6.00
@@ -35,6 +33,7 @@ Car on the ground (ground plane is the lowest wheel point; car 'down' is -Y):
   head         lowest Y   -7.50  clearance 11.50
   spine        lowest Y    9.50  clearance 28.50
   car length along Z -11.0 .. 261.0 = 272.0
+  car height 48.5 (top Y 29.5)
 Robot balance: centre of mass Y 0.2; feet stand on Y -13 .. 9 (heel to 14 outboard of the spine lane)
 Leg posing sweeps
   hip#1 back 20 deg worst 0.84 vs torso

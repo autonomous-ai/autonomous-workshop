@@ -22,10 +22,10 @@
       "wish_id": "wish-20261012-054637-a6c52bd4",
       "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261012-054637-a6c52bd4/workspace",
       "toy_dir": null,
-      "final_status": "active",
+      "final_status": "waiting (Contract Contradiction need; stop_category unclassified)",
       "brief": null,
       "finding_ids": [],
-      "notes": "Owner chose --agent claude --model claude-opus-5-5 --effort medium. Started 2026-10-12T05:46Z; References: 11 (matches); --check-motion true"
+      "notes": "Owner chose --agent claude --model claude-opus-5-5 --effort medium. Started 2026-10-12T05:46Z; References: 11 (matches); --check-motion true; 08:32Z stopped: 9/10 Components locked (torso open), 86.9M/100M tokens. In-run amendments 1 and 2 (R06) refused by Contract Reviewer; fixed at the root as amend-a."
     }
   ],
   "contract_versions": {
@@ -33,6 +33,55 @@
       "status": "approved",
       "notes": "Images approved by the owner 2026-10-12 (design-a-toy Stage 4); see NOTES.md",
       "backups": []
+    },
+    "amend-a": {
+      "status": "applied",
+      "notes": "build-a-toy/drafts/amend-a-notes.md",
+      "backups": [
+        "build-a-toy/drafts/amend-a-backup/"
+      ]
     }
-  }
+  },
+  "contract_contradictions": [
+    {
+      "id": "cc-r06-head-slide",
+      "attempt": 2,
+      "signature": "3d-declared-contacts:head",
+      "rows": [
+        "Every moving part keeps at least 0.5 mm from every other part through each transformation move and posing range and in both poses. Checked with --check-motion true: one sweep per transformation move in at most 10 steps against only the parts it can reach; a skipped, killed or timed-out sweep fails this requirement.",
+        "The head's 8 x 8 neck post (Y -0.5 to 7.5) slides in the torso's 9 x 9 neck bore below the head pocket (X -4.5 to 4.5, Y -1 to 8, floor Z 119). A 3 x 26 dowel pressed through the torso from front to back along Y at X 0, Z 149.5 runs through the post's 3.4 wide front-to-back slot and stops it at both ends: raised, the helmet's underside is at Z 178 and the neck shows through the pocket's 13 wide front notch (down to Z 170); lowered by 22, the helmet rests on the pocket floor at Z 156."
+      ],
+      "amendment": "amend-a",
+      "visible": false,
+      "approved": "not-needed",
+      "applied": true,
+      "reaudit": "toys-spec/racer-mecha/build-a-toy/drafts/amend-a-notes.md",
+      "resume": null,
+      "design_check": {
+        "name": "Stage 3d: global clearance rows list Interface-declared contacts",
+        "issue": null,
+        "status": "proposed"
+      }
+    },
+    {
+      "id": "cc-r02-car-height",
+      "attempt": 2,
+      "signature": "3d-pose-envelope:spine",
+      "rows": [
+        "In the car pose the toy is an open-wheel Formula car 272 mm long, 101 wide and 44 tall: nose cone and front wing ahead of the front wheels, the arm shells as front sidepods, the legs as rear sidepods, the spine as engine cover with the rear wing behind the tail, and no robot part showing above the bodywork.",
+        "an airbox scoop 12 wide on its front face (Y 15.5 to 22, Z 106 to 118)"
+      ],
+      "amendment": "amend-a",
+      "visible": false,
+      "approved": "not-needed",
+      "applied": true,
+      "reaudit": "toys-spec/racer-mecha/build-a-toy/drafts/amend-a-notes.md",
+      "resume": null,
+      "design_check": {
+        "name": "Stage 3d: measure every non-display pose envelope from the pose model",
+        "issue": null,
+        "status": "proposed"
+      }
+    }
+  ]
 }

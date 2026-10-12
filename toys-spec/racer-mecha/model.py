@@ -29,6 +29,13 @@ def CUT(x0, x1, y0, y1, z0, z1, mirror=False):  # removed material (bores, slots
         out.append(("cut", -x1, -x0, y0, y1, z0, z1))
     return out
 
+def TEARX(x0, x1, y, z, r, tip):  # along X: round R about (y, z), its point `tip` below the axis
+    return [("tearx", x0, x1, y, z, r, tip)]
+
+def tear_yz(p):
+    from shapely.geometry import MultiPoint
+    return MultiPoint([(p[3], p[4] - p[6])]).union(Point(p[3], p[4]).buffer(p[5], 32)).convex_hull
+
 def CUTX(x0, x1, y, z, r):
     return [("cutx", x0, x1, y, z, r)]
 
@@ -44,7 +51,7 @@ P["torso"] = (B(-29, 29, -13, 13, 99, 154) + B(-29, -10.5, -13, 13, 154, 180) + 
               + CUTX(-9.5, 9.5, -14, 180, 6.2)                                                # nose knuckle seat
               + CUT(-4.5, 4.5, -1, 8, 119, 156)                                             # neck post bore
               + CUT(3.5, 14.5, -9, 5, 99, 108, True))                                           # hip tongue slots
-P["nose"] = (CX(-9, 9, -14, 180, 5.7)                                                           # knuckle
+P["nose"] = (TEARX(-9, 9, -14, 180, 3.5, 5.7)                                                 # knuckle: R3.5 round, teardrop 5.7 below the axis
              + B(-9, 9, -33, -19, 140, 176) + B(-6, 6, -30, -19, 110, 140)                    # nose cone (stepped)
              + B(-27, 27, -21, -15, 99, 128) + B(-27, -24, -24, -14, 99, 128) + B(24, 27, -24, -14, 99, 128))
 P["head"] = B(-9.5, 9.5, -7.5, 8.5, 178, 197) + B(-4, 4, -0.5, 7.5, 143, 178)                      # helmet + neck post
@@ -106,6 +113,8 @@ def section_yz(prims, x):
             polys.append(sbox(p[3], p[5], p[4], p[6]))
         elif p[0] == "cylx" and p[1] <= x <= p[2]:
             polys.append(Point(p[3], p[4]).buffer(p[5], 32))
+        elif p[0] == "tearx" and p[1] <= x <= p[2]:
+            polys.append(tear_yz(p))
         elif p[0] == "cyly" and p[1] <= x <= p[2]:
             _, x0, x1, y0, y1, cx, cz, r = p
             if abs(x - cx) <= r:
@@ -130,6 +139,10 @@ def section_xz(prims, y):
             polys.append(sbox(p[1], p[4] - h, p[2], p[4] + h))
         elif p[0] == "cyly" and p[3] <= y <= p[4]:
             polys.append(Point(p[5], p[6]).buffer(p[7], 32).intersection(sbox(p[1], p[6], p[2], p[6] + p[7])))
+        elif p[0] == "tearx":
+            cut = tear_yz(p).intersection(sbox(y - 1e-3, -1e4, y + 1e-3, 1e4))
+            if not cut.is_empty:
+                polys.append(sbox(p[1], cut.bounds[1], p[2], cut.bounds[3]))
     return unary_union(polys).difference(unary_union(cuts))
 
 def xr(prims):
@@ -253,6 +266,8 @@ def report_car():
             b = car_section(n, lo + (hi - lo) * i / 12).bounds
             if b: zs += [b[1], b[3]]
     print(f"  car length along Z {min(zs):.1f} .. {max(zs):.1f} = {max(zs) - min(zs):.1f}")
+    top = max(car_section(n, xr(P[n])[0] + (xr(P[n])[1] - xr(P[n])[0]) * i / 12).bounds[2] for n in P for i in range(13) if car_section(n, xr(P[n])[0] + (xr(P[n])[1] - xr(P[n])[0]) * i / 12).bounds)
+    print(f"  car height {top - ground:.1f} (top Y {top:.1f})")
 
 def report_balance():
     vol = {}; cy = 0; M = 0
