@@ -2,8 +2,25 @@
   "contract": "toys-spec/racer-mecha/CONTRACT.md",
   "title": "Racer Mecha",
   "inventor": "rowan-vale",
-  "rounds": [],
+  "rounds": [
+    {
+      "round": 0,
+      "kind": "wish",
+      "name": "Racer Mecha v01",
+      "wish_id": "wish-20261012-054226-b55c5a47",
+      "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261012-054226-b55c5a47/workspace",
+      "toy_dir": null,
+      "final_status": "active",
+      "brief": null,
+      "finding_ids": [],
+      "notes": "Started 2026-10-12T05:42Z; receipt References: 11 (matches contract); --check-motion true"
+    }
+  ],
   "contract_versions": {
-    "v1": {"status": "approved", "notes": "Images approved by the owner 2026-10-12 (design-a-toy Stage 4); see NOTES.md", "backups": []}
+    "v1": {
+      "status": "approved",
+      "notes": "Images approved by the owner 2026-10-12 (design-a-toy Stage 4); see NOTES.md",
+      "backups": []
+    }
   }
 }
