@@ -47,7 +47,7 @@ straight at the sides, legs straight, head raised, spine flipped up. Envelope
 wheel axles 55, knee pins 80.5, hip pins 102, belly wing 99 to 128, nose
 plate 110 to 180, shoulder pins 157, front wheel axles 188, helmet top 197,
 rear wing top 221. Widths: arms across 101, front wheels across 94, torso 58,
-legs across 51 at the thighs and 60 at the shins.
+legs across 51 at the thighs and 60 at the shins; boots 29 wide, 5 apart.
 
 **Car pose.** Reached by the moves under Transformation. In assembly
 coordinates the car stands on its tail: its length runs along Z (-11 to
@@ -85,8 +85,8 @@ mirrors X.
 
 **Torso.** A core block 58 wide (X -29 to 29) x 26 deep (Y -13 to 13), Z 99
 to 180, its front face plain with engraved panel lines. A head pocket 21 x 19
-(X -10.5 to 10.5, Y -10 to 9), open at the top, floor at Z 156; a notch 13.5
-wide (X -6.75 to 6.75) cuts its front wall down to Z 170, so the neck shows.
+(X -10.5 to 10.5, Y -10 to 9), open at the top, floor at Z 156; a notch 13
+wide (X -6.5 to 6.5) cuts its front wall down to Z 170, so the neck shows.
 A 9 x 9 neck bore (X -4.5 to 4.5, Y -1 to 8) runs from the pocket floor down
 to Z 119. Two wheel towers, X 16 to 29 each side, Y -13 to
 13, rise to Z 192; each carries an Ø8 stub boss out to X 30.5 on the axis
@@ -153,8 +153,8 @@ tapering in to X 2.5 to 28 and Y -9 to 5 up to Z 76, topped by a knee tongue
 14 wide (X 8 to 22) x 8 deep, rounded R4 about the knee axis Y -2, Z 80.5.
 The front carries a raised knee pad 16 wide x 10 tall x 1.0 proud and a
 white stripe panel. Below
-it the boot, 28 wide (X 3.5 to 31.5), Y -13 to 9, Z 0 to 27, with a heel out
-to Y 14 over X 11 to 31.5; under the shin's inboard edge (X 0.5 to 3.5) the
+it the boot, 29 wide (X 2.5 to 31.5), Y -13 to 9, Z 0 to 27, with a heel out
+to Y 14 over X 11 to 31.5; under the shin's inboard edge (X 0.5 to 2.5) the
 boot rises at 52 degrees to meet it. The rear wheel's bore runs along X into the shin's outer face
 at Y -2, Z 55. Prints standing on its boot sole.
 
@@ -284,7 +284,7 @@ centre line, 13.3 behind their toes and 8.7 ahead of their heels.
     {"id": "R07", "scope": "assembly", "text": "Every purchased-part seat is derived from a catalog STEP file, or from the documented envelope when the catalog search is a recorded miss, and the bill of materials lists exactly 6 dowels 3 x 20, 2 dowels 3 x 24, 4 dowels 3 x 26, 3 dowels 3 x 30 and 4 push-on caps for 3 mm shafts."},
     {"id": "R08", "scope": "assembly", "text": "Every joint is built as its Interface text states, each hinge a purchased dowel pressed into a 2.9 mm bore on one side and turning in a 3.1 mm bore (3.2 for the wheels) on the other, with no glue."},
     {"id": "R09", "scope": "assembly", "text": "The robot stands unsupported in the Display Pose: its centre of mass lies over the boots, which span Y -13 to 9."},
-    {"id": "R10", "scope": "geometry:torso", "text": "A 58 x 26 core with engraved panel lines on its front and two wheel towers 13 wide rising 12 above its top corners; between them an open head pocket whose front wall has a 13.5 wide notch so the neck shows, and a small round hinge cheek either side of the notch on the front top edge."},
+    {"id": "R10", "scope": "geometry:torso", "text": "A 58 x 26 core with engraved panel lines on its front and two wheel towers 13 wide rising 12 above its top corners; between them an open head pocket whose front wall has a 13 wide notch so the neck shows, and a small round hinge cheek either side of the notch on the front top edge."},
     {"id": "R11", "scope": "geometry:torso", "text": "An Ø8 stub boss on the outer side of each tower for a front wheel; on the back a recessed cockpit, a raised hoop halo and two spine hinge cheeks at the bottom."},
     {"id": "R12", "scope": "geometry:nose", "text": "A red nose cone with a white stripe down each side, 18 wide at its root tapering to 12, ending in a blunt 4 wide tip, hanging from a hinge knuckle at its root."},
     {"id": "R13", "scope": "geometry:nose", "text": "Below the tip a black front wing 54 wide and 29 tall with a red endplate 3 wide at each end; the cone's tip overlaps the wing's upper half."},
@@ -292,7 +292,7 @@ centre line, 13.3 behind their toes and 8.7 ahead of their heels.
     {"id": "R15", "scope": "geometry:arm-shell", "text": "A 20 x 22 white channel open at the back and the bottom, its top chamfered front and back, with two elbow cheeks at its bottom and two red panels on its front face."},
     {"id": "R16", "scope": "geometry:forearm", "text": "A 14 x 15 white forearm with red side panels, ending at the top in a rounded knuckle and at the bottom in a closed black fist 9 tall and as wide as the forearm, four fingers split by three vertical grooves and crossed by two knuckle grooves."},
     {"id": "R17", "scope": "geometry:thigh", "text": "A 25 x 22 red block whose top steps in and rises into a rounded hip tongue 10 wide toward its inboard side, with a knee slot and a notch across the back of the knee."},
-    {"id": "R18", "scope": "geometry:shin", "text": "A 29.5 x 22 red shin with a raised knee pad and a white stripe panel on its front, a rounded knee tongue 14 wide on top, and a black boot 28 wide below that sticks out 1.5 past the shin's outer side and steps in 3 from its inner side."},
+    {"id": "R18", "scope": "geometry:shin", "text": "A 29.5 x 22 red shin with a raised knee pad and a white stripe panel on its front, a rounded knee tongue 14 wide on top, and a black boot 29 wide below that sticks out 1.5 past the shin's outer side and steps in 2 from its inner side."},
     {"id": "R19", "scope": "geometry:spine", "text": "A black boom 20 wide with an airbox scoop near its hinge knuckle, carrying at its top a rear wing 83 wide and 16 tall with a red endplate at each end that reaches 5.5 below the wing."},
     {"id": "R20", "scope": "geometry:front-wheel", "text": "A black tyre 38 across and 16 wide with a plain tread and a five-spoke rim face on its outer side."},
     {"id": "R21", "scope": "geometry:rear-wheel", "text": "A black tyre 34 across and 12 wide with a plain tread and a five-spoke rim face on its outer side."}
@@ -305,7 +305,7 @@ centre line, 13.3 behind their toes and 8.7 ahead of their heels.
        {"component": "nose", "rotation": {"axis_point": [0, -14, 180], "axis_direction": [1, 0, 0], "start_deg": 0, "end_deg": -180}},
        {"component": "head", "translation": {"vector": [0, 0, -22]}}]}},
     {"id": "head-slide", "kind": "coupled", "components": ["head", "torso"],
-     "text": "The head's 8 x 8 neck post (Y -0.5 to 7.5) slides in the torso's 9 x 9 neck bore below the head pocket (X -4.5 to 4.5, Y -1 to 8, floor Z 119). A 3 x 26 dowel pressed through the torso from front to back along Y at X 0, Z 149.5 runs through the post's 3.4 wide front-to-back slot and stops it at both ends: raised, the helmet's underside is at Z 178 and the neck shows through the pocket's 13.5 wide front notch (down to Z 170); lowered by 22, the helmet rests on the pocket floor at Z 156.",
+     "text": "The head's 8 x 8 neck post (Y -0.5 to 7.5) slides in the torso's 9 x 9 neck bore below the head pocket (X -4.5 to 4.5, Y -1 to 8, floor Z 119). A 3 x 26 dowel pressed through the torso from front to back along Y at X 0, Z 149.5 runs through the post's 3.4 wide front-to-back slot and stops it at both ends: raised, the helmet's underside is at Z 178 and the neck shows through the pocket's 13 wide front notch (down to Z 170); lowered by 22, the helmet rests on the pocket floor at Z 156.",
      "yielding": "head",
      "poses": {"steps": 10, "movers": [
        {"component": "head", "translation": {"vector": [0, 0, -22]}}]}},

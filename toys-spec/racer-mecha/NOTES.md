@@ -250,3 +250,18 @@ Every length is a stocked ISO 8734 Ø3 length (20, 24, 26, 30). The model's
 re-run after all of this is in `checks.txt`; every move keeps 0.5 or more.
 The model is boxes and cylinders, not the final sculpted shapes: Make's own
 `--check-motion` sweep is the binding check (R06).
+
+### Image fixes (2026-10-12, after the audit)
+
+The person asked to fix the images instead of listing the differences.
+
+| Ref | New source | Fix | Measured after | Verdict |
+|---|---|---|---|---|
+| ref-02 torso | j-torso, edit of d-torso | added the Ø3 retainer hole at 54% height | width 60.9; notch 12.6 | ok; notch amended to 13 |
+| ref-04 head | j-head, edit of g-head-bg | widened the neck slot | slot 3.7 to 3.8 (contract 3.4); post 7.5 | ok |
+| ref-05 arm shell | j-arm, edit of c-arm-bg | added the two elbow cheeks | width 20.0; cheeks 3.5 wide (contract 2.5) | residual 1 mm: the cheeks keep 2.5 so the 14 forearm fits between them |
+| ref-08 shin | l-shin, generated from the assembly's leg (leg-crop of a1) | the isolated shins had dropped the leg's inner block; the prompt names both blocks | shin 29.5, boot 29.4 stepped in 1.7, boot 26 tall | ok; boot amended to 29 (X 2.5 to 31.5), within 5% of ref-01's 28.1 and ref-08's 30.1 |
+
+Attempts that failed and were not used: h-shin (edit of e-shin), j-shin
+(from the leg crop, boot still wider than the shin), k-shin (pixel-keeping
+erase of the crop; the model redrew it at the same wrong ratio).
