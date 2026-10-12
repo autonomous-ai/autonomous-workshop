@@ -10,10 +10,10 @@
       "wish_id": "wish-20261012-054226-b55c5a47",
       "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261012-054226-b55c5a47/workspace",
       "toy_dir": null,
-      "final_status": "active",
+      "final_status": "waiting (stop_category unclassified)",
       "brief": null,
       "finding_ids": [],
-      "notes": "Started 2026-10-12T05:42Z; receipt References: 11 (matches contract); --check-motion true"
+      "notes": "Started 2026-10-12T05:42Z; receipt References: 11 (matches contract); --check-motion true; 05:42:31Z Codex exited code 1 after 1.6 s with no events (codex-turn-failure.json: incomplete-exit, stderr 682 bytes not kept). Standalone codex works. Same failure in wish-20261007-045728-5f073b6e. Worktree venv built from conda Python (no local uv.toml/.python-version pin). Awaiting owner decision."
     }
   ],
   "contract_versions": {
