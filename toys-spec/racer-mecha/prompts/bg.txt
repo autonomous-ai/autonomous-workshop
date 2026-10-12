@@ -1,0 +1,1 @@
+Edit the attached image: replace ONLY the background with a perfectly flat, uniform medium grey (#7f7f7f) with no gradient, no shadow and no floor. Keep the object EXACTLY as it is - same shape, size, position, proportions, colours and details, pixel for pixel. No text.

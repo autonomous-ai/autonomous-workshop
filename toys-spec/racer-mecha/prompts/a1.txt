@@ -1,0 +1,13 @@
+Product reference render of the attached transforming robot toy (same design, same red / white / black racing livery, same parts), now seen STRAIGHT FROM THE FRONT, orthographic, camera level with the chest, symmetric, standing upright, legs straight and parallel, arms hanging straight down at the sides. Plain flat light grey seamless background, soft even studio light, whole toy inside the frame with margin, no shadow on the background, no text.
+Proportions must be exact (heights as a fraction of the total height from the boot soles to the top of the rear wing behind the head):
+- black boots: from 0 to 12%; the boots stand on the floor, flat soles.
+- a black rear wheel on the OUTER side of each lower leg, centred at 23% height, wheel diameter 16% of the total height, the wheel's outer edge is the widest point of the legs.
+- knee joint at 36%; hip / crotch at 45%.
+- legs: two chunky red legs side by side with only a hairline gap between them; together they are as wide as the torso.
+- a black front wing (horizontal plate with red endplates) across the belly from 45% to 58%, as wide as the torso.
+- the red nose cone with white side stripes runs down the centre of the chest from 81% down to its tip at 50%, about 20% of the total width, overlapping the top of the front wing.
+- torso (black) from 45% up to 87%, about half the total width.
+- arms: a white/red upper arm hangs from each shoulder from 74% down to 54%, then a white forearm with a black fist down to 44%; the arms sit directly UNDER the shoulder wheels, outside the torso.
+- a black front wheel on each shoulder, centred at 85%, wheel diameter 16%, its outer edge is the widest point of the whole toy (total width = 47% of total height).
+- small white/red helmeted head with a blue visor between the shoulder wheels, top at 90.5%.
+- black rear wing with red endplates behind and above the head, from 91% to 100%, about two thirds of the total width, its endplates inside the shoulder wheels.
