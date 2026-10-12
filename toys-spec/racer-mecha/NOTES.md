@@ -118,3 +118,135 @@ Earlier design changes, before the images: the feet do not fold (the boots
 are the car's tail; a folding foot swept through the shin), the forearm folds
 up and back into a shell open at the back, and the shoulders swing forward
 and back instead of out.
+
+## Follow-up audit (2026-10-12): the steps the first pass skipped
+
+### Stage 1 - composition in Release's frame
+
+Release's hero view is `("hero", 35, 26)` in `src/workshop/release/renders.py`
+(the skill text says 22 degrees; the code wins). Release counts azimuth from
+the front (`turnaround-front` is 0), so in `render_review`'s convention it is
+[-55, 26] or [-125, 26], depending on the renderer's sign; both were checked
+with `camera_composition.py` (input in the session scratchpad, landmarks at
+contract numbers).
+
+| Camera | Nose centre on screen | Nearer arm on screen | Verdict |
+|---|---|---|---|
+| [-55, 26] | x -14.9 | x 25.7 (40.6 away), 9.1 nearer | nose unobstructed; 15 off centre |
+| [-125, 26] | x 14.9 | x -25.7 (40.6 away), 9.1 nearer | nose unobstructed; 15 off centre |
+| [-90, 0] (ref-01) | x 0 | x 40.5 | nose on the centre line |
+
+The `in_front` claim "nose nearer than the arm" fails from the hero camera,
+but the arm is 40 mm to the side on screen and covers nothing. The prose was
+reworded to say exactly that; no requirement row makes a camera claim.
+
+### Stage 3b - the missing checks
+
+Counts by machine (luminance runs round a circle, or dips along a scan):
+
+| Image | Feature | Contract | Count | Verdict |
+|---|---|---|---|---|
+| ref-10 | spokes | 5 | 5 (radius 0.42 and 0.5 R) | ok |
+| ref-11 | spokes | 5 | 5 at 0.55 R (inner radii read spoke-edge highlights) | ok |
+| ref-06 | finger grooves | was 3 "across" | scans unreliable on the shaded blocks; by eye 3 vertical + 2 knuckle grooves | contract amended to the image |
+
+More dimensioned features, measured at contract scale:
+
+| Image | Feature | Contract | Image | Verdict |
+|---|---|---|---|---|
+| ref-06 | fist height | was 13 | 8.9 | amended to 9 |
+| ref-08 | boot height | 27 (as ref-01) | 21.9 | DISAGREES with ref-01; contract follows ref-01; raised at Stage 4 |
+| ref-03 | knuckle width | was 20 | 17.4 | amended to 18 |
+| ref-03 | endplates | was 2 | 3.0 | amended to 3 |
+| ref-02 | neck notch | was 21 wide | 13.5 | amended to 13.5 |
+| ref-02 | hinge cheeks | was X 10.5 to 16 | X 11.1 to 13.6 | amended to 9.5 to 13.5 |
+| ref-04 | neck slot | 3.4 (the Ø3 pin needs it) | about 1.0 | DISAGREES; cannot shrink; raised at Stage 4 |
+| ref-04 | slot direction | was through along X | drawn through front to back | retainer dowel turned to run along Y |
+
+Depths (Y) and anything on a side, back or bottom face cannot be measured
+from a front view and are not claimed by these images.
+
+Sides: ref-07's tongue sits toward the inboard side, as the contract says.
+ref-05 shows its red panels on the front face, not the outboard face: the
+contract was amended. ref-08's boot does not step in on the inboard side
+(the boot disagreement above).
+
+Reference cameras and the cues they were read from:
+
+| Ref | Camera | Cue |
+|---|---|---|
+| ref-01 | [-90, 0] | both sides symmetric, no top faces visible, horizon at chest height |
+| ref-02 to ref-09 | [-90, 0] | front face only, symmetric left-right, no top or side faces |
+| ref-10, ref-11 | [0, 0] | the rim face is a full circle: seen square-on from the wheel's outer side (+X for #1) |
+
+Joint features each camera can see:
+
+| Component | Feature | Visible from its camera | Image shows it |
+|---|---|---|---|
+| torso | nose hinge cheeks, stub bosses, neck notch | yes | yes |
+| torso | head retainer bore on the chest, Ø2.9 | yes | no (3 mm hole; minor) |
+| torso | shoulder bores, hip slots, spine cheeks | no | - |
+| nose | knuckle | yes | yes |
+| head | neck post and slot | yes | yes, slot too thin |
+| arm shell | elbow cheeks, 2 below the front wall | yes | no (minor) |
+| forearm | knuckle | yes | yes |
+| thigh | hip tongue | yes | yes |
+| shin | knee tongue | yes | yes |
+| spine | knuckle, airbox scoop | yes | yes |
+| wheels | bore and cap | yes | yes |
+
+### Stage 3c - against the print-details library
+
+`print_details.py --limits --nozzle 0.4`: min_wall 0.8, min_feature 2.0,
+min_relief_width 0.9, min_relief_height 0.5, min_cut_width 0.5,
+min_cut_depth 0.5, min_web 1.6, overhang 45, **design_overhang 38**. The first
+pass used 45 degree chamfers, at the gate's limit with no margin; every
+chamfer, gusset, arch, wedge and teardrop is now designed at a 52 degree rise.
+
+Stacked and repeated details:
+
+| Detail | Host | Check | Verdict |
+|---|---|---|---|
+| knee pad 16 x 10, 1.0 proud | shin front 29.5 wide | host >= 17 | ok |
+| crest 2 wide, 1.5 high | helmet top 19 wide, convex | host >= 3 | ok |
+| 3 vertical finger grooves, 0.6 | fist 14 wide | webs (14 - 1.8) / 4 = 3.05 >= 1.6 | ok |
+| 2 knuckle grooves, 0.6 | fist 9 tall | webs (9 - 1.2) / 3 = 2.6 >= 1.6 | ok |
+| panel lines, 0.6 | torso front, spacing 14 | web >= 1.6 | ok |
+| 5 spokes, 3 wide | rim | >= 0.8 | ok |
+| airbox scoop opening 8 x 4 | boom front | cut >= 0.5 | ok |
+
+Supports found on the second pass and resolved:
+
+| Part | Problem | Resolution |
+|---|---|---|
+| torso | spine lane cut at the bed: a 4.5 cantilever ceiling | lane removed; the boom's root steps in instead |
+| torso | halo hoop legs stand out 7 | legs grow out over 9 at a 52 degree rise; opening 11 (bridge <= 12) |
+| torso | cockpit recess top edge | rises at 52 degrees |
+| head | post floated 4.5 above the bed in the back-down stance | post moved back flush with the helmet's back |
+| nose | knuckle's underside and the root behind the cone | teardrop knuckle (38 degree faces) and a 52 degree root; torso seat grown to R6.2 |
+| nose | cone tip in front of the wing | tip underside rises 52 degrees |
+| thigh | back-of-knee notch: a 9 cantilever roof | wedge roof rising 52 degrees |
+| arm shell | front top chamfer at 45 | 52 degree rise to a flat from Y -5.3 |
+
+Ceilings over moving parts: forearm cavity open at the back (the print's
+top); head pocket open; hip and knee slots pointed arches. `swept_ceiling.py`
+does not apply: no part turns about an axis normal to another part's bed.
+
+### Stage 3d - dowels
+
+| Joint | Dowel | Pressed | Through | Verdict |
+|---|---|---|---|---|
+| nose | 3 x 26 (X -13 to 13) | 3.5 in each cheek | knuckle 18 + 2 x 0.5 | ok (was 3 x 32, too long) |
+| head retainer | 3 x 26 (Y -13 to 13) | 12 front, 5 back | neck post slot | ok (turned to Y) |
+| shoulder | 3 x 20 | 13 in the shell | 5.5 of torso wall | ok |
+| elbow | 3 x 20 | 2.5 in each cheek | knuckle 14 | ok |
+| hip | 3 x 20 (X 1.5 to 21.5) | 2 and 7 in the slot walls | tongue 10 | ok |
+| knee | 3 x 24 (X 1 to 25) | 6.5 and 2.5 | tongue 14 | ok (3 x 20 left 0.5 in the outer wall) |
+| spine | 3 x 30 | 4.5 in each cheek | knuckle 20 | ok |
+| front wheels | 3 x 30 | 12 in tower and boss | wheel 16, cap 1.5 | ok |
+| rear wheels | 3 x 26 | 12 in the shin | wheel 12, cap 1.5 | ok |
+
+Every length is a stocked ISO 8734 Ø3 length (20, 24, 26, 30). The model's
+re-run after all of this is in `checks.txt`; every move keeps 0.5 or more.
+The model is boxes and cylinders, not the final sculpted shapes: Make's own
+`--check-motion` sweep is the binding check (R06).
