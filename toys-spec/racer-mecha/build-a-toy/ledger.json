@@ -40,6 +40,13 @@
       "backups": [
         "build-a-toy/drafts/amend-a-backup/"
       ]
+    },
+    "amend-b": {
+      "status": "applied",
+      "notes": "build-a-toy/drafts/amend-b-notes.md",
+      "backups": [
+        "build-a-toy/drafts/amend-b-backup/"
+      ]
     }
   },
   "contract_contradictions": [
@@ -79,6 +86,26 @@
       "resume": "resumed",
       "design_check": {
         "name": "Stage 3d: measure every non-display pose envelope from the pose model",
+        "issue": null,
+        "status": "proposed"
+      }
+    },
+    {
+      "id": "cc-r05-elbow-forward",
+      "attempt": 2,
+      "signature": "3d-posing-sweep:forearm",
+      "rows": [
+        "Posing ranges in the robot: shoulders 90 degrees forward and 30 back, elbows 90 forward, hips 20 forward and 20 back, knees 45 back, each holding its pose by friction.",
+        "A 20 x 22 white channel open at the back and the bottom, its top chamfered front and back, with two elbow cheeks at its bottom and two red panels on its front face."
+      ],
+      "amendment": "amend-b",
+      "visible": false,
+      "approved": "owner 2026-10-12",
+      "applied": true,
+      "reaudit": "toys-spec/racer-mecha/build-a-toy/drafts/amend-b-notes.md",
+      "resume": null,
+      "design_check": {
+        "name": "Stage 3d: sweep every posing range in its signed direction, not the transformation's",
         "issue": null,
         "status": "proposed"
       }

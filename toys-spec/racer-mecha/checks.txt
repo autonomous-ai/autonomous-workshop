@@ -4,8 +4,6 @@ Transformation sweeps, robot pose (0%) to car-standing (100%); gap mm (<0 = over
   spine      worst    0.50 vs torso at 100%
   forearm#1  worst    0.50 vs arm-shell#1 at 0%
   forearm#2  worst    0.50 vs arm-shell#2 at 0%
-  forearm#1    elbow forward 90 deg worst    0.50 vs arm-shell#1 at 0%
-  forearm#2    elbow forward 90 deg worst    0.50 vs arm-shell#2 at 0%
 Posing sweeps from the Display Pose
   arm-shell#1  shoulder forward 90 deg worst    0.89 vs wheel#1
   arm-shell#1  shoulder back 30 deg worst    3.33 vs wheel#1

@@ -207,8 +207,9 @@ From robot to car, in this order (reverse for car to robot):
    above the torso over the head pocket.
 5. Lay the car down on its wheels.
 
-Posing in the robot: shoulders 90 forward and 30 back; elbows 90 forward;
-hips 20 forward and 20 back; knees 45 back.
+Posing in the robot: shoulders 90 forward and 30 back; hips 20 forward and
+20 back; knees 45 back. The elbows do not bend forward: the arm shell's
+front wall reaches its bottom.
 
 ## Motion and fit
 
@@ -282,7 +283,7 @@ centre line, 13.3 behind their toes and 8.7 ahead of their heels.
     {"id": "R02", "scope": "assembly", "text": "In the car pose the toy is an open-wheel Formula car 272 mm long, 101 wide and 48.5 tall: nose cone and front wing ahead of the front wheels, the arm shells as front sidepods, the legs as rear sidepods, the spine as engine cover with the rear wing behind the tail, and no robot part showing above the bodywork."},
     {"id": "R03", "scope": "assembly", "text": "The robot becomes the car by five moves and no part comes off: the spine flips down 180 degrees onto the legs, each forearm folds 180 degrees up into its arm shell, the head slides 22 mm down into its pocket, the nose folds up 180 degrees over the pocket, and the car is laid on its wheels."},
     {"id": "R04", "scope": "assembly", "text": "In the car pose the car rests on all four wheels, every other part at least 1.5 mm above the ground, and each wheel turns freely on its dowel."},
-    {"id": "R05", "scope": "assembly", "text": "Posing ranges in the robot: shoulders 90 degrees forward and 30 back, elbows 90 forward, hips 20 forward and 20 back, knees 45 back, each holding its pose by friction."},
+    {"id": "R05", "scope": "assembly", "text": "Posing ranges in the robot: shoulders 90 degrees forward and 30 back, hips 20 forward and 20 back, knees 45 back, each holding its pose by friction."},
     {"id": "R06", "scope": "assembly", "text": "Every moving part keeps at least 0.5 mm from every other part through each transformation move and posing range and in both poses, except at the contacts the head-slide Interface itself declares: the 3 mm dowel running in and stopping against the neck post's 3.4 wide slot, and the lowered helmet resting on the head pocket floor. Checked with --check-motion true: one sweep per transformation move in at most 10 steps against only the parts it can reach; a skipped, killed or timed-out sweep fails this requirement."},
     {"id": "R07", "scope": "assembly", "text": "Every purchased-part seat is derived from a catalog STEP file, or from the documented envelope when the catalog search is a recorded miss, and the bill of materials lists exactly 6 dowels 3 x 20, 2 dowels 3 x 24, 4 dowels 3 x 26, 3 dowels 3 x 30 and 4 push-on caps for 3 mm shafts."},
     {"id": "R08", "scope": "assembly", "text": "Every joint is built as its Interface text states, each hinge a purchased dowel pressed into a 2.9 mm bore on one side and turning in a 3.1 mm bore (3.2 for the wheels) on the other, with no glue."},
@@ -325,12 +326,12 @@ centre line, 13.3 behind their toes and 8.7 ahead of their heels.
        {"component": "arm-shell#2", "rotation": {"axis_point": [0, -2, 157], "axis_direction": [1, 0, 0], "start_deg": 30, "end_deg": -90}},
        {"component": "forearm#2", "rotation": {"axis_point": [0, -2, 157], "axis_direction": [1, 0, 0], "start_deg": 30, "end_deg": -90}}]}},
     {"id": "elbow-1", "kind": "coupled", "components": ["forearm#1", "arm-shell#1"],
-     "text": "A 3 x 20 dowel pressed into arm shell 1's two elbow cheeks (X 30.5 to 33 and 48 to 50.5) along X at Y -2, Z 124 turns forearm 1's R7.5 knuckle on a 3.1 bore. The forearm folds 180 degrees up and back into the shell's cavity (X 33 to 48, Y -10 to 9, Z 118 to 152.6), entering through its open back; it also bends 90 degrees forward. 0.5 clearance throughout.",
+     "text": "A 3 x 20 dowel pressed into arm shell 1's two elbow cheeks (X 30.5 to 33 and 48 to 50.5) along X at Y -2, Z 124 turns forearm 1's R7.5 knuckle on a 3.1 bore. The forearm folds 180 degrees up and back into the shell's cavity (X 33 to 48, Y -10 to 9, Z 118 to 152.6), entering through its open back. 0.5 clearance throughout.",
      "yielding": "forearm#1",
      "poses": {"steps": 10, "movers": [
        {"component": "forearm#1", "rotation": {"axis_point": [40.5, -2, 124], "axis_direction": [1, 0, 0], "start_deg": 0, "end_deg": 180}}]}},
     {"id": "elbow-2", "kind": "coupled", "components": ["forearm#2", "arm-shell#2"],
-     "text": "Mirror of elbow-1: a 3 x 20 dowel pressed into arm shell 2's elbow cheeks along X at Y -2, Z 124 turns forearm 2's knuckle on a 3.1 bore; the forearm folds 180 degrees up and back into the cavity through the open back, and bends 90 degrees forward.",
+     "text": "Mirror of elbow-1: a 3 x 20 dowel pressed into arm shell 2's elbow cheeks along X at Y -2, Z 124 turns forearm 2's knuckle on a 3.1 bore; the forearm folds 180 degrees up and back into the cavity through the open back.",
      "yielding": "forearm#2",
      "poses": {"steps": 10, "movers": [
        {"component": "forearm#2", "rotation": {"axis_point": [-40.5, -2, 124], "axis_direction": [1, 0, 0], "start_deg": 0, "end_deg": 180}}]}},

@@ -206,10 +206,7 @@ if __name__ == "__main__":
     for m in ["nose", "head", "spine", "forearm#1", "forearm#2"]:
         g = sweep(m, allp)
         print(f"  {m:10s} worst {g[0]:7.2f} vs {g[1]} at {g[2]}%")
-    for m, deg in [("forearm#1", 90), ("forearm#2", 90)]:   # elbow posing: forearm bends forward
-        MOVES["_p"] = ("rx", (-2, 124), deg); P["_p"] = P[m]
-        g = sweep("_p", [o for o in allp if o != m]); del MOVES["_p"], P["_p"]
-        print(f"  {m:12s} elbow forward {deg} deg worst {g[0]:7.2f} vs {g[1]} at {g[2]}%")
+    # no elbow posing: the forearm bends only back (the +180 fold above); forward (-deg) hits the shell's front wall (amend-b)
     print("Posing sweeps from the Display Pose")
     for m, (k, ax, deg) in POSING.items():
         side = m[-2:]
