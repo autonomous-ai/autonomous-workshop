@@ -100,3 +100,42 @@ changes to the U; the cockpit opening starts 0.5 above the bar (132.5).
 
 ref-05 arm shell, ref-06 forearm, ref-11 and ref-12 wheels are unchanged
 v01 parts. The halo is a U in ref-01 and ref-02, and the contract follows.
+
+## v3 - contract follows the livery robot (owner chose 1, 2026-10-13)
+
+The owner found the gen12 reference set much uglier than the step sheet. The
+cause: flat orthographic renders on a pixel grid, and an assembly forced to
+the contract's narrow numbers. The approved step-sheet robot (v2-steps/rA)
+recoloured into the livery (prototypes/v2-livery-restyle.png, option 1) is
+the new ref-01: gen13/l1 -> green background (g1) -> shoulder fins removed
+(nf1), keyed, x0.97 to 124 x 207, camera [-90, 15] (front, chest top
+visible). The contract is re-laid out from its measurements at height 207:
+
+| Landmark | image | v3 contract |
+|---|---|---|
+| boots | 0-30 (top face seen), X 11-44 | 0-26, X 11-43 |
+| shin | cuff 30-45 X 3-37; block X 3.6-31.7 | cuff 26.5-45 X 3-34.5; block 45-73.5 X 3.5-31.5 |
+| rear wheel | Z 45-81, X 35-47 | Ø34 at Z 63, X 35-47 |
+| thigh | 94-117, X 5.5-28 | 90-115, X 5.5-28 |
+| torso | 117-190, ±28.5 | 117-190, ±28.5 |
+| halo | closed loop ±15, 132-180 | closed loop ±15, 132-179 |
+| cockpit | ±10, 138-173 | ±10, 138-173, 3.5 deep |
+| helmet | 186-207, 18 wide | 188-207, 19 wide |
+| arm | X 34-62.5, 85-171, fist 85-109 | X 34-62, 85-171, fist 85-109 |
+| shoulder towers | blocks X 28.5-44, 174-194 | X 28.5-43 to 195, 52 degree wedge under |
+| front wheel | X 44-60, Z 171-202 | Ø32 x 16, X 43.5-59.5, axis Z 189 |
+
+Mechanism changes forced by the new layout: the arm shell is the whole white
+arm and the fist alone folds into it (elbow at Z 116, 3 x 28 elbow dowel);
+the shoulder pivots at Z 160 on a torso boss, the arm's top rounded R11 about
+it so it clears the tower and the wheel at every angle; the front axle moves
+to Y 3 so the smaller front wheels still touch the ground; the cockpit is 3.5
+deep to keep 1.5 to the head pocket; the knee slide uses a 3 x 22 dowel with
+the post 16.5 wide; the boots sit outboard of the shins and the wing blades
+reach inboard to the centre line. No crotch block: it could not print. The
+nose keeps its length, 10 higher. Model: every check passes (checks.txt);
+car 286.5 long, 124 wide, 45 tall.
+
+Residuals in ref-01: no red blades are drawn on the toes, and the boots read
+4 taller because their top faces show. Every part reference from gen12 is
+now stale (style and size) and is redrawn next in the ref-01 style.

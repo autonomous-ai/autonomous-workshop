@@ -1,0 +1,1 @@
+Replace only the background of this toy photo with a flat uniform chroma-green (#00b140) background and remove the shadow on the floor. Keep the toy itself pixel-for-pixel identical: same position, size, shapes, colours, lighting and shading. No text.
