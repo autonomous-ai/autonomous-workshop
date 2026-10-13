@@ -1,0 +1,7 @@
+Product reference render of ONE separate 3D-printed part of the attached block-built transforming robot toy, shown ALONE (no other parts), same style, colours, block seams and matte plastic as the attached toy, centred, whole part inside the frame with a wide margin, flat uniform chroma-green (#00b140) background, soft even light, no shadow, no text, no labels. Proportions are exact. Straight-on FRONT orthographic view, camera level.
+The part: the SHIN, overall 34 wide x 75.75 tall (width/height 0.45), from bottom to top:
+- Bottom 24% of the height: a NARROW red ankle tongue only 17 wide (HALF the shin's width), centred, hanging below the block, its bottom end a half-round.
+- 24% to 69%: the red shin block, full width 34, built from small red blocks with seams, with a WHITE stripe panel 8 wide down the middle of its front.
+- 69% to 91%: a thin red knee guard plate 30 wide, flush with the block's LEFT edge (4 short of its right edge).
+- 91% to 100%: the top of a BLACK post 24 wide showing above the knee guard, 3 in from the left edge.
+No wheel, no boot, no thigh.

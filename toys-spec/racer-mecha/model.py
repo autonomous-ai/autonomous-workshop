@@ -37,23 +37,23 @@ def sym(prims):
 
 P = {}
 # ---- torso: v01 core, towers and hip slots; cockpit and halo now on the FRONT, nose hinge at the top of the back
-P["torso"] = (B(-29, 29, -13, 13, 115, 154)
+P["torso"] = (B(-29, 29, -13, 13, 106, 154)
               + sym(B(10.5, 29, -13, 13, 154, 180))                      # pocket side walls
               + B(-6.5, 6.5, -13, -10, 154, 170) + sym(B(6.5, 10.5, -13, -10, 154, 180))   # front wall with neck notch
               + B(-10.5, 10.5, 9, 13, 154, 180)                           # pocket back wall
               + sym(B(16, 29, -13, 13, 180, 192))                         # wheel towers
               + sym(CX(29, 30.5, 0, 188, 4))                              # wheel stub bosses
               + sym(CX(10.5, 14.5, 14, 182, 3.5)) + sym(B(10.5, 14.5, 10.5, 14, 176, 182))   # nose hinge cheeks, top of the back
-              + sym(B(8, 11, -20, -13, 124, 155.5)) + B(-11, 11, -20, -13, 152.5, 155.5)          # halo hoop on the chest
-              + CUT(-8, 8, -13, -7, 126, 152.5)                             # cockpit opening, 6 deep
+              + sym(B(8, 11, -20, -13, 129, 155.5)) + B(-11, 11, -20, -13, 129, 132)          # halo on the chest: two legs and a bottom bar, open at the top
+              + CUT(-8, 8, -13, -7, 132.5, 152.5)                             # cockpit opening, 6 deep
               + CUTX(-10.5, 10.5, 14, 182, 4.0)                           # seat round the nose knuckle
               + CUT(-4.5, 4.5, -1, 8, 125.5, 156)                           # neck bore
-              + sym(CUT(3.5, 14.5, -9, 5, 115, 124)))                      # hip slots
+              + sym(CUT(3.5, 14.5, -9, 5, 106, 115)))                      # hip slots
 P["head"] = B(-9.5, 9.5, -7.5, 8.5, 178, 197) + B(-4, 4, -0.5, 7.5, 148, 178)
 # ---- nose: hinged at the top of the back (Y 14, Z 182), lying down the back, front wing behind the thighs
 P["nose"] = (CX(-10, 10, 14, 182, 3.5)
              + B(-10, 10, 13.5, 21, 172, 179)                             # root block under the knuckle
-             + B(-9, 9, 13.5, 27, 140, 172) + B(-6, 6, 13.5, 24, 109, 140)   # cone, stepped taper
+             + B(-9, 9, 13.5, 27, 131, 172) + B(-6, 6, 13.5, 24, 109, 131)   # cone, stepped taper
              + B(-6, 6, 17, 21, 102, 109)                                 # cone tip, overlapping the wing's upper half
              + B(-42, 42, 21, 27, 96, 109)                            # front wing plate
              + sym(B(39, 42, 13.5, 27, 96, 109)))                         # wing endplates
@@ -62,12 +62,12 @@ P["arm-shell#1"] = (B(30.5, 50.5, -13, 9, 120, 157) + B(30.5, 50.5, -13, 9, 157,
                     + CUT(33, 48, -10, 9, 118, 152.6))
 P["forearm#1"] = B(33.5, 47.5, -9.5, 5.5, 97, 124) + CX(33.5, 47.5, -2, 124, 7.5)
 # ---- thigh: a sleeve open at the bottom; the shin's post slides 16 up into it
-P["thigh#1"] = (B(0.5, 30.5, -13, 9, 86, 109.5) + B(0.5, 30.5, -10, 6, 109.5, 112.5)
-                + B(4, 14, -5.7, 1.7, 112.5, 118) + CX(4, 14, -2, 118, 3.7)
-                + CUT(3, 28, -10.5, 6.5, 86, 109.5))
+P["thigh#1"] = (B(0.5, 30.5, -13, 9, 77, 100.5) + B(0.5, 30.5, -10, 6, 100.5, 103.5)
+                + B(4, 14, -5.7, 1.7, 103.5, 109) + CX(4, 14, -2, 109, 3.7)
+                + CUT(3, 28, -10.5, 6.5, 77, 100.5))
 # ---- shin: block, top post with the knee-slide dowel, knee guard in front of the post, ankle tongue below
-P["shin#1"] = (B(0.5, 34.5, -13, 9, 26.5, 69.5) + B(3.5, 27.5, -10, 6, 69.5, 93)
-               + B(0.5, 30.5, -15, -13.5, 69.5, 86)
+P["shin#1"] = (B(0.5, 34.5, -13, 9, 26.5, 60.5) + B(3.5, 27.5, -10, 6, 60.5, 84)
+               + B(0.5, 30.5, -15, -13.5, 60.5, 77)
                + B(9, 26, -0.25, 7.75, 12.25, 26.5) + CX(9, 26, 3.75, 12.25, 4))
 # ---- boot: long foot, toe 17 ahead of the shin; slot for the ankle tongue open at the top and the heel
 P["boot#1"] = (B(2.5, 34.5, -30, 3.75, 0, 26) + B(2.5, 34.5, 3.75, 11.5, 0, 12.25)
@@ -218,8 +218,8 @@ def report_posing():
     leg = ["thigh#1", "shin#1", "boot#1", "wing#1", "rear-wheel#1"]
     tests = [("shoulder#1 forward 90", ["arm-shell#1", "forearm#1"], (-2, 157), -90),
              ("shoulder#1 back 5", ["arm-shell#1", "forearm#1"], (-2, 157), 5),
-             ("hip#1 forward 20", leg, (-2, 118), -20),
-             ("hip#1 back 15", leg, (-2, 118), 15)]
+             ("hip#1 forward 20", leg, (-2, 109), -20),
+             ("hip#1 back 20", leg, (-2, 109), 20)]
     for label, group, ax, deg in tests:
         worst = (1e9, "")
         for k in range(13):

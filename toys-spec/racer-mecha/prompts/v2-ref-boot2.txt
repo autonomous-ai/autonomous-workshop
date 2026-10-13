@@ -1,0 +1,7 @@
+Product reference render of ONE separate 3D-printed part of the attached block-built transforming robot toy, shown ALONE (no other parts), same style, colours, block seams and matte plastic as the attached toy, centred, whole part inside the frame with a wide margin, flat uniform chroma-green (#00b140) background, soft even light, no shadow, no text, no labels. Proportions are exact. Straight-on SIDE orthographic view, camera level, the boot's TOE pointing to the LEFT of the image.
+The part: the black BOOT seen from its side, overall 41.5 long x 33 tall (length/height 1.26), measured from the toe at the left:
+- The main body is a TALL block 26 high (79% of the full height), from the toe to 81% of the length, its top flat.
+- At the right end the heel is lower: its top is a quarter-circle that falls from 20 high down to a vertical heel face 12.25 high. A small round hole sits at the centre of that quarter circle, 12.25 up.
+- At the toe a narrow hinge lug, 3.5 wide, rises only 7 above the flat top (to 33), its top rounded.
+- Sides split by seams into small black blocks.
+No other parts.

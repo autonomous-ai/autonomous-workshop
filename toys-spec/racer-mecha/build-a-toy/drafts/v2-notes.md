@@ -60,3 +60,43 @@ Forced by the move:
 - Boots are 6 taller in front only; the ankle stays at (3.75, 12.25) so the
   folded boot still sits 3 above the car's ground. Hinge A rises 6, so the
   car's rear wing stands 6 higher: car height 45 (was 39). Length 276.5 kept.
+
+## v2c - contract follows the approved-style assembly image (Stage 3b)
+
+Five image rounds from the chunky concept (gen11 a-e: c1 -> a1 -> b1 -> d1
+-> e1). The image model would not put the torso bottom at 115: rounds landed
+it at 124, 92-104 and 106. e1 is the best image (legs wide, chunky, halo
+round the cockpit), with the torso's bottom at 106 and the halo at 129-157.
+The image is the better object and v2b's 115 cannot be drawn, so the
+contract follows it: torso bottom 106, hip 109, thigh 77-103.5, slide post
+60.5-84 with the knee guard to 77, shin block 26.5-60.5 (34), slide slots
+80-96, cockpit 131-152.5 inside a halo 129-155.5. Boots (26), head, nose,
+wing and the car are unchanged. The lower hip gives the thigh room again, so
+the hips swing 20 back. Model rerun: every check passes (checks.txt).
+
+ref-01 = gen11/e1 keyed and narrowed x0.949 to the 101 x 207 envelope.
+Measured at contract scale: boots 0-23/27 (26), legs to 106 (thigh top
+103.5, torso 106), halo 129-157 (129-155.5), helmet 178-198 (178-197), each
+leg 29 wide at the thigh (30), arms 99-174 with the fist 99-120.
+Residuals left: the shoulder wheels are drawn 32 across (contract 38) and
+the arm shells reach 174 (163); the rear wheels are drawn 42-68 (33-67).
+
+Halo: ref-01 draws it as a U (two legs and a bottom bar, open at the top),
+and the torso image is drawn to match. The contract's inverted U (top bar)
+changes to the U; the cockpit opening starts 0.5 above the bar (132.5).
+
+## Stage 3b - v2 references (gen12), measured at contract scale
+
+| Image | Rounds | X scale | Check | Contract | Image | Verdict |
+|---|---|---|---|---|---|---|
+| ref-01 assembly | 5 | 0.949 | see v2c above | | | residuals listed above |
+| ref-02 torso [-90,0] | 3 | 1.172 | core top / notch / halo / halo legs X | 74 / 64 / 23-49.5 / ±11 | 73 / 64.6 / 21-51 / ±9.5 | halo 2 low and 1.5 tall: residual |
+| ref-03 nose [90,0] | 5 | 0.844 | wing / lower cone / step / upper cone | 13 tall, 84 / 12 / Z 35 / 18 | 10, 84 / 12.9 / Z 35 / 21.5 | step amended 140 -> 131 (image); wing 3 short and upper cone 3.5 wide: residual |
+| ref-04 head [-90,0] | 1 | 1.016 | helmet / post | 19 / 30 | 18 / 31 | agree |
+| ref-07 thigh [-90,0] | 3 | 0.834 | body / tongue | 26.5 tall / 10 wide, left | 25.8 / left | agree |
+| ref-08 shin [-90,0] | 4 | 0.991 | tongue / stripe / guard / post | 17 wide, 0-18.25 / centre / 30 / 24 | 14.5, 0-16 / centre / 29.3 / 25.2 | tongue 2.5 narrow: residual |
+| ref-09 boot [0,0] | 4 | 0.983 | body top / lug / heel / ankle hole | 26 / 33 / arc to 12.25 / at the arc centre | 24.5 / 32.8 / arc / at the arc centre | body 1.5 low: residual |
+| ref-10 wing [-45,30] | 4 | 1.0 | blade wider than plate, knuckle near, blade far | 33.75 vs 24 | blade overhangs both sides | agree |
+
+ref-05 arm shell, ref-06 forearm, ref-11 and ref-12 wheels are unchanged
+v01 parts. The halo is a U in ref-01 and ref-02, and the contract follows.

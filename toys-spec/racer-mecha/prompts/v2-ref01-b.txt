@@ -1,0 +1,6 @@
+Edit this front view of a block-built robot toy. Keep its style, colours, block seams, head, black torso with the red halo cockpit, fists, and chunky look. Change only:
+1. LEGS much WIDER: each whole leg (red thigh, red shin with its white stripe, black boot) is one third of the toy's total width, so the two legs together are two thirds of the total width, a little wider than the black torso; only a thin gap between the two legs at the centre. The legs stay the same height.
+2. The black calf wheels sit directly under the arms, against the outer sides of the shins.
+3. The two shoulder wheels are bigger: each about as tall as the helmet plus half again, still on top of the shoulders.
+4. The white upper arms are a little shorter at the top, so the shoulder wheels sit lower, their tops level with the helmet's top plus a little.
+Straight-on front orthographic view, no perspective, flat uniform chroma-green (#00b140) background, whole toy in frame with a wide margin, no shadow, no text.

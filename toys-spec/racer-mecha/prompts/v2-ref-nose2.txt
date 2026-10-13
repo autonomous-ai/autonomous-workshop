@@ -1,0 +1,8 @@
+Product reference render of ONE separate 3D-printed part of the attached block-built transforming robot toy, shown ALONE (no other parts), same style, colours, block seams and matte plastic as the attached toy, centred, whole part inside the frame with a wide margin, flat uniform chroma-green (#00b140) background, soft even light, no shadow, no text, no labels. Proportions are exact. Straight-on orthographic view of the part's OUTER face, camera level, the nose cone pointing DOWN.
+The part: the NOSE and FRONT WING, overall 84 wide x 89.5 tall (width/height 0.94), from bottom to top:
+- 0% to 15% of the height: a BLACK front wing plate 84 wide across the whole width, with a RED endplate 3 wide at each end. The wing plate is IN FRONT: it covers the cone's tip completely, so the cone ends at the wing's top edge and nothing red shows on the wing.
+- 15% to 49%: the lower red nose cone, 12 wide (one seventh of the wing's width), centred.
+- 49% to 85%: the upper red nose cone, 18 wide, centred, with a white stripe along each side.
+- 85% to 93%: a red root block 20 wide.
+- 93% to 100%: a red round hinge knuckle 20 wide on top.
+No other parts.

@@ -1,0 +1,5 @@
+Edit this front view of a block-built robot toy. Keep everything exactly (style, colours, seams, arms, wheels, boots, shins, overall height and width) except three small changes:
+1. The black torso extends exactly TWO block rows lower: its bottom edge moves down by two rows of the small seam blocks, and the red thighs lose those two rows at their top. Nothing below the thighs moves.
+2. The red halo's bottom bar moves down by one and a half block rows; its top bar stays where it is, so the halo becomes a little taller.
+3. The helmet is slightly smaller: four fifths of its current width and height, centred where it is now.
+Straight-on front orthographic view, no perspective, flat uniform chroma-green (#00b140) background, whole toy in frame with a wide margin, no shadow, no text.

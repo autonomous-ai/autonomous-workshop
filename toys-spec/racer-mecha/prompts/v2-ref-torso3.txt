@@ -1,0 +1,7 @@
+Product reference render of ONE separate 3D-printed part of the attached block-built transforming robot toy, shown ALONE (no other parts), same style, colours and matte plastic as the attached toy, centred, whole part inside the frame with a wide margin, flat uniform chroma-green (#00b140) background, soft even light, no shadow, no text. The part is built on a grid of equal SQUARE blocks; count the blocks exactly as listed, every block the same size, so the proportions come out exact. Straight-on FRONT orthographic view.
+The black TORSO, 12 blocks wide and 17 blocks tall, counting rows from the bottom:
+- Rows 1 to 15: a solid black wall 12 blocks wide (rows 14 and 15 have a notch in the middle 2.5 blocks wide).
+- Rows 16 and 17: only the two outer towers remain, each 2.5 blocks wide, at the left and right edges; a small round stub boss on the outer side of each tower in row 17.
+- A RED halo shaped like the letter U, 4.5 blocks wide: its bottom bar lies in row 5 (it starts at the bottom of row 5), its two legs (each half a block wide) rise from row 5 to the middle of row 10, open at the top. Inside the U, a dark recessed cockpit opening 3 blocks wide from row 6 up to row 10.
+- Rows 1 to 4 below the halo are plain black blocks; rows 11 to 15 above it plain black blocks.
+No head, arms, wheels or legs.
