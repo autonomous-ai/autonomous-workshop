@@ -1,0 +1,4 @@
+Edit the attached colour-coded robot toy (straight front view). Keep EXACTLY its silhouette, size, proportions, every part's thickness and the block-built style. Change only:
+- remove the purple strips from the shins: the shins are plain RED blocks;
+- each big DARK GREY boot now carries a flat PURPLE cover folded flat on its top (over the instep and toes), like a toe cap, with a thin purple plate edge at its outer side: this is half of the car's rear wing, folded down.
+Plain off-white background (#f5f0e6). No text, no arrows, no labels. Whole toy in frame.
