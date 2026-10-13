@@ -1,0 +1,8 @@
+Recolour this toy photo into a racing livery. Keep EVERYTHING else exactly as it is: the same camera, lighting, soft shadows, warm background, 3D shading, every part's shape, size, position, block seams and the chunky proportions. Change colours only:
+- green arms -> WHITE, with red panels on the lower half of each upper arm; dark grey fists stay BLACK;
+- the light grey chest -> BLACK; the light grey rounded halo hoop around the cockpit -> glossy RED; the cockpit opening stays dark;
+- head: white and red helmet with a blue visor band;
+- orange-red legs -> racing RED with a white stripe panel down each shin's front;
+- purple feet -> BLACK boots; the small yellow fins on the shoulders -> red;
+- wheels: black tyres with black rims (no blue or orange).
+No text.
