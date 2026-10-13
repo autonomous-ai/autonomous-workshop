@@ -55,8 +55,8 @@ to 70, thigh 70 to 96.5, hip pins 102, torso 99 to 180, cockpit 128 to 157
 inside a halo 126 to 160, shoulder pins 157, helmet 178 to 197, front wheel
 axles 188 and tops 207; behind: the nose hinge at Z 182, the front wing 96 to
 109. Widths: arms across 101, front wheels across 94, torso 58, the nose's
-front wing 84, legs 1 apart and 60 across, boots 29 wide and 5 apart, rear
-wheels across 85.
+front wing 84, legs 1 apart and 69 across, boots 32 wide and 5 apart, rear
+wheels across 94.
 
 **Car pose.** Reached by the moves under Transformation. In assembly
 coordinates the car stands on its tail: its length runs along Z (-8.5 to
@@ -83,7 +83,7 @@ Multi-colour prints; colours change only at the boundaries named here.
 | `arm-shell` | white with two red panels on its front face |
 | `forearm` | white with red side panels, black fist |
 | `thigh` | racing red |
-| `shin` | racing red with a white stripe panel down the front; black slide post |
+| `shin` | racing red with a white stripe panel down the front; red knee guard; black slide post |
 | `boot` | black |
 | `wing` | black plate, red blade |
 | `front-wheel`, `rear-wheel` | black |
@@ -149,41 +149,43 @@ Y -2, Z 124; the bottom 9 is a closed black fist as wide as the forearm: four
 fingers split by three vertical grooves, crossed by two knuckle grooves.
 Prints on its outboard face.
 
-**Thigh.** A sleeve 25 wide (X 0.5 to 25.5) x 22 deep (Y -13 to 9), Z 70 to
-93.5, open at the bottom: its cavity X 3 to 23, Y -10.5 to 6.5, up to a 3
+**Thigh.** A sleeve 30 wide (X 0.5 to 30.5) x 22 deep (Y -13 to 9), Z 70 to
+93.5, open at the bottom: its cavity X 3 to 28, Y -10.5 to 6.5, up to a 3
 thick roof at Z 93.5, walls 2.5. Above the roof it steps in to Y -10 to 6 up
 to Z 96.5 and is topped by a hip tongue 10 wide (X 4 to 14) x 7.4 deep (Y -5.7
 to 1.7) to Z 102, rounded R3.7 about the hip axis Y -2, Z 102. Each side wall
-(X 0.5 to 3 and 23 to 25.5) carries a slide slot along Z at Y -2, 3.2 wide,
+(X 0.5 to 3 and 28 to 30.5) carries a slide slot along Z at Y -2, 3.2 wide,
 its ends rounded about Z 73 and Z 89, narrowed to 2.8 for 1 just inside each
 end so the dowel clicks into the end. Prints standing on its bottom face
 (Z 70).
 
-**Shin.** A block 29.5 wide (X 0.5 to 30) x 22 deep (Y -13 to 9), Z 20.5 to
-53.5, with a raised knee pad 16 wide x 10 tall x 1.0 proud at its top front
-and a white stripe panel down its front. On top the slide post, 19 wide (X
-3.5 to 22.5) x 16 deep (Y -10 to 6), Z 53.5 to 77; the block's shoulders round
-the post rise at 52 degrees toward the block. The post carries the slide
-dowel's bore along X at Y -2, Z 73. Below the block the ankle tongue, 14 wide
-(X 8 to 22) x 8 deep (Y -0.25 to 7.75), down to a round end R4 about the ankle
+**Shin.** A block 34 wide (X 0.5 to 34.5) x 22 deep (Y -13 to 9), Z 20.5 to
+53.5, with a white stripe panel down its front. On top the slide post, 24
+wide (X 3.5 to 27.5) x 16 deep (Y -10 to 6), Z 53.5 to 77; the block's
+shoulders round the post rise at 52 degrees toward the block. In front of the
+post a knee guard 30 wide (X 0.5 to 30.5) x 1.5 thick (Y -15 to -13.5) rises
+from the block's front face to Z 70, so from the front the leg reads as one
+column; in the car it slides up 0.5 in front of the thigh. The post carries
+the slide dowel's bore along X at Y -2, Z 73. Below the block the ankle
+tongue, 17 wide (X 9 to 26) x 8 deep (Y -0.25 to 7.75), down to a round end R4 about the ankle
 axis Y 3.75, Z 12.25. The rear wheel's bore runs along X into the block's
 outer face at Y 2, Z 50. Prints upside down on the post's top face (Z 77).
 
-**Boot.** A long foot 29 wide (X 2.5 to 31.5), Y -30 to 11.5, Z 0 to 20,
+**Boot.** A long foot 32 wide (X 2.5 to 34.5), Y -30 to 11.5, Z 0 to 20,
 pointing forward, the way the robot faces: the toe is 17 ahead of the shin's
 front. Behind the ankle axis its top is rounded R7.75 about the axis (Y 3.75,
-Z 12.25) down to the heel face at Y 11.5. A slot for the shin's tongue, X 7.5
-to 22.5, Y -0.75 to the heel, down to Z 7.75, open at the top and the heel.
+Z 12.25) down to the heel face at Y 11.5. A slot for the shin's tongue, X 8.5
+to 26.5, Y -0.75 to the heel, down to Z 7.75, open at the top and the heel.
 The ankle bores run along X through the slot's side walls on the axis. The
 instep in front of the shin is a flat at Z 19.5 from the toe to Y -13.5,
-where the wing lies; at the toe two lugs (X 2.5 to 5 and 29 to 31.5), Y -30
-to -26.5, rise to Z 27, rounded R3.5 about the wing hinge axis Y -26.5, Z
+where the wing lies; at the toe two lugs 3.5 thick (X 2.5 to 6 and 31 to
+34.5), Y -30 to -26.5, rise to Z 27, rounded R3.5 about the wing hinge axis Y -26.5, Z
 23.5. Prints on its sole.
 
-**Wing.** One half of the rear wing, a single part. A knuckle Ø7 x 23 (X 5.5
-to 28.5) on the wing hinge axis (Y -26.5, Z 23.5); a plate 23 wide (X 5.5 to
-28.5) x 3 thick (Z 20 to 23) running from the knuckle to Y -14; and at the
-plate's far end the blade, 30.75 wide (X 0.75 to 31.5) x 3 (Y -17 to -14) x
+**Wing.** One half of the rear wing, a single part. A knuckle Ø7 x 24 (X 6.5
+to 30.5) on the wing hinge axis (Y -26.5, Z 23.5); a plate 24 wide (X 6.5 to
+30.5) x 3 thick (Z 20 to 23) running from the knuckle to Y -14; and at the
+plate's far end the blade, 33.75 wide (X 0.75 to 34.5) x 3 (Y -17 to -14) x
 10 tall (Z 20 to 30), standing up 1 in front of the shin. In the car the
 plate stands up as the wing's endplate and pylon and the blade points
 rearward as the wing, the two halves' blades 1.5 apart at the centre line.
@@ -210,9 +212,9 @@ teardrop with its point away from the bed. No glue.
 | Shoulder | 3 x 20, each | arm shell top block | torso side wall | X, at Y -2, Z 157 |
 | Elbow | 3 x 20, each | arm shell cheeks | forearm knuckle | X, at Y -2, Z 124 |
 | Hip | 3 x 20, each | torso slot walls | thigh tongue | X, at Y -2, Z 102 |
-| Knee slide | 3 x 24, each | shin post | thigh side-wall slots, Z 73 to 89 | X, at Y -2, Z 73 |
-| Ankle | 3 x 28, each | boot slot walls | shin tongue | X, at Y 3.75, Z 12.25 |
-| Wing hinge | 3 x 28, each | boot toe lugs | wing knuckle | X, at Y -26.5, Z 23.5 |
+| Knee slide | 3 x 28, each | shin post | thigh side-wall slots, Z 73 to 89 | X, at Y -2, Z 73 |
+| Ankle | 3 x 30, each | boot slot walls | shin tongue | X, at Y 3.75, Z 12.25 |
+| Wing hinge | 3 x 32, each | boot toe lugs | wing knuckle | X, at Y -26.5, Z 23.5 |
 | Front wheels | 3 x 30, each | torso tower and stub boss, 12 deep | wheel bore | X, at Y 0, Z 188 |
 | Rear wheels | 3 x 26, each | shin, 12 deep | wheel bore | X, at Y 2, Z 50 |
 
@@ -286,7 +288,8 @@ leave less than a part's floor below.
 
 Load-bearing sections are at least 3 mm: torso walls 3.0, arm shell walls
 2.5 beside a 3.0 front wall, thigh walls 2.5, every tongue at least 7.4 deep,
-the slide post 16, the neck post 8, the wing plate and blade 3. The one
+the slide post 16, the neck post 8, the wing plate and blade 3, the toe
+lugs 3.5. The one
 exception is the material around a dowel bore, which the joints above size:
 above a teardrop bore (its faces 38 degrees from vertical) inside a Ø7
 cheek, lug or knuckle 1.1 is left on the torso and the boot, 0.95 on the
@@ -327,22 +330,22 @@ ahead of the heels.
     {"id": "head", "name": "Head", "count": 1, "extents_mm": [19, 16, 54], "wall_min_mm": 1.9},
     {"id": "arm-shell", "name": "Upper arm shell", "count": 2, "extents_mm": [20, 22, 45], "wall_min_mm": 2.0},
     {"id": "forearm", "name": "Forearm and fist", "count": 2, "extents_mm": [14, 15, 34.5], "wall_min_mm": 3.0},
-    {"id": "thigh", "name": "Thigh sleeve", "count": 2, "extents_mm": [25, 22, 35.7], "wall_min_mm": 1.4},
-    {"id": "shin", "name": "Shin and slide post", "count": 2, "extents_mm": [29.5, 22, 68.75], "wall_min_mm": 1.9},
-    {"id": "boot", "name": "Boot", "count": 2, "extents_mm": [29, 41.5, 27], "wall_min_mm": 1.1},
-    {"id": "wing", "name": "Rear-wing half", "count": 2, "extents_mm": [30.75, 16, 10], "wall_min_mm": 0.95},
+    {"id": "thigh", "name": "Thigh sleeve", "count": 2, "extents_mm": [30, 22, 35.7], "wall_min_mm": 1.4},
+    {"id": "shin", "name": "Shin and slide post", "count": 2, "extents_mm": [34, 24, 68.75], "wall_min_mm": 1.9},
+    {"id": "boot", "name": "Boot", "count": 2, "extents_mm": [32, 41.5, 27], "wall_min_mm": 1.1},
+    {"id": "wing", "name": "Rear-wing half", "count": 2, "extents_mm": [33.75, 16, 10], "wall_min_mm": 0.95},
     {"id": "front-wheel", "name": "Front wheel", "count": 2, "extents_mm": [38, 38, 16], "wall_min_mm": 2.0},
     {"id": "rear-wheel", "name": "Rear wheel", "count": 2, "extents_mm": [34, 34, 12], "wall_min_mm": 2.0}
   ],
   "requirements": [
-    {"id": "R01", "scope": "assembly", "text": "In the Display Pose the robot stands upright on both boots, its helmet top at Z 197, arms hanging straight: the cockpit opening framed by the red halo sits in the middle of the chest from Z 126 to 160, a front wheel sits on each shoulder at Z 188, a rear wheel on the outer side of each calf at Z 50, the black slide post shows between each shin and thigh from Z 53.5 to 70, and each boot carries a folded wing half whose red blade stands in front of the shin."},
+    {"id": "R01", "scope": "assembly", "text": "In the Display Pose the robot stands upright on both boots, its helmet top at Z 197, arms hanging straight: the cockpit opening framed by the red halo sits in the middle of the chest from Z 126 to 160, a front wheel sits on each shoulder at Z 188, a rear wheel on the outer side of each calf at Z 50, a red knee guard runs up from each shin to its thigh over the slide post from Z 53.5 to 70, and each boot carries a folded wing half whose red blade stands in front of the shin."},
     {"id": "R02", "scope": "assembly", "text": "From behind, the nose lies down the middle of the robot's back from its hinge at Z 182, its front wing 84 wide across the back of the hips from Z 96 to 109, and nothing else rises behind the head."},
     {"id": "R03", "scope": "assembly", "text": "In the car pose the toy is an open-wheel Formula car 276.5 mm long, 101 wide and 39 tall, lying on the robot's back: nose cone and front wing ahead of the front wheels, the cockpit and halo on top, the arm shells as front sidepods, the legs side by side as the rear body, the boots as the tail, and the two wing halves standing on the boots as the rear wing, their blades meeting at the centre line."},
     {"id": "R04", "scope": "assembly", "text": "The robot becomes the car by seven moves and no part comes off: the head slides 22 down into its pocket, the nose flips 180 degrees up over the top of the back, each forearm folds 180 degrees into its arm shell, each boot folds 90 degrees at the ankle, each shin slides 16 up into its thigh, each wing half stands up 90 degrees on its hinge, and the car is laid on its back."},
     {"id": "R05", "scope": "assembly", "text": "In the car pose the car rests on all four wheels, the nose 1.5 mm and every other part at least 3 mm above the ground, and each wheel turns freely on its dowel."},
     {"id": "R06", "scope": "assembly", "text": "Posing ranges in the robot: shoulders 90 degrees forward and 5 back, hips 20 forward and 20 back, each holding its pose by friction; the knees do not bend, the legs slide."},
     {"id": "R07", "scope": "assembly", "text": "Every moving part keeps at least 0.5 mm from every other part through each transformation move and posing range and in both poses, except at the contacts the Interfaces declare: the head-slide dowel stopping in the neck post's slot, the lowered helmet on the pocket floor, and the knee-slide dowel stopping at its slot ends. Checked with --check-motion true: one sweep per transformation move in at most 10 steps against only the parts it can reach; a skipped, killed or timed-out sweep fails this requirement."},
-    {"id": "R08", "scope": "assembly", "text": "Every purchased-part seat is derived from a catalog STEP file, or from the documented envelope when the catalog search is a recorded miss, and the bill of materials lists exactly 7 dowels 3 x 20, 2 dowels 3 x 24, 3 dowels 3 x 26, 4 dowels 3 x 28, 2 dowels 3 x 30 and 4 push-on caps for 3 mm shafts."},
+    {"id": "R08", "scope": "assembly", "text": "Every purchased-part seat is derived from a catalog STEP file, or from the documented envelope when the catalog search is a recorded miss, and the bill of materials lists exactly 7 dowels 3 x 20, 3 dowels 3 x 26, 2 dowels 3 x 28, 4 dowels 3 x 30, 2 dowels 3 x 32 and 4 push-on caps for 3 mm shafts."},
     {"id": "R09", "scope": "assembly", "text": "Every joint is built as its Interface text states, each hinge or slide a purchased dowel pressed into a 2.9 mm bore on one side and turning or sliding in a 3.1 mm bore or slot (3.2 for the wheels) on the other, with no glue; each knee-slide slot narrows to 2.8 for 1 mm inside each end so the dowel clicks into the end and holds."},
     {"id": "R10", "scope": "assembly", "text": "The robot stands unsupported in the Display Pose: its centre of mass lies over the boots, which span Y -30 at the toes to 11.5 at the heels; each foot points forward, its toe 17 ahead of the shin's front."},
     {"id": "R11", "scope": "geometry:torso", "text": "A 58 x 26 core built from blocks, its front, sides and back split by seams with proud blocks on the front, and two wheel towers 13 wide rising 12 above its top corners; between them an open head pocket whose front wall has a 13 wide notch so the neck shows."},
@@ -352,10 +355,10 @@ ahead of the heels.
     {"id": "R15", "scope": "geometry:head", "text": "A white and red helmet 19 wide and 19 tall with a blue visor band across its front and a raised crest along its top centre line, on a square 8 mm neck post 35 long with a 3.4 wide slot through it from front to back."},
     {"id": "R16", "scope": "geometry:arm-shell", "text": "A 20 x 22 white channel open at the back and the bottom, its top chamfered front and back, its faces split into blocks by seams, with two elbow cheeks at its bottom and two red panels on its front face."},
     {"id": "R17", "scope": "geometry:forearm", "text": "A 14 x 15 white forearm with red side panels, ending at the top in a rounded knuckle and at the bottom in a closed black fist 9 tall and as wide as the forearm, four fingers split by three vertical grooves and crossed by two knuckle grooves."},
-    {"id": "R18", "scope": "geometry:thigh", "text": "A 25 x 22 red sleeve 23.5 tall, open at the bottom, whose top steps in and rises into a rounded hip tongue 10 wide toward its inboard side, with a 3.2 wide slot along each side wall for 16 mm of slide; its front and outer side are split by seams into blocks, two of them standing proud on the front."},
-    {"id": "R19", "scope": "geometry:shin", "text": "A 29.5 x 22 red shin block 33 tall with a raised knee pad and a white stripe panel on its front, a black slide post 19 x 16 rising 23.5 above it, and a rounded ankle tongue 14 wide below it; the block's faces are split into blocks by seams."},
-    {"id": "R20", "scope": "geometry:boot", "text": "A black boot 29 wide and 41.5 long pointing forward, 20 tall, its heel top rounded about the ankle, a slot for the shin's tongue open at the top and the heel, and two hinge lugs at the toe; its sides are split into blocks by seams."},
-    {"id": "R21", "scope": "geometry:wing", "text": "A black plate 23 wide and 3 thick on a 7 mm hinge knuckle, carrying at its far end a red blade 30.75 wide, 10 tall and 3 thick standing square to the plate."},
+    {"id": "R18", "scope": "geometry:thigh", "text": "A 30 x 22 red sleeve 23.5 tall, open at the bottom, whose top steps in and rises into a rounded hip tongue 10 wide toward its inboard side, with a 3.2 wide slot along each side wall for 16 mm of slide; its front and outer side are split by seams into blocks, two of them standing proud on the front."},
+    {"id": "R19", "scope": "geometry:shin", "text": "A 34 x 22 red shin block 33 tall with a white stripe panel on its front, a black slide post 24 x 16 rising 23.5 above it with a red knee guard 30 wide and 1.5 thick rising in front of it to the thigh, and a rounded ankle tongue 17 wide below it; the block's faces are split into blocks by seams."},
+    {"id": "R20", "scope": "geometry:boot", "text": "A black boot 32 wide and 41.5 long pointing forward, 20 tall, its heel top rounded about the ankle, a slot for the shin's tongue open at the top and the heel, and two hinge lugs at the toe; its sides are split into blocks by seams."},
+    {"id": "R21", "scope": "geometry:wing", "text": "A black plate 24 wide and 3 thick on a 7 mm hinge knuckle, carrying at its far end a red blade 33.75 wide, 10 tall and 3 thick standing square to the plate."},
     {"id": "R22", "scope": "geometry:front-wheel", "text": "A black tyre 38 across and 16 wide with a plain tread and a five-spoke rim face on its outer side."},
     {"id": "R23", "scope": "geometry:rear-wheel", "text": "A black tyre 34 across and 12 wide with a plain tread and a five-spoke rim face on its outer side."}
   ],
@@ -412,7 +415,7 @@ ahead of the heels.
        {"component": "wing#2", "rotation": {"axis_point": [0, -2, 102], "axis_direction": [1, 0, 0], "start_deg": -20, "end_deg": 20}},
        {"component": "rear-wheel#2", "rotation": {"axis_point": [0, -2, 102], "axis_direction": [1, 0, 0], "start_deg": -20, "end_deg": 20}}]}},
     {"id": "knee-slide-1", "kind": "coupled", "components": ["shin#1", "boot#1", "wing#1", "rear-wheel#1", "thigh#1", "torso"],
-     "text": "Shin 1's slide post (X 3.5 to 22.5, Y -10 to 6) runs in thigh 1's sleeve (cavity X 3 to 23, Y -10.5 to 6.5, roof Z 93.5), 0.5 clear all round. A 3 x 24 dowel pressed along X through the post at Y -2 runs in the 3.2 wide slots of the thigh's two side walls from Z 73 (robot, full length) to Z 89 (car, 16 up), each slot narrowed to 2.8 for 1 inside each end so the dowel clicks into the end. At 16 up the post's top is 0.5 under the roof and the shin block's top 0.5 under the thigh's bottom.",
+     "text": "Shin 1's slide post (X 3.5 to 27.5, Y -10 to 6) runs in thigh 1's sleeve (cavity X 3 to 28, Y -10.5 to 6.5, roof Z 93.5), 0.5 clear all round, the knee guard sliding 0.5 in front of the thigh's front face. A 3 x 28 dowel pressed along X through the post at Y -2 runs in the 3.2 wide slots of the thigh's two side walls from Z 73 (robot, full length) to Z 89 (car, 16 up), each slot narrowed to 2.8 for 1 inside each end so the dowel clicks into the end. At 16 up the post's top is 0.5 under the roof and the shin block's top 0.5 under the thigh's bottom.",
      "yielding": "shin#1",
      "poses": {"steps": 10, "movers": [
        {"component": "shin#1", "translation": {"vector": [0, 0, 16]}},
@@ -420,7 +423,7 @@ ahead of the heels.
        {"component": "wing#1", "translation": {"vector": [0, 0, 16]}},
        {"component": "rear-wheel#1", "translation": {"vector": [0, 0, 16]}}]}},
     {"id": "knee-slide-2", "kind": "coupled", "components": ["shin#2", "boot#2", "wing#2", "rear-wheel#2", "thigh#2", "torso"],
-     "text": "Mirror of knee-slide-1: shin 2's post slides 16 up into thigh 2's sleeve, 0.5 clear all round, on a 3 x 24 dowel along X at Y -2 running in the side-wall slots from Z 73 to Z 89, clicking into each end.",
+     "text": "Mirror of knee-slide-1: shin 2's post slides 16 up into thigh 2's sleeve, 0.5 clear all round, on a 3 x 28 dowel along X at Y -2 running in the side-wall slots from Z 73 to Z 89, clicking into each end.",
      "yielding": "shin#2",
      "poses": {"steps": 10, "movers": [
        {"component": "shin#2", "translation": {"vector": [0, 0, 16]}},
@@ -428,31 +431,31 @@ ahead of the heels.
        {"component": "wing#2", "translation": {"vector": [0, 0, 16]}},
        {"component": "rear-wheel#2", "translation": {"vector": [0, 0, 16]}}]}},
     {"id": "ankle-1", "kind": "coupled", "components": ["boot#1", "wing#1", "shin#1"],
-     "text": "Shin 1's ankle tongue (X 8 to 22, Y -0.25 to 7.75, round R4 about the axis) sits in boot 1's slot (X 7.5 to 22.5, Y -0.75 to the heel, down to Z 7.75); a 3 x 28 dowel pressed along X through the slot's side walls at Y 3.75, Z 12.25 turns it on a 3.1 bore. The boot folds 90 degrees, toe down: its heel top, rounded R7.75 about the axis, and its heel face at Y 11.5 pass and end 0.5 under the shin's bottom face (Z 20.5), and its sole ends 3 above the car's ground.",
+     "text": "Shin 1's ankle tongue (X 9 to 26, Y -0.25 to 7.75, round R4 about the axis) sits in boot 1's slot (X 8.5 to 26.5, Y -0.75 to the heel, down to Z 7.75); a 3 x 30 dowel pressed along X through the slot's side walls at Y 3.75, Z 12.25 turns it on a 3.1 bore. The boot folds 90 degrees, toe down: its heel top, rounded R7.75 about the axis, and its heel face at Y 11.5 pass and end 0.5 under the shin's bottom face (Z 20.5), and its sole ends 3 above the car's ground.",
      "yielding": "boot#1",
      "poses": {"steps": 10, "movers": [
        {"component": "boot#1", "rotation": {"axis_point": [0, 3.75, 12.25], "axis_direction": [1, 0, 0], "start_deg": 0, "end_deg": 90}},
        {"component": "wing#1", "rotation": {"axis_point": [0, 3.75, 12.25], "axis_direction": [1, 0, 0], "start_deg": 0, "end_deg": 90}}]}},
     {"id": "ankle-2", "kind": "coupled", "components": ["boot#2", "wing#2", "shin#2"],
-     "text": "Mirror of ankle-1: shin 2's R4 tongue in boot 2's slot on a 3 x 28 dowel along X at Y 3.75, Z 12.25, turning on a 3.1 bore; the boot folds 90 degrees toe down with 0.5 clearance under the shin.",
+     "text": "Mirror of ankle-1: shin 2's R4 tongue in boot 2's slot on a 3 x 30 dowel along X at Y 3.75, Z 12.25, turning on a 3.1 bore; the boot folds 90 degrees toe down with 0.5 clearance under the shin.",
      "yielding": "boot#2",
      "poses": {"steps": 10, "movers": [
        {"component": "boot#2", "rotation": {"axis_point": [0, 3.75, 12.25], "axis_direction": [1, 0, 0], "start_deg": 0, "end_deg": 90}},
        {"component": "wing#2", "rotation": {"axis_point": [0, 3.75, 12.25], "axis_direction": [1, 0, 0], "start_deg": 0, "end_deg": 90}}]}},
     {"id": "wing-hinge-1", "kind": "coupled", "components": ["wing#1", "boot#1", "shin#1"],
-     "text": "Wing 1's Ø7 knuckle (X 5.5 to 28.5) sits between boot 1's two toe lugs (X 2.5 to 5 and 29 to 31.5), 0.5 clear; a 3 x 28 dowel pressed along X into the lugs at Y -26.5, Z 23.5 turns it on a 3.1 bore. Folded, the plate lies 0.5 above the instep (Z 19.5) and the blade stands 1 in front of the shin. Standing (+90), the plate rises from the toe and the blade points away from the shin; in the car the blades of the two halves meet 1.5 apart at the centre line.",
+     "text": "Wing 1's Ø7 knuckle (X 6.5 to 30.5) sits between boot 1's two toe lugs (X 2.5 to 6 and 31 to 34.5), 0.5 clear; a 3 x 32 dowel pressed along X into the lugs at Y -26.5, Z 23.5 turns it on a 3.1 bore. Folded, the plate lies 0.5 above the instep (Z 19.5) and the blade stands 1 in front of the shin. Standing (+90), the plate rises from the toe and the blade points away from the shin; in the car the blades of the two halves meet 1.5 apart at the centre line.",
      "yielding": "wing#1",
      "poses": {"steps": 10, "movers": [
        {"component": "wing#1", "rotation": {"axis_point": [0, -26.5, 23.5], "axis_direction": [1, 0, 0], "start_deg": 0, "end_deg": 90}}]}},
     {"id": "wing-hinge-2", "kind": "coupled", "components": ["wing#2", "boot#2", "shin#2"],
-     "text": "Mirror of wing-hinge-1: wing 2's knuckle between boot 2's toe lugs on a 3 x 28 dowel along X at Y -26.5, Z 23.5, turning on a 3.1 bore; it stands up 90 degrees from lying on the instep.",
+     "text": "Mirror of wing-hinge-1: wing 2's knuckle between boot 2's toe lugs on a 3 x 32 dowel along X at Y -26.5, Z 23.5, turning on a 3.1 bore; it stands up 90 degrees from lying on the instep.",
      "yielding": "wing#2",
      "poses": {"steps": 10, "movers": [
        {"component": "wing#2", "rotation": {"axis_point": [0, -26.5, 23.5], "axis_direction": [1, 0, 0], "start_deg": 0, "end_deg": 90}}]}},
     {"id": "front-wheels", "kind": "static", "components": ["front-wheel#1", "front-wheel#2", "torso"],
      "text": "Each front wheel turns on a 3 x 30 dowel pressed 12 deep into the torso tower and its Ø8 stub boss on the axis Y 0, Z 188, the wheel's inner face 0.5 outside the boss (X 31 to 47 and -31 to -47), held by a push-on cap."},
     {"id": "rear-wheels", "kind": "static", "components": ["rear-wheel#1", "rear-wheel#2", "shin#1", "shin#2"],
-     "text": "Each rear wheel turns on a 3 x 26 dowel pressed 12 deep into its shin block's outer face on the axis Y 2, Z 50, the wheel's inner face 0.5 outside the shin (X 30.5 to 42.5 and -30.5 to -42.5), held by a push-on cap."}
+     "text": "Each rear wheel turns on a 3 x 26 dowel pressed 12 deep into its shin block's outer face on the axis Y 2, Z 50, the wheel's inner face 0.5 outside the shin (X 35 to 47 and -35 to -47), held by a push-on cap."}
   ]
 }
 ```

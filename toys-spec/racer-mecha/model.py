@@ -61,24 +61,26 @@ P["arm-shell#1"] = (B(30.5, 50.5, -13, 9, 120, 157) + B(30.5, 50.5, -13, 9, 157,
                     + CUT(33, 48, -10, 9, 118, 152.6))
 P["forearm#1"] = B(33.5, 47.5, -9.5, 5.5, 97, 124) + CX(33.5, 47.5, -2, 124, 7.5)
 # ---- thigh: a sleeve open at the bottom; the shin's post slides 16 up into it
-P["thigh#1"] = (B(0.5, 25.5, -13, 9, 70, 93.5) + B(0.5, 25.5, -10, 6, 93.5, 96.5)
+P["thigh#1"] = (B(0.5, 30.5, -13, 9, 70, 93.5) + B(0.5, 30.5, -10, 6, 93.5, 96.5)
                 + B(4, 14, -5.7, 1.7, 96.5, 102) + CX(4, 14, -2, 102, 3.7)
-                + CUT(3, 23, -10.5, 6.5, 70, 93.5))
-# ---- shin: block, top post with the knee-slide dowel, ankle tongue below
-P["shin#1"] = (B(0.5, 30, -13, 9, 20.5, 53.5) + B(3.5, 22.5, -10, 6, 53.5, 77)
-               + B(8, 22, -0.25, 7.75, 12.25, 20.5) + CX(8, 22, 3.75, 12.25, 4))
+                + CUT(3, 28, -10.5, 6.5, 70, 93.5))
+# ---- shin: block, top post with the knee-slide dowel, knee guard in front of the post, ankle tongue below
+P["shin#1"] = (B(0.5, 34.5, -13, 9, 20.5, 53.5) + B(3.5, 27.5, -10, 6, 53.5, 77)
+               + B(0.5, 30.5, -15, -13.5, 53.5, 70)
+               + B(9, 26, -0.25, 7.75, 12.25, 20.5) + CX(9, 26, 3.75, 12.25, 4))
 # ---- boot: long foot, toe 17 ahead of the shin; slot for the ankle tongue open at the top and the heel
-P["boot#1"] = (B(2.5, 31.5, -30, 3.75, 0, 20)
-               + B(2.5, 5, -30, -26.5, 20, 27) + CX(2.5, 5, -26.5, 23.5, 3.5) + B(29, 31.5, -30, -26.5, 20, 27) + CX(29, 31.5, -26.5, 23.5, 3.5)   # hinge-A lugs
-               + CUT(5, 29, -30, -13.5, 19.5, 20) + CUT(2.5, 31.5, -23, -13.5, 19.5, 20)   # instep dropped 0.5 under the wing + B(2.5, 31.5, 3.75, 11.5, 0, 12.25)
-               + CX(2.5, 31.5, 3.75, 12.25, 7.75)                         # heel top rounded R7.75 about the ankle
-               + CUT(7.5, 22.5, -0.75, 12, 7.75, 20.5))                   # tongue slot (R4 tongue + 0.5), open at the top and the heel
+P["boot#1"] = (B(2.5, 34.5, -30, 3.75, 0, 20) + B(2.5, 34.5, 3.75, 11.5, 0, 12.25)
+               + CX(2.5, 34.5, 3.75, 12.25, 7.75)                         # heel top rounded R7.75 about the ankle
+               + B(2.5, 6, -30, -26.5, 20, 27) + CX(2.5, 6, -26.5, 23.5, 3.5)
+               + B(31, 34.5, -30, -26.5, 20, 27) + CX(31, 34.5, -26.5, 23.5, 3.5)   # wing-hinge lugs
+               + CUT(6, 31, -30, -13.5, 19.5, 20) + CUT(2.5, 34.5, -23, -13.5, 19.5, 20)   # instep 0.5 under the wing
+               + CUT(8.5, 26.5, -0.75, 12, 7.75, 20.5))                   # tongue slot (R4 tongue + 0.5), open at the top and the heel
 # ---- rear wing half: one part, lying on the instep; hinge A (Y -26.5, Z 23.5) at the toe between two boot lugs;
 #      its blade is fixed at the far end and stands up in the robot, points rearward in the car
-P["wing#1"] = (CX(5.5, 28.5, -26.5, 23.5, 3.5) + B(5.5, 28.5, -26.5, -14, 20, 23)
-               + B(0.75, 31.5, -17, -14, 20, 30))
+P["wing#1"] = (CX(6.5, 30.5, -26.5, 23.5, 3.5) + B(6.5, 30.5, -26.5, -14, 20, 23)
+               + B(0.75, 34.5, -17, -14, 20, 30))
 P["front-wheel#1"] = CX(31, 47, 0, 188, 19)
-P["rear-wheel#1"] = CX(30.5, 42.5, 2, 50, 17)
+P["rear-wheel#1"] = CX(35, 47, 2, 50, 17)
 
 for n in list(P):
     if n.endswith("#1"):

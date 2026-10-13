@@ -53,4 +53,4 @@ Posing sweeps from the Display Pose (0.5 needed)
   shoulder#1 back 5      worst   2.80  forearm#1 vs nose
   hip#1 forward 20       worst   5.15  thigh#1 vs nose
   hip#1 back 20          worst   1.51  thigh#1 vs nose
-Robot balance: centre of mass Y -1.1; boots stand on Y -30 (toe) .. 11.5 (heel)
+Robot balance: centre of mass Y -1.3; boots stand on Y -30 (toe) .. 11.5 (heel)
