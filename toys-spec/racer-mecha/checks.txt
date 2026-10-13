@@ -1,40 +1,56 @@
-Transformation sweeps, robot pose (0%) to car-standing (100%); gap mm (<0 = overlap area)
-  nose       worst    1.00 vs torso at 0%
-  head       worst    0.50 vs torso at 86%
-  spine      worst    0.50 vs torso at 100%
-  forearm#1  worst    0.50 vs arm-shell#1 at 0%
-  forearm#2  worst    0.50 vs arm-shell#2 at 0%
-Posing sweeps from the Display Pose
-  arm-shell#1  shoulder forward 90 deg worst    0.89 vs wheel#1
-  arm-shell#1  shoulder back 30 deg worst    3.33 vs wheel#1
-  arm-shell#2  shoulder forward 90 deg worst    0.89 vs wheel#2
-  arm-shell#2  shoulder back 30 deg worst    3.33 vs wheel#2
-  thigh#1       -20 deg worst    0.84 vs torso at 100%
-  thigh#2       -20 deg worst    0.84 vs torso at 100%
-Static clearances in the Display Pose (pairs closer than 0.5 that are not joined)
-Car-standing pose: pairs closer than 0.5 (all moves applied)
-Car on the ground (ground plane is the lowest wheel point; car 'down' is -Y):
-  wheel#1      lowest Y  -19.00  clearance  0.00
-  wheel#3      lowest Y  -19.00  clearance  0.00
-  wheel#2      lowest Y  -19.00  clearance  0.00
-  wheel#4      lowest Y  -19.00  clearance  0.00
-  torso        lowest Y  -17.50  clearance  1.50
-  nose         lowest Y  -17.50  clearance  1.50
-  shin#1       lowest Y  -17.00  clearance  2.00
-  shin#2       lowest Y  -17.00  clearance  2.00
-  arm-shell#1  lowest Y  -13.00  clearance  6.00
-  thigh#1      lowest Y  -13.00  clearance  6.00
-  arm-shell#2  lowest Y  -13.00  clearance  6.00
-  thigh#2      lowest Y  -13.00  clearance  6.00
-  forearm#1    lowest Y   -9.50  clearance  9.50
-  forearm#2    lowest Y   -9.50  clearance  9.50
-  head         lowest Y   -7.50  clearance 11.50
-  spine        lowest Y    9.50  clearance 28.50
-  car length along Z -11.0 .. 261.0 = 272.0
-  car height 48.5 (top Y 29.5)
-Robot balance: centre of mass Y 0.0; feet stand on Y -17 (toe) .. 12 (heel, outboard of the spine lane)
-Leg posing sweeps
-  hip#1 back 20 deg worst 0.84 vs torso
-  knee#1 back 45 deg worst 0.50 vs thigh#1
-  hip#2 back 20 deg worst 0.84 vs torso
-  knee#2 back 45 deg worst 0.50 vs thigh#2
+Display Pose: unjoined pairs closer than 0.5
+Transformation sweeps, robot to car, stage by stage; worst gap mm (<0 = overlap area); joined pairs listed below
+  1. head down 22                         worst   2.00  head vs nose at 0%
+  2. nose flips 180 over the top          worst   5.00  nose vs head at 0%
+  3. forearms fold 180 into the shells    worst  17.05  forearm#1 vs front-wheel#1 at 92%
+  4. boots fold 90 at the ankles          worst   1.00  wing#1 vs shin#1 at 0%
+  5. shins slide 16 up into the thighs    worst   6.00  shin#1 vs torso at 100%
+  6. rear-wing halves stand 90 on hinge A worst  15.37  wing#1 vs shin#1 at 0%
+Car pose: unjoined pairs closer than 0.5
+Car on the ground (car down is +Y; ground = lowest wheel point):
+  front-wheel#1  lowest Y  19.00  clearance  0.00
+  rear-wheel#1   lowest Y  19.00  clearance  0.00
+  front-wheel#2  lowest Y  19.00  clearance  0.00
+  rear-wheel#2   lowest Y  19.00  clearance  0.00
+  nose           lowest Y  17.50  clearance  1.50
+  boot#1         lowest Y  16.00  clearance  3.00
+  boot#2         lowest Y  16.00  clearance  3.00
+  torso          lowest Y  13.00  clearance  6.00
+  arm-shell#1    lowest Y   9.00  clearance 10.00
+  thigh#1        lowest Y   9.00  clearance 10.00
+  shin#1         lowest Y   9.00  clearance 10.00
+  arm-shell#2    lowest Y   9.00  clearance 10.00
+  thigh#2        lowest Y   9.00  clearance 10.00
+  shin#2         lowest Y   9.00  clearance 10.00
+  head           lowest Y   8.50  clearance 10.50
+  forearm#1      lowest Y   5.50  clearance 13.50
+  forearm#2      lowest Y   5.50  clearance 13.50
+  wing#1         lowest Y  -4.00  clearance 23.00
+  wing#2         lowest Y  -4.00  clearance 23.00
+  car length along Z -8.5 .. 268.0 = 276.5; height 39.0 (top Y -20.0)
+  hinge A in the car at Y -7.50, Z -2.00
+Joined pairs: worst gap over every stage (a pin or slide contact by design shows as about 0)
+  arm-shell#1    / forearm#1        0.50
+  arm-shell#1    / torso           21.00
+  arm-shell#2    / forearm#2        0.50
+  arm-shell#2    / torso           21.00
+  boot#1         / shin#1           0.50
+  boot#1         / wing#1           0.50
+  boot#2         / shin#2           0.50
+  boot#2         / wing#2           0.50
+  front-wheel#1  / torso          1000000000.00
+  front-wheel#2  / torso          1000000000.00
+  head           / torso            0.50
+  nose           / torso            0.50
+  rear-wheel#1   / shin#1         1000000000.00
+  rear-wheel#2   / shin#2         1000000000.00
+  shin#1         / thigh#1          0.50
+  shin#2         / thigh#2          0.50
+  thigh#1        / torso            2.30
+  thigh#2        / torso            2.30
+Posing sweeps from the Display Pose (0.5 needed)
+  shoulder#1 forward 90  worst   0.89  arm-shell#1 vs front-wheel#1
+  shoulder#1 back 5      worst   2.80  forearm#1 vs nose
+  hip#1 forward 20       worst   5.15  thigh#1 vs nose
+  hip#1 back 20          worst   1.51  thigh#1 vs nose
+Robot balance: centre of mass Y -1.1; boots stand on Y -30 (toe) .. 11.5 (heel)

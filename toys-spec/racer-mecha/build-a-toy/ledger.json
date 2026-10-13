@@ -36,7 +36,7 @@
         "likeness:ref-04-head",
         "likeness:ref-09-spine"
       ],
-      "notes": "Owner chose --agent claude --model claude-opus-5-5 --effort medium. Started 2026-10-12T05:46Z; References: 11 (matches); --check-motion true; 08:32Z stopped: 9/10 Components locked (torso open), 86.9M/100M tokens. In-run amendments 1 and 2 (R06) refused by Contract Reviewer; fixed at the root as amend-a.; 09:07Z resumed with --amend-contract (owner-contract-amendment applied) and --max-tokens 200000000 (owner approved, raised from 100000000 at 87.2M used); 09:40Z stopped again at 97.3M/200M: need says R05/elbow Interfaces' 90 degree forward elbow bend sweeps the forearm through the arm shell's closed front wall (28 mm3 overlap at -18 deg, 468 at -90); every other gate passes. Awaiting owner choice: drop forward bend (invisible) or open the front wall (visible, new image + relaunch).; 09:45Z resumed with amend-b (owner-contract-amendment 2 applied); 12:19Z complete (Release sealed locally, unreleased), 139.8M tokens. Detection: 10 findings (5 wall below wall_min_mm, mostly around Ø3.1 dowel bores the contract itself sizes; thigh 28.2 vs 28.5; shin 28 vs 27; 3 likeness under 0.90, advisory under ADR 0076). After amend-c (wall floors and thigh/shin extents set to what the joints force), v01 re-measures with no wall or extents finding; only the three advisory likeness scores remain.",
+      "notes": "Owner chose --agent claude --model claude-opus-5-5 --effort medium. Started 2026-10-12T05:46Z; References: 11 (matches); --check-motion true; 08:32Z stopped: 9/10 Components locked (torso open), 86.9M/100M tokens. In-run amendments 1 and 2 (R06) refused by Contract Reviewer; fixed at the root as amend-a.; 09:07Z resumed with --amend-contract (owner-contract-amendment applied) and --max-tokens 200000000 (owner approved, raised from 100000000 at 87.2M used); 09:40Z stopped again at 97.3M/200M: need says R05/elbow Interfaces' 90 degree forward elbow bend sweeps the forearm through the arm shell's closed front wall (28 mm3 overlap at -18 deg, 468 at -90); every other gate passes. Awaiting owner choice: drop forward bend (invisible) or open the front wall (visible, new image + relaunch).; 09:45Z resumed with amend-b (owner-contract-amendment 2 applied); 12:19Z complete (Release sealed locally, unreleased), 139.8M tokens. Detection: 10 findings (5 wall below wall_min_mm, mostly around \u00d83.1 dowel bores the contract itself sizes; thigh 28.2 vs 28.5; shin 28 vs 27; 3 likeness under 0.90, advisory under ADR 0076). After amend-c (wall floors and thigh/shin extents set to what the joints force), v01 re-measures with no wall or extents finding; only the three advisory likeness scores remain.",
       "findings": "toys-spec/racer-mecha/build-a-toy/r00/findings.json",
       "findings_after_amend_c": [
         "likeness:ref-01-racer-mecha",
@@ -73,10 +73,18 @@
       ]
     },
     "amend-d": {
-      "status": "drafted, awaiting owner image approval",
+      "status": "superseded by v2 before approval",
       "notes": "build-a-toy/drafts/amend-d-notes.md",
       "backups": [
         "build-a-toy/drafts/amend-d-backup/"
+      ],
+      "visible": true
+    },
+    "v2": {
+      "status": "drafted, images pending (design-a-toy Stage 3)",
+      "notes": "build-a-toy/drafts/v2-notes.md",
+      "backups": [
+        "build-a-toy/drafts/v2-backup/"
       ],
       "visible": true
     }
@@ -145,7 +153,7 @@
     {
       "id": "cc-wall-floor",
       "signature": "wall-floor:torso,nose,head,thigh,shin",
-      "rows": "geometries wall_min_mm 3.0/2.0 vs the Ø3 dowel joints the contract sizes (Ø7 cheeks and knuckles around teardrop bores, bores 3 above a bottom face, a 3.4 slot in an 8 post)",
+      "rows": "geometries wall_min_mm 3.0/2.0 vs the \u00d83 dowel joints the contract sizes (\u00d87 cheeks and knuckles around teardrop bores, bores 3 above a bottom face, a 3.4 slot in an 8 post)",
       "amendment": "amend-c: wall_min_mm torso 1.1, nose 0.9, head 1.9, thigh 1.4, shin 1.9",
       "found_by": "r00 detection",
       "resume": "not-needed (v01 already built to the amended values)",

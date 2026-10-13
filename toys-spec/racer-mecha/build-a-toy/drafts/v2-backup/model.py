@@ -1,0 +1,294 @@
+"""Racer Mecha numbers and Stage 3d checks (design-a-toy). Calculates; never draws or builds CAD.
+
+Assembly frame = Display Pose (robot): X toward the figure's left, front is -Y, Z up from the desk.
+Every part is a list of boxes (x0,x1, y0,y1, z0,z1) or cylinders along X/Y in the robot pose.
+Each transformation joint is a rotation about an axis parallel to X or Y, or a translation;
+"car" is the car-standing pose (the car stood on its tail), reached by these moves.
+Sweeps are checked by slicing every pair of parts whose X ranges overlap.
+
+    python3 model.py            # pose tables, sweeps, clearances
+"""
+import math, itertools
+from shapely.geometry import box as sbox, Point
+from shapely.affinity import rotate, translate
+
+CLR = 0.5  # minimum clearance between parts that move against each other
+
+def B(x0, x1, y0, y1, z0, z1, mirror=False):
+    out = [("box", x0, x1, y0, y1, z0, z1)]
+    if mirror:
+        out.append(("box", -x1, -x0, y0, y1, z0, z1))
+    return out
+
+def CX(x0, x1, y, z, r):  # cylinder along X
+    return [("cylx", x0, x1, y, z, r)]
+
+def CUT(x0, x1, y0, y1, z0, z1, mirror=False):  # removed material (bores, slots, cavities)
+    out = [("cut", x0, x1, y0, y1, z0, z1)]
+    if mirror:
+        out.append(("cut", -x1, -x0, y0, y1, z0, z1))
+    return out
+
+def TEARX(x0, x1, y, z, r, tip):  # along X: round R about (y, z), its point `tip` below the axis
+    return [("tearx", x0, x1, y, z, r, tip)]
+
+def tear_yz(p):
+    from shapely.geometry import MultiPoint
+    return MultiPoint([(p[3], p[4] - p[6])]).union(Point(p[3], p[4]).buffer(p[5], 32)).convex_hull
+
+def CUTX(x0, x1, y, z, r):
+    return [("cutx", x0, x1, y, z, r)]
+
+# ---- parts (robot pose); one side for paired parts, instance #1 is +X (figure's left) ----
+P = {}
+P["torso"] = (B(-29, 29, -13, 13, 99, 154) + B(-29, -10.5, -13, 13, 154, 180) + B(10.5, 29, -13, 13, 154, 180)
+              + B(-6.5, 6.5, -13, -10, 154, 170) + B(-10.5, -6.5, -13, -10, 154, 180) + B(6.5, 10.5, -13, -10, 154, 180) + B(-10.5, 10.5, 9, 13, 154, 180)          # pocket walls
+              + B(16, 29, -13, 13, 180, 192, True)                                              # wheel towers
+              + CX(29, 30.5, 0, 188, 4) + CX(-30.5, -29, 0, 188, 4)                                 # wheel stub bosses
+              + CX(9.5, 13.5, -14, 180, 3.5) + CX(-13.5, -9.5, -14, 180, 3.5) + B(9.5, 13.5, -14, -9, 176.5, 183.5, True)                                            # nose hinge cheeks
+              + B(10.5, 15, 13, 27.5, 99, 111, True)                                             # spine hinge cheeks
+              + B(-9, 9, 13, 20, 125, 152)                                                      # halo over the cockpit
+              + CUTX(-9.5, 9.5, -14, 180, 6.2)                                                # nose knuckle seat
+              + CUT(-4.5, 4.5, -1, 8, 119, 156)                                             # neck post bore
+              + CUT(3.5, 14.5, -9, 5, 99, 108, True))                                           # hip tongue slots
+P["nose"] = (TEARX(-9, 9, -14, 180, 3.5, 5.7)                                                 # knuckle: R3.5 round, teardrop 5.7 below the axis
+             + B(-9, 9, -33, -19, 140, 176) + B(-6, 6, -30, -19, 110, 140)                    # nose cone (stepped)
+             + B(-27, 27, -21, -15, 99, 128) + B(-27, -24, -24, -14, 99, 128) + B(24, 27, -24, -14, 99, 128))
+P["head"] = B(-9.5, 9.5, -7.5, 8.5, 178, 197) + B(-4, 4, -0.5, 7.5, 143, 178)                      # helmet + neck post
+P["arm-shell#1"] = (B(30.5, 50.5, -13, 9, 120, 157)                                               # shell
+                    + B(30.5, 50.5, -13, 9, 157, 159) + B(30.5, 50.5, -10.4, 7, 159, 161)
+                    + B(30.5, 50.5, -7.8, 5, 161, 163)                                             # 45 deg chamfered top (outer staircase)
+                    + B(30.5, 33, -13, 9, 118, 120) + B(48, 50.5, -13, 9, 118, 120)              # elbow cheeks
+                    + CUT(33, 48, -10, 9, 118, 152.6))                                           # forearm cavity, open at the back and below
+P["forearm#1"] = B(33.5, 47.5, -9.5, 5.5, 97, 124) + CX(33.5, 47.5, -2, 124, 7.5)       # knuckle rounded about the elbow pin
+P["thigh#1"] = B(0.5, 25.5, -13, 9, 77.5, 92) + B(0.5, 25.5, -10, 6, 92, 95) + B(4, 14, -6, 2, 95, 102) + CX(4, 14, -2, 102, 4) + CUT(7.5, 22.5, -8.5, 4.5, 77.5, 85) + CUT(0.5, 25.5, -0.5, 9, 77.5, 79.4) + CUT(0.5, 25.5, 1, 9, 77.5, 81.3) + CUT(0.5, 25.5, 2.5, 9, 77.5, 83.2) + CUT(0.5, 25.5, 4, 9, 77.5, 85.2) + CUT(0.5, 25.5, 5.5, 9, 77.5, 87.1) + CUT(0.5, 25.5, 7, 9, 77.5, 89)                           # + tongue into hip slot
+P["shin#1"] = B(0.5, 30, -13, 9, 27, 72) + B(2.5, 28, -9, 5, 72, 76) + B(8, 22, -6, 2, 76, 80.5) + CX(8, 22, -2, 80.5, 4) + B(2.5, 31.5, -13, 9, 0, 27) + B(2.5, 31.5, -17, -13, 0, 7) + B(11, 31.5, 9, 12, 0, 7)  # shin, boot, stub
+P["spine"] = (CX(-10, 10, 22.5, 105, 6) + B(-10, 10, 22, 35.5, 105, 205) + CUT(-10, 10, 31.5, 35.6, 99, 112) + B(-6, 6, 15.5, 22, 106, 118)                           # knuckle + boom
+              + B(-41.5, 41.5, 22, 27, 205, 221) + B(-10, 10, 22, 35.5, 205, 221) + B(-41.5, -38.5, 20, 32, 199.5, 221) + B(38.5, 41.5, 20, 32, 199.5, 221))
+P["wheel#1"] = CX(31, 47, 0, 188, 19)   # front, on the torso tower
+P["wheel#3"] = CX(30.5, 42.5, -2, 55, 17)    # rear, on shin#1
+
+def mirror_part(prims):
+    out = []
+    for p in prims:
+        if p[0] == "box":
+            out.append(("box", -p[2], -p[1]) + p[3:])
+        elif p[0] == "cylx":
+            out.append(("cylx", -p[2], -p[1]) + p[3:])
+        elif p[0] == "cyly":
+            out.append(("cyly", -p[2], -p[1], p[3], p[4], -p[5], p[6], p[7]))
+        elif p[0] in ("cut", "cutx"):
+            out.append((p[0], -p[2], -p[1]) + p[3:])
+    return out
+
+for a, b in [("arm-shell#1", "arm-shell#2"), ("forearm#1", "forearm#2"), ("thigh#1", "thigh#2"),
+             ("shin#1", "shin#2"), ("wheel#1", "wheel#2"), ("wheel#3", "wheel#4")]:
+    P[b] = mirror_part(P[a])
+
+# ---- moves from robot pose to car-standing pose ----
+# ("rx", (y, z) axis point, deg) rotates about +X;  ("ry", (x, z), deg) about +Y;  ("t", (dx, dy, dz))
+MOVES = {
+    "nose": ("rx", (-14, 180), -180),
+    "head": ("t", (0, 0, -22)),
+    "forearm#1": ("rx", (-2, 124), 180),
+    "forearm#2": ("rx", (-2, 124), 180),
+    "spine": ("rx", (22.5, 105), -180),
+}
+POSING = {  # posing ranges checked from the Display Pose
+    "arm-shell#1": ("rx", (-2, 157), -90), "arm-shell#2": ("rx", (-2, 157), -90),
+    "thigh#1": ("rx", (-2, 102), -20), "thigh#2": ("rx", (-2, 102), -20),
+}
+
+def section_yz(prims, x):
+    """Y-Z section of a part at plane X=x (robot pose)."""
+    from shapely.ops import unary_union
+    polys, cuts = [], []
+    for p in prims:
+        if p[0] == "cut" and p[1] <= x <= p[2]:
+            cuts.append(sbox(p[3], p[5], p[4], p[6]))
+        elif p[0] == "cutx" and p[1] <= x <= p[2]:
+            cuts.append(Point(p[3], p[4]).buffer(p[5], 32))
+    for p in prims:
+        if p[0] == "box" and p[1] <= x <= p[2]:
+            polys.append(sbox(p[3], p[5], p[4], p[6]))
+        elif p[0] == "cylx" and p[1] <= x <= p[2]:
+            polys.append(Point(p[3], p[4]).buffer(p[5], 32))
+        elif p[0] == "tearx" and p[1] <= x <= p[2]:
+            polys.append(tear_yz(p))
+        elif p[0] == "cyly" and p[1] <= x <= p[2]:
+            _, x0, x1, y0, y1, cx, cz, r = p
+            if abs(x - cx) <= r:
+                h = math.sqrt(r * r - (x - cx) ** 2)
+                polys.append(sbox(y0, cz, y1, cz + h))
+    return unary_union(polys).difference(unary_union(cuts))
+
+def section_xz(prims, y):
+    from shapely.ops import unary_union
+    polys, cuts = [], []
+    for p in prims:
+        if p[0] == "cut" and p[3] <= y <= p[4]:
+            cuts.append(sbox(p[1], p[5], p[2], p[6]))
+        elif p[0] == "cutx" and abs(y - p[3]) <= p[5]:
+            h = math.sqrt(p[5] ** 2 - (y - p[3]) ** 2)
+            cuts.append(sbox(p[1], p[4] - h, p[2], p[4] + h))
+    for p in prims:
+        if p[0] == "box" and p[3] <= y <= p[4]:
+            polys.append(sbox(p[1], p[5], p[2], p[6]))
+        elif p[0] == "cylx" and abs(y - p[3]) <= p[5]:
+            h = math.sqrt(p[5] ** 2 - (y - p[3]) ** 2)
+            polys.append(sbox(p[1], p[4] - h, p[2], p[4] + h))
+        elif p[0] == "cyly" and p[3] <= y <= p[4]:
+            polys.append(Point(p[5], p[6]).buffer(p[7], 32).intersection(sbox(p[1], p[6], p[2], p[6] + p[7])))
+        elif p[0] == "tearx":
+            cut = tear_yz(p).intersection(sbox(y - 1e-3, -1e4, y + 1e-3, 1e4))
+            if not cut.is_empty:
+                polys.append(sbox(p[1], cut.bounds[1], p[2], cut.bounds[3]))
+    return unary_union(polys).difference(unary_union(cuts))
+
+def xr(prims):
+    lo = min(p[1] for p in prims if not p[0].startswith("cut")); hi = max(p[2] for p in prims if not p[0].startswith("cut"))
+    return lo, hi
+
+def moved_yz(name, frac, x):
+    s = section_yz(P[name], x)
+    m = MOVES.get(name)
+    if not m: return s
+    if m[0] == "rx": return rotate(s, m[2] * frac, origin=m[1])
+    if m[0] == "t": return translate(s, m[1][1] * frac, m[1][2] * frac)
+    return s
+
+def gap_yz(a, b, fa, fb):
+    lo = max(xr(P[a])[0], xr(P[b])[0]); hi = min(xr(P[a])[1], xr(P[b])[1])
+    if lo > hi: return None
+    best = 1e9
+    for i in range(9):
+        x = lo + (hi - lo) * i / 8
+        sa, sb = moved_yz(a, fa, x), moved_yz(b, fb, x)
+        if sa.is_empty or sb.is_empty: continue
+        best = min(best, -sb.intersection(sa).area if sa.intersects(sb) and sa.intersection(sb).area > 1e-6 else sa.distance(sb))
+    return None if best == 1e9 else best
+
+def sweep(mover, others, steps=36):
+    worst = (1e9, None, None)
+    for k in range(steps + 1):
+        f = k / steps
+        for o in others:
+            if o == mover: continue
+            fo = f if o in MOVES and MOVES[o][0] != "ry" and o in SIMUL.get(mover, ()) else 0
+            g = gap_yz(mover, o, f, fo)
+            if g is not None and g < worst[0]:
+                worst = (g, o, round(f * 100))
+    return worst
+
+def sweep_y(mover, axis, deg, others, steps=36):
+    """Rotation about Y: check in X-Z sections over the mover's Y range."""
+    ys = [p for p in P[mover] if p[0] == "box"]
+    y0 = min(p[3] for p in ys); y1 = max(p[4] for p in ys)
+    worst = (1e9, None, None)
+    for k in range(steps + 1):
+        f = k / steps
+        for o in others:
+            if o == mover: continue
+            for i in range(7):
+                y = y0 + (y1 - y0) * i / 6
+                sa = rotate(section_xz(P[mover], y), deg * f, origin=axis)  # CCW in (x, z): + swings a part below the axis toward +X
+                sb = section_xz(P[o], y)
+                if sa.is_empty or sb.is_empty: continue
+                g = -sa.intersection(sb).area if sa.intersection(sb).area > 1e-6 else sa.distance(sb)
+                if g < worst[0]: worst = (g, o, round(f * 100))
+    return worst
+
+SIMUL = {"nose": ("head",), "head": ("nose",)}
+
+if __name__ == "__main__":
+    allp = list(P)
+    print("Transformation sweeps, robot pose (0%) to car-standing (100%); gap mm (<0 = overlap area)")
+    for m in ["nose", "head", "spine", "forearm#1", "forearm#2"]:
+        g = sweep(m, allp)
+        print(f"  {m:10s} worst {g[0]:7.2f} vs {g[1]} at {g[2]}%")
+    # no elbow posing: the forearm bends only back (the +180 fold above); forward (-deg) hits the shell's front wall (amend-b)
+    print("Posing sweeps from the Display Pose")
+    for m, (k, ax, deg) in POSING.items():
+        side = m[-2:]
+        if m.startswith("arm-shell"):
+            g = None
+            for d in (deg, 30):
+                P["_p"] = P[m] + P["forearm" + side]; MOVES["_p"] = ("rx", ax, d)
+                gg = sweep("_p", [o for o in allp if o not in (m, "forearm" + side)]); del MOVES["_p"]
+                print(f"  {m:12s} shoulder {'forward' if d < 0 else 'back'} {abs(d)} deg worst {gg[0]:7.2f} vs {gg[1]}")
+            del P["_p"]; continue
+        else:
+            wheel = "wheel#3" if side == "#1" else "wheel#4"
+            P["_p"] = P[m] + P["shin" + side] + P[wheel]
+            MOVES["_p"] = ("rx", ax, deg)
+            g = sweep("_p", [o for o in allp if o not in (m, "shin" + side, wheel)]); del MOVES["_p"]
+        del P["_p"]
+        print(f"  {m:12s} {deg:+4d} deg worst {g[0]:7.2f} vs {g[1]} at {g[2]}%")
+    print("Static clearances in the Display Pose (pairs closer than 0.5 that are not joined)")
+    for a, b in itertools.combinations(allp, 2):
+        g = gap_yz(a, b, 0, 0)
+        if g is not None and g < CLR:
+            print(f"  {a} / {b}: {g:.2f}")
+
+def car_section(name, x):
+    return moved_yz(name, 1.0, x)
+
+def report_car():
+    print("Car-standing pose: pairs closer than 0.5 (all moves applied)")
+    for a, b in itertools.combinations(list(P), 2):
+        lo = max(xr(P[a])[0], xr(P[b])[0]); hi = min(xr(P[a])[1], xr(P[b])[1])
+        if lo > hi: continue
+        g = 1e9
+        for i in range(9):
+            x = lo + (hi - lo) * i / 8
+            sa, sb = car_section(a, x), car_section(b, x)
+            if sa.is_empty or sb.is_empty: continue
+            ov = sa.intersection(sb).area
+            g = min(g, -ov if ov > 1e-6 else sa.distance(sb))
+        if g < CLR: print(f"  {a} / {b}: {g:.2f}")
+    print("Car on the ground (ground plane is the lowest wheel point; car 'down' is -Y):")
+    low = {}
+    for n in P:
+        lo, hi = xr(P[n])
+        ys = [car_section(n, lo + (hi - lo) * i / 12).bounds for i in range(13)]
+        ys = [b[0] for b in ys if b]
+        low[n] = min(ys)
+    ground = min(low[w] for w in ("wheel#1", "wheel#2", "wheel#3", "wheel#4"))
+    for n, v in sorted(low.items(), key=lambda kv: kv[1]):
+        print(f"  {n:12s} lowest Y {v:7.2f}  clearance {v - ground:5.2f}")
+    zs = []
+    for n in P:
+        lo, hi = xr(P[n])
+        for i in range(13):
+            b = car_section(n, lo + (hi - lo) * i / 12).bounds
+            if b: zs += [b[1], b[3]]
+    print(f"  car length along Z {min(zs):.1f} .. {max(zs):.1f} = {max(zs) - min(zs):.1f}")
+    top = max(car_section(n, xr(P[n])[0] + (xr(P[n])[1] - xr(P[n])[0]) * i / 12).bounds[2] for n in P for i in range(13) if car_section(n, xr(P[n])[0] + (xr(P[n])[1] - xr(P[n])[0]) * i / 12).bounds)
+    print(f"  car height {top - ground:.1f} (top Y {top:.1f})")
+
+def report_balance():
+    vol = {}; cy = 0; M = 0
+    for n in P:
+        lo, hi = xr(P[n]); a = 0; m = 0
+        for i in range(12):
+            x = lo + (hi - lo) * (i + 0.5) / 12
+            s = section_yz(P[n], x)
+            if s.is_empty: continue
+            a += s.area * (hi - lo) / 12; m += s.area * (hi - lo) / 12 * s.centroid.x
+        M += a; cy += m
+    print(f"Robot balance: centre of mass Y {cy / M:.1f}; feet stand on Y -17 (toe) .. 12 (heel, outboard of the spine lane)")
+
+if __name__ == "__main__":
+    report_car(); report_balance()
+
+if __name__ == "__main__":
+    print("Leg posing sweeps")
+    allp = [n for n in P]
+    for side, w in (("#1", "wheel#3"), ("#2", "wheel#4")):
+        P["_p"] = P["thigh" + side] + P["shin" + side] + P[w]; MOVES["_p"] = ("rx", (-2, 102), 20)
+        g = sweep("_p", [o for o in allp if o not in ("thigh" + side, "shin" + side, w, "_p")])
+        print(f"  hip{side} back 20 deg worst {g[0]:.2f} vs {g[1]}")
+        P["_p"] = P["shin" + side] + P[w]; MOVES["_p"] = ("rx", (-2, 80.5), 45)
+        g = sweep("_p", [o for o in allp if o not in ("shin" + side, w, "_p")])
+        print(f"  knee{side} back 45 deg worst {g[0]:.2f} vs {g[1]}")
+        del P["_p"], MOVES["_p"]
