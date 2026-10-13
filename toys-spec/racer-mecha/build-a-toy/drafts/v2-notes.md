@@ -27,3 +27,36 @@ front, nose hinge at the back) and nose redrawn. Head, arm shell, forearm and wh
 Images to make (design-a-toy Stage 3): ref-01 assembly, ref-02 torso, ref-03 nose (from behind), ref-07
 thigh, ref-08 shin, ref-09 boot, ref-10 wing; renumber the two wheel images. Car-pose images wait for the
 Workshop posed-reference feature.
+
+## v2b - chunky proportions (owner chose B, 2026-10-13)
+
+The owner chose the chunky look (prototypes/v2-proportion-choice.png, B) over
+the v2a contract proportions. Measured from the approved chunky concept
+(gen10/c1, front view, scaled to 207): torso 125 to 194, thighs 100 to 121,
+shins 31 to 100, boots 0 to 31. Re-laid out, height kept at 207:
+
+| Landmark | v2a | v2b |
+|---|---|---|
+| boot top | 20 | 26 |
+| shin block | 20.5-53.5 | 26.5-69.5 |
+| slide post / knee guard | 53.5-77 / to 70 | 69.5-93 / to 86 |
+| thigh | 70-96.5 | 86-112.5 |
+| hip pin | 102 | 118 |
+| torso bottom | 99 | 115 |
+| cockpit / halo | 128-157 / 126-160 | 126-152.5 / 124-155.5 |
+| head neck post / retainer | 143-178 / 149.5 | 148-178 / 152 |
+| wing hinge A | Z 23.5 | Z 29.5 |
+
+Forced by the move:
+- The hip slots would have met the neck bore (head lowered to Z 121): the
+  neck post is shortened to 30 and the retainer raised to Z 152, bore floor
+  125.5, 1.5 over the hip slots.
+- The cockpit must keep 1.5 over the hip slots and under the head pocket, so
+  it is 26.5 tall (was 29) and the halo follows it.
+- The front wing now sits behind the thighs: it moves to the nose's back face
+  (Y 21 to 27), endplates run the full depth (Y 13.5 to 27), a 4 deep cone
+  tip (Y 17 to 21) runs on to Z 102 into the wing, and hip back swing is 15
+  (at 20 the thigh meets the cone's bottom).
+- Boots are 6 taller in front only; the ankle stays at (3.75, 12.25) so the
+  folded boot still sits 3 above the car's ground. Hinge A rises 6, so the
+  car's rear wing stands 6 higher: car height 45 (was 39). Length 276.5 kept.
