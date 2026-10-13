@@ -1,0 +1,6 @@
+Image 1 is a side view of a robot toy's shin-and-boot part, but its proportions are wrong: it is drawn far too wide and the toe is too long. Redraw the same part, same style, colours, seams and lighting, side orthographic view, front on the LEFT, plain flat medium grey (#7f7f7f) background, whole part in frame with margin, no text, with these exact proportions:
+- The whole part is a TALL NARROW column: its total depth (toe tip to heel back) is exactly ONE THIRD of its height.
+- The red shin column and the black boot above the toe have the same depth, about 80% of the total depth, and are the same straight column from the bottom to near the top.
+- The toe is a SHORT black step sticking out at the bottom LEFT: it sticks out only 14% of the total depth, and is only 14% of the height tall.
+- The heel is a tiny black step at the bottom RIGHT: it sticks out only 7% of the total depth, also 14% of the height tall.
+- The black boot is the bottom 32% of the height; the red shin above it; a small rounded red knee tongue on top, narrower than the shin.

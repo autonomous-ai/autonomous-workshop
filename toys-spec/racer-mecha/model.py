@@ -62,7 +62,7 @@ P["arm-shell#1"] = (B(30.5, 50.5, -13, 9, 120, 157)                             
                     + CUT(33, 48, -10, 9, 118, 152.6))                                           # forearm cavity, open at the back and below
 P["forearm#1"] = B(33.5, 47.5, -9.5, 5.5, 97, 124) + CX(33.5, 47.5, -2, 124, 7.5)       # knuckle rounded about the elbow pin
 P["thigh#1"] = B(0.5, 25.5, -13, 9, 77.5, 92) + B(0.5, 25.5, -10, 6, 92, 95) + B(4, 14, -6, 2, 95, 102) + CX(4, 14, -2, 102, 4) + CUT(7.5, 22.5, -8.5, 4.5, 77.5, 85) + CUT(0.5, 25.5, -0.5, 9, 77.5, 79.4) + CUT(0.5, 25.5, 1, 9, 77.5, 81.3) + CUT(0.5, 25.5, 2.5, 9, 77.5, 83.2) + CUT(0.5, 25.5, 4, 9, 77.5, 85.2) + CUT(0.5, 25.5, 5.5, 9, 77.5, 87.1) + CUT(0.5, 25.5, 7, 9, 77.5, 89)                           # + tongue into hip slot
-P["shin#1"] = B(0.5, 30, -13, 9, 27, 72) + B(2.5, 28, -9, 5, 72, 76) + B(8, 22, -6, 2, 76, 80.5) + CX(8, 22, -2, 80.5, 4) + B(2.5, 31.5, -13, 9, 0, 27) + B(11, 31.5, 9, 14, 0, 27)  # shin, boot, stub
+P["shin#1"] = B(0.5, 30, -13, 9, 27, 72) + B(2.5, 28, -9, 5, 72, 76) + B(8, 22, -6, 2, 76, 80.5) + CX(8, 22, -2, 80.5, 4) + B(2.5, 31.5, -13, 9, 0, 27) + B(2.5, 31.5, -17, -13, 0, 7) + B(11, 31.5, 9, 12, 0, 7)  # shin, boot, stub
 P["spine"] = (CX(-10, 10, 22.5, 105, 6) + B(-10, 10, 22, 35.5, 105, 205) + CUT(-10, 10, 31.5, 35.6, 99, 112) + B(-6, 6, 15.5, 22, 106, 118)                           # knuckle + boom
               + B(-41.5, 41.5, 22, 27, 205, 221) + B(-10, 10, 22, 35.5, 205, 221) + B(-41.5, -38.5, 20, 32, 199.5, 221) + B(38.5, 41.5, 20, 32, 199.5, 221))
 P["wheel#1"] = CX(31, 47, 0, 188, 19)   # front, on the torso tower
@@ -276,7 +276,7 @@ def report_balance():
             if s.is_empty: continue
             a += s.area * (hi - lo) / 12; m += s.area * (hi - lo) / 12 * s.centroid.x
         M += a; cy += m
-    print(f"Robot balance: centre of mass Y {cy / M:.1f}; feet stand on Y -13 .. 9 (heel to 14 outboard of the spine lane)")
+    print(f"Robot balance: centre of mass Y {cy / M:.1f}; feet stand on Y -17 (toe) .. 12 (heel, outboard of the spine lane)")
 
 if __name__ == "__main__":
     report_car(); report_balance()

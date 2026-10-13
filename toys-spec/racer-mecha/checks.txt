@@ -20,19 +20,19 @@ Car on the ground (ground plane is the lowest wheel point; car 'down' is -Y):
   wheel#4      lowest Y  -19.00  clearance  0.00
   torso        lowest Y  -17.50  clearance  1.50
   nose         lowest Y  -17.50  clearance  1.50
+  shin#1       lowest Y  -17.00  clearance  2.00
+  shin#2       lowest Y  -17.00  clearance  2.00
   arm-shell#1  lowest Y  -13.00  clearance  6.00
   thigh#1      lowest Y  -13.00  clearance  6.00
-  shin#1       lowest Y  -13.00  clearance  6.00
   arm-shell#2  lowest Y  -13.00  clearance  6.00
   thigh#2      lowest Y  -13.00  clearance  6.00
-  shin#2       lowest Y  -13.00  clearance  6.00
   forearm#1    lowest Y   -9.50  clearance  9.50
   forearm#2    lowest Y   -9.50  clearance  9.50
   head         lowest Y   -7.50  clearance 11.50
   spine        lowest Y    9.50  clearance 28.50
   car length along Z -11.0 .. 261.0 = 272.0
   car height 48.5 (top Y 29.5)
-Robot balance: centre of mass Y 0.2; feet stand on Y -13 .. 9 (heel to 14 outboard of the spine lane)
+Robot balance: centre of mass Y 0.0; feet stand on Y -17 (toe) .. 12 (heel, outboard of the spine lane)
 Leg posing sweeps
   hip#1 back 20 deg worst 0.84 vs torso
   knee#1 back 45 deg worst 0.50 vs thigh#1

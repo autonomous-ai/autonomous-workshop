@@ -1,0 +1,7 @@
+Image 1 is the SHIN-AND-BOOT part of a transforming robot toy seen from the FRONT. Image 2 is the whole robot for style. Draw the same part seen exactly from its OUTER SIDE: straight-on side orthographic view, camera level, the toy's FRONT on the LEFT of the picture and its BACK on the RIGHT. Plain flat medium grey (#7f7f7f) background, whole part inside the frame with a wide margin, matte 3D-printed plastic, same built-from-small-blocks style with thin recessed seams and small chamfered edges, no wheel, no text.
+Exact proportions (the part is 28 deep by 84.5 tall, depth/height 0.33):
+- The red shin is a tall block from 15% to 93% of the depth (left to right), from the boot top (32% of the height) up to 85% of the height; its top tapers in slightly at both sides, and on top a small red rounded knee tongue, centred a little left of middle (from 40% to 68% of the depth), rises to the very top.
+- A raised red knee pad sticks out 1 unit from the shin's front (left) face, about 75% to 82% of the height.
+- Its outer side face is split into red blocks by seams; a small round hole at 50% of the depth and 65% of the height (the rear wheel's axle).
+- The black boot is the bottom 32% of the height, the same depth as the shin (15% to 93%).
+- The FOOT POINTS FORWARD: a black toe block sticks out to the LEFT of the boot, from 0% to 15% of the depth, only the bottom 14% of the height tall, its top a flat step. At the back a small black heel sticks out from 93% to 100% of the depth, also only the bottom 14% tall.

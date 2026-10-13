@@ -1,0 +1,5 @@
+Edit this side view of a robot toy's shin-and-boot part. Keep the same height, style, colours, seams, lighting and the plain flat medium grey (#7f7f7f) background (make the background perfectly flat, no gradient). Change only these:
+1. Make the red shin column and the black boot column 50% DEEPER (wider in the picture), growing to the right, so the column's depth is 26% of the part's height. Add one more vertical seam on the red side face so its blocks stay 5 to 15 units across.
+2. Make the black toe a simple flat rectangular step at the bottom left: it sticks out 4% of the part's height to the left of the boot and is 14% of the height tall, with a flat horizontal top. No slope, no extra small steps.
+3. The heel stays a small flat step at the bottom right sticking out 2% of the height, 14% of the height tall.
+4. The knee pad on the left near the top sticks out only 1% of the height.

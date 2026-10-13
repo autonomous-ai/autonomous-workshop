@@ -1,0 +1,5 @@
+Edit this side view of a robot toy's shin-and-boot. Keep everything above the boot exactly as it is (red shin, knee pad, knee tongue, hole, seams), keep the same size and the flat grey background. Redraw ONLY the black boot's front (left) part:
+- Remove the small separate black block at the far bottom left and remove the sloped black block.
+- Instead the boot's left face is a straight vertical face in line with the red shin's left face, from the boot top down to 14% of the part's height above the bottom.
+- There, one single black toe block sticks out to the left: a plain rectangle from the bottom up to 14% of the part's height, sticking out to the left by only 5% of the part's height, with a flat horizontal top face and a small chamfer on its top front edge.
+- Keep the small heel step at the bottom right.

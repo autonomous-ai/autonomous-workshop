@@ -1,0 +1,4 @@
+Edit this side view of a robot toy's shin-and-boot. Keep the same size, position, colours, lighting, flat grey background, the red shin column, the knee pad, the hole, the black boot and the black toe step at the bottom left exactly as they are. Change only:
+1. The small red block on top is the knee TONGUE: make it narrower, only 30% of the red column's depth, centred slightly LEFT of the column's middle, and round its top into a half-circle (a rounded tab). Just below it, bevel the top corners of the red column slightly inward.
+2. The heel at the bottom right: one black rectangular step sticking out to the right by 9% of the column's depth, as tall as the toe step on the left, with a flat top.
+3. Split the big red side face into more blocks with thin recessed seams, so no block is taller than 15% of the part's height; offset the seams between rows like brickwork.

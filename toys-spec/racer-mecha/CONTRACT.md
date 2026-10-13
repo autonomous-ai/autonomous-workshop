@@ -154,8 +154,11 @@ tapering in to X 2.5 to 28 and Y -9 to 5 up to Z 76, topped by a knee tongue
 The block runs Y -13 to 9; the front carries a raised knee pad 16 wide x
 10 tall x 1.0 proud (to Y -14) and a
 white stripe panel. Below
-it the boot, 29 wide (X 2.5 to 31.5), Y -13 to 9, Z 0 to 27, with a heel out
-to Y 14 over X 11 to 31.5; under the shin's inboard edge (X 0.5 to 2.5) the
+it the boot, 29 wide (X 2.5 to 31.5), Y -13 to 9, Z 0 to 27, with a toe
+block out to Y -17 (4 ahead of the shin's front) over X 2.5 to 31.5, Z 0 to
+7, its top a flat step, and a heel step out to Y 12 over X 11 to 31.5, Z 0
+to 7;
+the foot points forward, the way the robot faces; under the shin's inboard edge (X 0.5 to 2.5) the
 boot rises at 52 degrees to meet it. The rear wheel's bore runs along X into the shin's outer face
 at Y -2, Z 55. Prints standing on its boot sole.
 
@@ -241,6 +244,19 @@ nothing is left out. Every chamfer, gusset, arch, wedge and teardrop is
 designed at most 38 degrees from vertical (a 52 degree rise), the
 print-details design limit, inside the gate's 45.
 
+The toy reads as built from small blocks, as ref-01 draws it, not as plain
+slabs. Every large face (over 15 across) of the torso, thigh, shin, arm
+shell, forearm and spine is split by seams 0.6 wide and 0.5 deep into
+blocks 5 to 15 across, offset between rows like brickwork, and on each
+front face at least two blocks stand 0.6 proud of their neighbours. Every
+exposed outside edge carries a chamfer 0.8 across, rising at 52 degrees on
+an edge that faces down in the print stance; edges on the print-bed face,
+at a bore, a slot, a joint face, or on any face another part comes within
+2 mm of in a pose or move stay square, and no proud block stands there.
+A seam is the one cut allowed into a load-bearing wall: the arm shell's 2.5
+walls keep 2.0 under a seam, and no seam runs where it would leave less
+than a part's floor below.
+
 Load-bearing sections are at least 3 mm: torso walls 3.0, arm shell walls
 2.5 beside a 3.0 front wall, every tongue at least 7.4 deep, the neck post 8, the boom
 20. The one exception is the material around a dowel bore, which the
@@ -252,8 +268,8 @@ an R3.7 or R4 tongue's Ø3.1 bore 2.15 or 2.45. So the torso holds a 1.1 floor, 
 the thigh 1.4 and the head and shin 1.9, and nothing on them is thinner than
 these joints force. A drop lands on a shoulder wheel or a boot; the wheels and the head are
 the first to come loose, and each presses back on its dowel. The robot
-stands unsupported: its centre of mass lies within 0.5 mm of the boots'
-centre line, 13.3 behind their toes and 8.7 ahead of their heels.
+stands unsupported: its centre of mass lies at Y 0, 17 behind the toes
+and 12 ahead of the heels.
 
 ```design-contract
 {
@@ -272,16 +288,17 @@ centre line, 13.3 behind their toes and 8.7 ahead of their heels.
     {"file": "ref-08-shin.png", "shows": "geometry:shin", "camera": [-90, 0]},
     {"file": "ref-09-spine.png", "shows": "geometry:spine", "camera": [-90, 0]},
     {"file": "ref-10-front-wheel.png", "shows": "geometry:front-wheel", "camera": [0, 0]},
-    {"file": "ref-11-rear-wheel.png", "shows": "geometry:rear-wheel", "camera": [0, 0]}
+    {"file": "ref-11-rear-wheel.png", "shows": "geometry:rear-wheel", "camera": [0, 0]},
+    {"file": "ref-12-shin-side.png", "shows": "geometry:shin", "camera": [0, 0]}
   ],
   "geometries": [
     {"id": "torso", "name": "Torso", "count": 1, "extents_mm": [61, 45, 93], "wall_min_mm": 1.1},
     {"id": "nose", "name": "Nose and front wing", "count": 1, "extents_mm": [54, 22.5, 84.5], "wall_min_mm": 0.9},
     {"id": "head", "name": "Head", "count": 1, "extents_mm": [19, 16, 54], "wall_min_mm": 1.9},
-    {"id": "arm-shell", "name": "Upper arm shell", "count": 2, "extents_mm": [20, 22, 45], "wall_min_mm": 2.5},
+    {"id": "arm-shell", "name": "Upper arm shell", "count": 2, "extents_mm": [20, 22, 45], "wall_min_mm": 2.0},
     {"id": "forearm", "name": "Forearm and fist", "count": 2, "extents_mm": [14, 15, 34.5], "wall_min_mm": 3.0},
     {"id": "thigh", "name": "Thigh", "count": 2, "extents_mm": [25, 22, 28.2], "wall_min_mm": 1.4},
-    {"id": "shin", "name": "Shin and boot", "count": 2, "extents_mm": [31, 28, 84.5], "wall_min_mm": 1.9},
+    {"id": "shin", "name": "Shin and boot", "count": 2, "extents_mm": [31, 29, 84.5], "wall_min_mm": 1.9},
     {"id": "spine", "name": "Spine and rear wing", "count": 1, "extents_mm": [83, 19, 122], "wall_min_mm": 3.0},
     {"id": "front-wheel", "name": "Front wheel", "count": 2, "extents_mm": [38, 38, 16], "wall_min_mm": 2.0},
     {"id": "rear-wheel", "name": "Rear wheel", "count": 2, "extents_mm": [34, 34, 12], "wall_min_mm": 2.0}
@@ -295,17 +312,17 @@ centre line, 13.3 behind their toes and 8.7 ahead of their heels.
     {"id": "R06", "scope": "assembly", "text": "Every moving part keeps at least 0.5 mm from every other part through each transformation move and posing range and in both poses, except at the contacts the head-slide Interface itself declares: the 3 mm dowel running in and stopping against the neck post's 3.4 wide slot, and the lowered helmet resting on the head pocket floor. Checked with --check-motion true: one sweep per transformation move in at most 10 steps against only the parts it can reach; a skipped, killed or timed-out sweep fails this requirement."},
     {"id": "R07", "scope": "assembly", "text": "Every purchased-part seat is derived from a catalog STEP file, or from the documented envelope when the catalog search is a recorded miss, and the bill of materials lists exactly 6 dowels 3 x 20, 2 dowels 3 x 24, 4 dowels 3 x 26, 3 dowels 3 x 30 and 4 push-on caps for 3 mm shafts."},
     {"id": "R08", "scope": "assembly", "text": "Every joint is built as its Interface text states, each hinge a purchased dowel pressed into a 2.9 mm bore on one side and turning in a 3.1 mm bore (3.2 for the wheels) on the other, with no glue."},
-    {"id": "R09", "scope": "assembly", "text": "The robot stands unsupported in the Display Pose: its centre of mass lies over the boots, which span Y -13 to 9."},
-    {"id": "R10", "scope": "geometry:torso", "text": "A 58 x 26 core with engraved panel lines on its front and two wheel towers 13 wide rising 12 above its top corners; between them an open head pocket whose front wall has a 13 wide notch so the neck shows, and a small round hinge cheek either side of the notch on the front top edge."},
+    {"id": "R09", "scope": "assembly", "text": "The robot stands unsupported in the Display Pose: its centre of mass lies over the boots, which span Y -17 at the toes to 12 at the heels; each foot points forward, its toe 4 ahead of the shin's front."},
+    {"id": "R10", "scope": "geometry:torso", "text": "A 58 x 26 core built from blocks, its front, sides and back split by seams with proud blocks on the front, and two wheel towers 13 wide rising 12 above its top corners; between them an open head pocket whose front wall has a 13 wide notch so the neck shows, and a small round hinge cheek either side of the notch on the front top edge."},
     {"id": "R11", "scope": "geometry:torso", "text": "An Ø8 stub boss on the outer side of each tower for a front wheel; on the back a recessed cockpit, a raised hoop halo and two spine hinge cheeks at the bottom."},
     {"id": "R12", "scope": "geometry:nose", "text": "A red nose cone with a white stripe down each side, 18 wide at its root tapering to 12, ending in a blunt 4 wide tip, hanging from a hinge knuckle at its root."},
     {"id": "R13", "scope": "geometry:nose", "text": "Below the tip a black front wing 54 wide and 29 tall with a red endplate 3 wide at each end; the cone's tip overlaps the wing's upper half."},
     {"id": "R14", "scope": "geometry:head", "text": "A white and red helmet 19 wide and 19 tall with a blue visor band across its front and a raised crest along its top centre line, on a square 8 mm neck post 35 long with a 3.4 wide slot through it from front to back."},
-    {"id": "R15", "scope": "geometry:arm-shell", "text": "A 20 x 22 white channel open at the back and the bottom, its top chamfered front and back, with two elbow cheeks at its bottom and two red panels on its front face."},
+    {"id": "R15", "scope": "geometry:arm-shell", "text": "A 20 x 22 white channel open at the back and the bottom, its top chamfered front and back, its faces split into blocks by seams, with two elbow cheeks at its bottom and two red panels on its front face."},
     {"id": "R16", "scope": "geometry:forearm", "text": "A 14 x 15 white forearm with red side panels, ending at the top in a rounded knuckle and at the bottom in a closed black fist 9 tall and as wide as the forearm, four fingers split by three vertical grooves and crossed by two knuckle grooves."},
-    {"id": "R17", "scope": "geometry:thigh", "text": "A 25 x 22 red block whose top steps in and rises into a rounded hip tongue 10 wide toward its inboard side, with a knee slot and a notch across the back of the knee."},
-    {"id": "R18", "scope": "geometry:shin", "text": "A 29.5 x 22 red shin with a raised knee pad and a white stripe panel on its front, a rounded knee tongue 14 wide on top, and a black boot 29 wide below that sticks out 1.5 past the shin's outer side and steps in 2 from its inner side."},
-    {"id": "R19", "scope": "geometry:spine", "text": "A black boom 20 wide with an airbox scoop near its hinge knuckle, carrying at its top a rear wing 83 wide and 16 tall with a red endplate at each end that reaches 5.5 below the wing."},
+    {"id": "R17", "scope": "geometry:thigh", "text": "A 25 x 22 red block whose top steps in and rises into a rounded hip tongue 10 wide toward its inboard side, with a knee slot and a notch across the back of the knee; its front and outer side are split by seams into blocks, two of them standing proud on the front."},
+    {"id": "R18", "scope": "geometry:shin", "text": "A 29.5 x 22 red shin with a raised knee pad and a white stripe panel on its front, a rounded knee tongue 14 wide on top, and a black boot 29 wide below that sticks out 1.5 past the shin's outer side and steps in 2 from its inner side; the shin's faces are split into blocks by seams, and the boot has a toe block 4 ahead of the shin's front, 7 tall, and a heel step 3 behind it, so the foot points forward."},
+    {"id": "R19", "scope": "geometry:spine", "text": "A black boom 20 wide, split into blocks by seams, with an airbox scoop near its hinge knuckle, carrying at its top a rear wing 83 wide and 16 tall with a red endplate at each end that reaches 5.5 below the wing."},
     {"id": "R20", "scope": "geometry:front-wheel", "text": "A black tyre 38 across and 16 wide with a plain tread and a five-spoke rim face on its outer side."},
     {"id": "R21", "scope": "geometry:rear-wheel", "text": "A black tyre 34 across and 12 wide with a plain tread and a five-spoke rim face on its outer side."}
   ],

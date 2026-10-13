@@ -71,6 +71,14 @@
       "backups": [
         "build-a-toy/drafts/amend-c-backup/"
       ]
+    },
+    "amend-d": {
+      "status": "drafted, awaiting owner image approval",
+      "notes": "build-a-toy/drafts/amend-d-notes.md",
+      "backups": [
+        "build-a-toy/drafts/amend-d-backup/"
+      ],
+      "visible": true
     }
   },
   "contract_contradictions": [
