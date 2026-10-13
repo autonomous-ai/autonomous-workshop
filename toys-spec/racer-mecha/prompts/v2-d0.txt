@@ -1,0 +1,8 @@
+Redraw the attached colour-coded Formula car toy (block-built, 3D-printed toy look, flat solid colours) with a CORRECTED, perfectly LEFT-RIGHT SYMMETRIC layout. Front to back:
+- YELLOW nose cone and yellow front wing at the very front.
+- Just behind the nose, the two front wheels (black tyres, BLUE rims), each mounted on the FRONT END of a long GREEN side block.
+- The two GREEN side blocks (the robot's arms) run straight back along the left and right sides of the car, starting right behind each front wheel and ending level with the back of the cockpit. Both sides identical.
+- Between the green blocks: the LIGHT GREY cockpit tub with the light grey curved HALO bar. The cockpit is EMPTY: a black seat opening, NO driver, NO helmet. In front of the cockpit, under the base of the yellow nose, a small closed dark grey hatch.
+- Behind the cockpit and the green blocks: the whole rear half of the car is RED (the robot's legs), split by a faint centre seam into a left and right half, with the rear wheels (black tyres, ORANGE rims) on its outer sides near the tail.
+- At the tail: two upright DARK GREY rear-wing end plates, one on each side, and between them the PURPLE rear-wing blade made of two halves meeting in the middle (a visible seam at the centre).
+No text, no labels, no arrows. Plain off-white background (#f5f0e6), soft studio light. Three-quarter view from the front-left, nose to the lower LEFT, tail to the upper right, whole car in frame.
