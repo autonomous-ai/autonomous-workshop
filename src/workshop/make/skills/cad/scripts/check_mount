@@ -79,6 +79,7 @@ DEFAULT_MIN_CLEARANCE = cadfits.FIT_TABLE["snug"]
 # is reported, never failed: a deliberately loose cradle for a foam-mounted
 # motor is a design, not a defect.
 LOOSE_CLEARANCE = 1.0
+GAP_EPS_MM = 1e-6   # a gap read back equal to its designed floor is that floor, not a failure
 
 ADVISORY_RULES = {"component-checksum", "no-bolt-pattern", "seat-clearance-loose"}
 
@@ -429,7 +430,7 @@ def run_mount(spec: dict, project: Path, shape, parts: dict,
         note("seat-clearance",
              "nothing in the model comes within measuring distance of the component; "
              "check the pose -- a seat that holds nothing reads as clearance")
-    elif gap < floor:
+    elif gap < floor - GAP_EPS_MM:
         note("seat-clearance",
              f"only {gap:.3f} mm of clearance, below the {floor:.3f} mm minimum. "
              "A bought part does not compress")

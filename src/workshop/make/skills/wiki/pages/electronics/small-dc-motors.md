@@ -8,8 +8,10 @@ sources:
   - https://www.pololu.com/category/60/micro-metal-gearmotors
   - https://www.pololu.com/product/1089
   - https://www.pololu.com/docs/0J15/9
+  - https://www.pololu.com/product/2370 (6 V free-run and stall points of one micro metal gearmotor)
+  - "experience: a gearmotor budget scaled linearly from 6 V that overstated the stall at 2.5 V by a third"
 related: [energy-drive, motor-drivers-and-flyback, power-path-design, gears, shafts-and-bearings, noise-and-vibration]
-updated: 2026-09-23
+updated: 2026-10-07
 ---
 
 # Small DC motors and gearmotors
@@ -38,13 +40,39 @@ seat.
   stall is beyond a microcontroller pin and at the edge of small drivers
   ([[motor-drivers-and-flyback]]).
 - **Speed follows voltage, torque follows current.** A motor run below its
-  rated voltage is slower and weaker. Batteries sag, so check the empty
-  voltage ([[battery-cells-and-packs]]).
+  rated voltage is slower and weaker — by more than the ratio of the voltages
+  (next section). Batteries sag, so check the empty voltage
+  ([[battery-cells-and-packs]]).
 - **Never drive a motor from a GPIO pin.** Use a driver or a transistor
   with a flyback diode.
 - **Wire gauge from stall current** ([[wire-gauge-and-connectors]]).
 - Pick the ratio from the output speed the mechanism wants; the gearmotor
   ratio plus any printed stage is the total ([[energy-drive#ratio-budget]]).
+
+## Below the rated voltage: a DC model, not a scale
+
+Scaling a datasheet's stall torque by `V / V_rated` ignores two things that
+do not scale: the friction current the motor draws just to turn, and the
+resistance of the source in series with the winding. Fit the motor through
+its two published points instead (output-shaft figures, so the gearbox's
+losses are inside them):
+
+```python
+R  = V_rated / I_stall                              # winding + brushes, ohm
+Ke = (V_rated - I_free * R) / w_free                # V per rad/s at the output
+Kt = T_stall / (I_stall - I_free)                   # torque per amp at the output
+def stall(E, Rs):  return Kt * (E / (R + Rs) - I_free)
+def speed(T, E, Rs): return (E - (T / Kt + I_free) * (R + Rs)) / Ke
+```
+
+`E` is the pack's open-circuit voltage and `Rs` its internal resistance plus
+switch, holder springs and wire. Worked, for a 6 V gearmotor with a 0.67 A
+stall and 70 mA free current on two alkaline cells at 2.5 V and 0.8 Ω: the
+linear scale gives 42 % of the 6 V stall, the model 31 %. The start current
+on fresh cells is `E / (R + Rs)`, not `I_stall × E / V_rated` — size the
+switch from that. Within one gearmotor family the higher-power winding has
+more torque at low voltage and a stall current that can pass a small switch's
+rating; compare the families on this model, not on the 6 V table.
 
 ## Mechanical integration
 

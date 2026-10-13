@@ -54,12 +54,25 @@ Who a toy is made for: the tech and office workers who visit autonomous.ai. A
 toy lives on their desk, so it is an adult's desk toy, not a child's toy.
 _Avoid_: Customer, audience, user, kid
 
-**Preview Image**:
-One generated image of a draft toy, made before the draft is judged so its
-judges can see it. It is never a reference image or a concept image and proves
-nothing about the toy; a winning draft's Preview Image becomes a reference only
-after it passes the same reconciliation as any other.
-_Avoid_: Hero, concept art, thumbnail
+**Concept Image**:
+One generated image of a toy idea, made so someone can see the idea before
+choosing it. That someone is a person picking a direction in a Concept Round,
+or the judges in a Trend contest. It proves nothing about the toy and is never
+a Reference Image. A chosen Concept Image becomes one only after it passes the
+same reconciliation with the Design Contract as any other image.
+_Avoid_: Preview Image, hero, concept art, thumbnail, mockup
+
+**Concept Round**:
+One batch of Concept Images, shown side by side for a person to pick from or
+react to. The next round is shaped by that reaction. A Concept Round chooses a
+direction; it decides no dimension and writes no contract.
+_Avoid_: Moodboard, iteration, variant set
+
+**Reference Image**:
+One image sealed in a Design Contract: one per unique geometry, plus one of the
+assembled toy. Make builds toward it, and the Component Reviewer judges the
+build against it. Only an approved, reconciled image becomes one.
+_Avoid_: Concept Image, render, picture
 
 **Signature Motion**:
 The one movement a toy's play centres on, made by parts in contact or sharing

@@ -12,6 +12,7 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from generate_image import (  # noqa: E402
+    MAX_REFERENCE_IMAGES,
     GeneratedImage,
     HttpResponse,
     OPENROUTER_API_KEY_NAME,
@@ -68,7 +69,7 @@ CONFIG = OpenRouterConfig(api_key="sk-or-secret-value", model="fake/image-model"
 def test_generate_image_writes_bounded_png(tmp_path):
     image_bytes = _png_bytes(64, 32)
     transport = _fake_transport(_chat_completions_response(image_bytes))
-    output_path = tmp_path / "preview.png"
+    output_path = tmp_path / "concept.png"
 
     result = generate_image(
         "a lone wizard, fully inside the frame",
@@ -97,11 +98,11 @@ def test_generate_image_writes_bounded_png(tmp_path):
 def test_generate_image_renames_output_to_match_media_type(tmp_path):
     image_bytes = _png_bytes(10, 10)
     transport = _fake_transport(_chat_completions_response(image_bytes))
-    output_path = tmp_path / "preview.jpg"
+    output_path = tmp_path / "concept.jpg"
 
     result = generate_image("subject", output_path, config=CONFIG, transport=transport)
 
-    assert result.path == tmp_path / "preview.png"
+    assert result.path == tmp_path / "concept.png"
     assert result.path.exists()
     assert not output_path.exists()
 
@@ -267,14 +268,14 @@ def test_main_writes_the_image_and_prints_its_facts_without_the_key(tmp_path, mo
     prompt.write_text("one toy whale, fully inside the frame")
     transport = _fake_transport(_chat_completions_response(_png_bytes(40, 40)))
 
-    code = main(["--prompt-file", str(prompt), "--out", str(tmp_path / "preview.jpg"), "--env", str(env)], transport=transport)
+    code = main(["--prompt-file", str(prompt), "--out", str(tmp_path / "concept.jpg"), "--env", str(env)], transport=transport)
 
     captured = capsys.readouterr()
     assert code == 0
     facts = json.loads(captured.out)
-    assert facts["path"] == str(tmp_path / "preview.png")
+    assert facts["path"] == str(tmp_path / "concept.png")
     assert facts["model"] == "fake/image-model"
-    assert (tmp_path / "preview.png").is_file()
+    assert (tmp_path / "concept.png").is_file()
     assert "sk-or-secret-value" not in captured.out + captured.err
 
 
@@ -283,7 +284,66 @@ def test_main_exits_2_when_the_key_is_missing(tmp_path, monkeypatch, capsys):
     prompt = tmp_path / "prompt.txt"
     prompt.write_text("one toy")
 
-    code = main(["--prompt-file", str(prompt), "--out", str(tmp_path / "preview.png"), "--env", str(tmp_path / "none")])
+    code = main(["--prompt-file", str(prompt), "--out", str(tmp_path / "concept.png"), "--env", str(tmp_path / "none")])
 
     assert code == 2
     assert OPENROUTER_API_KEY_NAME in capsys.readouterr().err
+
+
+def test_generate_image_sends_reference_images_after_the_prompt(tmp_path):
+    concept = tmp_path / "concept.png"
+    concept.write_bytes(_png_bytes(12, 12))
+    style = tmp_path / "style.jpg"
+    Image.new("RGB", (8, 8)).save(style, format="JPEG")
+    transport = _fake_transport(_chat_completions_response(_png_bytes(20, 20)))
+
+    generate_image("redraw the first in the style of the second", tmp_path / "out.png",
+                   config=CONFIG, transport=transport, references=[concept, style])
+
+    content = json.loads(transport.calls[0][2].decode("utf-8"))["messages"][0]["content"]
+    assert content[0] == {"type": "text", "text": "redraw the first in the style of the second"}
+    assert [part["type"] for part in content[1:]] == ["image_url", "image_url"]
+    assert content[1]["image_url"]["url"] == _data_url(concept.read_bytes(), "image/png")
+    assert content[2]["image_url"]["url"].startswith("data:image/jpeg;base64,")
+
+
+def test_generate_image_rejects_an_unreadable_reference(tmp_path):
+    bad = tmp_path / "notes.png"
+    bad.write_text("not an image")
+    transport = _fake_transport(_chat_completions_response(_png_bytes(10, 10)))
+
+    with pytest.raises(OpenRouterError, match="reference"):
+        generate_image("x", tmp_path / "out.png", config=CONFIG, transport=transport, references=[bad])
+    assert transport.calls == []
+
+
+def test_generate_image_rejects_too_many_references(tmp_path):
+    refs = []
+    for index in range(MAX_REFERENCE_IMAGES + 1):
+        path = tmp_path / ("r%d.png" % index)
+        path.write_bytes(_png_bytes(4, 4))
+        refs.append(path)
+    transport = _fake_transport(_chat_completions_response(_png_bytes(10, 10)))
+
+    with pytest.raises(OpenRouterError, match="at most"):
+        generate_image("x", tmp_path / "out.png", config=CONFIG, transport=transport, references=refs)
+    assert transport.calls == []
+
+
+def test_main_passes_each_ref_flag_as_a_reference(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv(OPENROUTER_API_KEY_NAME, "sk-or-secret-value")
+    monkeypatch.setenv(OPENROUTER_IMAGE_MODEL_NAME, "fake/image-model")
+    prompt = tmp_path / "prompt.txt"
+    prompt.write_text("restyle the concept")
+    first, second = tmp_path / "a.png", tmp_path / "b.png"
+    first.write_bytes(_png_bytes(6, 6))
+    second.write_bytes(_png_bytes(7, 7))
+    transport = _fake_transport(_chat_completions_response(_png_bytes(30, 30)))
+
+    code = main(["--prompt-file", str(prompt), "--out", str(tmp_path / "concept.png"),
+                 "--env", str(tmp_path / "none"), "--ref", str(first), "--ref", str(second)], transport=transport)
+
+    assert code == 0
+    content = json.loads(transport.calls[0][2].decode("utf-8"))["messages"][0]["content"]
+    assert len(content) == 3
+    assert "sk-or-secret-value" not in capsys.readouterr().out

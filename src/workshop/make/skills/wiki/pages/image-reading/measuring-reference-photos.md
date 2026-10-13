@@ -7,8 +7,9 @@ sources:
   - "toolchain: a contact shadow inflates every view by the same proportion, so a cross-view check still agrees (reproducible)"
   - "experience: dimensions read on the wrong view's ruler, which no downstream gate caught"
   - "experience: a cream egg on a cream ground defeated both toolchain masks; red-minus-blue after a median filter separated it"
+  - "experience: a brown token's dark contact shadow kept by every mask until a relative-saturation rule"
 related: [image-types-and-views, perspective-and-hidden-views, silhouette-likeness]
-updated: 2026-10-05
+updated: 2026-10-07
 ---
 
 # Measuring reference photos
@@ -36,6 +37,16 @@ the image, trust your eyes and say the tool disagreed.
   than the object visibly is, mirror symmetry well below what the object looks
   like, and the widest point dragged toward the base. Crop above the shadow;
   turning shadow rejection off out of habit lets a contact shadow back in.
+- **A coloured subject in its own dark contact shadow.** Under a key light a
+  brown, red or green part throws a shadow far darker than the ground, so the
+  mask and `ref_silhouette.py`'s band and border rules all keep it: a crescent
+  along every edge facing away from the light, 10-15 % of the area on one
+  oblique shot, scored as "the model is too thin" (IoU 0.807 for a model that
+  later scored 0.920). The shadow is neutral at every brightness and the
+  subject is not: relative saturation `(max - min) / max` read 0.46-0.77 on
+  the subject (lit face to deepest groove) and 0.31 or under on every shadow
+  pixel. `ref_silhouette.py --ground tint` flattens by that rule; a grey,
+  white or black subject has no tint to keep and needs another rule.
 - **Dark object on a dark ground, or light on light.** Symptom: an error or a
   nonsense bbox. Invert, or move the threshold (roughly 12–45 on 8-bit
   luminance).

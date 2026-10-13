@@ -1,5 +1,98 @@
 # Shared skill provenance
 
+## Resync to upstream `8488b44`: a tint ground rule, drift that tolerates edge jitter, mount rows per state (2026-10-08)
+
+- Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
+  `8488b44b85f72a51ef898b9673770ca4bc5341a9` (2026-10-08), resynced from
+  `f432984`. That is 11 upstream commits touching 29 vendored files, plus
+  `CLAUDE.md`, which is not vendored. The merge is the same three-way merge
+  as before: the locked `f432984` bytes are the base, the Workshop tree is one
+  side and upstream `HEAD` the other. `cad`, `image-to-cad` and `wiki` move.
+  `design-reference`, `electromechanical-integration`, `product-design` and
+  `step-parts` came out byte-identical, so their locks move to the new commit
+  only. `make-round` and `print-details` are unchanged. `toy-archive` and the
+  reverse-engineering pair stay out; none of them changed upstream in this
+  range.
+- **What upstream brought.** `cad`:
+  - `check_mount` reads a clearance equal to its floor, within 1e-6 mm, as
+    that floor. Before, a seat built exactly at the minimum could fail on
+    float rounding.
+  - `cadmount.seat_for` states which side the mouth is on: the +insert side,
+    so `insert` points out of the opening. The geometry is unchanged; a new
+    self-check fixture pins the side.
+  - `bought-parts.md` says the same, and adds one `measure/mounts.json` row
+    per assembly state a part is checked in: bolted on the bench and then
+    installed, pressed onto a bought shaft, or resting on a face by design.
+  - `run-cost.md` adds that a part entry should build only its own part. The
+    warm daemon evicts first-party modules between targets, so a shared
+    memoised assembly is rebuilt once per entry: 45 entries took 40 min of
+    `gen`, and 2.6 min after the switch.
+- `image-to-cad`:
+  - `ref_silhouette --ground tint` calls a pixel ground by its low relative
+    saturation `(max - min) / max` at any luminance, with `--tint-sat`
+    (default 0.34). It separates a coloured subject from its own dark contact
+    shadow, which the band and border rules both keep as object. `auto` never
+    picks it, and `likeness-gate.md` documents when to pass it.
+  - `render_views --compare-step` still passes a view at IoU 0.999 or above.
+    Below that, it now also passes when every flipped pixel lies within 2 px
+    of both outlines and the flips are at most 10 % of the edge. A traced
+    plan 79 mm long read IoU 0.998 against its own STEP. Each drift row now
+    carries `flipped_px`, `edge_px` and `max_px` beside `iou` and `ok`.
+- `wiki` adds two pages, `image-reading/reference-silhouette-masks` (split
+  out of `silhouette-likeness`) and `modeling/pixel-art-plans`, edits 20
+  others, and now has 202 pages. The edits cover walker drive budgets,
+  hanging journals and end thrust, gearmotors run below their rating, worm
+  drives from rest, sketch-fillet and taper-cap failures, teardrop bed edges,
+  and reading a plan from an oblique shot.
+
+Merge decisions:
+
+- No hunk conflicted. `check_mount`, `render_views.py`, `cadmount.py`,
+  `bought-parts.md`, `run-cost.md` and `likeness-gate.md` carry Workshop
+  changes elsewhere in the file. They merged cleanly, and each residual diff
+  against upstream `HEAD` was read after the merge: it is exactly the
+  Workshop-local adaptation, unchanged (serial Booleans, `$CAD_SKILL_ROOT` and
+  `workshop skills path` script paths, the restricted-run cache rule, the
+  Manager-owned likeness acceptance of ADR 0074, `worst_bands`).
+- No path adaptation was needed. The only bare `skills/...` paths in the new
+  text are wiki `sources:` front-matter citations, which Workshop already
+  leaves as written on 62 other pages.
+
+Workshop review of the new behaviour:
+
+- **The drift check is looser, and only at the pixel scale.** A shape that
+  moved, a feature standing 3 px proud, or a lost body still fails, and a
+  partial mesh is still refused. No host code reads the drift rows; the host
+  only sees `verify_project`'s exit status.
+- **The mount tolerance cannot pass a clash.** It forgives 1e-6 mm at the
+  floor, and a floor of zero still fails anything that intersects.
+- **Several rows for one component already validate.** `check_mount` and
+  `check_power` key rows by `id`, not by component, and no host code reads
+  `measure/mounts.json`.
+- **The tint rule is opt-in.** `--ground auto` behaves as before, so no
+  existing likeness score moves.
+
+Verified here:
+
+- `verify_skill_locks` matches nine trees.
+- The self-checks of `cadmount`, `ref_silhouette` and `render_views` pass,
+  including upstream's new mouth-side, tint and jitter fixtures.
+  `check_mount` has none.
+- `verify_project --self-check` and `wiki --self-check` pass.
+- `wiki lint` reports 202 pages, 0 errors.
+
+Consequences for existing runs:
+
+- **Materialized instruction bytes changed.** The `cad`, `image-to-cad` and
+  `wiki` fingerprints move. A run parked before this change must be
+  restarted rather than resumed; resume fails closed on the
+  materialized-instruction-hash mismatch.
+  `workshop resume --refresh-tools` rewrites the skills a run already carries.
+- A run that keeps its frozen tool bytes keeps its old `check_mount` and
+  `render_views` behaviour. The host reruns the run's own materialized
+  `verify_project` (`native_gate.NATIVE_CAD_VERIFIER_PATH`), so its sealed
+  verdicts still reproduce.
+
 ## Resync to upstream `f432984`: freeform obstacles cropped, exact trimmed-face extents, sRGB review shading (2026-10-07)
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
@@ -2204,3 +2297,30 @@ pitch)`: one march step under the minimum, less 1e-9 mm. Before this, a 0.8 mm
 wall at a 0.4 mm nozzle read 0.7333333333333333 against a limit of
 0.7333333333333334 and failed by float rounding. This changes the `cad`
 fingerprint; materialized runs keep their copied bytes.
+
+## Local change: assembly interference in every assembly round; the generator's import path holds through gen_step() (2026-10-08)
+
+A Workshop-local change (issue #118). The vendored `cad` skill's cadgen
+generator loader (`_internal/generation_runner.py`) used to drop the
+generator's own folder from `sys.path` as soon as the module body ran. It
+now keeps that folder on the path until `gen_step()` returns
+(`generator_import_path`), then restores the original path. An assembly
+entry that loads its parts inside `gen_step()` failed every `gen` and
+`inspect` build on the parts' `import params`, even though `render_review`
+and `check_motion` built it. Workshop's own `make-round` now runs
+`inspect interfere <entry> --format json` in every assembly round, the
+request `verify_project` sends as `interfere:assembly`, at its default
+tolerance. A clash fails the round and is named by pair, volume and
+location. An entry that cannot be built for the check also fails the round,
+with its error. This changes the `cad` and `make-round` fingerprints;
+materialized runs keep their copied bytes.
+
+## Local change: a component reviewer binding belongs to its run (2026-10-08)
+
+A Workshop-local change (issue #119) to Workshop's own `make-round`. A
+Component's `reviewer_id` is stored with `reviewer_wish`, the sha256 of the
+run's `WISH.json`, and reruns carry both forward. A binding recorded under
+another Wish, or a legacy one with no Wish, binds nothing, so a `workshop fix`
+run that cloned its source's component state lets its own first reviewer bind;
+a second reviewer in the same run is still refused. This changes the
+`make-round` fingerprint; materialized runs keep their copied bytes.

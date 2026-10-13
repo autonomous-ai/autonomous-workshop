@@ -396,8 +396,10 @@ ruling of the packet, and a disagreeing review whose only findings are
 Reference Conflicts or Ruling Disputes (such a review agrees). Where the Workshop host names the runtime
 (`WORKSHOP_REVIEWER_RUNTIME`, set on Claude Code), `reviewer` must be the
 reviewer's native agent id in that runtime's format (17 lowercase hex
-characters), the Component's first review binds it in the component state as
-`reviewer_id`, and a review naming another id is refused with the bound one.
+characters), the Component's first review in this run binds it in the
+component state as `reviewer_id` with the run's Wish hash, and a review naming
+another id is refused with the bound one. A binding cloned from another run
+(`workshop fix`) binds nothing here (issue #119).
 `make_round` cannot prove who the reviewer was; the host does, at Make
 acceptance, from the guard's record of which agent the runtime started and
 which packet images it read. The Manager must not write, edit or filter the
@@ -802,6 +804,7 @@ Every gate `make_round` runs, exactly as it runs it. `$C` is
 | build a sample | `PYTHONPATH=<project> "$WORKSHOP_PYTHON" $C/gen samples/<name>.step.py --write --json`, then both print gates | exit codes and gate verdicts |
 | keep-out envelope | `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/check_envelope part_<role>.step.py --envelope <round>/envelope-<id>.json --role inside\|outside --json` | `ok` and the per-pose volumes outside or inside the envelope |
 | interface interference | `"$WORKSHOP_PYTHON" $C/inspect interfere measure/interface-rounds/<id>/rNNNN/interface_<id>.step.py --format json` | `ok` and each clash's parts and volume |
+| assembly interference | `"$WORKSHOP_PYTHON" $C/inspect interfere <entry.step.py> --format json` (every assembly round, beside the render; the request `verify_project` sends as `interfere:assembly`) | `ok`, each clash's parts, volume and box (the `clash` line); a clash or an entry that does not build fails the round |
 | interface check | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/interface-rounds/<id>/rNNNN/motion.json --json` | the `coupled_motion_collision` condition's and each insertion path's `status` |
 | motion | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/motion.json --json` | `status` per condition: `pass`, `fail`, `inconclusive` |
 | inspection views | `"$WORKSHOP_PYTHON" $C/render_review <selected entry.step.py> --view iso --view front --view left --view top --view iso_front --view iso_back --view iso_left --view iso_right --view iso_bottom [--view=AZ,EL ...] --sheet -o <round>/visual` | `sheet.png` (every view, labelled) plus each exact shaded PNG; the reference-camera views are composed into `compare-NN.png` beside each reference |

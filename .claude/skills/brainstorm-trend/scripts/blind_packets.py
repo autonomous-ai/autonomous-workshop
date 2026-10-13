@@ -4,7 +4,7 @@
 Each match's judge gets one directory holding draft A and draft B, in the
 scheduled order: ``A.md`` and ``B.md``, each the contract's title and its
 ``## Trend Hook``, ``## Signature Motion`` and ``## Palette`` sections and
-nothing else, beside ``A.<ext>`` and ``B.<ext>``, each draft's Preview Image.
+nothing else, beside ``A.<ext>`` and ``B.<ext>``, each draft's Concept Image.
 The rest of a contract stays out, so an introduction that says who designed
 it never reaches a judge.
 
@@ -34,7 +34,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence
 import draw_personalities
 
 SECTIONS = ("Trend Hook", "Signature Motion", "Palette")
-PREVIEW_NAMES = ("preview.png", "preview.jpg", "preview.webp")
+CONCEPT_NAMES = ("concept.png", "concept.jpg", "concept.webp")
 
 _FENCE_START = "```design-contract"
 _HEADING = re.compile(r"^#{1,6}[ \t]", re.MULTILINE)
@@ -128,10 +128,10 @@ def _draft(run_dir: Path, slot: str, pool: Sequence[Mapping[str, Any]]) -> Dict[
     sections = text.split("\n", 1)[1] if "\n" in text else ""
     for name in named_personalities(sections, pool):
         reasons.append("%s names %s" % (slot, name))
-    previews = [run_dir / slot / name for name in PREVIEW_NAMES if (run_dir / slot / name).is_file()]
-    if not previews:
-        reasons.append("%s has no Preview Image" % slot)
-    return {"text": text, "preview": previews[0] if previews else None, "reasons": reasons}
+    concepts = [run_dir / slot / name for name in CONCEPT_NAMES if (run_dir / slot / name).is_file()]
+    if not concepts:
+        reasons.append("%s has no Concept Image" % slot)
+    return {"text": text, "concept": concepts[0] if concepts else None, "reasons": reasons}
 
 
 def build_packets(
@@ -170,7 +170,7 @@ def build_packets(
         for side, slot in (("A", match["a"]), ("B", match["b"])):
             draft = drafts[slot]
             (packet / ("%s.md" % side)).write_text(draft["text"], encoding="utf-8")
-            shutil.copyfile(draft["preview"], packet / (side + draft["preview"].suffix))
+            shutil.copyfile(draft["concept"], packet / (side + draft["concept"].suffix))
         names.append(name)
     staging.rename(out_dir)
     return [out_dir / name for name in names]

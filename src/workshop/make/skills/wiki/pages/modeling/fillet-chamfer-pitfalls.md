@@ -3,6 +3,7 @@ title: Fillet and chamfer pitfalls
 tags: [fillet, chamfer, bevel, radius, sigsegv, spline, offset, taper]
 aliases: [rounding, edge blend, retry ladder, BRep_API command not done, fillet failure, periodic spline, bed chamfer, elephant foot chamfer, bottom chamfer fails]
 sources:
+  - "experience: front-edge fillets on ten flat key plates, failing on sub-0.1 mm plan edges"
   - skills/cad/references/build123d-modeling.md (fillet, chamfer and periodic-spline sections; before the move)
   - skills/cad/references/repair-loop.md (fillet failure class; before the move)
   - skills/image-to-cad/references/build123d-operations.md (sketch fillet order; before the move)
@@ -10,8 +11,10 @@ sources:
   - "experience: chamfer and section-offset both failed on the bed edges of a lofted flexi chain"
   - "experience: a bevel round a flat-faced limb failed on the fused limb and on one mirrored side"
   - "experience: a rounded screen tray whose acute rear edge consumed the rim behind the lens"
+  - "experience: a traced, freeform token outline whose top-edge fillet failed its walk at every sample count; rounded instead by ruled bands"
+  - "experience: a key-plate outline of circles, ellipses and lines whose batch 2D fillet failed on one short edge, whose taper cap failed on its ellipses, and whose 3D top-edge fillet passed"
 related: [construction-strategy, operation-families, kernel-validity, modeling-failure-modes, flexi-chain-joints]
-updated: 2026-10-05
+updated: 2026-10-08
 ---
 
 # Fillet and chamfer pitfalls
@@ -106,15 +109,50 @@ with `extrude(..., taper=45)` (or per-arc `Cone` caps when the draft prism
 itself fails). Constructive bevels also survive later booleans, which
 chamfered edges often do not.
 
+The taper cap has its own limit: on an outline that carries ELLIPSE edges,
+`extrude(face, w, taper=45)` raises `BRepFill_TrimSurfaceTool::IntersectWith:
+incoherent intersection` (build123d 0.11), the failure the dense-spline
+section lists for splines. On a flat plate extruded from lines, circles and
+ellipses joined by 2D fillets, the plain 3D `fillet` of the straight-walled
+extrusion's top edges was the operation that worked (36 edges, r 0.6, under
+0.1 s), so on an analytic outline try the fillet first and keep the cap for the
+outlines where it fails.
+
+**A sliver edge kills that fillet.** The 0.6 mm round over a plate's whole
+top edge failed ("Failed creating a fillet with radius of 0.6") on plans that
+carried an edge of 0.0003–0.07 mm: one primitive's corner landing exactly on
+another's edge, a 0.01 mm overlap added at a seam, a band corner 0.2 mm from a
+neighbouring curve. An edge of 0.17 between two tangent arcs filleted fine.
+Keep a corner at least 0.3 mm inside the shape that covers it, bury the unused
+half of an ellipse in its neighbour instead of trimming it at the seam, and
+assert a minimum outline edge length (0.15 mm) in source before the build. A
+corner-by-corner 2D round that falls back to a smaller radius in a narrow V
+notch ends in the same failure one step later; closing the plan with
+`offset(+r)` then `offset(-r)` (Kind.ARC) rounds every concave corner at once,
+but fills any slit narrower than `2r`.
+
 ## Sketch fillets go before the boolean
 
 In 3D you fillet last; in a sketch you fillet **before** the boolean.
 Reversed, `fillet(sk.vertices(), r)` walks into the subtracted circle's seam
 vertex and raises `Vertex must connect exactly two edges` — verified on
 build123d 0.11. When the corner radius is uniform, `RectangleRounded(w, h, r)`
-skips the problem entirely. A 2D fillet on the sketch always succeeds where an
-equivalent 3D fillet on the extruded solid may fail, which makes it the
-escape hatch when `fillet()` on a solid raises an OCCT error.
+skips the problem entirely.
+
+A 2D fillet does not always succeed. `fillet_2d` fits a tangent arc between
+the two edges at the vertex and raises `Unable to find a tangent arc` or
+`Fillet algorithm failed for Vertex(...)` when one of them is shorter than the
+arc's tangent length: a line meeting an ellipse just past another corner, a
+short rectangle edge left between two subtracted circles (build123d 0.11).
+`fillet(sk.vertices(), r)` then fails for the whole outline. Fillet corners one
+at a time instead, re-finding each vertex by position after every fillet, and
+halve the radius at a corner that refuses, down to a floor below which the
+corner stays sharp and is logged; one bad corner then costs one corner. Skip
+vertices whose edges are already tangent. Where both edges are long enough the
+2D fillet is still the escape hatch when `fillet()` on a solid raises an OCCT
+error. A 2D fillet also **shrinks a small acute shape**: a 4.0 mm triangle with
+R 0.7 corners came out 2.4 mm wide. Draw a small rounded shape as the hull of
+its corner circles (`make_hull`), so its overall size is the measured one.
 
 ## Dense periodic spline profiles
 
@@ -130,10 +168,35 @@ OCP 7.9):
 - a ruled loft to an inward offset is analyzer-invalid where the outer wire's
   corner radius is smaller than the offset.
 
+- `fillet` on the one top edge of such a body fails its walk
+  (`ChFiDS_WalkingFailure`, at any radius down to 0.3 mm) with 55-110 samples
+  and runs for minutes without returning at 220; splitting the loop into G1
+  spline segments fails the same way. A traced outline's edge round is never
+  a fillet.
+
 Compute offsets NUMERICALLY on the sample loop (normal offset, prune points
 closer than |delta| to the source polyline, resample, smooth) and build
 bevelled bodies as one multi-section ruled loft so no coincident-face fuse
-exists. The same Null-offset behaviour is why a spline-bounded solid is never
+exists. A round is the same loft: sections inset by `r(1 - cos t)` at height
+`z0 + r sin t` for t in 15 deg steps, a sag of `r(1 - cos 7.5 deg)` = 0.9 %
+of `r`, which no render or gate sees. Two conditions keep every section a
+simple loop:
+
+- **Sample spacing well under the least convex radius.** A smoothing
+  spline sampled at uniform *parameter* gave 1.05-2.13 mm spacing round
+  1.2 mm tine ends, and the 1.0 mm normal inset crossed itself there. Resample
+  the loop by arc length at under half the least radius.
+- **Interpolate every section at one set of parameters.** Left to itself
+  each inset curve takes its own chord-length parameters, so a ruling joins
+  point i of one section to a point beside point i of the next, and the band's
+  slope no longer follows the inset. Pass the outline's own normalised chord lengths (closing
+  point included: one more value than points, for a periodic spline) as
+  `parameters=` to `Edge.make_spline` for every section.
+- **Enforce the least radius after the last smoothing step.** A raster
+  opening rounds every end to its disk, then the smoothing spline tightens
+  the ends again (1.28 mm opening, 0.88 mm after the spline). Open and close
+  the sampled polygon with buffers (`buffer(-r).buffer(r)`) last, and assert
+  `least convex radius > inset + 0.2` from the points. The same Null-offset behaviour is why a spline-bounded solid is never
 hollowed or inflated with `offset()` ([[feature-recipes#conformal-surface-decoration]]).
 
 For a cosmetic underside inset, when a constant-distance offset is unnecessary,

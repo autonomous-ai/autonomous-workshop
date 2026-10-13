@@ -10,7 +10,7 @@ sources:
   - https://www.sparkfun.com/products/97
   - https://www.adafruit.com/product/375
 related: [power-path-design, stepper-motors, electronics-enclosure-design, joints, buttons-knobs-and-front-panels]
-updated: 2026-09-23
+updated: 2026-10-07
 ---
 
 # Switches, limit switches and reed sensors
@@ -66,6 +66,14 @@ Cap-over-tactile-switch stack and flexure buttons:
 - A power switch belongs on the battery's positive lead, before the
   regulator and the charger's load path (unless a charger board specifies
   otherwise) ([[power-path-design]]).
+
+## Leave soldered terminals in the open
+
+A pocket cut as the component's own prism slots every terminal and frame tab
+into the printed wall: the walls between them come out 0.3-0.5 mm thick, and
+an iron cannot reach the joints without melting them. Cut the wall in front of
+the body away down to just under the terminals and let the side walls and the
+actuator's window locate the body.
 
 ## Panel mounting notes
 

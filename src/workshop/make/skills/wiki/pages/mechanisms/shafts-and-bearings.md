@@ -7,8 +7,9 @@ sources:
   - ISO 15 (radial bearing boundary dimensions)
   - Roark's Formulas for Stress and Strain, beams table (simply supported and cantilever cases)
   - skills/cad/scripts/stdpart (bearings and snap rings from bd_warehouse)
+  - "experience: walker hip journals that were a thin body wall, hung from a teardrop roof, with a key flat running in the bearing"
 related: [joints, gears, mechanism-design, beam-and-plate-stiffness, exact-constraint-and-kinematic-mounts, noise-and-vibration, shaft-hub-connections, rod-ends-and-clevises, swivels-and-turntables]
-updated: 2026-10-01
+updated: 2026-10-07
 ---
 
 # Shafts and bearings
@@ -119,6 +120,34 @@ of 3 or more: printed strength scatters and creeps under a steady load.
   at distance `a` loads that support by roughly `F (1 + a / span)`; keep
   `a` well under the span.
 - **Put loads next to supports**, not mid-span, when the layout allows.
+
+## A journal the load hangs from
+
+When a body hangs from its journals — a walker on its hip axles, a cradle,
+a pendulum — each shaft bears **up on the roof** of its bore. A horizontal
+hole printed with a 45° teardrop top puts a V-block exactly there: two lines
+of contact, `1 / cos 45° = 1.41×` the friction of a round bore.
+
+- Give a printed bore loaded upward a **flat roof just over the circle**
+  (`max_z = z + r + 0.05`; a roof tangent to the circle troubles the kernel):
+  a bridge of about `0.8 r`, one line of contact. Or print the bearing as a
+  standing bushing, whose bore is round.
+- **Never run a key flat through a bearing.** Key only the length inside the
+  hub; round everywhere the shaft turns. A flat in the journal puts its two
+  edges on the loaded roof once a turn.
+- **A wall too thin for 1.5 d:** when the wall is the journal and the part
+  outboard of it turns, press a printed **bushing** in from outside onto a lip
+  left in the wall, standing proud into a cup in the turning part. Print it
+  standing; give the cup free clearance so it never becomes a second bearing;
+  put the lip on the side the end thrust pushes toward. A fixed boss in the
+  same place is a horizontal peg in a belly-down print, and the turning part
+  round it leaves no room for a keel.
+
+```python
+assert JOURNAL_LEN >= 1.5 * SHAFT_D
+assert CUP_R - BUSHING_OD / 2 > (BORE_D - SHAFT_D) / 2, "the cup must not bear"
+assert ROOF_Z - (AXIS_Z + BORE_D / 2) < (BORE_D - SHAFT_D) / 2, "the journal bears on the flat roof"
+```
 
 ## Bushing or ball bearing
 

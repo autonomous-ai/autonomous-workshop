@@ -10,8 +10,9 @@ sources:
   - https://www.stratasys.com/siteassets/sdm/resources/design-guidelines/fdm/fdm_design_guidelines_2017-1.pdf
   - https://hlhrapid.com/knowledge/3d-printing-design-guide-adding-text-lettering-and-symbols/
   - https://blog.prusa3d.com/everything-about-nozzles-with-a-different-diameter_8344/
+  - "experience: a 3 mm debossed word on a key shank failed the thickness gate on the lands between its letters"
 related: [fdm-design-rule-tables, wall-thickness-and-hollowing, fdm-surface-finish, fdm-layer-height-and-nozzle, text-patterns-and-surface-detail]
-updated: 2026-09-23
+updated: 2026-10-08
 ---
 
 # Minimum feature sizes and printed text
@@ -72,6 +73,15 @@ cuts better than it raises (Hydra's engrave width 0.5 mm vs emboss 0.9 mm):
 an engraved groove needs one line's gap, a raised stroke needs two lines of
 plastic.
 
+A cut word is also a row of ridges. Debossing leaves lands between
+neighbouring letters and inside the counters of o, e and a, and each land is a
+wall as thin as the letter spacing there. At a 4.2 mm font (about 12 pt, caps
+3 mm) in a bold geometric sans, every groove was at least 0.5 mm wide, yet the
+lands came out 0.13–0.4 mm and the thickness gate failed them as walls under
+two lines. Size a debossed word by its tightest land, not its stroke: below the
+16 pt rule above, set the letters with your own spacing, or deboss one glyph
+instead of a word.
+
 A smaller nozzle is the tool for fine text: Prusa's 0.25 mm nozzle gives
 "better looking printed texts" and "better resolution in XY… perfect for
 jewelry, logos", at much longer print times
@@ -85,4 +95,5 @@ Building the text in build123d — fonts, emboss on flat and curved faces:
 ```python
 assert STROKE_W >= (0.5 if ENGRAVED else 0.9), "Hydra Research stroke limits at 0.45 mm lines"
 assert TEXT_PT >= (10 if ON_VERTICAL_WALL else 16), "Stratasys Direct text size"
+assert not ENGRAVED or MIN_LAND_W >= 2 * LINE_W, "a debossed word's lands are walls too"
 ```

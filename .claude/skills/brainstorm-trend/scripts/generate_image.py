@@ -1,12 +1,15 @@
-"""Generate one Preview Image via OpenRouter for brainstorm-trend.
+"""Generate one Concept Image via OpenRouter.
 
-Each of the six personality subagents in the brainstorm-trend skill calls
-this once, blind to the others, to draw its draft toy for the judges. The
-call is deterministic tooling, not a model judgement: it builds one
-image-generation request, decodes and bounds the one image the response
-carries, and writes it to disk. Everything about *whether* the image is any
-good — subject, composition, Trend, Palette — is the personality's prompt,
-not this script's job to judge; this script only enforces what
+Shared by two skills. In brainstorm-trend, each of the six personality
+subagents calls this once, blind to the others, to draw its draft toy for
+the judges. In brainstorm-concepts, the agent calls it once per Concept
+Image in a Concept Round, optionally with ``--ref`` images: the concept to
+keep and a style to copy. The call is deterministic tooling, not a model
+judgement: it builds one image-generation request, decodes and bounds the
+one image the response carries, and writes it to disk. Everything about
+*whether* the image is any good — subject, composition, Trend, Palette — is
+the caller's prompt, not this script's job to judge; this script only
+enforces what
 ``design-a-toy`` Stage 3 requires of any reference image: 800x800 or
 smaller, PNG/JPEG/WebP, a single readable frame.
 
@@ -31,12 +34,13 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Dict, List, Mapping, Optional
+from typing import Callable, Dict, List, Mapping, Optional, Sequence
 
 MAX_IMAGE_SIDE_PX = 800
 MAX_IMAGE_BYTES = 12 * 1024 * 1024
 MAX_RESPONSE_BYTES = 16 * 1024 * 1024
 MAX_PROMPT_CHARS = 8_000
+MAX_REFERENCE_IMAGES = 4
 HTTP_TIMEOUT_SECONDS = 180
 OPENROUTER_CHAT_COMPLETIONS_URL = "https://openrouter.ai/api/v1/chat/completions"
 USER_AGENT = "brainstorm-trend/openrouter-image"
@@ -172,12 +176,37 @@ def _decode_image(content: bytes) -> tuple[str, bytes]:
     return match.group("media_type"), data
 
 
+def _reference_part(path: Path) -> Dict[str, object]:
+    """One attached image as an ``image_url`` content part, checked first."""
+
+    from PIL import Image, UnidentifiedImageError
+
+    try:
+        image_bytes = path.read_bytes()
+    except OSError as exc:
+        raise OpenRouterError("could not read reference image: %s" % path) from exc
+    if len(image_bytes) > MAX_IMAGE_BYTES:
+        raise OpenRouterError("reference image exceeds %d bytes: %s" % (MAX_IMAGE_BYTES, path))
+    try:
+        with Image.open(io.BytesIO(image_bytes)) as image:
+            image_format = image.format
+            image.verify()
+    except (UnidentifiedImageError, OSError, ValueError, SyntaxError) as exc:
+        raise OpenRouterError("reference image is not a readable PNG, JPEG, or WebP: %s" % path) from exc
+    media_type = _PILLOW_FORMATS.get(image_format or "")
+    if media_type is None:
+        raise OpenRouterError("reference image is not a PNG, JPEG, or WebP: %s" % path)
+    encoded = base64.b64encode(image_bytes).decode("ascii")
+    return {"type": "image_url", "image_url": {"url": "data:%s;base64,%s" % (media_type, encoded)}}
+
+
 def generate_image(
     prompt: str,
     output_path: Path,
     *,
     config: OpenRouterConfig,
     transport: Optional[Transport] = None,
+    references: Sequence[Path] = (),
 ) -> GeneratedImage:
     """Request one image from OpenRouter and write it to ``output_path``.
 
@@ -186,6 +215,9 @@ def generate_image(
     This function only bounds what comes back — shrunk to 800x800 or
     smaller, a readable PNG/JPEG/WebP, one still frame — the same shape
     ``load_wish_references`` requires of any reference image.
+
+    ``references`` are attached after the prompt, in order, so the prompt can
+    name them ("the first image", "the second image").
     """
 
     if not isinstance(prompt, str) or not prompt.strip():
@@ -194,12 +226,17 @@ def generate_image(
         raise OpenRouterError("prompt exceeds %d characters" % MAX_PROMPT_CHARS)
     if not isinstance(config, OpenRouterConfig):
         raise OpenRouterError("generate_image requires an OpenRouterConfig")
+    if len(references) > MAX_REFERENCE_IMAGES:
+        raise OpenRouterError("pass at most %d reference images" % MAX_REFERENCE_IMAGES)
+    content: object = prompt
+    if references:
+        content = [{"type": "text", "text": prompt}] + [_reference_part(Path(ref)) for ref in references]
 
     send = transport or _urllib_transport
     body = json.dumps(
         {
             "model": config.model,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": [{"role": "user", "content": content}],
             "modalities": ["image", "text"],
         }
     ).encode("utf-8")
@@ -270,7 +307,7 @@ def generate_image(
 
 
 def main(argv: Optional[List[str]] = None, transport: Optional[Transport] = None) -> int:
-    """CLI: ``generate_image.py --prompt-file P --out PATH [--env .env]``.
+    """CLI: ``generate_image.py --prompt-file P --out PATH [--env .env] [--ref IMG ...]``.
 
     Prints the written image's path, model, media type and size as JSON. The
     output suffix follows the decoded format, so read the printed path.
@@ -280,11 +317,19 @@ def main(argv: Optional[List[str]] = None, transport: Optional[Transport] = None
     parser.add_argument("--prompt-file", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--env", type=Path, default=Path(".env"))
+    parser.add_argument(
+        "--ref", type=Path, action="append", default=[],
+        help="attach an input image after the prompt; repeat for several, in order",
+    )
     args = parser.parse_args(argv)
     try:
         config = load_openrouter_config(args.env, os.environ)
         image = generate_image(
-            args.prompt_file.read_text(encoding="utf-8"), args.out, config=config, transport=transport
+            args.prompt_file.read_text(encoding="utf-8"),
+            args.out,
+            config=config,
+            transport=transport,
+            references=args.ref,
         )
     except (OpenRouterError, OSError) as exc:
         print("generate-image: %s" % exc, file=sys.stderr)
@@ -312,6 +357,7 @@ __all__ = [
     "GeneratedImage",
     "HttpResponse",
     "MAX_IMAGE_SIDE_PX",
+    "MAX_REFERENCE_IMAGES",
     "OPENROUTER_API_KEY_NAME",
     "OPENROUTER_IMAGE_MODEL_NAME",
     "OpenRouterConfig",

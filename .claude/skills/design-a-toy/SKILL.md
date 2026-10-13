@@ -192,6 +192,25 @@ A toy whose Components never meet has `"interfaces": []`. Never leave a
 meeting out: one the block does not name is one nobody checks before
 assembly.
 
+Then check every **shared face**. For every requirement or Interface
+sentence that puts several Components on one face, plane or level ("share one
+flat back face at Z 0"), check that each named Component's `extents_mm` and
+every Interface range that places it allow it. Where a Component only reaches
+the face, such as an inlay whose top is level with it, name it only in the
+clause it meets. A Component thinner or thicker than its neighbours states its
+thickness in its own row. Pixel Tree Key's R08 put the baubles on the body's
+back face at Z 0, but each bauble is 0.8 thick and its Interface sets it at
+Z 2.7 to 3.5, and the run stopped on the contradiction.
+
+Then check every **assembly row**. An assembly-scoped requirement states only
+what renders of the assembled toy in its Display Pose show: silhouette,
+colours, counts, placement, visible features. The blind signature review
+needs visible evidence for every assembly row, so a claim no render can show
+fails it after everything else has passed. Move materials, filament types,
+print order, pauses, inserted parts and physical behaviour to the prose, or
+to a geometry row a gate measures. Pixel Tree Key's R09 named PLA types, the
+print order and an inlay pause, and its run stopped after every round passed.
+
 Check the drafted block against CONTRACT-FORMAT.md's row limits: at most 16
 assembly-scoped requirements, at most 4 per Unique Geometry, and the whole
 file (prose plus block) under 40,000 characters. If the design does not fit,
@@ -447,9 +466,10 @@ Resolve each problem yourself, in this order of preference, and keep the look:
 5. **Leave the detail out**, only when nothing above works, and name it in
    the Component's requirement row.
 
-Any change to size, shape or stance amends the contract. When an image no
-longer shows what the contract says, fix the image by AI editing. Then redo
-Stage 3b for every image you touched, and the assembly image.
+Any change to size, shape or stance amends the contract. Run Stage 2's
+shared-face check again on every row and Interface the change touches. When
+an image no longer shows what the contract says, fix the image by AI editing.
+Then redo Stage 3b for every image you touched, and the assembly image.
 
 Then check every hidden joint the contract pins, which no image shows. For
 each Component, take its print stance and its bed face, and for each peg,

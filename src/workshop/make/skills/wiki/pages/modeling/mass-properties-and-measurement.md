@@ -3,12 +3,14 @@ title: Mass properties and measurement
 tags: [volume, area, mass, center-of-mass, inertia, bounding-box, distance, clearance, measurement]
 aliases: [center of mass, centre of gravity, CoM, CenterOf.MASS, CenterOf.BOUNDING_BOX, matrix_of_inertia, principal_properties, radius_of_gyration, moment of inertia, distance_to, distance_to_with_closest_points, BRepExtrema_DistShapeShape, GProp_GProps, minimum distance, weight estimate, bounding box optimal]
 sources:
+  - "experience: ten wordmark-inlaid plates whose region-sum audit failed under one integration call or the other"
   - .venv/lib/python3*/site-packages/build123d/topology/shape_core.py (area, matrix_of_inertia, principal_properties, radius_of_gyration, compute_mass, combined_center, bounding_box, distance_to_with_closest_points)
   - .venv/lib/python3*/site-packages/build123d/topology/composite.py (Compound.volume, Compound.center)
   - .venv/lib/python3*/site-packages/build123d/geometry.py (BoundBox.from_topo_ds, BoundBox.is_inside)
   - "toolchain: build123d 0.11.1 on OCP, every number below measured with small shapes"
+  - "toolchain: a traced 650-sample spline plate whose default volume read 14-80 % high while precise integration and its mesh agreed"
 related: [kernel-validity, occt-topology-and-tolerance, boolean-pitfalls, parametric-design-intent, mechanism-verification, filament-properties]
-updated: 2026-09-23
+updated: 2026-10-08
 ---
 
 # Mass properties and measurement
@@ -22,6 +24,22 @@ on small parts) and belongs in the generator as an `assert`.
 - `shape.volume` for a `Solid`/`Part` is `BRepGProp.VolumeProperties` —
   exact on analytic solids (sphere, torus, cylinder: relative error 2e-16)
   and ~1e-7 on a swept helix. Edges and faces return `volume == 0.0`.
+- **Not on faces bounded by many-pole B-splines.** On a plate whose sections
+  are one periodic spline through 650 samples, the default integration read
+  a ruled loft as 7530 mm³ against 6624 (14 % high), the same body after three
+  cuts as 11546 against 6427 (80 %), and gave a plain extrude of that face
+  -140 at a tight tolerance; `check_fit`'s volume column printed the wrong
+  figure too. The geometry was sound: `BRepGProp.VolumeProperties_s(shape.wrapped,
+  props, 1e-6, True)` and the volume of the tessellation agreed to 0.1 %.
+  For mass or volume asserts on such a body use that call, or the mesh.
+- **And not that call on text.** On solids bounded by text-glyph faces (an
+  inlaid wordmark) the same `1e-6, True` call read one letter 5 % high, and
+  the colour regions of a plate summed 0.2–0.3 mm³ away from the plate they
+  were cut from; the default call came within 0.01–0.07 mm³, and the
+  tessellated pieces within 0.001. Neither integration is safe on every
+  surface family, so audit a split (regions against their whole) with a
+  relative tolerance, about 1e-4 of the whole, or on the mesh, never with an
+  absolute 0.05 mm³.
 - `shape.area` sums every face; `edge.length` / `wire.length` for curves.
 - **`Compound.volume` sums its solids without fusing.** Two 10 mm cubes
   overlapping by half: compound 2000, fused 1500. An assembly compound's

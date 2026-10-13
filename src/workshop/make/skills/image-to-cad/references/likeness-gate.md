@@ -98,6 +98,15 @@ flattened outline, the comparison is reported `not comparable` instead of
 failing — look at the `-sil.png` yourself before scoring against it — and an
 outline that reaches the frame edge always fails.
 
+A coloured subject under a key light is the third: its contact shadow is darker
+than any ground the band or border rule accepts, so both keep it, and so does
+the default mask — every edge facing away from the light grows a crescent and
+the model reads too thin. `auto` never picks the rule for this; pass
+`--ground tint`, which calls a pixel ground by its low relative saturation
+`(max - min) / max` at any brightness. Lay the `-sil.png` outline over the
+photo before scoring: the shadow should sit outside it on every lower edge.
+A grey, white or black subject has no tint, and the rule drops it.
+
 ### Score the pairs
 
 `render_views.py` prints the command:

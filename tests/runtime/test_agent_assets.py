@@ -542,6 +542,35 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         self.assertIn('"schema_version": 4', contract_format)
         self.assertIn("`text` (schema 4, required and non-empty, no length limit)", contract_format)
 
+    def test_design_a_toy_checks_shared_faces_and_assembly_row_scope(self):
+        # Issues #116 and #117: a shared-face sentence agrees with every named
+        # Component's extents and Interface ranges, and an assembly row states
+        # only what the assembled renders show.
+        def text(*parts):
+            return " ".join(REPOSITORY.joinpath(*parts).read_text(encoding="utf-8").split())
+
+        design = text(".claude/skills/design-a-toy/SKILL.md")
+        stage2 = design[design.index("## Stage 2"):design.index("## Stage 3 ")]
+        for required in (
+            "Then check every **shared face**.",
+            "check that each named Component's `extents_mm` and every Interface range that places it allow it",
+            "A Component thinner or thicker than its neighbours states its thickness in its own row.",
+            "Then check every **assembly row**.",
+            "An assembly-scoped requirement states only what renders of the assembled toy in its Display Pose show",
+            "Move materials, filament types, print order, pauses, inserted parts and physical behaviour to the prose",
+        ):
+            with self.subTest(design=required):
+                self.assertIn(required, stage2)
+        self.assertIn("Run Stage 2's shared-face check again", design)
+        contract_format = text(".claude/skills/build-a-toy/CONTRACT-FORMAT.md")
+        for required in (
+            "An `assembly` row states only what renders of the assembled toy in its Display Pose show",
+            "agrees with each one's `extents_mm` and every Interface range that places it",
+            "Every assembly row states only what the assembled renders show",
+        ):
+            with self.subTest(contract_format=required):
+                self.assertIn(required, contract_format)
+
     def test_workers_drop_a_twice_refused_detail_and_reviewers_ask_for_placeable_detail(self):
         # Issue #86: a Detail Refusal is repaired from the summary, a detail
         # refused twice at one spot is left out, and the reviewer's limits

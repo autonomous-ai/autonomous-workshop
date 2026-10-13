@@ -1265,12 +1265,16 @@ def _design_vault(run_root: Path):
     The host writes ``VAULT.json`` before every Invent, Make, and Playtest
     phase; a stage without one finalizes without vault rules.  A snapshot
     that is present but unreadable, or whose tool is missing, is a broken run
-    tree, not a legacy run.
+    tree, not a legacy run.  An empty regular file is no snapshot: the Codex
+    sandbox mounts ``VAULT.json`` read-only, and where the host wrote none it
+    leaves an empty mount point, which no packed vault can be.
     """
 
     vault_path = run_root / RUN_VAULT_PATH
     tool_path = run_root / RUN_VAULT_TOOL_PATH
     if not vault_path.is_file() and not vault_path.is_symlink():
+        return None
+    if not vault_path.is_symlink() and vault_path.stat().st_size == 0:
         return None
     if vault_path.is_symlink() or tool_path.is_symlink() or not tool_path.is_file():
         raise ProposalError("design vault snapshot or tool is missing from the run")

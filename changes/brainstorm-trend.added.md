@@ -4,7 +4,7 @@
   shortlist of five, each with dated sources and ranked by Google Trends
   interest. Six designers, three leaning on mechanism and three on form,
   are drawn by seed from a pool of thirty personalities and draft through
-  `design-a-toy` Stages 1-2, each with a Preview Image. A gate requires a
+  `design-a-toy` Stages 1-2, each with a Concept Image. A gate requires a
   Trend Hook, a Signature Motion, a Palette with one filament colour per
   geometry, and a coupled Interface. Fresh blind judges on Sonnet then
   compare every pair in both orders on originality, beauty and motion,

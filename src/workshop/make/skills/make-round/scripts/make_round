@@ -46,6 +46,12 @@ the reviewed B-rep carries the review forward. A round that fails its checks
 is not rendered. A component packet binds only the Component's own files and
 the Shared Helpers it imports. The assembly round keeps the Workshop
 Manager's --record-visual, the blind review and --full.
+An assembly round also runs the check final verification runs on the
+assembled object, `inspect interfere <entry>` at its default tolerance (issue
+#118): any clash between two placed Components fails the round, named by
+pair, volume and location, before the blind review is spent. An entry that
+cannot be built for it -- a part it cannot import, any build error -- fails
+the round with that error; it is never skipped.
 In a run with the make_round guard (ADR 0080) only a Component Worker runs a
 component round: the guard hook passes --worker-nonce, the round records it,
 and the host refuses a component round whose nonce it did not issue. A
@@ -679,11 +685,12 @@ def record_review(project: Path, review_path, component: str) -> dict:
         raise ValueError("a review needs the reviewer's name")
     if reviewer.strip().lower() in MANAGER_NAMES:
         raise ValueError("the Workshop Manager cannot review its own component")
-    bound = reviewer_binding(state, reviewer)
+    wish = _wish_binding(project)
+    bound = reviewer_binding(state, reviewer, wish=wish)
     if not isinstance(review["reason"], str) or not 1 <= len(review["reason"].strip()) <= MAX_REASON:
         raise ValueError("a review needs a reason of 1 to %d characters" % MAX_REASON)
     if mismatch:
-        return record_camera_mismatch(state, state_path, summary, summary_path, out, review, bound)
+        return record_camera_mismatch(state, state_path, summary, summary_path, out, review, bound, wish)
     if type(review["agrees"]) is not bool:
         raise ValueError("a review's agrees must be true or false")
     check_verdicts(review, visual, review["agrees"], "an agreeing review")
@@ -743,7 +750,7 @@ def record_review(project: Path, review_path, component: str) -> dict:
     summary_path.write_text(json.dumps(summary, sort_keys=True, indent=1) + "\n")
     state["policy"] = policy
     if bound is not None:
-        state["reviewer_id"] = bound
+        state.update(reviewer_id=bound, reviewer_wish=wish)
     state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return summary
 
@@ -779,7 +786,7 @@ def reference_conflicts(review: dict, summary: dict, project: Path) -> list[dict
     return recorded
 
 
-def record_camera_mismatch(state, state_path, summary, summary_path, out, review, bound) -> dict:
+def record_camera_mismatch(state, state_path, summary, summary_path, out, review, bound, wish) -> dict:
     """Record a reviewer's camera mismatch (ADR 0083): the side of the model
     that faces the Reference Camera is not the side the reference shows.
 
@@ -819,18 +826,19 @@ def record_camera_mismatch(state, state_path, summary, summary_path, out, review
     (out / "camera-mismatch.json").write_text(json.dumps(review, sort_keys=True, indent=2) + "\n")
     summary_path.write_text(json.dumps(summary, sort_keys=True, indent=1) + "\n")
     if bound is not None:
-        state["reviewer_id"] = bound
+        state.update(reviewer_id=bound, reviewer_wish=wish)
         state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return summary
 
 
-def reviewer_binding(state: dict, reviewer: str, runtime: str | None = None) -> str | None:
+def reviewer_binding(state: dict, reviewer: str, runtime: str | None = None, wish: str | None = None) -> str | None:
     """The native reviewer id a review binds the Component to, or None where
     the runtime gives no such id (issue #77).
 
     The id must have the runtime's format, so a name or a placeholder is
-    refused. The Component's first review binds it; a review naming another
-    id is refused with the bound one, so the Manager asks that thread again.
+    refused. The Component's first review in this run binds it; a review
+    naming another id is refused with the bound one, so the Manager asks that
+    thread again. ``wish`` is the run's ``_wish_binding``.
     """
 
     runtime = os.environ.get(REVIEWER_RUNTIME_ENV) if runtime is None else runtime
@@ -841,12 +849,27 @@ def reviewer_binding(state: dict, reviewer: str, runtime: str | None = None) -> 
         raise ValueError(
             "reviewer must be the component-reviewer's native agent id (%s), exactly as the "
             "runtime returned it when the reviewer was spawned; got %r" % (shape, reviewer[:40]))
-    bound = state.get("reviewer_id")
+    bound = bound_reviewer(state, wish)
     if bound is not None and bound != reviewer:
         raise ValueError(
             "this Component's reviews are bound to reviewer %s; send the review request to "
             "that reviewer's thread and record its answer under that id" % bound)
     return reviewer
+
+
+def bound_reviewer(state: dict, wish: str | None) -> str | None:
+    """The reviewer id this run bound the Component to, or None.
+
+    A binding belongs to the run that recorded it (issue #119): ``workshop
+    fix`` clones a Component's state from its source run, whose reviewer
+    thread can never answer here. A binding recorded under another Wish, or a
+    legacy one with no Wish, binds nothing; the host's role guard still allows
+    one proven reviewer per Component in this run.
+    """
+
+    if "reviewer_wish" not in state or state["reviewer_wish"] != wish:
+        return None
+    return state.get("reviewer_id")
 
 
 def lock_record(policy: dict) -> dict | None:
@@ -1397,6 +1420,11 @@ def render_summary(summary: dict) -> str:
         for item in summary.get("wakes_blocked") or ():
             lines.append("  wake  Blocked Report %d of %s waited on this Component; tell the Manager to wake its worker"
                          % (item["report"], item["component"]))
+    interference = summary.get("interference")
+    if interference is not None:
+        lines.append("  clash %-4s %s" % (interference["verdict"].upper()[:4], interference["detail"][:300]))
+        for clash in interference.get("clashes", [])[:8]:
+            lines.append("    %s" % clash_text(clash))
     if summary.get("motion_status") == "not-run":
         lines.append("  move  SKIP motion unverified")
     if summary.get("motion") is not None:
@@ -4108,6 +4136,63 @@ def insertion_conditions(project: Path, interface: dict) -> list[dict]:
     return chosen
 
 
+def clash_bounds(clash: dict) -> dict:
+    """Where one ``inspect interfere`` clash is: ``{"at": {"min": [x, y, z],
+    "max": [x, y, z]}}`` in assembly coordinates, or nothing when the tool
+    gave no box."""
+
+    bounds = clash.get("bounds")
+    if not isinstance(bounds, dict):
+        return {}
+    low, high = bounds.get("min"), bounds.get("max")
+    if not all(isinstance(corner, list) and len(corner) == 3
+               and all(isinstance(v, (int, float)) and math.isfinite(v) for v in corner) for corner in (low, high)):
+        return {}
+    return {"at": {"min": [round(float(v), 2) for v in low], "max": [round(float(v), 2) for v in high]}}
+
+
+def clash_text(clash: dict) -> str:
+    text = "%s x %s %.2f mm3" % (clash["a"], clash["b"], float(clash["volume_mm3"] or 0))
+    at = clash.get("at")
+    if at:
+        text += " at " + " ".join("%s %g..%g" % (axis, at["min"][i], at["max"][i]) for i, axis in enumerate("XYZ"))
+    return text
+
+
+def parse_assembly_interference(stdout: str, returncode: int) -> dict:
+    """``inspect interfere`` on the assembly entry, the check final
+    verification runs (issue #118): ``pass``; ``fail`` with every clash named
+    by pair, volume and location; ``unverified`` when the geometry time
+    allowance ran out with nothing found, as final verification reads it; or
+    ``error`` when the entry did not build or the tool gave no result. Only
+    ``pass`` and ``unverified`` let a round pass."""
+
+    result = parse_interference(stdout, returncode)
+    if result["verdict"] != "inconclusive":
+        if result["verdict"] == "fail":
+            result["detail"] = result["detail"].replace("at the assembly placement",
+                                                        "between Components of the assembly", 1)
+        else:
+            result["detail"] = "no interpenetration between the assembly's Components"
+        return result
+    payload = None
+    for line in (stdout or "").splitlines():
+        if line.lstrip().startswith("{"):
+            try:
+                payload = json.loads(line)
+            except ValueError:
+                payload = None
+    if (isinstance(payload, dict) and returncode == 3 and payload.get("status") == "unverified"
+            and not payload.get("errors") and not payload.get("clashCount")):
+        reasons = [str(item) for item in payload.get("unverified") or ()] or ["incomplete"]
+        return {"verdict": "unverified", "returncode": returncode, "clashes": [],
+                "detail": "inspect interfere did not finish: %s" % "; ".join(reasons)[:300]}
+    return {"verdict": "error", "returncode": returncode, "clashes": [],
+            "detail": "the assembly entry could not be checked for interference (%s); repair the entry so "
+                      "`inspect interfere` builds it -- final verification runs the same check"
+                      % result["detail"][:300]}
+
+
 def parse_interference(stdout: str, returncode: int) -> dict:
     """``inspect interfere`` on the Interface's placed Components: ``pass``,
     ``fail`` with each clash named, or ``inconclusive``."""
@@ -4123,10 +4208,10 @@ def parse_interference(stdout: str, returncode: int) -> dict:
         return {"verdict": "inconclusive", "returncode": returncode, "clashes": [],
                 "detail": "inspect interfere exit %d gave no result" % returncode}
     clashes = [{"a": (clash.get("a") or {}).get("name", ""), "b": (clash.get("b") or {}).get("name", ""),
-                "volume_mm3": clash.get("volume")} for clash in payload.get("clashes") or ()
-               if isinstance(clash, dict)]
+                "volume_mm3": clash.get("volume"), **clash_bounds(clash)}
+               for clash in payload.get("clashes") or () if isinstance(clash, dict)]
     if clashes:
-        detail = "; ".join("%s x %s %.2f mm3" % (c["a"], c["b"], float(c["volume_mm3"] or 0)) for c in clashes[:4])
+        detail = "; ".join(clash_text(c) for c in clashes[:4])
         return {"verdict": "fail", "returncode": returncode, "clashes": clashes,
                 "detail": "%d clash(es) at the assembly placement: %s" % (len(clashes), detail)}
     if payload.get("ok") is True and returncode == 0:
@@ -4812,6 +4897,34 @@ def make_round(args) -> int:
             shown.append((label, ref))
     refs = shown
 
+    # 4a. Issue #118: the assembled object's part-vs-part interference, the
+    # same `inspect interfere <entry>` final verification runs, at its default
+    # tolerance. It builds the entry through cadgen as final verification
+    # does, so an entry that cannot import or build its parts fails here. It
+    # runs beside the motion check and the render; its verdict joins the
+    # round's below.
+    interference, interference_pending, interference_pool = None, None, None
+    if component is None:
+        if build_failures:
+            interference = {"verdict": "not-run", "returncode": None, "clashes": [],
+                            "detail": "a part did not build, so the assembly was not checked for interference"}
+        else:
+            try:
+                entry_arg = entry.resolve().relative_to(project).as_posix()
+            except ValueError:
+                entry_arg = str(entry.resolve())
+            interference_job = {"command": [python, str(cad / "inspect"), "interfere", entry_arg, "--format", "json"],
+                                "cwd": project, "log": out / "interference.log",
+                                # It builds the whole assembly from source, as
+                                # final verification's inspect batch does.
+                                "timeout": FULL_TIMEOUT_SECONDS}
+            if round_jobs() > 1:
+                interference_pool = ThreadPoolExecutor(max_workers=1)
+                interference_pending = interference_pool.submit(lambda: run(**interference_job))
+            else:
+                done = run(**interference_job)
+                interference = parse_assembly_interference(done.stdout, done.returncode)
+
     # 4. motion gate when the project declares a manifest.
     motion = None
     manifest = measure / "motion.json"
@@ -4858,6 +4971,14 @@ def make_round(args) -> int:
         brep_logs["render"] = out / "visual-render.log"
         if component is not None and display_pose and refs:
             brep_logs["display-pose"] = out / "display-pose-render.log"
+    if interference_pending is not None:
+        try:
+            done = interference_pending.result()
+        finally:
+            interference_pool.shutdown()
+        interference = parse_assembly_interference(done.stdout, done.returncode)
+    if interference is not None and interference["verdict"] not in ("pass", "unverified"):
+        ok = False
     summary = {
         "round": round_index,
         "scope": "component:%s" % component if component is not None else "assembly",
@@ -4891,6 +5012,9 @@ def make_round(args) -> int:
     }
     if kept:
         summary["brep"] = brep_record(kept, digests, brep_logs)
+    if interference is not None:
+        # Issue #118: the assembly's part-vs-part interference.
+        summary["interference"] = interference
     if component is not None:
         next_policy = outcome["state"]
         carried = outcome["carried"]
@@ -4929,7 +5053,8 @@ def make_round(args) -> int:
             woken = waking_reports(project, component)
             if woken:
                 summary["wakes_blocked"] = woken
-    if any(item["verdict"] == "UNVERIFIED" for item in printing.values()) or (motion and motion["verdict"] == "unverified"):
+    if (any(item["verdict"] == "UNVERIFIED" for item in printing.values()) or (motion and motion["verdict"] == "unverified")
+            or (interference and interference["verdict"] == "unverified")):
         summary["geometry_status"] = "unverified"
         summary["print_ready_claim"] = False
     (out / "summary.json").write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n", encoding="utf-8")
@@ -4952,9 +5077,12 @@ def make_round(args) -> int:
     }
     if component is not None:
         state.update(shape_rounds=next_policy["shape_rounds"], policy=next_policy)
-        # The Component's reviewer binding outlives its rounds (issue #77).
+        # The Component's reviewer binding outlives its rounds (issue #77),
+        # with the Wish it was recorded under (issue #119).
         if previous_state.get("reviewer_id") is not None:
             state["reviewer_id"] = previous_state["reviewer_id"]
+            if "reviewer_wish" in previous_state:
+                state["reviewer_wish"] = previous_state["reviewer_wish"]
     state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(summary, sort_keys=True) if args.json else render_summary(summary))
     # Pending or failed visual evidence cannot report a complete round; a
@@ -4981,6 +5109,17 @@ def self_check() -> int:
     )
     check(parsed["verdict"] == "FAIL" and parsed["failures"][-1].startswith("ValueError"), "a failing build yields FAIL and the reason")
     check(parse_build('{"ok":true}\n', "", 0) == {"verdict": "PASS", "failures": []}, "a clean build yields PASS")
+    clash = parse_assembly_interference(json.dumps({"ok": False, "clashCount": 1, "errors": [], "clashes": [
+        {"a": {"name": "legs"}, "b": {"name": "arm"}, "volume": 120.2,
+         "bounds": {"min": [19.43, -4.0, 71.49], "max": [24.0, 4.86, 129.0]}}]}), 2)
+    check(clash["verdict"] == "fail" and "legs x arm 120.20 mm3 at X 19.43..24 Y -4..4.86 Z 71.49..129"
+          in clash["detail"], "an assembly clash fails and names its pair, volume and location")
+    broken = parse_assembly_interference(json.dumps({"ok": False, "errors": [
+        {"type": "ModuleNotFoundError", "message": "No module named 'params'"}]}), 2)
+    check(broken["verdict"] == "error" and "No module named 'params'" in broken["detail"],
+          "an assembly entry that does not build is an error, never a pass")
+    check(parse_assembly_interference("", 124)["verdict"] == "error", "a silent interference run is an error")
+    check(parse_assembly_interference('{"ok":true,"clashes":[]}', 0)["verdict"] == "pass", "no clash is a pass")
     check(parse_build("", "", 3)["failures"] == ["gen exit 3"], "a silent non-zero build still names its exit code")
     again = subprocess.CompletedProcess([], 0, '{"identitySha256": "a1"}\n', "")
     check(reproduction_failure("a1", again) is None, "a second build with the same identity reproduces")
@@ -5168,8 +5307,14 @@ def self_check() -> int:
           == ["inside", "outside"] and reference_roles(["wing#1", "wing#2", "body"]) == ["wing", "body"],
           "instances of one geometry on both sides of an envelope are both checked in its round")
     check(reviewer_binding({}, "a1f355b61d99918ed", "claude") == "a1f355b61d99918ed"
-          and refused({"reviewer_id": "a1f355b61d99918ed"}, "a7740f58e37677176", "claude"),
+          and refused({"reviewer_id": "a1f355b61d99918ed", "reviewer_wish": None}, "a7740f58e37677176", "claude")
+          and not refused({"reviewer_id": "a1f355b61d99918ed", "reviewer_wish": "w"}, "a7740f58e37677176", "claude"),
           "a Component's first reviewer id binds it; another id is refused")
+    check(reviewer_binding({"reviewer_id": "a1f355b61d99918ed", "reviewer_wish": "v"}, "a7740f58e37677176",
+                           "claude", wish="w") == "a7740f58e37677176"
+          and reviewer_binding({"reviewer_id": "a1f355b61d99918ed"}, "a7740f58e37677176", "claude",
+                               wish="w") == "a7740f58e37677176",
+          "a reviewer binding from another run, or with no run, binds nothing here")
     with tempfile.TemporaryDirectory() as tmp:
         project = Path(tmp)
         (project / "measure").mkdir()

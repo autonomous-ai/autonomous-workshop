@@ -148,6 +148,13 @@ DEFAULT_TOLERANCE = 0.1
 DEFAULT_PAD = 0.04
 SEARCH_SIZE = 240
 STALE_MIN_IOU = 0.999
+# Two meshes of one B-rep disagree on scattered pixels along a long freeform
+# outline: a traced plan 79 mm long flipped 135 of its 4318 edge pixels and read
+# IoU 0.998 against its own STEP. That is jitter, not drift, when every flipped
+# pixel lies within STALE_EDGE_PX of both outlines and they are a small share of
+# the edge; a stale or moved shape moves most of an edge, or moves part of it far.
+STALE_EDGE_PX = 2.0
+STALE_EDGE_SHARE = 0.10
 # Two references that the search hands the SAME camera must look the same. When
 # they do not, the reference mask is lying and every IoU in the run is about the
 # mask rather than the shape -- see `mask_contradictions`.
@@ -429,18 +436,43 @@ def rasterise(points: np.ndarray, faces: np.ndarray, az: float, el: float,
     return _open_mask(filled) if every_body else gate_mask(filled)
 
 
+def drift_verdict(a: np.ndarray, b: np.ndarray) -> dict:
+    """Is the STEP's silhouette `b` the source's `a`? IoU first; failing that,
+    accept only boundary jitter (see STALE_EDGE_PX)."""
+    from scipy import ndimage
+
+    iou = compare(a, b)["iou"]
+    h, w = max(a.shape[0], b.shape[0]), max(a.shape[1], b.shape[1])
+    canvas = []
+    for m in (a, b):
+        c = np.zeros((h, w), bool)
+        left = (w - m.shape[1]) // 2
+        c[:m.shape[0], left:left + m.shape[1]] = m
+        canvas.append(c)
+    a, b = canvas
+    flipped = a ^ b
+    edges = [m & ~ndimage.binary_erosion(m) for m in (a, b)]
+    edge_px = int(max(e.sum() for e in edges))
+    far = 0.0
+    if flipped.any():
+        far = float(max(ndimage.distance_transform_edt(~e)[flipped].max() for e in edges))
+    jitter = far <= STALE_EDGE_PX and flipped.sum() <= STALE_EDGE_SHARE * max(edge_px, 1)
+    return {"iou": iou, "flipped_px": int(flipped.sum()), "edge_px": edge_px,
+            "max_px": round(far, 2), "ok": bool(iou >= STALE_MIN_IOU or jitter)}
+
+
 def step_drift(src_points, src_faces, step_points, step_faces,
-               size: int = DEFAULT_SIZE) -> list[tuple[str, float]]:
-    """(view, IoU) of the source against its STEP in the three named views,
-    every body kept: two rows of equal pieces seen end-on are two equal blobs,
-    and keeping only the larger one compared one row of the source with the
-    other row of the STEP."""
+               size: int = DEFAULT_SIZE) -> list[tuple[str, dict]]:
+    """(view, drift_verdict) of the source against its STEP in the three named
+    views, every body kept: two rows of equal pieces seen end-on are two equal
+    blobs, and keeping only the larger one compared one row of the source with
+    the other row of the STEP."""
     out = []
     for label in ("front", "right", "top"):
         az, el = NAMED_VIEWS[label]
         a = normalise(rasterise(src_points, src_faces, az, el, size=size, every_body=True))
         b = normalise(rasterise(step_points, step_faces, az, el, size=size, every_body=True))
-        out.append((label, compare(a, b)["iou"]))
+        out.append((label, drift_verdict(a, b)))
     return out
 
 
@@ -1226,8 +1258,8 @@ def main(argv: list[str] | None = None) -> int:
         tol = compare_tolerance(points, args.size, args.tolerance)
         src_points, src_faces = tessellate_comparison(shape, tol)
         step_points, step_faces = tessellate_comparison(build_shape(step_path), tol)
-        for label, iou in step_drift(src_points, src_faces, step_points, step_faces, args.size):
-            entry = {"view": label, "iou": iou, "ok": iou >= STALE_MIN_IOU, "tolerance": tol}
+        for label, verdict in step_drift(src_points, src_faces, step_points, step_faces, args.size):
+            entry = {"view": label, **verdict, "tolerance": tol}
             failed = failed or not entry["ok"]
             drift.append(entry)
 
@@ -1572,7 +1604,7 @@ def self_check() -> int:
         tol = compare_tolerance(pts, 480, 0.1)
         sp, sf = tessellate_comparison(blade, tol)
         rp, rf = tessellate_comparison(build_shape(step), tol)
-        worst = min(iou for _v, iou in step_drift(sp, sf, rp, rf, 480))
+        worst = min(v["iou"] for _v, v in step_drift(sp, sf, rp, rf, 480))
     check("the comparison tessellates below a pixel", tol <= 28 / (4 * 480) + 1e-9, f"tolerance {tol:.4f}")
     check("a STEP round trip of a thin blade reads as no drift", worst >= STALE_MIN_IOU, f"worst IoU {worst:.4f}")
 
@@ -1598,8 +1630,30 @@ def self_check() -> int:
     big, small = _Box(20, 20, 30), _Pos(30, 0, 0) * _Box(10, 10, 20)
     two_p, two_f = tessellate(_Compound([big, small]), 0.1)
     one_p, one_f = tessellate(_Compound([big]), 0.1)
-    lost = min(iou for _v, iou in step_drift(two_p, two_f, one_p, one_f, 480))
-    check("a STEP that lost a whole body reads as drift", lost < STALE_MIN_IOU, f"worst IoU {lost:.4f}")
+    lost_rows = step_drift(two_p, two_f, one_p, one_f, 480)
+    lost = min(v["iou"] for _v, v in lost_rows)
+    check("a STEP that lost a whole body reads as drift",
+          lost < STALE_MIN_IOU and not all(v["ok"] for _v, v in lost_rows), f"worst IoU {lost:.4f}")
+
+    # A long outline flips scattered edge pixels between two meshes of one
+    # B-rep; that must pass. The same outline moved by one pixel all round, or
+    # a bump standing a few pixels proud on part of it, must not.
+    yy, xx = np.mgrid[:480, :480]
+    r2 = (yy - 240) ** 2 + (xx - 240) ** 2
+    disk = (r2 <= 150 ** 2) & (r2 >= 140 ** 2)    # a thin band: much edge, little area
+    from scipy import ndimage as _nd
+    edge = np.argwhere(disk & ~_nd.binary_erosion(disk))
+    rng = np.random.default_rng(7)
+    jittered = disk.copy()
+    for y, x in edge[rng.choice(len(edge), len(edge) // 25, replace=False)]:
+        jittered[y, x] = False
+    shifted = np.roll(disk, 1, axis=1) | disk
+    bumped = disk | (((yy - 240) ** 2 + (xx - 393) ** 2 <= 8 ** 2))
+    jit, shf, bmp = (drift_verdict(disk, m) for m in (jittered, shifted, bumped))
+    check("scattered edge flips on a long outline are jitter, not drift",
+          jit["ok"] and jit["iou"] < STALE_MIN_IOU, f"IoU {jit['iou']:.4f}, {jit['flipped_px']} px within {jit['max_px']}")
+    check("an outline moved a pixel all round, or bumped 3 px proud, is drift",
+          not shf["ok"] and not bmp["ok"], f"moved {shf['flipped_px']} px / edge {shf['edge_px']}; bump {bmp['max_px']} px")
 
     check("a replayed camera scores exactly what the search scored",
           a["iou"] == b["iou"] and b["poses_tried"] == 0

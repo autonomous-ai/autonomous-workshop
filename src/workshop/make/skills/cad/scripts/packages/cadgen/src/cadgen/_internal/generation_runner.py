@@ -42,6 +42,43 @@ from cadgen._internal.generation_spec import EntrySpec, _display_path
 
 GIT_LFS_POINTER_PREFIX = b"version https://git-lfs.github.com/spec/v1\n"
 
+def _generator_search_paths(resolved_script_path: Path) -> list[str]:
+    # Derive everything from the generator script's OWN location -- its folder, plus any
+    # ancestor that is a package root (contains a STEP/ or robot_common/ package) -- so
+    # resolution is independent of the process working directory. Deliberately NOT seeding
+    # the repo root or skills/cad/scripts: a generator must not depend on the repository's
+    # skills/ being importable (AGENTS.md skill isolation).
+    search_paths = [str(resolved_script_path.parent)]
+    for parent in resolved_script_path.parents:
+        if (
+            (parent / "STEP" / "__init__.py").is_file()
+            or (parent / "robot_common" / "__init__.py").is_file()
+        ):
+            search_paths.append(str(parent))
+    return search_paths
+
+
+@contextlib.contextmanager
+def generator_import_path(script_path: Path) -> Iterator[None]:
+    """Seed ``sys.path`` with the generator's own folder (and package roots) while it runs.
+
+    Workshop: the seed must hold for the whole build, not only while the module body
+    executes. An assembly entry that loads its parts inside ``gen_step()`` runs their
+    module-top ``import params`` after the module body has finished; restoring the path
+    first failed every ``gen``/``inspect`` build of such an entry with ModuleNotFoundError,
+    while ``render_review`` and ``check_motion`` (which keep the project on the path)
+    built it. The original ``sys.path`` is restored when the build ends.
+    """
+    original_sys_path = list(sys.path)
+    for candidate in reversed(_generator_search_paths(Path(script_path).resolve())):
+        if candidate not in sys.path:
+            sys.path.insert(0, candidate)
+    try:
+        yield
+    finally:
+        sys.path[:] = original_sys_path
+
+
 def _load_generator_module(script_path: Path) -> object:
     resolved_script_path = script_path.resolve()
     module_name = (
@@ -53,32 +90,15 @@ def _load_generator_module(script_path: Path) -> object:
         raise RuntimeError(f"Failed to load generator module from {_display_path(resolved_script_path)}")
 
     module = importlib.util.module_from_spec(module_spec)
-    original_sys_path = list(sys.path)
-    # Seed sys.path so the generator's module-top imports (its sibling/shared packages such as
-    # robot_common / STEP) resolve. Derive everything from the generator script's OWN location —
-    # its folder, plus any ancestor that is a package root (contains a STEP/ or robot_common/
-    # package) — so resolution is independent of the process working directory. Deliberately NOT
-    # seeding the repo root or skills/cad/scripts: a generator must not depend on the repository's
-    # skills/ being importable (AGENTS.md skill isolation).
-    search_paths = [str(resolved_script_path.parent)]
-    for parent in resolved_script_path.parents:
-        if (
-            (parent / "STEP" / "__init__.py").is_file()
-            or (parent / "robot_common" / "__init__.py").is_file()
-        ):
-            search_paths.append(str(parent))
-    for candidate in reversed(search_paths):
-        if candidate not in sys.path:
-            sys.path.insert(0, candidate)
-
     # Workshop #102: every Boolean the source runs is serial, so one source
     # always builds one B-rep identity and one set of Detail Refusals.
     serial_booleans()
-    try:
+    # Seed sys.path so the generator's module-top imports (its sibling/shared packages such as
+    # robot_common / STEP) resolve. A build also holds the seed while gen_step() runs: see
+    # generator_import_path.
+    with generator_import_path(resolved_script_path):
         sys.modules[module_name] = module
         module_spec.loader.exec_module(module)
-    finally:
-        sys.path[:] = original_sys_path
 
     return module
 
@@ -449,7 +469,8 @@ def _run_script_generator_inner(
     # unloads modules mid-run; the sys.modules delta stays as a belt-and-braces union.
     evict_first_party_modules()
     modules_before_load = set(sys.modules)
-    with record_first_party_execution() as executed_files, _detail_build():
+    with record_first_party_execution() as executed_files, _detail_build(), \
+            generator_import_path(spec.script_path):
         with logger.timed(f"load generator {spec.source_ref}"):
             module = _load_generator_module(spec.script_path)
         generator = getattr(module, generator_name, None)
@@ -503,7 +524,7 @@ def rebuilt_identity(script_path: Path) -> str:
     from cadgen.inspection_runtime import shape_identity
 
     resolved = Path(script_path).resolve()
-    with _detail_build():
+    with _detail_build(), generator_import_path(resolved):
         module = _load_generator_module(resolved)
         generator = getattr(module, "gen_step", None)
         if not callable(generator):

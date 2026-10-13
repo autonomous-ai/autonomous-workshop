@@ -160,9 +160,10 @@ with BuildPart() as bp:
 
 **The order is the opposite of the 3D rule.** In 3D you fillet last; in a
 sketch you fillet **before** the boolean ([[fillet-chamfer-pitfalls#sketch-fillets-go-before-the-boolean]]).
-A 2D fillet on the sketch always succeeds where an equivalent 3D fillet on the
-extruded solid may fail, so when a corner radius is part of the *profile*, put
-it in the sketch. Sketch algebra has its own traps:
+A 2D fillet on the sketch succeeds in most places an equivalent 3D fillet on
+the extruded solid fails (not where a neighbouring edge is too short for the
+arc: [[fillet-chamfer-pitfalls#sketch-fillets-go-before-the-boolean]]), so when
+a corner radius is part of the *profile*, put it in the sketch. Sketch algebra has its own traps:
 [[sketch-and-extrude-direction]].
 
 **Round every corner of a star or snowflake outline with offsets, not vertex

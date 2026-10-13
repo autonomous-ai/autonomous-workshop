@@ -55,12 +55,12 @@ def _run_log(run: Path, drawn=("storyteller", "cam-whisperer"), replacement=None
     (run / "run.json").write_text(json.dumps({"steps": steps}))
 
 
-def _slot(run: Path, slot: str, text: str = CONTRACT, preview: str = "preview.png") -> None:
+def _slot(run: Path, slot: str, text: str = CONTRACT, concept: str = "concept.png") -> None:
     if not (run / "run.json").exists():
         _run_log(run)
     (run / slot).mkdir(parents=True)
     (run / slot / "CONTRACT.md").write_text(text)
-    (run / slot / preview).write_bytes(b"image-" + slot.encode())
+    (run / slot / concept).write_bytes(b"image-" + slot.encode())
 
 
 SCHEDULE = {"matches": [
@@ -115,7 +115,7 @@ class BuildTests(unittest.TestCase):
             run, out = Path(directory) / "run", Path(directory) / "packets"
             clean = CONTRACT.replace(" Designed by the Storyteller.", "")
             _slot(run, "candidate-1", clean)
-            _slot(run, "candidate-2", clean.replace("Daybreak", "Moth"), preview="preview.jpg")
+            _slot(run, "candidate-2", clean.replace("Daybreak", "Moth"), concept="concept.jpg")
             written = BP.build_packets(SCHEDULE, run, out, POOL)
             self.assertEqual(written, [out / "match-00", out / "match-01"])
             self.assertTrue((out / "match-01" / "A.md").read_text().startswith("# Moth"))
@@ -157,13 +157,13 @@ class BuildTests(unittest.TestCase):
                 BP.build_packets(SCHEDULE, run, out, POOL)
             self.assertFalse(out.exists())
 
-    def test_a_slot_without_a_preview_image_is_refused(self) -> None:
+    def test_a_slot_without_a_concept_image_is_refused(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             run, out = Path(directory) / "run", Path(directory) / "packets"
             _slot(run, "candidate-1")
             (run / "candidate-2").mkdir()
             (run / "candidate-2" / "CONTRACT.md").write_text(CONTRACT)
-            with self.assertRaisesRegex(BP.PacketError, "candidate-2 has no Preview Image"):
+            with self.assertRaisesRegex(BP.PacketError, "candidate-2 has no Concept Image"):
                 BP.build_packets(SCHEDULE, run, out, POOL)
 
 
