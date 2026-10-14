@@ -2324,3 +2324,16 @@ another Wish, or a legacy one with no Wish, binds nothing, so a `workshop fix`
 run that cloned its source's component state lets its own first reviewer bind;
 a second reviewer in the same run is still refused. This changes the
 `make-round` fingerprint; materialized runs keep their copied bytes.
+
+## Local change: a motion state is bound by what its triangulation cannot change (2026-10-14)
+
+A Workshop-local change (issue #121) to `cad/scripts/motion_states.py` and
+`motion_presentation.py`. Final validation rebuilds the assembly in a new
+process, and a Boolean result can differ there in its last bits, so the
+mesher may join a few quads by their other diagonal. `state_bytes` now binds
+each occurrence, in leaf order, by its triangle count, the sign of its
+signed volume and its vertex set on a 1 µm grid, instead of every triangle.
+Evidence is schema 3, and schema-2 evidence must be regenerated. A
+re-rendered frame may differ from the bound GIF in at most 0.2% of its
+pixels by more than 32 levels. This changes the `cad` fingerprint;
+materialized runs keep their copied bytes.

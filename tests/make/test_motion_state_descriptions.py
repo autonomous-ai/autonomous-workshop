@@ -46,7 +46,7 @@ class StateDescriptionTests(unittest.TestCase):
             # certifying CAD poses.
             rows.append({"condition_id": "cycle", "sample_index": sample,
                          "sha256": hashlib.sha256(b"opaque state %d" % ordinal).hexdigest()})
-        evidence = {"schema_version": 2, "kind": "declared-cad-motion-animation",
+        evidence = {"schema_version": 3, "kind": "declared-cad-motion-animation",
                     "sources": self.presentation["sources"](root), "assembly_entry": "model.step.py",
                     "states": rows, "render": {"azimuth": -45, "elevation": 35, "size": 256},
                     "animation_sha256": "a" * 64,
