@@ -222,3 +222,13 @@ reads car to robot, steps 1 to 7 being the contract's moves 7 to 1. The
 standing nose was shortened to 0.72 of its drawn height (r2c) to keep it
 about 1.2 times the chest. Known looseness: step 1's boots are drawn
 shorter than step 3's, the car's sidepods are not quite symmetric.
+
+## Guide Image in the contract (2026-10-14, issue #122)
+
+The owner wants the colour-coded transformation sheet in the run (ADR 0089,
+branch `issues/122-guide-images`, not merged yet). The contract is now
+schema 5 with `guides[]`: `guide-01-transformation.png` (a copy of
+`prototypes/v3-colour-steps.png`, 1600 x 1332), its seven steps in the
+sheet's order, car to robot. To stay under 40,000 characters two Motion and
+fit bullets that repeated R07 and R05 word for word now point to those rows.
+A run needs the merged Workshop and `--guide toys-spec/racer-mecha/guide-01-transformation.png`.

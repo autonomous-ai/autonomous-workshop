@@ -238,22 +238,18 @@ From robot to car, in this order (reverse for car to robot):
    meet at the centre line, 1.5 apart.
 7. Lay the car down on its back, on its wheels.
 
+`guide-01-transformation.png` draws these moves from car to robot (7 to 1),
+one colour per part. Where it differs, this contract wins.
+
 Posing in the robot: shoulders 90 forward and 5 back; hips 20 forward and 20
 back. The knees do not bend: the legs slide. The fists do not bend forward:
 the arm shell's front wall reaches its bottom.
 
 ## Motion and fit
 
-- Every moving part keeps at least 0.5 mm from every other part through each
-  transformation move and each posing range, and in both poses, except at
-  the contacts the Interfaces themselves declare: the head-slide dowel
-  stopping against the neck post's slot, the lowered helmet resting on the
-  pocket floor, and the knee-slide dowel stopping at its slot ends.
-- Motion check plan: `--check-motion true` on every wish, resume and
-  correction; one sweep per transformation move in at most 10 steps, each
-  against only the parts it can reach (R07).
-- In the car pose the wheels are the lowest parts: the nose knuckle and the
-  torso's hinge cheeks stand 1.5 above the ground, the boots 3.
+- Clearances and the motion check plan are R07's: 0.5 mm except at the
+  contacts the Interfaces declare, one sweep per move.
+- In the car pose the wheels are the lowest parts (R05).
 - The knee-slide dowel's clicks hold the robot standing at full length and
   the car at its short length; the ankle and wing hinges hold by friction.
 - Assembled, not printed in place: each dowel is pressed in after its part
@@ -304,10 +300,13 @@ and 13 ahead of the heels.
 
 ```design-contract
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "title": "Racer Mecha",
   "inventor": "rowan-vale",
   "envelope_mm": [124, 57, 207],
+  "guides": [
+    {"file": "guide-01-transformation.png", "shows": "The moves from car to robot, one colour per part; a back view, the car's tail, the leg fold from the side.", "steps": ["Stand the car up on its tail.", "Fold the wing halves down onto the toes.", "Pull the shins out of the thighs.", "Fold the boots forward.", "Fold the fists out of the arm shells.", "Flip the nose down the back.", "Raise the head."]}
+  ],
   "references": [
     {"file": "ref-01-racer-mecha.png", "shows": "assembly", "camera": [-90, 15]},
     {"file": "ref-02-torso.png", "shows": "geometry:torso", "camera": [-90, 15]},
