@@ -410,7 +410,7 @@ class StageProposalToolTest(unittest.TestCase):
         )
         return assignment, invented, design_contract
 
-    def seal_referenced_wish(self):
+    def seal_referenced_wish(self, context=None):
         """Seal a Wish with one reference image, and its own matching Match/Invented pair.
 
         ADR 0072 Delivery 2: the finalizer must refuse a toy whose Wish sealed
@@ -425,7 +425,7 @@ class StageProposalToolTest(unittest.TestCase):
                 "product_id": "run-local-toy",
                 "objective": "Build a tiny lunar observatory with a rotating mask.",
                 "constraints": {},
-                "context": {},
+                "context": context or {},
                 "references": [
                     {
                         "name": "ref-01-observatory.png",
@@ -2744,8 +2744,8 @@ class StageProposalToolTest(unittest.TestCase):
         "accepted_by": "workshop-manager",
     }
 
-    def acceptance_stage(self):
-        assignment, invented = self.seal_referenced_wish()
+    def acceptance_stage(self, context=None):
+        assignment, invented = self.seal_referenced_wish(context)
         product_root, _, _, _ = self.create_product(invented=invented)
         self.write_stage(
             "make",
@@ -2759,7 +2759,7 @@ class StageProposalToolTest(unittest.TestCase):
         self.setUp()
 
     def write_component_acceptance(self, report, acceptances, *, verification_sha256=None, interfaces=None,
-                                   conflicts=None):
+                                   conflicts=None, guides=None):
         record = {
             "schema_version": 1,
             "verification_sha256": verification_sha256 or hashlib.sha256(report.read_bytes()).hexdigest(),
@@ -2769,6 +2769,8 @@ class StageProposalToolTest(unittest.TestCase):
             record["interfaces"] = interfaces
         if conflicts is not None:
             record["reference_conflicts"] = conflicts
+        if guides is not None:
+            record["guides"] = guides
         (report.parent / "component-acceptance.json").write_text(json.dumps(record), encoding="utf-8")
 
     INTERFACES = [
@@ -2849,6 +2851,67 @@ class StageProposalToolTest(unittest.TestCase):
                 self.write_component_acceptance(report, [], conflicts=conflicts)
                 refused = self.finalize_make(expected=2)
                 self.assertIn(needle, refused.stderr)
+
+    GUIDE_CONTEXT = {"design_contract": {"schema_version": 5, "requirements": [], "guides": [
+        {"file": "guide-01-steps.png", "shows": "The transformation.", "steps": ["Stand it up."]}]}}
+    GUIDES = [{"file": "guide-01-steps.png", "check_motion": True,
+               "steps": [{"step": "Stand it up.", "checked": "car pose"}],
+               "conflicts": [{"guide": "four fingers", "contract": "three fingers"}]}]
+
+    def stage_proposal_module(self):
+        spec = importlib.util.spec_from_file_location("stage_proposal_guides", TOOL)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_make_carries_the_verified_guide_account_into_the_product(self):
+        # ADR 0089: the verifier's account of every Guide Image reaches the host.
+        product_root, report = self.acceptance_stage()
+        report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+        self.write_component_acceptance(report, [], guides=self.GUIDES)
+        self.finalize_make()
+        product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        self.assertEqual(product["guides"], self.GUIDES)
+
+    def test_make_refuses_a_malformed_guide_account(self):
+        guide = self.GUIDES[0]
+        cases = {
+            "both notes": ([{**guide, "steps": [{"step": "Stand it up.", "checked": "a", "skipped": "b"}]}],
+                           "{step, checked} or {step, skipped}"),
+            "bad conflict": ([{**guide, "conflicts": [{"guide": "x"}]}], "fields are invalid"),
+            "bad motion flag": ([{**guide, "check_motion": "yes"}], "check_motion"),
+            "not a guide": ([{**guide, "file": "ref-01-x.png"}], "sealed guide image"),
+        }
+        for name, (guides, needle) in cases.items():
+            with self.subTest(name):
+                self.setUp_fresh()
+                _, report = self.acceptance_stage()
+                report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+                self.write_component_acceptance(report, [], guides=guides)
+                refused = self.finalize_make(expected=2)
+                self.assertIn(needle, refused.stderr)
+
+    def test_the_account_must_name_every_sealed_guide_and_no_other(self):
+        module = self.stage_proposal_module()
+        contract = self.GUIDE_CONTEXT["design_contract"]
+        module._require_guide_account(contract, self.GUIDES)
+        module._require_guide_account({"requirements": []}, None)
+        for guides in (None, [], [{**self.GUIDES[0], "file": "guide-02-x.png"}]):
+            with self.subTest(guides=guides):
+                with self.assertRaisesRegex(module.ProposalError, "account for every Guide Image"):
+                    module._require_guide_account(contract, guides)
+        with self.assertRaisesRegex(module.ProposalError, "account for every Guide Image"):
+            module._require_guide_account({"requirements": []}, self.GUIDES)
+
+    def test_make_refuses_a_guide_account_the_verifier_did_not_record(self):
+        product_root, report = self.acceptance_stage()
+        product = json.loads((product_root / "product.json").read_text(encoding="utf-8"))
+        product["guides"] = self.GUIDES
+        (product_root / "product.json").write_text(json.dumps(product), encoding="utf-8")
+        report.write_text(self.PASSING_IMAGE_DERIVED_RECORD, encoding="utf-8")
+        self.write_component_acceptance(report, [])
+        refused = self.finalize_make(expected=2)
+        self.assertIn("guides must come from the final verifier", refused.stderr)
 
     def test_make_refuses_reference_conflicts_the_verifier_did_not_record(self):
         product_root, report = self.acceptance_stage()

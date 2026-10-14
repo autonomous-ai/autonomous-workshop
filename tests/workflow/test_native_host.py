@@ -57,6 +57,11 @@ from workshop.workflow.native_run import (
     _made_component_acceptances,
     _made_interfaces,
     _made_reference_conflicts,
+    _made_guides,
+    _guide_history,
+    _frozen_check_motion,
+    _sealed_contract_inputs,
+    _sealed_guide_inputs,
     _reference_conflict_history,
     _verify_make_round_workers,
     _playtest_score_history,
@@ -3567,6 +3572,75 @@ class NativeHostTest(unittest.TestCase):
             (gates / "0005-make.json").write_text(json.dumps(
                 {"evidence": {"checks": {"component_acceptances": []}}}), encoding="utf-8")
             self.assertEqual(_reference_conflict_history(host), [])
+
+    GUIDE_STEPS = ["Stand the car on its tail.", "Pop the head up."]
+    GUIDE_CONTRACT = {"guides": [
+        {"file": "guide-01-steps.png", "shows": "The transformation.", "steps": GUIDE_STEPS},
+        {"file": "guide-02-side.png", "shows": "The leg from the side."},
+    ]}
+
+    def guide_account(self, check_motion=True):
+        return [
+            {"file": "guide-01-steps.png", "check_motion": check_motion, "steps": [
+                {"step": self.GUIDE_STEPS[0], "checked": "car pose"},
+                {"step": self.GUIDE_STEPS[1], "skipped": "the head slide is checked by R06"},
+            ], "conflicts": [{"guide": "four fingers", "contract": "three fingers"}]},
+            {"file": "guide-02-side.png", "check_motion": check_motion, "steps": [], "conflicts": []},
+        ]
+
+    def test_made_guides_account_for_every_sealed_guide(self):
+        # ADR 0089: the host counts the Manager's account; it never judges it.
+        account = self.guide_account()
+        self.assertEqual(_made_guides({"guides": account}, self.GUIDE_CONTRACT, True), account)
+        self.assertEqual(_made_guides({"title": "t"}, {}, True), [])
+        self.assertEqual(_made_guides({"title": "t"}, None, False), [])
+        partial = self.guide_account(check_motion=False)
+        partial[0]["steps"] = partial[0]["steps"][:1]
+        self.assertEqual(_made_guides({"guides": partial}, self.GUIDE_CONTRACT, False), partial)
+        first = account[0]
+        for bad, check_motion in (
+            ("nope", True),
+            (account[:1], True),
+            (list(reversed(account)), True),
+            ([dict(first, check_motion=False), account[1]], True),
+            ([dict(first, steps=first["steps"][:1]), account[1]], True),
+            ([dict(first, steps=[{"step": "Another step.", "checked": "x"}]), account[1]], False),
+            ([dict(first, steps=[first["steps"][0]] * 2), account[1]], True),
+            ([dict(first, steps=[{"step": self.GUIDE_STEPS[0], "checked": " "}]), account[1]], False),
+            ([dict(first, conflicts=[{"guide": "x"}]), account[1]], True),
+            ([dict(first, extra=1), account[1]], True),
+        ):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ContractError):
+                    _made_guides({"guides": bad}, self.GUIDE_CONTRACT, check_motion)
+        with self.assertRaises(ContractError):
+            _made_guides({"guides": account}, {}, True)
+
+    def test_guides_are_read_from_the_latest_make_gate_receipt(self):
+        account = self.guide_account()
+        with tempfile.TemporaryDirectory() as temporary:
+            host = Path(temporary).resolve()
+            self.assertEqual(_guide_history(host), [])
+            (host / "gates").mkdir()
+            (host / "gates" / "0003-make.json").write_text(json.dumps(
+                {"evidence": {"checks": {"guides": account}}}), encoding="utf-8")
+            self.assertEqual(_guide_history(host), account)
+
+    def test_the_frozen_motion_policy_and_sealed_guides_are_read_from_the_run(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            self.assertFalse(_frozen_check_motion(root))
+            (root / "MAKE-OPTIONS.json").write_text(json.dumps({"schema_version": 1, "check_motion": True}))
+            self.assertTrue(_frozen_check_motion(root))
+            sealed = [{"name": "ref-01-whole.png", "sha256": "1" * 64},
+                      {"name": "guide-01-steps.png", "sha256": "2" * 64}]
+            wish = json.dumps({"references": sealed, "context": {"design_contract": self.GUIDE_CONTRACT}})
+            (root / "WISH.json").write_text(wish)
+            digest = hashlib.sha256(wish.encode()).hexdigest()
+            contract, references = _sealed_contract_inputs(root, digest)
+            self.assertEqual(contract, self.GUIDE_CONTRACT)
+            self.assertEqual(list(references), ["ref-01-whole.png"])
+            self.assertEqual(list(_sealed_guide_inputs(root, digest)), ["guide-01-steps.png"])
 
     INTERFACES = [
         {"id": "wing-housing", "kind": "separable", "components": ["wing", "spine-housing"],

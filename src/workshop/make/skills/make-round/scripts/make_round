@@ -1815,6 +1815,13 @@ def guarded_run(project: Path) -> bool:
 # standalone tool and cannot import the host package.
 WISH_REFERENCES_DIR = "wish-references"
 SEALED_NAME = re.compile(r"^(ref-(?:0[1-9]|[1-9][0-9])-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?)\.(?:png|jpg|webp)$")
+# A Guide Image (ADR 0089) is sealed beside the references and never scored.
+GUIDE_NAME = re.compile(r"^guide-(?:0[1-9]|[1-9][0-9])-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$")
+# The Workshop Manager's account of each step a Guide Image draws, in the
+# CAD project root (ADR 0089).
+GUIDE_STEPS_NAME = "guide-steps.json"
+MAX_GUIDE_NOTE = 500
+MAX_GUIDE_CONFLICTS = 24
 
 
 def contract_reference_labels(wish: dict) -> dict:
@@ -2039,6 +2046,9 @@ def sealed_references(project: Path):
     for item in items:
         name = item.get("name") if isinstance(item, dict) else None
         digest = item.get("sha256") if isinstance(item, dict) else None
+        if isinstance(name, str) and GUIDE_NAME.fullmatch(name):
+            # ADR 0089: a Guide Image is never compared with the model.
+            continue
         match = SEALED_NAME.fullmatch(name) if isinstance(name, str) else None
         if match is None or not isinstance(digest, str):
             return [], "WISH.json names an invalid reference: %r" % (name,)
@@ -2046,6 +2056,130 @@ def sealed_references(project: Path):
         sealed.append({"label": label, "path": root / WISH_REFERENCES_DIR / name, "sha256": digest,
                        "camera": cameras.get(name)})
     return sealed, None
+
+
+def sealed_guides(project: Path):
+    """The Guide Images the Wish sealed (ADR 0089), as ``(guides, error)``.
+
+    Each is ``{"file", "shows", "steps", "path", "sha256"}``, ``shows`` and
+    ``steps`` from the sealed contract's ``guides[]``. They explain the
+    design to the Workshop Manager and every Component Worker; nothing
+    scores or compares them. Outside a run, and before schema 5, there are
+    none."""
+
+    root = run_root(project)
+    if root is None:
+        return [], None
+    try:
+        wish = json.loads((root / "WISH.json").read_text(encoding="utf-8"))
+        items = wish.get("references") or []
+        if not isinstance(items, list):
+            raise ValueError("references is not a list")
+    except (OSError, ValueError, AttributeError) as exc:
+        return [], "WISH.json unreadable: %s" % exc
+    contract = sealed_contract(project) or {}
+    listed = {item["file"]: item for item in contract.get("guides") or ()
+              if isinstance(item, dict) and isinstance(item.get("file"), str)}
+    guides = []
+    for item in items:
+        name = item.get("name") if isinstance(item, dict) else None
+        if not isinstance(name, str) or not GUIDE_NAME.fullmatch(name):
+            continue
+        entry = listed.get(name)
+        if entry is None or not isinstance(item.get("sha256"), str):
+            return [], "WISH.json seals guide image %s, which the Design Contract does not list" % name
+        steps = entry.get("steps") or []
+        guides.append({"file": name, "shows": str(entry.get("shows") or ""),
+                       "steps": [str(step) for step in steps] if isinstance(steps, list) else [],
+                       "path": root / WISH_REFERENCES_DIR / name, "sha256": item["sha256"]})
+    return guides, None
+
+
+def guide_view(guides: list) -> list:
+    """What a Component Worker or a Contract Reviewer is told of each Guide
+    Image: its file, what it shows and where it is sealed."""
+
+    return [{"file": item["file"], "shows": item["shows"], "path": str(item["path"])} for item in guides]
+
+
+def _guide_note(value) -> bool:
+    return isinstance(value, str) and 1 <= len(value.strip()) <= MAX_GUIDE_NOTE
+
+
+def guide_steps_report(project: Path, check_motion: bool) -> tuple[list, list | None]:
+    """``(failures, report)`` for the run's Guide Images (ADR 0089).
+
+    The Workshop Manager writes ``guide-steps.json`` in the CAD project:
+    ``{"guides": [{"file", "steps": [{"step", "checked" | "skipped"}],
+    "conflicts": [{"guide", "contract"}]}]}``. With motion checks on, every
+    step a guide's contract entry lists needs exactly one entry, the pose
+    it was checked in or why it is skipped. The verifier counts entries; it
+    never judges them. ``conflicts`` are places the guide shows what the
+    Design Contract forbids; the contract won. ``report`` is None when the
+    run has no Guide Image."""
+
+    guides, error = sealed_guides(project)
+    if error is not None:
+        return [error], None
+    if not guides:
+        return [], None
+    for item in guides:
+        if not item["path"].is_file() or file_hash(item["path"]) != item["sha256"]:
+            return ["sealed guide image %s is missing or does not match its sealed hash" % item["file"]], None
+    path = project / GUIDE_STEPS_NAME
+    record = None
+    failures = []
+    if path.is_file() and not path.is_symlink():
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, ValueError) as exc:
+            return ["%s does not parse: %s" % (GUIDE_STEPS_NAME, exc)], None
+    elif os.path.lexists(path):
+        return ["%s must be a regular file" % GUIDE_STEPS_NAME], None
+    entries = {}
+    if record is not None:
+        listed = record.get("guides") if isinstance(record, dict) and set(record) == {"guides"} else None
+        if not isinstance(listed, list):
+            return ['%s must be {"guides": [...]}' % GUIDE_STEPS_NAME], None
+        for raw in listed:
+            if (not isinstance(raw, dict) or not {"file"} <= set(raw) <= {"file", "steps", "conflicts"}
+                    or not isinstance(raw["file"], str) or raw["file"] in entries):
+                return ["%s lists a guide entry that is not {file, steps, conflicts}, or one twice"
+                        % GUIDE_STEPS_NAME], None
+            entries[raw["file"]] = raw
+    unknown = sorted(set(entries) - {item["file"] for item in guides})
+    if unknown:
+        return ["%s names %s, which is not a sealed guide image" % (GUIDE_STEPS_NAME, ", ".join(unknown))], None
+    report = []
+    for item in guides:
+        raw = entries.get(item["file"], {})
+        accounted = {}
+        for step in raw.get("steps", []) if isinstance(raw.get("steps", []), list) else [None]:
+            keys = set(step) if isinstance(step, dict) else set()
+            if (keys not in ({"step", "checked"}, {"step", "skipped"}) or step["step"] not in item["steps"]
+                    or step["step"] in accounted or not _guide_note(step.get("checked", step.get("skipped")))):
+                failures.append("%s: %s step entries are {step, checked} or {step, skipped}, each naming one "
+                                "step the contract lists for it, once, with 1 to %d characters"
+                                % (GUIDE_STEPS_NAME, item["file"], MAX_GUIDE_NOTE))
+                break
+            accounted[step["step"]] = step
+        conflicts = raw.get("conflicts", [])
+        if (not isinstance(conflicts, list) or len(conflicts) > MAX_GUIDE_CONFLICTS
+                or not all(isinstance(c, dict) and set(c) == {"guide", "contract"}
+                           and all(isinstance(c[k], str) and 1 <= len(c[k].strip()) <= 1000 for k in c)
+                           for c in conflicts)):
+            failures.append("%s: %s conflicts are at most %d {guide, contract} entries"
+                            % (GUIDE_STEPS_NAME, item["file"], MAX_GUIDE_CONFLICTS))
+            conflicts = []
+        missing = [step for step in item["steps"] if step not in accounted]
+        if check_motion and missing:
+            failures.append("%s: %s step(s) not accounted for: %s; record the pose each was checked in, or why "
+                            "it is skipped" % (item["file"], len(missing), "; ".join(missing)))
+        report.append({"file": item["file"], "check_motion": bool(check_motion),
+                       "steps": [{"step": step, **{k: v.strip() for k, v in accounted[step].items() if k != "step"}}
+                                 for step in item["steps"] if step in accounted],
+                       "conflicts": [{k: v.strip() for k, v in c.items()} for c in conflicts]})
+    return failures, report
 
 
 def current_passing_component_round(project: Path, role: str, digest: str | None) -> tuple[dict | None, str]:
@@ -3171,7 +3305,11 @@ def contract_amendments(content: str, contract: dict | None) -> dict:
         if wish != item["wish_sha256"]:
             raise ValueError("Contract Amendment %s is reviewed from another run" % number)
         verdict = event.get("verdict")
-        if (not isinstance(verdict, dict) or set(verdict) != set(AMENDMENT_VERDICT) | {"reason"}
+        if (not isinstance(verdict, dict)
+                or set(verdict) - {"guides_wrong"} != set(AMENDMENT_VERDICT) | {"reason"}
+                or not valid_guides_wrong(verdict.get("guides_wrong", []),
+                                          {g.get("file") for g in verdict.get("guides_wrong") or ()
+                                           if isinstance(g, dict)})
                 or type(verdict["contradiction"]) is not bool or type(verdict["smallest"]) is not bool
                 or not isinstance(verdict["visible_in"], list) or not isinstance(verdict["references_checked"], list)
                 or not _blocked_text(verdict["reason"], MAX_REASON)
@@ -3346,6 +3484,9 @@ def propose_amendment(project: Path, proposal_path) -> dict:
                            "sha256": item["sha256"]})
     if not references:
         raise ValueError("a Contract Amendment needs the sealed reference images its reviewer checks")
+    guides, guide_error = sealed_guides(project)
+    if guide_error is not None:
+        raise ValueError(guide_error)
     retry_of, refusal = retry_refusal([amendments[n] for n in sorted(amendments)],
                                       [row.strip() for row in rows], resolved)
     if refusal is not None:
@@ -3360,6 +3501,10 @@ def propose_amendment(project: Path, proposal_path) -> dict:
         "contract_sha256": contract_digest(contract), "amended_sha256": contract_digest(amended),
         "affects": amendment_affects(contract, resolved),
     }
+    if guides:
+        # ADR 0089: the reviewer names the guide panels a change makes wrong;
+        # that never refuses the amendment.
+        packet["guides"] = [{**view, "sha256": item["sha256"]} for view, item in zip(guide_view(guides), guides)]
     directory = project / "measure" / AMENDMENT_PACKETS_DIR / ("a%02d" % number)
     directory.mkdir(parents=True, exist_ok=True)
     packet_bytes = (json.dumps(packet, sort_keys=True, indent=1) + "\n").encode("utf-8")
@@ -3397,9 +3542,9 @@ def record_amendment_review(project: Path, review_path) -> dict:
 
     record = json.loads(Path(review_path).read_text(encoding="utf-8"))
     required = {"amendment", "packet_sha256", "reviewer", "reason", *AMENDMENT_VERDICT}
-    if not isinstance(record, dict) or set(record) != required:
+    if not isinstance(record, dict) or not required <= set(record) <= required | {"guides_wrong"}:
         raise ValueError("an amendment review needs amendment, packet_sha256, reviewer, contradiction, "
-                         "smallest, visible_in, references_checked and reason")
+                         "smallest, visible_in, references_checked and reason, and may add guides_wrong")
     amendments = read_contract_amendments(project)
     number = record["amendment"]
     item = amendments.get(number) if type(number) is int else None
@@ -3445,15 +3590,34 @@ def record_amendment_review(project: Path, review_path) -> dict:
                          % ", ".join(sorted(files - set(record["references_checked"]))))
     if not _blocked_text(record["reason"], MAX_REASON):
         raise ValueError("an amendment review needs a reason of 1 to %d characters" % MAX_REASON)
+    guide_files = {guide["file"] for guide in json.loads(packet_bytes).get("guides") or ()}
+    wrong = record.get("guides_wrong", [])
+    if not guide_files and "guides_wrong" in record:
+        raise ValueError("guides_wrong names Guide Images, and this packet shows none")
+    if not valid_guides_wrong(wrong, guide_files):
+        raise ValueError("guides_wrong lists at most %d {file, where} entries, file a guide image from the "
+                         "packet (%s) and where the panel or step that change makes wrong"
+                         % (MAX_GUIDE_CONFLICTS, ", ".join(sorted(guide_files))))
     verdict = {"contradiction": record["contradiction"], "smallest": record["smallest"],
                "visible_in": sorted(record["visible_in"]), "references_checked": sorted(files),
                "reason": record["reason"].strip()}
+    if guide_files:
+        verdict["guides_wrong"] = [{"file": item["file"], "where": item["where"].strip()} for item in wrong]
     event = {"event": "review", "amendment": number, "reviewer": reviewer, "verdict": verdict,
              "at": _utc_now(), "wish_sha256": item["wish_sha256"]}
     with amendment_ledger(project).open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(event, sort_keys=True) + "\n")
     reviewed = read_contract_amendments(project)[number]
     return amendment_view(reviewed)
+
+
+def valid_guides_wrong(value, guide_files) -> bool:
+    """A Contract Reviewer's list of Guide Image panels an amendment makes
+    wrong (ADR 0089): ``{file, where}`` entries naming the packet's guides."""
+
+    return (isinstance(value, list) and len(value) <= MAX_GUIDE_CONFLICTS
+            and all(isinstance(item, dict) and set(item) == {"file", "where"} and item["file"] in guide_files
+                    and _blocked_text(item["where"], MAX_GUIDE_NOTE) for item in value))
 
 
 def amendment_need(item: dict) -> str:
@@ -4603,6 +4767,7 @@ def make_round(args) -> int:
     component = None
     display_pose = False
     delivered = None
+    guides = []
     rulings = []
     if args.component:
         try:
@@ -4614,6 +4779,11 @@ def make_round(args) -> int:
         parts = [entry]
         display_pose = camera_contract(project)
         delivered = component_contract(project, role)
+        # ADR 0089: the worker may read every Guide Image; its reviewer never.
+        guides, guide_error = sealed_guides(project)
+        if guide_error is not None:
+            print("make_round: %s" % guide_error, file=sys.stderr)
+            return 2
         try:
             # Issue #97: the Manager's rulings on this Component's Blocked
             # Reports bind its reviewer, so they travel in the packet.
@@ -5044,6 +5214,8 @@ def make_round(args) -> int:
         if delivered is not None:
             # ADR 0084: the worker reads its rows from the sealed contract.
             summary["contract"] = delivered
+        if guides:
+            summary["guides"] = guide_view(guides)
         if rulings:
             summary["rulings"] = rulings
         if freeze is not None:

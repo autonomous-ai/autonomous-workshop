@@ -762,7 +762,9 @@ def _interface_review(make_round: dict, project: Path, identities: dict[str, str
     return failures, make_round["interface_report"](project, interfaces, digests)
 
 
-def _component_review_failed(runner: "Runner", make_round: dict, project: Path, sealed: list[dict]) -> bool:
+def _component_review_failed(
+    runner: "Runner", make_round: dict, project: Path, sealed: list[dict], check_motion: bool = False
+) -> bool:
     """Record the Contract Mode component-image gate; True when it fails."""
     started = time.perf_counter()
     identities = _gen_part_identities(runner.last_stdout)
@@ -770,6 +772,20 @@ def _component_review_failed(runner: "Runner", make_round: dict, project: Path, 
     failures, acceptances = _component_review_coverage(make_round, project, sealed, identities, conflicts)
     interface_failures, interfaces = _interface_review(make_round, project, identities)
     failures += interface_failures
+    # ADR 0089: every step a Guide Image draws is accounted for under motion
+    # checks; the image itself is never compared with the model.
+    if "guide_steps_report" in make_round:
+        guide_failures, guides = make_round["guide_steps_report"](project, check_motion)
+        failures += guide_failures
+        if guides is not None:
+            runner.guides = guides
+            for guide in guides:
+                for step in guide["steps"]:
+                    how = f"checked: {step['checked']}" if "checked" in step else f"skipped: {step['skipped']}"
+                    runner.note("guide step", f"{guide['file']} {step['step']} {how}")
+                for conflict in guide["conflicts"]:
+                    runner.note("guide conflict", f"{guide['file']} shows {conflict['guide']}; the Design "
+                                f"Contract requires {conflict['contract']}; the contract wins")
     if interfaces is not None:
         runner.interfaces = interfaces
         proofs = {"keep-out-envelope": "Keep-out Envelope checked in each side's component round",
@@ -810,6 +826,7 @@ def _write_component_acceptance(
     acceptances: list[dict],
     interfaces: list[dict] | None = None,
     conflicts: list[dict] | None = None,
+    guides: list[dict] | None = None,
 ) -> None:
     """Bind the Manager's component acceptances, the contract's Interfaces
     with how each was proven (ADR 0082), and the Reference Conflicts the
@@ -823,6 +840,8 @@ def _write_component_acceptance(
         record["interfaces"] = interfaces
     if conflicts:
         record["reference_conflicts"] = conflicts
+    if guides is not None:
+        record["guides"] = guides
     (report.parent / COMPONENT_ACCEPTANCE_NAME).write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
 
 
@@ -1024,6 +1043,7 @@ class Runner:
         # Reference Conflicts the component reviews recorded (ADR 0084),
         # gathered alongside the acceptances.
         self.reference_conflicts: list[dict] = []
+        self.guides: list[dict] | None = None
         # The sealed contract's Interfaces and how each was proven, when it
         # has an Interfaces section (ADR 0082).
         self.interfaces: list[dict] | None = None
@@ -1612,7 +1632,7 @@ def _write_report(
     (path.parent / "geometry-inspection.json").write_text(json.dumps(disclosure, indent=2) + "\n", encoding="utf-8")
     if runner.component_acceptances is not None:
         _write_component_acceptance(path, runner.component_acceptances, runner.interfaces,
-                                    runner.reference_conflicts)
+                                    runner.reference_conflicts, runner.guides)
 
 
 # ── Harness verdict ───────────────────────────────────────────────────────────
@@ -2856,7 +2876,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         ):
             result = 1
         elif contract_make_round is not None and not args.dry_run and _component_review_failed(
-            runner, contract_make_round, project, contract_sealed
+            runner, contract_make_round, project, contract_sealed, check_motion
         ):
             result = 1
         else:

@@ -2061,7 +2061,11 @@ def _wish_has_sealed_references(run_root: Path, wish_sha256: str) -> bool:
     """
 
     references = _materialized_wish(run_root, wish_sha256).get("references")
-    return isinstance(references, list) and len(references) > 0
+    # A Guide Image (ADR 0089) is sealed beside them but never accounted for.
+    return isinstance(references, list) and any(
+        not (isinstance(item, dict) and str(item.get("name", "")).startswith("guide-"))
+        for item in references
+    )
 
 
 def _sealed_assembly_requirement_texts(design_contract: Mapping[str, Any]) -> list[str]:
@@ -2648,10 +2652,13 @@ INTERFACE_PROOFS = {
 def _component_acceptances(
     run_root: Path, product_root_value: str, verification_relative: PurePosixPath
 ) -> Optional[
-    tuple[list[dict[str, Any]], Optional[list[dict[str, Any]]], list[dict[str, Any]]]
+    tuple[
+        list[dict[str, Any]], Optional[list[dict[str, Any]]], list[dict[str, Any]],
+        Optional[list[dict[str, Any]]],
+    ]
 ]:
-    """``(acceptances, interfaces, conflicts)`` from the final verifier, or
-    None when it wrote no record.
+    """``(acceptances, interfaces, conflicts, guides)`` from the final
+    verifier, or None when it wrote no record.
 
     The verifier writes ``component-acceptance.json`` beside its report and
     binds it to the report's exact bytes. Every acceptance is a Component
@@ -2661,6 +2668,8 @@ def _component_acceptances(
     Interfaces with how each was proven (ADR 0082), or is None for a
     contract without an Interfaces section. ``conflicts`` lists the
     Reference Conflicts the component reviews recorded (ADR 0084).
+    ``guides`` is the Workshop Manager's account of each Guide Image
+    (ADR 0089), or None when the run sealed none.
     """
 
     relative = "%s/%s" % (
@@ -2673,7 +2682,8 @@ def _component_acceptances(
     document, _, _ = _read_json(run_root, relative, label)
     record = _mapping(document, label)
     if not {"schema_version", "verification_sha256", "acceptances"} <= set(record) or not set(record) <= {
-        "schema_version", "verification_sha256", "acceptances", "interfaces", "reference_conflicts"
+        "schema_version", "verification_sha256", "acceptances", "interfaces", "reference_conflicts",
+        "guides",
     }:
         raise ProposalError("%s fields are invalid" % label)
     verification_sha256, _, _ = _hash_regular(
@@ -2718,7 +2728,64 @@ def _component_acceptances(
     if "interfaces" in record:
         interfaces = _verified_interfaces(record["interfaces"], label)
     conflicts = _verified_reference_conflicts(record.get("reference_conflicts", []), label)
-    return acceptances, interfaces, conflicts
+    guides = _verified_guides(record["guides"], label) if "guides" in record else None
+    return acceptances, interfaces, conflicts, guides
+
+
+MAX_GUIDE_NOTE = 500
+
+
+def _require_guide_account(
+    sealed_contract: Mapping[str, Any], guides: Optional[list[dict[str, Any]]]
+) -> None:
+    """ADR 0089: the verifier accounted for every sealed Guide Image, and no
+    other."""
+
+    sealed = sorted(
+        str(item.get("file")) for item in sealed_contract.get("guides") or ()
+        if isinstance(item, dict)
+    )
+    if sorted(str(item["file"]) for item in guides or ()) != sealed:
+        raise ProposalError(
+            "Make %s must account for every Guide Image of the sealed Design "
+            "Contract; rerun verify_project --image-derived" % COMPONENT_ACCEPTANCE_NAME
+        )
+
+
+def _verified_guides(value: Any, label: str) -> list[dict[str, Any]]:
+    """The verifier's account of each Guide Image (ADR 0089): the steps the
+    Workshop Manager checked or skipped, and where the guide disagreed with
+    the Design Contract. The verifier already refused a missing step."""
+
+    guides = _array(value, label + " guides")
+    if not 1 <= len(guides) <= 99:
+        raise ProposalError("%s lists an invalid number of guides" % label)
+    for index, raw in enumerate(guides, 1):
+        item_label = "%s guide %d" % (label, index)
+        item = _fields(raw, {"file", "check_motion", "steps", "conflicts"}, item_label)
+        if not _bounded_text(item["file"], item_label + " file", 200).startswith("guide-"):
+            raise ProposalError("%s file must name a sealed guide image" % item_label)
+        if type(item["check_motion"]) is not bool:
+            raise ProposalError("%s check_motion must be true or false" % item_label)
+        steps = _array(item["steps"], item_label + " steps")
+        if len(steps) > 24:
+            raise ProposalError("%s lists too many steps" % item_label)
+        for step_index, step in enumerate(steps, 1):
+            step_label = "%s step %d" % (item_label, step_index)
+            entry = _mapping(step, step_label)
+            if set(entry) not in ({"step", "checked"}, {"step", "skipped"}):
+                raise ProposalError("%s must be {step, checked} or {step, skipped}" % step_label)
+            _bounded_text(entry["step"], step_label + " step", 300)
+            _bounded_text(entry.get("checked", entry.get("skipped")), step_label + " note", MAX_GUIDE_NOTE)
+        conflicts = _array(item["conflicts"], item_label + " conflicts")
+        if len(conflicts) > 24:
+            raise ProposalError("%s lists too many conflicts" % item_label)
+        for conflict_index, conflict in enumerate(conflicts, 1):
+            conflict_label = "%s conflict %d" % (item_label, conflict_index)
+            entry = _fields(conflict, {"guide", "contract"}, conflict_label)
+            _bounded_text(entry["guide"], conflict_label + " guide", 1_000)
+            _bounded_text(entry["contract"], conflict_label + " contract", 1_000)
+    return guides
 
 
 REFERENCE_CONFLICT_FIELDS = frozenset(
@@ -2798,9 +2865,10 @@ def _seal_component_acceptances(
     acceptances: Optional[list[dict[str, Any]]],
     interfaces: Optional[list[dict[str, Any]]] = None,
     conflicts: Optional[list[dict[str, Any]]] = None,
+    guides: Optional[list[dict[str, Any]]] = None,
 ) -> None:
-    """Copy the verifier's acceptances, Interfaces and Reference Conflicts
-    into product.json; never let the agent author them."""
+    """Copy the verifier's acceptances, Interfaces, Reference Conflicts and
+    Guide Image account into product.json; never let the agent author them."""
 
     path = product_root / "product.json"
     if path.is_symlink() or not path.is_file():
@@ -2818,18 +2886,19 @@ def _seal_component_acceptances(
             % COMPONENT_ACCEPTANCE_NAME
         )
     if acceptances is None:
-        for key in ("component_acceptances", "interfaces", "reference_conflicts"):
+        for key in ("component_acceptances", "interfaces", "reference_conflicts", "guides"):
             if key in product:
                 raise ProposalError(
                     "Make product.json %s must come from the final verifier's %s, "
                     "which does not exist" % (key, COMPONENT_ACCEPTANCE_NAME)
                 )
         return
-    if interfaces is None and "interfaces" in product:
-        raise ProposalError(
-            "Make product.json interfaces must come from the final verifier's %s, "
-            "which lists none" % COMPONENT_ACCEPTANCE_NAME
-        )
+    for key, value in (("interfaces", interfaces), ("guides", guides)):
+        if value is None and key in product:
+            raise ProposalError(
+                "Make product.json %s must come from the final verifier's %s, "
+                "which lists none" % (key, COMPONENT_ACCEPTANCE_NAME)
+            )
     updated = dict(product)
     if acceptances:
         updated["component_acceptances"] = acceptances
@@ -2841,6 +2910,8 @@ def _seal_component_acceptances(
         updated["reference_conflicts"] = conflicts
     else:
         updated.pop("reference_conflicts", None)
+    if guides is not None:
+        updated["guides"] = guides
     if updated != product:
         path.write_text(json.dumps(updated, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
@@ -3087,6 +3158,7 @@ def _make_contract(
     component_acceptances = None if verified is None else verified[0]
     interfaces = None if verified is None else verified[1]
     reference_conflicts = None if verified is None else verified[2]
+    guides = None if verified is None else verified[3]
     sealed_contract = _sealed_design_contract(run_root, assignment["wish_sha256"])
     if (
         component_acceptances is None
@@ -3108,8 +3180,10 @@ def _make_contract(
                 "Make %s must list every Interface of the sealed Design Contract; "
                 "rerun verify_project --image-derived" % COMPONENT_ACCEPTANCE_NAME
             )
+    if verified is not None and sealed_contract is not None:
+        _require_guide_account(sealed_contract, guides)
     _seal_component_acceptances(
-        product_root, component_acceptances, interfaces, reference_conflicts
+        product_root, component_acceptances, interfaces, reference_conflicts, guides
     )
     product_document, product_bytes, _ = _read_json(
         run_root,

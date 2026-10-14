@@ -20,6 +20,8 @@ MAX_OBJECTIVE_CHARS = 50_000
 # Reference images ride the Wish as immutable run inputs under this directory.
 WISH_REFERENCES_DIRECTORY = "wish-references"
 # The ref-NN- filename pattern below is the hard ceiling: two digits, 01-99.
+# Guide Images (ADR 0089) ride the same directory as guide-NN- files and
+# share this count and the byte budget.
 MAX_WISH_REFERENCES = 99
 MAX_WISH_REFERENCE_BYTES = 12 * 1024 * 1024
 MAX_WISH_REFERENCE_TOTAL_BYTES = 48 * 1024 * 1024
@@ -29,8 +31,10 @@ MAX_WISH_REFERENCE_PIXELS = 50_000_000
 WISH_REFERENCE_MEDIA_TYPES: Mapping[str, str] = MappingProxyType(
     {"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp"}
 )
+REFERENCE_PREFIX = "ref"
+GUIDE_PREFIX = "guide"
 _REFERENCE_NAME = re.compile(
-    r"^ref-(?P<index>0[1-9]|[1-9][0-9])-"
+    r"^(?P<prefix>ref|guide)-(?P<index>0[1-9]|[1-9][0-9])-"
     r"(?P<slug>[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?)"
     r"\.(?P<extension>png|jpg|webp)$"
 )
@@ -119,7 +123,8 @@ class WishReference:
     def assert_valid(self) -> None:
         if not isinstance(self.name, str) or _REFERENCE_NAME.fullmatch(self.name) is None:
             raise ContractError(
-                "wish reference name must look like ref-NN-<slug>.png, .jpg, or .webp"
+                "wish reference name must look like ref-NN-<slug> or guide-NN-<slug>, "
+                "with .png, .jpg, or .webp"
             )
         if (
             not isinstance(self.sha256, str)
@@ -159,6 +164,15 @@ class WishReference:
         return int(match.group("index"))
 
     @property
+    def guide(self) -> bool:
+        """True for a Guide Image (ADR 0089): sealed like a reference, never
+        compared with the model."""
+
+        match = _REFERENCE_NAME.fullmatch(self.name)
+        assert match is not None
+        return match.group("prefix") == GUIDE_PREFIX
+
+    @property
     def path(self) -> str:
         """The run-relative path the host materializes the bytes at."""
 
@@ -196,9 +210,16 @@ def _references(value: Any) -> tuple[WishReference, ...]:
     if len(value) > MAX_WISH_REFERENCES:
         raise ContractError("wish references must be at most %d" % MAX_WISH_REFERENCES)
     items = tuple(WishReference.from_value(item, "wish reference") for item in value)
-    for position, item in enumerate(items, start=1):
-        if item.index != position:
-            raise ContractError("wish references must be numbered ref-01, ref-02, ... in order")
+    references = [item for item in items if not item.guide]
+    guides = [item for item in items if item.guide]
+    if list(items) != references + guides:
+        raise ContractError("wish guide images must follow every reference image")
+    for kind, group in (("ref", references), ("guide", guides)):
+        for position, item in enumerate(group, start=1):
+            if item.index != position:
+                raise ContractError(
+                    "wish references must be numbered %s-01, %s-02, ... in order" % (kind, kind)
+                )
     digests = [item.sha256 for item in items]
     if len(set(digests)) != len(digests):
         raise ContractError("wish references must not repeat the same bytes")

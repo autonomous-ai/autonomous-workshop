@@ -370,6 +370,27 @@ row. A disagreement you cannot close after the round cap is not waved through:
 raise it at Stage 4 as a visible difference in the picture ("the image shows
 three horns, the build will have two").
 
+### Guide Images
+
+A toy whose parts move between poses (a transformer, a folding vehicle) may
+also get **Guide Images** (ADR 0089): pictures that explain the design rather
+than show one subject, such as a colour-coded transformation sheet that draws
+every move, or a part from the sides its reference does not show. The run
+never compares them with the model: the Workshop Manager uses them to plan
+how the Components meet and move, and every Component Worker sees more sides
+of its part. Make them with AI generation or editing like every other image,
+from the approved reference images, one colour per Unique Geometry.
+
+Write the contract as schema 5 with a `guides[]` entry per image
+(`guide-NN-<slug>.png`, what it `shows`, and for a transformation sheet the
+`steps` it draws, in its order, worded as the Transformation section's
+moves). Check each Guide Image against the contract before Stage 4, by eye
+and by count, not by measurement: the number of steps and their order match
+the Transformation section, each part keeps one colour in every panel, no
+panel shows a part, joint or move the contract does not have, and the robot
+and car panels keep the reference images' proportions. Fix a disagreement by
+editing the panel. The contract wins over a Guide Image, never the other way.
+
 ## Stage 3c - Check that what the images show can be printed
 
 The build is scored against these images, so everything they show must be
@@ -743,6 +764,10 @@ rivets print as six 2 mm bumps, not ten small ones"; "the brow band prints
 plain, without rivets"). A Stage 3d change hidden
 inside the body gets one line ("the heart gear sits in front of the wing
 gears so the train cannot jam; hidden in the back").
+
+Show each Guide Image too, after the references, with one line on what it
+explains ("guide-01 - the colour-coded transformation, car to robot, seven
+steps"). Approving the images approves the Guide Images.
 
 Wait for explicit approval of the images. If the human wants a change - a
 different shape, proportion, count, pose or feature - fix the images by AI
