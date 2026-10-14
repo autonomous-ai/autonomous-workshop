@@ -54,7 +54,7 @@
       "final_status": "active",
       "brief": null,
       "finding_ids": [],
-      "notes": "v2 contract (v3 images + guide-01-transformation.png), owner said start 2026-10-14 (images treated as approved; blade kept as the contract's L). Launched 10:09Z from fresh worktree racer-v02-fed0c446 at origin/main fed0c446 with --agent claude --model claude-opus-5-5 --effort medium --guide --check-motion true --max-tokens 100000000; receipt References: 12, Guides: 1 (matches contract). Contract copy build-a-toy/r00/v02/CONTRACT.md; log build-a-toy/r00/v02/wish.log."
+      "notes": "v2 contract (v3 images + guide-01-transformation.png), owner said start 2026-10-14 (images treated as approved; blade kept as the contract's L). Launched 10:09Z from fresh worktree racer-v02-fed0c446 at origin/main fed0c446 with --agent claude --model claude-opus-5-5 --effort medium --guide --check-motion true --max-tokens 100000000; receipt References: 12, Guides: 1 (matches contract). Contract copy build-a-toy/r00/v02/CONTRACT.md; log build-a-toy/r00/v02/wish.log. 11:00Z waiting: need on shin print stance (guard island, block-top overhang), 42.0M tokens; fixed at root as amend-e (invisible), folded in-run amendment 1; 11:06Z resumed with --amend-contract (Owner Contract Amendment 1 applied)."
     }
   ],
   "contract_versions": {
@@ -99,6 +99,14 @@
         "build-a-toy/drafts/v2-backup/"
       ],
       "visible": true
+    },
+    "amend-e": {
+      "status": "applied",
+      "notes": "build-a-toy/drafts/amend-e-notes.md",
+      "backups": [
+        "build-a-toy/drafts/amend-e-backup/"
+      ],
+      "visible": false
     }
   },
   "contract_contradictions": [
@@ -194,6 +202,26 @@
       "design_check": "proposed",
       "visible": false,
       "reaudit": "build-a-toy/drafts/amend-c-notes.md"
+    },
+    {
+      "id": "cc-r19-shin-stance",
+      "attempt": 3,
+      "signature": "3c-print-stance-overhang:shin",
+      "rows": [
+        "R19 (shin)",
+        "knee-slide-1"
+      ],
+      "amendment": "amend-e",
+      "visible": false,
+      "approved": "not-needed",
+      "applied": true,
+      "reaudit": "toys-spec/racer-mecha/build-a-toy/drafts/amend-e-notes.md",
+      "resume": "resumed",
+      "design_check": {
+        "name": "Stage 3c: overhang check of each Component in its print stance, including features stepped in on every side",
+        "issue": null,
+        "status": "proposed"
+      }
     }
   ]
 }
