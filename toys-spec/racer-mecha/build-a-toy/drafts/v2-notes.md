@@ -272,3 +272,12 @@ was resized to 84 x 13 (anisotropic resize of the drawn wing, background
 patched); the step-1 rear wing slab was squashed to 0.35 of its drawn depth
 (about 8 mm, contract 10). Back view regenerated with a flat front-wing panel
 (`prompts/v3-st-back-frontwing.txt`): 80 mm wide, 20 deep (contract 13; left).
+
+## Car tail redrawn (2026-10-14)
+
+The car's tail now follows the contract: two plain boot blocks end the car,
+toes rearward; from each toe a purple plate stands up on its knuckle (the
+pylon), and the two flat blades lie across the plate tops, meeting at the
+centre line, with open space under the wing. Tall outer endplates removed.
+`carrear.png` (`prompts/v3-st-carrear.txt`) and the step-0 car `car.png`
+(`prompts/v3-st-car.txt`) regenerated so the two agree.
