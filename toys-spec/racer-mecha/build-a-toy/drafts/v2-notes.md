@@ -241,3 +241,12 @@ thigh never changes), and the boot was a thin plate instead of the 26 tall
 block. `prototypes/v3-steps/leg2.png` regenerated from `prompts/v3-st-leg2.txt`
 with r0 as input; pasted into the sheet's leg cell. `guide-01-transformation.png`
 is again a copy of `prototypes/v3-colour-steps.png`.
+
+## Wing blades in the step panels (2026-10-14)
+
+The owner saw the purple wing disagree between the step panels and the leg
+strip. Steps 2 to 7 drew each wing half as a cover on its boot; the contract
+(and ref-10) makes it a plate plus a 42.25 wide blade reaching inboard to 1.5
+from the other one. r5, r4b, r3, r2c, r1 and r0 were edited to add the blades
+(prompts `v3-st-blade-s2..s4.txt`; s4 used for r2c, r1, r0) and the sheet
+recomposed with the same tile normalisation.
