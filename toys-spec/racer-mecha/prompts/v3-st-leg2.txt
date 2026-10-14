@@ -1,5 +1,14 @@
-Edit the attached grid of four side views of one toy leg. Fix only the PURPLE wing piece's hinge, which is always at the boot's TOE end:
-- Top-left: the round purple hinge knuckle must be at the LEFT end of the flat purple plate, at the toe tip of the boot; the short upright purple bar stays at the plate's RIGHT end, just in front of the orange shin. Nothing round at the shin end.
-- Top-right and bottom-left: keep the plate against the hanging boot's left face with its round knuckle at the BOTTOM, and add the short purple bar sticking out to the LEFT from the TOP end of the plate.
-- Bottom-right: the plate must swing out from the BOTTOM of the boot: its round knuckle at the boot's bottom-left corner, the plate sticking out level to the left at the height of the boot's bottom end, and the purple bar hanging DOWN from its far left end.
-Everything else stays exactly the same: colours, scale, alignment, plain off-white background (#f5f0e6). No text, no arrows, no labels, no frame lines.
+A 2 x 2 grid of four SIDE VIEWS of ONE leg of the attached colour-coded robot toy, seen exactly from the side, the robot facing LEFT (toe of the foot points LEFT). Same block-built 3D-printed toy look as the attached robot: soft studio light, shaded 3D blocks with seams, plain off-white background (#f5f0e6). All four views at the SAME scale, aligned on the same top line (the red thigh's top edge is at the same height in all four).
+
+Parts, identical in all four views:
+- RED thigh: a short block at the top, 2 blocks tall. Its size NEVER changes.
+- ORANGE shin: a tall block column below the thigh, about 3 times the thigh's height, a black tyre with a white rim on its side near the top of the shin.
+- DARK GREY boot: a CHUNKY block, as tall as the thigh and about twice as long as the shin is deep, with a rounded heel. A thick solid foot, not a thin plate.
+- PURPLE wing piece: a flat purple plate a little shorter than the boot, with a round hinge knuckle at the toe end, and a short purple bar standing at right angles at its other end.
+
+Top-left (robot): the boot stands flat on the floor, pointing LEFT, its toe reaching well ahead of the shin. The purple plate lies flat on top of the boot's front half, its knuckle at the toe tip; its bar stands UP at the plate's back end, just in front of the shin.
+Top-right: the boot has turned 90 degrees DOWN at the ankle: it hangs straight down below the shin, toe pointing to the floor, sole facing RIGHT. The purple plate lies flat against the boot's LEFT face, knuckle at the BOTTOM, its bar sticking out to the LEFT at the top.
+Bottom-left: same as top-right, but the ORANGE shin has slid UP INTO the red thigh: the orange part below the thigh is clearly SHORTER, the RED thigh is EXACTLY the same size as before, so the whole leg is shorter and the boot hangs higher.
+Bottom-right: same as bottom-left, but the purple plate has swung 90 degrees on its knuckle at the boot's bottom, so it sticks out LEVEL to the LEFT from the boot's bottom end, and its bar now hangs DOWN from the plate's far left end.
+
+No text, no arrows, no numbers, no labels, no frame lines.

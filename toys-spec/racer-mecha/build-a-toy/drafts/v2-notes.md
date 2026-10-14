@@ -232,3 +232,12 @@ schema 5 with `guides[]`: `guide-01-transformation.png` (a copy of
 sheet's order, car to robot. To stay under 40,000 characters two Motion and
 fit bullets that repeated R07 and R05 word for word now point to those rows.
 A run needs the merged Workshop and `--guide toys-spec/racer-mecha/guide-01-transformation.png`.
+
+## Leg strip redrawn (2026-10-14)
+
+The owner flagged the side-view leg strip. Its push-up panels shortened the
+red thigh instead of the orange shin (the shin slides into the thigh, so the
+thigh never changes), and the boot was a thin plate instead of the 26 tall
+block. `prototypes/v3-steps/leg2.png` regenerated from `prompts/v3-st-leg2.txt`
+with r0 as input; pasted into the sheet's leg cell. `guide-01-transformation.png`
+is again a copy of `prototypes/v3-colour-steps.png`.
