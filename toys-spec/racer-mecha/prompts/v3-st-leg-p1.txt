@@ -1,0 +1,7 @@
+A single SIDE VIEW (seen exactly from the side) of ONE leg of a colour-coded block-built 3D-printed toy robot, standing, the robot facing LEFT, in the same style, colours and lighting as the attached image, centred on a plain off-white background (#f5f0e6). Draw it with these exact proportions; call the shin's front-to-back depth D:
+- RED thigh at the top: D wide, D tall.
+- ORANGE shin directly below: D wide, 3 D tall, made of blocks.
+- A black tyre with a white rim on the shin's side: diameter 1.5 D, its centre 1.2 D below the thigh's bottom edge and slightly toward the BACK (right) half of the shin.
+- DARK GREY boot under the shin: a solid block 1.2 D tall and 1.9 D long, standing flat on the ground. Its back (heel, right) end is only slightly behind the shin's back face, its heel corner rounded; its front (toe, left) end sticks out only 0.8 D ahead of the shin's front face.
+- PURPLE wing piece lying on the boot's top in front of the shin: a round purple hinge knuckle (diameter 0.3 D) at the toe's top front corner, a thin flat plate (0.15 D thick) from the knuckle back to just in front of the shin, and at the plate's back end a thin upright purple blade (0.15 D thick) standing 0.45 D tall, just in front of the shin's front face.
+Only this one leg. No text, no numbers, no arrows, no labels, no frame.

@@ -290,3 +290,17 @@ as the pylon and the blade flat on top pointing rearward, matching the car
 tail. Panel 2 keeps the shin's full length (the boot fold does not move the
 shin); panel 3 is shorter by the slide. Panels numbered 1 to 4. Generated
 with `prompts/v3-st-leg2*.txt`.
+
+## Leg strip rebuilt from one drawn leg (2026-10-14)
+
+Generated panels kept drawing the boot, plate and wing at a different size in
+each view, and the owner saw the shin shrink in panel 2. Now only panel 1 is
+generated (`prompts/v3-st-leg-p1.txt`, source `leg-p1-source.png`); its toe
+is squashed to the contract's 17 ahead of the shin and its heel to 2.5
+behind, and panels 2 to 4 are that same drawing's pieces moved about the
+contract's axes by `leg_build.py`: the boot +90 about the ankle (Y 3.75,
+Z 12.25; the ankle tongue shown in the gap), the lower leg 16 up into the
+thigh (the outboard wheel drawn over the thigh), the wing +90 about its
+knuckle, then the leg laid down as in the car. Panel 4 shows the blade on
+one side of the plate (an L), as the contract has it; the car tail image
+draws it nearer a T.
