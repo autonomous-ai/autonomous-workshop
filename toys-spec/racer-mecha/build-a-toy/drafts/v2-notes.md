@@ -260,3 +260,15 @@ purple slab under the boots (r6, `prompts/v3-st-wing-s1.txt`), the front
 wing as a flat yellow panel about as wide as the shoulder towers (r6, r5,
 r4b, r3, r2c, `prompts/v3-st-frontwing.txt`; measured 0.85 to 0.97 of the
 grey width across the towers, contract 84/86).
+
+## Sheet recomposed, wings sized by measurement (2026-10-14)
+
+The wider front wing became the widest row, so the old tile anchor shifted
+steps 1 to 5 down and cut their feet. `prototypes/v3-steps/compose.py` now
+anchors robot panels on the top of the grey torso and shrinks them together
+until the tallest fits. Wings measured against the shoulder wheels (119
+across): the regenerated front wings were 104-125 x 21-26 mm, so each band
+was resized to 84 x 13 (anisotropic resize of the drawn wing, background
+patched); the step-1 rear wing slab was squashed to 0.35 of its drawn depth
+(about 8 mm, contract 10). Back view regenerated with a flat front-wing panel
+(`prompts/v3-st-back-frontwing.txt`): 80 mm wide, 20 deep (contract 13; left).
