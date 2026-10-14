@@ -2337,3 +2337,20 @@ Evidence is schema 3, and schema-2 evidence must be regenerated. A
 re-rendered frame may differ from the bound GIF in at most 0.2% of its
 pixels by more than 32 levels. This changes the `cad` fingerprint;
 materialized runs keep their copied bytes.
+
+## Local change: Guide Images are never compared and every step is accounted for (2026-10-14)
+
+A Workshop-local change (issue #122, ADR 0089) to `make-round/scripts/make_round`
+and `cad/scripts/verify_project`. `sealed_references` leaves out every sealed
+`guide-NN-<slug>` image, so no component round, assembly round, blind review
+or `--image-derived` coverage compares a Guide Image with the model.
+`sealed_guides` lists them from the schema 5 contract's `guides[]`; a
+component round's `summary.json` names them under `guides` for its worker,
+and its review packet does not. An amendment packet lists them, and the
+Contract Reviewer's answer may add `guides_wrong`, which never refuses the
+amendment. `guide_steps_report` reads the Workshop Manager's
+`guide-steps.json`, and under motion checks the final verifier fails until
+every step a guide's contract entry lists has one `checked` or `skipped`
+entry; `component-acceptance.json` carries the account as `guides`. This
+changes the `make-round` and `cad` fingerprints; materialized runs keep their
+copied bytes.

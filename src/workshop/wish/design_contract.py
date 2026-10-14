@@ -26,11 +26,16 @@ MAX_GEOMETRY_REQUIREMENTS = 4
 # before it, stay valid without one. Schema 3 keeps the Interfaces and gives
 # every reference its Reference Camera (ADR 0083). Schema 4 keeps both and
 # gives every Interface the text of what it imposes on each Component it
-# joins (ADR 0084).
-SCHEMA_VERSIONS = (1, 2, 3, 4)
+# joins (ADR 0084). Schema 5 keeps all three and adds Guide Images, which
+# explain the design and are never compared with the model (ADR 0089).
+SCHEMA_VERSIONS = (1, 2, 3, 4, 5)
 INTERFACES_SCHEMA_VERSION = 2
 CAMERA_SCHEMA_VERSION = 3
 INTERFACE_TEXT_SCHEMA_VERSION = 4
+GUIDE_SCHEMA_VERSION = 5
+MAX_GUIDE_SHOWS_CHARS = 500
+MAX_GUIDE_STEPS = 24
+MAX_GUIDE_STEP_CHARS = 300
 # A Reference Camera, in degrees, in render_review's convention: azimuth 0
 # looks from +X, -90 from the front (-Y); elevation 90 looks down from above.
 CAMERA_AZIMUTH_RANGE = (-180.0, 180.0)
@@ -46,6 +51,9 @@ _INSTANCE_REFERENCE = re.compile(r"^([a-z0-9]+(?:-[a-z0-9]+)*)#([0-9]+)$")
 _REQUIREMENT_ID = re.compile(r"^R[0-9]{2}$")
 _REFERENCE_FILE = re.compile(
     r"^ref-(?:0[1-9]|[1-9][0-9])-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$"
+)
+_GUIDE_FILE = re.compile(
+    r"^guide-(?:0[1-9]|[1-9][0-9])-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$"
 )
 
 
@@ -68,6 +76,25 @@ def _plain_number(value: float) -> Any:
     """An integral camera angle seals as an integer, as the contract wrote it."""
 
     return int(value) if float(value).is_integer() else value
+
+
+@dataclass(frozen=True)
+class ContractGuide:
+    """One Guide Image (ADR 0089): sealed with the contract to explain the
+    design, read by the Manager and every Component Worker, and never scored
+    or compared with the model. ``shows`` says what it explains; ``steps``,
+    when given, names each step it draws, in order, so the run can account
+    for every one."""
+
+    file: str
+    shows: str
+    steps: Tuple[str, ...] = ()
+
+    def to_dict(self) -> Dict[str, Any]:
+        value: Dict[str, Any] = {"file": self.file, "shows": self.shows}
+        if self.steps:
+            value["steps"] = list(self.steps)
+        return value
 
 
 @dataclass(frozen=True)
@@ -132,6 +159,8 @@ class DesignContract:
     requirements: Tuple[ContractRequirement, ...]
     # None for a schema 1 contract, which has no Interfaces section.
     interfaces: Optional[Tuple[ContractInterface, ...]] = None
+    # None before schema 5, which has no Guide Images (ADR 0089).
+    guides: Optional[Tuple[ContractGuide, ...]] = None
 
     def reference_labels(self) -> Dict[str, str]:
         """Sealed file name -> the label Contract Mode uses in Make round summaries."""
@@ -166,6 +195,29 @@ class DesignContract:
                 "names and in its order" % "; ".join(errors)
             )
 
+    def check_guide_names(self, names: Sequence[str]) -> None:
+        """Refuse Guide Images that would not seal as this contract's guides.
+
+        The same rule as ``check_reference_names`` (ADR 0089): exactly the
+        files ``guides[]`` lists, in its order. A contract before schema 5
+        takes no Guide Image at all.
+        """
+
+        expected = [guide.file for guide in self.guides or ()]
+        errors: List[str] = []
+        if len(names) != len(expected):
+            errors.append(
+                "it lists %d guide image(s) but %d were given" % (len(expected), len(names))
+            )
+        for position, (given, listed) in enumerate(zip(names, expected), start=1):
+            if given != listed:
+                errors.append("guide image %d seals as %s, not %s" % (position, given, listed))
+        if errors:
+            raise ContractError(
+                "design contract: %s; pass the contract's guide images with --guide, "
+                "under its file names and in its order" % "; ".join(errors)
+            )
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "schema_version": self.schema_version,
@@ -190,6 +242,11 @@ class DesignContract:
             **(
                 {"interfaces": [item.to_dict() for item in self.interfaces]}
                 if self.interfaces is not None
+                else {}
+            ),
+            **(
+                {"guides": [item.to_dict() for item in self.guides]}
+                if self.guides is not None
                 else {}
             ),
         }
@@ -314,6 +371,60 @@ def _parse_references(
         if file_name is not None and shows is not None and (camera is not None or not cameras):
             references.append(ContractReference(file=file_name, shows=shows, camera=camera))
     return tuple(references)
+
+
+def _parse_guides(value: Any, errors: List[str]) -> Tuple[ContractGuide, ...]:
+    """Schema 5's Guide Images (ADR 0089): a non-empty list, each a
+    ``guide-NN-<slug>`` file numbered from 01 in order, what it shows, and
+    optionally the steps it draws."""
+
+    if not isinstance(value, list) or not value:
+        errors.append("guides must be a non-empty list (schema_version 5)")
+        return ()
+    guides: List[ContractGuide] = []
+    for index, item in enumerate(value):
+        label = "guides[%d]" % index
+        if not isinstance(item, dict):
+            errors.append("%s must be an object" % label)
+            continue
+        unknown = sorted(set(item) - {"file", "shows", "steps"})
+        if unknown:
+            errors.append("%s has unknown field(s): %s" % (label, ", ".join(unknown)))
+        file_name = item.get("file")
+        if not isinstance(file_name, str) or _GUIDE_FILE.fullmatch(file_name) is None:
+            errors.append("%s.file must look like guide-NN-<slug>.png, .jpg, or .webp" % label)
+            file_name = None
+        elif int(file_name[len("guide-"):len("guide-NN")]) != index + 1:
+            errors.append("%s.file must be numbered guide-%02d" % (label, index + 1))
+            file_name = None
+        shows = item.get("shows")
+        if not isinstance(shows, str) or not shows.strip() or len(shows) > MAX_GUIDE_SHOWS_CHARS:
+            errors.append(
+                "%s.shows must say in at most %d characters what the image explains"
+                % (label, MAX_GUIDE_SHOWS_CHARS)
+            )
+            shows = None
+        steps: Tuple[str, ...] = ()
+        if "steps" in item:
+            raw = item["steps"]
+            if (
+                not isinstance(raw, list) or not 1 <= len(raw) <= MAX_GUIDE_STEPS
+                or any(
+                    not isinstance(step, str) or not step.strip() or len(step) > MAX_GUIDE_STEP_CHARS
+                    for step in raw
+                )
+                or len(set(raw)) != len(raw)
+            ):
+                errors.append(
+                    "%s.steps must be 1 to %d distinct non-empty strings of at most %d characters"
+                    % (label, MAX_GUIDE_STEPS, MAX_GUIDE_STEP_CHARS)
+                )
+                shows = None
+            else:
+                steps = tuple(raw)
+        if file_name is not None and shows is not None:
+            guides.append(ContractGuide(file=file_name, shows=shows, steps=steps))
+    return tuple(guides)
 
 
 def _parse_requirements(
@@ -606,7 +717,7 @@ def parse_design_contract(text: str) -> DesignContract:
 
     schema_version = block.get("schema_version")
     if isinstance(schema_version, bool) or schema_version not in SCHEMA_VERSIONS:
-        errors.append("schema_version must be 1, 2, 3 or 4")
+        errors.append("schema_version must be 1, 2, 3, 4 or 5")
 
     title = block.get("title")
     if not isinstance(title, str) or not title.strip():
@@ -621,18 +732,28 @@ def parse_design_contract(text: str) -> DesignContract:
     geometries, geometry_ids = _parse_geometries(block.get("geometries"), errors)
     references = _parse_references(
         block.get("references"), geometry_ids, errors,
-        cameras=schema_version in (CAMERA_SCHEMA_VERSION, INTERFACE_TEXT_SCHEMA_VERSION),
+        cameras=schema_version in (
+            CAMERA_SCHEMA_VERSION, INTERFACE_TEXT_SCHEMA_VERSION, GUIDE_SCHEMA_VERSION
+        ),
     )
     requirements = _parse_requirements(block.get("requirements"), geometry_ids, errors)
     interfaces: Optional[Tuple[ContractInterface, ...]] = None
-    if schema_version in (INTERFACES_SCHEMA_VERSION, CAMERA_SCHEMA_VERSION, INTERFACE_TEXT_SCHEMA_VERSION):
+    if schema_version in (
+        INTERFACES_SCHEMA_VERSION, CAMERA_SCHEMA_VERSION,
+        INTERFACE_TEXT_SCHEMA_VERSION, GUIDE_SCHEMA_VERSION,
+    ):
         counts = {item.id: item.count for item in geometries}
         interfaces = _parse_interfaces(
             block.get("interfaces"), counts, errors,
-            text=schema_version == INTERFACE_TEXT_SCHEMA_VERSION,
+            text=schema_version in (INTERFACE_TEXT_SCHEMA_VERSION, GUIDE_SCHEMA_VERSION),
         )
     elif "interfaces" in block:
         errors.append("interfaces need schema_version 2 or later")
+    guides: Optional[Tuple[ContractGuide, ...]] = None
+    if schema_version == GUIDE_SCHEMA_VERSION:
+        guides = _parse_guides(block.get("guides"), errors)
+    elif "guides" in block:
+        errors.append("guides need schema_version 5")
 
     assembly_count = sum(1 for item in requirements if item.scope == "assembly")
     if assembly_count > MAX_ASSEMBLY_REQUIREMENTS:
@@ -663,4 +784,5 @@ def parse_design_contract(text: str) -> DesignContract:
         geometries=geometries,
         requirements=requirements,
         interfaces=interfaces,
+        guides=guides,
     )

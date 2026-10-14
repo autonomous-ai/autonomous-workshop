@@ -492,4 +492,89 @@ class InterfaceTextTest(unittest.TestCase):
         self.assertIn("text needs schema_version 4", self._refused(camera))
 
     def test_an_unknown_schema_is_refused(self):
-        self.assertIn("schema_version must be 1, 2, 3 or 4", self._refused(_block(schema_version=5)))
+        self.assertIn("schema_version must be 1, 2, 3, 4 or 5", self._refused(_block(schema_version=6)))
+
+
+def _guide_block(**overrides):
+    block = _text_block()
+    block["schema_version"] = 5
+    block["guides"] = [
+        {
+            "file": "guide-01-transformation.png",
+            "shows": "The colour-coded transformation, car to robot.",
+            "steps": ["Stand the car on its tail.", "Fold the wing halves onto the toes."],
+        },
+        {"file": "guide-02-side.png", "shows": "The leg fold, seen from the side."},
+    ]
+    block.update(overrides)
+    return block
+
+
+class GuideImageTest(unittest.TestCase):
+    """ADR 0089: a schema 5 contract seals Guide Images in their own list."""
+
+    def _refused(self, block):
+        with self.assertRaises(ContractError) as caught:
+            parse_design_contract(_contract_text(block))
+        return str(caught.exception)
+
+    def test_guides_parse_and_seal_beside_the_references(self):
+        block = _guide_block()
+        contract = parse_design_contract(_contract_text(block))
+        self.assertEqual(contract.schema_version, 5)
+        self.assertEqual([item.file for item in contract.guides],
+                         ["guide-01-transformation.png", "guide-02-side.png"])
+        self.assertEqual(contract.guides[0].steps, tuple(block["guides"][0]["steps"]))
+        self.assertEqual(contract.guides[1].steps, ())
+        self.assertEqual(contract.to_dict()["guides"], block["guides"])
+        # Schema 5 keeps the cameras and the Interface text of schema 4.
+        self.assertEqual([item.camera for item in contract.references], [(-60.0, 20.0), (0.0, 90.0)])
+        self.assertTrue(all(item.text for item in contract.interfaces))
+        # A guide is never a reference: its label table is unchanged.
+        self.assertNotIn("guide-01-transformation.png", contract.reference_labels())
+
+    def test_schema_5_needs_a_non_empty_guides_list(self):
+        for value in (None, [], {}):
+            with self.subTest(value=value):
+                block = _guide_block()
+                if value is None:
+                    del block["guides"]
+                else:
+                    block["guides"] = value
+                self.assertIn("guides must be a non-empty list", self._refused(block))
+
+    def test_guides_need_schema_5(self):
+        block = _text_block()
+        block["guides"] = _guide_block()["guides"]
+        self.assertIn("guides need schema_version 5", self._refused(block))
+
+    def test_a_bad_guide_entry_is_refused_naming_it(self):
+        cases = {
+            "file must look like guide-NN": {"file": "ref-01-steps.png", "shows": "x"},
+            "must be numbered guide-02": {"file": "guide-03-side.png", "shows": "x"},
+            "shows must say": {"file": "guide-02-side.png", "shows": " "},
+            "steps must be 1 to 24": {"file": "guide-02-side.png", "shows": "x", "steps": []},
+            "unknown field(s): camera": {"file": "guide-02-side.png", "shows": "x", "camera": [0, 0]},
+        }
+        for expected, entry in cases.items():
+            with self.subTest(expected=expected):
+                block = _guide_block()
+                block["guides"][1] = entry
+                message = self._refused(block)
+                self.assertIn("guides[1]", message)
+                self.assertIn(expected, message)
+        block = _guide_block()
+        block["guides"][0]["steps"] = ["Same.", "Same."]
+        self.assertIn("guides[0].steps must be 1 to 24 distinct", self._refused(block))
+
+    def test_check_guide_names_wants_the_contracts_files_in_order(self):
+        contract = parse_design_contract(_contract_text(_guide_block()))
+        contract.check_guide_names(["guide-01-transformation.png", "guide-02-side.png"])
+        with self.assertRaisesRegex(ContractError, "lists 2 guide image\\(s\\) but 1 were given"):
+            contract.check_guide_names(["guide-01-transformation.png"])
+        with self.assertRaisesRegex(ContractError, "guide image 1 seals as guide-01-x.png"):
+            contract.check_guide_names(["guide-01-x.png", "guide-02-side.png"])
+        older = parse_design_contract(_contract_text(_text_block()))
+        older.check_guide_names([])
+        with self.assertRaisesRegex(ContractError, "lists 0 guide image"):
+            older.check_guide_names(["guide-01-transformation.png"])

@@ -127,11 +127,25 @@ instances.)
   each Component placed by its `assembly_pose(shape, None)` from this camera
   beside its reference, so a wrong camera shows the wrong side of the model.
   Required from schema 3 and refused before it.
+- `guides[]` (schema 5, ADR 0089): the contract's **Guide Images**, pictures
+  that explain the design, such as a colour-coded transformation step sheet
+  or a part seen from more sides. Each is `{"file": "guide-NN-<slug>.png",
+  "shows": "<what it explains, at most 500 characters>", "steps": ["<each
+  step it draws, in order>", ...]}`, numbered from `01` without gaps, at
+  most 2048 pixels a side and 12 MiB, any number of panels. `steps` is optional,
+  1 to 24 distinct lines of at most 300 characters; for a transformation
+  sheet, write the Transformation section's moves in the order the sheet
+  draws them. Pass every file to `--guide` under these names and in this
+  order, after the `--ref` images. A Guide Image is never compared with the
+  model: the Workshop Manager and every Component Worker read it, the
+  Component Reviewer never sees it, and the contract wins wherever it
+  disagrees. With `--check-motion true` the run must account for every step.
 - `geometries[]`: one entry per **Unique Geometry**. `id` is lowercase kebab
   case. `count` is how many Components the toy has with this shape.
   `wall_min_mm` is the minimum wall.
-- `schema_version`: `4` for every new contract: schema 3 plus a `text` on
-  every Interface (ADR 0084). Schema 3 is schema 2 plus a `camera` on every
+- `schema_version`: `4` for every new contract without a Guide Image: schema
+  3 plus a `text` on every Interface (ADR 0084). `5` is schema 4 plus a
+  non-empty `guides[]` (ADR 0089); a contract with no Guide Image stays 4. Schema 3 is schema 2 plus a `camera` on every
   reference; from schema 3 every Component file defines
   `assembly_pose(shape, pose)`, even one in no Interface. A schema 3
   contract has no Interface text, a schema 2 contract no cameras and a
@@ -196,6 +210,8 @@ A contract is ready only when all of these hold. Report every failure at once.
   with `n` in 1..`count`.
 - Every Unique Geometry has at least one reference whose `shows` names it.
 - Every reference file exists beside `CONTRACT.md` and meets the image rules.
+- Every Guide Image file exists beside `CONTRACT.md`, the person approved it
+  with the references, and its `steps` follow the Transformation section.
 - Every assembly row states only what the assembled renders show, and
   every shared face agrees with the extents and Interface ranges of the
   Components it names.

@@ -74,6 +74,14 @@ assembled toy. Make builds toward it, and the Component Reviewer judges the
 build against it. Only an approved, reconciled image becomes one.
 _Avoid_: Concept Image, render, picture
 
+**Guide Image**:
+An image sealed in a Design Contract that explains the design — the
+transformation step by step, or a part from more sides — rather than showing
+one subject to build toward. The Workshop Manager and every Component Worker
+read it; nothing compares it with the model, and the Component Reviewer never
+sees it. Where it disagrees with the Design Contract, the contract wins.
+_Avoid_: Step sheet reference, extra reference, guide reference
+
 **Signature Motion**:
 The one movement a toy's play centres on, made by parts in contact or sharing
 space over time — a crank that flaps wings, a pull that walks legs. A toy whose

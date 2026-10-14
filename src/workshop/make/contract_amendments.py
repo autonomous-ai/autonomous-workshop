@@ -66,6 +66,23 @@ INTERFACE_ROW = "interface:"
 # Names that identify the Workshop Manager; kept in step with make_round.
 MANAGER_NAMES = frozenset({"workshop-manager", "manager", "workshop manager"})
 _VERDICT_KEYS = frozenset({"contradiction", "smallest", "visible_in", "references_checked", "reason"})
+# ADR 0089: the Guide Image panels an amendment makes wrong. They never
+# refuse it; build-a-toy redraws them before the next attempt.
+_GUIDES_WRONG = "guides_wrong"
+_MAX_GUIDES_WRONG = 24
+_MAX_GUIDE_WHERE = 500
+
+
+def _guides_wrong_valid(value: Any) -> bool:
+    return (
+        isinstance(value, list) and len(value) <= _MAX_GUIDES_WRONG
+        and all(
+            isinstance(item, dict) and set(item) == {"file", "where"}
+            and isinstance(item["file"], str) and item["file"].startswith("guide-")
+            and _text(item["where"], _MAX_GUIDE_WHERE)
+            for item in value
+        )
+    )
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 _MAKE_ATTEMPTS = ("artifacts", "make")
 _INSTANCE = re.compile(r"^(.+)#[1-9][0-9]*$")
@@ -320,7 +337,8 @@ def replay_contract_amendments(
         verdict = event.get("verdict")
         if (
             not isinstance(verdict, dict)
-            or set(verdict) != _VERDICT_KEYS
+            or set(verdict) - {_GUIDES_WRONG} != _VERDICT_KEYS
+            or not _guides_wrong_valid(verdict.get(_GUIDES_WRONG, []))
             or type(verdict["contradiction"]) is not bool
             or type(verdict["smallest"]) is not bool
             or not isinstance(verdict["visible_in"], list)
@@ -375,6 +393,7 @@ def verify_contract_amendments(
     blocked_reports: Sequence[Mapping[str, Any]] = (),
     reviewer_check: Optional[Any] = None,
     owner_amendments: Sequence[Mapping[str, Any]] = (),
+    guides: Optional[Mapping[str, tuple[Path, str]]] = None,
 ) -> list[dict[str, Any]]:
     """Refuse Make output whose Contract Amendments do not replay; return
     every amendment, applied or refused, as the Make gate receipt records it,
@@ -382,7 +401,8 @@ def verify_contract_amendments(
     in-run amendments after the number the ledger had reached.
 
     ``references`` maps each sealed reference file to its run path and sealed
-    sha256. ``blocked_reports`` are the run's Blocked Reports: one cleared by
+    sha256; ``guides`` maps each sealed Guide Image (ADR 0089) the same way,
+    and a packet shows them all when there are any. ``blocked_reports`` are the run's Blocked Reports: one cleared by
     an amendment needs that applied amendment to name it. ``reviewer_check``,
     in a run that binds reviewers, is called with ``(reviewer, images, label)``
     and refuses a reviewer the runtime cannot prove.
@@ -402,8 +422,12 @@ def verify_contract_amendments(
     if refusal is not None:
         raise ContractError(refusal)
     seen_reviewers: dict[str, int] = {}
+    sealed_guides = {
+        name: (os.path.realpath(path), digest) for name, (path, digest) in (guides or {}).items()
+    }
     images = {
-        os.path.realpath(path): digest for path, digest in references.values()
+        os.path.realpath(path): digest
+        for path, digest in [*references.values(), *(guides or {}).values()]
     }
     for item in amendments:
         label = "Contract Amendment %d" % item["amendment"]
@@ -426,6 +450,10 @@ def verify_contract_amendments(
                 entry["file"]: (os.path.realpath(entry["path"]), entry["sha256"])
                 for entry in packet["references"]
             }
+            shown_guides = {
+                entry["file"]: (os.path.realpath(entry["path"]), entry["sha256"])
+                for entry in packet.get("guides") or ()
+            }
         except (OSError, ValueError, KeyError, TypeError) as exc:
             raise ContractError("%s's reviewed packet is missing or changed" % label) from exc
         sealed = {
@@ -435,7 +463,18 @@ def verify_contract_amendments(
             raise ContractError(
                 "%s's packet does not show every sealed reference by its sealed hash" % label
             )
+        if shown_guides != sealed_guides:
+            raise ContractError(
+                "%s's packet does not show every sealed Guide Image by its sealed hash" % label
+            )
         verdict = item["review"]["verdict"]
+        if not {entry["file"] for entry in verdict.get(_GUIDES_WRONG, [])} <= set(sealed_guides) or (
+            bool(sealed_guides) != (_GUIDES_WRONG in verdict)
+        ):
+            raise ContractError(
+                "%s's review does not name the Guide Image panels it makes wrong, or names "
+                "an image that is not a sealed guide" % label
+            )
         if set(verdict["references_checked"]) != set(sealed) or not set(
             verdict["visible_in"]
         ) <= set(sealed):

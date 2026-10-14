@@ -37,7 +37,8 @@ from workshop.wish.contracts import (
 _PILLOW_FORMATS = {"PNG": "image/png", "JPEG": "image/jpeg", "WEBP": "image/webp"}
 _MAX_SLUG_CHARS = 40
 _PLACE_NAME = re.compile(
-    r"^ref-(?P<index>0[1-9]|[1-9][0-9])-(?P<slug>[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?)$"
+    r"^(?P<prefix>ref|guide)-(?P<index>0[1-9]|[1-9][0-9])-"
+    r"(?P<slug>[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?)$"
 )
 _URL_SCHEMES = ("http", "https")
 WISH_REFERENCE_FETCH_TIMEOUT_SECONDS = 30
@@ -116,7 +117,7 @@ def _url_stem(url: str) -> str:
     return PurePosixPath(path).stem
 
 
-def _place_slug(stem: str, position: int) -> str:
+def _place_slug(stem: str, position: int, prefix: str = "ref") -> str:
     """The slug of the reference sealed at ``position``.
 
     A file already named for that place, the way a Design Contract names its
@@ -126,7 +127,11 @@ def _place_slug(stem: str, position: int) -> str:
     """
 
     named = _PLACE_NAME.fullmatch(stem)
-    if named is not None and int(named.group("index")) == position:
+    if (
+        named is not None
+        and named.group("prefix") == prefix
+        and int(named.group("index")) == position
+    ):
         return named.group("slug")
     return _slug(stem)
 
@@ -142,21 +147,30 @@ def _slug(stem: str) -> str:
 
 def load_wish_references(
     paths: Sequence[Union[str, Path]],
+    guides: Sequence[Union[str, Path]] = (),
 ) -> tuple[LoadedWishReference, ...]:
-    """Validate reference image files in the order given and name them ref-NN."""
+    """Validate reference image files in the order given and name them ref-NN.
 
-    if isinstance(paths, (str, bytes, Path)):
-        raise ContractError("reference image paths must be a list")
-    if len(paths) > MAX_WISH_REFERENCES:
+    ``guides`` are Guide Images (ADR 0089), named guide-NN after every
+    reference; they pass the same checks and share the count and byte
+    budget.
+    """
+
+    for value in (paths, guides):
+        if isinstance(value, (str, bytes, Path)):
+            raise ContractError("reference image paths must be a list")
+    if len(paths) + len(guides) > MAX_WISH_REFERENCES:
         raise ContractError("a Wish may attach at most %d reference images" % MAX_WISH_REFERENCES)
-    if not paths:
+    if not paths and not guides:
         return ()
     from PIL import Image, UnidentifiedImageError
 
     loaded: list[LoadedWishReference] = []
     seen: Dict[str, str] = {}
     total = 0
-    for position, raw in enumerate(paths, start=1):
+    places = [("ref", position, raw) for position, raw in enumerate(paths, start=1)]
+    places += [("guide", position, raw) for position, raw in enumerate(guides, start=1)]
+    for prefix, position, raw in places:
         if is_reference_url(raw):
             source = str(raw)
             display = source
@@ -219,9 +233,10 @@ def load_wish_references(
             raise ContractError(
                 "reference images together exceed %d bytes" % MAX_WISH_REFERENCE_TOTAL_BYTES
             )
-        name = "ref-%02d-%s.%s" % (
+        name = "%s-%02d-%s.%s" % (
+            prefix,
             position,
-            _place_slug(stem, position),
+            _place_slug(stem, position, prefix),
             WISH_REFERENCE_MEDIA_TYPES[media_type],
         )
         reference = WishReference(name, digest, media_type, size, width, height)

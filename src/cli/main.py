@@ -490,6 +490,31 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                         item.get("contract", "?"),
                     )
                 )
+    guides = receipt.get("guides")
+    if isinstance(guides, (list, tuple)):
+        # ADR 0089: how each Guide Image's steps were checked, and where a
+        # guide drew what the Design Contract forbids.
+        for guide in guides:
+            if not isinstance(guide, Mapping):
+                continue
+            for step in guide.get("steps") or ():
+                if isinstance(step, Mapping):
+                    print(
+                        "Guide step: %s %s — %s"
+                        % (
+                            guide.get("file", "?"),
+                            step.get("step", "?"),
+                            "checked: %s" % step["checked"] if "checked" in step
+                            else "skipped: %s" % step.get("skipped", "?"),
+                        )
+                    )
+            for conflict in guide.get("conflicts") or ():
+                if isinstance(conflict, Mapping):
+                    print(
+                        "Guide Conflict: %s shows %s; the Design Contract requires %s"
+                        % (guide.get("file", "?"), conflict.get("guide", "?"),
+                           conflict.get("contract", "?"))
+                    )
     blocked = receipt.get("blocked_reports")
     if isinstance(blocked, (list, tuple)):
         # Issue #88: every Blocked Report, how it was cleared and how long it
@@ -560,6 +585,14 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                         review.get("reviewer", "none yet"),
                     )
                 )
+                verdict = review.get("verdict") if isinstance(review.get("verdict"), Mapping) else {}
+                for wrong in verdict.get("guides_wrong") or ():
+                    # ADR 0089: a Guide Image panel to redraw.
+                    if isinstance(wrong, Mapping):
+                        print(
+                            "  Guide Image to redraw: %s %s"
+                            % (wrong.get("file", "?"), wrong.get("where", "?"))
+                        )
             elif isinstance(item, Mapping):
                 print(
                     "Reference Camera amended: %s (%s) %s -> %s"
@@ -761,11 +794,16 @@ def _start_run(
     sealed_contract = wish.context.get("design_contract")
     if isinstance(sealed_contract, Mapping):
         print(
-            "Contract Mode: sealed %r (%d requirement(s), %d reference(s))"
+            "Contract Mode: sealed %r (%d requirement(s), %d reference(s)%s)"
             % (
                 sealed_contract.get("title"),
                 len(sealed_contract.get("requirements") or ()),
                 len(sealed_contract.get("references") or ()),
+                (
+                    ", %d guide(s)" % len(sealed_contract["guides"])
+                    if sealed_contract.get("guides")
+                    else ""
+                ),
             ),
             file=progress,
             flush=True,
@@ -797,13 +835,22 @@ def _start_run(
         file=progress,
         flush=True,
     )
+    guide_count = sum(1 for reference in wish.references if reference.guide)
     if wish.references:
         print(
             "References: %d image(s) attached read-only under %s/"
-            % (len(wish.references), WISH_REFERENCES_DIRECTORY),
+            % (len(wish.references) - guide_count, WISH_REFERENCES_DIRECTORY),
             file=progress,
             flush=True,
         )
+    if guide_count:
+        print(
+            "Guides: %d image(s) attached read-only under %s/, never compared with the model"
+            % (guide_count, WISH_REFERENCES_DIRECTORY),
+            file=progress,
+            flush=True,
+        )
+    if wish.references:
         sources = wish.context.get("reference_sources") or {}
         for reference in wish.references:
             if reference.name in sources:
@@ -891,14 +938,34 @@ def _load_sealed_contract(
     except (OSError, UnicodeError) as exc:
         raise WorkshopError("cannot read design contract file") from exc
     contract = parse_design_contract(text)
-    contract.check_reference_names([item.reference.name for item in references])
+    contract.check_reference_names(
+        [item.reference.name for item in references if not item.reference.guide]
+    )
+    contract.check_guide_names(
+        [item.reference.name for item in references if item.reference.guide]
+    )
     return text, contract.to_dict()
+
+
+def _load_references(args: argparse.Namespace) -> tuple[LoadedWishReference, ...]:
+    """The --ref images, then the --guide images (ADR 0089).
+
+    A Guide Image exists only as a Design Contract's ``guides[]`` entry, so
+    --guide without --contract refuses before anything is read.
+    """
+
+    guides = list(getattr(args, "guides", None) or ())
+    if guides and getattr(args, "contract", None) is None:
+        raise WorkshopError(
+            "--guide attaches a Design Contract's Guide Images: pass --contract FILE too"
+        )
+    return load_wish_references(list(args.references or ()), guides)
 
 
 def _wish(args: argparse.Namespace) -> int:
     _reject_conflicting_publication_options(args)
     workflow = workshop_effort(args.workflow)
-    loaded_references = load_wish_references(list(args.references or ()))
+    loaded_references = _load_references(args)
     context: dict = {"source": "workshop-cli"}
     if args.inventor is not None:
         context["inventor_id"] = args.inventor
@@ -964,7 +1031,7 @@ def _fix(args: argparse.Namespace) -> int:
             raise WorkshopError("cannot read correction prompt file") from exc
     else:
         prompt = args.prompt
-    loaded_references = load_wish_references(list(args.references or ()))
+    loaded_references = _load_references(args)
     # A correction without images or a contract calls exactly as it did before
     # --ref and --contract existed, so its Wish keeps the canonical bytes of
     # the pre-reference contract.
@@ -2329,6 +2396,20 @@ def parser() -> argparse.ArgumentParser:
         ),
     )
     wish.add_argument(
+        "--guide",
+        action="append",
+        dest="guides",
+        type=str,
+        metavar="IMAGE_OR_URL",
+        help=(
+            "with --contract: attach one of the contract's Guide Images "
+            "(guides[], schema 5, ADR 0089), in its order; read by the Manager "
+            "and every Component Worker, never compared with the model; the "
+            "run receives the bytes read-only as %s/guide-NN-<name>"
+            % WISH_REFERENCES_DIRECTORY
+        ),
+    )
+    wish.add_argument(
         "--inventor",
         metavar="INVENTOR",
         help=(
@@ -2450,6 +2531,20 @@ def parser() -> argparse.ArgumentParser:
             "link is downloaded once now, and the run receives the bytes "
             "read-only as %s/ref-NN-<name>"
             % (MAX_WISH_REFERENCES, WISH_REFERENCES_DIRECTORY)
+        ),
+    )
+    fix.add_argument(
+        "--guide",
+        action="append",
+        dest="guides",
+        type=str,
+        metavar="IMAGE_OR_URL",
+        help=(
+            "with --contract: attach one of the contract's Guide Images "
+            "(guides[], schema 5, ADR 0089), in its order; read by the Manager "
+            "and every Component Worker, never compared with the model; the "
+            "run receives the bytes read-only as %s/guide-NN-<name>"
+            % WISH_REFERENCES_DIRECTORY
         ),
     )
     fix.add_argument(

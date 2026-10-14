@@ -119,3 +119,30 @@ class WishReferenceContractTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def _guide(index=1, slug="steps", **overrides):
+    value = {"name": "guide-%02d-%s.png" % (index, slug), "sha256": ("%02x" % (50 + index)) * 32}
+    value.update(overrides)
+    return _reference(index, slug, **value)
+
+
+class WishGuideImageTest(unittest.TestCase):
+    """ADR 0089: Guide Images seal beside the references as guide-NN files."""
+
+    def test_guides_follow_the_references_numbered_from_01(self):
+        wish = Wish.create(
+            "wish-g", "toy", references=[_reference(1), _reference(2, "top"), _guide(1), _guide(2, "leg")],
+        )
+        self.assertEqual([item.guide for item in wish.references], [False, False, True, True])
+        self.assertEqual(wish.references[2].path, "wish-references/guide-01-steps.png")
+        self.assertEqual(wish.references[3].index, 2)
+        Wish.create("wish-g", "toy", references=[_guide(1)])
+
+    def test_guides_out_of_place_or_order_are_refused(self):
+        with self.assertRaisesRegex(ContractError, "follow every reference image"):
+            Wish.create("wish-g", "toy", references=[_guide(1), _reference(1)])
+        with self.assertRaisesRegex(ContractError, "numbered guide-01"):
+            Wish.create("wish-g", "toy", references=[_reference(1), _guide(2)])
+        with self.assertRaisesRegex(ContractError, "repeat the same bytes"):
+            Wish.create("wish-g", "toy", references=[_reference(1), _guide(1, sha256="01" * 32)])

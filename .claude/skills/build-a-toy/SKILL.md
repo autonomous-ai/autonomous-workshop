@@ -24,6 +24,7 @@ Every run this skill starts, whether `wish` or `fix`, uses:
 | `--turn-minutes` | `360` | The maximum. The clock is not the limit |
 | `--max-tokens` | `100000000` | **This is the real backstop.** With 360-minute turns and unlimited resume, a run stops when its tokens run out |
 | `--ref` | every contract reference, every run | The assembly round scores every sealed reference that no current component round already scored (ADR 0072). A description of an image is no substitute for the image |
+| `--guide` | every contract Guide Image (`guides[]`, schema 5), every run, after the `--ref` images | Guide Images explain the design to the Manager and the workers and are never compared (ADR 0089); the contract refuses a run that leaves one out |
 | `--check-motion` | `true` when the contract has any moving part, on **every** `wish`, `fix` and `resume` | `workshop resume` reselects this option and defaults it to `false`. Broken God v01 was resumed without it, and its final verification skipped the motion check and shipped with its wings unverified |
 | `--effort`, `--model` | only if the person passed them | Both are frozen for the run and cannot change on resume, so never raise them yourself |
 
@@ -61,12 +62,14 @@ Build the command:
 ```bash
 uv run workshop wish --contract build-a-toy/r00/CONTRACT.md --inventor <inventor> \
   --ref <contract-dir>/ref-01-<slug>.png --ref ... \
+  [--guide <contract-dir>/guide-01-<slug>.png --guide ...] \
   --no-publish --turn-minutes 360 --max-tokens 100000000 [--check-motion true]
 ```
 
 **Show the person the exact command and wait for explicit approval.** Then run
 it. When the receipt prints, check that its `References:` line reports as
-many images as the contract lists. If the counts differ, stop: the likeness
+many images as the contract lists, and its `Guides:` line as many Guide
+Images. If the counts differ, stop: the likeness
 gate will score the wrong set.
 
 Done when: the run is started, the receipt's reference count matches, and
@@ -176,6 +179,7 @@ archive, and it stays within `fix`'s 128 MiB source limit.
 uv run workshop fix "<previous-run-workspace>" --prompt-file build-a-toy/r<NN>/brief.md \
   --contract <contract-dir>/CONTRACT.md \
   --ref <contract-dir>/ref-01-<slug>.png --ref ... \
+  [--guide <contract-dir>/guide-01-<slug>.png --guide ...] \
   --no-publish --turn-minutes 360 --max-tokens 100000000 [--check-motion true]
 ```
 
@@ -349,6 +353,13 @@ no separate re-audit beyond Stage 3c and 3d on the rows it changed. A change
 outer-loop amendment changed it since) is folded by hand, leaving `folded:
 false` until it is; `ledger.py next` lists it as pending. A refused
 in-run amendment is a `need` like any other and is diagnosed by class.
+
+An applied amendment may also name Guide Image panels it makes wrong
+(`guides_wrong` in its review, printed as "Guide Image to redraw", ADR 0089).
+They never stopped the run. Before the next attempt, redraw each named panel
+with `design-a-toy` from the folded contract, and show the owner the changed
+Guide Image with the next images they approve; the run is not relaunched for
+it alone.
 
 ### Approval: only visible changes wait for the owner
 
