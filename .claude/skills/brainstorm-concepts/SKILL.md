@@ -70,14 +70,16 @@ has a Rejections log.
    - each concept id with its idea;
    - the source of every image (text only, or which `--ref` inputs);
    - every flaw.
-7. **Commit and push** the round to the working branch. Pull and rebase first,
-   because other sessions push to the same branch.
+7. **Do not commit the round.** New files under `toys-spec/` are gitignored;
+   `tools/sync-to-main.sh` (the project's Stop hook) copies them into the
+   main checkout, where the human reads them. Only a file Git already tracks
+   is committed and pushed, as any other change.
 8. **Report** in the human's language, briefly: a table of id, name and idea,
    then the flaws, two or three picks with a one-line reason each, and one
    question.
 
 Done when: every planned image exists and was checked, every flaw is written
-down, and the page, `NOTES.md` and the push all reflect the round.
+down, and the page and `NOTES.md` reflect the round.
 
 ## Between rounds
 
@@ -89,8 +91,8 @@ round's shared block excludes it. Then run the round again.
 ## When the human picks
 
 Mark each chosen concept: a **Đã chọn** badge on its card and a dated line in
-`NOTES.md` with any changes the human asked for. Republish the page, commit,
-push and stop. Brainstorming continues only if the human asks for more.
+`NOTES.md` with any changes the human asked for. Republish the page and
+stop. Brainstorming continues only if the human asks for more.
 
 ## Prompt gotchas
 

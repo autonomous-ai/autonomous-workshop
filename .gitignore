@@ -47,15 +47,17 @@ __cadgen__/
 .DS_Store
 .venv-cad/
 
-# Private runtime workspaces never belong in Git.  The source-checkout
-# `toys/<inventor>-<slug>/` namespace is reserved for sanitized public examples,
-# so those snapshots are visible without a per-product allowlist.  Old
-# path-bound Wish workspaces remain ignored and resumable in place.
+# Private runtime workspaces never belong in Git.  Toy output and design
+# material are no longer committed either: new files under `toys/`,
+# `toys-spec/` and the owner's `inbox/` stay untracked, and
+# `tools/sync-to-main.sh` copies them from a worktree into the main checkout.
+# Files already tracked there stay tracked and are committed as before.
+/toys/
+/toys-spec/
+/inbox/
 /runs/
 /state/
 /credentials/
-/toys/wish-*/
-/toys/.public-example-*/
 /tmp/
 
 # Private planning material (not published)

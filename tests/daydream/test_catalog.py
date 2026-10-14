@@ -11,6 +11,7 @@ from workshop.daydream.catalog import (
     content_tokens,
     lint_novelty,
     load_repository_prior_work,
+    main_checkout_root,
     normalize_title,
     render_prior_work_markdown,
     source_checkout_root,
@@ -92,6 +93,43 @@ class RepositoryPriorWorkTest(unittest.TestCase):
         self.assertEqual(load_repository_prior_work(None), ())
         with tempfile.TemporaryDirectory() as temporary:
             self.assertEqual(load_repository_prior_work(Path(temporary)), ())
+
+    def test_linked_worktree_also_reads_the_main_checkout_catalog(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            main = Path(temporary) / "main"
+            worktree = Path(temporary) / "wt"
+            gitdir = main / ".git" / "worktrees" / "wt"
+            gitdir.mkdir(parents=True)
+            (gitdir / "commondir").write_text("../..\n", encoding="utf-8")
+            worktree.mkdir()
+            (worktree / ".git").write_text("gitdir: %s\n" % gitdir, encoding="utf-8")
+            for root, slug, title in (
+                (worktree, "shared", "Worktree Shared"),
+                (worktree, "only-wt", "Worktree Only"),
+                (main, "shared", "Main Shared"),
+                (main, "only-main", "Main Only"),
+            ):
+                (_toy(root, slug) / "README.md").write_text(
+                    "# %s\n\nA toy.\n" % title, encoding="utf-8"
+                )
+            self.assertEqual(main_checkout_root(worktree), main.resolve())
+            self.assertIsNone(main_checkout_root(main))
+            self.assertEqual(
+                [(entry.source, entry.title) for entry in load_repository_prior_work(worktree)],
+                [
+                    ("toys/only-main", "Main Only"),
+                    ("toys/only-wt", "Worktree Only"),
+                    ("toys/shared", "Worktree Shared"),
+                ],
+            )
+
+    def test_main_checkout_root_rejects_a_malformed_git_file(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / ".git").write_text("not a gitdir line\n", encoding="utf-8")
+            self.assertIsNone(main_checkout_root(root))
+            (root / ".git").write_text("gitdir: %s/missing\n" % root, encoding="utf-8")
+            self.assertIsNone(main_checkout_root(root))
 
     def test_source_checkout_root_finds_this_checkout(self):
         self.assertEqual(source_checkout_root(), REPOSITORY)

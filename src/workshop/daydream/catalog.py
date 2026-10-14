@@ -123,21 +123,29 @@ def _readme_prior_work(source: str, path: Path) -> Optional[PriorWork]:
 def load_repository_prior_work(
     repository_root: Optional[Path],
 ) -> tuple[PriorWork, ...]:
-    """Read the public toy catalog of a source checkout; malformed toys are skipped."""
+    """Read the public toy catalog of a source checkout; malformed toys are skipped.
+
+    New toys are untracked and synced to the main checkout, so a linked
+    worktree also reads the main checkout's catalog; a worktree toy wins a
+    shared name.
+    """
 
     if repository_root is None:
         return ()
-    toys = Path(repository_root) / "toys"
-    if toys.is_symlink() or not toys.is_dir():
-        return ()
-    try:
-        children = sorted(toys.iterdir(), key=lambda item: item.name)
-    except OSError:
-        return ()
+    roots = [Path(repository_root)]
+    main = main_checkout_root(Path(repository_root))
+    if main is not None:
+        roots.append(main)
+    children: list[Path] = []
+    seen: set[str] = set()
+    for root in roots:
+        for child in _catalog_children(root / "toys"):
+            if child.name not in seen:
+                seen.add(child.name)
+                children.append(child)
+    children.sort(key=lambda item: item.name)
     entries: list[PriorWork] = []
     for child in children:
-        if child.is_symlink() or not child.is_dir():
-            continue
         source = "toys/%s" % child.name
         entry = _wish_prior_work(source, child / "wish" / "wish.json")
         if entry is None:
@@ -145,6 +153,42 @@ def load_repository_prior_work(
         if entry is not None:
             entries.append(entry)
     return tuple(entries)
+
+
+def _catalog_children(toys: Path) -> list[Path]:
+    if toys.is_symlink() or not toys.is_dir():
+        return []
+    try:
+        children = list(toys.iterdir())
+    except OSError:
+        return []
+    return [child for child in children if not child.is_symlink() and child.is_dir()]
+
+
+def main_checkout_root(repository_root: Path) -> Optional[Path]:
+    """Return the main checkout of a linked Git worktree, read from `.git` alone."""
+
+    marker = repository_root / ".git"
+    if marker.is_symlink() or not marker.is_file():
+        return None
+    try:
+        line = marker.read_text(encoding="utf-8").strip()
+        if not line.startswith("gitdir:"):
+            return None
+        gitdir = Path(line[len("gitdir:"):].strip())
+        if not gitdir.is_absolute():
+            gitdir = repository_root / gitdir
+        common = (gitdir / "commondir").read_text(encoding="utf-8").strip()
+    except (OSError, UnicodeDecodeError):
+        return None
+    common_dir = Path(common) if Path(common).is_absolute() else gitdir / common
+    common_dir = common_dir.resolve()
+    if common_dir.name != ".git":
+        return None
+    main = common_dir.parent
+    if main.resolve() == repository_root.resolve() or not main.is_dir():
+        return None
+    return main
 
 
 def source_checkout_root() -> Optional[Path]:
@@ -272,6 +316,7 @@ __all__ = [
     "content_tokens",
     "lint_novelty",
     "load_repository_prior_work",
+    "main_checkout_root",
     "normalize_title",
     "render_prior_work_markdown",
     "source_checkout_root",

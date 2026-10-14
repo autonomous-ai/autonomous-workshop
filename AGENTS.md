@@ -338,6 +338,10 @@ top-level `tests/`.
   pass.
 - Never commit credentials, `.env` files, transcripts, run workspaces, build
   outputs, or private customer artifacts.
+- New files under `toys/`, `toys-spec/` and `inbox/` are gitignored and never
+  force-added; the project Stop hook, `tools/sync-to-main.sh`, copies them
+  into the main checkout for the owner. Files Git already tracks there are
+  committed as before, and workflow changes are always committed.
 - Do not claim physical manufacture, delivery, publication, or live readiness
   from mocked or model-generated evidence.
 - Keep documentation explicit about implemented behavior versus an accepted
