@@ -1,0 +1,6 @@
+Edit the attached 2 x 2 grid of side views of one toy leg. Keep the style, colours, lighting, layout and everything in it, with only these fixes:
+1. Make the whole background ONE uniform plain off-white (#f5f0e6) with no visible square or panel edges.
+2. Top-right view: the ORANGE shin between the red thigh and the dark grey boot must be EXACTLY as long as in the top-left view (the same number of orange blocks, the wheel at the same height); the boot simply hangs below it. The red thigh is the same size in all views.
+3. Bottom-left view: same as top-right but the orange shin is shorter by about one quarter of its length (it slid up into the thigh); red thigh unchanged.
+4. Bottom-right view: keep it as it is (the leg lying down with the purple plate standing up on the boot's end and the flat purple blade on top).
+No text, no numbers, no arrows, no labels.

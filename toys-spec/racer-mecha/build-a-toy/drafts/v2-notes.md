@@ -281,3 +281,12 @@ pylon), and the two flat blades lie across the plate tops, meeting at the
 centre line, with open space under the wing. Tall outer endplates removed.
 `carrear.png` (`prompts/v3-st-carrear.txt`) and the step-0 car `car.png`
 (`prompts/v3-st-car.txt`) regenerated so the two agree.
+
+## Leg strip ends in the car pose (2026-10-14)
+
+Panel 4 of the side-view leg strip now shows the leg lying as it does in the
+car: thigh, shin, boot toe rearward, the wing plate standing up from the toe
+as the pylon and the blade flat on top pointing rearward, matching the car
+tail. Panel 2 keeps the shin's full length (the boot fold does not move the
+shin); panel 3 is shorter by the slide. Panels numbered 1 to 4. Generated
+with `prompts/v3-st-leg2*.txt`.

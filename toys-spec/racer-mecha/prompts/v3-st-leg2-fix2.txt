@@ -1,0 +1,4 @@
+Edit the attached 2 x 2 grid of side views of one toy leg. Change ONLY the length of the ORANGE shin in two views, keep everything else (style, colours, background, the other views, the boot, the purple pieces, the wheel's look) exactly as it is:
+- Top-right view: add ONE more row of orange blocks to the shin, so the orange shin is exactly as long as in the top-left view; the dark grey boot and purple plate move down accordingly and stay attached below the shin.
+- Bottom-left view: add ONE more row of orange blocks to the shin, so it is one row shorter than the top-left view's shin, not more; the boot moves down accordingly.
+No text, no numbers, no arrows, no labels.

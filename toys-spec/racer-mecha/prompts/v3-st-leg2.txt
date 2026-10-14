@@ -1,14 +1,7 @@
-A 2 x 2 grid of four SIDE VIEWS of ONE leg of the attached colour-coded robot toy, seen exactly from the side, the robot facing LEFT (toe of the foot points LEFT). Same block-built 3D-printed toy look as the attached robot: soft studio light, shaded 3D blocks with seams, plain off-white background (#f5f0e6). All four views at the SAME scale, aligned on the same top line (the red thigh's top edge is at the same height in all four).
-
-Parts, identical in all four views:
-- RED thigh: a short block at the top, 2 blocks tall. Its size NEVER changes.
-- ORANGE shin: a tall block column below the thigh, about 3 times the thigh's height, a black tyre with a white rim on its side near the top of the shin.
-- DARK GREY boot: a CHUNKY block, as tall as the thigh and about twice as long as the shin is deep, with a rounded heel. A thick solid foot, not a thin plate.
-- PURPLE wing piece: a flat purple plate a little shorter than the boot, with a round hinge knuckle at the toe end, and a short purple bar standing at right angles at its other end.
-
-Top-left (robot): the boot stands flat on the floor, pointing LEFT, its toe reaching well ahead of the shin. The purple plate lies flat on top of the boot's front half, its knuckle at the toe tip; its bar stands UP at the plate's back end, just in front of the shin.
-Top-right: the boot has turned 90 degrees DOWN at the ankle: it hangs straight down below the shin, toe pointing to the floor, sole facing RIGHT. The purple plate lies flat against the boot's LEFT face, knuckle at the BOTTOM, its bar sticking out to the LEFT at the top.
-Bottom-left: same as top-right, but the ORANGE shin has slid UP INTO the red thigh: the orange part below the thigh is clearly SHORTER, the RED thigh is EXACTLY the same size as before, so the whole leg is shorter and the boot hangs higher.
-Bottom-right: same as bottom-left, but the purple plate has swung 90 degrees on its knuckle at the boot's bottom, so it sticks out LEVEL to the LEFT from the boot's bottom end, and its bar now hangs DOWN from the plate's far left end.
-
-No text, no arrows, no numbers, no labels, no frame lines.
+Redraw the FIRST attached image (a 2 x 2 grid of four side views of one leg of a colour-coded block-built toy) keeping its style, colours, scale, lighting and plain off-white background. The SECOND attached image shows the finished car's tail for reference: dark grey boot blocks, a purple upright plate (pylon) on each boot's end with a round hinge knuckle at its foot, and a flat purple wing blade across the pylon tops.
+Parts in every view: RED thigh (same size in all views), ORANGE shin with a black tyre with white rim on its side, DARK GREY chunky boot block, PURPLE wing half = a flat PLATE with a round hinge KNUCKLE at one end (always at the boot's toe) and a flat BLADE fixed square across its other end.
+Top-left (1, robot): the leg stands upright, the robot faces LEFT. The boot lies flat on the floor pointing LEFT, its toe well ahead of the shin. The purple plate lies flat on top of the boot's front half, knuckle at the toe tip; the blade stands UP at the plate's back end, just in front of the shin.
+Top-right (2): the boot has turned 90 degrees DOWN at the ankle and hangs straight below the shin, toe at the bottom, sole facing RIGHT. The plate lies flat against the boot's LEFT face, knuckle at the bottom; the blade sticks out to the LEFT at the plate's top end.
+Bottom-left (3): same as 2, but the ORANGE shin has slid UP into the red thigh: less orange shows, the red thigh is unchanged, so the leg is shorter.
+Bottom-right (4, CAR): the same leg now LYING DOWN HORIZONTALLY as it does in the car: red thigh at the LEFT end, orange shin in the middle (wheel on its side), dark grey boot at the RIGHT end lying flat on the ground with its toe pointing RIGHT. The purple plate STANDS STRAIGHT UP from the boot's right (toe) end on its knuckle, like the pylon in the car tail, and the blade lies FLAT on top of the plate, sticking out to the RIGHT (rearward) like the car's rear wing. Clear empty space under the blade.
+No text, no numbers, no arrows, no labels, no frame lines.
