@@ -1,0 +1,4 @@
+Edit the attached back view of the colour-coded robot toy. Fix only the YELLOW nose on its back:
+- The yellow front wing at its bottom (across behind the red thighs) must be NARROWER: about 2/3 of the span across the green arms, ending well inside the arms, about as wide as the shoulder towers.
+- The yellow nose cone must taper the OTHER way: wide at the TOP (a rounded yellow hinge knuckle about as wide as the head, between the shoulder towers) and narrowing DOWNWARD into a slim, blunt tip that meets the middle of the wing; a small step halfway down where it narrows.
+Everything else stays exactly the same: same view, scale, colours and style, plain off-white background (#f5f0e6). No text, no arrows, no labels.

@@ -1,0 +1,5 @@
+Edit the attached colour-coded robot toy. Fix only the YELLOW nose standing up above the chest:
+- Make it much TALLER: from the top of the light grey chest to the top of the yellow wing it must be as tall as the light grey chest itself (from the shoulder line down to the hips), so the robot's outline becomes much taller. Zoom out so the whole toy, wing included, fits in frame with margin.
+- The cone must taper UPWARD: widest at the bottom, where a rounded yellow hinge knuckle about as wide as the halo sits on top of the chest, narrowing upward into a slim, blunt tip that just meets the middle of the yellow front wing; a small step halfway up where it narrows.
+- The yellow front wing at the top stays a flat horizontal bar with small end plates, about as wide as the two shoulder towers together.
+Everything else stays exactly the same: same front view, colours and block-built style, plain off-white background (#f5f0e6). No text, no arrows, no labels.

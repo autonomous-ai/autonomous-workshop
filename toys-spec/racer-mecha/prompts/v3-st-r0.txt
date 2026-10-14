@@ -1,0 +1,10 @@
+Recolour the attached block-built transforming robot toy into a COLOUR-CODED parts diagram. Keep EXACTLY the same toy, pose, front view, proportions, block shapes and outline; change only the colours, each part one flat solid colour:
+- Chest/torso with the shoulder towers and hips: LIGHT GREY; the halo frame round the chest opening: light grey too, slightly lighter; the opening inside stays black.
+- Head: WHITE helmet with a BLUE visor band (as now).
+- Each whole upper arm and forearm shell from shoulder to wrist: GREEN (no white, no red band).
+- Fists: DARK GREY.
+- Thighs (upper legs, from hip to the knee): RED.
+- Shins (lower legs, from the knee down to the ankle, including the knee guard): ORANGE, no white stripes.
+- Boots (the long feet): DARK GREY, with a PURPLE flat plate lying on top of each boot's front half and a PURPLE bar standing across the front of each shin just above the boot (the folded rear-wing halves).
+- Shoulder wheels (front wheels): black tyres with BLUE rims. Calf wheels (rear wheels): black tyres with WHITE rims.
+Plain off-white background (#f5f0e6), soft studio light, whole toy in frame, left-right symmetric. No text, no arrows, no labels.

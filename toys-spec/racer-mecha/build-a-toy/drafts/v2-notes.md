@@ -186,3 +186,39 @@ towers; X stretch 0.95. Measured at contract scale: towers across 86, body
 58.2 (57), halo 34 x 46.4 (30 x 47), halo Z 13.6 to 60 visible (14.5 to 60).
 Residual: halo 4 wider. Earlier ref-02 (rounds a to e) read squat because its
 towers stood tall above the body.
+
+## Reference cameras re-estimated (2026-10-14)
+
+The owner saw cameras that did not match their images. Re-read by eye in the
+Display Pose frame, rounded to 15 degrees:
+
+| Image | Was | Now | Cue |
+|---|---|---|---|
+| ref-03 nose | [90, 15] | [90, 0] | flat back view, no top face of the wing or knuckle shows |
+| ref-05 arm shell | [-90, 15] | [-75, 15] | the +X outer face shows right of the front face (22 deep x tan 15 against 28 wide); top faces show |
+| ref-06 fist | [-90, 15] | [-90, 0] | front face only, no top face on the knuckle block |
+| ref-07 thigh | [-90, 15] | [-75, 15] | the +X side face shows right of the front face; top faces show |
+| ref-08 shin | [-90, 15] | [-90, 0] | front face only; the +X wheel boss is seen edge-on on the right |
+| ref-10 wing | [-90, 30] | [-105, 30] | the blade's -X end face shows and its +X end sits higher (slope 0.17 = tan 19 x sin 30) |
+| ref-11 front wheel | [0, 15] | [-15, 15] | tread shows on the left (front) edge, about 3 of 16 |
+| ref-12 rear wheel | [0, 0] | [-30, 15] | tread shows on the left, 5.4 of 12, and on top, 3 of 12 |
+
+Kept: ref-01, ref-02 [-90, 15]; ref-04 [-90, 0]; ref-09 boot [0, 0] (its
+blocks show no top face; only the two toe lugs are drawn offset as if from
+15 up).
+
+The fist image draws three fingers in two rows, the contract said four
+fingers and two knuckle grooves; the contract now says three fingers split
+by two vertical grooves, crossed by one knuckle groove (prose and R17).
+
+## v3 colour-coded transformation sheet
+
+`prototypes/v3-colour-steps.png`, panels in `prototypes/v3-steps/`, prompts
+`prompts/v3-st-*.txt`. Generated from ref-01 recoloured (torso grey, nose
+yellow, head white/blue, arm shells green, fists dark grey, thighs red,
+shins orange, boots dark grey, wing halves purple, front rims blue, rear
+rims white), then one edit per Transformation move in reverse. The sheet
+reads car to robot, steps 1 to 7 being the contract's moves 7 to 1. The
+standing nose was shortened to 0.72 of its drawn height (r2c) to keep it
+about 1.2 times the chest. Known looseness: step 1's boots are drawn
+shorter than step 3's, the car's sidepods are not quite symmetric.

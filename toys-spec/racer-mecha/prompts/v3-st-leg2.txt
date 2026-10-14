@@ -1,0 +1,5 @@
+Edit the attached grid of four side views of one toy leg. Fix only the PURPLE wing piece's hinge, which is always at the boot's TOE end:
+- Top-left: the round purple hinge knuckle must be at the LEFT end of the flat purple plate, at the toe tip of the boot; the short upright purple bar stays at the plate's RIGHT end, just in front of the orange shin. Nothing round at the shin end.
+- Top-right and bottom-left: keep the plate against the hanging boot's left face with its round knuckle at the BOTTOM, and add the short purple bar sticking out to the LEFT from the TOP end of the plate.
+- Bottom-right: the plate must swing out from the BOTTOM of the boot: its round knuckle at the boot's bottom-left corner, the plate sticking out level to the left at the height of the boot's bottom end, and the purple bar hanging DOWN from its far left end.
+Everything else stays exactly the same: colours, scale, alignment, plain off-white background (#f5f0e6). No text, no arrows, no labels, no frame lines.

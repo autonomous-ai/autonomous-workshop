@@ -1,0 +1,4 @@
+Edit the attached colour-coded robot toy. Fix only the two hanging dark grey boots below the orange shins:
+- On the front face of each boot, a flat PURPLE plate now covers the face from the short purple block sticking out at its top all the way DOWN to the boot's bottom end, as wide as the boot minus a narrow dark grey border; at the bottom end the plate ends in a round purple hinge knuckle running across the boot's width.
+- The short purple block sticking out toward the viewer stays at the TOP of that plate, just under the orange shin; the purple strip lying across the top of the boot stays.
+Everything else stays exactly the same: same front view, scale, colours and block-built style, plain off-white background (#f5f0e6). No text, no arrows, no labels.

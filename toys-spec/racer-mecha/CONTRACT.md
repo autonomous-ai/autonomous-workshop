@@ -146,8 +146,8 @@ inboard face at Y -2, Z 160. Prints on its front face.
 
 **Forearm.** A black closed fist 22 wide (X 37 to 59) x 15 deep (Y -9.5 to
 5.5), Z 85 to 116, ending at the top in a wrist knuckle rounded R7.5 about the
-elbow axis Y -2, Z 116; below the shell (Z 85 to 109) four fingers split by
-three vertical grooves, crossed by two knuckle grooves. Prints on its
+elbow axis Y -2, Z 116; below the shell (Z 85 to 109) three fingers split by
+two vertical grooves, crossed by one knuckle groove. Prints on its
 outboard face.
 
 **Thigh.** A sleeve 22.5 wide (X 5.5 to 28) x 22 deep (Y -13 to 9), Z 90 to
@@ -311,16 +311,16 @@ and 13 ahead of the heels.
   "references": [
     {"file": "ref-01-racer-mecha.png", "shows": "assembly", "camera": [-90, 15]},
     {"file": "ref-02-torso.png", "shows": "geometry:torso", "camera": [-90, 15]},
-    {"file": "ref-03-nose.png", "shows": "geometry:nose", "camera": [90, 15]},
+    {"file": "ref-03-nose.png", "shows": "geometry:nose", "camera": [90, 0]},
     {"file": "ref-04-head.png", "shows": "geometry:head", "camera": [-90, 0]},
-    {"file": "ref-05-arm-shell.png", "shows": "geometry:arm-shell", "camera": [-90, 15]},
-    {"file": "ref-06-forearm.png", "shows": "geometry:forearm", "camera": [-90, 15]},
-    {"file": "ref-07-thigh.png", "shows": "geometry:thigh", "camera": [-90, 15]},
-    {"file": "ref-08-shin.png", "shows": "geometry:shin", "camera": [-90, 15]},
+    {"file": "ref-05-arm-shell.png", "shows": "geometry:arm-shell", "camera": [-75, 15]},
+    {"file": "ref-06-forearm.png", "shows": "geometry:forearm", "camera": [-90, 0]},
+    {"file": "ref-07-thigh.png", "shows": "geometry:thigh", "camera": [-75, 15]},
+    {"file": "ref-08-shin.png", "shows": "geometry:shin", "camera": [-90, 0]},
     {"file": "ref-09-boot.png", "shows": "geometry:boot", "camera": [0, 0]},
-    {"file": "ref-10-wing.png", "shows": "geometry:wing", "camera": [-90, 30]},
-    {"file": "ref-11-front-wheel.png", "shows": "geometry:front-wheel", "camera": [0, 15]},
-    {"file": "ref-12-rear-wheel.png", "shows": "geometry:rear-wheel", "camera": [0, 0]}
+    {"file": "ref-10-wing.png", "shows": "geometry:wing", "camera": [-105, 30]},
+    {"file": "ref-11-front-wheel.png", "shows": "geometry:front-wheel", "camera": [-15, 15]},
+    {"file": "ref-12-rear-wheel.png", "shows": "geometry:rear-wheel", "camera": [-30, 15]}
   ],
   "geometries": [
     {"id": "torso", "name": "Torso", "count": 1, "extents_mm": [86, 37.5, 78.5], "wall_min_mm": 1.1},
@@ -352,7 +352,7 @@ and 13 ahead of the heels.
     {"id": "R14", "scope": "geometry:nose", "text": "At the tip a black front wing 84 wide and 13 tall on the cone's outer face, with a red endplate 3 wide at each end; the cone's tip overlaps the wing's upper half from in front."},
     {"id": "R15", "scope": "geometry:head", "text": "A white and red helmet 19 wide and 19 tall with a blue visor band across its front and a raised crest along its top centre line, on a square 8 mm neck post 30 long with a 3.4 wide slot through it from front to back."},
     {"id": "R16", "scope": "geometry:arm-shell", "text": "A 28 x 22 white arm 62 tall, a channel open at the back and the bottom, its top rounded about the shoulder axis, its faces split into chunky blocks by seams, a seam splitting upper from lower arm and a red band 11 tall round the upper arm."},
-    {"id": "R17", "scope": "geometry:forearm", "text": "A black closed fist 22 wide and 15 deep, ending at the top in a rounded wrist knuckle, four fingers split by three vertical grooves and crossed by two knuckle grooves."},
+    {"id": "R17", "scope": "geometry:forearm", "text": "A black closed fist 22 wide and 15 deep, ending at the top in a rounded wrist knuckle, three fingers split by two vertical grooves and crossed by one knuckle groove."},
     {"id": "R18", "scope": "geometry:thigh", "text": "A 22.5 x 22 red sleeve 22.5 tall, open at the bottom, whose top steps in and rises into a rounded hip tongue 10 wide toward its inboard side, with a 3.2 wide slot along each side wall for 16 mm of slide; its front and outer side are split by seams into blocks, two of them standing proud on the front."},
     {"id": "R19", "scope": "geometry:shin", "text": "A red shin: a cuff 31.5 wide and 18.5 tall under a block 28 wide and 28.5 tall, a white stripe panel down the front of both, a black slide post 16.5 x 16 rising 22.5 above with a red knee guard 22.5 wide and 1.5 thick in front of it, a wheel boss on the outer face and a rounded ankle tongue 14 wide below; faces split into blocks by seams."},
     {"id": "R20", "scope": "geometry:boot", "text": "A black boot 32 wide and 41.5 long pointing forward, 26 tall, its heel top rounded about the ankle, a slot for the shin's tongue open at the top and the heel, and two hinge lugs at the toe; its sides are split into blocks by seams."},

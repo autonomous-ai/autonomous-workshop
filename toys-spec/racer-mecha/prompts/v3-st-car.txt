@@ -1,0 +1,8 @@
+Image 1 is a colour-coded transforming toy stood up on its tail, seen from what will be the car's TOP. Lay it down on its back so it becomes a low, flat open-wheel Formula racing car resting on its four wheels, and show the car in a three-quarter view from the front-left and above, like image 2 (image 2 is only a viewpoint and style guide; its parts and colours differ - follow image 1). Use exactly the parts and colours of image 1; nothing added, nothing removed:
+- FRONT: the YELLOW nose cone pointing forward, narrow and low, with the YELLOW front wing (a flat bar with small end plates) across the very front, narrower than the car.
+- Behind the nose: the LIGHT GREY chest is the cockpit tub, the light grey HALO arching over the dark cockpit opening, facing up.
+- The two BLUE-rim front wheels stand at the sides of the front of the cockpit (on the light grey shoulder towers).
+- The two GREEN arm shells lie along the sides of the cockpit as the front sidepods, the widest part of the car.
+- Behind them the two ORANGE legs lie side by side as the rear body, a thin red band between them and the cockpit, with the WHITE-rim rear wheels on their outer sides near the tail.
+- TAIL: the two dark grey boots point down to the ground at the very back (gearbox and diffuser); from each boot a flat PURPLE plate stands UP as the rear wing's end plate, and the long PURPLE blade spans between them across the car, two halves meeting at a centre seam.
+The car is long and low: about 2.3 times as long as it is wide, and the rear wing is its highest point. Block-built 3D-printed toy look, flat solid colours, plain off-white background (#f5f0e6), soft studio light, whole car in frame. No text, no arrows, no labels.
