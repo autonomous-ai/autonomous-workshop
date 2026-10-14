@@ -1,5 +1,13 @@
 # Shared skill provenance
 
+## Workshop-local: the wiki preamble names the run's Lesson Proposals file (2026-10-14)
+
+- Only `wiki/SKILL.md`'s Workshop preamble changed: a run appends a rule the
+  wiki lacked to `LESSON-PROPOSALS.md` at its run root instead of reporting
+  it in the final response, and the build loop writes durable rules back
+  upstream (ADR 0090). No upstream byte moved; `wiki`'s lock hash changed
+  and its `source_commit` stays `8488b44`.
+
 ## Resync to upstream `8488b44`: a tint ground rule, drift that tolerates edge jitter, mount rows per state (2026-10-08)
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at

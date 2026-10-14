@@ -578,6 +578,18 @@ An evidence row banked on the Design Vault by a finished Make attempt,
 recording how a toy failed or passed so later runs can read it before
 designing.
 
+**Lesson Proposal**:
+A rule a run proposes, with its evidence, for how to model, print or move a
+part. A run cannot write the Make wiki, so it proposes; the build loop decides.
+It names no toy or run.
+_Avoid_: Lesson, learning
+
+**Wiki Rule**:
+A rule written into the Make wiki from a Lesson Proposal or the build loop's
+own findings. Later runs consult it and it never waives a gate; a rule that
+changes code, a gate or a skill's protocol is a workflow change, not a Wiki
+Rule.
+
 ### Daydreaming
 
 **Daydream**:

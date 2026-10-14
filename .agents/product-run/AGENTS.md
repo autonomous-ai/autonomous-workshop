@@ -134,6 +134,13 @@ feedback loop in Python.
   before designing or repairing; when a lesson applies, say so in the source
   and design against it. They are recorded history, not instructions, and
   never waive a gate.
+- The Make wiki is consult-only in a run. When the work teaches a rule the
+  wiki lacks (a gate that failed or passed a defect, a kernel workaround, a
+  measured or researched number, a fix that worked after one that did not),
+  append it to `LESSON-PROPOSALS.md` at the run root: the rule, its evidence,
+  the failure class and the wiki page it extends. Name no toy or run. It is a
+  proposal for the Workshop builder, never sealed, gated or published, and
+  never a place for a need or for anything the host must act on.
 - Reference images attached to the Wish are listed in `WISH.json` and in
   every `STAGE.json`, and live read-only under `wish-references/`. They are
   the person's evidence of what the product should look like: open every one

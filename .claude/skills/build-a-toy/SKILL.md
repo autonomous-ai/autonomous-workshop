@@ -202,6 +202,44 @@ actually went live. Before concluding anything, read the effect ledger in
 page. Rows marked `factory-publish|unknown` mean the publication went out, so
 do not publish again.
 
+## Step 8 - Write back what the build taught
+
+Every stop of the whole build ends here, whether it conformed, stopped to
+ask or ran out of budget. Nobody reviews the result first. Its sources are:
+
+- each attempt's **Lesson Proposals**, the `LESSON-PROPOSALS.md` at its run
+  workspace root (`<workshop-home>/runs/<wish-id>/workspace/`), copied
+  beside that attempt's `evidence.json` when the attempt stopped;
+- what the diagnoses found: a repeated print defect and the fix that ended
+  it, a gate that passed a defect, a kernel workaround.
+
+Keep only **Wiki Rules**: knowledge of how to model, print or move a part.
+Ask of each one: if it were deleted, would a skill still run its steps and
+pass its gates correctly? If not, it is a workflow change (code, a gate, a
+skill's protocol). Fix that through the harness-defect path instead.
+
+Write the rules to the upstream `autonomous-product-to-cad` wiki through
+GitHub, never in the owner's local checkout of it:
+
+```bash
+S=.claude/skills/build-a-toy/scripts/wiki_writeback.sh
+$S clone <scratch>/upstream-wiki
+# search first; extend a page before adding one (`wiki new` refuses a taken slug)
+cd <scratch>/upstream-wiki && python3 skills/wiki/scripts/wiki search <words>
+# ... edit pages under skills/wiki/, `wiki lint`, commit ...
+$S push <scratch>/upstream-wiki
+```
+
+Follow that wiki's own `SKILL.md`. Each rule:
+- carries `sources: "experience: <the failure class that taught it>"`;
+- states the number or the assert;
+- names no toy, run, Component Worker or other Workshop-only term.
+
+`push` refuses commits outside `skills/wiki/` and stops on a rebase
+conflict. Merge that by hand, keeping both rules. Runs read the rules after
+the owner's next `resync-vendored-skills`. When nothing new was learned,
+push nothing and say so in the report.
+
 ## Unattended mode
 
 The person can hand a toy's whole loop to one supervising session ("run
@@ -252,7 +290,8 @@ person is listed under "When the loop stops and asks".
      rounds, for what a worker reported blocked and what a repeated print
      defect is made of.
 
-   Write the evidence to `build-a-toy/r00/attempt<N>-<id>/evidence.json`,
+   Write the evidence to `build-a-toy/r00/attempt<N>-<id>/evidence.json`
+   (with the run's `LESSON-PROPOSALS.md`, if any, beside it for Step 8),
    classify it with `ledger.py classify` on that file, and record one `stops`
    entry with the class, the evidence and the progress.
 4. **Fold in-run amendments** into the contract, whatever the class (below).
@@ -454,7 +493,7 @@ Done when, for each pass, the ledger shows:
   attempt's `launch` or `ask-owner` with its reasons.
 
 The loop ends when an attempt conforms and is published by Step 7 (`loop.state:
-done`), or when the owner stops it (`stopped`).
+done`), or when the owner stops it (`stopped`). Either way it runs Step 8.
 
 ## The report
 
@@ -463,4 +502,5 @@ out of budget, with:
 
 - each round's wish id, toy directory, and finding ids;
 - which findings were **unverified** rather than failed;
-- what was published, if anything, and how it was confirmed.
+- what was published, if anything, and how it was confirmed;
+- the Wiki Rules Step 8 pushed upstream, with the commit, or "none".
