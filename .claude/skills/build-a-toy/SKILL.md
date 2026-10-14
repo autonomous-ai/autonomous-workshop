@@ -214,6 +214,10 @@ ask or ran out of budget. Nobody reviews the result first. Its sources are:
   it, a gate that passed a defect, a kernel workaround.
 
 Keep only **Wiki Rules**: knowledge of how to model, print or move a part.
+A lesson about designing the toy instead (how a contract row read two ways,
+what a reference image misled, the judgment behind a Contract Contradiction
+fix) goes to `design-a-toy`'s [LESSONS.md](../design-a-toy/LESSONS.md) under
+that skill's rules, committed with the loop's other harness changes.
 Ask of each one: if it were deleted, would a skill still run its steps and
 pass its gates correctly? If not, it is a workflow change (code, a gate, a
 skill's protocol). Fix that through the harness-defect path instead.

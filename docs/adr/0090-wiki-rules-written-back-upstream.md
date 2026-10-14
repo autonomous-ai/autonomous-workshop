@@ -51,5 +51,10 @@ host banks on the design vault and hands the next packet. They are not rules.
   after its build stops, and frozen runs keep the bytes they materialized.
 - Workshop pushes to upstream `main`. Any local checkout of upstream with
   unpushed commits must pull before its next push.
+- Lessons about designing a toy (contract wording, reference images, the
+  judgment behind a Contract Contradiction fix) are Workshop-only. They live
+  in `design-a-toy`'s `LESSONS.md`, written by `design-a-toy` after a
+  hand-off and by `build-a-toy` Step 8, and are committed like any workflow
+  change, with no separate review.
 - Lesson Proposals are model prose. They become rules only through the build
   loop's judgment, and never move a gate.

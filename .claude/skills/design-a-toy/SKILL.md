@@ -23,6 +23,12 @@ contract and the images in agreement is this skill's job, done by measurement
 in Stage 3b, so that approving the images is the same as approving the
 contract.
 
+## Lessons
+
+[LESSONS.md](LESSONS.md) holds what earlier designs and builds taught. Read
+its section for each stage before working that stage. It never overrides this
+file, the Taste or the human's answer.
+
 ## Who designs
 
 Read the Inventor's `TASTE.md` from `inventors/<id>/TASTE.md` and work as that
@@ -793,6 +799,19 @@ starts, round 0 through every correction, always under `--contract`. Do not prin
 Then state plainly what happens next: Make builds against these images, the
 silhouette-likeness gate re-checks every round at IoU >= 0.90, and every
 correction runs through `build-a-toy`, not back through this skill.
+
+## Write back what the design taught
+
+After the hand-off, add to [LESSONS.md](LESSONS.md) whatever this design
+taught that the file did not already say. Sources: each change the human
+asked for in Stage 4, a Stage 3b/3c/3d finding that took more than one pass,
+and an image prompt that failed before one worked.
+
+Apply its own test: a rule that adds a required step or check is a workflow
+change to this file instead. Extend an entry before adding one, and name no
+toy. Commit `LESSONS.md` and push it to the working branch, as any workflow
+change; it reaches `main` with that branch. When nothing new was learned,
+say so and change nothing.
 
 ## What this skill does not do
 
