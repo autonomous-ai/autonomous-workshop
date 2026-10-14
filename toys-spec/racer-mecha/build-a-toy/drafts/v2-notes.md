@@ -177,3 +177,12 @@ Residuals at the 5-round cap (contract kept, each becomes a Reference
 Conflict if the reviewer reads it): torso body 3 wide and halo 4 low; nose
 cone drawn 18 wide all the way (contract steps to 12 below Z 141) and wing
 3 thin; shin block 2.7 narrow, post 1.7 narrow, ankle tongue 3.6 short.
+
+### ref-02 torso redrawn (owner: chest looked short beside ref-01)
+
+Rounds f, g (owner-requested beyond the cap): f generated from a crop of the
+chest in gen13 nf1 (ref-01's source), g shrank the halo and widened the
+towers; X stretch 0.95. Measured at contract scale: towers across 86, body
+58.2 (57), halo 34 x 46.4 (30 x 47), halo Z 13.6 to 60 visible (14.5 to 60).
+Residual: halo 4 wider. Earlier ref-02 (rounds a to e) read squat because its
+towers stood tall above the body.
