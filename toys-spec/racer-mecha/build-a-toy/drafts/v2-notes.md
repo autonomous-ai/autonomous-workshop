@@ -250,3 +250,13 @@ strip. Steps 2 to 7 drew each wing half as a cover on its boot; the contract
 from the other one. r5, r4b, r3, r2c, r1 and r0 were edited to add the blades
 (prompts `v3-st-blade-s2..s4.txt`; s4 used for r2c, r1, r0) and the sheet
 recomposed with the same tile normalisation.
+
+## Wings seen from above the car (2026-10-14)
+
+The owner noticed step 1 drew the rear wing as a thin rod on posts, as if
+seen from the side. Steps 1 to 5 look at the robot's front, which is the
+car's top, so both wings show their top faces: the rear wing as a flat
+purple slab under the boots (r6, `prompts/v3-st-wing-s1.txt`), the front
+wing as a flat yellow panel about as wide as the shoulder towers (r6, r5,
+r4b, r3, r2c, `prompts/v3-st-frontwing.txt`; measured 0.85 to 0.97 of the
+grey width across the towers, contract 84/86).
