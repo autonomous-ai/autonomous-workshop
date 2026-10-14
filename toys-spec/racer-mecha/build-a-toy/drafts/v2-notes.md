@@ -139,3 +139,41 @@ car 286.5 long, 124 wide, 45 tall.
 Residuals in ref-01: no red blades are drawn on the toes, and the boots read
 4 taller because their top faces show. Every part reference from gen12 is
 now stale (style and size) and is redrawn next in the ref-01 style.
+
+## v3 part references (design-a-toy Stage 3/3b)
+
+All eleven part images redrawn in ref-01's style: each generated from the
+livery robot image (gen13 nf1) as "one part taken off this toy", then edited
+for proportions, keyed off chroma green, stray green zeroed, X-only stretch.
+Prompts: `prompts/v3-part-*.txt` (a = first draw, b..e = edit rounds). Sheet:
+`prototypes/v3-reference-set.png`. Visible height at EL 15 = Z cos15 + depth sin15.
+
+| Image | Rounds | Camera | X stretch | Check | Contract | Image | Verdict |
+|---|---|---|---|---|---|---|---|
+| ref-02 torso | 5 | [-90, 15] | 1.00 | aspect | 1.006 | 1.005 | ok |
+| | | | | towers across / body | 86 / 57 | 86 / 60.2 | body +3.2 (5.6%) residual |
+| | | | | halo w x h | 30 x 47 | 29.8 x 46.4 | ok |
+| | | | | halo bottom (visible) | 14.5 | 10.4 | 4 low, residual |
+| ref-03 nose | 5 | [90, 15] | 1.018 | width | 84 | 84 | ok |
+| | | | | cone upper / lower | 18 / 12 | 18.6 / 18.6 | no step drawn, residual (contract keeps the 12 step: hip-back clearance) |
+| | | | | wing height | 14 (visible) | 11 | 3 thin, residual |
+| ref-04 head | 3 | [-90, 0] | 1.20 | helmet w / h | 19 / 19 | 19 / 18.6 | ok |
+| | | | | post w / length | 8 / 30 | 7.7 / 30.4 | ok |
+| ref-05 arm | 4 | [-90, 15] | 1.18 | width | 28 | 28 | ok |
+| | | | | red band Z (visible) | 31.9-42.5 | 32.0-42.4 | ok |
+| ref-06 fist | 1 | [-90, 15] | 1.20 | width | 22 | 21.8 | ok |
+| ref-07 thigh | 2 | [-90, 15] | 0.92 | width / tongue | 22.5 / 10 | 22.5 / 9.4 | ok (0.6) |
+| | | | | sleeve top / tongue top | 27.4 / 38.2 | 28.4 / 38.1 | ok |
+| ref-08 shin | 5 | [-90, 15] | 0.94 | cuff | 31.5 | 31.0 | ok |
+| | | | | block / knee guard | 28 / 22.5 | 25.3 / 24.6 | -2.7 / +2.1, residual |
+| | | | | post | 16.5 | 14.8 | -1.7, residual |
+| | | | | guard top / tongue length | 78.5 / 17.6 | 78 / 14 | tongue 3.6 short, residual |
+| ref-09 boot | 5 | [0, 0] | 1.00 | length / lug top / body | 41.5 / 33 / 26 | 40.5 / 32.8 / 25.2 | ok |
+| ref-10 wing | 3 | [-90, 30] | 1.145 | aspect (projected) | 2.74 | 2.74 | ok; blade overhangs inboard (left) far, outboard a little |
+| ref-11 front wheel | 1 | [0, 15] | 1.00 | diameter | 32 | 32.2 | ok |
+| ref-12 rear wheel | 1 | [0, 0] | 1.00 | diameter | 34 | 33.6 | ok |
+
+Residuals at the 5-round cap (contract kept, each becomes a Reference
+Conflict if the reviewer reads it): torso body 3 wide and halo 4 low; nose
+cone drawn 18 wide all the way (contract steps to 12 below Z 141) and wing
+3 thin; shin block 2.7 narrow, post 1.7 narrow, ankle tongue 3.6 short.
