@@ -90,6 +90,42 @@ def _check_animation(raw):
             raise ValueError("motion animation is static; choose a view that shows the declared action")
 
 
+# A rebuilt state may join a few quads by their other diagonal (issue #121),
+# which can move a handful of shaded pixels; a different pose or camera
+# changes far more than this.
+FRAME_PIXEL_DELTA = 32
+FRAME_PIXEL_SHARE = 0.002
+
+
+def _frames(raw):
+    import numpy as np
+    from PIL import Image
+    with Image.open(io.BytesIO(raw)) as im:
+        frames = []
+        for index in range(im.n_frames):
+            im.seek(index)
+            frames.append(np.asarray(im.convert("RGB"), dtype=np.int16))
+        return frames
+
+
+def _same_frames(raw, expected_raw):
+    """The bound GIF shows the rebuilt states: same frames, sizes and order,
+    each differing from the re-render in at most FRAME_PIXEL_SHARE of its
+    pixels by more than FRAME_PIXEL_DELTA in any channel."""
+    if raw == expected_raw:
+        return True
+    actual, expected = _frames(raw), _frames(expected_raw)
+    if len(actual) != len(expected):
+        return False
+    for a, b in zip(actual, expected):
+        if a.shape != b.shape:
+            return False
+        moved = (abs(a - b).max(axis=-1) > FRAME_PIXEL_DELTA).mean()
+        if moved > FRAME_PIXEL_SHARE:
+            return False
+    return True
+
+
 def _check_review(project, signature, evidence_raw):
     raw = read_file(project, REVIEW, 64 * 1024)
     review = json.loads(raw)
@@ -112,8 +148,8 @@ def _bound_state_evidence(project):
     raw = read_file(project, EVIDENCE, 64 * 1024)
     evidence = json.loads(raw)
     fields = {"schema_version", "kind", "sources", "assembly_entry", "states", "render", "animation_sha256", "motion_sha256"}
-    if raw != canonical(evidence) or set(evidence) != fields or evidence["schema_version"] != 2 or evidence["kind"] != "declared-cad-motion-animation":
-        raise ValueError("motion evidence must be schema 2; regenerate with motion_presentation.py from measure/motion.json")
+    if raw != canonical(evidence) or set(evidence) != fields or evidence["schema_version"] != 3 or evidence["kind"] != "declared-cad-motion-animation":
+        raise ValueError("motion evidence must be schema 3; regenerate with motion_presentation.py from measure/motion.json")
     if not evidence["sources"] or evidence["sources"] != sources(project):
         raise ValueError("motion animation has stale CAD sources")
     if evidence["assembly_entry"] not in evidence["sources"]:
@@ -182,7 +218,7 @@ def validate(project, signature_review):
             raise ValueError("motion states are not in declared condition/sample order")
         if row["sha256"] != hashlib.sha256(tool["state_bytes"](occurrences)).hexdigest():
             raise ValueError(f"motion state {row['condition_id']}[{row['sample_index']}] differs from the checked poses; regenerate the presentation")
-    if evidence["animation_sha256"] != hashlib.sha256(tool["animation_bytes"](expected, evidence["render"])).hexdigest():
+    if not _same_frames(animation, tool["animation_bytes"](expected, evidence["render"])):
         raise ValueError("motion animation differs from its reconciled geometry and camera")
     if sources(project) != evidence["sources"] or digest(project, "measure/motion.json") != evidence["motion_sha256"]:
         raise ValueError("motion inputs changed during reconciliation")
@@ -246,7 +282,7 @@ def generate(project, *, selections=None, frames=8, view="iso", size=600, deadli
         # The work is bounded by the state count and the deadline instead.
         data = tool["state_bytes"](occurrences)
         rows.append({**identity, "sha256": hashlib.sha256(data).hexdigest()})
-    evidence = {"schema_version": 2, "kind": "declared-cad-motion-animation", "sources": source_hashes,
+    evidence = {"schema_version": 3, "kind": "declared-cad-motion-animation", "sources": source_hashes,
                 "assembly_entry": entry, "states": rows, "render": render,
                 "animation_sha256": hashlib.sha256(animation).hexdigest(), "motion_sha256": motion_hash}
     _write(project, "snap/motion.gif", animation)

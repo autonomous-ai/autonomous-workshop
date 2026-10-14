@@ -32,7 +32,7 @@ condition is included. Do not author a second set of angle or translation
 functions for the animation.
 
 The tool writes `snap/motion.gif` with common framing and occurrence colors,
-plus schema-v2 `snap/MOTION-EVIDENCE.json`. It binds source, manifest, camera,
+plus schema-v3 `snap/MOTION-EVIDENCE.json`. It binds source, manifest, camera,
 condition/sample identities and states. Final validation reconstructs the
 states and movie, so hashing unrelated or incorrectly posed files cannot make
 them conform. Write all source helpers before rendering; source changes

@@ -20,6 +20,7 @@ if str(SCRIPTS) not in sys.path:
 import progresslib  # noqa: E402  (needs SCRIPTS on sys.path)
 
 TOLERANCE = 0.08
+QUANTUM_MM = 1e-3  # state vertex grid, far below TOLERANCE
 MAX_STATES = 48
 
 # One wall-clock bound for the states and frames of a single presentation.
@@ -213,29 +214,30 @@ def posed_occurrences(shape, condition, indices):
 
 
 def state_bytes(occurrences):
-    """Stable canonical triangle encoding for hashing a posed state.
+    """Canonical encoding of a posed state that its triangulation cannot change.
 
-    Binary-STL layout, held in memory only: nothing writes it to disk, because
-    STEP is the only geometry format this toolchain writes.
+    A rebuilt B-rep can differ in its last bits from one process to the next,
+    and the mesher can then join the same vertices with the other diagonal of
+    a few quads (issue #121). So a state is bound per occurrence, in leaf
+    order, by its triangle count, the sign of its signed volume (a reversed
+    winding flips it) and its vertex set on a 1 µm grid. Held in memory only:
+    nothing writes it to disk, because STEP is the only geometry format this
+    toolchain writes.
     """
-    triangles = np.concatenate([p[f] for p, f, _ in occurrences]).astype("<f4")
-    if not np.isfinite(triangles).all():
-        raise ValueError("motion triangles are not finite")
-    triangles[triangles == 0] = 0  # normalize negative zero
-    starts = np.lexsort((triangles[:, :, 2], triangles[:, :, 1], triangles[:, :, 0]), axis=1)[:, 0]
-    indices = (starts[:, None] + np.arange(3)) % 3
-    triangles = np.take_along_axis(triangles, indices[:, :, None], axis=1)
-    flat = triangles.reshape(-1, 9)
-    triangles = triangles[np.lexsort(tuple(flat[:, i] for i in range(8, -1, -1)))]
-    records = np.zeros(len(triangles), dtype=[("normal", "<f4", 3), ("points", "<f4", (3, 3)), ("attribute", "<u2")])
-    normals = np.cross(triangles[:, 1].astype(float) - triangles[:, 0],
-                       triangles[:, 2].astype(float) - triangles[:, 0])
-    lengths = np.linalg.norm(normals, axis=1)
-    valid = lengths > 0
-    normals[valid] /= lengths[valid, None]
-    records["normal"] = normals
-    records["points"] = triangles
-    return b"Workshop declared motion state v2".ljust(80, b"\0") + struct.pack("<I", len(records)) + records.tobytes()
+    records = [b"Workshop declared motion state v3".ljust(80, b"\0"), struct.pack("<I", len(occurrences))]
+    for points, faces, _ in occurrences:
+        points = np.asarray(points, dtype=float)
+        faces = np.asarray(faces, dtype=np.int64)
+        used = points[np.unique(faces)]
+        if not np.isfinite(used).all():
+            raise ValueError("motion triangles are not finite")
+        grid = np.unique(np.round(used / QUANTUM_MM).astype("<i8"), axis=0)
+        corners = points[faces]
+        volume = np.einsum("ij,ij->", corners[:, 0] - used.mean(axis=0),
+                           np.cross(corners[:, 1] - corners[:, 0], corners[:, 2] - corners[:, 0]))
+        records.append(struct.pack("<IbI", len(faces), int(np.sign(volume)), len(grid)))
+        records.append(grid.tobytes())
+    return b"".join(records)
 
 
 def validate_render(settings):

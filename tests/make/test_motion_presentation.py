@@ -115,13 +115,23 @@ def test_every_coupled_condition_is_covered(tmp_path):
         HELPER["validate"](tmp_path, signature)
 
 
-def test_legacy_hash_only_evidence_is_not_promoted(tmp_path):
+@pytest.mark.parametrize("version", [1, 2])
+def test_legacy_evidence_is_not_promoted(tmp_path, version):
+    # Schema 2 bound every triangle, so its hashes cannot be rechecked (issue #121).
     signature = fixture(tmp_path)
     evidence = json.loads((tmp_path / HELPER["EVIDENCE"]).read_bytes())
-    evidence["schema_version"] = 1
+    evidence["schema_version"] = version
     rebind_test_evidence(tmp_path, evidence)
-    with pytest.raises(ValueError, match="schema 2"):
+    with pytest.raises(ValueError, match="schema 3"):
         HELPER["validate"](tmp_path, signature)
+
+
+def test_a_fresh_process_reconciles_the_states(tmp_path):
+    signature = fixture(tmp_path)
+    code = ("import runpy, sys, json; h = runpy.run_path(sys.argv[1]); "
+            "h['validate'](__import__('pathlib').Path(sys.argv[2]), json.loads(sys.argv[3]))")
+    subprocess.run([sys.executable, "-c", code, str(TOOLS / "motion_presentation.py"), str(tmp_path),
+                    json.dumps(signature)], check=True, capture_output=True)
 
 
 def test_no_mesh_is_written_to_disk(tmp_path):
@@ -213,11 +223,44 @@ def test_invalid_samples_are_rejected(indices):
 
 def test_state_encoding_preserves_winding_and_ignores_triangle_order():
     points = np.array([[0,0,0], [1,0,0], [0,1,0], [0,0,1]], dtype=float)
-    faces = np.array([[0,1,2], [0,3,1]])
+    faces = np.array([[0,2,1], [0,1,3], [0,3,2], [1,2,3]])
     first = STATES["state_bytes"]([(points, faces, (100,100,100))])
     shuffled = STATES["state_bytes"]([(points, np.roll(faces[::-1], 1, axis=1), (100,100,100))])
     reversed_winding = STATES["state_bytes"]([(points, faces[:, ::-1], (100,100,100))])
     assert first == shuffled and first != reversed_winding
+
+
+def test_state_encoding_ignores_the_diagonal_a_rebuilt_face_takes():
+    # Issue #121: a rebuilt B-rep joined 4 of 48,628 triangles by the other
+    # diagonal in another process, with every vertex identical.
+    points = np.array([[0,0,0], [1,0,0], [1,1,0], [0,1,0], [.5,.5,-1]], dtype=float)
+    sides = [[0,4,1], [1,4,2], [2,4,3], [3,4,0]]
+    one = STATES["state_bytes"]([(points, np.array(sides + [[0,1,2], [0,2,3]]), None)])
+    other = STATES["state_bytes"]([(points, np.array(sides + [[0,1,3], [1,2,3]]), None)])
+    moved = points.copy(); moved[4, 2] -= .002
+    assert one == other
+    assert one != STATES["state_bytes"]([(moved, np.array(sides + [[0,1,2], [0,2,3]]), None)])
+
+
+def test_state_encoding_keeps_each_occurrence_apart():
+    a = (np.array([[0,0,0], [1,0,0], [0,1,0], [0,0,1]], dtype=float), np.array([[0,2,1], [0,1,3], [0,3,2], [1,2,3]]), None)
+    b = (a[0] + 5, a[1], None)
+    assert STATES["state_bytes"]([a, b]) != STATES["state_bytes"]([b, a])
+
+
+def test_rerendered_frames_tolerate_a_few_pixels_only():
+    def gif(frames):
+        stream = io.BytesIO()
+        images = [Image.fromarray(f) for f in frames]
+        images[0].save(stream, format="GIF", save_all=True, append_images=images[1:], duration=120, loop=0)
+        return stream.getvalue()
+    base = [np.full((256, 256, 3), (i * 25, 100, 200), dtype=np.uint8) for i in range(8)]
+    speck = [f.copy() for f in base]; speck[3][10:13, 10:13] = 0
+    smear = [f.copy() for f in base]; smear[3][:40] = 0
+    assert HELPER["_same_frames"](gif(base), gif(speck))
+    assert not HELPER["_same_frames"](gif(base), gif(smear))
+    assert not HELPER["_same_frames"](gif(base), gif(base[:7] + base[:1]))
+    assert not HELPER["_same_frames"](gif(base), gif(base[:7]))
 
 
 def test_fixed_framing_preserves_translation():
@@ -245,7 +288,7 @@ def test_cli_constructs_states_without_an_extra_generator(tmp_path):
     result = subprocess.run([sys.executable, str(TOOLS / "motion_presentation.py"), str(tmp_path), "--size", "256", "--samples", "turn=0,1,2,3,4,5,6,8"], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     evidence = json.loads((tmp_path / HELPER["EVIDENCE"]).read_bytes())
-    assert evidence["schema_version"] == 2 and len(evidence["states"]) == 8
+    assert evidence["schema_version"] == 3 and len(evidence["states"]) == 8
     assert evidence["states"][-1]["sample_index"] == 8
 
 
