@@ -54,7 +54,7 @@
       "final_status": "active",
       "brief": null,
       "finding_ids": [],
-      "notes": "v2 contract (v3 images + guide-01-transformation.png), owner said start 2026-10-14 (images treated as approved; blade kept as the contract's L). Launched 10:09Z from fresh worktree racer-v02-fed0c446 at origin/main fed0c446 with --agent claude --model claude-opus-5-5 --effort medium --guide --check-motion true --max-tokens 100000000; receipt References: 12, Guides: 1 (matches contract). Contract copy build-a-toy/r00/v02/CONTRACT.md; log build-a-toy/r00/v02/wish.log. 11:00Z waiting: need on shin print stance (guard island, block-top overhang), 42.0M tokens; fixed at root as amend-e (invisible), folded in-run amendment 1; 11:06Z resumed with --amend-contract (Owner Contract Amendment 1 applied). 12:45Z stopped on budget at 100.06M/100M with all 11 Components locked (v01's first budget stop had 9/10), 73 component rounds, 8 repeated print defects, 3 contract amendments, 11 reference conflicts, no open need: budget-progressing, resumed once with --max-tokens 200000000.",
+      "notes": "v2 contract (v3 images + guide-01-transformation.png), owner said start 2026-10-14 (images treated as approved; blade kept as the contract's L). Launched 10:09Z from fresh worktree racer-v02-fed0c446 at origin/main fed0c446 with --agent claude --model claude-opus-5-5 --effort medium --guide --check-motion true --max-tokens 100000000; receipt References: 12, Guides: 1 (matches contract). Contract copy build-a-toy/r00/v02/CONTRACT.md; log build-a-toy/r00/v02/wish.log. 11:00Z waiting: need on shin print stance (guard island, block-top overhang), 42.0M tokens; fixed at root as amend-e (invisible), folded in-run amendment 1; 11:06Z resumed with --amend-contract (Owner Contract Amendment 1 applied). 12:45Z stopped on budget at 100.06M/100M with all 11 Components locked (v01's first budget stop had 9/10), 73 component rounds, 8 repeated print defects, 3 contract amendments, 11 reference conflicts, no open need: budget-progressing, resumed once with --max-tokens 200000000. 2026-10-14T15:42Z stopped on usage-limit (Claude Code weekly limit) at 126.8M/200M; 2026-10-15T03:29Z resumed on owner's word (budget kept).",
       "stops": [
         {
           "at": "2026-10-14T12:45Z",
@@ -64,6 +64,11 @@
           "budget_raised": true,
           "limit_before": 100000000,
           "limit_after": 200000000
+        },
+        {
+          "at": "2026-10-14T15:42Z",
+          "class": "usage-limit",
+          "tokens": 126759255
         }
       ]
     }
