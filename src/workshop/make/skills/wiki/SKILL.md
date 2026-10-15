@@ -25,10 +25,10 @@ $W lint                              # must pass before a wiki edit is done
 materialized read-only and bound into the run's input manifest like every other
 skill, so `new`, a page edit and a `synonyms.txt` edit are all refused there —
 and a run that tampered with them would fail its resume. Search, show and list
-freely; step 5 below does not apply in a run. Report a rule the wiki lacked,
-with its evidence, in the final response; the host's Make lessons loop carries
-gate failures into the design vault, and a Workshop builder writes durable
-rules back into this tree (or upstream). Paths written `skills/<name>/...` in
+freely; step 5 below does not apply in a run. Append a rule the wiki lacked,
+with its evidence, to `LESSON-PROPOSALS.md` at the run root; the host's Make
+lessons loop carries gate failures into the design vault, and the Workshop
+build loop writes durable rules back to this wiki upstream. Paths written `skills/<name>/...` in
 these pages name a sibling Make skill: read them under
 `"$(workshop skills path)/<name>/"`. Upstream's `step-to-source` and
 `stl-to-step` are not Workshop skills: a `reverse-engineering/` page that

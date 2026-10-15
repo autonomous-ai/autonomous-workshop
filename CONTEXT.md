@@ -74,6 +74,14 @@ assembled toy. Make builds toward it, and the Component Reviewer judges the
 build against it. Only an approved, reconciled image becomes one.
 _Avoid_: Concept Image, render, picture
 
+**Guide Image**:
+An image sealed in a Design Contract that explains the design — the
+transformation step by step, or a part from more sides — rather than showing
+one subject to build toward. The Workshop Manager and every Component Worker
+read it; nothing compares it with the model, and the Component Reviewer never
+sees it. Where it disagrees with the Design Contract, the contract wins.
+_Avoid_: Step sheet reference, extra reference, guide reference
+
 **Signature Motion**:
 The one movement a toy's play centres on, made by parts in contact or sharing
 space over time — a crank that flaps wings, a pull that walks legs. A toy whose
@@ -569,6 +577,18 @@ _Avoid_: Warning, hint, suggestion
 An evidence row banked on the Design Vault by a finished Make attempt,
 recording how a toy failed or passed so later runs can read it before
 designing.
+
+**Lesson Proposal**:
+A rule a run proposes, with its evidence, for how to model, print or move a
+part. A run cannot write the Make wiki, so it proposes; the build loop decides.
+It names no toy or run.
+_Avoid_: Lesson, learning
+
+**Wiki Rule**:
+A rule written into the Make wiki from a Lesson Proposal or the build loop's
+own findings. Later runs consult it and it never waives a gate; a rule that
+changes code, a gate or a skill's protocol is a workflow change, not a Wiki
+Rule.
 
 ### Daydreaming
 

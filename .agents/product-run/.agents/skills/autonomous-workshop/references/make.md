@@ -259,8 +259,9 @@ are separate. Frozen older runs retain their materialized rules and tools.
    `part_<id>.step.py` path it writes; the shared files it builds on,
    including `features/print_details.py`; its
    sealed `geometry:<id>` reference and declared camera; only that
-   Component's Design Contract rows; the nozzle; and the shape-repair limit
-   (5). The worker writes the first draft, runs the round above until build
+   Component's Design Contract rows; every Guide Image the contract seals
+   (ADR 0089), by path with what it `shows`; the nozzle; and the shape-repair
+   limit (5). The worker writes the first draft, runs the round above until build
    and print pass, then reports in 10 lines or fewer and waits:
    `make_round` refuses to change a passing round's geometry before its
    review is recorded (ADR 0081). The worker may view its
@@ -508,7 +509,11 @@ are separate. Frozen older runs retain their materialized rules and tools.
 
    `review.json` is `{"amendment": M, "packet_sha256": "<hash>",
    "reviewer": "<id>", "contradiction": ..., "smallest": ...,
-   "visible_in": [...], "references_checked": [...], "reason": "..."}`. On
+   "visible_in": [...], "references_checked": [...], "reason": "..."}`, plus
+   the reviewer's `"guides_wrong": [...]` unchanged when the packet lists
+   `guides` (ADR 0089): Guide Image panels the change would draw wrongly.
+   They never refuse the amendment; the run reports them so the owner
+   redraws those panels. On
    Claude Code `reviewer` is the agent id the runtime returned when you
    spawned it (17 lowercase hex characters), and the host checks that this
    agent started as a `contract-reviewer` and read every sealed reference.
@@ -689,6 +694,21 @@ are separate. Frozen older runs retain their materialized rules and tools.
    writes `measure/component-acceptance.json` beside its report, and the
    finalizer copies every component acceptance from it into `product.json`.
    Do not author `component_acceptances` yourself.
+
+   **Guide Images (ADR 0089).** A schema 5 Design Contract may seal Guide
+   Images (`wish-references/guide-NN-<slug>`, its `guides[]`): a
+   transformation step sheet, extra views. Open each before you write the
+   shared files and the joints, and use it to plan how the Components meet
+   and move. Nothing compares a Guide Image with the model, and where it
+   disagrees with the contract, the contract wins. Before the final
+   verifier, write `<cad-project>/guide-steps.json`:
+   `{"guides": [{"file": "guide-01-x.png", "steps": [{"step": "<a step
+   exactly as the contract's guides[] lists it>", "checked": "<the motion
+   state or pose you checked it in>"} or {"step": ..., "skipped": "<why>"}],
+   "conflicts": [{"guide": "<what the guide shows>", "contract": "<what the
+   contract requires>"}]}]}`. With `--check-motion true` the verifier fails
+   until every listed step has one entry; it counts them and never judges
+   them. The run reports the steps and the conflicts.
 9. Write product metadata and invoke the Make finalizer immediately.
 
 Complete the blind signature review and, if needed, up to three focused repairs before

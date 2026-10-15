@@ -2649,3 +2649,93 @@ class VaultCommandTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def _guide_contract(tmp):
+    """A schema 5 contract with one reference and one Guide Image (ADR 0089),
+    and both images under the names it lists."""
+
+    from PIL import Image
+
+    block = _contract_block(
+        schema_version=5,
+        references=[{"file": "ref-01-antisol.png", "shows": "assembly", "camera": [-90, 15]}],
+        interfaces=[],
+        guides=[{"file": "guide-01-steps.png", "shows": "How the discs fold.", "steps": ["Fold."]}],
+    )
+    contract_path = Path(tmp) / "CONTRACT.md"
+    contract_path.write_text(_contract_text(block), encoding="utf-8")
+    guide = Path(tmp) / "guide-01-steps.png"
+    Image.new("RGB", (64, 32), "blue").save(guide)
+    return contract_path, _contract_image(tmp), guide
+
+
+class WishGuideImageCommandTest(unittest.TestCase):
+    """``workshop wish --contract --guide`` (ADR 0089)."""
+
+    def run_wish(self, *arguments):
+        stdout, stderr = StringIO(), StringIO()
+        with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(stdout), redirect_stderr(stderr):
+            result = main(("wish", *arguments))
+        return result, start, stdout.getvalue(), stderr.getvalue()
+
+    def test_guides_seal_after_the_references_and_are_announced_apart(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            contract, image, guide = _guide_contract(tmp)
+            result, start, stdout, _ = self.run_wish(
+                "--contract", str(contract), "--ref", str(image), "--guide", str(guide)
+            )
+            self.assertEqual(result, 0)
+            sealed = start.call_args.args[0]
+            self.assertEqual([item.name for item in sealed.references],
+                             ["ref-01-antisol.png", "guide-01-steps.png"])
+            self.assertEqual(sealed.context["design_contract"]["guides"][0]["steps"], ["Fold."])
+            self.assertIn("1 reference(s), 1 guide(s)", stdout)
+            self.assertIn("References: 1 image(s)", stdout)
+            self.assertIn("Guides: 1 image(s)", stdout)
+
+    def test_a_missing_or_misnamed_guide_refuses_and_starts_no_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            contract, image, guide = _guide_contract(tmp)
+            result, start, _, stderr = self.run_wish("--contract", str(contract), "--ref", str(image))
+            self.assertEqual(result, 2)
+            start.assert_not_called()
+            self.assertIn("1 guide image(s) but 0 were given", stderr)
+            other = Path(tmp) / "sheet.png"
+            other.write_bytes(guide.read_bytes() + b"")
+            guide.rename(other)
+            result, start, _, stderr = self.run_wish(
+                "--contract", str(contract), "--ref", str(image), "--guide", str(other)
+            )
+            self.assertEqual(result, 2)
+            self.assertIn("guide-01-sheet.png, not guide-01-steps.png", stderr)
+
+    def test_a_guide_needs_a_contract_and_a_guide_is_never_a_reference(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            contract, image, guide = _guide_contract(tmp)
+            result, start, _, stderr = self.run_wish("A toy", "--guide", str(guide))
+            self.assertEqual(result, 2)
+            start.assert_not_called()
+            self.assertIn("--guide attaches a Design Contract's Guide Images", stderr)
+            result, _, _, stderr = self.run_wish(
+                "--contract", str(contract), "--ref", str(image), "--ref", str(guide)
+            )
+            self.assertEqual(result, 2)
+            self.assertIn("lists 1 reference image(s) but 2 were given", stderr)
+
+    def test_the_receipt_prints_the_guide_account(self):
+        from cli.main import _print_native_receipt
+
+        receipt = {**native_receipt(status="complete", stage="release"), "guides": [{
+            "file": "guide-01-steps.png", "check_motion": True,
+            "steps": [{"step": "Fold.", "checked": "state folded"}],
+            "conflicts": [{"guide": "four discs", "contract": "sixteen discs"}],
+        }]}
+        stdout = StringIO()
+        with redirect_stdout(stdout):
+            _print_native_receipt(receipt, verb="Run")
+        self.assertIn("Guide step: guide-01-steps.png Fold. — checked: state folded", stdout.getvalue())
+        self.assertIn("Guide Conflict: guide-01-steps.png shows four discs; the Design Contract "
+                      "requires sixteen discs", stdout.getvalue())

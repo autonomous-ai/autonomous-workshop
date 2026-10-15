@@ -2851,6 +2851,90 @@ def _made_reference_conflicts(product: Mapping[str, Any]) -> list[dict[str, Any]
     return conflicts
 
 
+_GUIDE_FIELDS = frozenset({"file", "check_motion", "steps", "conflicts"})
+_MAX_GUIDE_NOTE = 500
+
+
+def _frozen_check_motion(run_root: Path) -> bool:
+    """Whether the run's frozen Make options turned motion checks on."""
+
+    path = Path(run_root) / "MAKE-OPTIONS.json"
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > 1024:
+        return False
+    try:
+        payload = json.loads(path.read_bytes())
+    except (OSError, ValueError):
+        return False
+    return isinstance(payload, dict) and payload.get("check_motion") is True
+
+
+def _made_guides(
+    product: Mapping[str, Any],
+    contract: Optional[Mapping[str, Any]],
+    check_motion: bool,
+) -> list[dict[str, Any]]:
+    """The Workshop Manager's account of each Guide Image (ADR 0089), from
+    sealed product metadata the Make finalizer copied from the final
+    verifier's hash-bound record.
+
+    Every Guide Image the contract seals is listed once. With motion checks
+    on, every step its contract entry names has one entry, the pose it was
+    checked in or why it was skipped. The host counts; it never judges.
+    """
+
+    sealed = [
+        item for item in (contract or {}).get("guides") or ()
+        if isinstance(item, Mapping) and isinstance(item.get("file"), str)
+    ]
+    raw = product.get("guides", ())
+    if not sealed:
+        if raw:
+            raise ContractError("Made guides name Guide Images the contract does not seal")
+        return []
+    if isinstance(raw, (str, bytes)) or not isinstance(raw, Sequence) or len(raw) != len(sealed):
+        raise ContractError("Made guides must account for every sealed Guide Image")
+    guides: list[dict[str, Any]] = []
+    for entry, item in zip(sealed, raw):
+        if (
+            not isinstance(item, Mapping) or set(item) != _GUIDE_FIELDS
+            or item["file"] != entry["file"]
+            or type(item["check_motion"]) is not bool
+            or item["check_motion"] is not check_motion
+            or not isinstance(item["steps"], Sequence) or isinstance(item["steps"], (str, bytes))
+            or not isinstance(item["conflicts"], Sequence) or isinstance(item["conflicts"], (str, bytes))
+            or len(item["conflicts"]) > 24
+        ):
+            raise ContractError("Made guide %s is invalid" % entry["file"])
+        listed = [str(step) for step in entry.get("steps") or ()]
+        seen: list[str] = []
+        for step in item["steps"]:
+            if (
+                not isinstance(step, Mapping)
+                or set(step) not in ({"step", "checked"}, {"step", "skipped"})
+                or step["step"] not in listed or step["step"] in seen
+                or not isinstance(step.get("checked", step.get("skipped")), str)
+                or not 1 <= len(step.get("checked", step.get("skipped")).strip()) <= _MAX_GUIDE_NOTE
+            ):
+                raise ContractError("Made guide %s has an invalid step entry" % entry["file"])
+            seen.append(step["step"])
+        if check_motion and set(seen) != set(listed):
+            raise ContractError(
+                "Made guide %s leaves step(s) unaccounted for under motion checks: %s"
+                % (entry["file"], "; ".join(step for step in listed if step not in seen))
+            )
+        for conflict in item["conflicts"]:
+            if (
+                not isinstance(conflict, Mapping) or set(conflict) != {"guide", "contract"}
+                or any(
+                    not isinstance(conflict[key], str) or not 1 <= len(conflict[key].strip()) <= 1000
+                    for key in ("guide", "contract")
+                )
+            ):
+                raise ContractError("Made guide %s has an invalid conflict" % entry["file"])
+        guides.append({key: item[key] for key in sorted(_GUIDE_FIELDS)})
+    return guides
+
+
 _INTERFACE_PROOFS = {
     "static": "shared-helper-samples",
     "separable": "keep-out-envelope",
@@ -2914,6 +2998,13 @@ def _reference_conflict_history(host_state_root: Path) -> list[dict[str, Any]]:
     receipt (ADR 0084)."""
 
     return _latest_make_check(host_state_root, "reference_conflicts")
+
+
+def _guide_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """The Guide Image account of the current Make, from the host's own
+    receipt (ADR 0089)."""
+
+    return _latest_make_check(host_state_root, "guides")
 
 
 def _contract_amendment_history(host_state_root: Path) -> list[dict[str, Any]]:
@@ -3120,13 +3211,30 @@ def _sealed_contract_inputs(
     document = _strict_json_bytes(content, label="materialized Wish")
     context = document.get("context") if isinstance(document, dict) else None
     contract = context.get("design_contract") if isinstance(context, dict) else None
+    # A Guide Image (ADR 0089) is sealed beside the references but never
+    # checked as one; _sealed_guide_inputs returns it.
     references = {
         item["name"]: (Path(run_root) / "wish-references" / item["name"], item["sha256"])
         for item in document.get("references") or ()
         if isinstance(item, dict) and isinstance(item.get("name"), str)
-        and isinstance(item.get("sha256"), str)
+        and isinstance(item.get("sha256"), str) and not item["name"].startswith("guide-")
     }
     return (contract if isinstance(contract, dict) else None), references
+
+
+def _sealed_guide_inputs(run_root: Path, wish_sha256: str) -> dict[str, tuple[Path, str]]:
+    """Each sealed Guide Image file -> its run path and sealed sha256."""
+
+    content = (Path(run_root) / "WISH.json").read_bytes()
+    if _sha256(content) != wish_sha256:
+        raise StateConflict("materialized Wish differs from the run binding")
+    document = _strict_json_bytes(content, label="materialized Wish")
+    return {
+        item["name"]: (Path(run_root) / "wish-references" / item["name"], item["sha256"])
+        for item in (document.get("references") or () if isinstance(document, dict) else ())
+        if isinstance(item, dict) and isinstance(item.get("name"), str)
+        and isinstance(item.get("sha256"), str) and item["name"].startswith("guide-")
+    }
 
 
 def _run_contract_amendments(paths: NativeRunPaths, wish_sha256: str) -> list[dict[str, Any]]:
@@ -7970,6 +8078,7 @@ def _evaluate_make_stage(
             contract=sealed_contract,
             wish_sha256=checkpoint.wish_sha256,
             references=sealed_references,
+            guides=_sealed_guide_inputs(run.run_root, checkpoint.wish_sha256),
             blocked_reports=blocked_reports,
             # Issue #100: the owner's amendments, as the host recorded them.
             owner_amendments=_verified_owner_contract_amendments(run),
@@ -8005,6 +8114,11 @@ def _evaluate_make_stage(
         reference_conflicts = _made_reference_conflicts(made.product)
         if reference_conflicts:
             product_checks["reference_conflicts"] = reference_conflicts
+        guides = _made_guides(
+            made.product, sealed_contract, _frozen_check_motion(run.run_root)
+        )
+        if guides:
+            product_checks["guides"] = guides
         if blocked_reports:
             product_checks["blocked_reports"] = blocked_reports
         if contract_amendments:
@@ -10796,6 +10910,7 @@ def _native_receipt(
     reference_conflicts = (
         _reference_conflict_history(paths.host_state) if paths is not None else []
     )
+    guides = _guide_history(paths.host_state) if paths is not None else []
     contract_amendments = (
         _contract_amendment_history(paths.host_state) if paths is not None else []
     )
@@ -11067,6 +11182,9 @@ def _native_receipt(
             }
         ),
     }
+    if guides:
+        # ADR 0089: the Guide Image account, only in a run that sealed one.
+        receipt["guides"] = guides
     if checkpoint.effort is not None:
         receipt["workflow"] = checkpoint.effort
     receipt["agent"] = checkpoint.manager_id

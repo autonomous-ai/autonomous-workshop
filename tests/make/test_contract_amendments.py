@@ -720,3 +720,89 @@ class ContractAmendmentTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+GUIDE = "guide-01-steps.png"
+GUIDE_CONTRACT = {
+    **CONTRACT,
+    "schema_version": 5,
+    "guides": [{"file": GUIDE, "shows": "The transformation, step by step."}],
+}
+
+
+class GuideImageAmendmentTest(unittest.TestCase):
+    """ADR 0089: an amendment packet shows the Guide Images; the reviewer's
+    ``guides_wrong`` never refuses the amendment, and the host replays it."""
+
+    propose = ContractAmendmentTest.propose
+    review = ContractAmendmentTest.review
+    write = ContractAmendmentTest.write
+
+    def setUp(self):
+        self.module = load_module()
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.run_root = Path(temporary.name).resolve()
+        (self.run_root / "wish-references").mkdir()
+        sealed = []
+        for index, name in enumerate((*REFERENCES, GUIDE)):
+            content = b"image %d" % index
+            (self.run_root / "wish-references" / name).write_bytes(content)
+            sealed.append({"name": name, "sha256": hashlib.sha256(content).hexdigest()})
+        wish = json.dumps({"context": {"design_contract": GUIDE_CONTRACT}, "references": sealed}).encode()
+        (self.run_root / "WISH.json").write_bytes(wish)
+        self.wish_sha256 = hashlib.sha256(wish).hexdigest()
+        paths = {
+            item["name"]: (self.run_root / "wish-references" / item["name"], item["sha256"])
+            for item in sealed
+        }
+        self.references = {name: value for name, value in paths.items() if name != GUIDE}
+        self.guides = {GUIDE: paths[GUIDE]}
+        self.project = self.run_root / "artifacts/make/r0001/product/cad"
+        self.project.mkdir(parents=True)
+        for role in ("spine-housing", "wing"):
+            (self.project / ("part_%s.step.py" % role)).write_text("")
+        previous = os.environ.pop(self.module.REVIEWER_RUNTIME_ENV, None)
+        if previous is not None:
+            self.addCleanup(os.environ.__setitem__, self.module.REVIEWER_RUNTIME_ENV, previous)
+
+    def verify(self, **options):
+        return verify_contract_amendments(
+            self.project, contract=GUIDE_CONTRACT, wish_sha256=self.wish_sha256,
+            references=self.references, blocked_reports=[], **options,
+        )
+
+    def test_the_packet_lists_the_guides_and_the_review_names_wrong_panels(self):
+        event = self.propose()
+        packet = json.loads(Path(event["packet"]).read_bytes())
+        self.assertEqual([item["file"] for item in packet["references"]], list(REFERENCES))
+        self.assertEqual([item["file"] for item in packet["guides"]], [GUIDE])
+        wrong = [{"file": GUIDE, "where": "panel 4 still draws the old print stance"}]
+        item = self.review(guides_wrong=wrong)
+        self.assertEqual(item["status"], "applied")
+        records = self.verify(guides=self.guides)
+        self.assertEqual(records[0]["review"]["verdict"]["guides_wrong"], wrong)
+
+    def test_a_review_without_guides_wrong_records_an_empty_list(self):
+        self.propose()
+        self.review()
+        records = self.verify(guides=self.guides)
+        self.assertEqual(records[0]["review"]["verdict"]["guides_wrong"], [])
+
+    def test_a_guide_is_never_a_reference_to_check_or_a_visible_change(self):
+        self.propose()
+        with self.assertRaisesRegex(ValueError, "lists sealed reference files"):
+            self.review(visible_in=[GUIDE])
+        with self.assertRaisesRegex(ValueError, "guides_wrong lists"):
+            self.review(guides_wrong=[{"file": "guide-02-other.png", "where": "x"}])
+
+    def test_the_host_refuses_a_packet_that_hides_the_guides(self):
+        self.propose()
+        self.review()
+        with self.assertRaisesRegex(ContractError, "every sealed Guide Image"):
+            self.verify(guides={})
+        with self.assertRaisesRegex(ContractError, "every sealed reference"):
+            verify_contract_amendments(
+                self.project, contract=GUIDE_CONTRACT, wish_sha256=self.wish_sha256,
+                references={**self.references, **self.guides}, blocked_reports=[],
+            )

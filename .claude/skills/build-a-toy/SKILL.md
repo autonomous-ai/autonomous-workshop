@@ -24,6 +24,7 @@ Every run this skill starts, whether `wish` or `fix`, uses:
 | `--turn-minutes` | `360` | The maximum. The clock is not the limit |
 | `--max-tokens` | `100000000` | **This is the real backstop.** With 360-minute turns and unlimited resume, a run stops when its tokens run out |
 | `--ref` | every contract reference, every run | The assembly round scores every sealed reference that no current component round already scored (ADR 0072). A description of an image is no substitute for the image |
+| `--guide` | every contract Guide Image (`guides[]`, schema 5), every run, after the `--ref` images | Guide Images explain the design to the Manager and the workers and are never compared (ADR 0089); the contract refuses a run that leaves one out |
 | `--check-motion` | `true` when the contract has any moving part, on **every** `wish`, `fix` and `resume` | `workshop resume` reselects this option and defaults it to `false`. Broken God v01 was resumed without it, and its final verification skipped the motion check and shipped with its wings unverified |
 | `--effort`, `--model` | only if the person passed them | Both are frozen for the run and cannot change on resume, so never raise them yourself |
 
@@ -61,12 +62,14 @@ Build the command:
 ```bash
 uv run workshop wish --contract build-a-toy/r00/CONTRACT.md --inventor <inventor> \
   --ref <contract-dir>/ref-01-<slug>.png --ref ... \
+  [--guide <contract-dir>/guide-01-<slug>.png --guide ...] \
   --no-publish --turn-minutes 360 --max-tokens 100000000 [--check-motion true]
 ```
 
 **Show the person the exact command and wait for explicit approval.** Then run
 it. When the receipt prints, check that its `References:` line reports as
-many images as the contract lists. If the counts differ, stop: the likeness
+many images as the contract lists, and its `Guides:` line as many Guide
+Images. If the counts differ, stop: the likeness
 gate will score the wrong set.
 
 Done when: the run is started, the receipt's reference count matches, and
@@ -176,6 +179,7 @@ archive, and it stays within `fix`'s 128 MiB source limit.
 uv run workshop fix "<previous-run-workspace>" --prompt-file build-a-toy/r<NN>/brief.md \
   --contract <contract-dir>/CONTRACT.md \
   --ref <contract-dir>/ref-01-<slug>.png --ref ... \
+  [--guide <contract-dir>/guide-01-<slug>.png --guide ...] \
   --no-publish --turn-minutes 360 --max-tokens 100000000 [--check-motion true]
 ```
 
@@ -197,6 +201,48 @@ actually went live. Before concluding anything, read the effect ledger in
 `<workshop-home>/state/<wish-id>/factory-effects.sqlite3` and fetch the live
 page. Rows marked `factory-publish|unknown` mean the publication went out, so
 do not publish again.
+
+## Step 8 - Write back what the build taught
+
+Every stop of the whole build ends here, whether it conformed, stopped to
+ask or ran out of budget. Nobody reviews the result first. Its sources are:
+
+- each attempt's **Lesson Proposals**, the `LESSON-PROPOSALS.md` at its run
+  workspace root (`<workshop-home>/runs/<wish-id>/workspace/`), copied
+  beside that attempt's `evidence.json` when the attempt stopped;
+- what the diagnoses found: a repeated print defect and the fix that ended
+  it, a gate that passed a defect, a kernel workaround.
+
+Keep only **Wiki Rules**: knowledge of how to model, print or move a part.
+A lesson about designing the toy instead (how a contract row read two ways,
+what a reference image misled, the judgment behind a Contract Contradiction
+fix) goes to `design-a-toy`'s [LESSONS.md](../design-a-toy/LESSONS.md) under
+that skill's rules, committed with the loop's other harness changes.
+Ask of each one: if it were deleted, would a skill still run its steps and
+pass its gates correctly? If not, it is a workflow change (code, a gate, a
+skill's protocol). Fix that through the harness-defect path instead.
+
+Write the rules to the upstream `autonomous-product-to-cad` wiki through
+GitHub, never in the owner's local checkout of it:
+
+```bash
+S=.claude/skills/build-a-toy/scripts/wiki_writeback.sh
+$S clone <scratch>/upstream-wiki
+# search first; extend a page before adding one (`wiki new` refuses a taken slug)
+cd <scratch>/upstream-wiki && python3 skills/wiki/scripts/wiki search <words>
+# ... edit pages under skills/wiki/, `wiki lint`, commit ...
+$S push <scratch>/upstream-wiki
+```
+
+Follow that wiki's own `SKILL.md`. Each rule:
+- carries `sources: "experience: <the failure class that taught it>"`;
+- states the number or the assert;
+- names no toy, run, Component Worker or other Workshop-only term.
+
+`push` refuses commits outside `skills/wiki/` and stops on a rebase
+conflict. Merge that by hand, keeping both rules. Runs read the rules after
+the owner's next `resync-vendored-skills`. When nothing new was learned,
+push nothing and say so in the report.
 
 ## Unattended mode
 
@@ -248,7 +294,8 @@ person is listed under "When the loop stops and asks".
      rounds, for what a worker reported blocked and what a repeated print
      defect is made of.
 
-   Write the evidence to `build-a-toy/r00/attempt<N>-<id>/evidence.json`,
+   Write the evidence to `build-a-toy/r00/attempt<N>-<id>/evidence.json`
+   (with the run's `LESSON-PROPOSALS.md`, if any, beside it for Step 8),
    classify it with `ledger.py classify` on that file, and record one `stops`
    entry with the class, the evidence and the progress.
 4. **Fold in-run amendments** into the contract, whatever the class (below).
@@ -350,6 +397,13 @@ outer-loop amendment changed it since) is folded by hand, leaving `folded:
 false` until it is; `ledger.py next` lists it as pending. A refused
 in-run amendment is a `need` like any other and is diagnosed by class.
 
+An applied amendment may also name Guide Image panels it makes wrong
+(`guides_wrong` in its review, printed as "Guide Image to redraw", ADR 0089).
+They never stopped the run. Before the next attempt, redraw each named panel
+with `design-a-toy` from the folded contract, and show the owner the changed
+Guide Image with the next images they approve; the run is not relaunched for
+it alone.
+
 ### Approval: only visible changes wait for the owner
 
 A change is **visible** when a reference image would have to be redrawn
@@ -443,7 +497,7 @@ Done when, for each pass, the ledger shows:
   attempt's `launch` or `ask-owner` with its reasons.
 
 The loop ends when an attempt conforms and is published by Step 7 (`loop.state:
-done`), or when the owner stops it (`stopped`).
+done`), or when the owner stops it (`stopped`). Either way it runs Step 8.
 
 ## The report
 
@@ -452,4 +506,5 @@ out of budget, with:
 
 - each round's wish id, toy directory, and finding ids;
 - which findings were **unverified** rather than failed;
-- what was published, if anything, and how it was confirmed.
+- what was published, if anything, and how it was confirmed;
+- the Wiki Rules Step 8 pushed upstream, with the commit, or "none".

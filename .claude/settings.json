@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && tools/sync-to-main.sh",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

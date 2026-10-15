@@ -45,3 +45,5 @@ ADR. Small factual corrections that do not change the decision are allowed.
 - [0086: Spark Make expands the Wish before building](0086-spark-make-expands-the-wish.md)
 - [0087: Make rounds review one sheet and judge plan and reference apart](0087-make-round-review-sheet-and-split-verdict.md)
 - [0088: Catch mesh validity, interference and insertion before assembly](0088-catch-mesh-interference-and-insertion-before-assembly.md)
+- [0089: Guide Images explain the design and are never compared](0089-guide-images-explain-the-design-and-are-never-compared.md)
+- [0090: Builds write Wiki Rules back to the upstream wiki, and the owner resyncs it](0090-wiki-rules-written-back-upstream.md)

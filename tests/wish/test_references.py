@@ -91,6 +91,30 @@ class LoadWishReferencesTest(unittest.TestCase):
 
         self.assertEqual(loaded[0].reference.name, "ref-01-ref-05-spine.png")
 
+    def test_guides_load_after_the_references_as_guide_nn(self):
+        hero = self._image("ref-01-hero.png")
+        steps = self._image("guide-01-steps.png", size=(80, 40))
+        side = self._image("Leg side.png", size=(40, 80))
+
+        loaded = load_wish_references([hero], [steps, side])
+
+        self.assertEqual(
+            [item.reference.name for item in loaded],
+            ["ref-01-hero.png", "guide-01-steps.png", "guide-02-leg-side.png"],
+        )
+        self.assertEqual([item.reference.guide for item in loaded], [False, True, True])
+        self.assertEqual(
+            [item.reference.name for item in load_wish_references([], [steps])],
+            ["guide-01-steps.png"],
+        )
+
+    def test_guides_share_the_duplicate_and_count_checks(self):
+        hero = self._image("hero.png")
+        with self.assertRaisesRegex(ContractError, "repeats the bytes"):
+            load_wish_references([hero], [hero])
+        with self.assertRaisesRegex(ContractError, "at most %d" % MAX_WISH_REFERENCES):
+            load_wish_references([hero] * MAX_WISH_REFERENCES, [hero])
+
     def test_unsupported_or_unreadable_files_are_rejected_by_name(self):
         gif = self._image("spinner.gif")
         text = self.root / "notes.txt"
