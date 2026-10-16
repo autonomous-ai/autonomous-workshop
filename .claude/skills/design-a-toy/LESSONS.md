@@ -65,6 +65,21 @@ file.
   flush with the helmet's back face; the front half of the helmet
   overhangs it".
 
+### Draw what the camera can see, and pick a camera that shows the defining profile
+- **Why:** the owner caught three images that hid what their camera should
+  show:
+  - a boot seen 15 degrees from above showed no sign of a slot open on its
+    top;
+  - an L-shaped wing seen nearly head-on read as a flat bar;
+  - a post and the guard in front of it, contracted to end level, stuck up
+    at different heights in the back and side views.
+- **How to apply:** for each feature the contract places, ask whether the
+  image's camera can see it, and edit it in if it can. A part whose shape
+  is a profile (L, T, U) gets a three-quarter camera that shows that
+  profile at one end. Say "ends at exactly the same height as" for things
+  the contract makes level, and give each view's widths as a percentage
+  of the height, because the models draw parts too slim.
+
 ## Stage 3b-3d - Reconcile, print, motion
 
 ## Stage 4 - Visual review
