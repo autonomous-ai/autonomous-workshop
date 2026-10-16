@@ -80,6 +80,17 @@ file.
   the contract makes level, and give each view's widths as a percentage
   of the height, because the models draw parts too slim.
 
+### Draw transformation steps as one chain of edits, one move per edit
+- **Why:** step panels made as separate edits each redrew the toy, so parts
+  changed between steps and the owner rejected the whole sheet.
+- **How to apply:** start from the approved robot (or end) image. Make
+  each step one edit of the previous step's image that names only that
+  move, and keep the camera. Give the moved part's new size relative to a
+  part in the image, such as "the nose above the chest is 1.2 times the
+  chest's height", because the models shorten long parts. Lay the vehicle
+  down from the last stood-up step, and pass the old vehicle view only as
+  a camera example.
+
 ## Stage 3b-3d - Reconcile, print, motion
 
 ## Stage 4 - Visual review
