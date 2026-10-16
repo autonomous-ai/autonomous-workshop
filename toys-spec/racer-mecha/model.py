@@ -1,4 +1,4 @@
-"""Racer Mecha v2 numbers and Stage 3d checks (design-a-toy). Calculates; never draws or builds CAD.
+"""Racer Mecha v4 numbers (v02 scaled to 250 tall: Y and Z x 250/207, X unchanged) and Stage 3d checks (design-a-toy). Calculates; never draws or builds CAD.
 
 Assembly frame = Display Pose (robot): X toward the figure's left, front is -Y, Z up from the desk.
 Every part is a list of boxes / X-cylinders / cuts in the robot pose. Every move of the v2
@@ -7,6 +7,11 @@ check runs on Y-Z sections taken at X planes.
 
 The car is the robot lying on its back: car front is +Z (nose), car top is -Y (cockpit),
 the ground is the plane through the lowest wheel points (+Y side).
+
+Against the v02 model this one also follows three contract numbers the v02 model lagged behind
+(head post Y 0.5 to 8.5 and neck bore Y 0 to 9 from in-run amendment 1, knee guard up to the post's
+top from amend-e), adds the thigh's gabled top and bevels (v4 fix) and a posing sweep of each pinned
+pair itself (arm shell / torso, thigh / torso), which the v02 model skipped.
 
     uv run --with shapely --with numpy python model.py > checks.txt
 """
@@ -36,52 +41,59 @@ def sym(prims):
     return prims + M(prims)
 
 P = {}
-# ---- torso (v3, drawn from the approved livery robot): 57 wide core, shoulder towers jutting over the arms,
+# ---- torso: 57 wide core, shoulder towers jutting over the arms (52 degree wedge underside, rise 18.5 over X 14.5),
 #      closed red halo round the cockpit, head pocket in the top, nose hinge at the top of the back
-P["torso"] = (B(-28.5, 28.5, -13, 13, 117, 190)
-              + sym(B(28.5, 33.9, -13, 13, 164.5, 195) + B(33.9, 36, -13, 13, 171.5, 195)
-                    + B(36, 40, -13, 13, 174.1, 195) + B(40, 43, -13, 13, 179.2, 195))   # shoulder towers: 52 degree wedge underside over the arms
-              + sym(CX(28.5, 33.5, -2, 160, 5))                           # shoulder bosses
-              + sym(CX(10.5, 14.5, 14, 192, 3.5)) + sym(B(10.5, 14.5, 10.5, 14, 186, 192))   # nose hinge cheeks
-              + sym(B(11, 15, -20, -13, 132, 179)) + B(-15, 15, -20, -13, 132, 137)
-              + B(-15, 15, -20, -13, 174, 179)                            # halo: a closed loop on the chest
-              + CUT(-10, 10, -13, -9.5, 138, 173)                         # cockpit opening, 3.5 deep
-              + CUT(-10.5, 10.5, -8, 9, 166, 190) + CUT(-6.5, 6.5, -13, -8, 180, 190)   # head pocket and neck notch
-              + CUTX(-10.5, 10.5, 14, 192, 4.0)                           # seat round the nose knuckle
-              + CUT(-4.5, 4.5, -1, 8, 135.5, 166)                         # neck bore
-              + sym(CUT(8.5, 19.5, -9, 5, 117, 126)))                     # hip slots
-P["head"] = B(-9.5, 9.5, -7.5, 8.5, 188, 207) + B(-4, 4, -0.5, 7.5, 158, 188)
-# ---- nose: hinged at the top of the back (Y 14, Z 192), lying down the back, front wing behind the thighs
-P["nose"] = (CX(-10, 10, 14, 192, 3.5)
-             + B(-10, 10, 13.5, 21, 182, 189)                             # root block under the knuckle
-             + B(-9, 9, 13.5, 27, 141, 182) + B(-6, 6, 13.5, 24, 119, 141)   # cone, stepped taper
-             + B(-6, 6, 17, 21, 112, 119)                                 # cone tip, overlapping the wing's upper half
-             + B(-42, 42, 21, 27, 106, 119)                               # front wing plate
-             + sym(B(39, 42, 18, 27, 106, 119)))                          # wing endplates
-# ---- arm shell: one white sleeve from the shoulder to the wrist, top rounded about the shoulder axis
-P["arm-shell#1"] = (B(34, 62, -13, 9, 109, 160) + CX(34, 62, -2, 160, 11)
-                    + CUT(36.5, 59.5, -10.5, 9, 109, 152))
-P["forearm#1"] = B(37, 59, -9.5, 5.5, 85, 116) + CX(37, 59, -2, 116, 7.5)
-# ---- thigh: a sleeve open at the bottom; the shin's post slides 16 up into it
-P["thigh#1"] = (B(5.5, 28, -13, 9, 90, 112.5) + B(5.5, 28, -10, 6, 112.5, 115)
-                + B(9, 19, -5.7, 1.7, 115, 120) + CX(9, 19, -2, 120, 3.7)
-                + CUT(8, 25.5, -10.5, 6.5, 90, 112.5))
-# ---- shin: flared cuff, block, top post with the knee-slide dowel, knee guard in front of the post, ankle tongue below
-P["shin#1"] = (B(3, 34.5, -13, 9, 26.5, 45) + B(3.5, 31.5, -13, 9, 45, 73.5) + B(8.5, 25, -10, 6, 73.5, 96)
-               + B(5.5, 28, -15, -13.5, 73.5, 89.5) + CX(31.5, 34.5, 2, 63, 4)
-               + B(14, 28, -0.25, 7.75, 12.25, 26.5) + CX(14, 28, 3.75, 12.25, 4))
-# ---- boot: long foot set outboard of the shin, toe 17 ahead of the shin; slot for the ankle tongue
-P["boot#1"] = (B(11, 43, -30, 3.75, 0, 26) + B(11, 43, 3.75, 11.5, 0, 12.25)
-               + CX(11, 43, 3.75, 12.25, 7.75)                            # heel top rounded R7.75 about the ankle
-               + B(11, 14.5, -30, -26.5, 26, 33) + CX(11, 14.5, -26.5, 29.5, 3.5)
-               + B(39.5, 43, -30, -26.5, 26, 33) + CX(39.5, 43, -26.5, 29.5, 3.5)   # wing-hinge lugs
-               + CUT(14.5, 39.5, -30, -13.5, 25.5, 26) + CUT(11, 43, -23, -13.5, 25.5, 26)   # instep 0.5 under the wing
-               + CUT(13.5, 28.5, -0.75, 12, 7.75, 26.5))                  # tongue slot
-# ---- rear wing half: knuckle between the toe lugs, plate on the instep, blade overhanging inboard to the centre line
-P["wing#1"] = (CX(15, 39, -26.5, 29.5, 3.5) + B(15, 39, -26.5, -14, 26, 29)
-               + B(0.75, 43, -17, -14, 26, 36))
-P["front-wheel#1"] = CX(43.5, 59.5, 3, 189, 16)
-P["rear-wheel#1"] = CX(35, 47, 2, 63, 17)
+P["torso"] = (B(-35, 35, -15.75, 15.75, 141.25, 229.5)                # broad-chest amendment: core 70 wide (was 57)
+              + sym(B(35, 36, -15.75, 15.75, 208.3, 235.5)
+                    + B(36, 40, -15.75, 15.75, 209.6, 235.5) + B(40, 43, -15.75, 15.75, 214.7, 235.5))   # towers, stepped wedge
+              + sym(CX(35, 36.5, -2.5, 193.25, 7.25))                     # shoulder bosses, 1.5 proud of the side wall
+              + sym(CX(10.5, 14.5, 17, 232, 4.25)) + sym(B(10.5, 14.5, 12.75, 17, 224.75, 232))   # nose hinge cheeks
+              + sym(B(11, 15, -24.25, -15.75, 170, 216.25)) + B(-15, 15, -24.25, -15.75, 170, 176)
+              + B(-15, 15, -24.25, -15.75, 210.25, 216.25)                # halo: a closed loop on the chest (3b: bottom bar up to Z 170)
+              + CUT(-10, 10, -15.75, -11.5, 177.25, 209)                  # cockpit opening, 4.25 deep
+              + CUT(-10.5, 10.5, -9.75, 10.75, 200.5, 229.5) + CUT(-6.5, 6.5, -15.75, -9.75, 217.5, 229.5)   # head pocket and neck notch
+              + CUTX(-10.5, 10.5, 17, 232, 4.75)                          # seat round the nose knuckle
+              + CUT(-4.5, 4.5, 0, 10.75, 163.75, 200.5)                   # neck bore
+              + sym(CUT(8.5, 19.5, -11, 6, 141.25, 152.25)))              # hip slots
+P["head"] = B(-9.5, 9.5, -9.25, 10.25, 227, 250) + B(-4, 4, 0.5, 10.25, 190.75, 227)
+# ---- nose: hinged at the top of the back (Y 17, Z 232), lying down the back, front wing behind the thighs
+P["nose"] = (CX(-10, 10, 17, 232, 4.25)
+             + B(-10, 10, 16.25, 25.25, 219.75, 228.25)                   # root block under the knuckle
+             + B(-9, 9, 16.25, 32.5, 170.25, 219.75) + B(-6, 6, 16.25, 29, 143.75, 170.25)   # cone, stepped taper
+             + B(-6, 6, 20.5, 25.25, 135.25, 143.75)                      # cone tip, overlapping the wing's upper half
+             + B(-42, 42, 25.25, 32.5, 128, 145)                          # front wing plate, 17 tall (final 3b)
+             + sym(B(39, 42, 21.75, 32.5, 128, 148.5)))                   # wing endplates, stepped, rising 3.5 above the wing (3b)
+# ---- arm shell: one white sleeve from the shoulder to the wrist, top rounded R13.25 about the shoulder axis
+# ---- slim amendment (Stage 3b, owner: "too thick"): limb sections reduced toward the images; joints, Z numbers kept.
+# ---- arm shell: one white sleeve from the shoulder to the wrist, 26 x 22, top rounded R11 about the shoulder axis
+P["arm-shell#1"] = (B(37, 63, -13.5, 8.5, 131.75, 193.25) + CX(37, 63, -2.5, 193.25, 11)
+                    + CUT(39.5, 60.5, -10.5, 8.5, 131.75, 183.5))
+P["forearm#1"] = B(40, 60, -10, 5, 102.75, 140) + CX(40, 60, -2.5, 140, 7.5)
+# ---- thigh: an 18 x 19 sleeve open at the bottom; the shin's post slides 19.25 up into it. Its top over the cavity is a
+#      low gable falling 20 degrees from Z 138.75 beside the tongue to 137.84 at the cavity's edges; the walls end at
+#      135.75, their top outer edges bevelled 1 at 52 degrees; the cavity's ceiling edges bevelled 1.5 at 52 degrees.
+#      Gable and bevels are drawn as steps lying inside them.
+P["thigh#1"] = (B(7.5, 25.5, -12, 7, 108.5, 135.75)
+                + B(7.5, 25.5, -9.5, 4.5, 135.75, 137.84) + B(7.5, 25.5, -8.25, 3.25, 137.84, 138.3) + B(7.5, 25.5, -7, 2, 138.3, 138.75)
+                + B(9, 19, -7, 2, 138.75, 145) + CX(9, 19, -2.5, 145, 4.5)
+                + CUT(7.5, 25.5, -12, -11, 134.47, 135.75) + CUT(7.5, 25.5, 6, 7, 134.47, 135.75)   # wall top bevels
+                + CUT(10, 23, -9.5, 4.5, 108.5, 133.85) + CUT(10, 23, -8, 3, 133.85, 135.75))   # cavity, ceiling edges bevelled
+# ---- shin: cuff 27.5 x 22, block 22, post 12 x 13 with the knee-slide dowel, knee guard in front of the post up to its top, ankle tongue below
+P["shin#1"] = (B(7, 34.5, -12.5, 9.5, 32, 54.25) + B(7.5, 29.5, -12.5, 9.5, 54.25, 88.75) + B(10.5, 22.5, -9, 4, 88.75, 114.1) + B(10.5, 22.5, -7.5, 2.5, 114.1, 116)   # post, top edges bevelled 1.5
+               + B(7.5, 25.5, -14.25, -12.5, 88.75, 116) + CX(29.5, 34.5, 2.5, 76, 4.75)
+               + B(14, 28, -0.25, 9.25, 14.75, 32) + CX(14, 28, 4.5, 14.75, 4.75))
+# ---- boot: long foot set outboard of the shin, X 8 to 40 (16 apart); slot for the ankle tongue
+P["boot#1"] = (B(8, 40, -36.25, 4.5, 0, 31.5) + B(8, 40, 4.5, 13.75, 0, 14.75)
+               + CX(8, 40, 4.5, 14.75, 9.25)                              # heel top rounded R9.25 about the ankle
+               + B(8, 11.5, -36.25, -32, 31.5, 40) + CX(8, 11.5, -32, 35.75, 4.25)
+               + B(36.5, 40, -36.25, -32, 31.5, 40) + CX(36.5, 40, -32, 35.75, 4.25)   # wing-hinge lugs
+               + CUT(11.5, 36.5, -36.25, -16.5, 31, 31.5) + CUT(8, 40, -27.75, -16.5, 31, 31.5)   # instep 0.5 under the wing
+               + CUT(13.5, 28.5, -0.75, 14.25, 9.5, 32))                  # tongue slot
+# ---- rear wing half: knuckle between the toe lugs, plate on the instep, blade from 0.75 off the centre line to the boot's outer side
+P["wing#1"] = (CX(12, 36, -32, 35.75, 4.25) + B(12, 36, -32, -17, 31.5, 35)
+               + B(0.75, 40, -20.5, -17, 31.5, 43.5))
+P["front-wheel#1"] = CX(43.5, 59.5, 3.5, 228.25, 19.5)
+P["rear-wheel#1"] = CX(35, 47, 2.5, 76, 20.5)
 
 for n in list(P):
     if n.endswith("#1"):
@@ -102,15 +114,16 @@ def xr(prims):
     return min(p[1] for p in s), max(p[2] for p in s)
 
 # ---- the transformation, robot -> car; ("t", (dy, dz)), ("r", (y, z), deg), ("rA"/"rB", None, deg)
-ANKLE = (3.75, 12.25)
-HINGE_A = (-26.5, 29.5)     # boot frame, robot pose
-SLIDE = 16
+ANKLE = (4.5, 14.75)
+HINGE_A = (-32, 35.75)     # boot frame, robot pose
+SLIDE = 19.25
+HEAD = 26.5
 STAGES = [
-    ("head down 22", {"head": [("t", (0, -22))]}),
-    ("nose flips 180 over the top", {"nose": [("r", (14, 192), 180)]}),
-    ("forearms fold 180 into the shells", {f"forearm{s}": [("r", (-2, 116), 180)] for s in ("#1", "#2")}),
+    ("head down 26.5", {"head": [("t", (0, -HEAD))]}),
+    ("nose flips 180 over the top", {"nose": [("r", (17, 232), 180)]}),
+    ("forearms fold 180 into the shells", {f"forearm{s}": [("r", (-2.5, 140), 180)] for s in ("#1", "#2")}),
     ("boots fold 90 at the ankles", {f"{p}{s}": [("r", ANKLE, 90)] for s in ("#1", "#2") for p in ("boot", "wing")}),
-    ("shins slide 16 up into the thighs", {f"{p}{s}": [("t", (0, SLIDE))] for s in ("#1", "#2") for p in ("shin", "boot", "wing", "rear-wheel")}),
+    ("shins slide 19.25 up into the thighs", {f"{p}{s}": [("t", (0, SLIDE))] for s in ("#1", "#2") for p in ("shin", "boot", "wing", "rear-wheel")}),
     ("rear-wing halves stand 90 on hinge A", {f"wing{s}": [("rA", None, 90)] for s in ("#1", "#2")}),
 ]
 
@@ -216,10 +229,10 @@ def report_car():
 def report_posing():
     print("Posing sweeps from the Display Pose (0.5 needed)")
     leg = ["thigh#1", "shin#1", "boot#1", "wing#1", "rear-wheel#1"]
-    tests = [("shoulder#1 forward 90", ["arm-shell#1", "forearm#1"], (-2, 160), -90),
-             ("shoulder#1 back 5", ["arm-shell#1", "forearm#1"], (-2, 160), 5),
-             ("hip#1 forward 20", leg, (-2, 120), -20),
-             ("hip#1 back 20", leg, (-2, 120), 20)]
+    tests = [("shoulder#1 forward 90", ["arm-shell#1", "forearm#1"], (-2.5, 193.25), -90),
+             ("shoulder#1 back 5", ["arm-shell#1", "forearm#1"], (-2.5, 193.25), 5),
+             ("hip#1 forward 20", leg, (-2.5, 145), -20),
+             ("hip#1 back 20", leg, (-2.5, 145), 20)]
     for label, group, ax, deg in tests:
         worst = (1e9, "")
         for k in range(13):
@@ -237,6 +250,18 @@ def report_posing():
                         ov = sa.intersection(sb).area; g = -ov if ov > 1e-6 else sa.distance(sb)
                         if g < worst[0]: worst = (g, f"{gname} vs {o}")
         print(f"  {label:22s} worst {worst[0]:6.2f}  {worst[1]}")
+    print("Posing sweeps, the pinned pair itself (0.5 needed away from the pin)")
+    for label, part, ax, deg in [("shoulder#1 forward 90", "arm-shell#1", (-2.5, 193.25), -90), ("shoulder#1 back 5", "arm-shell#1", (-2.5, 193.25), 5),
+                                 ("hip#1 forward 20", "thigh#1", (-2.5, 145), -20), ("hip#1 back 20", "thigh#1", (-2.5, 145), 20)]:
+        worst = 1e9
+        lo = max(xr(P[part])[0], xr(P["torso"])[0]); hi = min(xr(P[part])[1], xr(P["torso"])[1])
+        for k in range(13):
+            for i in range(23):
+                x = lo + (hi - lo) * i / 22
+                sa = rotate(section(P[part], x), deg * k / 12, origin=ax); sb = section(P["torso"], x)
+                if sa.is_empty or sb.is_empty: continue
+                ov = sa.intersection(sb).area; worst = min(worst, -ov if ov > 1e-6 else sa.distance(sb))
+        print(f"  {label:22s} worst {worst:6.2f}  {part} vs torso")
 
 def report_balance():
     cy = m = 0
@@ -246,7 +271,7 @@ def report_balance():
             s = section(P[n], lo + (hi - lo) * (i + 0.5) / 12)
             if not s.is_empty:
                 a = s.area * (hi - lo) / 12; m += a; cy += a * s.centroid.x
-    print(f"Robot balance: centre of mass Y {cy / m:.1f}; boots stand on Y -30 (toe) .. 11.5 (heel)")
+    print(f"Robot balance: centre of mass Y {cy / m:.1f}; boots stand on Y -36.25 (toe) .. 13.75 (heel)")
 
 if __name__ == "__main__":
     report_static()
