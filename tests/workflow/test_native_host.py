@@ -3588,6 +3588,17 @@ class NativeHostTest(unittest.TestCase):
             {"file": "guide-02-side.png", "check_motion": check_motion, "steps": [], "conflicts": []},
         ]
 
+    def test_made_guides_accept_the_frozen_product_the_host_reads(self):
+        # NativeMade freezes product: the guides must come back as plain JSON
+        # the Make gate's receipt can serialize.
+        account = self.guide_account()
+        guides = _made_guides(_freeze({"title": "t", "guides": account}), self.GUIDE_CONTRACT, True)
+        self.assertEqual(guides, account)
+        self.assertIs(type(guides[0]["steps"]), list)
+        self.assertIs(type(guides[0]["steps"][0]), dict)
+        self.assertIs(type(guides[0]["conflicts"][0]), dict)
+        json.dumps(guides, allow_nan=False)
+
     def test_made_guides_account_for_every_sealed_guide(self):
         # ADR 0089: the host counts the Manager's account; it never judges it.
         account = self.guide_account()
