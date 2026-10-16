@@ -2061,11 +2061,12 @@ def sealed_references(project: Path):
 def sealed_guides(project: Path):
     """The Guide Images the Wish sealed (ADR 0089), as ``(guides, error)``.
 
-    Each is ``{"file", "shows", "steps", "path", "sha256"}``, ``shows`` and
-    ``steps`` from the sealed contract's ``guides[]``. They explain the
-    design to the Workshop Manager and every Component Worker; nothing
-    scores or compares them. Outside a run, and before schema 5, there are
-    none."""
+    Each is ``{"file", "shows", "steps", "geometries", "path", "sha256"}``,
+    ``shows``, ``steps`` and ``geometries`` from the sealed contract's
+    ``guides[]``; ``geometries`` is None when every Component Worker reads
+    the guide (issue #125). They explain the design to the Workshop Manager
+    and the Component Workers; nothing scores or compares them. Outside a
+    run, and before schema 5, there are none."""
 
     root = run_root(project)
     if root is None:
@@ -2089,10 +2090,22 @@ def sealed_guides(project: Path):
         if entry is None or not isinstance(item.get("sha256"), str):
             return [], "WISH.json seals guide image %s, which the Design Contract does not list" % name
         steps = entry.get("steps") or []
+        geometries = entry.get("geometries")
         guides.append({"file": name, "shows": str(entry.get("shows") or ""),
                        "steps": [str(step) for step in steps] if isinstance(steps, list) else [],
+                       # Issue #125: None means every Component Worker reads it.
+                       "geometries": [str(g) for g in geometries] if isinstance(geometries, list) else None,
                        "path": root / WISH_REFERENCES_DIR / name, "sha256": item["sha256"]})
     return guides, None
+
+
+def component_guides(guides: list, role: str) -> list:
+    """The Guide Images ``role``'s Component Worker reads (issue #125): every
+    guide that names no ``geometries``, and every guide whose ``geometries``
+    names ``role``. The Workshop Manager and the Contract Reviewer still
+    read every guide; the Component Reviewer reads none."""
+
+    return [item for item in guides if item.get("geometries") is None or role in item["geometries"]]
 
 
 def guide_view(guides: list) -> list:
@@ -4779,11 +4792,13 @@ def make_round(args) -> int:
         parts = [entry]
         display_pose = camera_contract(project)
         delivered = component_contract(project, role)
-        # ADR 0089: the worker may read every Guide Image; its reviewer never.
+        # ADR 0089: the worker reads the Guide Images that apply to its
+        # Component (issue #125); its reviewer never reads one.
         guides, guide_error = sealed_guides(project)
         if guide_error is not None:
             print("make_round: %s" % guide_error, file=sys.stderr)
             return 2
+        guides = component_guides(guides, role)
         try:
             # Issue #97: the Manager's rulings on this Component's Blocked
             # Reports bind its reviewer, so they travel in the packet.
