@@ -45,6 +45,18 @@ file.
   the whole bend, with its start and end stations. Report likeness instead of
   gating on it.
 
+### Start a colour layer from the cut that seats the part, not from a fixed station
+
+- **Why:** a part was seated on a flared shade at a slant, and its colour
+  layer started at one fixed station along the part. On one side the seating
+  cut ran through the layer, so the colour showed on the mounting face, and
+  the build stopped on the contradiction.
+- **How to apply:** when a part's foot is cut to follow a curved or slanted
+  surface, compute where that cut meets the colour interface across the
+  width. Start the layer a fixed distance above that line (for example
+  s = max(s0, s_cut(t) + 4 mm)) and tabulate it. Add a check that the layer
+  keeps a set BRep distance from the mounting face.
+
 ## Stage 3 - Reference images
 
 ### Show a colour layer hidden inside a fold with a cutaway; fix one defect by editing
