@@ -32,6 +32,18 @@ file.
 
 ## Stage 3 - Reference images
 
+### Draw a part's extra views in one turnaround image, never one view per call
+- **Why:** each separate AI edit of a reference into a back or side view
+  redesigned the part. In one toy, five of eleven parts drifted: a band
+  wrapped onto the open back, a solid block grew a window, and a fist's back
+  was drawn as its front. Views cut from one image that shows all three
+  views agreed with each other.
+- **How to apply:** make one generation per part: LEFT copies the reference,
+  MIDDLE and RIGHT are the new cameras, at one scale on one ground line.
+  Spell out the part's construction and, for a profile, its proportions in
+  units. Cut the views apart by empty columns. Compose each row at the
+  sheet's single scale, with the reference matched to the LEFT view's height.
+
 ## Stage 3b-3d - Reconcile, print, motion
 
 ## Stage 4 - Visual review
