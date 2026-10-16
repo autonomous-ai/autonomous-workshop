@@ -81,19 +81,24 @@ def _plain_number(value: float) -> Any:
 @dataclass(frozen=True)
 class ContractGuide:
     """One Guide Image (ADR 0089): sealed with the contract to explain the
-    design, read by the Manager and every Component Worker, and never scored
-    or compared with the model. ``shows`` says what it explains; ``steps``,
+    design, read by the Manager and Component Workers, and never scored or
+    compared with the model. ``shows`` says what it explains; ``steps``,
     when given, names each step it draws, in order, so the run can account
-    for every one."""
+    for every one. ``geometries``, when given, names the Unique Geometries
+    whose Component Workers read it (issue #125); without it every
+    Component Worker does."""
 
     file: str
     shows: str
     steps: Tuple[str, ...] = ()
+    geometries: Optional[Tuple[str, ...]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         value: Dict[str, Any] = {"file": self.file, "shows": self.shows}
         if self.steps:
             value["steps"] = list(self.steps)
+        if self.geometries is not None:
+            value["geometries"] = list(self.geometries)
         return value
 
 
@@ -373,10 +378,13 @@ def _parse_references(
     return tuple(references)
 
 
-def _parse_guides(value: Any, errors: List[str]) -> Tuple[ContractGuide, ...]:
+def _parse_guides(
+    value: Any, geometry_ids: frozenset, errors: List[str]
+) -> Tuple[ContractGuide, ...]:
     """Schema 5's Guide Images (ADR 0089): a non-empty list, each a
-    ``guide-NN-<slug>`` file numbered from 01 in order, what it shows, and
-    optionally the steps it draws."""
+    ``guide-NN-<slug>`` file numbered from 01 in order, what it shows,
+    optionally the steps it draws, and optionally the Unique Geometries
+    whose Component Workers read it (issue #125)."""
 
     if not isinstance(value, list) or not value:
         errors.append("guides must be a non-empty list (schema_version 5)")
@@ -387,7 +395,7 @@ def _parse_guides(value: Any, errors: List[str]) -> Tuple[ContractGuide, ...]:
         if not isinstance(item, dict):
             errors.append("%s must be an object" % label)
             continue
-        unknown = sorted(set(item) - {"file", "shows", "steps"})
+        unknown = sorted(set(item) - {"file", "shows", "steps", "geometries"})
         if unknown:
             errors.append("%s has unknown field(s): %s" % (label, ", ".join(unknown)))
         file_name = item.get("file")
@@ -422,8 +430,34 @@ def _parse_guides(value: Any, errors: List[str]) -> Tuple[ContractGuide, ...]:
                 shows = None
             else:
                 steps = tuple(raw)
+        geometries: Optional[Tuple[str, ...]] = None
+        if "geometries" in item:
+            raw = item["geometries"]
+            if (
+                not isinstance(raw, list) or not raw
+                or any(not isinstance(entry, str) for entry in raw)
+            ):
+                errors.append(
+                    "%s.geometries must be a non-empty list of Unique Geometry ids" % label
+                )
+                shows = None
+            elif len(set(raw)) != len(raw):
+                errors.append("%s.geometries names a Unique Geometry twice" % label)
+                shows = None
+            else:
+                missing = [entry for entry in raw if entry not in geometry_ids]
+                if missing:
+                    errors.append(
+                        "%s.geometries names a Unique Geometry that does not exist: %s"
+                        % (label, ", ".join(repr(entry) for entry in missing))
+                    )
+                    shows = None
+                else:
+                    geometries = tuple(raw)
         if file_name is not None and shows is not None:
-            guides.append(ContractGuide(file=file_name, shows=shows, steps=steps))
+            guides.append(
+                ContractGuide(file=file_name, shows=shows, steps=steps, geometries=geometries)
+            )
     return tuple(guides)
 
 
@@ -751,7 +785,7 @@ def parse_design_contract(text: str) -> DesignContract:
         errors.append("interfaces need schema_version 2 or later")
     guides: Optional[Tuple[ContractGuide, ...]] = None
     if schema_version == GUIDE_SCHEMA_VERSION:
-        guides = _parse_guides(block.get("guides"), errors)
+        guides = _parse_guides(block.get("guides"), geometry_ids, errors)
     elif "guides" in block:
         errors.append("guides need schema_version 5")
 
