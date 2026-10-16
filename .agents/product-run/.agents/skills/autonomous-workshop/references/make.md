@@ -260,7 +260,8 @@ are separate. Frozen older runs retain their materialized rules and tools.
    including `features/print_details.py`; its
    sealed `geometry:<id>` reference and declared camera; only that
    Component's Design Contract rows; every Guide Image the contract seals
-   (ADR 0089), by path with what it `shows`; the nozzle; and the shape-repair
+   (ADR 0089) that names no `geometries` or whose `geometries` names this
+   Component, by path with what it `shows`; the nozzle; and the shape-repair
    limit (5). The worker writes the first draft, runs the round above until build
    and print pass, then reports in 10 lines or fewer and waits:
    `make_round` refuses to change a passing round's geometry before its
@@ -699,7 +700,10 @@ are separate. Frozen older runs retain their materialized rules and tools.
    Images (`wish-references/guide-NN-<slug>`, its `guides[]`): a
    transformation step sheet, extra views. Open each before you write the
    shared files and the joints, and use it to plan how the Components meet
-   and move. Nothing compares a Guide Image with the model, and where it
+   and move. A guide whose `geometries` lists Unique Geometry ids goes only
+   to those Components' workers, and a component round's `summary.json`
+   lists only the guides for its Component; a guide without `geometries`
+   goes to every worker. Nothing compares a Guide Image with the model, and where it
    disagrees with the contract, the contract wins. Before the final
    verifier, write `<cad-project>/guide-steps.json`:
    `{"guides": [{"file": "guide-01-x.png", "steps": [{"step": "<a step
