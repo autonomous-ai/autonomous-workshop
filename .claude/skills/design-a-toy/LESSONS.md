@@ -44,6 +44,27 @@ file.
   units. Cut the views apart by empty columns. Compose each row at the
   sheet's single scale, with the reference matched to the LEFT view's height.
 
+### Fix a wrong detail by editing the image, on two models, and pick
+- **Why:** regenerating a whole image to fix one detail redraws everything
+  around it, and fresh errors appear. In one round of six fixes, three
+  models each won different fixes:
+  - `openai/gpt-image-2.5-sunburst` kept the source image intact best, and
+    won the arm shell's inside, the elbow hole, the fist's depth and the
+    hip tongue;
+  - `openai/gpt-5.4-image-2` placed parts correctly where the prompt said
+    where they sit, and won the neck post flush with the helmet back and a
+    cutaway of the leg's slide;
+  - `google/gemini-3-pro-image` won none.
+- **How to apply:** for a fix, pass the current image as IMAGE 1. Name only
+  the change and say "keep everything else exactly". Run it once on
+  sunburst and once on gpt-5.4, then compare.
+  [`scripts/gen_image.py`](scripts/gen_image.py) calls both. Sunburst is
+  image-only: it goes through `/images`, and through chat it answers 404.
+  For a turnaround, set `IMAGE_ASPECT=3:2`. State a spatial fact in words
+  the model cannot read two ways, for example: "the post's back face is
+  flush with the helmet's back face; the front half of the helmet
+  overhangs it".
+
 ## Stage 3b-3d - Reconcile, print, motion
 
 ## Stage 4 - Visual review
