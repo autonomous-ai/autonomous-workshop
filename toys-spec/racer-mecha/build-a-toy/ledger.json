@@ -111,6 +111,19 @@
    ],
    "notes": "v3 contract (12 refs, 13 guides). Launched 10:59Z from fresh worktree racer-v03-df4d3e7b at origin/main df4d3e7b (#124 + #126 merged) with --agent claude --model claude-opus-5-5 --effort medium --check-motion true --max-tokens 100000000 --turn-minutes 360 --no-publish; receipt References: 12, Guides: 13 (matches contract). Contract copy build-a-toy/r00/v03/CONTRACT.md; log build-a-toy/r00/v03/wish.log. 11:05Z waiting (5.6M tokens): need \"host CAD interpreter cannot import build123d\" — the fresh worktree venv was built on miniconda CPython 3.13.13 (pyexpat/libexpat clash) because the local uv pin (.python-version, uv.toml, excluded via .git/info/exclude) is not in a new worktree; copied both from racer-v02, rebuilt .venv on uv CPython 3.13.15, resumed 11:06Z with --check-motion true (log resume1.log). 13:55Z stopped on budget at 100.18M/100M with all 11 Components locked, 70 component rounds, 0 repeated print defects (v02 had 8 at its first budget stop), 2 Reference Conflicts, 1 Blocked Report (shin boss overhang) answered in-run: budget-progressing, raised once to 200M (budget_raised: true) and resumed with --check-motion true (log resume2.log). 22:18Z complete (sealed locally, unreleased), 163M tokens, 11 Components locked, 3 Reference Conflicts (status.json lists 1 at the end), guide steps accounted in status.json; status saved build-a-toy/r00/v03/status.json. Detection: build-a-toy/r00/v03/findings.json, 8 findings / 62 passed; vs v02 removed envelope, wall:thigh, wall:rear-wheel, likeness:ref-04-head, likeness:ref-07-thigh; new extents:wing, wall:shin, wall:front-wheel.",
    "budget_raised": true
+  },
+  {
+   "round": 1,
+   "kind": "fix",
+   "name": "Racer Mecha v04",
+   "wish_id": "wish-20261017-071954-30e9fa1d",
+   "source": "wish-20261016-105957-68bdfa0a workspace",
+   "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261017-071954-30e9fa1d/workspace",
+   "toy_dir": null,
+   "final_status": null,
+   "brief": "build-a-toy/r01/brief.md",
+   "finding_ids": [],
+   "notes": "v4 contract (wedge boot, wing plate on the toe slope, detailed fist) plus v03 findings. Launched 07:19Z with workshop fix from worktree racer-v03-df4d3e7b (origin/main df4d3e7b), --agent claude --model claude-opus-5-5 --effort medium --check-motion true --max-tokens 100000000 --turn-minutes 360 --no-publish; receipt References: 12, Guides: 13 (matches). Log build-a-toy/r01/fix.log."
   }
  ],
  "contract_versions": {
@@ -173,7 +186,7 @@
    "visible": true
   },
   "v4": {
-   "status": "draft: boot, wing and fist approved in direction by owner 2026-10-17 (\"chọn theo ảnh tổng thể\", \"cách 2\"); ref-01, guide-01 and guide-02 still to redraw",
+   "status": "approved by owner 2026-10-17 (\"Ảnh trông ok rồi\"); ref-01, guide-01, guide-02, guide-10, guide-11 redrawn for the wedge boot",
    "notes": "v5/ working dir (model.py, work/); wedge boot 64.5 long, wing hinge Y -46.5 Z 12, plate 38.75 at 30 deg, car 360.75; fist fingers detailed",
    "backups": [
     "build-a-toy/drafts/v4-backup/"
