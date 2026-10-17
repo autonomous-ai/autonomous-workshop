@@ -1,9 +1,81 @@
-[{"n":1,"date":"17/10/2026","ask":"Tìm concept khác → chọn 2 (đồ chơi mới hoàn toàn)","concepts":[
-{"id":"N1","name":"Bí ngô ma","file":"N1_pumpkin-peekaboo.jpg","size":"~10 cm","idea":"Vặn cuống bí: nắp nâng lên, con ma trắng nhô ra khỏi quả bí rồi thụt vào.","flaw":"Ảnh vẽ nắp lơ lửng, không thấy trục nâng."},
-{"id":"N2","name":"Cầu trượt chim cánh cụt","file":"N2_penguin-slide.jpg","size":"~13 cm cao","idea":"Quay tay: 3 chú chim cánh cụt được đưa lên đỉnh đồi tuyết rồi trượt xuống máng xoắn, chạy vòng mãi.","flaw":""},
-{"id":"N3","name":"Cú quay đầu","file":"N3_owl-turn.jpg","size":"~11 cm cao","idea":"Lên dây cót: đầu cú quay ngoái ra sau và mí mắt chớp.","flaw":"Đầu chỉ ngoái khoảng 90°, chưa đủ 180°; chìa cót nằm bên hông thay vì sau lưng."},
-{"id":"N4","name":"Sọ khủng long đớp","file":"N4_dino-chomp.jpg","size":"~14 cm dài","idea":"Bóp cò dưới hàm: hàm dưới đớp, cổ đốt lắc lư.","flaw":"Răng vẽ nhọn (bản thật sẽ bo tròn); không thấy cò bóp."},
-{"id":"N5","name":"Nhím lăn xòe gai","file":"N5_hedgehog-roll.jpg","size":"~9 cm dài","idea":"Đẩy nhím lăn trên bàn: các tấm gai hình lá bật lên xòe thành vương miện rồi xẹp xuống.","flaw":""},
-{"id":"N6","name":"Chim gõ kiến","file":"N6_woodpecker-pole.jpg","size":"~15 cm cao","idea":"Đặt chim lên đỉnh cột: chim tự gõ mỏ, tụt dần xuống từng nấc nhờ vòng kẹp lắc.","flaw":""},
-{"id":"N7","name":"Tắc kè thè lưỡi","file":"N7_chameleon-tongue.jpg","size":"~12 cm dài","idea":"Bóp đuôi cuộn: lưỡi hồng bắn thẳng ra chạm con ruồi rồi rút về.","flaw":""},
-{"id":"N8","name":"Nhà gingerbread xoay","file":"N8_gingerbread-turn.jpg","size":"~12 cm cao","idea":"Vặn ống khói: cửa chớp mở và bàn xoay có 4 hình nhân gừng chạy qua cửa chính.","flaw":""}]}]
+[
+ {
+  "n": 1,
+  "date": "17/10/2026",
+  "ask": "Tìm concept khác → chọn 2 (đồ chơi mới hoàn toàn)",
+  "concepts": [
+   {
+    "id": "N1",
+    "name": "Bí ngô ma",
+    "file": "N1_pumpkin-peekaboo.jpg",
+    "size": "~10 cm",
+    "idea": "Vặn cuống bí: nắp nâng lên, con ma trắng nhô ra khỏi quả bí rồi thụt vào.",
+    "flaw": "Ảnh vẽ nắp lơ lửng, không thấy trục nâng.",
+    "exists": "ĐÃ CÓ: \"Pop-up Ghost Jack-o'-lantern\" trên MakerWorld (ma nhô khỏi bí ngô), gần như y hệt."
+   },
+   {
+    "id": "N2",
+    "name": "Cầu trượt chim cánh cụt",
+    "file": "N2_penguin-slide.jpg",
+    "size": "~13 cm cao",
+    "idea": "Quay tay: 3 chú chim cánh cụt được đưa lên đỉnh đồi tuyết rồi trượt xuống máng xoắn, chạy vòng mãi.",
+    "flaw": "",
+    "exists": "Bản in 3D quay tay chưa thấy. Nhưng đồ chơi \"penguin race\" (cầu thang + máng trượt, chạy pin) bán đại trà từ lâu."
+   },
+   {
+    "id": "N3",
+    "name": "Cú quay đầu",
+    "file": "N3_owl-turn.jpg",
+    "size": "~11 cm cao",
+    "idea": "Lên dây cót: đầu cú quay ngoái ra sau và mí mắt chớp.",
+    "flaw": "Đầu chỉ ngoái khoảng 90°, chưa đủ 180°; chìa cót nằm bên hông thay vì sau lưng.",
+    "exists": "Gần: có \"Owl Automaton\" quay tay và nhiều cú xoay đầu bằng tay. Bản lên dây cót quay đầu + chớp mắt chưa thấy."
+   },
+   {
+    "id": "N4",
+    "name": "Sọ khủng long đớp",
+    "file": "N4_dino-chomp.jpg",
+    "size": "~14 cm dài",
+    "idea": "Bóp cò dưới hàm: hàm dưới đớp, cổ đốt lắc lư.",
+    "flaw": "Răng vẽ nhọn (bản thật sẽ bo tròn); không thấy cò bóp.",
+    "exists": "ĐÃ CÓ: nhiều sọ T-rex hàm khớp, \"T-Rex Skull Grabber\" và đồ chơi đớp dùng dây thun."
+   },
+   {
+    "id": "N5",
+    "name": "Nhím lăn xòe gai",
+    "file": "N5_hedgehog-roll.jpg",
+    "size": "~9 cm dài",
+    "idea": "Đẩy nhím lăn trên bàn: các tấm gai hình lá bật lên xòe thành vương miện rồi xẹp xuống.",
+    "flaw": "",
+    "exists": "Chưa thấy: chỉ có nhím flexi/fidget. Cơ chế lăn làm gai xòe lên là mới nhất trong 8 cái."
+   },
+   {
+    "id": "N6",
+    "name": "Chim gõ kiến",
+    "file": "N6_woodpecker-pole.jpg",
+    "size": "~15 cm cao",
+    "idea": "Đặt chim lên đỉnh cột: chim tự gõ mỏ, tụt dần xuống từng nấc nhờ vòng kẹp lắc.",
+    "flaw": "",
+    "exists": "ĐÃ CÓ: \"Pecking Woodpecker Toy\" trên Printables và 2 bản trên MakerWorld; đồ chơi cổ điển hàng trăm năm."
+   },
+   {
+    "id": "N7",
+    "name": "Tắc kè thè lưỡi",
+    "file": "N7_chameleon-tongue.jpg",
+    "size": "~12 cm dài",
+    "idea": "Bóp đuôi cuộn: lưỡi hồng bắn thẳng ra chạm con ruồi rồi rút về.",
+    "flaw": "",
+    "exists": "Gần: tắc kè flexi có lưỡi gắn cố định để \"bắt\" mồi. Lưỡi bắn ra khi bóp đuôi chưa thấy."
+   },
+   {
+    "id": "N8",
+    "name": "Nhà gingerbread xoay",
+    "file": "N8_gingerbread-turn.jpg",
+    "size": "~12 cm cao",
+    "idea": "Vặn ống khói: cửa chớp mở và bàn xoay có 4 hình nhân gừng chạy qua cửa chính.",
+    "flaw": "",
+    "exists": "Gần: carousel Noel (có bản chạy động cơ) và nhà gingerbread đều có, nhưng riêng lẻ. Nhà gingerbread có bàn xoay bên trong chưa thấy."
+   }
+  ]
+ }
+]

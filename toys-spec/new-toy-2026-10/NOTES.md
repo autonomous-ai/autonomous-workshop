@@ -39,3 +39,17 @@ drafts are kept in concepts/round1/first/.
 - N6 Woodpecker Pole: classic pecking descent down a pole on a rocking collar.
 - N7 Chameleon Tongue: squeeze the tail, the tongue shoots out to a fly.
 - N8 Gingerbread Carousel House: turn the chimney, shutters open, 4 gingerbread figures circle past the door.
+
+### Novelty check, 2026-10-17 10:10 ICT
+
+Tam: "Mấy cái này có tồn tại chưa?" Searched Printables (GraphQL) and MakerWorld (api.bambulab.com)
+with product-type terms via t3d.novelty's helpers; looked at the 21 closest covers.
+
+- N1 EXISTS: MakerWorld 3439351 "Pop-up Ghost Jack-o'-lantern" (+ "Pop-up Ghost Halloween Pumpkin").
+- N2 no printed hand-crank version; the battery "penguin race" stair-and-slide toy is a long-standing mass-market product.
+- N3 close: MakerWorld 1369639 "Owl Automaton" (crank) and several twist-head owls; wind-up head-turn + blink not found.
+- N4 EXISTS: articulated-jaw T-rex skulls, "T-Rex Skull Grabber Handle", rubber-band chomp toys.
+- N5 not found (only flexi/fidget hedgehogs). Most novel of the round.
+- N6 EXISTS: Printables "Pecking Woodpecker Toy - stick-slip pole climber" + 2 MakerWorld copies; a classic toy.
+- N7 close: MakerWorld 1611393 chameleon with a static snap-fit tongue; a squeeze-fired tongue not found.
+- N8 close: Christmas carousels (incl. motorised) and gingerbread houses exist separately; the combination not found.
