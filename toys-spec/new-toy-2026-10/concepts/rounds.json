@@ -77,5 +77,72 @@
     "exists": "Gần: carousel Noel (có bản chạy động cơ) và nhà gingerbread đều có, nhưng riêng lẻ. Nhà gingerbread có bàn xoay bên trong chưa thấy."
    }
   ]
+ },
+ {
+  "n": 2,
+  "date": "17/10/2026",
+  "ask": "Lấy concept từ /root/x3dbuild (post X); chỉ ý chưa tồn tại",
+  "concepts": [
+   {
+    "id": "X1",
+    "name": "Ốc sên vẽ",
+    "file": "X1_doodle-snail.jpg",
+    "size": "~10 cm dài",
+    "idea": "Đẩy ốc sên chạy trên giấy: bút lông gắn trong thân vẽ ra vệt xoắn ốc ngay sau nó, mỗi lần một hình khác.",
+    "flaw": "Bút vẽ lơ lửng trên đầu thay vì xuyên qua vỏ.",
+    "source": "Robot viết tay bằng bút thật (@BrianMcDonaldIE ♥102).",
+    "exists": "Chưa thấy trên Printables/MakerWorld. Máy spirograph có nhiều nhưng không có con vật vừa chạy vừa vẽ."
+   },
+   {
+    "id": "X2",
+    "name": "Quái vật ăn bi",
+    "file": "X2_marble-muncher.jpg",
+    "size": "~11 cm cao",
+    "idea": "Thú cưng cơ khí: bỏ viên bi vào miệng, bấm đuôi thì hàm nhai, bi lăn qua bụng trong suốt rồi rơi ra bát; lặp lại mãi.",
+    "flaw": "",
+    "source": "Tamagotchi AI vỏ in 3D (@Piefena), nhiều Tamagotchi clicker trên MakerWorld.",
+    "exists": "Chưa thấy trên Printables/MakerWorld. Có máy chạy bi và Tamagotchi clicker, chưa có con thú ăn bi."
+   },
+   {
+    "id": "X3",
+    "name": "Cáo mặt lật",
+    "file": "X3_flap-face-fox.jpg",
+    "size": "~10 cm cao",
+    "idea": "Mặt cáo là bảng lật như bảng sân bay: vặn chìa bên đầu, các mảnh mặt lật qua 6 biểu cảm.",
+    "flaw": "Ảnh chỉ thấy đường chia mảnh, chưa thấy mảnh đang lật.",
+    "source": "Figure Bomberman mặt thay được (@ToyNerdProd ♥575).",
+    "exists": "Chưa thấy trên Printables/MakerWorld. Bảng split-flap có nhiều nhưng không có nhân vật mang mặt split-flap."
+   },
+   {
+    "id": "X4",
+    "name": "Núi cáp treo",
+    "file": "X4_funicular-mountain.jpg",
+    "size": "~14 cm cao",
+    "idea": "Quay tay ở chân núi: hai cabin đỏ nối cùng một sợi cáp, một lên một xuống, tránh nhau ở giữa.",
+    "flaw": "",
+    "source": "Mô hình đường sắt (post ♥113) và tay quay tàu mini.",
+    "exists": "Chưa thấy trên Printables/MakerWorld. Chỉ có cabin cho mô hình tàu, chưa có đồ chơi núi cáp treo quay tay."
+   },
+   {
+    "id": "X5",
+    "name": "Khách sạn tên lửa",
+    "file": "X5_rocket-hotel.jpg",
+    "size": "~15 cm cao",
+    "idea": "Vặn mũi tên lửa: vỏ mở ra như cánh hoa, bên trong 3 tầng (phòng ngủ, phòng khách, buồng lái) với khách du lịch tí hon.",
+    "flaw": "",
+    "source": "Playset tàu vũ trụ du lịch (@MechbayFigures).",
+    "exists": "Chưa thấy trên Printables/MakerWorld. Có tên lửa đồ chơi và playset riêng; chưa có tên lửa mở cánh hoa."
+   },
+   {
+    "id": "X6",
+    "name": "Máy ảnh đóng dấu",
+    "file": "X6_stamp-camera.jpg",
+    "size": "~10 cm rộng",
+    "idea": "Bấm nút chụp: con dấu dưới đáy in ra một \"tấm ảnh\" lên giấy; xoay núm chọn 4 hình.",
+    "flaw": "",
+    "source": "Máy ảnh đồ chơi in nhiệt bằng Raspberry Pi (post ♥9).",
+    "exists": "Chưa thấy trên Printables/MakerWorld. Máy ảnh đồ chơi trên MakerWorld chỉ có nút bấm kêu \"click\", không in hình."
+   }
+  ]
  }
 ]

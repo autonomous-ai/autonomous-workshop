@@ -20,7 +20,11 @@ A buyer receives it finished.
 
 ## Rejections
 
-(none yet; earlier Tam feedback on other subjects: "xấu và to thô" for a bulky black slider)
+(earlier Tam feedback on other subjects: "xấu và to thô" for a bulky black slider)
+- 2026-10-17 round N1: N1 pop-up pumpkin ghost, N4 T-rex jaw skull, N6 pecking woodpecker — already exist on
+  MakerWorld/Printables. Tam asked "Mấy cái này có tồn tại chưa?" and "bạn lấy concept từ đâu vậy?":
+  every concept must be checked for prior art before it is drawn, and come from a source, not memory.
+- Ideas must come from /root/x3dbuild/ (list.md + posts.json, X posts) — Tam 10:33 "lấy concept từ đây đi".
 
 ## Round 1 (N), 2026-10-17
 
@@ -53,3 +57,22 @@ with product-type terms via t3d.novelty's helpers; looked at the 21 closest cove
 - N6 EXISTS: Printables "Pecking Woodpecker Toy - stick-slip pole climber" + 2 MakerWorld copies; a classic toy.
 - N7 close: MakerWorld 1611393 chameleon with a static snap-fit tongue; a squeeze-fired tongue not found.
 - N8 close: Christmas carousels (incl. motorised) and gingerbread houses exist separately; the combination not found.
+
+## Round 2 (X), 2026-10-17
+
+Ask (Tam, TG 10:33): "/root/x3dbuild/ … list.md … posts.json … lấy concept từ đây đi".
+Read list.md (77 items, mostly print businesses/software/electronics) and keyword-scanned posts.json (88 toy-ish
+posts of 815). Every broad category found there already exists (split-flap, rocker-bogie rover, rocket playsets,
+spirograph machines, skeleton puzzles, colouring ornaments, dart/rubber-band blasters, tamagotchi clickers,
+loop trains, wind turbines, squirt toys, mix-and-match monsters, flipbook machines, pigeon walkers, Claude desk
+buddies). Only sharpened twists with no close Printables/MakerWorld match were drawn (search terms in the
+session; MakerWorld "Interaktive Toy Camera" only clicks, "Rocket Launch Desk Buddy" is static).
+
+Images: text only, hunyuan-image-3-t2i via /root/docs/gen.sh, prompts in concepts/round2/prompts/, no redraws.
+
+- X1 Doodle Snail (src: handwriting robot @BrianMcDonaldIE): rolling snail drags a marker, draws a spiral. Flaw: marker floats above the head.
+- X2 Marble Muncher (src: AI Tamagotchi @Piefena): marble in the mouth, tail lever chews, rolls through a clear belly spiral to the bowl.
+- X3 Flap-Face Fox (src: swappable-face Bomberman @ToyNerdProd): split-flap face, key cycles 6 expressions. Flaw: no flap shown mid-flip.
+- X4 Funicular Mountain (src: railway-modelling post): crank hauls two counterbalanced cabins.
+- X5 Rocket Hotel (src: space-tourism playset @MechbayFigures): twist nose, petals open on 3 decks of peg tourists.
+- X6 Stamp Camera (src: Pi thermal-printer camera toy): shutter stamps a picture under the camera; dial picks 1 of 4.
