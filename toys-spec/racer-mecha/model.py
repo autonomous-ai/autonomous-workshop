@@ -16,7 +16,7 @@ pair itself (arm shell / torso, thigh / torso), which the v02 model skipped.
     uv run --with shapely --with numpy python model.py > checks.txt
 """
 import math, itertools
-from shapely.geometry import box as sbox, Point
+from shapely.geometry import box as sbox, Point, Polygon
 from shapely.affinity import rotate, translate
 from shapely.ops import unary_union
 
@@ -82,16 +82,29 @@ P["thigh#1"] = (B(7.5, 25.5, -12, 7, 108.5, 135.75)
 P["shin#1"] = (B(7, 34.5, -12.5, 9.5, 32, 54.25) + B(7.5, 29.5, -12.5, 9.5, 54.25, 88.75) + B(10.5, 22.5, -9, 4, 88.75, 114.1) + B(10.5, 22.5, -7.5, 2.5, 114.1, 116)   # post, top edges bevelled 1.5
                + B(7.5, 25.5, -14.25, -12.5, 88.75, 116) + CX(29.5, 34.5, 2.5, 76, 4.75)
                + B(14, 28, -0.25, 9.25, 14.75, 32) + CX(14, 28, 4.5, 14.75, 4.75))
-# ---- boot: long foot set outboard of the shin, X 8 to 40 (16 apart); slot for the ankle tongue
-P["boot#1"] = (B(8, 40, -36.25, 4.5, 0, 31.5) + B(8, 40, 4.5, 13.75, 0, 14.75)
-               + CX(8, 40, 4.5, 14.75, 9.25)                              # heel top rounded R9.25 about the ankle
-               + B(8, 11.5, -36.25, -32, 31.5, 40) + CX(8, 11.5, -32, 35.75, 4.25)
-               + B(36.5, 40, -36.25, -32, 31.5, 40) + CX(36.5, 40, -32, 35.75, 4.25)   # wing-hinge lugs
-               + CUT(11.5, 36.5, -36.25, -16.5, 31, 31.5) + CUT(8, 40, -27.75, -16.5, 31, 31.5)   # instep 0.5 under the wing
-               + CUT(13.5, 28.5, -0.75, 14.25, 9.5, 32))                  # tongue slot
-# ---- rear wing half: knuckle between the toe lugs, plate on the instep, blade from 0.75 off the centre line to the boot's outer side
-P["wing#1"] = (CX(12, 36, -32, 35.75, 4.25) + B(12, 36, -32, -17, 31.5, 35)
-               + B(0.75, 40, -20.5, -17, 31.5, 43.5))
+# ---- v5 boot (owner 2026-10-17, "cách 2"): a wedge as in the overall image. The rear-wing plate lies on the toe slope,
+#      its hinge low at the toe; the car's rear wing keeps its height (hinge Z + plate length = 50.75).
+ZH, TH = 12.0, 30.0                      # wing hinge height and the plate's slope, degrees
+LP = 50.75 - ZH                          # hinge centre to the blade's back face, along the plate
+_c, _s = math.cos(math.radians(TH)), math.sin(math.radians(TH))
+def _w(y, z): return (y * _c - z * _s, y * _s + z * _c)      # flat wing frame -> robot pose, relative to the hinge
+_zc = (32 - ZH - LP * _s) / _c           # the blade leans forward; its back face at the cuff's bottom (Z 32)
+YH = -46.5                               # contract value; the blade's back face clears the cuff's front-bottom edge
+YH_MAX = -12.5 - 0.5 / _c - _w(LP, _zc)[0] # the hinge furthest back that keeps 0.5 square to that face
+def _H(y, z): a = _w(y, z); return (YH + a[0], ZH + a[1])
+def POLY(x0, x1, pts): return [("polyx", x0, x1, tuple(pts))]
+def CUTPOLY(x0, x1, pts): return [("cutpolyx", x0, x1, tuple(pts))]
+# blade back face offset 0.5, up to the boot top Z 31.5
+_k = (31.5 - _H(LP + 0.5, -4.75)[1]) / _c
+_heel = [(4.5 + 16.75 * math.cos(math.radians(a)), 14.75 + 16.75 * math.sin(math.radians(a))) for a in range(90, 56, -4)] + [(13.75, 28.71)]
+BOOT_PROFILE = ([(YH - 4.25, 0), (13.75, 0)] + _heel[::-1] + [(4.5, 31.5), _H(LP + 0.5, -4.75 + _k), _H(LP + 0.5, -4.75), _H(0, -4.75), (YH - 4.25, ZH)])
+P["boot#1"] = (POLY(8, 40, BOOT_PROFILE) + CX(8, 11.5, YH, ZH, 4.25) + CX(36.5, 40, YH, ZH, 4.25)   # lugs rounded about the hinge
+               + CUTX(11.5, 36.5, YH, ZH, 4.75)                                                    # knuckle clearance
+               + CUT(13.5, 28.5, -0.75, 14.25, 9.5, 32))                                          # tongue slot
+# ---- rear wing half: knuckle between the toe lugs, plate on the slope, blade square to the plate
+P["wing#1"] = (CX(12, 36, YH, ZH, 4.25)
+               + POLY(12, 36, [_H(0, -4.25), _H(LP, -4.25), _H(LP, -0.75), _H(0, -0.75)])
+               + POLY(0.75, 40, [_H(LP - 3.5, -4.25), _H(LP, -4.25), _H(LP, 7.75), _H(LP - 3.5, 7.75)]))
 P["front-wheel#1"] = CX(43.5, 59.5, 3.5, 228.25, 19.5)
 P["rear-wheel#1"] = CX(35, 47, 2.5, 76, 20.5)
 
@@ -107,6 +120,8 @@ def section(prims, x):
             elif p[0] == "cylx": polys.append(Point(p[3], p[4]).buffer(p[5], 48))
             elif p[0] == "cut": cuts.append(sbox(p[3], p[5], p[4], p[6]))
             elif p[0] == "cutx": cuts.append(Point(p[3], p[4]).buffer(p[5], 48))
+            elif p[0] == "polyx": polys.append(Polygon(p[3]))
+            elif p[0] == "cutpolyx": cuts.append(Polygon(p[3]))
     return unary_union(polys).difference(unary_union(cuts))
 
 def xr(prims):
@@ -115,7 +130,7 @@ def xr(prims):
 
 # ---- the transformation, robot -> car; ("t", (dy, dz)), ("r", (y, z), deg), ("rA"/"rB", None, deg)
 ANKLE = (4.5, 14.75)
-HINGE_A = (-32, 35.75)     # boot frame, robot pose
+HINGE_A = (YH, ZH)         # boot frame, robot pose
 SLIDE = 19.25
 HEAD = 26.5
 STAGES = [
@@ -124,7 +139,7 @@ STAGES = [
     ("forearms fold 180 into the shells", {f"forearm{s}": [("r", (-2.5, 140), 180)] for s in ("#1", "#2")}),
     ("boots fold 90 at the ankles", {f"{p}{s}": [("r", ANKLE, 90)] for s in ("#1", "#2") for p in ("boot", "wing")}),
     ("shins slide 19.25 up into the thighs", {f"{p}{s}": [("t", (0, SLIDE))] for s in ("#1", "#2") for p in ("shin", "boot", "wing", "rear-wheel")}),
-    ("rear-wing halves stand 90 on hinge A", {f"wing{s}": [("rA", None, 90)] for s in ("#1", "#2")}),
+    ("rear-wing halves stand on hinge A", {f"wing{s}": [("rA", None, 90 - TH)] for s in ("#1", "#2")}),
 ]
 
 def rot_pt(pt, origin, deg):
@@ -271,7 +286,8 @@ def report_balance():
             s = section(P[n], lo + (hi - lo) * (i + 0.5) / 12)
             if not s.is_empty:
                 a = s.area * (hi - lo) / 12; m += a; cy += a * s.centroid.x
-    print(f"Robot balance: centre of mass Y {cy / m:.1f}; boots stand on Y -36.25 (toe) .. 13.75 (heel)")
+    print(f"Robot balance: centre of mass Y {cy / m:.1f}; boots stand on Y {YH - 4.25:.2f} (toe) .. 13.75 (heel)")
+    print(f"Hinge Y may be at most {YH_MAX:.2f}. Wing hinge Y {YH:.2f}, Z {ZH}; plate {LP} at {TH} deg; blade top Z {_H(LP, 7.75)[1]:.2f}, foot Z {_H(LP, -4.25)[1]:.2f}; boot length {13.75 - YH + 4.25:.2f}")
 
 if __name__ == "__main__":
     report_static()

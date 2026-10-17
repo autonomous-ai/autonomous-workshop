@@ -171,6 +171,14 @@
     "build-a-toy/drafts/v3-backup/"
    ],
    "visible": true
+  },
+  "v4": {
+   "status": "draft: boot, wing and fist approved in direction by owner 2026-10-17 (\"chọn theo ảnh tổng thể\", \"cách 2\"); ref-01, guide-01 and guide-02 still to redraw",
+   "notes": "v5/ working dir (model.py, work/); wedge boot 64.5 long, wing hinge Y -46.5 Z 12, plate 38.75 at 30 deg, car 360.75; fist fingers detailed",
+   "backups": [
+    "build-a-toy/drafts/v4-backup/"
+   ],
+   "visible": true
   }
  },
  "contract_contradictions": [

@@ -3,9 +3,9 @@ Transformation sweeps, robot to car, stage by stage; worst gap mm (<0 = overlap 
   1. head down 26.5                       worst   2.50  head vs nose at 0%
   2. nose flips 180 over the top          worst   6.00  nose vs head at 0%
   3. forearms fold 180 into the shells    worst   5.71  forearm#1 vs rear-wheel#1 at 8%
-  4. boots fold 90 at the ankles          worst   4.50  wing#1 vs shin#1 at 0%
+  4. boots fold 90 at the ankles          worst   0.69  wing#1 vs shin#1 at 0%
   5. shins slide 19.25 up into the thighs worst   6.00  shin#1 vs torso at 100%
-  6. rear-wing halves stand 90 on hinge A worst  22.50  wing#1 vs shin#1 at 0%
+  6. rear-wing halves stand on hinge A    worst  15.30  wing#1 vs shin#1 at 0%
 Car pose: unjoined pairs closer than 0.5
 Car on the ground (car down is +Y; ground = lowest wheel point):
   front-wheel#1  lowest Y  23.00  clearance  0.00
@@ -16,6 +16,8 @@ Car on the ground (car down is +Y; ground = lowest wheel point):
   nose           lowest Y  21.25  clearance  1.75
   boot#1         lowest Y  19.25  clearance  3.75
   boot#2         lowest Y  19.25  clearance  3.75
+  wing#1         lowest Y  11.50  clearance 11.50
+  wing#2         lowest Y  11.50  clearance 11.50
   head           lowest Y  10.25  clearance 12.75
   shin#1         lowest Y   9.50  clearance 13.50
   shin#2         lowest Y   9.50  clearance 13.50
@@ -25,10 +27,8 @@ Car on the ground (car down is +Y; ground = lowest wheel point):
   thigh#2        lowest Y   7.00  clearance 16.00
   forearm#1      lowest Y   5.00  clearance 18.00
   forearm#2      lowest Y   5.00  clearance 18.00
-  wing#1         lowest Y -12.25  clearance 35.25
-  wing#2         lowest Y -12.25  clearance 35.25
-  car length along Z -10.2 .. 336.0 = 346.2; height 54.5 (top Y -31.5)
-  hinge A in the car at Y -16.50, Z -2.50
+  car length along Z -24.7 .. 336.0 = 360.8; height 54.5 (top Y -31.5)
+  hinge A in the car at Y 7.25, Z -17.00
 Joined pairs: worst gap over every stage (a pin or slide contact by design shows as about 0)
   arm-shell#1    / forearm#1        0.50
   arm-shell#1    / torso            5.35
@@ -58,4 +58,5 @@ Posing sweeps, the pinned pair itself (0.5 needed away from the pin)
   shoulder#1 back 5      worst   5.35  arm-shell#1 vs torso
   hip#1 forward 20       worst   0.58  thigh#1 vs torso
   hip#1 back 20          worst   0.58  thigh#1 vs torso
-Robot balance: centre of mass Y -1.6; boots stand on Y -36.25 (toe) .. 13.75 (heel)
+Robot balance: centre of mass Y -1.6; boots stand on Y -50.75 (toe) .. 13.75 (heel)
+Hinge Y may be at most -46.27. Wing hinge Y -46.50, Z 12.0; plate 38.75 at 30.0 deg; blade top Z 38.09, foot Z 27.69; boot length 64.50
