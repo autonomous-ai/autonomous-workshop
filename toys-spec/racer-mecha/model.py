@@ -68,7 +68,8 @@ P["nose"] = (CX(-10, 10, 17, 232, 4.25)
 # ---- arm shell: one white sleeve from the shoulder to the wrist, 26 x 22, top rounded R11 about the shoulder axis
 P["arm-shell#1"] = (B(37, 63, -13.5, 8.5, 131.75, 193.25) + CX(37, 63, -2.5, 193.25, 11)
                     + CUT(39.5, 60.5, -10.5, 8.5, 131.75, 183.5))
-P["forearm#1"] = B(40, 60, -10, 5, 102.75, 140) + CX(40, 60, -2.5, 140, 7.5)
+P["forearm#1"] = (B(40, 60, -10, 5, 102.75, 140) + CX(40, 60, -2.5, 140, 7.5)
+                  + B(40, 60, -11.5, -10, 102.75, 120))                # curled hand 1.5 proud of the guard (fist fix)
 # ---- thigh: an 18 x 19 sleeve open at the bottom; the shin's post slides 19.25 up into it. Its top over the cavity is a
 #      low gable falling 20 degrees from Z 138.75 beside the tongue to 137.84 at the cavity's edges; the walls end at
 #      135.75, their top outer edges bevelled 1 at 52 degrees; the cavity's ceiling edges bevelled 1.5 at 52 degrees.

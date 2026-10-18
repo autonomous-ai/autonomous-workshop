@@ -2,7 +2,7 @@
 
 A heroic robot in detailed toy armour, 250 mm to the top of its helmet, that
 transforms by hand, with no part removed, into an open-wheel Formula racing
-car 360.75 mm long on four wheels: the car stood up on its tail and opened out.
+car 360.75 mm long on four wheels.
 
 Inventor: `rowan-vale`.
 
@@ -122,13 +122,15 @@ are the elbow cheeks, with the elbow bore along X at Y -2.5, Z 140. The
 shoulder bore runs along X into the top block from its inboard face at Y
 -2.5, Z 193.25. Prints on its front face.
 
-**Forearm.** A black closed fist 20 wide (X 40 to 60) x 15 deep (Y -10 to
-5), Z 102.75 to 140, ending at the top in a wrist knuckle rounded R7.5 about
+**Forearm.** A black closed fist 20 wide (X 40 to 60) x 16.5 deep (Y -11.5
+to 5), Z 102.75 to 140, ending at the top in a wrist knuckle rounded R7.5 about
 the elbow axis Y -2.5, Z 140; under the knuckle a wrist guard down to Z 120
-with a raised V plate 0.75 proud. Below it, across the front, a thumb 2.8
-wide wrapping the inboard corner and four fingers 3.5 wide, split by grooves
-0.8 wide and 2 deep; each finger crossed by a knuckle groove at Z 111, its tip
-rounded R2 at the bottom. Prints on its outboard face.
+with a raised V plate 0.75 proud. Below Z 120 the hand curls: four fingers
+3.5 wide (X 43.6 to 60), split by grooves 0.8 wide and 3 deep, stand 1.5
+proud of the guard (front at Y -11.5), each in three segments split by 0.8
+grooves at Z 111 and 106, its tip curling under, rounded R5 about X. A thumb
+2.8 wide (X 40 to 42.8, Z 109 to 119), as proud, wraps the inboard corner;
+under it the corner is cut away. Prints on its outboard face.
 
 **Thigh.** A sleeve 18 wide (X 7.5 to 25.5) x 19 deep (Y -12 to 7), Z 108.5
 to 135.75, open at the bottom: its cavity X 10 to 23, Y -9.5 to 4.5, up to Z
@@ -192,11 +194,10 @@ face.
 
 ## Joints
 
-Every hinge is a purchased steel ISO 8734 dowel pin Ø3 as R09 sets out
-(Ø3.1 bores and slots hold poses by friction). Each wheel is held by a purchased
+Every hinge is a purchased steel ISO 8734 dowel pin Ø3 as R09 sets out.
+Each wheel is held by a purchased
 Ø3 push-on cap (starlock) on the dowel's outer end. Every horizontal bore is a
-teardrop with its point away from the bed. No glue. Each joint's dowel,
-seats and axis are in its Interface text.
+teardrop with its point away from the bed. No glue.
 
 ## Transformation
 
@@ -217,7 +218,7 @@ From robot to car, in this order (reverse for car to robot):
    meet at the centre line, 1.5 apart.
 7. Lay the car down on its back, on its wheels.
 
-Posing ranges are R06's. The fists do not bend forward: the arm shell's front wall reaches its bottom.
+The fists do not bend forward: the arm shell's front wall reaches its bottom.
 
 ## Motion and fit
 
@@ -228,7 +229,7 @@ Posing ranges are R06's. The fists do not bend forward: the arm shell's front wa
 
 ## Print and handling
 
-Workshop prints at a 0.4 mm nozzle; every part prints without support in
+Every part prints without support in
 the stance named above. Every point, chisel, keel and V underside ends in a
 flat land at least 0.8 mm across (one print minimum at a 0.4 mm nozzle). A
 drawn detail under the print minimums is enlarged to the minimum; when the
@@ -262,7 +263,7 @@ and above the slide dowel's bore in the post; 2.3 from the hip bore at Z 145
 to the hip slot's bottom, and beside the neck post's 3.4 slot; 2.95 or 3.2
 round an R4.5 or R4.75 tongue's Ø3.1 bore. The floors stay below these: the
 torso and the boot 1.1, the nose and the wing 0.95, the thigh and the shin
-1.4, the head 1.9. The robot
+1.4, the head 1.9, the fist 2.5. The robot
 stands unsupported: its centre of mass lies at Y -1.6, 49.15 behind the toes
 and 15.35 ahead of the heels.
 
@@ -310,7 +311,7 @@ and 15.35 ahead of the heels.
     {"id":"nose","name":"Nose and front wing","count":1,"extents_mm":[84,19.75,108.25],"wall_min_mm":0.95},
     {"id":"head","name":"Head","count":1,"extents_mm":[19,19.5,59.25],"wall_min_mm":1.9},
     {"id":"arm-shell","name":"Arm shell","count":2,"extents_mm":[26,22,72.5],"wall_min_mm":2.0},
-    {"id":"forearm","name":"Fist","count":2,"extents_mm":[20,15,44.75],"wall_min_mm":2.5},
+    {"id":"forearm","name":"Fist","count":2,"extents_mm":[20,16.5,44.75],"wall_min_mm":2.5},
     {"id":"thigh","name":"Thigh sleeve","count":2,"extents_mm":[18,19,41],"wall_min_mm":1.4},
     {"id":"shin","name":"Shin and slide post","count":2,"extents_mm":[27.5,23.75,106],"wall_min_mm":1.4},
     {"id":"boot","name":"Boot","count":2,"extents_mm":[32,64.5,31.5],"wall_min_mm":1.1},
@@ -335,7 +336,7 @@ and 15.35 ahead of the heels.
     {"id":"R14","scope":"geometry:nose","text":"At the tip a black front wing 84 wide and 17 tall, a main plane under a flap slat with a 2 x 1.2 slot by each end, and a stepped red endplate 3 wide at each end rising 3.5 above it; the red cone runs on over the wing's outer face to its lower edge, narrowing to 6."},
     {"id":"R15","scope":"geometry:head","text":"A white and red helmet 19 wide and 23 tall with a blue visor band across its front, faceted cheek guards and a raised crest 4 wide along its top centre line, bevelled at 52 degrees, on a neck post 8 wide, 9.75 deep and 36.25 long with a 3.4 wide slot through it from front to back."},
     {"id":"R16","scope":"geometry:arm-shell","text":"A 26 x 22 white arm 72.5 tall, a channel open at the back and the bottom, its top rounded about the shoulder axis, its outer edges bevelled 2 to 4, a panel line splitting upper from lower arm, a red band 11.5 tall round the upper arm with a red tab under it, vents at a 2.2 slit pitch; its front, the bed face, is plated by engraved lines only."},
-    {"id":"R17","scope":"geometry:forearm","text":"A black closed fist 20 wide and 15 deep, ending at the top in a rounded wrist knuckle as wide as the fist, a wrist guard with a raised V plate, then four separate fingers across the front split by grooves 0.8 wide and 2 deep, each with a knuckle groove and a rounded tip, and a thumb wrapping its inboard front corner."},
+    {"id":"R17","scope":"geometry:forearm","text":"A black closed fist 20 wide and 16.5 deep, ending at the top in a rounded wrist knuckle as wide as the fist, a wrist guard with a raised V plate, then a curled hand standing proud of the guard: four separate fingers split by grooves 0.8 wide and 3 deep, each in three segments curling under the fist, and a thumb on its inboard front corner, the corner cut away under it."},
     {"id":"R18","scope":"geometry:thigh","text":"An 18 x 19 red sleeve 27.25 tall, open at the bottom, whose top steps in as a low gable and rises into a rounded hip tongue 10 wide toward its inboard side, with a 3.2 wide slot along each side wall for 19.25 mm of slide; its front plate bevelled 2 to 4 at its corners and carrying two white chevron panels, its front and outer side layered armour plates with vents at a 2.2 slit pitch."},
     {"id":"R19","scope":"geometry:shin","text":"A red shin: a cuff 27.5 wide and 22.25 tall under a block 22 wide and 34.5 tall, a white zig-zag stripe down the front of both, a black slide post 12 x 13 rising 27.25 above with a red knee guard 18 wide and 1.75 thick in front of it up to the post's top, the block's top sloping down at 52 degrees beside and behind the post, a wheel boss on the outer face and a rounded ankle tongue 14 wide below; layered armour plates with vents at a 2.2 slit pitch, bevelled 2 to 4 where it tapers toward the ankle; the knee guard is plain, too thin for panel lines."},
     {"id":"R20","scope":"geometry:boot","text":"A black wedge boot 32 wide and 64.5 long pointing forward, 31.5 tall behind the toe slope, which falls forward at 30 degrees to a toe face 12 tall, its heel top rounded about the ankle, a slot for the shin's tongue open at the top and the heel, and two hinge lugs at the very toe; a toe plate on its toe bevelled 2 to 4, a sole band with tread notches, its sides layered armour plates with bevelled edges and vents at a 2.2 slit pitch."},

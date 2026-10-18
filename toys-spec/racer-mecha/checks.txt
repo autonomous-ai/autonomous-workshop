@@ -2,7 +2,7 @@ Display Pose: unjoined pairs closer than 0.5
 Transformation sweeps, robot to car, stage by stage; worst gap mm (<0 = overlap area); joined pairs listed below
   1. head down 26.5                       worst   2.50  head vs nose at 0%
   2. nose flips 180 over the top          worst   6.00  nose vs head at 0%
-  3. forearms fold 180 into the shells    worst   5.71  forearm#1 vs rear-wheel#1 at 8%
+  3. forearms fold 180 into the shells    worst   5.51  forearm#1 vs rear-wheel#1 at 8%
   4. boots fold 90 at the ankles          worst   0.69  wing#1 vs shin#1 at 0%
   5. shins slide 19.25 up into the thighs worst   6.00  shin#1 vs torso at 100%
   6. rear-wing halves stand on hinge A    worst  15.30  wing#1 vs shin#1 at 0%
@@ -25,8 +25,8 @@ Car on the ground (car down is +Y; ground = lowest wheel point):
   arm-shell#2    lowest Y   8.50  clearance 14.50
   thigh#1        lowest Y   7.00  clearance 16.00
   thigh#2        lowest Y   7.00  clearance 16.00
-  forearm#1      lowest Y   5.00  clearance 18.00
-  forearm#2      lowest Y   5.00  clearance 18.00
+  forearm#1      lowest Y   6.50  clearance 16.50
+  forearm#2      lowest Y   6.50  clearance 16.50
   car length along Z -24.7 .. 336.0 = 360.8; height 54.5 (top Y -31.5)
   hinge A in the car at Y 7.25, Z -17.00
 Joined pairs: worst gap over every stage (a pin or slide contact by design shows as about 0)
@@ -51,7 +51,7 @@ Joined pairs: worst gap over every stage (a pin or slide contact by design shows
 Posing sweeps from the Display Pose (0.5 needed)
   shoulder#1 forward 90  worst   5.01  arm-shell#1 vs front-wheel#1
   shoulder#1 back 5      worst   5.01  arm-shell#1 vs front-wheel#1
-  hip#1 forward 20       worst   5.78  rear-wheel#1 vs forearm#1
+  hip#1 forward 20       worst   5.49  rear-wheel#1 vs forearm#1
   hip#1 back 20          worst   5.78  rear-wheel#1 vs forearm#1
 Posing sweeps, the pinned pair itself (0.5 needed away from the pin)
   shoulder#1 forward 90  worst   5.35  arm-shell#1 vs torso
