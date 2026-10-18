@@ -132,7 +132,13 @@
     "repeated_print_defects": 2,
     "blocked_open": [
      "arm-shell#4"
-    ]
+    ],
+    "budget_raised": "owner",
+    "owner_decision": {
+     "at": "2026-10-18T04:25Z",
+     "limit_before": 100000000,
+     "limit_after": 200000000
+    }
    }
   }
  ],
