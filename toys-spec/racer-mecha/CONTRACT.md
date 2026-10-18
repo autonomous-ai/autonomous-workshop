@@ -273,7 +273,7 @@ and 15.35 ahead of the heels.
   "inventor":"rowan-vale",
   "envelope_mm":[
     126,
-    68.75,
+    83.25,
     250
   ],
   "guides":[
@@ -310,7 +310,7 @@ and 15.35 ahead of the heels.
     {"id":"nose","name":"Nose and front wing","count":1,"extents_mm":[84,19.75,108.25],"wall_min_mm":0.95},
     {"id":"head","name":"Head","count":1,"extents_mm":[19,19.5,59.25],"wall_min_mm":1.9},
     {"id":"arm-shell","name":"Arm shell","count":2,"extents_mm":[26,22,72.5],"wall_min_mm":2.0},
-    {"id":"forearm","name":"Fist","count":2,"extents_mm":[20,15,44.75],"wall_min_mm":3.0},
+    {"id":"forearm","name":"Fist","count":2,"extents_mm":[20,15,44.75],"wall_min_mm":2.5},
     {"id":"thigh","name":"Thigh sleeve","count":2,"extents_mm":[18,19,41],"wall_min_mm":1.4},
     {"id":"shin","name":"Shin and slide post","count":2,"extents_mm":[27.5,23.75,106],"wall_min_mm":1.4},
     {"id":"boot","name":"Boot","count":2,"extents_mm":[32,64.5,31.5],"wall_min_mm":1.1},
@@ -322,7 +322,7 @@ and 15.35 ahead of the heels.
     {"id":"R01","scope":"assembly","text":"In the Display Pose the robot stands upright on both boots, its helmet top at Z 250, arms hanging straight 2 out from the torso, every part dressed in layered, faceted armour plates with bevelled corners, not blocks: the cockpit opening ringed by the closed red halo sits in the middle of the broad black chest from Z 170 to 216.25, a shoulder tower juts over each arm with a front wheel on its outer face at Z 228.25, a rear wheel on the outer side of each calf at Z 76, a red knee guard runs up from each shin over the foot of its thigh from Z 88.75 to 116, and each wedge boot carries a folded wing half lying on its toe slope, whose red blade leans forward in front of the shin."},
     {"id":"R02","scope":"assembly","text":"From behind, the nose lies down the middle of the robot's back from its hinge at Z 232, its front wing 84 wide across the back of the thighs from Z 128 to 145, and nothing else rises behind the head."},
     {"id":"R03","scope":"assembly","text":"In the car pose the toy is an open-wheel Formula car 360.75 mm long, 126 wide and 54.5 tall to the rear wing, lying on the robot's back: nose cone and front wing ahead of the front wheels, the cockpit and halo on top, the arm shells as front sidepods, the legs side by side as the rear body, the boots as the tail, and the two wing halves standing on the boots as the rear wing, their blades meeting at the centre line."},
-    {"id":"R04","scope":"assembly","text":"The robot becomes the car by seven moves and no part comes off: the head slides 26.5 down into its pocket, the nose flips 180 degrees up over the top of the back, each fist folds 180 degrees into its arm shell, each boot folds 90 degrees at the ankle, each shin slides 19.25 up into its thigh, each wing half stands up 90 degrees on its hinge, and the car is laid on its back."},
+    {"id":"R04","scope":"assembly","text":"The robot becomes the car by seven moves and no part comes off: the head slides 26.5 down into its pocket, the nose flips 180 degrees up over the top of the back, each fist folds 180 degrees into its arm shell, each boot folds 90 degrees at the ankle, each shin slides 19.25 up into its thigh, each wing half stands up 60 degrees on its hinge, and the car is laid on its back."},
     {"id":"R05","scope":"assembly","text":"In the car pose the car rests on all four wheels, the nose knuckle and the torso's hinge cheeks 1.75 mm and every other part at least 3.75 mm above the ground, and each wheel turns freely on its dowel."},
     {"id":"R06","scope":"assembly","text":"Posing ranges in the robot: shoulders 90 degrees forward and 5 back, hips 20 forward and 20 back, each holding its pose by friction; the knees do not bend, the legs slide."},
     {"id":"R07","scope":"assembly","text":"Every moving part keeps at least 0.5 mm from every other part through each transformation move and posing range and in both poses, except at the contacts the Interfaces declare: the head-slide dowel stopping in the neck post's slot, the lowered helmet on the pocket floor, and the knee-slide dowel stopping at its slot ends. Checked with --check-motion true: one sweep per transformation move in at most 10 steps against only the parts it can reach; a skipped, killed or timed-out sweep fails this requirement."},

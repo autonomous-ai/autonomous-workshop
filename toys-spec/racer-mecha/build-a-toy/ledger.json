@@ -122,7 +122,17 @@
    "toy_dir": "toys/rowan-vale-racer-mecha-v04",
    "final_status": "complete",
    "brief": "build-a-toy/r01/brief.md",
-   "finding_ids": [],
+   "finding_ids": [
+    "envelope",
+    "extents:wing",
+    "wall:forearm",
+    "wall:thigh",
+    "wall:shin",
+    "likeness:ref-01-racer-mecha",
+    "likeness:ref-03-nose",
+    "likeness:ref-08-shin",
+    "likeness:ref-10-wing"
+   ],
    "notes": "v4 contract (wedge boot, wing plate on the toe slope, detailed fist) plus v03 findings. Launched 07:19Z with workshop fix from worktree racer-v03-df4d3e7b (origin/main df4d3e7b), --agent claude --model claude-opus-5-5 --effort medium --check-motion true --max-tokens 100000000 --turn-minutes 360 --no-publish; receipt References: 12, Guides: 13 (matches). Log build-a-toy/r01/fix.log. 2026-10-17 09:19Z waiting on usage-limit at 72M tokens (11 workers, Blocked Reports on boot and forearm answered in-run, 2 Reference Conflicts); resumed 2026-10-18 04:01Z after the limit reset, with --check-motion true (log resume1.log). 2026-10-18 04:25Z stopped on budget at 100M/100M: 6 of 11 Components locked (forearm, front-wheel, head, rear-wheel, thigh, wing; not arm-shell 7 rounds, boot 9, nose 10, shin 11, torso 5), 75 component rounds, 2 repeated print defects, 2 Reference Conflicts; Blocked Report 4 (arm-shell front grille: recessed panel vs R16 engraved lines only) open. Fewer locks than v03 at its budget stop (11, 0 repeats), so not budget-progressing: class other, owner asked whether to raise the cap.",
    "stop": {
     "at": "2026-10-18T04:25Z",
@@ -142,7 +152,8 @@
    },
    "tokens": 136602305,
    "locked": 11,
-   "repeated_print_defects": 2
+   "repeated_print_defects": 2,
+   "findings": "build-a-toy/r01/findings.json"
   }
  ],
  "contract_versions": {
