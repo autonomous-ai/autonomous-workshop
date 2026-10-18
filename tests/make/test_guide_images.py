@@ -86,6 +86,38 @@ class GuideImageTest(unittest.TestCase):
         view = self.make_round["guide_view"](guides)
         self.assertEqual(set(view[0]), {"file", "shows", "path"})
 
+    def test_an_unscoped_guide_reaches_every_component_and_a_scoped_one_only_its_own(self):
+        # Issue #125: geometries names the Component Workers that read a guide.
+        contract = dict(CONTRACT, guides=[CONTRACT["guides"][0],
+                                          dict(CONTRACT["guides"][1], geometries=["leg", "body"])])
+        self.write_wish(contract)
+        guides, error = self.make_round["sealed_guides"](self.project)
+        self.assertIsNone(error)
+        self.assertEqual([item["geometries"] for item in guides], [None, ["leg", "body"]])
+        component_guides = self.make_round["component_guides"]
+        files = lambda role: [item["file"] for item in component_guides(guides, role)]
+        self.assertEqual(files("body"), ["guide-01-steps.png", "guide-02-side.png"])
+        self.assertEqual(files("leg"), ["guide-01-steps.png", "guide-02-side.png"])
+        self.assertEqual(files("head"), ["guide-01-steps.png"])
+        # What the worker is told is unchanged in shape.
+        view = self.make_round["guide_view"](component_guides(guides, "head"))
+        self.assertEqual(view, [{"file": "guide-01-steps.png", "shows": CONTRACT["guides"][0]["shows"],
+                                 "path": str(self.run_root / "wish-references/guide-01-steps.png")}])
+
+    def test_without_geometries_every_component_reads_every_guide(self):
+        guides, _ = self.make_round["sealed_guides"](self.project)
+        self.assertEqual([item["geometries"] for item in guides], [None, None])
+        self.assertEqual(self.make_round["component_guides"](guides, "head"), guides)
+
+    def test_a_scoped_guide_is_still_accounted_for(self):
+        # guide-steps.json still covers every guide, scoped or not.
+        contract = dict(CONTRACT, guides=[dict(CONTRACT["guides"][0], geometries=["body"]),
+                                          CONTRACT["guides"][1]])
+        self.write_wish(contract)
+        failures, report = self.report()
+        self.assertIn("guide-01-steps.png: 3 step(s) not accounted for", failures[0])
+        self.assertEqual([item["file"] for item in report], ["guide-01-steps.png", "guide-02-side.png"])
+
     def test_a_guide_the_contract_does_not_list_is_an_error(self):
         contract = dict(CONTRACT, guides=CONTRACT["guides"][:1])
         self.write_wish(contract)
