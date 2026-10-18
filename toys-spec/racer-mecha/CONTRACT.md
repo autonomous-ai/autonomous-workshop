@@ -142,7 +142,7 @@ Z 145. Each side wall (X 7.5 to 10 and 23 to 25.5) carries a slide slot along
 Z at Y -2.5, 3.2 wide, its ends rounded about Z 112.25 and Z 131.5 (R09's clicks). Prints
 standing on its bottom face (Z 108.5).
 
-**Shin.** A cuff 27.5 wide (X 7 to 34.5) x 22 deep (Y -12.5 to 9.5), Z
+**Shin.** A cuff 27.5 wide (X 2.75 to 30.25), flared both sides alike, x 22 deep (Y -12.5 to 9.5), Z
 32 to 54.25, and above it a block 18 wide (X 7.5 to 25.5), Z 54.25 to 88.75,
 the cuff's step rising at 52 degrees, with a white zig-zag stripe 5 wide down
 the front of both, centred on X 16.5. On top the slide post, 12 wide (X 10.5
@@ -224,7 +224,7 @@ The fists do not bend forward: the arm shell's front wall reaches its bottom.
 - The knee-slide dowel's clicks hold the robot standing at full length and
   the car at its short length; the ankle and wing hinges hold by friction.
 - Assembled, not printed in place: each dowel is pressed in after its part
-  is seated, the head's retainer last, through the torso's back.
+  is seated.
 
 ## Print and handling
 
@@ -312,7 +312,7 @@ and 15.35 ahead of the heels.
     {"id":"arm-shell","name":"Arm shell","count":2,"extents_mm":[26,22,72.5],"wall_min_mm":2.0},
     {"id":"forearm","name":"Fist","count":2,"extents_mm":[20,16.5,44.75],"wall_min_mm":2.5},
     {"id":"thigh","name":"Thigh sleeve","count":2,"extents_mm":[18,19,41],"wall_min_mm":1.4},
-    {"id":"shin","name":"Shin and slide post","count":2,"extents_mm":[27.5,23.75,106],"wall_min_mm":1.4},
+    {"id":"shin","name":"Shin and slide post","count":2,"extents_mm":[31.75,23.75,106],"wall_min_mm":1.4},
     {"id":"boot","name":"Boot","count":2,"extents_mm":[32,64.5,31.5],"wall_min_mm":1.1},
     {"id":"wing","name":"Rear-wing half","count":2,"extents_mm":[39.25,43,12],"wall_min_mm":0.95},
     {"id":"front-wheel","name":"Front wheel","count":2,"extents_mm":[39,39,16],"wall_min_mm":2.0},

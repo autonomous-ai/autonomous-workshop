@@ -15,7 +15,7 @@ pair itself (arm shell / torso, thigh / torso), which the v02 model skipped.
 
     uv run --with shapely --with numpy python model.py > checks.txt
 """
-import math, itertools
+import math, itertools, json, sys
 from shapely.geometry import box as sbox, Point, Polygon
 from shapely.affinity import rotate, translate
 from shapely.ops import unary_union
@@ -80,7 +80,7 @@ P["thigh#1"] = (B(7.5, 25.5, -12, 7, 108.5, 135.75)
                 + CUT(7.5, 25.5, -12, -11, 134.47, 135.75) + CUT(7.5, 25.5, 6, 7, 134.47, 135.75)   # wall top bevels
                 + CUT(10, 23, -9.5, 4.5, 108.5, 133.85) + CUT(10, 23, -8, 3, 133.85, 135.75))   # cavity, ceiling edges bevelled
 # ---- shin: cuff 27.5 x 22, block 18 flush under the thigh (owner 2026-10-18), post 12 x 13 with the knee-slide dowel, knee guard in front of the post up to its top, ankle tongue below
-P["shin#1"] = (B(7, 34.5, -12.5, 9.5, 32, 54.25) + B(7.5, 25.5, -12.5, 9.5, 54.25, 88.75) + B(10.5, 22.5, -9, 4, 88.75, 114.1) + B(10.5, 22.5, -7.5, 2.5, 114.1, 116)   # post, top edges bevelled 1.5
+P["shin#1"] = (B(2.75, 30.25, -12.5, 9.5, 32, 54.25) + B(7.5, 25.5, -12.5, 9.5, 54.25, 88.75) + B(10.5, 22.5, -9, 4, 88.75, 114.1) + B(10.5, 22.5, -7.5, 2.5, 114.1, 116)   # post, top edges bevelled 1.5
                + B(7.5, 25.5, -14.25, -12.5, 88.75, 116) + CX(25.5, 34.5, 2.5, 76, 4.75)
                + B(14, 28, -0.25, 9.25, 14.75, 32) + CX(14, 28, 4.5, 14.75, 4.75))
 # ---- v5 boot (owner 2026-10-17, "cách 2"): a wedge as in the overall image. The rear-wing plate lies on the toe slope,
@@ -290,7 +290,44 @@ def report_balance():
     print(f"Robot balance: centre of mass Y {cy / m:.1f}; boots stand on Y {YH - 4.25:.2f} (toe) .. 13.75 (heel)")
     print(f"Hinge Y may be at most {YH_MAX:.2f}. Wing hinge Y {YH:.2f}, Z {ZH}; plate {LP} at {TH} deg; blade top Z {_H(LP, 7.75)[1]:.2f}, foot Z {_H(LP, -4.25)[1]:.2f}; boot length {13.75 - YH + 4.25:.2f}")
 
+def write_facts(path):
+    """Facts for design-a-toy's contract_lint.py: Display Pose boxes and the moves."""
+    def bounds(geoms):
+        bs = [g.bounds for g in geoms if not g.is_empty]
+        return [min(b[0] for b in bs), max(b[2] for b in bs)], [min(b[1] for b in bs), max(b[3] for b in bs)]
+    comps = {}
+    for n in P:
+        lo, hi = xr(P[n])
+        y, z = bounds([section(P[n], lo + (hi - lo) * i / 40) for i in range(41)])
+        edges = sorted({v for q in P[n] for v in q[1:3] if lo <= v <= hi})
+        xs = sorted({min(max(v + d, lo), hi) for v in edges for d in (-1e-6, 1e-6)} | {(a + b) / 2 for a, b in zip(edges, edges[1:])})
+        secs = [(x, section(P[n], x)) for x in xs]
+        prof = []
+        for zz in range(math.floor(z[0]), math.ceil(z[1]) + 1):
+            line = sbox(-1e3, zz - 0.05, 1e3, zz + 0.05)
+            hit = [x for x, g in secs if not g.is_empty and g.intersects(line)]
+            if hit: prof.append([zz, min(hit), max(hit)])
+        comps[n] = {"geometry": n.split("#")[0], "bbox": {"x": [lo, hi], "y": y, "z": z}, "profile": prof}
+    allx = [v for c in comps.values() for v in c["bbox"]["x"]]
+    env = {a: [min(c["bbox"][a][0] for c in comps.values()), max(c["bbox"][a][1] for c in comps.values())] for a in "yz"}
+    env["x"] = [min(allx), max(allx)]
+    lo, hi = xr(P["wing#1"])                              # the wing's extents are given in its flat (car) frame
+    y, z = bounds([rotate(section(P["wing#1"], lo + (hi - lo) * i / 40), -TH, origin=(YH, ZH)) for i in range(41)])
+    moves = {}
+    for _, mv in STAGES:
+        for n, ops in mv.items():
+            for op in ops:
+                moves.setdefault(n, []).append({"translation": [0, op[1][0], op[1][1]]} if op[0] == "t" else {"rotation_deg": op[2]})
+    leg = ["thigh", "shin", "boot", "wing", "rear-wheel"]       # posing ranges report_posing sweeps (back to forward)
+    for sd in ("#1", "#2"):
+        for n in ("arm-shell", "forearm"): moves.setdefault(n + sd, []).append({"rotation_deg": 95})
+        for n in leg: moves.setdefault(n + sd, []).append({"rotation_deg": 40})
+    json.dump({"envelope": env, "components": comps, "extents": {"wing": [hi - lo, y[1] - y[0], z[1] - z[0]]}, "moves": moves},
+              open(path, "w"), indent=1)
+
 if __name__ == "__main__":
+    if len(sys.argv) > 2 and sys.argv[1] == "--facts":
+        write_facts(sys.argv[2]); sys.exit(0)
     report_static()
     report_sweeps()
     report_car()

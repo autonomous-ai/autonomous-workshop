@@ -8,6 +8,10 @@ quote the words you read it from (at most 120 characters).
 
 - **move**: the text says a Component turns by some angle in a move:
   `{"kind": "move", "component": "<geometry id or id#n>", "deg": 60, "quote": "..."}`.
+  Add `"joint": "<Interface id>"` naming the Interface whose joint the move
+  turns about, from the block's `interfaces[].id`, without its instance
+  number (`wing-hinge` for `wing-hinge-1` and `-2`), whenever the text names
+  the joint ("on its hinge", "at the ankle", "about its wrist").
   An angle a move passes through, such as "the toe points down", is not a move.
 - **range**: the text places a Component's own material from one coordinate
   to another on one axis:

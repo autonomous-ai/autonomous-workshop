@@ -28,12 +28,16 @@ Display Pose):
 CLAIMS.json is the Stage 3e extraction: every number the prose and the rows
 state about a Component, transcribed by a fresh reader, never computed:
 
-    [{"kind": "move", "component": "wing", "deg": 90, "quote": "..."},
+    [{"kind": "move", "component": "wing", "deg": 90, "joint": "wing-hinge", "quote": "..."},
      {"kind": "range", "component": "shin", "axis": "x", "from": 7.5, "to": 29.5, "quote": "..."},
      {"kind": "size", "component": "forearm", "feature": "thumb", "value": 2.8, "quote": "..."},
      {"kind": "envelope", "axis": "y", "value": 83.25, "quote": "..."}]
 
-`component` is a geometry id, an instance (`shin#1`) or `assembly`. A size
+`component` is a geometry id, an instance (`shin#1`) or `assembly`. A move's
+`joint` names the Interface it turns about (`wing-hinge` matches `wing-hinge-1`
+and `-2`); without one, any move the model makes of that Component matches.
+A range is checked only against the Component's whole box, so it catches a
+position outside the part, not one shifted inside it. A size
 claim may carry `"exception": true` when the contract names it as an
 exception to the floor.
 
@@ -125,9 +129,21 @@ def lint(contract, facts, claims):
     for c in claims:
         k, comp, q = c["kind"], c.get("component"), c.get("quote", "")[:120]
         if k == "move":
-            degs = [abs(mv["rotation_deg"]) for mv in model_moves(comp) if "rotation_deg" in mv]
+            if c.get("joint"):
+                # the Interface poses for this joint (wing-hinge matches wing-hinge-1 and -2) and this mover
+                geo = comp.split("#")[0]
+                degs = [abs(m["rotation"]["end_deg"] - m["rotation"]["start_deg"])
+                        for itf in contract.get("interfaces", []) if itf["id"] == c["joint"] or itf["id"].startswith(c["joint"] + "-")
+                        for m in (itf.get("poses") or {}).get("movers", [])
+                        if "rotation" in m and m["component"].split("#")[0] == geo]
+                if not degs:
+                    add("error", "claims", "%s turns %g about %s in the text, but no Interface %s turns it: \"%s\"" % (
+                        comp, c["deg"], c["joint"], c["joint"], q))
+            else:
+                degs = [abs(mv["rotation_deg"]) for mv in model_moves(comp) if "rotation_deg" in mv]
             if degs and not any(abs(abs(c["deg"]) - d) <= TOL for d in degs):
-                add("error", "claims", "%s turns %g in the text, model %s: \"%s\"" % (comp, c["deg"], degs, q))
+                add("error", "claims", "%s turns %g in the text, %s %s: \"%s\"" % (
+                    comp, c["deg"], "Interface " + c["joint"] if c.get("joint") else "model", sorted(set(degs)), q))
         elif k == "range":
             for n in instances(facts, comp)[:1]:
                 lo, hi = facts["components"][n]["bbox"][c["axis"]]
