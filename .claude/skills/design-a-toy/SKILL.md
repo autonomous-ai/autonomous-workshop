@@ -403,7 +403,11 @@ from the approved reference images, one colour per Unique Geometry.
 Write the contract as schema 5 with a `guides[]` entry per image
 (`guide-NN-<slug>.png`, what it `shows`, and for a transformation sheet the
 `steps` it draws, in its order, worded as the Transformation section's
-moves). Check each Guide Image against the contract before Stage 4, by eye
+moves). A sheet that shows one part - its reference beside more views of
+it - is its own guide with `"geometries": ["<that geometry id>"]`, so only
+that part's Component Worker reads it and the sheet can be drawn larger; a
+guide without `geometries`, such as the whole transformation sheet, reaches
+every worker. Check each Guide Image against the contract before Stage 4, by eye
 and by count, not by measurement: the number of steps and their order match
 the Transformation section, each part keeps one colour in every panel, no
 panel shows a part, joint or move the contract does not have, and the robot

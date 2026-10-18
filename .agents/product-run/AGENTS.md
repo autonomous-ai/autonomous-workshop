@@ -151,7 +151,9 @@ feedback loop in Python.
 - A schema 5 Design Contract may also seal Guide Images under
   `wish-references/guide-NN-<slug>` (ADR 0089): pictures that explain the
   design, such as a transformation step sheet. Open each before Make and
-  give every Component Worker their paths. They are never compared with the
+  give each Component Worker the paths of the guides for its Component:
+  every guide without `geometries`, and every guide whose `geometries`
+  names it. They are never compared with the
   model, and the Design Contract wins wherever they disagree with it.
 
 For the underlying Codex patterns, see the official guidance on

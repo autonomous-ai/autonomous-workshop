@@ -131,15 +131,20 @@ instances.)
   that explain the design, such as a colour-coded transformation step sheet
   or a part seen from more sides. Each is `{"file": "guide-NN-<slug>.png",
   "shows": "<what it explains, at most 500 characters>", "steps": ["<each
-  step it draws, in order>", ...]}`, numbered from `01` without gaps, at
+  step it draws, in order>", ...], "geometries": ["<geometry id>", ...]}`,
+  numbered from `01` without gaps, at
   most 2048 pixels a side and 12 MiB, any number of panels. `steps` is optional,
   1 to 24 distinct lines of at most 300 characters; for a transformation
   sheet, write the Transformation section's moves in the order the sheet
-  draws them. Pass every file to `--guide` under these names and in this
-  order, after the `--ref` images. A Guide Image is never compared with the
-  model: the Workshop Manager and every Component Worker read it, the
-  Component Reviewer never sees it, and the contract wins wherever it
-  disagrees. With `--check-motion true` the run must account for every step.
+  draws them. `geometries` is optional: a non-empty list of distinct
+  `geometries[]` ids whose Component Workers read the guide (issue #125).
+  Without it every Component Worker reads it; give a sheet that shows one
+  part `geometries: ["<that id>"]`. Pass every file to `--guide` under these
+  names and in this order, after the `--ref` images. A Guide Image is never
+  compared with the model: the Workshop Manager reads every one, each
+  Component Worker reads those for its Component, the Component Reviewer
+  never sees one, and the contract wins wherever it disagrees. With
+  `--check-motion true` the run must account for every step of every guide.
 - `geometries[]`: one entry per **Unique Geometry**. `id` is lowercase kebab
   case. `count` is how many Components the toy has with this shape.
   `wall_min_mm` is the minimum wall.

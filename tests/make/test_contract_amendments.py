@@ -796,6 +796,27 @@ class GuideImageAmendmentTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "guides_wrong lists"):
             self.review(guides_wrong=[{"file": "guide-02-other.png", "where": "x"}])
 
+    def test_a_guide_scoped_to_one_geometry_still_reaches_the_contract_reviewer(self):
+        # Issue #125: geometries narrows only which Component Workers read a
+        # guide; the amendment packet and the host replay still need it.
+        contract = {**GUIDE_CONTRACT,
+                    "guides": [{**GUIDE_CONTRACT["guides"][0], "geometries": ["wing"]}]}
+        wish = json.loads((self.run_root / "WISH.json").read_bytes())
+        wish["context"]["design_contract"] = contract
+        data = json.dumps(wish).encode()
+        (self.run_root / "WISH.json").write_bytes(data)
+        wish_sha256 = hashlib.sha256(data).hexdigest()
+        event = self.propose()
+        packet = json.loads(Path(event["packet"]).read_bytes())
+        self.assertEqual([item["file"] for item in packet["guides"]], [GUIDE])
+        self.review()
+        options = dict(contract=contract, wish_sha256=wish_sha256,
+                       references=self.references, blocked_reports=[])
+        records = verify_contract_amendments(self.project, guides=self.guides, **options)
+        self.assertEqual(records[0]["review"]["verdict"]["guides_wrong"], [])
+        with self.assertRaisesRegex(ContractError, "every sealed Guide Image"):
+            verify_contract_amendments(self.project, guides={}, **options)
+
     def test_the_host_refuses_a_packet_that_hides_the_guides(self):
         self.propose()
         self.review()
