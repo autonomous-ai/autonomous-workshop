@@ -2931,7 +2931,14 @@ def _made_guides(
                 )
             ):
                 raise ContractError("Made guide %s has an invalid conflict" % entry["file"])
-        guides.append({key: item[key] for key in sorted(_GUIDE_FIELDS)})
+        # made.json reaches the host frozen (mappingproxy and tuples, as in
+        # #105): seal plain JSON so the gate receipt can serialize it.
+        guides.append({
+            "check_motion": item["check_motion"],
+            "conflicts": [dict(conflict) for conflict in item["conflicts"]],
+            "file": item["file"],
+            "steps": [dict(step) for step in item["steps"]],
+        })
     return guides
 
 

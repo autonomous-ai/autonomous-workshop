@@ -567,6 +567,44 @@ class GuideImageTest(unittest.TestCase):
         block["guides"][0]["steps"] = ["Same.", "Same."]
         self.assertIn("guides[0].steps must be 1 to 24 distinct", self._refused(block))
 
+    def test_a_guide_scoped_to_geometries_parses_and_round_trips(self):
+        # Issue #125: a guide may name the Unique Geometries whose Component
+        # Workers read it; without the field every worker reads it.
+        block = _guide_block()
+        block["guides"][1]["geometries"] = ["wing", "heart-core"]
+        contract = parse_design_contract(_contract_text(block))
+        self.assertIsNone(contract.guides[0].geometries)
+        self.assertEqual(contract.guides[1].geometries, ("wing", "heart-core"))
+        sealed = contract.to_dict()
+        self.assertNotIn("geometries", sealed["guides"][0])
+        self.assertEqual(sealed["guides"], block["guides"])
+        again = parse_design_contract(_contract_text(sealed))
+        self.assertEqual(again.guides, contract.guides)
+
+    def test_a_bad_guide_geometries_list_is_refused_naming_it(self):
+        cases = {
+            "names a Unique Geometry that does not exist: 'tail'": ["wing", "tail"],
+            "names a Unique Geometry twice": ["wing", "wing"],
+            "geometries must be a non-empty list of Unique Geometry ids": [],
+        }
+        for expected, value in cases.items():
+            with self.subTest(value=value):
+                block = _guide_block()
+                block["guides"][1]["geometries"] = value
+                message = self._refused(block)
+                self.assertIn("guides[1].geometries", message)
+                self.assertIn(expected, message)
+        for value in ("wing", ["wing", 3], None, {"wing": True}):
+            with self.subTest(value=value):
+                block = _guide_block()
+                block["guides"][1]["geometries"] = value
+                self.assertIn("guides[1].geometries must be a non-empty list", self._refused(block))
+
+    def test_guide_geometries_need_schema_5(self):
+        block = _text_block()
+        block["guides"] = [{"file": "guide-01-side.png", "shows": "x", "geometries": ["wing"]}]
+        self.assertIn("guides need schema_version 5", self._refused(block))
+
     def test_check_guide_names_wants_the_contracts_files_in_order(self):
         contract = parse_design_contract(_contract_text(_guide_block()))
         contract.check_guide_names(["guide-01-transformation.png", "guide-02-side.png"])

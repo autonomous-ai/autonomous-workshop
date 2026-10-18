@@ -72,8 +72,10 @@ one section a failure you cannot place requires.
   and keep what you saw in mind for the rest of your work. Do not view it
   again.
 - When the Design Contract seals Guide Images (`guide-NN-<slug>`, ADR 0089),
-  the Manager's message and every round's `summary.json` list them under
-  `guides`, each with what it `shows`. View each once, when you start, to
+  the Manager's message and every round's `summary.json` list the ones for
+  your Component under `guides`, each with what it `shows`: every guide
+  that names no `geometries`, and every guide whose `geometries` names your
+  Component. View each once, when you start, to
   see how your Component sits among the others and moves through the
   transformation, and from more sides than your reference shows. A Guide
   Image is never compared with your model and your reviewer never sees it:
