@@ -7,12 +7,10 @@ car 360.75 mm long on four wheels.
 Inventor: `rowan-vale`.
 
 `arm-shell#2`, `forearm#2`, `thigh#2`, `shin#2`, `boot#2` and `wing#2` are
-the mirror images of `#1`. Every `#1`, including `front-wheel#1` and
-`rear-wheel#1`, is on the +X side.
+the mirror images of `#1`. Every `#1` is on the +X side.
 
 **Focal Component: the torso.** In the Display Pose the cockpit opening ringed
-by its red halo, in the middle of the broad black chest, is the form the eye
-goes to first.
+by its red halo, in the middle of the broad black chest, draws the eye first.
 
 ## Frame, poses and composition
 
@@ -130,7 +128,8 @@ with a raised V plate 0.75 proud. Below Z 120 the hand curls: four fingers
 proud of the guard (front at Y -11.5), each in three segments split by 0.8
 grooves at Z 111 and 106, its tip curling under, rounded R5 about X. A thumb
 2.8 wide (X 40 to 42.8, Z 109 to 119), as proud, wraps the inboard corner;
-under it the corner is cut away. Prints on its outboard face.
+under it the corner is cut away. Prints on its back face (Y 5); the wrist
+knuckle meets the bed through 52 degree chords.
 
 **Thigh.** A sleeve 18 wide (X 7.5 to 25.5) x 19 deep (Y -12 to 7), Z 108.5
 to 135.75, open at the bottom: its cavity X 10 to 23, Y -9.5 to 4.5, up to Z
