@@ -143,17 +143,17 @@ Z at Y -2.5, 3.2 wide, its ends rounded about Z 112.25 and Z 131.5 (R09's clicks
 standing on its bottom face (Z 108.5).
 
 **Shin.** A cuff 27.5 wide (X 7 to 34.5) x 22 deep (Y -12.5 to 9.5), Z
-32 to 54.25, and above it a block 22 wide (X 7.5 to 29.5), Z 54.25 to 88.75,
+32 to 54.25, and above it a block 18 wide (X 7.5 to 25.5), Z 54.25 to 88.75,
 the cuff's step rising at 52 degrees, with a white zig-zag stripe 5 wide down
-the front of both, centred on X 18. On top the slide post, 12 wide (X 10.5
+the front of both, centred on X 16.5. On top the slide post, 12 wide (X 10.5
 to 22.5) x 13 deep (Y -9 to 4), Z 88.75 to 116, its top front and back edges
 bevelled 1.5 at 52 degrees. In front of the post a knee guard 18 wide (X
 7.5 to 25.5) x 1.75 thick (Y -14.25 to -12.5) rises from the block's front face to
 the post's top: in the robot it laps 7.5 over
 the thigh's foot. Beside and behind the post the block's top slopes down at
-52 degrees (to Z 84.91 at X 7.5, 79.79 at X 29.5, 81.71 at Y 9.5); only between guard
+52 degrees (to Z 84.91 at X 7.5 and 25.5, 81.71 at Y 9.5); only between guard
 and post is it flat. The post carries the slide dowel's bore along X at Y
--2.5, Z 112.25. On the block's outer face an Ø9.5 boss (X 29.5 to 34.5) on
+-2.5, Z 112.25. On the block's outer face an Ø9.5 boss (X 25.5 to 34.5) on
 the rear wheel axis Y 2.5, Z 76. Below the cuff the ankle tongue, 14 wide (X
 14 to 28) x 9.5 deep (Y -0.25 to 9.25), down to a round end R4.75 about the
 ankle axis Y 4.5, Z 14.75. Prints upside down on the post's top face (Z 116).
@@ -200,7 +200,7 @@ teardrop with its point away from the bed. No glue.
 
 ## Transformation
 
-From robot to car, in this order (reverse for car to robot):
+From robot to car, in this order:
 
 1. Push the head down 26.5 into its pocket.
 2. Flip the nose 180 degrees up over the top of the back (+180 about +X):
@@ -337,7 +337,7 @@ and 15.35 ahead of the heels.
     {"id":"R16","scope":"geometry:arm-shell","text":"A 26 x 22 white arm 72.5 tall, a channel open at the back and the bottom, its top rounded about the shoulder axis, its outer edges bevelled 2 to 4, a panel line splitting upper from lower arm, a red band 11.5 tall round the upper arm with a red tab under it, vents at a 2.2 slit pitch; its front, the bed face, is plated by engraved lines only."},
     {"id":"R17","scope":"geometry:forearm","text":"A black closed fist 20 wide and 16.5 deep, ending at the top in a rounded wrist knuckle as wide as the fist, a wrist guard with a raised V plate, then a curled hand standing proud of the guard: four separate fingers split by grooves 0.8 wide and 3 deep, each in three segments curling under the fist, and a thumb on its inboard front corner, the corner cut away under it."},
     {"id":"R18","scope":"geometry:thigh","text":"An 18 x 19 red sleeve 27.25 tall, open at the bottom, whose top steps in as a low gable and rises into a rounded hip tongue 10 wide toward its inboard side, with a 3.2 wide slot along each side wall for 19.25 mm of slide; its front plate bevelled 2 to 4 at its corners and carrying two white chevron panels, its front and outer side layered armour plates with vents at a 2.2 slit pitch."},
-    {"id":"R19","scope":"geometry:shin","text":"A red shin: a cuff 27.5 wide and 22.25 tall under a block 22 wide and 34.5 tall, a white zig-zag stripe down the front of both, a black slide post 12 x 13 rising 27.25 above with a red knee guard 18 wide and 1.75 thick in front of it up to the post's top, the block's top sloping down at 52 degrees beside and behind the post, a wheel boss on the outer face and a rounded ankle tongue 14 wide below; layered armour plates with vents at a 2.2 slit pitch, bevelled 2 to 4 where it tapers toward the ankle; the knee guard is plain, too thin for panel lines."},
+    {"id":"R19","scope":"geometry:shin","text":"A red shin: a cuff 27.5 wide and 22.25 tall under a block 18 wide and 34.5 tall, flush with the thigh's sides, a white zig-zag stripe down the front of both, a black slide post 12 x 13 rising 27.25 above with a red knee guard 18 wide and 1.75 thick in front of it up to the post's top, the block's top sloping down at 52 degrees beside and behind the post, a wheel boss on the outer face and a rounded ankle tongue 14 wide below; layered armour plates with vents at a 2.2 slit pitch, bevelled 2 to 4 where it tapers toward the ankle; the knee guard is plain, too thin for panel lines."},
     {"id":"R20","scope":"geometry:boot","text":"A black wedge boot 32 wide and 64.5 long pointing forward, 31.5 tall behind the toe slope, which falls forward at 30 degrees to a toe face 12 tall, its heel top rounded about the ankle, a slot for the shin's tongue open at the top and the heel, and two hinge lugs at the very toe; a toe plate on its toe bevelled 2 to 4, a sole band with tread notches, its sides layered armour plates with bevelled edges and vents at a 2.2 slit pitch."},
     {"id":"R21","scope":"geometry:wing","text":"A black plate 24 wide, 3.5 thick and 38.75 long from the axis of an 8.5 mm hinge knuckle, carrying at its far end a red blade 39.25 wide, 12 tall and 3.5 thick standing square to the plate and overhanging it by 11.25 inboard and 4 outboard, its outer 3 a black endplate cap with a 1 x 2.5 slot, a white gurney lip along its top."},
     {"id":"R22","scope":"geometry:front-wheel","text":"A black tyre 39 across and 16 wide with a chevron-grooved tread and a five-spoke rim face on its outer side, the windows between the spokes open through."},

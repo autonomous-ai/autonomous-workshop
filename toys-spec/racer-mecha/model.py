@@ -79,9 +79,9 @@ P["thigh#1"] = (B(7.5, 25.5, -12, 7, 108.5, 135.75)
                 + B(9, 19, -7, 2, 138.75, 145) + CX(9, 19, -2.5, 145, 4.5)
                 + CUT(7.5, 25.5, -12, -11, 134.47, 135.75) + CUT(7.5, 25.5, 6, 7, 134.47, 135.75)   # wall top bevels
                 + CUT(10, 23, -9.5, 4.5, 108.5, 133.85) + CUT(10, 23, -8, 3, 133.85, 135.75))   # cavity, ceiling edges bevelled
-# ---- shin: cuff 27.5 x 22, block 22, post 12 x 13 with the knee-slide dowel, knee guard in front of the post up to its top, ankle tongue below
-P["shin#1"] = (B(7, 34.5, -12.5, 9.5, 32, 54.25) + B(7.5, 29.5, -12.5, 9.5, 54.25, 88.75) + B(10.5, 22.5, -9, 4, 88.75, 114.1) + B(10.5, 22.5, -7.5, 2.5, 114.1, 116)   # post, top edges bevelled 1.5
-               + B(7.5, 25.5, -14.25, -12.5, 88.75, 116) + CX(29.5, 34.5, 2.5, 76, 4.75)
+# ---- shin: cuff 27.5 x 22, block 18 flush under the thigh (owner 2026-10-18), post 12 x 13 with the knee-slide dowel, knee guard in front of the post up to its top, ankle tongue below
+P["shin#1"] = (B(7, 34.5, -12.5, 9.5, 32, 54.25) + B(7.5, 25.5, -12.5, 9.5, 54.25, 88.75) + B(10.5, 22.5, -9, 4, 88.75, 114.1) + B(10.5, 22.5, -7.5, 2.5, 114.1, 116)   # post, top edges bevelled 1.5
+               + B(7.5, 25.5, -14.25, -12.5, 88.75, 116) + CX(25.5, 34.5, 2.5, 76, 4.75)
                + B(14, 28, -0.25, 9.25, 14.75, 32) + CX(14, 28, 4.5, 14.75, 4.75))
 # ---- v5 boot (owner 2026-10-17, "cách 2"): a wedge as in the overall image. The rear-wing plate lies on the toe slope,
 #      its hinge low at the toe; the car's rear wing keeps its height (hinge Z + plate length = 50.75).
