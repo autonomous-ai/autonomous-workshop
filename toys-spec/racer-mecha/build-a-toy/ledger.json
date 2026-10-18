@@ -1,342 +1,355 @@
 {
- "contract": "toys-spec/racer-mecha/CONTRACT.md",
- "title": "Racer Mecha",
- "inventor": "rowan-vale",
- "rounds": [
-  {
-   "round": 0,
-   "kind": "wish",
-   "name": "Racer Mecha v01",
-   "wish_id": "wish-20261012-054226-b55c5a47",
-   "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261012-054226-b55c5a47/workspace",
-   "toy_dir": null,
-   "final_status": "abandoned (Codex start failure; owner switched runtime to Claude Code)",
-   "brief": null,
-   "finding_ids": [],
-   "notes": "Started 2026-10-12T05:42Z; receipt References: 11 (matches contract); --check-motion true; 05:42:31Z Codex exited code 1 after 1.6 s with no events (codex-turn-failure.json: incomplete-exit, stderr 682 bytes not kept). Standalone codex works. Same failure in wish-20261007-045728-5f073b6e. Worktree venv built from conda Python (no local uv.toml/.python-version pin). Awaiting owner decision."
-  },
-  {
-   "round": 0,
-   "kind": "wish",
-   "name": "Racer Mecha v01",
-   "wish_id": "wish-20261012-054637-a6c52bd4",
-   "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261012-054637-a6c52bd4/workspace",
-   "toy_dir": "toys/rowan-vale-racer-mecha-v01",
-   "final_status": "complete",
-   "brief": null,
-   "finding_ids": [
-    "wall:torso",
-    "wall:nose",
-    "wall:head",
-    "extents:thigh",
-    "wall:thigh",
-    "extents:shin",
-    "wall:shin",
-    "likeness:ref-01-racer-mecha",
-    "likeness:ref-04-head",
-    "likeness:ref-09-spine"
-   ],
-   "notes": "Owner chose --agent claude --model claude-opus-5-5 --effort medium. Started 2026-10-12T05:46Z; References: 11 (matches); --check-motion true; 08:32Z stopped: 9/10 Components locked (torso open), 86.9M/100M tokens. In-run amendments 1 and 2 (R06) refused by Contract Reviewer; fixed at the root as amend-a.; 09:07Z resumed with --amend-contract (owner-contract-amendment applied) and --max-tokens 200000000 (owner approved, raised from 100000000 at 87.2M used); 09:40Z stopped again at 97.3M/200M: need says R05/elbow Interfaces' 90 degree forward elbow bend sweeps the forearm through the arm shell's closed front wall (28 mm3 overlap at -18 deg, 468 at -90); every other gate passes. Awaiting owner choice: drop forward bend (invisible) or open the front wall (visible, new image + relaunch).; 09:45Z resumed with amend-b (owner-contract-amendment 2 applied); 12:19Z complete (Release sealed locally, unreleased), 139.8M tokens. Detection: 10 findings (5 wall below wall_min_mm, mostly around Ø3.1 dowel bores the contract itself sizes; thigh 28.2 vs 28.5; shin 28 vs 27; 3 likeness under 0.90, advisory under ADR 0076). After amend-c (wall floors and thigh/shin extents set to what the joints force), v01 re-measures with no wall or extents finding; only the three advisory likeness scores remain.",
-   "findings": "toys-spec/racer-mecha/build-a-toy/r00/findings.json",
-   "findings_after_amend_c": [
-    "likeness:ref-01-racer-mecha",
-    "likeness:ref-04-head",
-    "likeness:ref-09-spine"
-   ]
-  },
-  {
-   "round": 0,
-   "kind": "wish",
-   "name": "Racer Mecha v02",
-   "wish_id": "wish-20261014-100904-1ee4c488",
-   "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261014-100904-1ee4c488/workspace",
-   "toy_dir": "/home/loginuserxx/harnesses/worktrees/autonomous-workshop/racer-v02-fed0c446/toys/rowan-vale-racer-mecha-v02",
-   "final_status": "complete",
-   "brief": null,
-   "finding_ids": [
-    "envelope",
-    "extents:arm-shell",
-    "wall:thigh",
-    "wall:rear-wheel",
-    "likeness:ref-01-racer-mecha",
-    "likeness:ref-03-nose",
-    "likeness:ref-04-head",
-    "likeness:ref-07-thigh",
-    "likeness:ref-08-shin",
-    "likeness:ref-10-wing"
-   ],
-   "notes": "v2 contract (v3 images + guide-01-transformation.png), owner said start 2026-10-14 (images treated as approved; blade kept as the contract's L). Launched 10:09Z from fresh worktree racer-v02-fed0c446 at origin/main fed0c446 with --agent claude --model claude-opus-5-5 --effort medium --guide --check-motion true --max-tokens 100000000; receipt References: 12, Guides: 1 (matches contract). Contract copy build-a-toy/r00/v02/CONTRACT.md; log build-a-toy/r00/v02/wish.log. 11:00Z waiting: need on shin print stance (guard island, block-top overhang), 42.0M tokens; fixed at root as amend-e (invisible), folded in-run amendment 1; 11:06Z resumed with --amend-contract (Owner Contract Amendment 1 applied). 12:45Z stopped on budget at 100.06M/100M with all 11 Components locked (v01's first budget stop had 9/10), 73 component rounds, 8 repeated print defects, 3 contract amendments, 11 reference conflicts, no open need: budget-progressing, resumed once with --max-tokens 200000000. 2026-10-14T15:42Z stopped on usage-limit (Claude Code weekly limit) at 126.8M/200M; 2026-10-15T03:29Z resumed on owner's word (budget kept). 2026-10-15T09:22Z stopped at Make acceptance after final verify PASS: host gate refused 'stage gate checks must be a JSON object' (harness defect #123: _made_guides kept frozen mappings); fixed locally in racer-v02-fed0c446, resumed on owner's word; 10:25Z complete (Release sealed locally, unreleased), 179.3M tokens, 11 Components locked, 6 Reference Conflicts, all 7 guide steps accounted (6 checked, 1 skipped). Fix PR #124.",
-   "stops": [
+  "contract": "toys-spec/racer-mecha/CONTRACT.md",
+  "title": "Racer Mecha",
+  "inventor": "rowan-vale",
+  "rounds": [
     {
-     "at": "2026-10-14T12:45Z",
-     "class": "budget-progressing",
-     "locked": 11,
-     "repeated_print_defects": 8,
-     "budget_raised": true,
-     "limit_before": 100000000,
-     "limit_after": 200000000
+      "round": 0,
+      "kind": "wish",
+      "name": "Racer Mecha v01",
+      "wish_id": "wish-20261012-054226-b55c5a47",
+      "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261012-054226-b55c5a47/workspace",
+      "toy_dir": null,
+      "final_status": "abandoned (Codex start failure; owner switched runtime to Claude Code)",
+      "brief": null,
+      "finding_ids": [],
+      "notes": "Started 2026-10-12T05:42Z; receipt References: 11 (matches contract); --check-motion true; 05:42:31Z Codex exited code 1 after 1.6 s with no events (codex-turn-failure.json: incomplete-exit, stderr 682 bytes not kept). Standalone codex works. Same failure in wish-20261007-045728-5f073b6e. Worktree venv built from conda Python (no local uv.toml/.python-version pin). Awaiting owner decision."
     },
     {
-     "at": "2026-10-14T15:42Z",
-     "class": "usage-limit",
-     "tokens": 126759255
+      "round": 0,
+      "kind": "wish",
+      "name": "Racer Mecha v01",
+      "wish_id": "wish-20261012-054637-a6c52bd4",
+      "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261012-054637-a6c52bd4/workspace",
+      "toy_dir": "toys/rowan-vale-racer-mecha-v01",
+      "final_status": "complete",
+      "brief": null,
+      "finding_ids": [
+        "wall:torso",
+        "wall:nose",
+        "wall:head",
+        "extents:thigh",
+        "wall:thigh",
+        "extents:shin",
+        "wall:shin",
+        "likeness:ref-01-racer-mecha",
+        "likeness:ref-04-head",
+        "likeness:ref-09-spine"
+      ],
+      "notes": "Owner chose --agent claude --model claude-opus-5-5 --effort medium. Started 2026-10-12T05:46Z; References: 11 (matches); --check-motion true; 08:32Z stopped: 9/10 Components locked (torso open), 86.9M/100M tokens. In-run amendments 1 and 2 (R06) refused by Contract Reviewer; fixed at the root as amend-a.; 09:07Z resumed with --amend-contract (owner-contract-amendment applied) and --max-tokens 200000000 (owner approved, raised from 100000000 at 87.2M used); 09:40Z stopped again at 97.3M/200M: need says R05/elbow Interfaces' 90 degree forward elbow bend sweeps the forearm through the arm shell's closed front wall (28 mm3 overlap at -18 deg, 468 at -90); every other gate passes. Awaiting owner choice: drop forward bend (invisible) or open the front wall (visible, new image + relaunch).; 09:45Z resumed with amend-b (owner-contract-amendment 2 applied); 12:19Z complete (Release sealed locally, unreleased), 139.8M tokens. Detection: 10 findings (5 wall below wall_min_mm, mostly around Ø3.1 dowel bores the contract itself sizes; thigh 28.2 vs 28.5; shin 28 vs 27; 3 likeness under 0.90, advisory under ADR 0076). After amend-c (wall floors and thigh/shin extents set to what the joints force), v01 re-measures with no wall or extents finding; only the three advisory likeness scores remain.",
+      "findings": "toys-spec/racer-mecha/build-a-toy/r00/findings.json",
+      "findings_after_amend_c": [
+        "likeness:ref-01-racer-mecha",
+        "likeness:ref-04-head",
+        "likeness:ref-09-spine"
+      ]
     },
     {
-     "at": "2026-10-15T09:22Z",
-     "class": "harness-defect",
-     "issue": 123,
-     "pr": 124
+      "round": 0,
+      "kind": "wish",
+      "name": "Racer Mecha v02",
+      "wish_id": "wish-20261014-100904-1ee4c488",
+      "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261014-100904-1ee4c488/workspace",
+      "toy_dir": "/home/loginuserxx/harnesses/worktrees/autonomous-workshop/racer-v02-fed0c446/toys/rowan-vale-racer-mecha-v02",
+      "final_status": "complete",
+      "brief": null,
+      "finding_ids": [
+        "envelope",
+        "extents:arm-shell",
+        "wall:thigh",
+        "wall:rear-wheel",
+        "likeness:ref-01-racer-mecha",
+        "likeness:ref-03-nose",
+        "likeness:ref-04-head",
+        "likeness:ref-07-thigh",
+        "likeness:ref-08-shin",
+        "likeness:ref-10-wing"
+      ],
+      "notes": "v2 contract (v3 images + guide-01-transformation.png), owner said start 2026-10-14 (images treated as approved; blade kept as the contract's L). Launched 10:09Z from fresh worktree racer-v02-fed0c446 at origin/main fed0c446 with --agent claude --model claude-opus-5-5 --effort medium --guide --check-motion true --max-tokens 100000000; receipt References: 12, Guides: 1 (matches contract). Contract copy build-a-toy/r00/v02/CONTRACT.md; log build-a-toy/r00/v02/wish.log. 11:00Z waiting: need on shin print stance (guard island, block-top overhang), 42.0M tokens; fixed at root as amend-e (invisible), folded in-run amendment 1; 11:06Z resumed with --amend-contract (Owner Contract Amendment 1 applied). 12:45Z stopped on budget at 100.06M/100M with all 11 Components locked (v01's first budget stop had 9/10), 73 component rounds, 8 repeated print defects, 3 contract amendments, 11 reference conflicts, no open need: budget-progressing, resumed once with --max-tokens 200000000. 2026-10-14T15:42Z stopped on usage-limit (Claude Code weekly limit) at 126.8M/200M; 2026-10-15T03:29Z resumed on owner's word (budget kept). 2026-10-15T09:22Z stopped at Make acceptance after final verify PASS: host gate refused 'stage gate checks must be a JSON object' (harness defect #123: _made_guides kept frozen mappings); fixed locally in racer-v02-fed0c446, resumed on owner's word; 10:25Z complete (Release sealed locally, unreleased), 179.3M tokens, 11 Components locked, 6 Reference Conflicts, all 7 guide steps accounted (6 checked, 1 skipped). Fix PR #124.",
+      "stops": [
+        {
+          "at": "2026-10-14T12:45Z",
+          "class": "budget-progressing",
+          "locked": 11,
+          "repeated_print_defects": 8,
+          "budget_raised": true,
+          "limit_before": 100000000,
+          "limit_after": 200000000
+        },
+        {
+          "at": "2026-10-14T15:42Z",
+          "class": "usage-limit",
+          "tokens": 126759255
+        },
+        {
+          "at": "2026-10-15T09:22Z",
+          "class": "harness-defect",
+          "issue": 123,
+          "pr": 124
+        }
+      ],
+      "findings": "toys-spec/racer-mecha/build-a-toy/r00/v02/findings.json"
+    },
+    {
+      "round": 0,
+      "kind": "wish",
+      "name": "Racer Mecha v03",
+      "wish_id": "wish-20261016-105957-68bdfa0a",
+      "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261016-105957-68bdfa0a/workspace",
+      "toy_dir": "/home/loginuserxx/harnesses/worktrees/autonomous-workshop/racer-v03-df4d3e7b/toys/rowan-vale-racer-mecha",
+      "final_status": "complete",
+      "brief": null,
+      "finding_ids": [
+        "extents:arm-shell",
+        "extents:wing",
+        "wall:shin",
+        "wall:front-wheel",
+        "likeness:ref-01-racer-mecha",
+        "likeness:ref-03-nose",
+        "likeness:ref-08-shin",
+        "likeness:ref-10-wing"
+      ],
+      "notes": "v3 contract (12 refs, 13 guides). Launched 10:59Z from fresh worktree racer-v03-df4d3e7b at origin/main df4d3e7b (#124 + #126 merged) with --agent claude --model claude-opus-5-5 --effort medium --check-motion true --max-tokens 100000000 --turn-minutes 360 --no-publish; receipt References: 12, Guides: 13 (matches contract). Contract copy build-a-toy/r00/v03/CONTRACT.md; log build-a-toy/r00/v03/wish.log. 11:05Z waiting (5.6M tokens): need \"host CAD interpreter cannot import build123d\" — the fresh worktree venv was built on miniconda CPython 3.13.13 (pyexpat/libexpat clash) because the local uv pin (.python-version, uv.toml, excluded via .git/info/exclude) is not in a new worktree; copied both from racer-v02, rebuilt .venv on uv CPython 3.13.15, resumed 11:06Z with --check-motion true (log resume1.log). 13:55Z stopped on budget at 100.18M/100M with all 11 Components locked, 70 component rounds, 0 repeated print defects (v02 had 8 at its first budget stop), 2 Reference Conflicts, 1 Blocked Report (shin boss overhang) answered in-run: budget-progressing, raised once to 200M (budget_raised: true) and resumed with --check-motion true (log resume2.log). 22:18Z complete (sealed locally, unreleased), 163M tokens, 11 Components locked, 3 Reference Conflicts (status.json lists 1 at the end), guide steps accounted in status.json; status saved build-a-toy/r00/v03/status.json. Detection: build-a-toy/r00/v03/findings.json, 8 findings / 62 passed; vs v02 removed envelope, wall:thigh, wall:rear-wheel, likeness:ref-04-head, likeness:ref-07-thigh; new extents:wing, wall:shin, wall:front-wheel.",
+      "budget_raised": true
+    },
+    {
+      "round": 1,
+      "kind": "fix",
+      "name": "Racer Mecha v04",
+      "wish_id": "wish-20261017-071954-30e9fa1d",
+      "source": "wish-20261016-105957-68bdfa0a workspace",
+      "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261017-071954-30e9fa1d/workspace",
+      "toy_dir": "toys/rowan-vale-racer-mecha-v04",
+      "final_status": "complete",
+      "brief": "build-a-toy/r01/brief.md",
+      "finding_ids": [
+        "envelope",
+        "extents:wing",
+        "wall:forearm",
+        "wall:thigh",
+        "wall:shin",
+        "likeness:ref-01-racer-mecha",
+        "likeness:ref-03-nose",
+        "likeness:ref-08-shin",
+        "likeness:ref-10-wing"
+      ],
+      "notes": "v4 contract (wedge boot, wing plate on the toe slope, detailed fist) plus v03 findings. Launched 07:19Z with workshop fix from worktree racer-v03-df4d3e7b (origin/main df4d3e7b), --agent claude --model claude-opus-5-5 --effort medium --check-motion true --max-tokens 100000000 --turn-minutes 360 --no-publish; receipt References: 12, Guides: 13 (matches). Log build-a-toy/r01/fix.log. 2026-10-17 09:19Z waiting on usage-limit at 72M tokens (11 workers, Blocked Reports on boot and forearm answered in-run, 2 Reference Conflicts); resumed 2026-10-18 04:01Z after the limit reset, with --check-motion true (log resume1.log). 2026-10-18 04:25Z stopped on budget at 100M/100M: 6 of 11 Components locked (forearm, front-wheel, head, rear-wheel, thigh, wing; not arm-shell 7 rounds, boot 9, nose 10, shin 11, torso 5), 75 component rounds, 2 repeated print defects, 2 Reference Conflicts; Blocked Report 4 (arm-shell front grille: recessed panel vs R16 engraved lines only) open. Fewer locks than v03 at its budget stop (11, 0 repeats), so not budget-progressing: class other, owner asked whether to raise the cap.",
+      "stop": {
+        "at": "2026-10-18T04:25Z",
+        "stop_category": "budget",
+        "class": "other",
+        "locked": 6,
+        "repeated_print_defects": 2,
+        "blocked_open": [
+          "arm-shell#4"
+        ],
+        "budget_raised": "owner",
+        "owner_decision": {
+          "at": "2026-10-18T04:25Z",
+          "limit_before": 100000000,
+          "limit_after": 200000000
+        }
+      },
+      "tokens": 136602305,
+      "locked": 11,
+      "repeated_print_defects": 2,
+      "findings": "build-a-toy/r01/findings.json"
+    },
+    {
+      "round": 2,
+      "kind": "fix",
+      "name": "Racer Mecha v05",
+      "wish_id": "wish-20261018-161459-27a59f4f",
+      "source": "wish-20261017-071954-30e9fa1d workspace",
+      "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261018-161459-27a59f4f/workspace",
+      "toy_dir": null,
+      "final_status": "running",
+      "brief": "build-a-toy/r02/brief.md",
+      "finding_ids": [],
+      "notes": "Contract after Stage 3e lint/audit (curled fist, shin block flush X 7.5-25.5, centred cuff X 2.75-30.25), ref-01/08/10 and guide-06/09/11 redrawn and owner-approved 2026-10-18. Launched 16:14Z from worktree racer-v03-df4d3e7b (df4d3e7b; main has no src change since), --agent claude --model claude-opus-5-5 --effort medium --check-motion true --max-tokens 100000000 --turn-minutes 360 --no-publish; receipt 12 references, 13 guides (matches). Log build-a-toy/r02/fix.log. Aborted earlier launches, no build: wish-20261018-131908-dbd662fa (defaulted to Codex, failed in 3 s, 0 tokens), wish-20261018-131936-cb9abe2e (claude-opus-5, stopped by TaskStop)."
     }
-   ],
-   "findings": "toys-spec/racer-mecha/build-a-toy/r00/v02/findings.json"
-  },
-  {
-   "round": 0,
-   "kind": "wish",
-   "name": "Racer Mecha v03",
-   "wish_id": "wish-20261016-105957-68bdfa0a",
-   "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261016-105957-68bdfa0a/workspace",
-   "toy_dir": "/home/loginuserxx/harnesses/worktrees/autonomous-workshop/racer-v03-df4d3e7b/toys/rowan-vale-racer-mecha",
-   "final_status": "complete",
-   "brief": null,
-   "finding_ids": [
-    "extents:arm-shell",
-    "extents:wing",
-    "wall:shin",
-    "wall:front-wheel",
-    "likeness:ref-01-racer-mecha",
-    "likeness:ref-03-nose",
-    "likeness:ref-08-shin",
-    "likeness:ref-10-wing"
-   ],
-   "notes": "v3 contract (12 refs, 13 guides). Launched 10:59Z from fresh worktree racer-v03-df4d3e7b at origin/main df4d3e7b (#124 + #126 merged) with --agent claude --model claude-opus-5-5 --effort medium --check-motion true --max-tokens 100000000 --turn-minutes 360 --no-publish; receipt References: 12, Guides: 13 (matches contract). Contract copy build-a-toy/r00/v03/CONTRACT.md; log build-a-toy/r00/v03/wish.log. 11:05Z waiting (5.6M tokens): need \"host CAD interpreter cannot import build123d\" — the fresh worktree venv was built on miniconda CPython 3.13.13 (pyexpat/libexpat clash) because the local uv pin (.python-version, uv.toml, excluded via .git/info/exclude) is not in a new worktree; copied both from racer-v02, rebuilt .venv on uv CPython 3.13.15, resumed 11:06Z with --check-motion true (log resume1.log). 13:55Z stopped on budget at 100.18M/100M with all 11 Components locked, 70 component rounds, 0 repeated print defects (v02 had 8 at its first budget stop), 2 Reference Conflicts, 1 Blocked Report (shin boss overhang) answered in-run: budget-progressing, raised once to 200M (budget_raised: true) and resumed with --check-motion true (log resume2.log). 22:18Z complete (sealed locally, unreleased), 163M tokens, 11 Components locked, 3 Reference Conflicts (status.json lists 1 at the end), guide steps accounted in status.json; status saved build-a-toy/r00/v03/status.json. Detection: build-a-toy/r00/v03/findings.json, 8 findings / 62 passed; vs v02 removed envelope, wall:thigh, wall:rear-wheel, likeness:ref-04-head, likeness:ref-07-thigh; new extents:wing, wall:shin, wall:front-wheel.",
-   "budget_raised": true
-  },
-  {
-   "round": 1,
-   "kind": "fix",
-   "name": "Racer Mecha v04",
-   "wish_id": "wish-20261017-071954-30e9fa1d",
-   "source": "wish-20261016-105957-68bdfa0a workspace",
-   "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261017-071954-30e9fa1d/workspace",
-   "toy_dir": "toys/rowan-vale-racer-mecha-v04",
-   "final_status": "complete",
-   "brief": "build-a-toy/r01/brief.md",
-   "finding_ids": [
-    "envelope",
-    "extents:wing",
-    "wall:forearm",
-    "wall:thigh",
-    "wall:shin",
-    "likeness:ref-01-racer-mecha",
-    "likeness:ref-03-nose",
-    "likeness:ref-08-shin",
-    "likeness:ref-10-wing"
-   ],
-   "notes": "v4 contract (wedge boot, wing plate on the toe slope, detailed fist) plus v03 findings. Launched 07:19Z with workshop fix from worktree racer-v03-df4d3e7b (origin/main df4d3e7b), --agent claude --model claude-opus-5-5 --effort medium --check-motion true --max-tokens 100000000 --turn-minutes 360 --no-publish; receipt References: 12, Guides: 13 (matches). Log build-a-toy/r01/fix.log. 2026-10-17 09:19Z waiting on usage-limit at 72M tokens (11 workers, Blocked Reports on boot and forearm answered in-run, 2 Reference Conflicts); resumed 2026-10-18 04:01Z after the limit reset, with --check-motion true (log resume1.log). 2026-10-18 04:25Z stopped on budget at 100M/100M: 6 of 11 Components locked (forearm, front-wheel, head, rear-wheel, thigh, wing; not arm-shell 7 rounds, boot 9, nose 10, shin 11, torso 5), 75 component rounds, 2 repeated print defects, 2 Reference Conflicts; Blocked Report 4 (arm-shell front grille: recessed panel vs R16 engraved lines only) open. Fewer locks than v03 at its budget stop (11, 0 repeats), so not budget-progressing: class other, owner asked whether to raise the cap.",
-   "stop": {
-    "at": "2026-10-18T04:25Z",
-    "stop_category": "budget",
-    "class": "other",
-    "locked": 6,
-    "repeated_print_defects": 2,
-    "blocked_open": [
-     "arm-shell#4"
-    ],
-    "budget_raised": "owner",
-    "owner_decision": {
-     "at": "2026-10-18T04:25Z",
-     "limit_before": 100000000,
-     "limit_after": 200000000
+  ],
+  "contract_versions": {
+    "v1": {
+      "status": "approved",
+      "notes": "Images approved by the owner 2026-10-12 (design-a-toy Stage 4); see NOTES.md",
+      "backups": []
+    },
+    "amend-a": {
+      "status": "applied",
+      "notes": "build-a-toy/drafts/amend-a-notes.md",
+      "backups": [
+        "build-a-toy/drafts/amend-a-backup/"
+      ]
+    },
+    "amend-b": {
+      "status": "applied",
+      "notes": "build-a-toy/drafts/amend-b-notes.md",
+      "backups": [
+        "build-a-toy/drafts/amend-b-backup/"
+      ]
+    },
+    "amend-c": {
+      "status": "applied",
+      "notes": "build-a-toy/drafts/amend-c-notes.md",
+      "backups": [
+        "build-a-toy/drafts/amend-c-backup/"
+      ]
+    },
+    "amend-d": {
+      "status": "superseded by v2 before approval",
+      "notes": "build-a-toy/drafts/amend-d-notes.md",
+      "backups": [
+        "build-a-toy/drafts/amend-d-backup/"
+      ],
+      "visible": true
+    },
+    "v2": {
+      "status": "approved by owner 2026-10-14 (start of v02 run)",
+      "notes": "build-a-toy/drafts/v2-notes.md",
+      "backups": [
+        "build-a-toy/drafts/v2-backup/"
+      ],
+      "visible": true
+    },
+    "amend-e": {
+      "status": "applied",
+      "notes": "build-a-toy/drafts/amend-e-notes.md",
+      "backups": [
+        "build-a-toy/drafts/amend-e-backup/"
+      ],
+      "visible": false
+    },
+    "v3": {
+      "status": "approved by owner 2026-10-16 (\"merge rồi chạy đi\")",
+      "notes": "v4/ working dir (refs/NOTES.md, views/NOTES.md, guide/NOTES.md); 13 Guide Images, guide-03..13 scoped by geometries (#125)",
+      "backups": [
+        "build-a-toy/drafts/v3-backup/"
+      ],
+      "visible": true
+    },
+    "v4": {
+      "status": "approved by owner 2026-10-17 (\"Ảnh trông ok rồi\"); ref-01, guide-01, guide-02, guide-10, guide-11 redrawn for the wedge boot",
+      "notes": "v5/ working dir (model.py, work/); wedge boot 64.5 long, wing hinge Y -46.5 Z 12, plate 38.75 at 30 deg, car 360.75; fist fingers detailed",
+      "backups": [
+        "build-a-toy/drafts/v4-backup/"
+      ],
+      "visible": true
     }
-   },
-   "tokens": 136602305,
-   "locked": 11,
-   "repeated_print_defects": 2,
-   "findings": "build-a-toy/r01/findings.json"
-  }
- ],
- "contract_versions": {
-  "v1": {
-   "status": "approved",
-   "notes": "Images approved by the owner 2026-10-12 (design-a-toy Stage 4); see NOTES.md",
-   "backups": []
   },
-  "amend-a": {
-   "status": "applied",
-   "notes": "build-a-toy/drafts/amend-a-notes.md",
-   "backups": [
-    "build-a-toy/drafts/amend-a-backup/"
-   ]
-  },
-  "amend-b": {
-   "status": "applied",
-   "notes": "build-a-toy/drafts/amend-b-notes.md",
-   "backups": [
-    "build-a-toy/drafts/amend-b-backup/"
-   ]
-  },
-  "amend-c": {
-   "status": "applied",
-   "notes": "build-a-toy/drafts/amend-c-notes.md",
-   "backups": [
-    "build-a-toy/drafts/amend-c-backup/"
-   ]
-  },
-  "amend-d": {
-   "status": "superseded by v2 before approval",
-   "notes": "build-a-toy/drafts/amend-d-notes.md",
-   "backups": [
-    "build-a-toy/drafts/amend-d-backup/"
-   ],
-   "visible": true
-  },
-  "v2": {
-   "status": "approved by owner 2026-10-14 (start of v02 run)",
-   "notes": "build-a-toy/drafts/v2-notes.md",
-   "backups": [
-    "build-a-toy/drafts/v2-backup/"
-   ],
-   "visible": true
-  },
-  "amend-e": {
-   "status": "applied",
-   "notes": "build-a-toy/drafts/amend-e-notes.md",
-   "backups": [
-    "build-a-toy/drafts/amend-e-backup/"
-   ],
-   "visible": false
-  },
-  "v3": {
-   "status": "approved by owner 2026-10-16 (\"merge rồi chạy đi\")",
-   "notes": "v4/ working dir (refs/NOTES.md, views/NOTES.md, guide/NOTES.md); 13 Guide Images, guide-03..13 scoped by geometries (#125)",
-   "backups": [
-    "build-a-toy/drafts/v3-backup/"
-   ],
-   "visible": true
-  },
-  "v4": {
-   "status": "approved by owner 2026-10-17 (\"Ảnh trông ok rồi\"); ref-01, guide-01, guide-02, guide-10, guide-11 redrawn for the wedge boot",
-   "notes": "v5/ working dir (model.py, work/); wedge boot 64.5 long, wing hinge Y -46.5 Z 12, plate 38.75 at 30 deg, car 360.75; fist fingers detailed",
-   "backups": [
-    "build-a-toy/drafts/v4-backup/"
-   ],
-   "visible": true
-  }
- },
- "contract_contradictions": [
-  {
-   "id": "cc-r06-head-slide",
-   "attempt": 2,
-   "signature": "3d-declared-contacts:head",
-   "rows": [
-    "Every moving part keeps at least 0.5 mm from every other part through each transformation move and posing range and in both poses. Checked with --check-motion true: one sweep per transformation move in at most 10 steps against only the parts it can reach; a skipped, killed or timed-out sweep fails this requirement.",
-    "The head's 8 x 8 neck post (Y -0.5 to 7.5) slides in the torso's 9 x 9 neck bore below the head pocket (X -4.5 to 4.5, Y -1 to 8, floor Z 119). A 3 x 26 dowel pressed through the torso from front to back along Y at X 0, Z 149.5 runs through the post's 3.4 wide front-to-back slot and stops it at both ends: raised, the helmet's underside is at Z 178 and the neck shows through the pocket's 13 wide front notch (down to Z 170); lowered by 22, the helmet rests on the pocket floor at Z 156."
-   ],
-   "amendment": "amend-a",
-   "visible": false,
-   "approved": "not-needed",
-   "applied": true,
-   "reaudit": "toys-spec/racer-mecha/build-a-toy/drafts/amend-a-notes.md",
-   "resume": "resumed",
-   "design_check": {
-    "name": "Stage 3d: global clearance rows list Interface-declared contacts",
-    "issue": null,
-    "status": "proposed"
-   }
-  },
-  {
-   "id": "cc-r02-car-height",
-   "attempt": 2,
-   "signature": "3d-pose-envelope:spine",
-   "rows": [
-    "In the car pose the toy is an open-wheel Formula car 272 mm long, 101 wide and 44 tall: nose cone and front wing ahead of the front wheels, the arm shells as front sidepods, the legs as rear sidepods, the spine as engine cover with the rear wing behind the tail, and no robot part showing above the bodywork.",
-    "an airbox scoop 12 wide on its front face (Y 15.5 to 22, Z 106 to 118)"
-   ],
-   "amendment": "amend-a",
-   "visible": false,
-   "approved": "not-needed",
-   "applied": true,
-   "reaudit": "toys-spec/racer-mecha/build-a-toy/drafts/amend-a-notes.md",
-   "resume": "resumed",
-   "design_check": {
-    "name": "Stage 3d: measure every non-display pose envelope from the pose model",
-    "issue": null,
-    "status": "proposed"
-   }
-  },
-  {
-   "id": "cc-r05-elbow-forward",
-   "attempt": 2,
-   "signature": "3d-posing-sweep:forearm",
-   "rows": [
-    "Posing ranges in the robot: shoulders 90 degrees forward and 30 back, elbows 90 forward, hips 20 forward and 20 back, knees 45 back, each holding its pose by friction.",
-    "A 20 x 22 white channel open at the back and the bottom, its top chamfered front and back, with two elbow cheeks at its bottom and two red panels on its front face."
-   ],
-   "amendment": "amend-b",
-   "visible": false,
-   "approved": "owner 2026-10-12",
-   "applied": true,
-   "reaudit": "toys-spec/racer-mecha/build-a-toy/drafts/amend-b-notes.md",
-   "resume": "resumed",
-   "design_check": {
-    "name": "Stage 3d: sweep every posing range in its signed direction, not the transformation's",
-    "issue": null,
-    "status": "proposed"
-   }
-  },
-  {
-   "id": "cc-wall-floor",
-   "signature": "wall-floor:torso,nose,head,thigh,shin",
-   "rows": "geometries wall_min_mm 3.0/2.0 vs the Ø3 dowel joints the contract sizes (Ø7 cheeks and knuckles around teardrop bores, bores 3 above a bottom face, a 3.4 slot in an 8 post)",
-   "amendment": "amend-c: wall_min_mm torso 1.1, nose 0.9, head 1.9, thigh 1.4, shin 1.9",
-   "found_by": "r00 detection",
-   "resume": "not-needed (v01 already built to the amended values)",
-   "design_check": "proposed",
-   "visible": false,
-   "reaudit": "build-a-toy/drafts/amend-c-notes.md"
-  },
-  {
-   "id": "cc-arch-clearance",
-   "signature": "arch-clearance:thigh",
-   "rows": "thigh hip tongue rounded R4 about the hip axis vs R06 0.5 clearance under the hip slot's pointed-arch roof 4.24 from the axis",
-   "amendment": "amend-c: tongue R3.7 (Y -5.7 to 1.7), thigh extents Z 28.2",
-   "found_by": "r00 detection",
-   "resume": "not-needed (v01 already built to the amended values)",
-   "design_check": "proposed",
-   "visible": false,
-   "reaudit": "build-a-toy/drafts/amend-c-notes.md"
-  },
-  {
-   "id": "cc-extents-proud-feature",
-   "signature": "extents-proud-feature:shin",
-   "rows": "shin extents Y 27 vs the block Y -13 to 9 with a 1.0 proud knee pad and heel to Y 14 (28)",
-   "amendment": "amend-c: shin extents Y 28",
-   "found_by": "r00 detection",
-   "resume": "not-needed (v01 already built to the amended values)",
-   "design_check": "proposed",
-   "visible": false,
-   "reaudit": "build-a-toy/drafts/amend-c-notes.md"
-  },
-  {
-   "id": "cc-r19-shin-stance",
-   "attempt": 3,
-   "signature": "3c-print-stance-overhang:shin",
-   "rows": [
-    "R19 (shin)",
-    "knee-slide-1"
-   ],
-   "amendment": "amend-e",
-   "visible": false,
-   "approved": "not-needed",
-   "applied": true,
-   "reaudit": "toys-spec/racer-mecha/build-a-toy/drafts/amend-e-notes.md",
-   "resume": "resumed",
-   "design_check": {
-    "name": "Stage 3c: overhang check of each Component in its print stance, including features stepped in on every side",
-    "issue": null,
-    "status": "proposed"
-   }
-  }
- ]
+  "contract_contradictions": [
+    {
+      "id": "cc-r06-head-slide",
+      "attempt": 2,
+      "signature": "3d-declared-contacts:head",
+      "rows": [
+        "Every moving part keeps at least 0.5 mm from every other part through each transformation move and posing range and in both poses. Checked with --check-motion true: one sweep per transformation move in at most 10 steps against only the parts it can reach; a skipped, killed or timed-out sweep fails this requirement.",
+        "The head's 8 x 8 neck post (Y -0.5 to 7.5) slides in the torso's 9 x 9 neck bore below the head pocket (X -4.5 to 4.5, Y -1 to 8, floor Z 119). A 3 x 26 dowel pressed through the torso from front to back along Y at X 0, Z 149.5 runs through the post's 3.4 wide front-to-back slot and stops it at both ends: raised, the helmet's underside is at Z 178 and the neck shows through the pocket's 13 wide front notch (down to Z 170); lowered by 22, the helmet rests on the pocket floor at Z 156."
+      ],
+      "amendment": "amend-a",
+      "visible": false,
+      "approved": "not-needed",
+      "applied": true,
+      "reaudit": "toys-spec/racer-mecha/build-a-toy/drafts/amend-a-notes.md",
+      "resume": "resumed",
+      "design_check": {
+        "name": "Stage 3d: global clearance rows list Interface-declared contacts",
+        "issue": null,
+        "status": "proposed"
+      }
+    },
+    {
+      "id": "cc-r02-car-height",
+      "attempt": 2,
+      "signature": "3d-pose-envelope:spine",
+      "rows": [
+        "In the car pose the toy is an open-wheel Formula car 272 mm long, 101 wide and 44 tall: nose cone and front wing ahead of the front wheels, the arm shells as front sidepods, the legs as rear sidepods, the spine as engine cover with the rear wing behind the tail, and no robot part showing above the bodywork.",
+        "an airbox scoop 12 wide on its front face (Y 15.5 to 22, Z 106 to 118)"
+      ],
+      "amendment": "amend-a",
+      "visible": false,
+      "approved": "not-needed",
+      "applied": true,
+      "reaudit": "toys-spec/racer-mecha/build-a-toy/drafts/amend-a-notes.md",
+      "resume": "resumed",
+      "design_check": {
+        "name": "Stage 3d: measure every non-display pose envelope from the pose model",
+        "issue": null,
+        "status": "proposed"
+      }
+    },
+    {
+      "id": "cc-r05-elbow-forward",
+      "attempt": 2,
+      "signature": "3d-posing-sweep:forearm",
+      "rows": [
+        "Posing ranges in the robot: shoulders 90 degrees forward and 30 back, elbows 90 forward, hips 20 forward and 20 back, knees 45 back, each holding its pose by friction.",
+        "A 20 x 22 white channel open at the back and the bottom, its top chamfered front and back, with two elbow cheeks at its bottom and two red panels on its front face."
+      ],
+      "amendment": "amend-b",
+      "visible": false,
+      "approved": "owner 2026-10-12",
+      "applied": true,
+      "reaudit": "toys-spec/racer-mecha/build-a-toy/drafts/amend-b-notes.md",
+      "resume": "resumed",
+      "design_check": {
+        "name": "Stage 3d: sweep every posing range in its signed direction, not the transformation's",
+        "issue": null,
+        "status": "proposed"
+      }
+    },
+    {
+      "id": "cc-wall-floor",
+      "signature": "wall-floor:torso,nose,head,thigh,shin",
+      "rows": "geometries wall_min_mm 3.0/2.0 vs the Ø3 dowel joints the contract sizes (Ø7 cheeks and knuckles around teardrop bores, bores 3 above a bottom face, a 3.4 slot in an 8 post)",
+      "amendment": "amend-c: wall_min_mm torso 1.1, nose 0.9, head 1.9, thigh 1.4, shin 1.9",
+      "found_by": "r00 detection",
+      "resume": "not-needed (v01 already built to the amended values)",
+      "design_check": "proposed",
+      "visible": false,
+      "reaudit": "build-a-toy/drafts/amend-c-notes.md"
+    },
+    {
+      "id": "cc-arch-clearance",
+      "signature": "arch-clearance:thigh",
+      "rows": "thigh hip tongue rounded R4 about the hip axis vs R06 0.5 clearance under the hip slot's pointed-arch roof 4.24 from the axis",
+      "amendment": "amend-c: tongue R3.7 (Y -5.7 to 1.7), thigh extents Z 28.2",
+      "found_by": "r00 detection",
+      "resume": "not-needed (v01 already built to the amended values)",
+      "design_check": "proposed",
+      "visible": false,
+      "reaudit": "build-a-toy/drafts/amend-c-notes.md"
+    },
+    {
+      "id": "cc-extents-proud-feature",
+      "signature": "extents-proud-feature:shin",
+      "rows": "shin extents Y 27 vs the block Y -13 to 9 with a 1.0 proud knee pad and heel to Y 14 (28)",
+      "amendment": "amend-c: shin extents Y 28",
+      "found_by": "r00 detection",
+      "resume": "not-needed (v01 already built to the amended values)",
+      "design_check": "proposed",
+      "visible": false,
+      "reaudit": "build-a-toy/drafts/amend-c-notes.md"
+    },
+    {
+      "id": "cc-r19-shin-stance",
+      "attempt": 3,
+      "signature": "3c-print-stance-overhang:shin",
+      "rows": [
+        "R19 (shin)",
+        "knee-slide-1"
+      ],
+      "amendment": "amend-e",
+      "visible": false,
+      "approved": "not-needed",
+      "applied": true,
+      "reaudit": "toys-spec/racer-mecha/build-a-toy/drafts/amend-e-notes.md",
+      "resume": "resumed",
+      "design_check": {
+        "name": "Stage 3c: overhang check of each Component in its print stance, including features stepped in on every side",
+        "issue": null,
+        "status": "proposed"
+      }
+    }
+  ]
 }
