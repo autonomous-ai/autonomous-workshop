@@ -30,6 +30,18 @@ file.
 
 ## Stage 2 - Contract
 
+### Write a detail that changes the outline as outline, never as grooves on a box
+- **Why:** a contract gave a fist as a 20 x 15 box with fingers "split by
+  grooves 0.8 wide and 2 deep" and a thumb inside that face. The run built
+  exactly that, the reviewer agreed, and the owner saw a square block twice:
+  the image's fingers stand proud, curl under, and its thumb sticks out over
+  a cut-away corner.
+- **How to apply:** for each detail the image shows, ask whether it changes
+  the silhouette in the front or side view. If it does, give its outline in
+  numbers: how far it stands proud, where the outline steps in or is cut
+  away, how the end rounds or curls. Only a detail that leaves the silhouette
+  unchanged may be written as an engraved line or a groove.
+
 ## Stage 3 - Reference images
 
 ### Draw a part's extra views in one turnaround image, never one view per call
