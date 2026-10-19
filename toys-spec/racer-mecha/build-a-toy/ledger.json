@@ -163,10 +163,10 @@
       "source": "wish-20261017-071954-30e9fa1d workspace",
       "run_workspace": "/home/loginuserxx/.local/share/autonomous-workshop/runs/wish-20261018-161459-27a59f4f/workspace",
       "toy_dir": null,
-      "final_status": "running",
+      "final_status": "waiting",
       "brief": "build-a-toy/r02/brief.md",
       "finding_ids": [],
-      "notes": "Contract after Stage 3e lint/audit (curled fist, shin block flush X 7.5-25.5, centred cuff X 2.75-30.25), ref-01/08/10 and guide-06/09/11 redrawn and owner-approved 2026-10-18. Launched 16:14Z from worktree racer-v03-df4d3e7b (df4d3e7b; main has no src change since), --agent claude --model claude-opus-5-5 --effort medium --check-motion true --max-tokens 100000000 --turn-minutes 360 --no-publish; receipt 12 references, 13 guides (matches). Log build-a-toy/r02/fix.log. Aborted earlier launches, no build: wish-20261018-131908-dbd662fa (defaulted to Codex, failed in 3 s, 0 tokens), wish-20261018-131936-cb9abe2e (claude-opus-5, stopped by TaskStop)."
+      "notes": "Contract after Stage 3e lint/audit (curled fist, shin block flush X 7.5-25.5, centred cuff X 2.75-30.25), ref-01/08/10 and guide-06/09/11 redrawn and owner-approved 2026-10-18. Launched 16:14Z from worktree racer-v03-df4d3e7b (df4d3e7b; main has no src change since), --agent claude --model claude-opus-5-5 --effort medium --check-motion true --max-tokens 100000000 --turn-minutes 360 --no-publish; receipt 12 references, 13 guides (matches). Log build-a-toy/r02/fix.log. Aborted earlier launches, no build: wish-20261018-131908-dbd662fa (defaulted to Codex, failed in 3 s, 0 tokens), wish-20261018-131936-cb9abe2e (claude-opus-5, stopped by TaskStop). 2026-10-19 01:02Z stopped on budget at 100M/100M: 11 of 11 Components locked, 103 component rounds, 2 repeated print defects, 8 Reference Conflicts, 0 needs; in assembly at round 13 (gates, interference and motion pass; root unlocked shin for thin tapers under the 1.4 floor). Same lock count and defects as v04, so class other: owner decides the raise."
     }
   ],
   "contract_versions": {
