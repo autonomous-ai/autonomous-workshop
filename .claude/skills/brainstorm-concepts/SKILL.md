@@ -65,21 +65,19 @@ has a Rejections log.
    idea, any flaw, and a **Đã chọn** badge on chosen concepts. Publish it with
    the Artifact tool, and republish the same file path so the link stays the
    same. If the artifact was deleted, ask before publishing a new link.
-   If the Artifact tool is off, skip the publish; the repo copy below still
+   If the Artifact tool is off, skip the publish; the standalone copy below still
    happens.
-6. **Repo copy, every time the page changes, unasked.** The human opens pages
-   on their own machine, where neither `toys-spec/` nor the server's paths
-   exist. Write a self-contained copy with every image inlined:
+6. **Standalone copy, every time the page changes, unasked.** The human opens
+   pages from the main checkout, where the artifact's relative image paths may
+   not resolve. Write a copy with every image inlined next to the page:
    ```
    uv run --no-project --with pillow python \
      .claude/skills/brainstorm-concepts/scripts/embed_page.py \
-     toys-spec/<subject>/CONCEPTS.html docs/ideas/<subject>-concepts.html
+     toys-spec/<subject>/CONCEPTS.html toys-spec/<subject>/CONCEPTS-standalone.html
    ```
-   Commit only that file (with `git add <path>`, never a force-add of
-   `toys-spec/`) and push the current branch. In the report, give its absolute
-   GitHub link,
-   `https://github.com/autonomous-ai/autonomous-workshop/blob/<branch>/docs/ideas/<subject>-concepts.html`,
-   never a relative path or a server path.
+   Do not commit or push it; run `tools/sync-to-main.sh` so it reaches the
+   main checkout now. In the report, give its absolute path in the main
+   checkout, never a relative path.
 7. **Notes.** Append a round section to `NOTES.md`:
    - the human's ask, in their words;
    - each concept id with its idea;
@@ -87,8 +85,8 @@ has a Rejections log.
    - every flaw.
 8. **Do not commit the round's sources.** New files under `toys-spec/` are
    gitignored; `tools/sync-to-main.sh` (the project's Stop hook) copies them
-   into the main checkout. Only the step 6 copy and files Git already tracks
-   are committed and pushed.
+   into the main checkout. Only files Git already tracks are committed and
+   pushed.
 9. **Report** in the human's language, briefly: a table of id, name and idea,
    then the flaws, two or three picks with a one-line reason each, and one
    question.
@@ -107,7 +105,7 @@ round's shared block excludes it. Then run the round again.
 
 Mark each chosen concept: a **Đã chọn** badge on its card and a dated line in
 `NOTES.md` with any changes the human asked for. Republish the page, refresh
-the repo copy (step 6), and stop. Brainstorming continues only if the human asks for more.
+the standalone copy (step 6), and stop. Brainstorming continues only if the human asks for more.
 
 ## Prompt gotchas
 
