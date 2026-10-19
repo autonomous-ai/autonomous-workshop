@@ -1,0 +1,16 @@
+{
+  "extensions": [
+    {
+      "artifact_sha256": "60a965ce68852409250dc075f9e3f4b03d4ce3951a94e77a0e4a09bc035a33dd",
+      "kind": "codex-skill",
+      "name": "juno-defy-inventor",
+      "path": "skills/juno-defy-inventor"
+    }
+  ],
+  "id": "juno-defy",
+  "schema_version": 8,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}
