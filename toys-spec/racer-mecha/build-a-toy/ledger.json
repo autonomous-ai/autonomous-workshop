@@ -199,7 +199,7 @@
    "final_status": null,
    "brief": "build-a-toy/r03/brief.md",
    "finding_ids": [],
-   "notes": "v06 design (owner changes 2026-10-19: rear wheels on the shin cuff, sliding nose tip, friction hinges, larger wheels; new geometry nose-tip, ref-13). Owner approved the brief and launch 2026-10-19. Fix from the v05 workspace, worktree racer-v03-df4d3e7b, --agent claude --model claude-opus-5-5 --effort medium --check-motion true --max-tokens 100000000 --turn-minutes 360 --no-publish. Log build-a-toy/r03/fix.log. Launched 11:17Z; receipt 23 requirements, 13 references, 13 guides (matches)."
+   "notes": "v06 design (owner changes 2026-10-19: rear wheels on the shin cuff, sliding nose tip, friction hinges, larger wheels; new geometry nose-tip, ref-13). Owner approved the brief and launch 2026-10-19. Fix from the v05 workspace, worktree racer-v03-df4d3e7b, --agent claude --model claude-opus-5-5 --effort medium --check-motion true --max-tokens 100000000 --turn-minutes 360 --no-publish. Log build-a-toy/r03/fix.log. Launched 11:17Z; receipt 23 requirements, 13 references, 13 guides (matches). 2026-10-19 15:09Z stopped on budget at 100M/100M: 12 of 12 Components locked (52 component rounds, 0 repeated print defects), 4 Reference Conflicts, 0 needs; assembly r0006 passed (interference and motion pass) after a size repair (r0003 12.96 MiB > 12 MB); state STEPs, snaps and motion gif written; blind review in phase 1 when the budget ran out. Asked the owner for a raise to 130M. Owner raised the cap to 200M (budget_raised: owner; owner_decision at 2026-10-19T15:09Z, limit_before 100000000, limit_after 200000000); resumed with --max-tokens 200000000 --check-motion true (log resume1.log)."
   }
  ],
  "contract_versions": {
