@@ -80,7 +80,8 @@ the cone's axis. A root block 20 wide (Y 16.25 to 25.25, Z 219.75 to 228.25)
 joins it to the cone, which runs down the back, its outer face sculpted as
 a nose cone with a raised centre ridge: 18 wide and 16.25 deep (Y 16.25 to
 32.5) from Z 219.75 to 170.25. Its bottom face opens on a sleeve 13 wide (X
--6.5 to 6.5) x 11.25 deep (Y 18.25 to 29.5) up to a pointed-arch top at Z 208;
+-6.5 to 6.5) x 11.25 deep (Y 18.25 to 29.5) up to Z 208 at its walls, then a 52 degree
+pointed arch;
 its side walls carry the nose slide's slots. Prints standing on its bottom
 face (Z 170.25).
 
@@ -147,8 +148,8 @@ bevelled 1.5 at 52 degrees. In front of the post a knee guard 18 wide (X
 the post's top: in the robot it laps 7.5 over
 the thigh's foot. Beside and behind the post the block's top slopes down at
 52 degrees (to Z 84.91 at X 7.5 and 25.5, 81.71 at Y 9.5); only between guard
-and post is it flat. On the cuff's outer face an Ø9.5 boss (X 30.25 to 40) on
-the rear wheel axis Y 5, Z 48. Below the cuff the ankle tongue, 14 wide (X
+and post is it flat. On the cuff's outer face an Ø9.5 teardrop boss (X 30.25 to 40)
+on the rear wheel axis Y 5, Z 48. Below the cuff the ankle tongue, 14 wide (X
 14 to 28) x 9.5 deep (Y -0.25 to 9.25), down to a round end R4.75 about the
 ankle axis Y 4.5, Z 14.75. Prints upside down on the post's top face (Z 116).
 
@@ -188,8 +189,8 @@ face.
 
 Every hinge is a purchased steel ISO 8734 dowel pin Ø3 as R09 sets out.
 Every hinge holds its angle by friction: the turning side's bore is 2.9,
-split by a 0.8 slit from the bore out through the knuckle on its unseen
-side, so it grips the dowel.
+split by a 0.8 slit from the bore out through the teardrop's point, so
+it grips the dowel.
 Each wheel is held by a purchased
 Ø3 push-on cap (starlock) on the dowel's outer end. Every horizontal bore is a
 teardrop with its point away from the bed. No glue.
@@ -247,12 +248,12 @@ Load-bearing sections are at least 3 mm: torso walls 3.0, arm shell and
 thigh walls 2.5, every tongue at least 9 deep, the slide post 12 x 13, the
 neck post 8, the wing plate 3.5 and blade 2.9, the toe lugs 3.5. The exceptions,
 which the joints size: above a teardrop bore (faces 38 degrees from vertical)
-inside a Ø8.5 cheek, lug or knuckle 1.9 on the torso and the boot, 1.7 on the
-nose and the wing; the cockpit's 1.75 wall to the head pocket; the thigh's
+inside a Ø8.5 cheek, lug or knuckle 1.9; the nose sleeve's walls 2 and
+2.5; the cockpit's 1.75 wall to the head pocket; the thigh's
 1.5 roof; 2.15 from the slide slot's end at Z 112.25 to the thigh's bottom,
 and above the slide dowel's bore in the post; 2.3 from the hip bore at Z 145
-to the hip slot's bottom, and beside the neck post's 3.4 slot; 2.95 or 3.2
-round an R4.5 or R4.75 tongue's Ø3.1 bore. The floors stay below these: the
+to the hip slot's bottom, and beside the neck post's 3.4 slot; 3.05 or 3.3
+round an R4.5 or R4.75 tongue's 2.9 bore. The floors stay below these: the
 torso and the boot 1.1, the nose, nose tip and wing 0.95, the thigh and the shin
 1.4, the head 1.9, the fist 2.5. The robot
 stands unsupported: its centre of mass lies at Y -1.2, 49.55 behind the toes
