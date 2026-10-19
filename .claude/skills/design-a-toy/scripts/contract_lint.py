@@ -132,10 +132,12 @@ def lint(contract, facts, claims):
             if c.get("joint"):
                 # the Interface poses for this joint (wing-hinge matches wing-hinge-1 and -2) and this mover
                 geo = comp.split("#")[0]
-                degs = [abs(m["rotation"]["end_deg"] - m["rotation"]["start_deg"])
-                        for itf in contract.get("interfaces", []) if itf["id"] == c["joint"] or itf["id"].startswith(c["joint"] + "-")
+                # a posing range reads as its span or as either end ("90 forward and 5 back" is -90..5)
+                degs = [d for itf in contract.get("interfaces", []) if itf["id"] == c["joint"] or itf["id"].startswith(c["joint"] + "-")
                         for m in (itf.get("poses") or {}).get("movers", [])
-                        if "rotation" in m and m["component"].split("#")[0] == geo]
+                        if "rotation" in m and m["component"].split("#")[0] == geo
+                        for r in [m["rotation"]]
+                        for d in (abs(r["end_deg"] - r["start_deg"]), abs(r["start_deg"]), abs(r["end_deg"]))]
                 if not degs:
                     add("error", "claims", "%s turns %g about %s in the text, but no Interface %s turns it: \"%s\"" % (
                         comp, c["deg"], c["joint"], c["joint"], q))

@@ -59,10 +59,15 @@ P["head"] = B(-9.5, 9.5, -9.25, 10.25, 227, 250) + B(-4, 4, 0.5, 10.25, 190.75, 
 # ---- nose: hinged at the top of the back (Y 17, Z 232), lying down the back, front wing behind the thighs
 P["nose"] = (CX(-10, 10, 17, 232, 4.25)
              + B(-10, 10, 16.25, 25.25, 219.75, 228.25)                   # root block under the knuckle
-             + B(-9, 9, 16.25, 32.5, 170.25, 219.75) + B(-6, 6, 16.25, 29, 143.75, 170.25)   # cone, stepped taper
-             + B(-6, 6, 20.5, 25.25, 135.25, 143.75)                      # cone tip, overlapping the wing's upper half
-             + B(-42, 42, 25.25, 32.5, 128, 145)                          # front wing plate, 17 tall (final 3b)
-             + sym(B(39, 42, 21.75, 32.5, 128, 148.5)))                   # wing endplates, stepped, rising 3.5 above the wing (3b)
+             + B(-9, 9, 16.25, 32.5, 170.25, 219.75)                      # cone, upper section: the sleeve
+             + CUT(-6.5, 6.5, 18.25, 29.5, 170.25, 208))                  # v6: sleeve for the nose tip, open at its bottom
+# ---- v6 nose tip (owner 2026-10-19: the nose extends and retracts): the cone's lower section, its tip and the front wing,
+#      sliding 24 along the cone in the sleeve; extended in the robot, retracted in the car
+NOSE_SLIDE = 24                                           # the wing stops 0.5 under the cone's bottom (Z 170.25)
+P["nose-tip"] = (B(-6, 6, 18.75, 29, 143.75, 183.5)                      # lower section, its top 13.25 inside the sleeve
+                 + B(-6, 6, 20.5, 25.25, 135.25, 143.75)                  # cone tip, overlapping the wing's upper half
+                 + B(-42, 42, 25.25, 32.5, 128, 145)                      # front wing plate, 17 tall
+                 + sym(B(39, 42, 21.75, 32.5, 128, 148.5)))               # wing endplates
 # ---- arm shell: one white sleeve from the shoulder to the wrist, top rounded R13.25 about the shoulder axis
 # ---- slim amendment (Stage 3b, owner: "too thick"): limb sections reduced toward the images; joints, Z numbers kept.
 # ---- arm shell: one white sleeve from the shoulder to the wrist, 26 x 22, top rounded R11 about the shoulder axis
@@ -81,7 +86,7 @@ P["thigh#1"] = (B(7.5, 25.5, -12, 7, 108.5, 135.75)
                 + CUT(10, 23, -9.5, 4.5, 108.5, 133.85) + CUT(10, 23, -8, 3, 133.85, 135.75))   # cavity, ceiling edges bevelled
 # ---- shin: cuff 27.5 x 22, block 18 flush under the thigh (owner 2026-10-18), post 12 x 13 with the knee-slide dowel, knee guard in front of the post up to its top, ankle tongue below
 P["shin#1"] = (B(2.75, 30.25, -12.5, 9.5, 32, 54.25) + B(7.5, 25.5, -12.5, 9.5, 54.25, 88.75) + B(10.5, 22.5, -9, 4, 88.75, 114.1) + B(10.5, 22.5, -7.5, 2.5, 114.1, 116)   # post, top edges bevelled 1.5
-               + B(7.5, 25.5, -14.25, -12.5, 88.75, 116) + CX(25.5, 34.5, 2.5, 76, 4.75)
+               + B(7.5, 25.5, -14.25, -12.5, 88.75, 116) + CX(30.25, 40, 5, 48, 4.75)   # v6: wheel boss on the cuff
                + B(14, 28, -0.25, 9.25, 14.75, 32) + CX(14, 28, 4.5, 14.75, 4.75))
 # ---- v5 boot (owner 2026-10-17, "cách 2"): a wedge as in the overall image. The rear-wing plate lies on the toe slope,
 #      its hinge low at the toe; the car's rear wing keeps its height (hinge Z + plate length = 50.75).
@@ -106,8 +111,8 @@ P["boot#1"] = (POLY(8, 40, BOOT_PROFILE) + CX(8, 11.5, YH, ZH, 4.25) + CX(36.5, 
 P["wing#1"] = (CX(12, 36, YH, ZH, 4.25)
                + POLY(12, 36, [_H(0, -4.25), _H(LP, -4.25), _H(LP, -0.75), _H(0, -0.75)])
                + POLY(0.75, 40, [_H(LP - 3.5, -4.25), _H(LP, -4.25), _H(LP, 7.75), _H(LP - 3.5, 7.75)]))
-P["front-wheel#1"] = CX(43.5, 59.5, 3.5, 228.25, 19.5)
-P["rear-wheel#1"] = CX(35, 47, 2.5, 76, 20.5)
+P["front-wheel#1"] = CX(43.5, 59.5, 6, 228.25, 21.5)           # v6: Ø43, axle Y 6
+P["rear-wheel#1"] = CX(40.5, 52.5, 5, 48, 22.5)             # v6: Ø45 at the cuff's foot, outboard of the boot
 
 for n in list(P):
     if n.endswith("#1"):
@@ -136,7 +141,8 @@ SLIDE = 19.25
 HEAD = 26.5
 STAGES = [
     ("head down 26.5", {"head": [("t", (0, -HEAD))]}),
-    ("nose flips 180 over the top", {"nose": [("r", (17, 232), 180)]}),
+    ("nose flips 180 over the top", {n: [("r", (17, 232), 180)] for n in ("nose", "nose-tip")}),
+    ("nose tip slides 24 into the cone", {"nose-tip": [("t", (0, -NOSE_SLIDE))]}),
     ("forearms fold 180 into the shells", {f"forearm{s}": [("r", (-2.5, 140), 180)] for s in ("#1", "#2")}),
     ("boots fold 90 at the ankles", {f"{p}{s}": [("r", ANKLE, 90)] for s in ("#1", "#2") for p in ("boot", "wing")}),
     ("shins slide 19.25 up into the thighs", {f"{p}{s}": [("t", (0, SLIDE))] for s in ("#1", "#2") for p in ("shin", "boot", "wing", "rear-wheel")}),
@@ -183,7 +189,7 @@ def pair_gap(a, b, stage, f, n=11):
 
 # Pairs joined by a pin or a slide; their running clearances are reported separately
 JOINED = {frozenset(p) for p in [
-    ("torso", "nose"), ("torso", "head"), ("thigh#1", "shin#1"), ("thigh#2", "shin#2"), ("shin#1", "boot#1"), ("shin#2", "boot#2"),
+    ("torso", "nose"), ("nose", "nose-tip"), ("torso", "head"), ("thigh#1", "shin#1"), ("thigh#2", "shin#2"), ("shin#1", "boot#1"), ("shin#2", "boot#2"),
     ("boot#1", "wing#1"), ("boot#2", "wing#2"),
     ("torso", "thigh#1"), ("torso", "thigh#2"), ("torso", "arm-shell#1"), ("torso", "arm-shell#2"),
     ("arm-shell#1", "forearm#1"), ("arm-shell#2", "forearm#2"), ("torso", "front-wheel#1"), ("torso", "front-wheel#2"),
