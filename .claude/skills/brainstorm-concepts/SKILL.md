@@ -101,6 +101,26 @@ write any **rejection** into the Rejections log in `NOTES.md` with its reason
 ("too childish", "a snowflake key is someone else's idea"). Every later
 round's shared block excludes it. Then run the round again.
 
+## Riding a trend without its IP
+
+When the human wants concepts that ride a film, book or game trend, the
+scene stays generic and the source shows only through **Hidden References**:
+small props a fan decodes and nobody else needs.
+
+- **IP stays out.** Write no names, inscriptions or crests, and none of the
+  source's signature colours, characters or one-of-a-kind objects. List them
+  as exclusions in the shared block and in the `NOTES.md` constraints.
+- **Every Hidden Reference passes two tests:**
+  1. *Same place*: it comes from a moment in the source that happens in this
+     very room or activity. A prop borrowed from another scene fails, however
+     famous.
+  2. *Staged as the moment*: it is shown mid-story (thrown, dropped, caught,
+     spilled, half-done), not set on a shelf. A loose prop reads as
+     decoration.
+- **Name the moment.** The concept line names the source moment it stages.
+  Each card adds a "Reference kín" line saying which moment it is, so a human
+  who does not know the source can still judge whether the room points at it.
+
 ## When the human picks
 
 Mark each chosen concept: a **Đã chọn** badge on its card and a dated line in
