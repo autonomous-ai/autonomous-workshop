@@ -182,6 +182,14 @@ file.
 - **How to apply:** after four edits, regenerate with the last image as the
   only reference, labelled "a LAYOUT GUIDE: do not copy its pixels", plus a
   full scene description wall by wall.
+- **Count the whole lineage, not one round:** an assembly image fixed back
+  and forth across review rounds (a stair, then a door, then the desks, then
+  the sky) reached the limit without any single round making four edits, and
+  the owner saw the artifacts. Count every edit since the last fresh
+  generation. The fresh redraw must look like the old image detail for
+  detail: describe every object as the last image draws it (shape, colour,
+  count, position), keep the camera and framing, then compare the two images
+  object by object and fix any difference with one edit.
 
 ### Extract a component by removing, not by redrawing
 - **Why:** "redraw this as the empty case" let the model reflow the
