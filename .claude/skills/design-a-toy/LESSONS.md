@@ -88,8 +88,16 @@ file.
   s = max(s0, s_cut(t) + 4 mm)) and tabulate it. Add a check that the layer
   keeps a set BRep distance from the mounting face.
 
-## Stage 3 - Reference images
+### Check every relational word against the coordinates
+- **Why:** with every number linted, a fresh read still found nine words the
+  coordinates denied: rails that "meet" 3.4 apart, a "square" 4 x 2 newel,
+  bosses "clear of" rings they bear on, a stand narrower than its ring, a
+  door plate running through the hinge pin where only knuckles were bored.
+- **How to apply:** before Stage 3e recompute each meet, touch, clear of,
+  beside, square and parallel from the stated ranges. For a pin hinge, say
+  where the leaf's edge stops beside the knuckles.
 
+## Stage 3 - Reference images
 
 ### Draw a part's extra views in one turnaround image, never one view per call
 - **Why:** each separate AI edit of a reference into a back or side view
@@ -104,40 +112,26 @@ file.
   sheet's single scale, with the reference matched to the LEFT view's height.
 
 ### Fix a wrong detail by editing the image, on two models, and pick
-- **Why:** regenerating a whole image to fix one detail redraws everything
-  around it, and fresh errors appear. In one round of six fixes, three
-  models each won different fixes:
-  - `openai/gpt-image-2.5-sunburst` kept the source image intact best, and
-    won the arm shell's inside, the elbow hole, the fist's depth and the
-    hip tongue;
-  - `openai/gpt-5.4-image-2` placed parts correctly where the prompt said
-    where they sit, and won the neck post flush with the helmet back and a
-    cutaway of the leg's slide;
-  - `google/gemini-3-pro-image` won none.
-- **How to apply:** for a fix, pass the current image as IMAGE 1. Name only
-  the change and say "keep everything else exactly". Run it once on
-  sunburst and once on gpt-5.4, then compare.
-  [`scripts/gen_image.py`](scripts/gen_image.py) calls both. Sunburst is
-  image-only: it goes through `/images`, and through chat it answers 404.
-  For a turnaround, set `IMAGE_ASPECT=3:2`. State a spatial fact in words
-  the model cannot read two ways, for example: "the post's back face is
-  flush with the helmet's back face; the front half of the helmet
-  overhangs it".
+- **Why:** regenerating to fix one detail redraws everything around it. In
+  one round of six fixes `openai/gpt-image-2.5-sunburst` kept the source
+  intact best (won four), `openai/gpt-5.4-image-2` placed parts where the
+  prompt said they sit (won two), `google/gemini-3-pro-image` won none.
+- **How to apply:** pass the current image as IMAGE 1, name only the change
+  and say "keep everything else exactly"; run sunburst and gpt-5.4
+  ([`scripts/gen_image.py`](scripts/gen_image.py); sunburst is image-only,
+  via `/images`) and compare. For a turnaround set `IMAGE_ASPECT=3:2`. State
+  a spatial fact one way only: "the post's back face is flush with the
+  helmet's back face; the front half of the helmet overhangs it".
 
 ### Draw what the camera can see, and pick a camera that shows the defining profile
-- **Why:** the owner caught three images that hid what their camera should
-  show:
-  - a boot seen 15 degrees from above showed no sign of a slot open on its
-    top;
-  - an L-shaped wing seen nearly head-on read as a flat bar;
-  - a post and the guard in front of it, contracted to end level, stuck up
-    at different heights in the back and side views.
-- **How to apply:** for each feature the contract places, ask whether the
-  image's camera can see it, and edit it in if it can. A part whose shape
-  is a profile (L, T, U) gets a three-quarter camera that shows that
-  profile at one end. Say "ends at exactly the same height as" for things
-  the contract makes level, and give each view's widths as a percentage
-  of the height, because the models draw parts too slim.
+- **Why:** the owner caught a slot open on top invisible from 15 degrees
+  above, an L-shaped wing read as a flat bar head-on, and a post and guard
+  contracted level drawn at different heights.
+- **How to apply:** for each feature the contract places, edit it in if the
+  camera can see it. Give a profile part (L, T, U) a three-quarter camera
+  showing the profile at one end. Say "ends at exactly the same height as"
+  for level things, and give widths as a percentage of the height, because
+  the models draw parts too slim.
 
 ### Draw transformation steps as one chain of edits, one move per edit
 - **Why:** step panels made as separate edits each redrew the toy, so parts
@@ -150,7 +144,6 @@ file.
   down from the last stood-up step, and pass the old vehicle view only as
   a camera example.
 
-
 ### Show a colour layer hidden inside a fold with a cutaway; fix one defect by editing
 
 - **Why:** views looking into a narrow fold came out as a cup on every model,
@@ -159,47 +152,43 @@ file.
   defect was left (a flared foot), regenerating would have lost the rest, but
   an edit of the chosen image fixed only that spot.
 - **How to apply:** prompt "sliced in half down its middle, look square at the
-  cut face" and name the layer's start, path and end. To fix one detail, send
-  the chosen image as the input and say "keep everything exactly the same,
-  change only X". Run the same prompt on two or three models and pick the
-  best. A model can draw a thick part thinner (a blade) or round (a pipe), so
-  check the thickness against the contract before choosing.
+  cut face" and name the layer's start, path and end. Fix a leftover defect by
+  editing (see above). Check the drawn thickness against the contract, since a
+  model can draw a thick part as a blade or a pipe.
 
 ### Edits drop objects nobody asked to remove
-- **Why:** each "change only X" edit silently lost one or two unrelated
-  objects (an inkwell, a framed picture, a sill plant) in four of seven
-  rounds.
-- **How to apply:** list every object to keep by name in each edit prompt,
-  compare the result's object list with the previous image's, and restore
-  a lost object in one follow-up edit, passing the earlier image as a
-  reference and describing the object as it looked there. A generic noun
-  ("terracotta pot, green plant") brings back a different object.
+- **Why:** each "change only X" edit lost one or two unrelated objects (an
+  inkwell, a framed picture, a sill plant) in four of seven rounds.
+- **How to apply:** name every object to keep in each edit prompt, compare
+  object lists after, and restore a lost one in one edit with the earlier
+  image passed and the object described as it looked there; a generic noun
+  brings back a different object.
 
-### Redraw fresh after about four chained edits
-- **Why:** editing an edit accumulates blur and artifacts; after five
-  rounds the owner saw them. A text-only redraw lost the box proportions;
-  a redraw with the last image attached as a layout guide kept them.
-- **How to apply:** after four edits, regenerate with the last image as the
-  only reference, labelled "a LAYOUT GUIDE: do not copy its pixels", plus a
-  full scene description wall by wall.
-- **Count the whole lineage, not one round:** an assembly image fixed back
-  and forth across review rounds (a stair, then a door, then the desks, then
-  the sky) reached the limit without any single round making four edits, and
-  the owner saw the artifacts. Count every edit since the last fresh
-  generation. The fresh redraw must look like the old image detail for
-  detail: describe every object as the last image draws it (shape, colour,
-  count, position), keep the camera and framing, then compare the two images
-  object by object and fix any difference with one edit.
+### When the models keep moving a part, change the composition, not the prompt
+- **Why:** in seven tries on two models a cabinet "under the stair" landed
+  on the dais; as a niche in the stair's solid side it was drawn right at
+  once, and the owner preferred it.
+- **How to apply:** after three generations put a part in the same wrong
+  spot, offer a layout that builds it into a neighbour the model already
+  draws, and amend the contract to it.
+
+### Redraw fresh after about four chained edits, counting the whole lineage
+- **Why:** editing an edit accumulates blur; the owner saw it after five,
+  including an assembly fixed back and forth across rounds with no single
+  round making four edits. A text-only redraw lost the box proportions; one
+  with the last image as a layout guide kept them.
+- **How to apply:** count every edit since the last fresh generation. At
+  four, regenerate with the last image as the only reference, labelled "a
+  LAYOUT GUIDE: do not copy its pixels", describing every object as it is
+  drawn there (shape, colour, count, position) at the same camera; then
+  compare object by object and fix any difference with one edit.
 
 ### Extract a component by removing, not by redrawing
-- **Why:** "redraw this as the empty case" let the model reflow the
-  layout (shorter bookcase, smaller window, an angled wall); "edit: remove
-  the chair, the desk ... keep everything else" kept every position.
-- **How to apply:** for a component that is the assembly minus parts,
-  edit the assembly image and name every part to remove and what shows
-  behind it. For a top view, pass an earlier clean top view as the first
-  reference (camera and style) and the assembly second (objects); a text
-  request for a top view returns a three-quarter view.
+- **Why:** "redraw this as the empty case" reflowed the layout; "remove the
+  chair, the desk ... keep everything else" kept every position.
+- **How to apply:** edit the assembly and name every part to remove and
+  what shows behind it. For a top view pass a clean earlier top view first
+  (camera) and the assembly second; text alone returns a three-quarter view.
 
 ### Ask for proportion changes as relative edits
 - **Why:** "N times taller than wide" was ignored for thin parts (a ladder
@@ -248,3 +237,13 @@ file.
 - **How to apply:** for any choice of style, species, prop or layout, draw
   both options from the same base image (one change each) and publish them
   side by side with one line each.
+
+### Name the two objects that touch before fixing a region the owner flags
+- **Why:** "the lower part of this image is wrong" was fixed three times as
+  the wrong thing (a pilaster, a width, an open underside) before it turned
+  out to mean the stair's foot touching the right wall.
+- **How to apply:** when a complaint names a region, not an object, crop
+  that region, list what touches what there, and fix the contact that
+  breaks the contract or the room plan. If two readings remain, show a crop
+  of each in one question.
+
