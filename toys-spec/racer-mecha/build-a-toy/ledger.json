@@ -206,7 +206,7 @@
     "likeness:ref-10-wing",
     "likeness:ref-13-nose-tip"
    ],
-   "notes": "v06 design (owner changes 2026-10-19: rear wheels on the shin cuff, sliding nose tip, friction hinges, larger wheels; new geometry nose-tip, ref-13). Owner approved the brief and launch 2026-10-19. Fix from the v05 workspace, worktree racer-v03-df4d3e7b, --agent claude --model claude-opus-5-5 --effort medium --check-motion true --max-tokens 100000000 --turn-minutes 360 --no-publish. Log build-a-toy/r03/fix.log. Launched 11:17Z; receipt 23 requirements, 13 references, 13 guides (matches). 2026-10-19 15:09Z stopped on budget at 100M/100M: 12 of 12 Components locked (52 component rounds, 0 repeated print defects), 4 Reference Conflicts, 0 needs; assembly r0006 passed (interference and motion pass) after a size repair (r0003 12.96 MiB > 12 MB); state STEPs, snaps and motion gif written; blind review in phase 1 when the budget ran out. Asked the owner for a raise to 130M. Owner raised the cap to 200M (budget_raised: owner; owner_decision at 2026-10-19T15:09Z, limit_before 100000000, limit_after 200000000); resumed with --max-tokens 200000000 --check-motion true (log resume1.log). Complete 2026-10-19T18:01Z at 119M tokens; final verification PASS (motion rc=0, 595.82 s); 0 Component Acceptances, 1 Reference Conflict (shin knee guard plain), 6 Blocked Reports answered by the root, 0 amendments; assembled.step 11.97 MB, heaviest Component torso 1.60 MB. Detection build-a-toy/r03/findings.json: 6 findings, 68 passed; ref-03 now passes (0.978); ref-08 dropped (0.657 print stance, 0.837 at camera)."
+   "notes": "v06 design (owner changes 2026-10-19: rear wheels on the shin cuff, sliding nose tip, friction hinges, larger wheels; new geometry nose-tip, ref-13). Owner approved the brief and launch 2026-10-19. Fix from the v05 workspace, worktree racer-v03-df4d3e7b, --agent claude --model claude-opus-5-5 --effort medium --check-motion true --max-tokens 100000000 --turn-minutes 360 --no-publish. Log build-a-toy/r03/fix.log. Launched 11:17Z; receipt 23 requirements, 13 references, 13 guides (matches). 2026-10-19 15:09Z stopped on budget at 100M/100M: 12 of 12 Components locked (52 component rounds, 0 repeated print defects), 4 Reference Conflicts, 0 needs; assembly r0006 passed (interference and motion pass) after a size repair (r0003 12.96 MiB > 12 MB); state STEPs, snaps and motion gif written; blind review in phase 1 when the budget ran out. Asked the owner for a raise to 130M. Owner raised the cap to 200M (budget_raised: owner; owner_decision at 2026-10-19T15:09Z, limit_before 100000000, limit_after 200000000); resumed with --max-tokens 200000000 --check-motion true (log resume1.log). Complete 2026-10-19T18:01Z at 119M tokens; final verification PASS (motion rc=0, 595.82 s); 0 Component Acceptances, 1 Reference Conflict (shin knee guard plain), 6 Blocked Reports answered by the root, 0 amendments; assembled.step 11.97 MB, heaviest Component torso 1.60 MB. Detection build-a-toy/r03/findings.json: 6 findings, 68 passed; ref-03 now passes (0.978); ref-08 dropped (0.657 print stance, 0.837 at camera). 2026-10-20 03:55Z owner chose to publish v06 with its 6 findings open: workshop publish --title \"Racer Mecha\"; summary said effect.factory failed, but the effect ledger has factory-import succeeded and factory-publish unknown with HTTP 200; live at https://www.autonomous.ai/toys/product/racer-mecha-nnee (title Racer Mecha, HTTP 200), a new listing beside v05's racer-mecha."
   }
  ],
  "contract_versions": {
@@ -393,10 +393,17 @@
   }
  ],
  "published": {
-  "wish_id": "wish-20261018-161459-27a59f4f",
+  "wish_id": "wish-20261019-111735-4f03b18e",
   "title": "Racer Mecha",
-  "url": "https://www.autonomous.ai/toys/product/racer-mecha",
-  "at": "2026-10-19T03:35Z",
-  "by": "owner decision, findings open"
+  "url": "https://www.autonomous.ai/toys/product/racer-mecha-nnee",
+  "at": "2026-10-20T03:55Z",
+  "by": "owner decision, findings open",
+  "previous": {
+   "wish_id": "wish-20261018-161459-27a59f4f",
+   "title": "Racer Mecha",
+   "url": "https://www.autonomous.ai/toys/product/racer-mecha",
+   "at": "2026-10-19T03:35Z",
+   "by": "owner decision, findings open"
+  }
  }
 }
