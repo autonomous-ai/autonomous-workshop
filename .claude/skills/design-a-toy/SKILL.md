@@ -304,7 +304,11 @@ For each image, take its alpha silhouette and check:
 3. **Masses.** Compare the width of each major body at its own height with the
    contract dimension. A torso, a head, a base or a wing root are examples. A
    56 mm torso drawn as a 33 mm skeleton is a disagreement even when the
-   overall aspect matches.
+   overall aspect matches. In the assembly image, measure each body's left
+   and right edge too, not only its width, against the bodies above and
+   below it: a shin block drawn flush under its thigh but contracted 4 mm
+   wider on the outer side only reads as a leg shifted sideways, though each
+   width alone passes.
 4. **Counts, sides and orientation.** Tooth, blade, spoke and finger counts;
    which side the eye or the claw is on; which way a hole faces. Count blades
    and teeth by machine (edge crossings along a scan line), not by eye.
@@ -318,6 +322,15 @@ For each image, take its alpha silhouette and check:
    wing blades and 18 mm claws, and the images drew 9 mm, 11-13 mm and
    37 mm. Make followed the numbers, and every part came out a different
    shape from its picture.
+
+   Then the **outline**. In each component image, measure the silhouette's width at
+   every tenth of its height and every place it steps in or out, stands
+   proud, curls or is cut away. Each one is a contract statement of outline:
+   how far it stands proud, where it steps and where it is cut away. A
+   detail the contract writes as an engraved line or a groove on a plain face
+   while the image draws it changing the silhouette is a disagreement,
+   however the feature list reads ("four fingers, a thumb: drawn, ok" passed
+   a fist the contract kept as a box).
 
 6. **Reference Camera.** Estimate, by eye, the camera each image shows its
    subject from: `[AZ, EL]` in degrees, in the Display Pose (assembly)
@@ -429,6 +442,17 @@ at Workshop's 0.4 mm nozzle they are:
 | A groove, slit, slot, gap or opening meant to stay open | 0.5 mm across | `min_cut_width` |
 | An engraved or inset cut | 0.5 mm deep | `min_cut_depth` |
 | Material between two cut copies: slits or windows side by side | 1.6 mm | `min_web` |
+
+Then check every feature **against its print stance and its floor**. For each
+groove, slot, notch, curl, proud detail and cut-away the contract gives, turn
+it into the stance the contract names and check that it prints without
+support: an open-top groove or slot is free; one whose opening faces sideways
+across the build direction has a roof, which fails unless it is a ledge under
+1 deep or rises at 52 degrees. A finger groove 3 deep printed on the part's
+side is a 3 mm cantilevered roof. When a detail fails, change the stance
+before the detail. Then check each feature's width or thickness against its
+geometry's `wall_min_mm`: a feature under the floor either grows, or the
+contract lowers that geometry's floor and names why.
 
 Then check every **stacked or curved placement**: each detail the images draw
 on another detail (rivets on a band, a boss on a rim) or on a curved host (a
@@ -755,6 +779,45 @@ in the contract, the Interfaces match it, every named travel stop has a
 printable site at each extreme it ends, and every camera-named composition
 claim holds from its camera.
 
+## Stage 3e - Lint the contract and have it audited
+
+Stages 3b to 3d check the contract against the images and the model one fact
+at a time, and one author does them. Two failures get past that: the same
+fact stated twice that an amendment changed in one place only (an envelope
+left at the old depth, a move still at its old angle), and the author
+reading the contract as they meant it. This stage checks both, and runs again
+after **every** amendment: Stage 4's changes, `build-a-toy`'s root
+amendments and folded in-run amendments.
+
+1. **Facts.** The Stage 3d model script writes the facts the contract states
+   more than once: the Display Pose box, each Component's box and X span at
+   each 1 mm of Z, a geometry's extents in its own frame when they are not
+   its box, and each Component's moves and posing ranges.
+   [`scripts/contract_lint.py`](scripts/contract_lint.py)'s docstring gives
+   the format.
+2. **Claims.** A fresh subagent that has not seen this design transcribes
+   every move angle, placed range, feature size and envelope size the prose,
+   the rows and the Interface texts state into `claims.json`, from
+   [claims-prompt.md](claims-prompt.md) with its paths filled in. It copies
+   numbers; it never computes or judges.
+3. **Lint.** Run
+   `python3 .claude/skills/design-a-toy/scripts/contract_lint.py CONTRACT.md facts.json --claims claims.json`.
+   It compares the block (`envelope_mm`, `extents_mm`, Interface poses) and
+   every claim with the facts, every feature size with its geometry's floor,
+   and warns where a Component, or two it joins, keeps one X edge while the
+   other steps. Fix every error in the contract or the model, whichever is
+   wrong. Check every warning against the assembly image's edges there, and
+   record the verdict.
+4. **Audit.** Another fresh subagent audits the contract against the images
+   from [audit-prompt.md](audit-prompt.md): outlines, neighbouring edges,
+   printing in each stance, and contradictions. Resolve every finding as
+   Stage 3b resolves a disagreement, and redo the checks it touches.
+
+Record the lint output, the claims file and the audit in the working notes.
+
+Done when: the lint reports no error, every warning and audit finding has a
+recorded verdict, and both ran on the contract as it now stands.
+
 ## Stage 4 - Visual review
 
 **Stop. This is the only approval gate.** Show the human every reference image
@@ -782,7 +845,7 @@ steps"). Approving the images approves the Guide Images.
 Wait for explicit approval of the images. If the human wants a change - a
 different shape, proportion, count, pose or feature - fix the images by AI
 editing or regeneration, amend the contract so it says what the new images
-show, and redo Stages 3b, 3c and 3d for **every** image. Then update the same Artifact
+show, and redo Stages 3b, 3c, 3d and 3e for **every** image. Then update the same Artifact
 page and show only the images that changed, always with the assembly image,
 which is the one the likeness gate scores. Repeat until the human approves.
 
