@@ -338,7 +338,7 @@ one of these: fold it as above.) Fix the contract:
    `design-a-toy` check that covers this class, and the Component), and the
    amendment.
 2. **Re-audit the whole contract** with `design-a-toy` Stages 3b (for every
-   image the amendment touches), 3c and 3d: every Component and every check,
+   image the amendment touches), 3c, 3d and 3e: every Component and every check,
    not only the changed row. Record the notes' path in `reaudit`. A new
    contradiction the re-audit finds goes into the same amendment.
 3. **Give `design-a-toy` a check that would have caught it**, when it has
@@ -391,7 +391,8 @@ contract is skipped. Back up `CONTRACT.md`, review the draft, then copy it
 over `CONTRACT.md` and add `amend-<x>` to `contract_versions`. Append each
 printed entry to `in_run_amendments` with `contract_version: amend-<x>`. It
 needs no owner approval (the run's Contract Reviewer found it invisible) and
-no separate re-audit beyond Stage 3c and 3d on the rows it changed. A change
+no separate re-audit beyond Stage 3c and 3d on the rows it changed, and
+Stage 3e's lint on the folded contract. A change
 `fold` refuses (the row no longer reads as the run quoted it, because an
 outer-loop amendment changed it since) is folded by hand, leaving `folded:
 false` until it is; `ledger.py next` lists it as pending. A refused
