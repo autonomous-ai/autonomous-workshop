@@ -78,6 +78,7 @@ class RegistryTest(unittest.TestCase):
                 "ferro-line",
                 "halden-detent",
                 "ivy",
+                "juno-defy",
                 "kestrel-knot",
                 "leo",
                 "luma-vale",
