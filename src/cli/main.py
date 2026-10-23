@@ -803,6 +803,12 @@ def _start_run(
                     ", %d guide(s)" % len(sealed_contract["guides"])
                     if sealed_contract.get("guides")
                     else ""
+                )
+                + (
+                    ", %d print art image(s), %d Print Piece(s)"
+                    % (len(sealed_contract["print"]["art"]), len(sealed_contract["print"]["pieces"]))
+                    if isinstance(sealed_contract.get("print"), Mapping)
+                    else ""
                 ),
             ),
             file=progress,
@@ -836,10 +842,11 @@ def _start_run(
         flush=True,
     )
     guide_count = sum(1 for reference in wish.references if reference.guide)
+    print_count = sum(1 for reference in wish.references if reference.print_art)
     if wish.references:
         print(
             "References: %d image(s) attached read-only under %s/"
-            % (len(wish.references) - guide_count, WISH_REFERENCES_DIRECTORY),
+            % (len(wish.references) - guide_count - print_count, WISH_REFERENCES_DIRECTORY),
             file=progress,
             flush=True,
         )
@@ -847,6 +854,13 @@ def _start_run(
         print(
             "Guides: %d image(s) attached read-only under %s/, never compared with the model"
             % (guide_count, WISH_REFERENCES_DIRECTORY),
+            file=progress,
+            flush=True,
+        )
+    if print_count:
+        print(
+            "Print art: %d image(s) attached read-only under %s/, printed on the Print Sheets"
+            % (print_count, WISH_REFERENCES_DIRECTORY),
             file=progress,
             flush=True,
         )
@@ -939,19 +953,24 @@ def _load_sealed_contract(
         raise WorkshopError("cannot read design contract file") from exc
     contract = parse_design_contract(text)
     contract.check_reference_names(
-        [item.reference.name for item in references if not item.reference.guide]
+        [item.reference.name for item in references if item.reference.kind == "ref"]
     )
     contract.check_guide_names(
         [item.reference.name for item in references if item.reference.guide]
+    )
+    contract.check_print_art_names(
+        [item.reference.name for item in references if item.reference.print_art]
     )
     return text, contract.to_dict()
 
 
 def _load_references(args: argparse.Namespace) -> tuple[LoadedWishReference, ...]:
-    """The --ref images, then the --guide images (ADR 0089).
+    """The --ref images, then the --guide images (ADR 0089), then the
+    --print-art images (ADR 0091).
 
-    A Guide Image exists only as a Design Contract's ``guides[]`` entry, so
-    --guide without --contract refuses before anything is read.
+    A Guide Image exists only as a Design Contract's ``guides[]`` entry, and
+    print art only as its ``print.art`` entry, so either flag without
+    --contract refuses before anything is read.
     """
 
     guides = list(getattr(args, "guides", None) or ())
@@ -959,7 +978,12 @@ def _load_references(args: argparse.Namespace) -> tuple[LoadedWishReference, ...
         raise WorkshopError(
             "--guide attaches a Design Contract's Guide Images: pass --contract FILE too"
         )
-    return load_wish_references(list(args.references or ()), guides)
+    prints = list(getattr(args, "print_art", None) or ())
+    if prints and getattr(args, "contract", None) is None:
+        raise WorkshopError(
+            "--print-art attaches a Design Contract's print art: pass --contract FILE too"
+        )
+    return load_wish_references(list(args.references or ()), guides, prints)
 
 
 def _wish(args: argparse.Namespace) -> int:
@@ -2410,6 +2434,20 @@ def parser() -> argparse.ArgumentParser:
         ),
     )
     wish.add_argument(
+        "--print-art",
+        action="append",
+        dest="print_art",
+        type=str,
+        metavar="IMAGE_OR_URL",
+        help=(
+            "with --contract: attach one of the contract's print art images "
+            "(print.art, schema 6, ADR 0091), in its order; printed on the "
+            "Print Sheets, never compared with the model; the run receives "
+            "the bytes read-only as %s/print-NN-<name>"
+            % WISH_REFERENCES_DIRECTORY
+        ),
+    )
+    wish.add_argument(
         "--inventor",
         metavar="INVENTOR",
         help=(
@@ -2544,6 +2582,20 @@ def parser() -> argparse.ArgumentParser:
             "(guides[], schema 5, ADR 0089), in its order; read by the Manager "
             "and every Component Worker, never compared with the model; the "
             "run receives the bytes read-only as %s/guide-NN-<name>"
+            % WISH_REFERENCES_DIRECTORY
+        ),
+    )
+    fix.add_argument(
+        "--print-art",
+        action="append",
+        dest="print_art",
+        type=str,
+        metavar="IMAGE_OR_URL",
+        help=(
+            "with --contract: attach one of the contract's print art images "
+            "(print.art, schema 6, ADR 0091), in its order; printed on the "
+            "Print Sheets, never compared with the model; the run receives "
+            "the bytes read-only as %s/print-NN-<name>"
             % WISH_REFERENCES_DIRECTORY
         ),
     )

@@ -183,3 +183,35 @@ class WishGuideImageTest(unittest.TestCase):
             Wish.create("wish-g", "toy", references=[_reference(1), _guide(2)])
         with self.assertRaisesRegex(ContractError, "repeat the same bytes"):
             Wish.create("wish-g", "toy", references=[_reference(1), _guide(1, sha256="01" * 32)])
+
+
+def _print_art(index=1, slug="sky", **overrides):
+    value = {"name": "print-%02d-%s.png" % (index, slug), "sha256": ("%02x" % (150 + index)) * 32}
+    value.update(overrides)
+    return _reference(index, slug, **value)
+
+
+class WishPrintArtTest(unittest.TestCase):
+    """ADR 0091: print art seals as print-NN files after every guide."""
+
+    def test_print_art_follows_the_guides_numbered_from_01(self):
+        wish = Wish.create(
+            "wish-p", "toy",
+            references=[_reference(1), _guide(1), _print_art(1), _print_art(2, "cover")],
+        )
+        self.assertEqual([item.kind for item in wish.references], ["ref", "guide", "print", "print"])
+        self.assertEqual([item.print_art for item in wish.references], [False, False, True, True])
+        self.assertFalse(any(item.guide for item in wish.references[2:]))
+        self.assertEqual(wish.references[3].path, "wish-references/print-02-cover.png")
+        self.assertEqual(Wish(**wish.to_dict()), wish)
+        Wish.create("wish-p", "toy", references=[_reference(1), _print_art(1)])
+
+    def test_print_art_out_of_place_or_order_is_refused(self):
+        with self.assertRaisesRegex(ContractError, "print art every guide"):
+            Wish.create("wish-p", "toy", references=[_reference(1), _print_art(1), _guide(1)])
+        with self.assertRaisesRegex(ContractError, "print art every guide"):
+            Wish.create("wish-p", "toy", references=[_print_art(1), _reference(1)])
+        with self.assertRaisesRegex(ContractError, "numbered print-01"):
+            Wish.create("wish-p", "toy", references=[_reference(1), _print_art(2)])
+        with self.assertRaisesRegex(ContractError, "repeat the same bytes"):
+            Wish.create("wish-p", "toy", references=[_reference(1), _print_art(1, sha256="01" * 32)])

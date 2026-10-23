@@ -21,7 +21,8 @@ MAX_OBJECTIVE_CHARS = 50_000
 WISH_REFERENCES_DIRECTORY = "wish-references"
 # The ref-NN- filename pattern below is the hard ceiling: 01-99, then
 # 100-999 (ADR 0091). Guide Images (ADR 0089) ride the same directory as
-# guide-NN- files and share this count and the byte budget.
+# guide-NN- files, and print art (ADR 0091) as print-NN- files; all share
+# this count and the byte budget.
 MAX_WISH_REFERENCES = 999
 MAX_WISH_REFERENCE_BYTES = 12 * 1024 * 1024
 MAX_WISH_REFERENCE_TOTAL_BYTES = 480 * 1024 * 1024
@@ -33,8 +34,12 @@ WISH_REFERENCE_MEDIA_TYPES: Mapping[str, str] = MappingProxyType(
 )
 REFERENCE_PREFIX = "ref"
 GUIDE_PREFIX = "guide"
+PRINT_PREFIX = "print"
+# The order the kinds seal in: every reference, then every guide, then the
+# print art, each numbered from 01.
+_PREFIX_ORDER = (REFERENCE_PREFIX, GUIDE_PREFIX, PRINT_PREFIX)
 _REFERENCE_NAME = re.compile(
-    r"^(?P<prefix>ref|guide)-(?P<index>0[1-9]|[1-9][0-9]{1,2})-"
+    r"^(?P<prefix>ref|guide|print)-(?P<index>0[1-9]|[1-9][0-9]{1,2})-"
     r"(?P<slug>[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?)"
     r"\.(?P<extension>png|jpg|webp)$"
 )
@@ -123,7 +128,8 @@ class WishReference:
     def assert_valid(self) -> None:
         if not isinstance(self.name, str) or _REFERENCE_NAME.fullmatch(self.name) is None:
             raise ContractError(
-                "wish reference name must look like ref-NN-<slug> or guide-NN-<slug>, "
+                "wish reference name must look like ref-NN-<slug>, guide-NN-<slug> or "
+                "print-NN-<slug>, "
                 "with .png, .jpg, or .webp"
             )
         if (
@@ -164,13 +170,26 @@ class WishReference:
         return int(match.group("index"))
 
     @property
+    def kind(self) -> str:
+        """``ref``, ``guide`` or ``print``: the name's prefix."""
+
+        match = _REFERENCE_NAME.fullmatch(self.name)
+        assert match is not None
+        return match.group("prefix")
+
+    @property
     def guide(self) -> bool:
         """True for a Guide Image (ADR 0089): sealed like a reference, never
         compared with the model."""
 
-        match = _REFERENCE_NAME.fullmatch(self.name)
-        assert match is not None
-        return match.group("prefix") == GUIDE_PREFIX
+        return self.kind == GUIDE_PREFIX
+
+    @property
+    def print_art(self) -> bool:
+        """True for print art (ADR 0091): sealed like a reference, printed on
+        a Print Sheet, never compared with the model as a likeness target."""
+
+        return self.kind == PRINT_PREFIX
 
     @property
     def path(self) -> str:
@@ -210,11 +229,12 @@ def _references(value: Any) -> tuple[WishReference, ...]:
     if len(value) > MAX_WISH_REFERENCES:
         raise ContractError("wish references must be at most %d" % MAX_WISH_REFERENCES)
     items = tuple(WishReference.from_value(item, "wish reference") for item in value)
-    references = [item for item in items if not item.guide]
-    guides = [item for item in items if item.guide]
-    if list(items) != references + guides:
-        raise ContractError("wish guide images must follow every reference image")
-    for kind, group in (("ref", references), ("guide", guides)):
+    groups = {kind: [item for item in items if item.kind == kind] for kind in _PREFIX_ORDER}
+    if list(items) != [item for kind in _PREFIX_ORDER for item in groups[kind]]:
+        raise ContractError(
+            "wish guide images must follow every reference image, and print art every guide"
+        )
+    for kind, group in groups.items():
         for position, item in enumerate(group, start=1):
             if item.index != position:
                 raise ContractError(

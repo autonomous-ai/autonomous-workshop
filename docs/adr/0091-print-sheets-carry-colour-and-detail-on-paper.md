@@ -1,7 +1,8 @@
 # ADR 0091: Print Sheets carry colour and detail on paper
 
-- Status: Proposed; decision 10 (the image budget) implemented and
-  deterministically tested, the rest not yet implemented
+- Status: Accepted. Implemented and deterministically tested: decisions 1
+  to 3, the sealing half of 4 (schema 6 and `--print-art`) and 10 (the image
+  budget). Not yet implemented: the rest.
 - Date: 2026-10-23
 - Amends: ADR 0089 (what a Design Contract seals; schema 6 keeps schema 5),
   ADR 0062/0063 (what Make delivers beside STEP and what the CAD gate checks),
@@ -41,9 +42,10 @@ checks that the plastic it lands on fits it, or ships the sheet.
    it, applied to one Unique Geometry; the buyer cuts, folds and applies it.
    Both are defined in `CONTEXT.md`.
 
-2. **Schema 6 and stocks.** A schema 6 Design Contract keeps schema 5 and
-   adds an optional `print` section. Contracts without it, schema 1 to 5
-   contracts and frozen runs are unchanged. Any toy may declare one.
+2. **Schema 6 and stocks.** A schema 6 Design Contract keeps schema 5,
+   makes Guide Images optional and requires a `print` section. Any toy may
+   declare one; a toy without Print Sheets stays at schema 4 or 5, and
+   earlier contracts and frozen runs are unchanged.
 
    The section names the stocks it uses, with the caliper each is computed
    at:

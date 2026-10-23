@@ -3218,13 +3218,15 @@ def _sealed_contract_inputs(
     document = _strict_json_bytes(content, label="materialized Wish")
     context = document.get("context") if isinstance(document, dict) else None
     contract = context.get("design_contract") if isinstance(context, dict) else None
-    # A Guide Image (ADR 0089) is sealed beside the references but never
-    # checked as one; _sealed_guide_inputs returns it.
+    # A Guide Image (ADR 0089) and print art (ADR 0091) are sealed beside the
+    # references but never checked as one; _sealed_guide_inputs returns the
+    # guides.
     references = {
         item["name"]: (Path(run_root) / "wish-references" / item["name"], item["sha256"])
         for item in document.get("references") or ()
         if isinstance(item, dict) and isinstance(item.get("name"), str)
-        and isinstance(item.get("sha256"), str) and not item["name"].startswith("guide-")
+        and isinstance(item.get("sha256"), str)
+        and not item["name"].startswith(("guide-", "print-"))
     }
     return (contract if isinstance(contract, dict) else None), references
 
