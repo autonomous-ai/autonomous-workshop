@@ -8,7 +8,9 @@ contract must meet before it is allowed into the round robin, and reports
 every failure at once. It does not judge whether a Trend Hook is genuinely
 countable or pointable, or whether a Signature Motion is any fun -- only that
 both sections exist, that some Interface is coupled, and that a Palette
-section gives every Unique Geometry its one filament colour. Those judgements
+section gives every printed Part its one catalogue filament (schema 7, ADR
+0092 decision 4), or every Unique Geometry its one colour in an earlier
+schema with no Parts. Those judgements
 belong to the orchestrator and the judges.
 
 The limits on assembly and per-geometry requirement counts, and the whole-
@@ -103,9 +105,25 @@ def gate_contract(text: str) -> Tuple[bool, List[str]]:
         if not _section_body(prose, title).strip():
             reasons.append("no %s section found in the prose" % title)
 
-    # One filament colour per Component, with no limit on how many colours.
+    # One colour per printed Part from the filament catalogue (ADR 0092
+    # decision 4), with no limit on how many colours. The host parser has
+    # already refused a Part whose filament is not in the catalogue; the
+    # Palette names each printed Part with that filament on its own line. A
+    # contract before schema 7 has no Parts: it keeps one colour per Unique
+    # Geometry.
     palette = _section_body(prose, "Palette")
-    if contract is not None and palette.strip():
+    tree = contract.assembly_tree if contract is not None else None
+    if tree is not None and palette.strip():
+        lines = palette.splitlines()
+        for part in tree.to_dict()["parts"]:
+            if "filament" not in part:
+                continue
+            if not any(_names(line, part["id"]) and _names(line, part["filament"]) for line in lines):
+                reasons.append(
+                    "the Palette names no line with printed Part %s and its catalogue filament %s"
+                    % (part["id"], part["filament"])
+                )
+    elif contract is not None and palette.strip():
         for geometry in contract.geometries:
             if not _names(palette, geometry.id):
                 reasons.append("the Palette names no colour for geometry %s" % geometry.id)
