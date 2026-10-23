@@ -2758,7 +2758,7 @@ def _verified_guides(value: Any, label: str) -> list[dict[str, Any]]:
     the Design Contract. The verifier already refused a missing step."""
 
     guides = _array(value, label + " guides")
-    if not 1 <= len(guides) <= 99:
+    if not 1 <= len(guides) <= 999:
         raise ProposalError("%s lists an invalid number of guides" % label)
     for index, raw in enumerate(guides, 1):
         item_label = "%s guide %d" % (label, index)

@@ -1814,9 +1814,9 @@ def guarded_run(project: Path) -> bool:
 # workshop/wish/contracts.py. This script is materialized into a run as a
 # standalone tool and cannot import the host package.
 WISH_REFERENCES_DIR = "wish-references"
-SEALED_NAME = re.compile(r"^(ref-(?:0[1-9]|[1-9][0-9])-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?)\.(?:png|jpg|webp)$")
+SEALED_NAME = re.compile(r"^(ref-(?:0[1-9]|[1-9][0-9]{1,2})-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?)\.(?:png|jpg|webp)$")
 # A Guide Image (ADR 0089) is sealed beside the references and never scored.
-GUIDE_NAME = re.compile(r"^guide-(?:0[1-9]|[1-9][0-9])-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$")
+GUIDE_NAME = re.compile(r"^guide-(?:0[1-9]|[1-9][0-9]{1,2})-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$")
 # The Workshop Manager's account of each step a Guide Image draws, in the
 # CAD project root (ADR 0089).
 GUIDE_STEPS_NAME = "guide-steps.json"

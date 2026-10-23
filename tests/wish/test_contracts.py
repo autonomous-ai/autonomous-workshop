@@ -117,6 +117,43 @@ class WishReferenceContractTest(unittest.TestCase):
             )
 
 
+class WishImageBudgetTest(unittest.TestCase):
+    """ADR 0091 decision 10: 999 images and 480 MiB, numbered past 99."""
+
+    def test_budget_is_999_images_and_480_mib(self):
+        self.assertEqual(MAX_WISH_REFERENCES, 999)
+        self.assertEqual(MAX_WISH_REFERENCE_TOTAL_BYTES, 480 * 1024 * 1024)
+        self.assertEqual(MAX_WISH_REFERENCE_BYTES, 12 * 1024 * 1024)
+
+    def test_references_number_past_99_with_three_digits(self):
+        references = [
+            _reference(index, sha256="%064x" % index, size=1) for index in range(1, 102)
+        ]
+
+        wish = Wish.create("wish-many", "a crowded nook", references=references)
+
+        self.assertEqual(wish.references[99].path, "wish-references/ref-100-side.png")
+        self.assertEqual(wish.references[100].index, 101)
+        self.assertEqual(Wish(**wish.to_dict()), wish)
+
+    def test_names_keep_one_spelling_per_number(self):
+        for name in (
+            "ref-100-side.png",
+            "ref-999-side.png",
+            "guide-123-steps.png",
+        ):
+            with self.subTest(name=name):
+                WishReference.from_value(_reference(name=name), "wish reference")
+        for name in (
+            "ref-0100-side.png",
+            "ref-1000-side.png",
+            "ref-001-side.png",
+            "ref-1-side.png",
+        ):
+            with self.subTest(name=name), self.assertRaisesRegex(ContractError, "look like ref-NN"):
+                WishReference.from_value(_reference(name=name), "wish reference")
+
+
 if __name__ == "__main__":
     unittest.main()
 
