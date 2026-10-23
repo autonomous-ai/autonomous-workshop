@@ -513,6 +513,8 @@ _Avoid_: Piece, Component (a Component may hold many Parts)
 A Part that is purchased rather than printed (a battery box, an LED, a steel
 pin, a clear jar, wire), named from a fixed catalogue. One outside the
 catalogue needs the owner's approval before a Design Contract may use it.
+Every model and render shows it in one reserved magenta no filament takes,
+and the toy ships a list of its bodies as not printed.
 _Avoid_: Purchased part, hardware, accessory
 
 **Assembly Tree**:
@@ -528,6 +530,13 @@ single input, as a fold, cut or bend does. Joining LED leads is an Assembly
 Step that sits at or above the smallest Sub-assembly holding every lamp it
 joins; a step that encloses a lead says where the lead comes out.
 _Avoid_: Big step, page, instruction
+
+**Tree defect**:
+A sealed Assembly Tree that does not hold together: a Part missing, extra or
+duplicated against its Print Sheet or catalogue side, or a step in the wrong
+place. It stops the run for the owner; nothing in the run repairs it.
+_Avoid_: Labelling slip (built bodies that do not match a sound tree, which
+the run repairs like any failing gate)
 
 **Sub-assembly**:
 The output of one Assembly Step, which later steps take as an input.

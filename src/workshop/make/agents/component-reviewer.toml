@@ -115,7 +115,11 @@ each packet you judge.
 - Under a schema 7 Design Contract (ADR 0092) the renders colour each
   printed Part with its catalogue filament. A Part whose colour is not the
   one the reference shows for it (a black hat rendered brass, a navy shell
-  rendered oak) is a difference: name the Part and both colours.
+  rendered oak) is a difference: name the Part and both colours. Bought
+  Parts (pins, jars, LEDs, battery boxes) are always rendered in the
+  reserved magenta `#ff00ff`, meaning bought, not printed: judge their
+  form and place, never their colour. A Part the reference shows that the
+  model lacks is a difference like any other.
 - Give two separate judgements beside `agrees` (ADR 0087).
   `matches_plan`: does the model build what this Component's contract rows,
   or the plan lines you are given, describe? `matches_reference`: does its

@@ -193,7 +193,10 @@ instances.)
     `{"id": "P02-steel-pin", "bought": "<Bought Part id>"}`. Both ids come
     from the owner's catalogues, `src/workshop/wish/catalogues/filaments.json`
     and `bought-parts.json`. A colour or Bought Part outside them is refused:
-    the owner approves one by adding it to the catalogue. Tools and
+    the owner approves one by adding it to the catalogue. No filament may be
+    the reserved magenta `#ff00ff`: it marks Bought Parts, which every STEP
+    and render shows in it as bought, not printed (ADR 0092 decision 5,
+    owner decision Q29). Tools and
     consumables (tweezers, foam tape and dots, glue, a screwdriver) are never
     Parts; they go in `materials`.
   - `steps[]`, in Manual order with rising numbers, each `{"id":
@@ -243,8 +246,13 @@ instances.)
     exactly one of their parts; one on a Bought Part has no printed feature.
     Steps above the Components join Components and stay recorded as
     Interfaces. In Make each printed Part is one solid labelled with its id
-    and each Bought Part one labelled body (`make-round/SKILL.md`, "The
-    kit's Assembly Tree").
+    in its filament's colour, and each Bought Part one labelled body in
+    `#ff00ff` (`make-round/SKILL.md`, "The kit's Assembly Tree"). Final
+    verification lists every Bought Part body with its catalogue id in
+    `measure/not-printed.json`, which ships beside the STEP files. A body
+    that does not match the tree is a labelling slip the run repairs; a
+    tree that does not hold together stops the run (ADR 0092 decision 10,
+    Q28).
   - `materials`: the tools and consumables the Manual lists, catalogue ids
     whose category is `tool` or `consumable`.
 

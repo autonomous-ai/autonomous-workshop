@@ -101,8 +101,12 @@ Poll `uv run workshop status <wish-id> --json`. Its `status` is `active`,
   reference's camera: never edit the image, a requirement or the contract
   file to answer it. Record the old and new camera and the cue in the ledger.
 - `waiting` with a `need` naming a **Tree defect** (schema 7 kits, ADR 0092
-  decision 10): Make found a Part missing, extra or duplicated against the
-  Assembly Tree, or a leads step below its lamps. In the pilot nothing
+  decision 10): Make found the sealed Assembly Tree itself inconsistent: a
+  Print Piece or Bought Part it cannot account for, a leaf in two steps, a
+  Part in no step or Component, or a leads step below its lamps. A
+  labelling slip (the built bodies not matching a sound tree) is not one:
+  the run repairs it like any gate and never stops for it (owner decision
+  Q28, 2026-10-23). In the pilot nothing
   repairs the tree on its own, not the run and not this loop. Append one
   row to the toy's `toys-spec/<toy>/TREE-ISSUES.md` (create it with this
   header if absent), then ask the owner and wait:
@@ -114,8 +118,9 @@ Poll `uv run workshop status <wish-id> --json`. Its `status` is `active`,
   ```
 
   `Caught by` is the gate scope the need names, or the review that saw it
-  (a Component Reviewer, DETECT, an image check). Log a defect a review
-  finds the same way, even when no gate fired. Fill in the owner's decision
+  (a Component Reviewer, DETECT, an image check). Log a contract defect a
+  review finds the same way, even when no gate fired; a Part merely
+  missing from a model is a difference the run repairs, not a row. Fill in the owner's decision
   when it comes; only the owner changes the tree.
 - Anything else means the run is **incomplete**, which is not a design
   result. Read the receipt's `stop_category` (present whenever `status` is
@@ -346,7 +351,7 @@ worker blocked on two rows).
 | Camera need | a Reference Camera mismatch `need` | Step 3's path, unchanged |
 | `contract-contradiction` | a `need` quoting contradicting statements, a Blocked Report open or waiting (except at a progressing attempt's first budget stop with no other such evidence: the raise gives the root its turn to answer), a Component Worker's report quoting rows that cannot both hold, or a repeated print defect that a contract row forces | Fix it at the root (below); resume the stopped run with an invisible fix as an owner amendment, else relaunch |
 | `reference-mismatch` | an image contradicts the contract or the camera beyond what a Reference Conflict absorbs | Fix the image with `design-a-toy` Stage 3b; it is a visible change |
-| `tree-defect` | a `need` beginning "Tree defect" (ADR 0092 decision 10), or a review that names a Part missing, extra or duplicated against the Assembly Tree | Log a `TREE-ISSUES.md` row (Step 3) and ask the owner; never repair the tree or relabel around it |
+| `tree-defect` | a `need` beginning "Tree defect" (ADR 0092 decision 10): the sealed Assembly Tree itself is inconsistent. A labelling slip (bodies not matching a sound tree) is not one; it is a failing gate the run repairs (Q28) | Log a `TREE-ISSUES.md` row (Step 3) and ask the owner; never repair the tree or relabel around it |
 | `harness-defect` | Workshop itself went wrong: a false stop, a miscount, a guard or tool refusing valid work | Open an issue, fix and merge it (below) |
 | `budget-progressing` | `stop_category` `budget`, and more Components locked or fewer repeated print defects than the previous attempt, with no raise yet in this attempt | Resume once with the cap raised by 100M tokens: `uv run workshop resume <wish-id> --max-tokens <limit + 100000000> --turn-minutes 360 --json`, with `--check-motion true` when the run has it; record `budget_raised: true` |
 | `other` | anything else, including a second budget stop in one attempt | Ask the owner; when the owner raises the token cap, record `budget_raised: "owner"` and `owner_decision` `{at, limit_before, limit_after}` (never `true`: that is the loop's one raise), then resume with `--max-tokens <limit_after>`. A later budget stop in the attempt is still `other` |
