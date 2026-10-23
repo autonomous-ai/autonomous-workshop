@@ -132,6 +132,7 @@ from __future__ import annotations
 import argparse
 import ast
 import hashlib
+import importlib.util
 from importlib.metadata import PackageNotFoundError, version as package_version
 import json
 import math
@@ -1286,6 +1287,16 @@ def paper_hosts(project: Path) -> tuple[set, str | None]:
         return set(), None
     roles = {str(piece.get("on", "")).split("#")[0] for piece in section.get("pieces") or ()
              if isinstance(piece, dict)}
+    if contract.get("schema_version") == TREE_SCHEMA_VERSION or (project / KIT_INSTALL).is_file():
+        # ADR 0092: a piece's `on` names a Part or a Sub-assembly; the tree
+        # says which Component's round checks it.
+        kit, kit_error = kit_state(project)
+        if kit is None:
+            return {str(item.get("id")) for item in contract.get("geometries") or () if isinstance(item, dict)}, \
+                kit_error or "the Assembly Tree is not installed"
+        roles = kit_tree().paper_roles(kit)
+        if kit_error is not None:
+            return roles, kit_error
     try:
         installed = json.loads((project / PRINT_PIECES_FILE).read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -1298,15 +1309,113 @@ def paper_hosts(project: Path) -> tuple[set, str | None]:
 
 
 def parse_paper(stdout: str, returncode: int) -> dict:
-    """The verdict and every failing piece from a check_print_pieces run."""
+    """The verdict, every failing piece and every piece whose feature passed,
+    from a check_print_pieces run."""
 
-    failures = [line[len("FAIL "):].strip() for line in (stdout or "").splitlines()
-                if line.startswith("FAIL ")]
+    lines = (stdout or "").splitlines()
+    failures = [line[len("FAIL "):].strip() for line in lines if line.startswith("FAIL ")]
+    # ADR 0092: the pieces a part carries, so a piece across Components is
+    # checked to land in exactly one of them.
+    pieces = sorted({line[len("PASS "):].split(":", 1)[0].strip() for line in lines if line.startswith("PASS ")})
     if returncode == 0:
-        return {"verdict": "PASS", "failures": []}
+        return {"verdict": "PASS", "failures": [], "pieces": pieces}
     if not failures:
         failures = ["check_print_pieces exit %d" % returncode]
-    return {"verdict": "FAIL", "failures": failures}
+    return {"verdict": "FAIL", "failures": failures, "pieces": pieces}
+
+
+# ADR 0092: a schema 7 Design Contract's Assembly Tree, installed into the CAD
+# project by kit_tree.py --install and checked by kit_tree.py: in each
+# component round the checks wholly inside the Component, in each assembly
+# round those across Components. A tree defect stops the run (decision 10).
+TREE_SCHEMA_VERSION = 7
+KIT_INSTALL = Path("tree") / "kit.json"
+KIT_TREE_SCRIPT = Path(__file__).resolve().with_name("kit_tree.py")
+_KIT_TREE = []
+
+
+def kit_tree():
+    """The kit_tree.py module beside this script."""
+
+    if not _KIT_TREE:
+        spec = importlib.util.spec_from_file_location("make_round_kit_tree", KIT_TREE_SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _KIT_TREE.append(module)
+    return _KIT_TREE[0]
+
+
+def kit_state(project: Path) -> tuple[dict | None, str | None]:
+    """``(install, error)`` for a schema 7 run, ``(None, None)`` otherwise.
+    In a run the install must be what the sealed Wish gives (the contract in
+    effect and its kit_catalogue); outside one the installed tree stands and
+    the host checks it against the seal."""
+
+    contract = current_contract(project)
+    if contract is None:
+        if run_root(project) is not None or not (project / KIT_INSTALL).is_file():
+            return None, None
+        return kit_tree().install_state(project, None)
+    if contract.get("schema_version") != TREE_SCHEMA_VERSION:
+        return None, None
+    try:
+        wish = json.loads((run_root(project) / "WISH.json").read_text(encoding="utf-8"))
+        catalogue = (wish.get("context") or {}).get("kit_catalogue")
+        expected = kit_tree().install_document(contract, catalogue)
+    except (OSError, ValueError, AttributeError) as exc:
+        return None, "the sealed Assembly Tree cannot be read: %s" % exc
+    return kit_tree().install_state(project, expected)
+
+
+def tree_refusal(project: Path) -> str:
+    """Why no round may run: a tree defect of this tree is on record
+    (ADR 0092 decision 10). Nothing repairs the tree in the run."""
+
+    kit, _error = kit_state(project)
+    if kit is None:
+        return ""
+    record = kit_tree().open_defects(project, kit_tree().tree_digest(kit))
+    if record is None:
+        return ""
+    return ("a tree defect stopped this run (ADR 0092 decision 10): %s The Workshop Manager stops the run "
+            "with it now: stage_proposal.py --run-root . need --stage make --status waiting --reason %s"
+            % (record.get("need", ""), json.dumps(record.get("need", ""))))
+
+
+def parse_tree(stdout: str, returncode: int) -> dict:
+    """A kit_tree.py run's verdict from its JSON report line."""
+
+    report = None
+    for line in reversed((stdout or "").splitlines()):
+        if line.startswith("{"):
+            try:
+                report = json.loads(line)
+            except ValueError:
+                report = None
+            break
+    if not isinstance(report, dict) or report.get("kind") != "kit-tree-report":
+        return {"verdict": "FAIL", "defects": [], "failures": ["kit_tree exit %d: %s" % (returncode, tail(stdout)[:200])]}
+    return {"verdict": report["verdict"], "defects": report["defects"], "failures": report["failures"],
+            "conditions": len(report["conditions"]), "routes": len(report["routes"]),
+            "tree_sha256": report.get("tree_sha256"), "scope": report.get("scope")}
+
+
+def tree_job(project: Path, out: Path, nozzle: float, component: str | None) -> dict:
+    scope = ["--component", component] if component is not None else ["--assembly"]
+    return {"command": [sys.executable, str(KIT_TREE_SCRIPT), str(project), *scope, "--nozzle", str(nozzle),
+                        "--json", "--manifest", str(out / "tree-conditions.json")],
+            "cwd": project, "log": out / "tree.log", "timeout": FULL_TIMEOUT_SECONDS}
+
+
+def finish_tree(project: Path, tree: dict, error: str | None = None) -> dict:
+    """Record a tree defect in the pilot's ledger; every later round refuses."""
+
+    if error is not None:
+        return {"verdict": "FAIL", "defects": [], "failures": [error]}
+    if tree["verdict"] == "DEFECT":
+        record = kit_tree().record_defects(project, tree, tree.get("tree_sha256") or "")
+        tree["need"] = record["need"]
+    return tree
 
 
 def diff_parts(previous: dict, current: dict) -> list[str]:
@@ -1437,6 +1546,18 @@ def render_summary(summary: dict) -> str:
     for role, keys in sorted((summary.get("repeated_print_defects") or {}).items()):
         lines.append("  again FAIL %-28s  failed last round too: %s; repair from the report's feature column"
                      % (role, ", ".join(keys[:4])))
+    tree = summary.get("tree")
+    if tree is not None:
+        # ADR 0092: the Assembly Tree gates.
+        lines.append("  tree  %-4s %d insertion sequence(s), %d lead route(s)"
+                     % (tree["verdict"], tree.get("conditions", 0), tree.get("routes", 0)))
+        for item in (tree.get("defects") or [])[:6]:
+            lines.append("    DEFECT %s %s: %s" % (item.get("kind"), item.get("part"), item.get("detail")))
+        for item in (tree.get("failures") or [])[:8]:
+            lines.append("    %s" % item)
+        if tree.get("need"):
+            lines.append("  TREE DEFECT: stop now. Do not change the model to hide it; report it to the Workshop "
+                         "Manager, who stops the run with this need (ADR 0092 decision 10): %s" % tree["need"])
     unchecked = [r for r in summary["parts"] if r not in summary["checked"]]
     if unchecked:
         lines.append("  build skip %d unchanged part(s): %s" % (len(unchecked), ", ".join(unchecked[:6]) + (" ..." if len(unchecked) > 6 else "")))
@@ -4849,6 +4970,12 @@ def make_round(args) -> int:
     if args.full:
         print("make_round: --full requires --record-visual after inspection and independent blind review", file=sys.stderr)
         return 2
+    # ADR 0092 decision 10: after a tree defect no round runs; nothing
+    # repairs the tree in the run.
+    refusal = tree_refusal(project)
+    if refusal:
+        print("make_round: %s" % refusal, file=sys.stderr)
+        return 2
     roots = skills_root()
     if roots is None:
         print("make_round: cannot locate the cad and image-to-cad skills", file=sys.stderr)
@@ -5110,8 +5237,24 @@ def make_round(args) -> int:
     if component is not None and component in digests:
         envelopes, envelope_pending = envelope_jobs(project, component, entry, out, interfaces,
                                                     check_env(component))
+    # 2d. ADR 0092: a schema 7 contract's Assembly Tree, in the scope this
+    # round owns: a component round the checks wholly inside its Component,
+    # an assembly round those across Components.
+    kit, kit_error = kit_state(project)
+    tree, tree_jobs = None, []
+    if kit is not None or kit_error is not None:
+        if build_failures:
+            tree = {"verdict": "FAIL", "defects": [], "failures": ["a part did not build, so the tree was not checked"]}
+        elif kit_error is not None:
+            tree = finish_tree(project, {}, kit_error)
+        else:
+            tree_jobs.append(tree_job(project, out, args.nozzle, component))
     checked = run_all([job for _role, _gate, job in gate_jobs]
-                      + [job for _key, _side, _reference, job in envelope_pending])
+                      + [job for _key, _side, _reference, job in envelope_pending] + tree_jobs)
+    if tree_jobs:
+        done = checked[-1]
+        checked = checked[:-1]
+        tree = finish_tree(project, parse_tree(done.stdout, done.returncode))
     envelopes = finish_envelopes(envelopes, envelope_pending, checked[len(gate_jobs):])
     measured: dict[str, dict] = {}
     for (role, gate, job), done in zip(gate_jobs, checked):
@@ -5232,6 +5375,14 @@ def make_round(args) -> int:
         motion = parse_motion(done.stdout, done.returncode, done.stderr)
     full = None
 
+    if component is None and kit is not None and tree is not None and tree["verdict"] != "DEFECT":
+        # ADR 0092: a Print Piece on a Sub-assembly across Components lands
+        # in exactly one of their parts.
+        coverage = kit_tree().paper_coverage(kit, {
+            role: set((item.get("paper") or {}).get("pieces") or ()) for role, item in printing.items()})
+        if coverage:
+            tree = {**tree, "verdict": "FAIL", "failures": list(tree["failures"]) + coverage}
+
     ok = (
         all(item["verdict"] == "PASS" for item in build.values())
         and all(item["verdict"] in ("PASS", "UNVERIFIED") for item in printing.values())
@@ -5239,6 +5390,7 @@ def make_round(args) -> int:
         and not reference_errors
         and (motion is None or motion["verdict"] in ("pass", "unverified"))
         and (full is None or full["ok"])
+        and (tree is None or tree["verdict"] == "PASS")
     )
 
     # The round policy (ADR 0081): whether this is a Shape Round, whether an
@@ -5314,6 +5466,9 @@ def make_round(args) -> int:
     if interference is not None:
         # Issue #118: the assembly's part-vs-part interference.
         summary["interference"] = interference
+    if tree is not None:
+        # ADR 0092: the Assembly Tree gates of this round's scope.
+        summary["tree"] = tree
     if component is not None:
         next_policy = outcome["state"]
         carried = outcome["carried"]

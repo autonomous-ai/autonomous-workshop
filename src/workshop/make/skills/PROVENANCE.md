@@ -2392,3 +2392,20 @@ gains `read_decal` and `move_decal`. In the vendored `cad` tree,
 faces are rasterised (`_paint_decals`, `_paint_sphere`); `make-round`'s
 Display Pose entry moves them into the pose. The `cad`, `make-round` and
 `print-details` locks move; a resync must keep these lines.
+
+## Local change: the kit's Assembly Tree gates (2026-10-23, ADR 0092)
+
+`make-round/scripts/kit_tree.py` is new and host-owned: it installs a
+schema 7 Design Contract's Assembly Tree (`tree/kit.json`), reconciles each
+Component's labelled bodies with the tree's leaves, checks Part colours,
+compiles each joining step to `check_motion` `assembly_sequence` /
+`linear_motion_collision` conditions and sweeps them, and sweeps each lead
+route. `make_round` runs it in component and assembly rounds (a `tree`
+line), refuses every round after a tree defect, and routes a schema 7
+Print Piece's `paper` gate by its host. `print-details`'
+`check_print_pieces.py` reads the tree for the same routing. In the
+vendored `cad` tree, `verify_project` runs `kit_tree.py --final` before the
+Print Sheets (`_run_kit_tree`) and checks that a piece on a Sub-assembly
+across Components is carried by exactly one part. `check_motion` is
+unchanged. The `cad`, `make-round` and `print-details` locks move; a resync
+must keep these lines.

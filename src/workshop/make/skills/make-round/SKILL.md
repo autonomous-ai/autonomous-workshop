@@ -683,6 +683,67 @@ and from then on `--propose-amendment` is refused. The host refuses an
 owner amendment for a run whose `make_round` or finalizer lacks the marker
 `workshop-owner-contract-amendments-v1`.
 
+### The kit's Assembly Tree (ADR 0092)
+
+A schema 7 Design Contract splits the toy into kit Parts and joins them in
+an Assembly Tree, in Manual order. Before any worker starts, the Workshop
+Manager installs the tree beside the Print Sheets:
+
+```bash
+"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/kit_tree.py --install <cad-project> --wish WISH.json
+```
+
+It writes `tree/kit.json`: the tree, the geometries, the Print Pieces and
+the catalogue entries the Wish sealed (`kit_catalogue`). Never edit it; a
+round of a schema 7 run fails its `tree` line until it is the sealed one.
+
+**How a Part is a STEP body.** A Component's `gen_step()` returns one
+labelled solid per printed Part of the Component, its label the Part id
+(`A03-hat`), coloured with its filament's catalogue hex
+(`cadgen.srgb(<hex>)`; `tree/kit.json` `catalogue.filaments`). A Component
+that holds Bought Parts also defines `bought_parts()`, returning one labelled
+body per Bought Part (`P02-steel-pin`) at its catalogue size, in the same
+frame as `gen_step()`; it is never printed. When one Component instance
+holds a Part more than once, the copies are `<id>#1`, `<id>#2`, ... in Manual
+order: copy k of a step takes the next `count` copies of each of its inputs.
+Instance n of a geometry whose count is above 1 is the n-th copy of its
+subtree. `assembly_pose(shape, None)` moves the shape as a whole and keeps
+its labels. Unlabelled nodes are looked through; a solid reached without a
+Part label is an extra body.
+
+**What the gates check.** `kit_tree.py` reconciles every body, Print Piece
+and cited Bought Part with exactly one leaf; checks each printed Part's
+colour; sweeps each input of each joining step alone from wholly outside
+the rest of its Sub-assembly to its seat, against only what is already
+assembled, along its declared direction (a `check_motion`
+`assembly_sequence` of `linear_motion_collision` conditions, overlap above
+0.001 mm3 fails, contact at the seat allowed, sampled no coarser than the
+thinnest wall); refuses an input that only goes in together with another
+(a simultaneous move) and a mating face pair at an angle to the direction (a
+non-parallel joint); and sweeps a sphere of each lamp's lead diameter plus
+0.4 mm along every declared lead route.
+
+**Where each check runs.** A step whose Parts all belong to one Component is
+checked in that Component's round (its `tree` line); a step across
+Components in every assembly round and in final verification, which also
+reconciles every Component and writes `measure/tree-report.json` for the
+host. The `paper` gate follows the same split: a Print Piece on a printed
+Part, or on a Sub-assembly inside one Component, is that Component's to
+carry; one on a Bought Part has no printed feature; one on a Sub-assembly
+across Components must be carried by exactly one of their parts, which
+assembly rounds and final verification check.
+
+**A tree defect stops the run** (decision 10, the pilot). A missing, extra or
+duplicated Part, or a leads step below its lamps' smallest common
+Sub-assembly, prints `TREE DEFECT` with a need, records
+`measure/tree-defects.json`, and from then on `make_round` refuses every
+round of that tree. A worker reports it to the Manager and changes nothing;
+the Manager stops the run with the need it names (`stage_proposal.py need
+--stage make --status waiting`). Nothing in the run repairs the tree or
+relabels bodies to hide it: the owner corrects the contract, and the
+build-a-toy loop logs the defect in the toy's `TREE-ISSUES.md`. Insertion,
+colour and lead-route failures are repairs like a print gate's.
+
 ## Record assembly visual feedback
 
 The native Manager performs the assembly's visual judgment. Python renders and hashes
