@@ -1,6 +1,7 @@
 # ADR 0091: Print Sheets carry colour and detail on paper
 
-- Status: Proposed; not yet implemented
+- Status: Proposed; decision 10 (the image budget) implemented and
+  deterministically tested, the rest not yet implemented
 - Date: 2026-10-23
 - Amends: ADR 0089 (what a Design Contract seals; schema 6 keeps schema 5),
   ADR 0062/0063 (what Make delivers beside STEP and what the CAD gate checks),
