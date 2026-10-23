@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Contract lint for design-a-toy Stage 3e: one fact, one value, everywhere.
 
-    python3 contract_lint.py CONTRACT.md FACTS.json [--claims CLAIMS.json] [--json]
+    python3 contract_lint.py CONTRACT.md [FACTS.json] [--claims CLAIMS.json] [--json]
 
 A Design Contract states most facts more than once: in the prose, in the
 `design-contract` block (`envelope_mm`, `extents_mm`, `wall_min_mm`,
@@ -42,6 +42,12 @@ claim may carry `"exception": true` when the contract names it as an
 exception to the floor.
 
 Checks, each an error unless marked warn:
+  schema       the host's own contract parser (workshop.wish.design_contract),
+               every failure it names: for schema 7 (ADR 0092) the Assembly
+               Tree, its Components, ids and mnemonics, and the colours and
+               Bought Parts against the owner's catalogues
+  catalogue    (warn) a schema 7 contract uses a catalogue entry the owner
+               has not confirmed
   envelope     block envelope_mm against the model's Display Pose box
   extents      block extents_mm (sorted) against the model (sorted)
   moves        every Interface pose against the model's moves for that mover
@@ -52,9 +58,17 @@ Checks, each an error unless marked warn:
                steps by more than 2 mm: the part leans to one side; compare
                the assembly image's edges there
 
+Without FACTS.json only the schema and catalogue checks run, as at Stage 2
+and at the Stage 4 tree reconciliation.
+
 Exit 1 when any error is found.
 """
 import argparse, json, re, sys
+from pathlib import Path
+
+# The repository's src/, so the host's parser runs on exactly what a run
+# would seal.
+SRC = Path(__file__).resolve().parents[4] / "src"
 
 TOL = 0.05
 
@@ -65,6 +79,31 @@ def block(path):
     if not m:
         sys.exit("no design-contract block in %s" % path)
     return json.loads(m.group(1))
+
+
+def schema_findings(text):
+    """The host parser's failures on the whole CONTRACT.md, one per finding,
+    and a warning per unconfirmed catalogue entry a schema 7 tree uses."""
+    if str(SRC) not in sys.path:
+        sys.path.insert(0, str(SRC))
+    try:
+        from workshop.errors import ContractError
+        from workshop.wish.design_contract import parse_design_contract
+    except ImportError as exc:
+        return [{"level": "error", "check": "schema",
+                 "message": "cannot import the host's parser (%s): run with uv run" % exc}]
+    try:
+        contract = parse_design_contract(text)
+    except ContractError as exc:
+        message = str(exc)
+        for prefix in ("design contract: ", "catalogue: "):
+            if message.startswith(prefix):
+                message = message[len(prefix):]
+        return [{"level": "error", "check": "schema", "message": item} for item in message.split("; ")]
+    tree = contract.assembly_tree
+    return [{"level": "warn", "check": "catalogue",
+             "message": "%s is not confirmed by the owner yet" % name}
+            for name in (tree.unconfirmed if tree is not None else ())]
 
 
 def size(r):
@@ -215,19 +254,25 @@ def lint(contract, facts, claims):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("contract")
-    ap.add_argument("facts")
+    ap.add_argument("facts", nargs="?")
     ap.add_argument("--claims")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
     claims = json.load(open(a.claims, encoding="utf-8")) if a.claims else []
-    out = lint(block(a.contract), json.load(open(a.facts, encoding="utf-8")), claims)
+    out = schema_findings(open(a.contract, encoding="utf-8").read())
+    if a.facts:
+        out += lint(block(a.contract), json.load(open(a.facts, encoding="utf-8")), claims)
+    elif a.claims:
+        sys.exit("--claims needs FACTS.json")
     if a.json:
         print(json.dumps(out, indent=1))
     else:
         for f in out:
             print("%-5s %-9s %s" % (f["level"].upper(), f["check"], f["message"]))
         e = sum(f["level"] == "error" for f in out)
-        print("%d error(s), %d warning(s)%s" % (e, len(out) - e, "" if claims else "; no claims file, text not checked"))
+        print("%d error(s), %d warning(s)%s" % (e, len(out) - e,
+              "; no facts file, only the schema checked" if not a.facts
+              else "" if claims else "; no claims file, text not checked"))
     sys.exit(1 if any(f["level"] == "error" for f in out) else 0)
 
 

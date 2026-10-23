@@ -325,7 +325,7 @@ class AssemblyTreeTest(unittest.TestCase):
         _step(block, "S01-cabinet-shelf")["id"] = "S09-cabinet-shelf"
         _step(block, "S02-cabinet-spines")["inputs"][0]["id"] = "S09-cabinet-shelf"
         message = self._refused(block)
-        self.assertIn("steps[1]: step numbers rise in Manual order; S02-cabinet-spines follows S09", message)
+        self.assertIn("steps[1]: step numbers rise in Manual order, and S02-cabinet-spines follows S09", message)
 
     def test_each_moving_input_has_one_straight_direction(self):
         block = _tree_block()

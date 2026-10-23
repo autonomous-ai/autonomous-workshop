@@ -161,7 +161,7 @@ def _parse_parts(
             entry = catalogues.parts.get(item["bought"]) if isinstance(item["bought"], str) else None
             if entry is None:
                 errors.append(
-                    "%s.bought %r is not in the Bought Part catalogue; one outside it needs the "
+                    "%s.bought %r is not in the Bought Part catalogue: one outside it needs the "
                     "owner's approval, by adding it to bought-parts.json" % (label, item["bought"])
                 )
                 continue
@@ -184,7 +184,7 @@ def _parse_parts(
         filament = catalogues.filaments.get(item["filament"]) if isinstance(item["filament"], str) else None
         if filament is None:
             errors.append(
-                "%s.filament %r is not in the filament catalogue; a colour outside it needs the "
+                "%s.filament %r is not in the filament catalogue: a colour outside it needs the "
                 "owner's approval, by adding it to filaments.json" % (label, item["filament"])
             )
             continue
@@ -193,7 +193,7 @@ def _parse_parts(
         letter = match.group(1)
         if letter in letters and letters[letter][0] != filament.id:
             errors.append(
-                "%s: letter %s is %s (%s), so %s cannot be %s; one letter is one filament"
+                "%s: letter %s is %s (%s), so %s cannot be %s: one letter is one filament"
                 % (label, letter, letters[letter][0], letters[letter][1], identifier, filament.id)
             )
             continue
@@ -261,7 +261,7 @@ def _parse_steps(
             continue
         number = int(match.group(1))
         if number <= last_number:
-            errors.append("%s: step numbers rise in Manual order; %s follows S%02d" % (label, identifier, last_number))
+            errors.append("%s: step numbers rise in Manual order, and %s follows S%02d" % (label, identifier, last_number))
         last_number = max(last_number, number)
         unknown = sorted(set(item) - allowed)
         if unknown:
@@ -410,7 +410,7 @@ def parse_assembly_tree(
     for step in steps[:-1]:
         if step["id"] not in parent:
             errors.append(
-                "%s's Sub-assembly is used by no later step; only the last step, %s, is the "
+                "%s's Sub-assembly is used by no later step: only the last step, %s, is the "
                 "finished toy" % (step["id"], root)
             )
     if by_id[root]["count"] != 1:
@@ -466,7 +466,7 @@ def _check_leads(
                 errors.append("%s.lamps names %r, which is no lamp Bought Part" % (step["id"], name))
             elif name not in below:
                 errors.append(
-                    "%s joins the leads of %s, which is not yet in its Sub-assembly; a leads step "
+                    "%s joins the leads of %s, which is not yet in its Sub-assembly: a leads step "
                     "sits at or above the smallest Sub-assembly holding every lamp it joins"
                     % (step["id"], name)
                 )
@@ -630,7 +630,7 @@ def _check_materials(value: Any, catalogues: Catalogues, unconfirmed: Set[str], 
         entry = catalogues.parts.get(name) if isinstance(name, str) else None
         if entry is None:
             errors.append(
-                "assembly_tree.materials names %r, which is not in the Bought Part catalogue; one "
+                "assembly_tree.materials names %r, which is not in the Bought Part catalogue: one "
                 "outside it needs the owner's approval" % (name,)
             )
         elif not entry.material:
