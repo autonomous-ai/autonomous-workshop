@@ -87,6 +87,7 @@ from workshop.make.native import NativeMade, validate_build_groups
 from workshop.make.role_agents import make_role_agent_files
 from workshop.make.print_sheets import verify_made_print_sheets
 from workshop.make.kit_tree import verify_made_tree
+from workshop.make.kit_manual import verify_made_manual
 from workshop.make.blocked_reports import (
     run_blocked_reports,
     verify_no_open_blocked_reports,
@@ -3279,6 +3280,12 @@ def _kit_tree_history(host_state_root: Path) -> list[dict[str, Any]]:
     """The Assembly Tree account the current Make's acceptance checked."""
 
     return _latest_make_check(host_state_root, "kit_tree")
+
+
+def _kit_manual_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """The kit Manual the current Make's acceptance checked (ADR 0092)."""
+
+    return _latest_make_check(host_state_root, "kit_manual")
 
 
 def _print_sheet_history(host_state_root: Path) -> list[dict[str, Any]]:
@@ -8185,6 +8192,14 @@ def _evaluate_make_stage(
         )
         if kit_tree is not None:
             product_checks["kit_tree"] = [kit_tree]
+        # ADR 0092 decision 9: Make wrote the kit's Manual for the sealed
+        # tree; the host rebuilds no geometry for it (ADR 0061).
+        kit_manual = verify_made_manual(
+            run.run_root, made, sealed_contract,
+            _sealed_kit_catalogue(run.run_root, checkpoint.wish_sha256),
+        )
+        if kit_manual is not None:
+            product_checks["kit_manual"] = [kit_manual]
         if blocked_reports:
             product_checks["blocked_reports"] = blocked_reports
         if contract_amendments:
@@ -10979,6 +10994,7 @@ def _native_receipt(
     guides = _guide_history(paths.host_state) if paths is not None else []
     print_sheets = _print_sheet_history(paths.host_state) if paths is not None else []
     kit_tree = _kit_tree_history(paths.host_state) if paths is not None else []
+    kit_manual = _kit_manual_history(paths.host_state) if paths is not None else []
     contract_amendments = (
         _contract_amendment_history(paths.host_state) if paths is not None else []
     )
@@ -11259,6 +11275,9 @@ def _native_receipt(
     if kit_tree:
         # ADR 0092: the kit's Assembly Tree gates, only for a schema 7 toy.
         receipt["kit_tree"] = kit_tree[0]
+    if kit_manual:
+        # ADR 0092 decision 9: the kit's Manual, only for a schema 7 toy.
+        receipt["kit_manual"] = kit_manual[0]
     if checkpoint.effort is not None:
         receipt["workflow"] = checkpoint.effort
     receipt["agent"] = checkpoint.manager_id

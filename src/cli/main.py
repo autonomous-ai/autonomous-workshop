@@ -535,6 +535,16 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                kit_tree.get("print_pieces", "?"), kit_tree.get("insertions_across_components", "?"),
                kit_tree.get("lead_routes_across_components", "?"))
         )
+    kit_manual = receipt.get("kit_manual")
+    if isinstance(kit_manual, Mapping):
+        # ADR 0092 decision 9: the kit's Manual, written by Make.
+        print(
+            "Kit Manual: %s, %s page(s), %s section(s), %s Check Step(s); after-sales contact %s"
+            % (kit_manual.get("pdf", "?"), kit_manual.get("pages", "?"), kit_manual.get("sections", "?"),
+               kit_manual.get("check_steps", "?"),
+               "confirmed" if kit_manual.get("after_sales_confirmed") is True
+               else "UNCONFIRMED: the owner sets it in make-round/company.json")
+        )
     blocked = receipt.get("blocked_reports")
     if isinstance(blocked, (list, tuple)):
         # Issue #88: every Blocked Report, how it was cleared and how long it
