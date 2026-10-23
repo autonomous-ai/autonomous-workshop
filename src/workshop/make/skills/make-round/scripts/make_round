@@ -1327,7 +1327,10 @@ def parse_paper(stdout: str, returncode: int) -> dict:
 # ADR 0092: a schema 7 Design Contract's Assembly Tree, installed into the CAD
 # project by kit_tree.py --install and checked by kit_tree.py: in each
 # component round the checks wholly inside the Component, in each assembly
-# round those across Components. A tree defect stops the run (decision 10).
+# round those across Components. A contract tree defect stops the run
+# (decision 10); a labelling slip, built bodies that do not match a sound
+# tree, is an ordinary failure repaired in the next round (owner decision
+# Q28, 2026-10-23).
 TREE_SCHEMA_VERSION = 7
 KIT_INSTALL = Path("tree") / "kit.json"
 KIT_TREE_SCRIPT = Path(__file__).resolve().with_name("kit_tree.py")
@@ -1368,8 +1371,9 @@ def kit_state(project: Path) -> tuple[dict | None, str | None]:
 
 
 def tree_refusal(project: Path) -> str:
-    """Why no round may run: a tree defect of this tree is on record
-    (ADR 0092 decision 10). Nothing repairs the tree in the run."""
+    """Why no round may run: a contract tree defect of this tree is on
+    record (ADR 0092 decision 10). Nothing repairs the tree in the run. A
+    labelling slip is never recorded, so it refuses nothing (Q28)."""
 
     kit, _error = kit_state(project)
     if kit is None:
@@ -1395,7 +1399,8 @@ def parse_tree(stdout: str, returncode: int) -> dict:
             break
     if not isinstance(report, dict) or report.get("kind") != "kit-tree-report":
         return {"verdict": "FAIL", "defects": [], "failures": ["kit_tree exit %d: %s" % (returncode, tail(stdout)[:200])]}
-    return {"verdict": report["verdict"], "defects": report["defects"], "failures": report["failures"],
+    return {"verdict": report["verdict"], "defects": report["defects"], "slips": report.get("slips") or [],
+            "failures": report["failures"],
             "conditions": len(report["conditions"]), "routes": len(report["routes"]),
             "tree_sha256": report.get("tree_sha256"), "scope": report.get("scope")}
 
@@ -1408,7 +1413,8 @@ def tree_job(project: Path, out: Path, nozzle: float, component: str | None) -> 
 
 
 def finish_tree(project: Path, tree: dict, error: str | None = None) -> dict:
-    """Record a tree defect in the pilot's ledger; every later round refuses."""
+    """Record a contract tree defect in the pilot's ledger; every later round
+    refuses. A labelling slip (FAIL) records nothing: the next round repairs it."""
 
     if error is not None:
         return {"verdict": "FAIL", "defects": [], "failures": [error]}
@@ -1556,8 +1562,12 @@ def render_summary(summary: dict) -> str:
         for item in (tree.get("failures") or [])[:8]:
             lines.append("    %s" % item)
         if tree.get("need"):
-            lines.append("  TREE DEFECT: stop now. Do not change the model to hide it; report it to the Workshop "
-                         "Manager, who stops the run with this need (ADR 0092 decision 10): %s" % tree["need"])
+            lines.append("  TREE DEFECT: stop now. The sealed tree does not hold together; do not change the model "
+                         "to hide it; report it to the Workshop Manager, who stops the run with this need "
+                         "(ADR 0092 decision 10): %s" % tree["need"])
+        elif tree.get("slips"):
+            lines.append("  tree  labelling slip: the bodies do not match the tree; repair them in the next round "
+                         "like any failing gate (Q28)")
     unchecked = [r for r in summary["parts"] if r not in summary["checked"]]
     if unchecked:
         lines.append("  build skip %d unchanged part(s): %s" % (len(unchecked), ", ".join(unchecked[:6]) + (" ..." if len(unchecked) > 6 else "")))
