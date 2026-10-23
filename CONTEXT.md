@@ -213,9 +213,11 @@ run keeps the exact route, model, allowances, and tool bytes it started with.
 ### Making the toy
 
 **Component**:
-One distinct physical part of a toy, authored in its own source file and
-proven on its own before it may join an assembly.
-_Avoid_: Part, piece, module
+One subtree of a toy's Assembly Tree that the Design Contract chooses as the
+unit to author in its own source and prove on its own, against its own
+reference image, before it may join an assembly. It holds one or more Parts,
+and every Part belongs to exactly one Component.
+_Avoid_: piece, module
 
 **Make Round**:
 One build-and-repair cycle over a component or an assembly, driven by both
@@ -500,6 +502,47 @@ A chess set has six, not thirty-two. It is the unit a Design Contract names
 before any Component exists.
 _Avoid_: Piece type, part shape
 
+**Part**:
+One thing the buyer finds in the box and handles: a printed body in one
+filament colour, a Print Piece, or a Bought Part. It is a leaf of the
+Assembly Tree.
+_Avoid_: Piece, Component (a Component may hold many Parts)
+
+**Bought Part**:
+A Part that is purchased rather than printed (a battery box, an LED, a steel
+pin, a clear jar, wire), named from a fixed catalogue. One outside the
+catalogue needs the owner's approval before a Design Contract may use it.
+_Avoid_: Purchased part, hardware, accessory
+
+**Assembly Tree**:
+How a toy's Parts become the finished toy: Parts are its leaves, every inner
+node is an Assembly Step, and the finished toy is its root. The Manual is
+written from it; the Components are chosen subtrees of it.
+_Avoid_: Build order, BOM
+
+**Assembly Step**:
+One join in the Assembly Tree, turning its inputs (Parts or earlier
+Sub-assemblies) into one Sub-assembly, possibly made N times. It may have a
+single input, as a fold, cut or bend does. Joining LED leads is an Assembly
+Step that sits at or above the smallest Sub-assembly holding every lamp it
+joins; a step that encloses a lead says where the lead comes out.
+_Avoid_: Big step, page, instruction
+
+**Sub-assembly**:
+The output of one Assembly Step, which later steps take as an input.
+_Avoid_: Module, group, part
+
+**Check Step**:
+A Manual instruction that tests rather than joins, such as the light test at
+the start that is connected and then taken apart again. It is not a node of
+the Assembly Tree.
+_Avoid_: Test step
+
+**Manual Page**:
+One page of the Manual. It presents Assembly Steps in pictures and words; one
+step may span several pages and one page may hold several steps.
+_Avoid_: Step, section
+
 **Focal Component**:
 The one component of a toy's design allowed to dominate the composition,
 chosen and paid for in the design before any image exists. It is a part of
@@ -530,7 +573,8 @@ the print will use.
 ### Release and effects
 
 **Manual**:
-The self-contained printable PDF that ships in the box. It is the canonical
+The self-contained printable PDF that ships in the box and tells the buyer how
+to assemble the toy, Rolife-style, from its Assembly Tree. It is the canonical
 customer artifact, not a summary of one.
 _Avoid_: Docs, readme, instructions, guide
 
