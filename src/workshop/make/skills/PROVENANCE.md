@@ -2412,3 +2412,15 @@ Print Sheets (`_run_kit_tree`) and checks that a piece on a Sub-assembly
 across Components is carried by exactly one part. `check_motion` is
 unchanged. The `cad`, `make-round` and `print-details` locks move; a resync
 must keep these lines.
+
+## Local change: the kit's Manual (2026-10-23, ADR 0092 decision 9)
+
+`make-round/scripts/kit_manual.py` and `make-round/company.json` are new and
+host-owned: the tool writes a schema 7 kit's Manual (`manual/manual.pdf`
+and `manual/manual.json`) deterministically from `tree/kit.json` and the
+build, shading pictures with `render_review`'s rasteriser (unchanged), and
+reads the after-sales contact and warnings from `company.json`.
+`kit_tree.py`'s Part labels take every letter but M, N, P and S. In the
+vendored `cad` tree, `verify_project` runs the tool after the Print Sheets
+(`_run_kit_manual`) and lists both files among its sweep's tool paths. The
+`cad` and `make-round` locks move; a resync must keep these lines.

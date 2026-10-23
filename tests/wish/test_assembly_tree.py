@@ -127,6 +127,10 @@ def _tree_block():
                                                   "D01-inkwell", "P01-hinge-pin", "P02-jar"]},
                 {"geometry": "desk", "parts": ["C01-desk-body"]},
             ],
+            "checks": [
+                {"id": "light-test", "parts": ["P03-ball-led", "P04-battery-box"],
+                 "text": "Join the LED to the battery box, switch on, then take them apart."},
+            ],
             "materials": ["tweezers", "foam-tape"],
         },
     }
@@ -271,6 +275,43 @@ class AssemblyTreeTest(unittest.TestCase):
         block["assembly_tree"]["parts"][2]["filament"] = "oak"
         self.assertIn("letter B is dark-oak", self._refused(block))
 
+    def test_printed_letters_are_every_letter_but_m_n_p_and_s(self):
+        # Owner decision 2026-10-23 (Q27): not only A-K, one letter per filament.
+        renames = {"D01-inkwell": "Z01-inkwell", "C01-desk-body": "L01-desk-body"}
+        text = json.dumps(_tree_block())
+        for old, new in renames.items():
+            text = text.replace(old, new)
+        contract = self._parse(json.loads(text))
+        self.assertEqual(contract.assembly_tree.component_of["Z01-inkwell"], "cabinet")
+        for letter in "MNS":
+            block = json.loads(json.dumps(_tree_block()).replace("D01-inkwell", "%s07-inkwell" % letter))
+            self.assertIn("any letter but M, N, P and S", self._refused(block))
+
+    def test_one_filament_is_one_letter(self):
+        block = _tree_block()
+        block["assembly_tree"]["parts"][4]["filament"] = "oak"  # D01-inkwell, beside C01's oak
+        self.assertIn("oak already has letter C (C01-desk-body), so D01-inkwell cannot use D",
+                      self._refused(block))
+
+    def test_a_lamp_is_tested_in_a_check_step_first(self):
+        block = _tree_block()
+        del block["assembly_tree"]["checks"]
+        self.assertIn("P03-ball-led is a lamp in no Check Step", self._refused(block))
+        block = _tree_block()
+        check = block["assembly_tree"]["checks"][0]
+        check["parts"] = ["P03-ball-led"]
+        self.assertIn("names at least one of each", self._refused(block))
+        check["parts"] = ["P03-ball-led", "P04-battery-box", "P02-jar"]
+        self.assertIn("P02-jar', which is no lamp or power Bought Part", self._refused(block))
+        check["parts"] = ["P03-ball-led", "P04-battery-box"]
+        check["id"] = "case-shell"
+        self.assertIn("repeats the mnemonic 'case-shell'", self._refused(block))
+        check["id"] = "light-test"
+        check["text"] = ""
+        self.assertIn("checks[0].text must be one short English instruction", self._refused(block))
+        del check["text"]
+        self.assertIn("checks[0] must be exactly {id, text, parts}", self._refused(block))
+
     def test_a_bought_part_outside_the_catalogue_is_refused(self):
         block = _tree_block()
         block["assembly_tree"]["parts"][5]["bought"] = "brass-hinge"
@@ -398,6 +439,7 @@ class AssemblyTreeTest(unittest.TestCase):
         block["assembly_tree"]["parts"].append({"id": "P05-desk-lamp", "bought": "led-3v-cool-white"})
         _step(block, "S04-dress-desk")["inputs"].append({"id": "P05-desk-lamp", "direction": [0, 0, -1]})
         _component(block, "desk")["parts"].append("P05-desk-lamp")
+        block["assembly_tree"]["checks"][0]["parts"].append("P05-desk-lamp")
         _step(block, "S05-case-lamp")["inputs"].append(
             _step(block, "S06-case-battery")["inputs"][1])
         _step(block, "S06-case-battery").update({
@@ -438,12 +480,9 @@ class AssemblyTreeTest(unittest.TestCase):
         for needle in ("sparkle-purple", "brass-hinge", "requirements[0].id"):
             self.assertIn(needle, message)
 
-    def test_no_run_can_seal_schema_7_until_its_manual_exists(self):
-        contract = self._parse(_tree_block())
-        with self.assertRaises(ContractError) as caught:
-            contract.check_sealable()
-        self.assertIn("issue #137", str(caught.exception))
-        self.assertNotIn("#136", str(caught.exception))
+    def test_a_run_may_seal_schema_7_now_its_manual_exists(self):
+        # Every schema 7 gate is wired: the tree gates (#136) and the Manual (#137).
+        self._parse(_tree_block()).check_sealable()
         block = _tree_block()
         block["schema_version"] = 6
         del block["assembly_tree"]

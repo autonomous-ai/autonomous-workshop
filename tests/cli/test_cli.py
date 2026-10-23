@@ -2832,19 +2832,31 @@ class WishPrintArtCommandTest(unittest.TestCase):
 class WishAssemblyTreeCommandTest(unittest.TestCase):
     """``workshop wish --contract`` with a schema 7 contract (ADR 0092)."""
 
-    def test_a_valid_schema_7_contract_refuses_to_seal_until_its_manual_exists(self):
+    def test_a_valid_schema_7_contract_seals_with_its_catalogue(self):
+        # Every schema 7 gate is wired (#136 tree gates, #137 Manual), so a
+        # run seals the kit and its catalogue entries.
+        from PIL import Image
         from tests.wish.test_assembly_tree import _tree_block
 
+        block = _tree_block()
         with tempfile.TemporaryDirectory() as tmp:
             contract = Path(tmp) / "CONTRACT.md"
-            contract.write_text(_contract_text(_tree_block()), encoding="utf-8")
+            contract.write_text(_contract_text(block), encoding="utf-8")
+            arguments = ["wish", "--contract", str(contract)]
+            for index, item in enumerate(block["references"]):
+                path = Path(tmp) / item["file"]
+                Image.new("RGB", (64, 64), (10 * index, 20, 90)).save(path)
+                arguments += ["--ref", str(path)]
+            for index, item in enumerate(block["print"]["art"]):
+                path = Path(tmp) / item["file"]
+                Image.new("RGB", (300, 300), (20, 90 + 10 * index, 20)).save(path)
+                arguments += ["--print-art", str(path)]
             stdout, stderr = StringIO(), StringIO()
             with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(
                 "cli.main.start_native_run", return_value=native_receipt()
             ) as start, redirect_stdout(stdout), redirect_stderr(stderr):
-                result = main(("wish", "--contract", str(contract)))
-            self.assertEqual(result, 2)
-            start.assert_not_called()
-            self.assertIn("schema_version 7 is validated", stderr.getvalue())
-            self.assertIn("Manual (issue #137)", stderr.getvalue())
-            self.assertNotIn("#136", stderr.getvalue())
+                result = main(tuple(arguments))
+            self.assertEqual(result, 0, stderr.getvalue())
+            sealed = start.call_args.args[0]
+            self.assertEqual(sealed.context["design_contract"]["schema_version"], 7)
+            self.assertIn("led-3v-cool-white", sealed.context["kit_catalogue"]["bought_parts"])

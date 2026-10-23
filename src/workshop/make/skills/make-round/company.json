@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "kind": "workshop-company",
+  "about": "The company facts every kit Manual prints (ADR 0092 decision 9): the after-sales contact and the fixed safety warnings. Owned by the owner. The after-sales contact below is a PLACEHOLDER, unconfirmed: the owner replaces it with the real contact and sets confirmed to true. Until then every Manual prints the placeholder and its report says the contact is unconfirmed. Editing this file changes the make-round skill's fingerprint in src/workshop/make/skills/LOCK.json.",
+  "name": "Autonomous",
+  "after_sales": {
+    "contact": "PLACEHOLDER: the owner sets the after-sales contact",
+    "confirmed": false
+  },
+  "warnings": {
+    "small_parts": "Small parts. Not for children under 3 years.",
+    "batteries": "Batteries are not included. Remove them when the toy is not in use."
+  }
+}

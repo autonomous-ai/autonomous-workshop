@@ -184,12 +184,14 @@ instances.)
   **Assembly Tree** its Manual is written from. Its leaves are the Parts the
   buyer handles, every inner node is an Assembly Step, and the last step is
   the finished toy. It is `{"parts": [...], "steps": [...], "components":
-  [...], "materials": [...]}`:
+  [...], "checks": [...], "materials": [...]}`. Make writes the kit's
+  Manual from it (ADR 0092 decision 9), using only this section's words:
   - Every id is a code plus a kebab-case mnemonic, and no code or mnemonic
     repeats anywhere in the tree or the Print Pieces.
   - `parts[]`: a printed Part is `{"id": "A03-hat", "name": "<at most 80
-    characters>", "filament": "<filament id>"}`. Its letter, A to K, groups
-    Parts by colour: one letter is one filament. A Bought Part is
+    characters>", "filament": "<filament id>"}`. Its letter groups Parts by
+    colour: any letter except M and N (Print Pieces), P (Bought Parts) and S
+    (steps), one letter per filament and one filament per letter. A Bought Part is
     `{"id": "P02-steel-pin", "bought": "<Bought Part id>"}`. Both ids come
     from the owner's catalogues, `src/workshop/wish/catalogues/filaments.json`
     and `bought-parts.json`. A colour or Bought Part outside them is refused:
@@ -253,8 +255,15 @@ instances.)
     that does not match the tree is a labelling slip the run repairs; a
     tree that does not hold together stops the run (ADR 0092 decision 10,
     Q28).
+  - `checks`: the Check Steps the Manual shows first, outside the tree:
+    `{"id": "light-test", "text": "<one short English instruction>",
+    "parts": [<lamp and power Bought Parts>]}`, each naming at least one lamp
+    and one power source; the id is a kebab-case mnemonic no other id uses.
+    A tree with a lamp tests every lamp in one; otherwise `checks` is left
+    out.
   - `materials`: the tools and consumables the Manual lists, catalogue ids
-    whose category is `tool` or `consumable`.
+    whose category is `tool` or `consumable`. The Manual adds a screwdriver
+    by itself when a Bought Part is a screw or a power source.
 
   An abridged cabinet, one Component of five Parts with a spine strip and a
   pin hinge, placed in the case:
@@ -301,10 +310,9 @@ instances.)
   `6` is schema 5 plus the `print` section (ADR 0091), with `guides[]`
   optional; a contract with no Print Sheet stays 4 or 5. `7` is schema 6
   plus `assembly_tree` (ADR 0092), with `print` and `guides[]` optional and
-  the Print Pieces' ids and hosts in the Part form above. A schema 7
-  contract is validated, and Make's tree gates (ADR 0092 decision 8) check
-  it, but `workshop wish|fix --contract` refuse to seal it until its Manual
-  (issue #137) exists. Schema 3 is schema 2 plus a `camera` on every
+  the Print Pieces' ids and hosts in the Part form above. Make's tree gates
+  (ADR 0092 decision 8) check a schema 7 kit, and final verification writes
+  its Manual (decision 9). Schema 3 is schema 2 plus a `camera` on every
   reference; from schema 3 every Component file defines
   `assembly_pose(shape, pose)`, even one in no Interface. A schema 3
   contract has no Interface text, a schema 2 contract no cameras and a

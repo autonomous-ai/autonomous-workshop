@@ -42,11 +42,10 @@ INTERFACE_TEXT_SCHEMA_VERSION = 4
 GUIDE_SCHEMA_VERSION = 5
 PRINT_SCHEMA_VERSION = 6
 TREE_SCHEMA_VERSION = 7
-# A run may seal these. Schema 7 parses and validates, and Make's tree gates
-# (ADR 0092 decision 8, issue #136) exist, but its Manual (decision 9, issue
-# #137) does not: a kit would ship without the book it is assembled from, so
-# `workshop wish|fix --contract` refuses it until the Manual exists.
-SEALABLE_SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6)
+# A run may seal these. Schema 7 became sealable once every gate it needs was
+# wired: Make's tree gates (ADR 0092 decision 8, issue #136) and its Manual
+# (decision 9, issue #137), which the host checks before Make is accepted.
+SEALABLE_SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7)
 MAX_GUIDE_SHOWS_CHARS = 500
 MAX_GUIDE_STEPS = 24
 MAX_GUIDE_STEP_CHARS = 300
@@ -193,8 +192,8 @@ class DesignContract:
 
         if self.schema_version not in SEALABLE_SCHEMA_VERSIONS:
             raise ContractError(
-                "design contract: schema_version %d is validated, but its Manual (issue #137) is "
-                "not implemented yet, so no run can seal it" % self.schema_version
+                "design contract: schema_version %d is validated, but no run can seal it yet"
+                % self.schema_version
             )
 
     def kit_catalogue(self) -> Optional[Dict[str, Any]]:

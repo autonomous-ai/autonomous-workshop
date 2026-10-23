@@ -85,6 +85,9 @@ MAKE_ROUND_SCRIPT = SCRIPTS_DIR.parents[1] / "make-round" / "scripts" / "make_ro
 PRINT_DETAILS_SCRIPTS = SCRIPTS_DIR.parents[1] / "print-details" / "scripts"
 # ADR 0092: the Assembly Tree gates of a schema 7 Design Contract.
 KIT_TREE_SCRIPT = MAKE_ROUND_SCRIPT.with_name("kit_tree.py")
+# ADR 0092 decision 9: the kit's Manual, written from the tree and the build.
+KIT_MANUAL_SCRIPT = MAKE_ROUND_SCRIPT.with_name("kit_manual.py")
+KIT_COMPANY_FILE = MAKE_ROUND_SCRIPT.parents[1] / "company.json"
 COMPONENT_ACCEPTANCE_NAME = "component-acceptance.json"
 POWER_SCRIPTS_DIR = (
     SCRIPTS_DIR.parents[1] / "electromechanical-integration" / "scripts"
@@ -1362,6 +1365,30 @@ def _run_kit_tree(runner: Runner, project: Path, nozzle: float) -> int:
     ) != 0 else 0
 
 
+def _run_kit_manual(runner: Runner, project: Path) -> int:
+    """The kit's Manual (ADR 0092 decision 9): written deterministically
+    into manual/ from the installed Assembly Tree and the build, after the
+    tree gates and the Print Sheets passed. The host checks its report and
+    hash before Make is accepted. Nothing runs for an earlier contract."""
+
+    if not MAKE_ROUND_SCRIPT.is_file() or not KIT_MANUAL_SCRIPT.is_file():
+        return 0
+    tool = runpy.run_path(str(MAKE_ROUND_SCRIPT))
+    if "kit_state" not in tool:
+        return 0
+    kit, error = tool["kit_state"](project)
+    if kit is None and error is None:
+        return 0
+    if error is not None:
+        print(f"[verify_project] kit manual: {error}", flush=True)
+        runner.records.append({"command": f"kit manual  # FAILED: {error}", "status": "rc=1", "seconds": 0.0})
+        return 1
+    return 1 if runner.command(
+        [sys.executable, KIT_MANUAL_SCRIPT, _path_arg(project, runner.cwd)],
+        replay_success_stdout=True,
+    ) != 0 else 0
+
+
 def _run_print_gates(
     runner: Runner,
     project: Path,
@@ -1577,6 +1604,8 @@ def _sweep_tool_paths(*, image_derived: bool) -> list[Path]:
         PRINT_DETAILS_SCRIPTS / "check_print_pieces.py",
         PRINT_DETAILS_SCRIPTS / "print_sheets.py",
         KIT_TREE_SCRIPT,
+        KIT_MANUAL_SCRIPT,
+        KIT_COMPANY_FILE,
     ]
     if image_derived:
         paths.extend([
@@ -2123,6 +2152,10 @@ def _final(
 
     # ADR 0091: the Print Sheet gate, cheap, before the print sweep.
     if _run_print_sheets(runner, project, parts) != 0:
+        return 1
+
+    # ADR 0092 decision 9: the kit's Manual, once its tree and sheets passed.
+    if _run_kit_manual(runner, project) != 0:
         return 1
 
     # Last, where the print sweep has always run. Two independent reasons put it

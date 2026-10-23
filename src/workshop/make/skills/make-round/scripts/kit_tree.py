@@ -136,7 +136,7 @@ PRINT_LINES = 2              # the thinnest printable wall, in lines
 
 DEFECT = "defect"
 FAILURE = "failure"
-PART_LABEL = re.compile(r"^([A-KP][0-9]{2}-[a-z0-9]+(?:-[a-z0-9]+)*)(?:#([1-9][0-9]*))?$")
+PART_LABEL = re.compile(r"^([A-LO-RT-Z][0-9]{2}-[a-z0-9]+(?:-[a-z0-9]+)*)(?:#([1-9][0-9]*))?$")
 EXIT_PASS, EXIT_FAIL, EXIT_USAGE, EXIT_DEFECT = 0, 1, 2, 3
 
 

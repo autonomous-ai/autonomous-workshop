@@ -236,6 +236,10 @@ are separate. Frozen older runs retain their materialized rules and tools.
    the steps inside each Component; your assembly rounds and final
    verification check the joins across Components and write
    `measure/tree-report.json`, which the host checks before accepting Make.
+   Final verification then writes the kit's Manual into `manual/` from the
+   tree and the build (`make-round/scripts/kit_manual.py`, ADR 0092
+   decision 9); the host checks it too, and Release ships it. Never write,
+   edit or reword the Manual: its text is the contract's own.
    Make never changes the tree. A `labelling slip` (built bodies that do
    not match a sound tree: a wrong or unknown Part label, a body missing,
    extra or duplicated, a wrong colour) is an ordinary gate failure: the
