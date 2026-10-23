@@ -191,6 +191,37 @@ skill's own `check_thickness --nozzle` and `check_overhang --angle` on each.
 It exits non-zero on any failure. The Workshop test suite runs it; you need
 not run it in a product run.
 
+## Print Pieces in a part
+
+A schema 6 contract's Print Pieces each land on one Unique Geometry (`on`).
+The Workshop Manager installs the sealed print section and art once,
+beside the library:
+
+```sh
+"$WORKSHOP_PYTHON" .agents/skills/print-details/scripts/print_details.py --install-print <cad-project> --wish WISH.json
+```
+
+A Component Worker places each piece its geometry hosts by id; the call
+reads the piece's sizes from `print/pieces.json`, so a part cannot receive
+a piece at any other size:
+
+| `way` | Call | Makes |
+|---|---|---|
+| `flat`, `sticker` | `pd.print_recess(body, piece, at, angle=0)` | a recess 0.6 mm deep, the piece's size plus 0.2 mm, rect or oval; roofed at 52 deg on a wall; `at` may be a list, one per copy |
+| `stand` | `pd.print_slot(body, piece, at, angle=0)` | a slot `slot_mm` + 0.2 long (local X), the card's caliper + 0.3 wide, 5.5 mm deep |
+| `wrap` | `pd.print_block(block, piece)` | checks the block you built is `block_mm` within 0.5 mm, before you fuse it |
+| `sphere` | `pd.print_sphere(ball, piece)` | checks the ball is `diameter_mm` within 0.5 mm, before you fuse it |
+| `fold` | `pd.print_fold(body, piece, at)` | checks the flat face at `at` holds one `page_mm` page |
+
+Each call tags what it made with the piece's id and the digest of its
+contract entry. `check_print_pieces.py <part>` builds the part and fails a
+hosted piece with no feature, a recess or slot filled again later, a block
+or ball no longer in the part, a feature made from another contract entry,
+and a piece placed on the wrong part. `make_round` runs it on every hosting
+part as the round's `paper` gate; final verification runs it on every part
+and lays out the sheets. Never model, emboss or paint the art: the paper
+carries it.
+
 ## Print Sheets
 
 A schema 6 Design Contract's `print` section (ADR 0091) declares the paper
@@ -201,8 +232,12 @@ checks the layout:
 
 ```sh
 "$WORKSHOP_PYTHON" .agents/skills/print-details/scripts/print_sheets.py \
-  --contract <run>/WISH.json --art <run>/wish-references -o <cad-project>/print-sheets
+  --contract <cad-project>/print/pieces.json --art <cad-project>/print/art \
+  -o <cad-project>/print/sheets
 ```
+
+Final verification runs exactly this; the sheets it writes ship with the
+toy.
 
 It writes `print-sheets.pdf` (print at 100 %: art clipped to each cut line,
 cut lines solid, fold lines dashed, ids and a 50 mm scale bar),

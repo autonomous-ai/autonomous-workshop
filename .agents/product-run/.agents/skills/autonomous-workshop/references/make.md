@@ -206,6 +206,21 @@ are separate. Frozen older runs retain their materialized rules and tools.
    project builds on its own. It is a standard element, like a `stdpart`
    gear, not a design value: never edit it.
 
+   When the sealed Design Contract has a `print` section (schema 6, ADR
+   0091), install its Print Sheets the same way, before any worker starts:
+
+   ```bash
+   "$WORKSHOP_PYTHON" .agents/skills/print-details/scripts/print_details.py --install-print <cad-project> --wish WISH.json
+   ```
+
+   It writes `print/pieces.json` (the contract's print section) and copies
+   the sealed print art to `print/art/`; never edit either. Tell each
+   Component Worker which Print Pieces land on its geometry (`on`). Its
+   round's `paper` line fails until the part carries each one's recess,
+   slot, block, ball or fold face, and final verification fails until every
+   hosting part does and the sheets lay out (`print/sheets/`, ADR 0091). The
+   printed paper carries the art: no part models, embosses or paints it.
+
    When the sealed Design Contract has an `interfaces` section (ADR 0082),
    implement its Interfaces; do not invent others. A shared file is then a
    Shared Helper and holds only what two or more Components must agree on:

@@ -101,6 +101,23 @@ _TRACE_AREA = 0.25             # mm2
 _ROOT = 0.15                   # how far a raised root reaches below contact
 _LIFT = 0.3                    # how far a cut starts outside the surface
 
+# Print Pieces (ADR 0091). The Workshop Manager installs the sealed contract's
+# print section and art under <cad-project>/print/ (`--install-print`); the
+# calls below read each piece's sizes from there, so a part cannot receive a
+# piece at any size but the contract's.
+PRINT_DIR = "print"
+PRINT_PIECES_FILE = "pieces.json"
+PRINT_ART_DIR = "art"
+RECESS_DEPTH = 0.6             # mm; above min_cut_depth, so the floor prints
+PRINT_CLEARANCE = 0.2          # mm a recess or slot is longer than its piece
+SLOT_CLEARANCE = 0.3           # mm a card slot is wider than the card
+STAND_TAB = 5.0                # mm of tab under a standing card (print_sheets.py)
+SLOT_DEPTH = STAND_TAB + 0.5
+PRINT_SIZE_TOLERANCE = 0.5     # mm a block, ball or face may differ from the contract
+# The tag a print call records names its piece and the digest of the piece's
+# contract entry: `<kind>:<piece>:<digest>`, read back by check_print_pieces.
+PRINT_TAG_KINDS = ("print-recess", "print-slot", "print-block", "print-sphere", "print-fold")
+
 
 class PrintLimitError(ValueError):
     """A detail that cannot print at this nozzle, or cannot print here.
@@ -195,7 +212,7 @@ def _call_site() -> str:
     return f"{os.path.basename(frame.f_code.co_filename)}:{frame.f_lineno}"
 
 
-def _tag(kind: str, shapes) -> None:
+def _tag(kind: str, shapes, name: str | None = None) -> None:
     """Record one feature for the print gates; see PRINT_DETAIL_TAGS."""
     b = _b3d()
     shapes = [shape for shape in shapes if shape is not None]
@@ -203,8 +220,48 @@ def _tag(kind: str, shapes) -> None:
         return
     shape = shapes[0] if len(shapes) == 1 else b.Compound(children=shapes)
     number = 1 + sum(1 for tag in PRINT_DETAIL_TAGS if tag["kind"] == kind)
-    PRINT_DETAIL_TAGS.append({"kind": kind, "name": f"{kind}-{number}", "site": _call_site(),
+    PRINT_DETAIL_TAGS.append({"kind": kind, "name": name or f"{kind}-{number}", "site": _call_site(),
                               "shape": shape})
+
+
+def piece_digest(spec: dict) -> str:
+    """The first 12 hex digits of a piece's canonical contract entry."""
+    import hashlib
+    return hashlib.sha256(json.dumps(spec, sort_keys=True, separators=(",", ":")).encode()).hexdigest()[:12]
+
+
+def print_pieces(project=None) -> dict:
+    """The installed print section, ``{"title", "print": {...}}``: from
+    `project`, else from the CAD project this copy of the library sits in."""
+    from pathlib import Path
+    root = Path(project) if project is not None else Path(__file__).resolve().parents[1]
+    path = root / PRINT_DIR / PRINT_PIECES_FILE
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        data["print"]["pieces"]
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise PrintLimitError(
+            f"no Print Pieces are installed at {path} ({exc})",
+            "the Workshop Manager installs them: print_details.py --install-print") from exc
+    return data
+
+
+def _piece(piece: str, ways: tuple) -> tuple:
+    """The contract entry of Print Piece `piece` and its stock, refusing a
+    piece this call cannot place."""
+    section = print_pieces()["print"]
+    spec = next((item for item in section["pieces"] if item.get("id") == piece), None)
+    if spec is None:
+        raise PrintLimitError(f"print piece {piece!r} is not in the Design Contract's print section",
+                              "a piece id from print/pieces.json")
+    if spec["way"] not in ways:
+        raise PrintLimitError(f"print piece {piece!r} is a {spec['way']} piece; this call places "
+                              f"{' or '.join(ways)} pieces", f"pd.{_PRINT_CALLS[spec['way']]}(...)")
+    return spec, section["stocks"][spec["stock"]]
+
+
+_PRINT_CALLS = {"flat": "print_recess", "sticker": "print_recess", "stand": "print_slot",
+                "wrap": "print_block", "sphere": "print_sphere", "fold": "print_fold"}
 
 
 def _line(nozzle: float) -> float:
@@ -851,6 +908,9 @@ class Details:
         w2, y0, y1 = width / 2, -height / 2, height / 2
         if arch == "flat":
             return _as_face(b.Rectangle(width, height))
+        if arch == "oval":
+            # an oval Print Piece's recess (ADR 0091): its lower half faces up
+            return _as_face(b.Ellipse(width / 2, height / 2))
         if arch == "lancet":
             # a pointed arch: each side an arc of radius `width` from its
             # springing point until it leans 52 deg, then straight to the apex,
@@ -911,7 +971,7 @@ class Details:
             if math.dist(unique[0], unique[-1]) < 1e-9:
                 unique.pop()
             return _as_face(b.Polygon(*unique, align=None))
-        raise ValueError("arch is 'flat', 'lancet', 'gable' or 'teardrop'")
+        raise ValueError("arch is 'flat', 'lancet', 'gable', 'teardrop' or 'oval'")
 
     # -- engines --------------------------------------------------------------
 
@@ -1057,7 +1117,7 @@ class Details:
         _tag(name, solids)
         return result
 
-    def _place_cuts(self, host, at, name, shape, depth, through, angle):
+    def _place_cuts(self, host, at, name, shape, depth, through, angle, tag=None):
         b = _b3d()
         spots = [self.spot(host, p) for p in self._points(at)]
         tools = []
@@ -1100,7 +1160,7 @@ class Details:
         self._spacing(name, spots, extent, raised=False)
         self._check_overhang(name, tools, host, cut=True)
         result = self._one_solid(host.cut(*tools), name)
-        _tag(name, tools)
+        _tag(name, tools, tag)
         return result
 
     def _flank_betas(self, frames):
@@ -1255,6 +1315,88 @@ class Details:
                 "a spot on a face nearer the print direction, or a pointed shape")
 
 
+    # -- Print Pieces (ADR 0091) ----------------------------------------------
+
+    @_collecting
+    def print_recess(self, host, piece: str, at, angle: float = 0.0):
+        """The recess a `flat` or `sticker` Print Piece lies in: the piece's
+        contract size plus PRINT_CLEARANCE, RECESS_DEPTH deep, rect or oval.
+        On a wall its roof rises outward at 52 deg. `at` may be a list: one
+        recess per copy."""
+        spec, _stock = _piece(piece, ("flat", "sticker"))
+        width, height = (float(v) + PRINT_CLEARANCE for v in spec["size_mm"])
+        arch = "oval" if spec.get("outline") == "oval" else "flat"
+        return self._place_cuts(host, at, "print-recess", (width, height, arch), RECESS_DEPTH,
+                                False, angle, f"print-recess:{piece}:{piece_digest(spec)}")
+
+    @_collecting
+    def print_slot(self, host, piece: str, at, angle: float = 0.0):
+        """The slot a `stand` card's tab goes into: `slot_mm` plus
+        PRINT_CLEARANCE long (local X; turn it with `angle`), the card's
+        caliper plus SLOT_CLEARANCE wide, SLOT_DEPTH deep."""
+        spec, stock = _piece(piece, ("stand",))
+        length = float(spec["slot_mm"]) + PRINT_CLEARANCE
+        across = float(stock["caliper_mm"]) + SLOT_CLEARANCE
+        return self._place_cuts(host, at, "print-slot", (length, across, "flat"), SLOT_DEPTH,
+                                False, angle, f"print-slot:{piece}:{piece_digest(spec)}")
+
+    def _measured(self, kind, piece, solid, want):
+        size = sorted(solid.bounding_box().size)
+        if any(abs(a - b) > PRINT_SIZE_TOLERANCE for a, b in zip(size, sorted(want))):
+            shown = " x ".join(f"{v:.2f}" for v in size)
+            wanted = " x ".join(f"{float(v):g}" for v in sorted(want))
+            raise PrintLimitError(
+                f"{kind} {piece}: it measures {shown} mm; the contract's piece needs {wanted} mm "
+                f"within {PRINT_SIZE_TOLERANCE:g} mm", f"a solid of {wanted} mm")
+
+    @_collecting
+    def print_block(self, block, piece: str):
+        """Check and tag the block a `wrap` piece wraps: `block` is the solid
+        you built for it, before you fuse it to the part; its box must match
+        `block_mm` within PRINT_SIZE_TOLERANCE. Returns `block` unchanged."""
+        spec, _stock = _piece(piece, ("wrap",))
+        self._measured("print-block", piece, block, spec["block_mm"])
+        _tag("print-block", [block], f"print-block:{piece}:{piece_digest(spec)}")
+        return block
+
+    @_collecting
+    def print_sphere(self, ball, piece: str):
+        """Check and tag the ball a `sphere` gore strip wraps: its box must be
+        `diameter_mm` every way within PRINT_SIZE_TOLERANCE. Returns `ball`."""
+        spec, _stock = _piece(piece, ("sphere",))
+        self._measured("print-sphere", piece, ball, [spec["diameter_mm"]] * 3)
+        _tag("print-sphere", [ball], f"print-sphere:{piece}:{piece_digest(spec)}")
+        return ball
+
+    @_collecting
+    def print_fold(self, host, piece: str, at):
+        """Check and tag the flat face a `fold` piece's pages are glued on:
+        the face of `host` at `at` must hold one page, `page_mm`, within
+        PRINT_SIZE_TOLERANCE. Returns `host` unchanged."""
+        spec, _stock = _piece(piece, ("fold",))
+        b = _b3d()
+        point = _vec(at)
+        face = min(host.faces(), key=lambda f: f.distance_to(point))
+        if face.distance_to(point) > 0.05:
+            raise ValueError(f"point {tuple(round(c, 3) for c in point)} is not on the host's surface")
+        if not str(face.geom_type).upper().endswith("PLANE"):
+            raise PrintLimitError(f"print-fold {piece}: pages are glued on a flat face, not a "
+                                  f"{face.geom_type} one", "a flat face of the part")
+        spot = self.spot(host, point)
+        across = spot.normal.cross(spot.x)
+        corners = [b.Vector(*vertex.to_tuple()) - spot.point for vertex in face.vertices()]
+        held = sorted(max(c.dot(axis) for c in corners) - min(c.dot(axis) for c in corners)
+                      for axis in (spot.x, across))
+        page = sorted(float(v) for v in spec["page_mm"])
+        if any(h < p - PRINT_SIZE_TOLERANCE for h, p in zip(held, page)):
+            raise PrintLimitError(
+                f"print-fold {piece}: the face is {held[0]:.2f} x {held[1]:.2f} mm; one "
+                f"{page[0]:g} x {page[1]:g} mm page must fit on it",
+                f"a face of at least {page[0]:g} x {page[1]:g} mm")
+        _tag("print-fold", [face], f"print-fold:{piece}:{piece_digest(spec)}")
+        return host
+
+
 # -------------------------------------------------------------- self-check ---
 
 def _cad_scripts():
@@ -1279,6 +1421,44 @@ def install(project) -> str:
     target.parent.mkdir(exist_ok=True)
     target.write_bytes(data)
     return hashlib.sha256(data).hexdigest()
+
+
+def install_print(project, wish) -> dict:
+    """Install the sealed Design Contract's Print Sheets into `project`
+    (ADR 0091): `print/pieces.json` holds the title and the contract's print
+    section, byte for byte as JSON, and `print/art/` a copy of every print art
+    file, each checked against the sha256 the Wish sealed. Refuses a Wish
+    without a print section, art whose bytes differ from the seal, and an
+    existing install with other bytes."""
+    import hashlib
+    from pathlib import Path
+    project, wish = Path(project), Path(wish)
+    if not project.is_dir():
+        raise SystemExit(f"{project}: not a CAD project directory")
+    document = json.loads(wish.read_text(encoding="utf-8"))
+    contract = (document.get("context") or {}).get("design_contract") or {}
+    section = contract.get("print")
+    if not isinstance(section, dict):
+        raise SystemExit(f"{wish}: the sealed Design Contract declares no Print Sheets")
+    sealed = {item["name"]: item["sha256"] for item in document.get("references") or ()}
+    files = {PRINT_PIECES_FILE: (json.dumps({"title": contract.get("title"), "print": section},
+                                            indent=2, sort_keys=True) + "\n").encode()}
+    for item in section["art"]:
+        name = item["file"]
+        data = (wish.parent / "wish-references" / name).read_bytes()
+        if sealed.get(name) != hashlib.sha256(data).hexdigest():
+            raise SystemExit(f"{name}: its bytes are not the ones the Wish sealed")
+        files[f"{PRINT_ART_DIR}/{name}"] = data
+    root = project / PRINT_DIR
+    for name, data in files.items():
+        target = root / name
+        if target.exists() and target.read_bytes() != data:
+            raise SystemExit(f"{target}: exists with other bytes; the print install is never edited")
+    for name, data in files.items():
+        target = root / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+    return {"pieces": len(section["pieces"]), "art": len(section["art"])}
 
 
 # Each case: (name, host, call). `host` is a build123d expression standing on
@@ -1531,6 +1711,10 @@ def main(argv=None) -> int:
                         help="copy the library to CAD_PROJECT/features/print_details.py")
     action.add_argument("--self-check", action="store_true",
                         help="build every feature and run the real print gates on it")
+    action.add_argument("--install-print", metavar="CAD_PROJECT",
+                        help="install the sealed contract's Print Sheets (with --wish) into "
+                             "CAD_PROJECT/print/")
+    parser.add_argument("--wish", default=None, help="--install-print: the run's WISH.json")
     parser.add_argument("--jobs", type=int, default=None, help="self-check: parallel entries")
     parser.add_argument("--keep", default=None, help="self-check: build the entries in this directory")
     parser.add_argument("--only", action="append", default=None, help="self-check: one case by name")
@@ -1542,6 +1726,12 @@ def main(argv=None) -> int:
     if args.install:
         digest = install(args.install)
         print(f"installed features/print_details.py sha256 {digest}")
+        return 0
+    if args.install_print:
+        if args.wish is None:
+            parser.error("--install-print needs --wish <run>/WISH.json")
+        counts = install_print(args.install_print, args.wish)
+        print(f"installed print/pieces.json ({counts['pieces']} piece(s)) and {counts['art']} art file(s)")
         return 0
     return self_check(args.nozzle, args.overhang_angle, args.jobs, args.keep, args.only)
 
