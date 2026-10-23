@@ -142,6 +142,16 @@ checks that the plastic it lands on fits it, or ships the sheet.
    Release still creates no new PDF (ADR 0061). It packages the sheets Make
    produced and the gate passed.
 
+10. **A larger image budget.** Every sealed image of a Wish shares one
+    budget: Reference Images, Guide Images and print art. That budget rises
+    from 99 images / 48 MiB to **999 images / 480 MiB**. One image is still
+    at most 12 MiB.
+
+    - **Names.** An image's number may run to three digits (`ref-100-…`,
+      `print-123-…`). Two-digit names stay valid, and order is numeric.
+    - **Old runs.** The limit applies when a Wish is sealed, so frozen runs
+      keep the bytes they sealed.
+
 ## Not decided here
 
 - Splitting a concept into kit parts (colour per part, sub-assemblies, bags,
@@ -159,9 +169,9 @@ checks that the plastic it lands on fits it, or ships the sheet.
 - **Fit is checked twice.** Fit between paper and plastic is checked by Make
   and again by the host, so a mismatch like r00's door-against-face shows up
   as a gate failure, not in the box.
-- **Image budget.** Contracts gain sealed art files. A book nook may need
-  dozens, which counts against the 99-image / 48 MiB budget; the
-  implementation must say whether that budget grows.
+- **Image budget.** A book nook may seal dozens of art files. Decision 10
+  raises the budget tenfold, so the run root and each checkpoint's
+  re-verification carry up to 480 MiB of images.
 - **Render cost.** Applying art in renders adds a texture step to component
   rounds that host pieces.
 - **Stock values are estimates.** Changing paper later edits one contract
@@ -171,7 +181,7 @@ checks that the plastic it lands on fits it, or ships the sheet.
 
 Each step is its own PR with contract and failure-path tests:
 
-1. Schema 6 and sealing the art.
+1. Schema 6, sealing the art and the larger image budget.
 2. `design-a-toy`: authoring the art, the CC0 sources and the sheet proof in
    Stage 4.
 3. The layout tool and the `verify_project` gate.
