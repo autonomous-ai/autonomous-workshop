@@ -2383,3 +2383,12 @@ and lays out the sheets in final verification (`_run_print_sheets`), and
 `geometry_sources.py` counts `print/pieces.json` as a Geometry Source of a
 part that imports print-details. The `cad`, `make-round` and
 `print-details` locks move; a resync must keep these lines.
+
+## Local change: Print Piece decals in the review renders (2026-10-23, ADR 0091)
+
+`print-details` tags a `print-decal` for every Print Piece it places and
+gains `read_decal` and `move_decal`. In the vendored `cad` tree,
+`render_review` paints a part entry's decals with their art after the
+faces are rasterised (`_paint_decals`, `_paint_sphere`); `make-round`'s
+Display Pose entry moves them into the pose. The `cad`, `make-round` and
+`print-details` locks move; a resync must keep these lines.
