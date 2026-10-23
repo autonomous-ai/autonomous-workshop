@@ -237,6 +237,43 @@ class KitManualTest(unittest.TestCase):
         self.assertEqual(kit_manual.main(["--self-check"]), 0)
 
 
+class FinalVerificationManualTest(unittest.TestCase):
+    def test_final_verification_writes_the_manual_of_a_schema_7_run(self):
+        import contextlib
+        import io
+        import runpy
+
+        from workshop.wish.design_contract import parse_design_contract
+        from tests.make.test_kit_tree import sealed_block
+        from tests.wish.test_assembly_tree import _catalogues
+        from tests.wish.test_design_contract import _contract_text
+
+        verifier = runpy.run_path(str(product_run_domain_skill_roots()["cad"] / "scripts" / "verify_project"))
+        self.assertIn(TOOL, verifier["_sweep_tool_paths"](image_derived=False))
+        with tempfile.TemporaryDirectory() as temporary:
+            run_root = Path(temporary)
+            project = run_root / "cad"
+            project.mkdir()
+            parsed = parse_design_contract(_contract_text(sealed_block()), catalogues=_catalogues())
+            (run_root / "WISH.json").write_text(json.dumps({"references": [], "context": {
+                "design_contract": parsed.to_dict(), "kit_catalogue": parsed.kit_catalogue()}}))
+            runner = verifier["Runner"](cwd=project, dry_run=False, verbose=False)
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(verifier["_run_kit_manual"](runner, project), 1)
+            self.assertIn("kit manual  # FAILED", runner.records[-1]["command"])
+            kit_tree.install(project, run_root / "WISH.json")
+            runner = verifier["Runner"](cwd=project, dry_run=True, verbose=False)
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(verifier["_run_kit_manual"](runner, project), 0)
+            self.assertIn("kit_manual.py", runner.records[-1]["command"])
+            # An earlier contract writes no Manual.
+            (run_root / "WISH.json").write_text(json.dumps({"references": [], "context": {
+                "design_contract": dict(parsed.to_dict(), schema_version=6)}}))
+            runner = verifier["Runner"](cwd=project, dry_run=True, verbose=False)
+            self.assertEqual(verifier["_run_kit_manual"](runner, project), 0)
+            self.assertEqual(runner.records, [])
+
+
 def _build123d_imports() -> bool:
     try:
         import build123d  # noqa: F401
