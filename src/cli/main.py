@@ -525,6 +525,16 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                     % (sheet.get("sheet", "?"), sheet.get("stock", "?"),
                        sheet.get("pieces", "?"), sheet.get("pdf", "?"))
                 )
+    kit_tree = receipt.get("kit_tree")
+    if isinstance(kit_tree, Mapping):
+        # ADR 0092: the kit's Assembly Tree gates.
+        print(
+            "Kit tree: %s printed Part(s), %s Bought Part(s) and %s Print Piece(s) reconciled; "
+            "%s insertion(s) and %s lead route(s) across Components clear"
+            % (kit_tree.get("printed_parts", "?"), kit_tree.get("bought_parts", "?"),
+               kit_tree.get("print_pieces", "?"), kit_tree.get("insertions_across_components", "?"),
+               kit_tree.get("lead_routes_across_components", "?"))
+        )
     blocked = receipt.get("blocked_reports")
     if isinstance(blocked, (list, tuple)):
         # Issue #88: every Blocked Report, how it was cleared and how long it
