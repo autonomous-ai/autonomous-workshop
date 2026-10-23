@@ -1,6 +1,6 @@
 # ADR 0092: An Assembly Tree splits a toy into kit Parts and writes its Manual
 
-- Status: Proposed (brainstorm 2026-10-23); not implemented
+- Status: Accepted (owner, 2026-10-23); not implemented
 - Date: 2026-10-23
 - Amends: ADR 0091 (what a Print Piece lands on; its id form), ADR 0082
   (Components are subtrees of the Assembly Tree), ADR 0088 (insertion paths
