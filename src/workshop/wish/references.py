@@ -37,7 +37,7 @@ from workshop.wish.contracts import (
 _PILLOW_FORMATS = {"PNG": "image/png", "JPEG": "image/jpeg", "WEBP": "image/webp"}
 _MAX_SLUG_CHARS = 40
 _PLACE_NAME = re.compile(
-    r"^(?P<prefix>ref|guide)-(?P<index>0[1-9]|[1-9][0-9])-"
+    r"^(?P<prefix>ref|guide)-(?P<index>0[1-9]|[1-9][0-9]{1,2})-"
     r"(?P<slug>[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?)$"
 )
 _URL_SCHEMES = ("http", "https")

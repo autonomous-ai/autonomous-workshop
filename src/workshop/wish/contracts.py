@@ -19,12 +19,12 @@ MAX_OBJECTIVE_CHARS = 50_000
 
 # Reference images ride the Wish as immutable run inputs under this directory.
 WISH_REFERENCES_DIRECTORY = "wish-references"
-# The ref-NN- filename pattern below is the hard ceiling: two digits, 01-99.
-# Guide Images (ADR 0089) ride the same directory as guide-NN- files and
-# share this count and the byte budget.
-MAX_WISH_REFERENCES = 99
+# The ref-NN- filename pattern below is the hard ceiling: 01-99, then
+# 100-999 (ADR 0091). Guide Images (ADR 0089) ride the same directory as
+# guide-NN- files and share this count and the byte budget.
+MAX_WISH_REFERENCES = 999
 MAX_WISH_REFERENCE_BYTES = 12 * 1024 * 1024
-MAX_WISH_REFERENCE_TOTAL_BYTES = 48 * 1024 * 1024
+MAX_WISH_REFERENCE_TOTAL_BYTES = 480 * 1024 * 1024
 MIN_WISH_REFERENCE_SIDE_PX = 16
 MAX_WISH_REFERENCE_SIDE_PX = 16_384
 MAX_WISH_REFERENCE_PIXELS = 50_000_000
@@ -34,7 +34,7 @@ WISH_REFERENCE_MEDIA_TYPES: Mapping[str, str] = MappingProxyType(
 REFERENCE_PREFIX = "ref"
 GUIDE_PREFIX = "guide"
 _REFERENCE_NAME = re.compile(
-    r"^(?P<prefix>ref|guide)-(?P<index>0[1-9]|[1-9][0-9])-"
+    r"^(?P<prefix>ref|guide)-(?P<index>0[1-9]|[1-9][0-9]{1,2})-"
     r"(?P<slug>[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?)"
     r"\.(?P<extension>png|jpg|webp)$"
 )

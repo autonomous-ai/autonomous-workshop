@@ -567,6 +567,27 @@ class GuideImageTest(unittest.TestCase):
         block["guides"][0]["steps"] = ["Same.", "Same."]
         self.assertIn("guides[0].steps must be 1 to 24 distinct", self._refused(block))
 
+    def test_guides_number_past_99_with_three_digits(self):
+        """ADR 0091 decision 10: an image's number may run to three digits."""
+        block = _guide_block()
+        block["guides"] = [
+            {"file": "guide-%02d-view.png" % index, "shows": "View %d." % index}
+            for index in range(1, 102)
+        ]
+        contract = parse_design_contract(_contract_text(block))
+        self.assertEqual(contract.guides[99].file, "guide-100-view.png")
+        self.assertEqual(contract.guides[100].file, "guide-101-view.png")
+        block["guides"][0] = {"file": "guide-100-view.png", "shows": "x"}
+        self.assertIn("guides[0].file must be numbered guide-01", self._refused(block))
+        for name in ("guide-0101-view.png", "guide-1000-view.png"):
+            with self.subTest(name=name):
+                block = _guide_block()
+                block["guides"][1] = {"file": name, "shows": "x"}
+                self.assertIn("guides[1].file must look like guide-NN", self._refused(block))
+        block = _guide_block()
+        block["references"][0]["file"] = "ref-1000-side.png"
+        self.assertIn("references[0].file must look like ref-NN", self._refused(block))
+
     def test_a_guide_scoped_to_geometries_parses_and_round_trips(self):
         # Issue #125: a guide may name the Unique Geometries whose Component
         # Workers read it; without the field every worker reads it.

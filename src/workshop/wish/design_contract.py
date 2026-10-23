@@ -50,10 +50,10 @@ _GEOMETRY_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _INSTANCE_REFERENCE = re.compile(r"^([a-z0-9]+(?:-[a-z0-9]+)*)#([0-9]+)$")
 _REQUIREMENT_ID = re.compile(r"^R[0-9]{2}$")
 _REFERENCE_FILE = re.compile(
-    r"^ref-(?:0[1-9]|[1-9][0-9])-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$"
+    r"^ref-(?:0[1-9]|[1-9][0-9]{1,2})-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$"
 )
 _GUIDE_FILE = re.compile(
-    r"^guide-(?:0[1-9]|[1-9][0-9])-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$"
+    r"^guide-(?:0[1-9]|[1-9][0-9]{1,2})-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$"
 )
 
 
@@ -402,7 +402,7 @@ def _parse_guides(
         if not isinstance(file_name, str) or _GUIDE_FILE.fullmatch(file_name) is None:
             errors.append("%s.file must look like guide-NN-<slug>.png, .jpg, or .webp" % label)
             file_name = None
-        elif int(file_name[len("guide-"):len("guide-NN")]) != index + 1:
+        elif int(file_name.split("-")[1]) != index + 1:
             errors.append("%s.file must be numbered guide-%02d" % (label, index + 1))
             file_name = None
         shows = item.get("shows")

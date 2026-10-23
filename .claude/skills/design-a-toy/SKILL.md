@@ -262,13 +262,13 @@ Each image must be:
 
 - **800x800 or smaller.** The likeness gate extracts a silhouette, normalizes
   height, and does not read color. Resolution beyond this buys no accuracy and
-  spends the Wish's 48 MiB reference budget.
+  spends the Wish's 480 MiB image budget.
 - **One subject, fully inside the frame.** The gate rejects a reference whose
   subject touches the image boundary. The assembled toy counts as one subject; a
   scene, a diorama or a populated board position does not.
-- **Named `ref-NN-<slug>.png`**, numbered from `01` in order with no gaps.
-  Lowercase kebab slug. `png`, `jpg`, or `webp`. At most 99 images, at most
-  12 MiB each.
+- **Named `ref-NN-<slug>.png`**, numbered from `01` in order with no gaps
+  (`ref-100-<slug>` after `ref-99`). Lowercase kebab slug. `png`, `jpg`, or
+  `webp`. At most 999 images, at most 12 MiB each.
 
 Iterate each image against criteria stated up front — silhouette reads the
 component's role at thumbnail size, one focal point, contrast holds against
