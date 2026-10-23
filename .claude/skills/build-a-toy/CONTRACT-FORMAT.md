@@ -131,21 +131,61 @@ instances.)
   that explain the design, such as a colour-coded transformation step sheet
   or a part seen from more sides. Each is `{"file": "guide-NN-<slug>.png",
   "shows": "<what it explains, at most 500 characters>", "steps": ["<each
-  step it draws, in order>", ...]}`, numbered from `01` without gaps, at
+  step it draws, in order>", ...], "geometries": ["<geometry id>", ...]}`,
+  numbered from `01` without gaps, at
   most 2048 pixels a side and 12 MiB, any number of panels. `steps` is optional,
   1 to 24 distinct lines of at most 300 characters; for a transformation
   sheet, write the Transformation section's moves in the order the sheet
-  draws them. Pass every file to `--guide` under these names and in this
-  order, after the `--ref` images. A Guide Image is never compared with the
-  model: the Workshop Manager and every Component Worker read it, the
-  Component Reviewer never sees it, and the contract wins wherever it
-  disagrees. With `--check-motion true` the run must account for every step.
+  draws them. `geometries` is optional: a non-empty list of distinct
+  `geometries[]` ids whose Component Workers read the guide (issue #125).
+  Without it every Component Worker reads it; give a sheet that shows one
+  part `geometries: ["<that id>"]`. Pass every file to `--guide` under these
+  names and in this order, after the `--ref` images. A Guide Image is never
+  compared with the model: the Workshop Manager reads every one, each
+  Component Worker reads those for its Component, the Component Reviewer
+  never sees one, and the contract wins wherever it disagrees. With
+  `--check-motion true` the run must account for every step of every guide.
+- `print` (schema 6, ADR 0091): the toy's **Print Sheets**, everything the
+  maker prints on A4 and ships for the buyer to cut out with scissors, fold
+  and apply. It is `{"stocks": {...}, "art": [...], "pieces": [...]}`:
+  - `stocks`: each stock the pieces are cut from, `paper`, `sticker`, `card`
+    or `film`, as `{"name": "<what the print shop sells>", "caliper_mm":
+    <thickness>}`, 0.03 to 1.0 mm. Defaults: `paper` matte couche 120 gsm
+    0.10, `sticker` paper decal 0.15, `card` Ivory 300 gsm 0.45, `film` laser
+    OHP film 100 µm 0.10. Declare only stocks some piece uses.
+  - `art[]`: `{"file": "print-NN-<slug>.png", "shows": "<at most 500
+    characters>"}`, numbered from `01` without gaps; stock art adds `"source":
+    "<http(s) link>", "licence": "CC0-1.0"` (CC0 only). Every art file is
+    used by at least one piece; one file may serve several. Pass every file
+    to `--print-art` under these names and in this order, after the `--guide`
+    images. Print art is never compared with the model as a likeness target.
+  - `pieces[]`: `{"id", "art", "stock", "way", "on", "where", ...}`. `id` is
+    lowercase kebab case and unique; `on` is the Unique Geometry it lands on,
+    or one instance `<id>#<n>`; `where` says which face, block, sphere or
+    slot (at most 300 characters); optional `count` (1 to 99) is how many
+    copies are printed. `way` and its sizes, all in mm, the contract's
+    sizes being the truth the model must match within ±0.5 mm:
+
+    | `way` | Stock | Sizes |
+    |---|---|---|
+    | `flat` (into a recess about 0.4 mm deep) | `paper` or `film` | `size_mm: [w, h]`, optional `outline` `rect`/`oval` |
+    | `sticker` (into a recess) | `sticker` | `size_mm`, optional `outline` |
+    | `wrap` round a block | `paper` | `block_mm: [height, width, depth]`, `around`: `cover` (front, spine, back) or `band` (all four sides) |
+    | `sphere`, one strip of joined gores | `paper` | `diameter_mm` ≥ 25, `gores` 8 to 24 |
+    | `fold`, accordion pages | `paper` | `page_mm: [w, h]`, `pages` 2 to 32 |
+    | `stand`, a card in a slot | `card` | `size_mm`, optional `outline`, `slot_mm` (≤ the card's width) |
+
+    Scissors rules: every cut edge is at least 5 mm (a `wrap`'s height, a
+    `fold`'s page, a flat or standing piece's sides); small shelf books are
+    one spine strip, never one piece each.
 - `geometries[]`: one entry per **Unique Geometry**. `id` is lowercase kebab
   case. `count` is how many Components the toy has with this shape.
   `wall_min_mm` is the minimum wall.
 - `schema_version`: `4` for every new contract without a Guide Image: schema
   3 plus a `text` on every Interface (ADR 0084). `5` is schema 4 plus a
-  non-empty `guides[]` (ADR 0089); a contract with no Guide Image stays 4. Schema 3 is schema 2 plus a `camera` on every
+  non-empty `guides[]` (ADR 0089); a contract with no Guide Image stays 4.
+  `6` is schema 5 plus the `print` section (ADR 0091), with `guides[]`
+  optional; a contract with no Print Sheet stays 4 or 5. Schema 3 is schema 2 plus a `camera` on every
   reference; from schema 3 every Component file defines
   `assembly_pose(shape, pose)`, even one in no Interface. A schema 3
   contract has no Interface text, a schema 2 contract no cameras and a

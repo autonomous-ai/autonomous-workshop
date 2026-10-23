@@ -104,6 +104,14 @@ each packet you judge.
   with. Name a detail as one of its features (rivet, boss, low dome, band,
   rim, pipe rib, inset panel, lancet window, grille slit, teardrop bore,
   blunt tip, rib end) with its size.
+- A Print Piece (ADR 0091) is printed paper the buyer lays in a shallow
+  recess, stands in a slot, or wraps round a block or ball. Where a
+  reference shows a picture, text, texture or colour on such a place, judge
+  the place: its position, size and outline. The renders draw the sealed
+  print art there, as the buyer will see it. The art's content is the
+  contract's, not the plastic's, so a drawing that differs from the
+  reference inside a printed area is not a difference; a printed area in
+  the wrong place, of the wrong size or outline, or missing, is one.
 - Give two separate judgements beside `agrees` (ADR 0087).
   `matches_plan`: does the model build what this Component's contract rows,
   or the plan lines you are given, describe? `matches_reference`: does its

@@ -470,6 +470,13 @@ def _copy_made_tree(
                 destination_root,
                 PurePosixPath(*cad_relative.parts[1:]).as_posix(),
             )
+        elif cad_relative.parts[0] == "print":
+            # ADR 0091: the Print Sheets ship beside the models: the
+            # installed print section, its art and the laid-out sheets.
+            destination = "%s/print/%s" % (
+                destination_root,
+                PurePosixPath(*cad_relative.parts[1:]).as_posix(),
+            )
         elif cad_relative.parts[0] == "snap":
             destination = "%s/verification/renders/%s" % (
                 destination_root,

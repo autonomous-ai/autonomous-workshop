@@ -3,7 +3,8 @@
 - Status: Accepted; implemented and deterministically tested; not yet
   validated by a live run
 - Date: 2026-10-14
-- Issue: #122
+- Issue: #122; amended by #125 (Guide Images scoped to Components,
+  2026-10-16)
 - Amends: ADR 0072 (what a Design Contract seals), ADR 0085 (the Contract
   Reviewer's answer), ADR 0083/0084 (schema 5 keeps cameras and Interface text)
 - Relates to: ADR 0076 and ADR 0077 (who views which image), ADR 0084
@@ -72,3 +73,39 @@ every Contract Reviewer as a likeness target.
   the host, so a run with motion checks cannot quietly ignore a Guide Image.
 - A Guide Image can go stale after an in-run amendment; the receipt names
   the panels, and the owner's redraw closes it before the next attempt.
+
+## Amendment: a Guide Image can be scoped to the Components that read it (2026-10-16, issue #125)
+
+Status: Accepted; implemented and deterministically tested; not yet
+validated by a live run.
+
+**Context.** Decision 4 gives every Component Worker every Guide Image. A
+sheet that shows one part, its reference beside more views of it, then
+reaches every worker: another worker can read that part as its own, and the
+sheet has to stay small enough to share with the whole toy.
+
+**Decision.** Decision 4 changes for new contracts:
+
+1. **An optional `geometries`.** A `guides[]` entry may add
+   `"geometries": ["<geometry id>", ...]`: a non-empty list of distinct
+   strings, each the `id` of an entry of the contract's `geometries[]`.
+   The Design Contract parser refuses an unknown id, a repeated id, an
+   empty list and anything but a list of strings, and only schema 5 has
+   guides at all. The field seals with the contract and parses back.
+2. **Who reads a scoped guide.** Without `geometries`, every Component
+   Worker reads the guide, as before. With it, only the Component Workers
+   of the named Unique Geometries do: a Component Worker's Component is
+   `part_<id>.step.py`, so its id is the geometry id. The Workshop Manager
+   still opens every Guide Image, and gives each worker only the guides for
+   its Component. A component round's `summary.json` lists under `guides`
+   only those guides (`component_guides` in `make_round`).
+3. **Unchanged.** The Component Reviewer never sees a Guide Image. A
+   Contract Amendment packet still lists every sealed Guide Image, and the
+   host's replay still refuses a packet that hides one (decision 6).
+   `guide-steps.json`, the final verifier, the finalizer and the host's
+   Make receipt still account for every guide, scoped or not (decision 5).
+
+**Compatibility.** A contract without the field, every schema 1 to 4
+contract and every frozen run behave exactly as before: every worker reads
+every guide. A frozen run keeps its materialized `make_round`, guidance and
+role agent text.

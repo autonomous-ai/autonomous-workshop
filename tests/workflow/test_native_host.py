@@ -3588,6 +3588,17 @@ class NativeHostTest(unittest.TestCase):
             {"file": "guide-02-side.png", "check_motion": check_motion, "steps": [], "conflicts": []},
         ]
 
+    def test_made_guides_accept_the_frozen_product_the_host_reads(self):
+        # NativeMade freezes product: the guides must come back as plain JSON
+        # the Make gate's receipt can serialize.
+        account = self.guide_account()
+        guides = _made_guides(_freeze({"title": "t", "guides": account}), self.GUIDE_CONTRACT, True)
+        self.assertEqual(guides, account)
+        self.assertIs(type(guides[0]["steps"]), list)
+        self.assertIs(type(guides[0]["steps"][0]), dict)
+        self.assertIs(type(guides[0]["conflicts"][0]), dict)
+        json.dumps(guides, allow_nan=False)
+
     def test_made_guides_account_for_every_sealed_guide(self):
         # ADR 0089: the host counts the Manager's account; it never judges it.
         account = self.guide_account()
@@ -3633,7 +3644,9 @@ class NativeHostTest(unittest.TestCase):
             (root / "MAKE-OPTIONS.json").write_text(json.dumps({"schema_version": 1, "check_motion": True}))
             self.assertTrue(_frozen_check_motion(root))
             sealed = [{"name": "ref-01-whole.png", "sha256": "1" * 64},
-                      {"name": "guide-01-steps.png", "sha256": "2" * 64}]
+                      {"name": "guide-01-steps.png", "sha256": "2" * 64},
+                      # ADR 0091: print art is neither a reference nor a guide.
+                      {"name": "print-01-sky.png", "sha256": "3" * 64}]
             wish = json.dumps({"references": sealed, "context": {"design_contract": self.GUIDE_CONTRACT}})
             (root / "WISH.json").write_text(wish)
             digest = hashlib.sha256(wish.encode()).hexdigest()

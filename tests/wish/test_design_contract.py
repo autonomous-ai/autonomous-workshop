@@ -492,7 +492,7 @@ class InterfaceTextTest(unittest.TestCase):
         self.assertIn("text needs schema_version 4", self._refused(camera))
 
     def test_an_unknown_schema_is_refused(self):
-        self.assertIn("schema_version must be 1, 2, 3, 4 or 5", self._refused(_block(schema_version=6)))
+        self.assertIn("schema_version must be 1, 2, 3, 4, 5 or 6", self._refused(_block(schema_version=7)))
 
 
 def _guide_block(**overrides):
@@ -566,6 +566,65 @@ class GuideImageTest(unittest.TestCase):
         block = _guide_block()
         block["guides"][0]["steps"] = ["Same.", "Same."]
         self.assertIn("guides[0].steps must be 1 to 24 distinct", self._refused(block))
+
+    def test_guides_number_past_99_with_three_digits(self):
+        """ADR 0091 decision 10: an image's number may run to three digits."""
+        block = _guide_block()
+        block["guides"] = [
+            {"file": "guide-%02d-view.png" % index, "shows": "View %d." % index}
+            for index in range(1, 102)
+        ]
+        contract = parse_design_contract(_contract_text(block))
+        self.assertEqual(contract.guides[99].file, "guide-100-view.png")
+        self.assertEqual(contract.guides[100].file, "guide-101-view.png")
+        block["guides"][0] = {"file": "guide-100-view.png", "shows": "x"}
+        self.assertIn("guides[0].file must be numbered guide-01", self._refused(block))
+        for name in ("guide-0101-view.png", "guide-1000-view.png"):
+            with self.subTest(name=name):
+                block = _guide_block()
+                block["guides"][1] = {"file": name, "shows": "x"}
+                self.assertIn("guides[1].file must look like guide-NN", self._refused(block))
+        block = _guide_block()
+        block["references"][0]["file"] = "ref-1000-side.png"
+        self.assertIn("references[0].file must look like ref-NN", self._refused(block))
+
+    def test_a_guide_scoped_to_geometries_parses_and_round_trips(self):
+        # Issue #125: a guide may name the Unique Geometries whose Component
+        # Workers read it; without the field every worker reads it.
+        block = _guide_block()
+        block["guides"][1]["geometries"] = ["wing", "heart-core"]
+        contract = parse_design_contract(_contract_text(block))
+        self.assertIsNone(contract.guides[0].geometries)
+        self.assertEqual(contract.guides[1].geometries, ("wing", "heart-core"))
+        sealed = contract.to_dict()
+        self.assertNotIn("geometries", sealed["guides"][0])
+        self.assertEqual(sealed["guides"], block["guides"])
+        again = parse_design_contract(_contract_text(sealed))
+        self.assertEqual(again.guides, contract.guides)
+
+    def test_a_bad_guide_geometries_list_is_refused_naming_it(self):
+        cases = {
+            "names a Unique Geometry that does not exist: 'tail'": ["wing", "tail"],
+            "names a Unique Geometry twice": ["wing", "wing"],
+            "geometries must be a non-empty list of Unique Geometry ids": [],
+        }
+        for expected, value in cases.items():
+            with self.subTest(value=value):
+                block = _guide_block()
+                block["guides"][1]["geometries"] = value
+                message = self._refused(block)
+                self.assertIn("guides[1].geometries", message)
+                self.assertIn(expected, message)
+        for value in ("wing", ["wing", 3], None, {"wing": True}):
+            with self.subTest(value=value):
+                block = _guide_block()
+                block["guides"][1]["geometries"] = value
+                self.assertIn("guides[1].geometries must be a non-empty list", self._refused(block))
+
+    def test_guide_geometries_need_schema_5(self):
+        block = _text_block()
+        block["guides"] = [{"file": "guide-01-side.png", "shows": "x", "geometries": ["wing"]}]
+        self.assertIn("guides need schema_version 5", self._refused(block))
 
     def test_check_guide_names_wants_the_contracts_files_in_order(self):
         contract = parse_design_contract(_contract_text(_guide_block()))

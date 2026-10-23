@@ -206,6 +206,21 @@ are separate. Frozen older runs retain their materialized rules and tools.
    project builds on its own. It is a standard element, like a `stdpart`
    gear, not a design value: never edit it.
 
+   When the sealed Design Contract has a `print` section (schema 6, ADR
+   0091), install its Print Sheets the same way, before any worker starts:
+
+   ```bash
+   "$WORKSHOP_PYTHON" .agents/skills/print-details/scripts/print_details.py --install-print <cad-project> --wish WISH.json
+   ```
+
+   It writes `print/pieces.json` (the contract's print section) and copies
+   the sealed print art to `print/art/`; never edit either. Tell each
+   Component Worker which Print Pieces land on its geometry (`on`). Its
+   round's `paper` line fails until the part carries each one's recess,
+   slot, block, ball or fold face, and final verification fails until every
+   hosting part does and the sheets lay out (`print/sheets/`, ADR 0091). The
+   printed paper carries the art: no part models, embosses or paints it.
+
    When the sealed Design Contract has an `interfaces` section (ADR 0082),
    implement its Interfaces; do not invent others. A shared file is then a
    Shared Helper and holds only what two or more Components must agree on:
@@ -260,7 +275,8 @@ are separate. Frozen older runs retain their materialized rules and tools.
    including `features/print_details.py`; its
    sealed `geometry:<id>` reference and declared camera; only that
    Component's Design Contract rows; every Guide Image the contract seals
-   (ADR 0089), by path with what it `shows`; the nozzle; and the shape-repair
+   (ADR 0089) that names no `geometries` or whose `geometries` names this
+   Component, by path with what it `shows`; the nozzle; and the shape-repair
    limit (5). The worker writes the first draft, runs the round above until build
    and print pass, then reports in 10 lines or fewer and waits:
    `make_round` refuses to change a passing round's geometry before its
@@ -699,7 +715,10 @@ are separate. Frozen older runs retain their materialized rules and tools.
    Images (`wish-references/guide-NN-<slug>`, its `guides[]`): a
    transformation step sheet, extra views. Open each before you write the
    shared files and the joints, and use it to plan how the Components meet
-   and move. Nothing compares a Guide Image with the model, and where it
+   and move. A guide whose `geometries` lists Unique Geometry ids goes only
+   to those Components' workers, and a component round's `summary.json`
+   lists only the guides for its Component; a guide without `geometries`
+   goes to every worker. Nothing compares a Guide Image with the model, and where it
    disagrees with the contract, the contract wins. Before the final
    verifier, write `<cad-project>/guide-steps.json`:
    `{"guides": [{"file": "guide-01-x.png", "steps": [{"step": "<a step
