@@ -24,8 +24,14 @@ The shape, in brief::
                             {"id": "C01-hat", "direction": [0, 0, -1]}],
                  "text": "Press the hat into the desk's socket."}],
       "components": [{"geometry": "teacher-desk", "parts": ["A01-desk", "C01-hat"]}],
+      "checks": [{"id": "light-test", "parts": ["P02-led", "P03-battery-box"],
+                  "text": "Join the LED to the battery box, switch on, then take it apart."}],
       "materials": ["tweezers"]
     }
+
+``checks`` holds the Check Steps (ADR 0092 decision 1): light tests the
+Manual shows first, outside the tree. A tree with a lamp has one, and every
+lamp is in a Check Step with a power Bought Part.
 """
 
 from __future__ import annotations
@@ -47,8 +53,10 @@ SHAPINGS = ("fold", "cut", "bend", "roll")
 # A step that joins LED leads (ADR 0092 decision 2).
 LEADS = "leads"
 JOINTS = JOINS + (PAPER,) + SHAPINGS + (LEADS,)
-# Printed Part letters, grouped by filament colour (ADR 0092 decision 6).
-PRINTED_LETTERS = "ABCDEFGHIJK"
+# Printed Part letters: every letter except M and N (Print Pieces), P (Bought
+# Parts) and S (steps), one letter per filament colour (ADR 0092 decision 6,
+# as the owner amended it on 2026-10-23).
+PRINTED_LETTERS = "ABCDEFGHIJKLOQRTUVWXYZ"
 MAX_COUNT = 99
 MAX_TEXT_CHARS = 200
 MAX_OUTPUT_CHARS = 80
@@ -58,7 +66,10 @@ MAX_EXIT_CHARS = 200
 MAX_STEPS = 999
 
 _SLUG = r"[a-z0-9]+(?:-[a-z0-9]+)*"
-PART_ID = re.compile(r"^([A-KP])([0-9]{2})-(%s)$" % _SLUG)
+PART_ID = re.compile(r"^([A-LO-RT-Z])([0-9]{2})-(%s)$" % _SLUG)
+CHECK_ID = re.compile(r"^%s$" % _SLUG)
+# Bought Part categories a Check Step may connect: lamps and their power.
+CHECK_CATEGORIES = ("lamp", "power")
 STEP_ID = re.compile(r"^S([0-9]{2})-(%s)$" % _SLUG)
 PIECE_ID = re.compile(r"^([MN])([0-9]{2})-(%s)$" % _SLUG)
 
@@ -171,6 +182,7 @@ def _parse_parts(
         errors.append("assembly_tree.parts must be a non-empty list")
         return printed, bought
     letters: Dict[str, Tuple[str, str]] = {}
+    colours: Dict[str, Tuple[str, str]] = {}
     for index, item in enumerate(value):
         label = "assembly_tree.parts[%d]" % index
         if not isinstance(item, dict):
@@ -180,8 +192,9 @@ def _parse_parts(
         match = PART_ID.fullmatch(identifier) if isinstance(identifier, str) else None
         if match is None:
             errors.append(
-                "%s.id must be a code and a kebab-case mnemonic: A01-<name> to K99-<name> for a "
-                "printed Part, P01-<name> for a Bought Part" % label
+                "%s.id must be a code and a kebab-case mnemonic: <letter>01-<name> for a printed "
+                "Part, any letter but M, N, P and S, one letter per filament; P01-<name> for a "
+                "Bought Part" % label
             )
             continue
         if not ids.add(identifier, label):
@@ -229,7 +242,14 @@ def _parse_parts(
                 % (label, letter, letters[letter][0], letters[letter][1], identifier, filament.id)
             )
             continue
+        if filament.id in colours and colours[filament.id][0] != letter:
+            errors.append(
+                "%s: %s already has letter %s (%s), so %s cannot use %s: one filament is one letter"
+                % (label, filament.id, colours[filament.id][0], colours[filament.id][1], identifier, letter)
+            )
+            continue
         letters.setdefault(letter, (filament.id, identifier))
+        colours.setdefault(filament.id, (letter, identifier))
         printed[identifier] = item
     return printed, bought
 
@@ -410,7 +430,7 @@ def parse_assembly_tree(
         errors.append("assembly_tree must be an object with parts, steps and components (schema_version 7)")
         return None
     before = len(errors)
-    unknown = sorted(set(value) - {"parts", "steps", "components", "materials"})
+    unknown = sorted(set(value) - {"parts", "steps", "components", "materials", "checks"})
     if unknown:
         errors.append("assembly_tree has unknown field(s): %s" % ", ".join(unknown))
     ids = _Ids(errors)
@@ -473,6 +493,7 @@ def parse_assembly_tree(
         value.get("components"), geometries, printed, bought, parent, children, totals, errors
     )
     _check_materials(value.get("materials"), catalogues, unconfirmed, errors)
+    _check_checks(value, bought, catalogues, ids, errors)
     if len(errors) != before:
         return None
     return ContractAssemblyTree(
@@ -653,6 +674,65 @@ def _check_components(
     return owner
 
 
+def _check_checks(
+    value: Mapping[str, Any], bought: Mapping[str, Mapping[str, Any]], catalogues: Catalogues,
+    ids: _Ids, errors: List[str],
+) -> None:
+    """The Check Steps (ADR 0092 decision 1): each connects lamps to their
+    power and is taken apart again; it is no node of the tree. A tree with a
+    lamp tests every lamp in one."""
+
+    def category(identifier: Any) -> Optional[str]:
+        entry = bought.get(identifier) if isinstance(identifier, str) else None
+        return None if entry is None else catalogues.parts[entry["bought"]].category
+
+    lamps = sorted(key for key in bought if category(key) == "lamp")
+    checks = value.get("checks")
+    tested: Set[str] = set()
+    if checks is not None:
+        if not isinstance(checks, list) or not checks:
+            errors.append("assembly_tree.checks must list its Check Steps, or be left out")
+            checks = []
+        for index, item in enumerate(checks):
+            label = "assembly_tree.checks[%d]" % index
+            if not isinstance(item, dict) or set(item) != {"id", "text", "parts"}:
+                errors.append("%s must be exactly {id, text, parts}" % label)
+                continue
+            identifier = item["id"]
+            if not isinstance(identifier, str) or not CHECK_ID.fullmatch(identifier):
+                errors.append("%s.id must be a kebab-case mnemonic, such as light-test" % label)
+                continue
+            if identifier in ids.mnemonics or identifier in ids.codes:
+                errors.append("%s repeats the mnemonic %r (%s)"
+                              % (label, identifier, ids.mnemonics.get(identifier, ids.codes.get(identifier))))
+                continue
+            ids.mnemonics[identifier] = label
+            if not _text(item["text"], MAX_TEXT_CHARS):
+                errors.append("%s.text must be one short English instruction of at most %d characters"
+                              % (label, MAX_TEXT_CHARS))
+            parts = item["parts"]
+            if not isinstance(parts, list) or not parts or len(set(map(str, parts))) != len(parts):
+                errors.append("%s.parts must list its lamps and their power, each once" % label)
+                continue
+            kinds = set()
+            for part in parts:
+                kind = category(part)
+                if kind not in CHECK_CATEGORIES:
+                    errors.append("%s.parts names %r, which is no lamp or power Bought Part" % (label, part))
+                    continue
+                kinds.add(kind)
+                if kind == "lamp":
+                    tested.add(part)
+            if kinds and kinds != set(CHECK_CATEGORIES):
+                errors.append("%s connects lamps to their power: it names at least one of each" % label)
+    for lamp in lamps:
+        if lamp not in tested:
+            errors.append(
+                "%s is a lamp in no Check Step: the Manual tests every lamp first, in "
+                "assembly_tree.checks" % lamp
+            )
+
+
 def _check_materials(value: Any, catalogues: Catalogues, unconfirmed: Set[str], errors: List[str]) -> None:
     if value is None:
         return
@@ -676,6 +756,7 @@ def _check_materials(value: Any, catalogues: Catalogues, unconfirmed: Set[str], 
 
 
 __all__ = [
+    "CHECK_ID",
     "ContractAssemblyTree",
     "JOINS",
     "JOINTS",
