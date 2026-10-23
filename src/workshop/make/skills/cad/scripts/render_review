@@ -142,8 +142,10 @@ def build_shape(source: Path):
         import brepbundle
 
         bundle = brepbundle.for_entry(source, purpose="render_review")
+    tags = None
     if bundle is not None:
         shape = bundle.shape
+        tags = bundle.tags
     elif source.name.endswith(ENTRY_SUFFIX):
         with contextlib.redirect_stdout(io.StringIO()):
             module = _load_entry(source)
@@ -160,7 +162,212 @@ def build_shape(source: Path):
     else:
         raise ValueError(f"{source} is neither a {ENTRY_SUFFIX} entry nor STEP")
     setattr(shape, _RESOLVED_SOURCE_ATTR, source)
+    # Decals are in their part's own frame: only a part entry draws its own.
+    # An assembly would place them wrongly, so it shows none (ADR 0091).
+    if getattr(shape, PRINT_DECALS_ATTR, None) is None and source.name.startswith("part_"):
+        try:
+            setattr(shape, PRINT_DECALS_ATTR, _decals_from_tags(tags))
+        except (AttributeError, TypeError):  # a shape that takes no attribute shows no decal
+            pass
     return source, shape
+
+
+# ADR 0091 decision 8: a Component's Print Pieces are drawn on it with their
+# art, where print-details tagged each one's decal. A generated Display Pose
+# entry sets the attribute itself, with the decals moved into the pose.
+PRINT_DECALS_ATTR = "_print_decals"
+DECAL_DEPTH_TOLERANCE = 0.05   # mm a decal may sit behind the surface it is on
+
+
+def _print_details():
+    """print-details' own module (its decal reader), or None outside a skill tree."""
+    scripts = Path(__file__).resolve().parents[2] / "print-details" / "scripts"
+    path = scripts / "print_details.py"
+    if not path.is_file():
+        return None
+    name = "_render_review_print_details"
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module   # its dataclasses look their module up
+    try:
+        spec.loader.exec_module(module)
+    except BaseException:
+        sys.modules.pop(name, None)
+        raise
+    return module
+
+
+def _live_tags() -> list:
+    tags, seen = [], set()
+    for module in list(sys.modules.values()):
+        registry = getattr(module, "PRINT_DETAIL_TAGS", None)
+        if isinstance(registry, list) and id(registry) not in seen:
+            seen.add(id(registry))
+            tags.extend(tag for tag in registry if isinstance(tag, dict))
+    return tags
+
+
+def _decals_from_tags(tags) -> list:
+    """Every decal print-details tagged in this build (``tags``: a kept
+    B-rep's, else the live registries'), as plain numbers."""
+    tags = _live_tags() if tags is None else tags
+    names = [tag.get("name") for tag in tags if tag.get("kind") == "print-decal"]
+    if not names:
+        return []
+    library = _print_details()
+    if library is None:
+        return []
+    return [decal for decal in (library.read_decal(name) for name in names) if decal is not None]
+
+
+def load_decal_art(source: Path, decals: list) -> list:
+    """``decals`` with each one's art loaded, from the CAD project's installed
+    Print Sheets (``print/pieces.json``, ``print/art/``) above ``source``. A
+    decal whose piece or art cannot be read is left out."""
+    if not decals:
+        return []
+    directory = source.parent if source.is_file() or not source.exists() else source
+    for candidate in (directory, *directory.parents):
+        pieces = candidate / "print" / "pieces.json"
+        if pieces.is_file():
+            break
+    else:
+        return []
+    import json
+
+    try:
+        section = json.loads(pieces.read_text(encoding="utf-8"))["print"]
+        art = {piece["id"]: piece["art"] for piece in section["pieces"]}
+    except (OSError, ValueError, KeyError, TypeError):
+        return []
+    loaded, images = [], {}
+    for decal in decals:
+        name = art.get(decal["piece"])
+        if name is None:
+            continue
+        if name not in images:
+            try:
+                with Image.open(pieces.parent / "art" / name) as image:
+                    images[name] = np.asarray(image.convert("RGB"))
+            except OSError:
+                images[name] = None
+        if images[name] is not None:
+            loaded.append({**decal, "image": images[name]})
+    return loaded
+
+
+def _sample(image, s, t):
+    """Nearest texel of ``image`` at (s, t) in [0, 1], t up."""
+    height, width = image.shape[:2]
+    column = np.clip((s * width).astype(np.int64), 0, width - 1)
+    row = np.clip(((1.0 - t) * height).astype(np.int64), 0, height - 1)
+    return image[row, column].astype(float)
+
+
+def _brightness(normals, light, toward_viewer):
+    """``shade_faces``' brightness for each unit normal."""
+    diffuse = np.maximum(0.0, normals @ light)
+    rim = np.maximum(0.0, normals @ toward_viewer)
+    return np.minimum(1.18, 0.34 + 0.66 * diffuse + 0.12 * rim)
+
+
+def _paint_decals(decals, pixels, depths, toward_viewer, right, up, scale, x_offset, y_offset, light):
+    size = pixels.shape[0]
+    for decal in decals:
+        if decal["mode"] == "sphere":
+            _paint_sphere(decal, pixels, depths, toward_viewer, right, up, scale, x_offset, y_offset,
+                          light, size)
+            continue
+        origin, u, v = (np.asarray(decal[key], dtype=float) for key in ("origin", "u", "v"))
+        normal = np.cross(u, v)
+        length = float(np.linalg.norm(normal))
+        if length < 1e-12:
+            continue
+        normal /= length
+        facing = float(normal @ toward_viewer)
+        if decal["mode"] != "card" and facing <= 1e-9:
+            continue
+        flip = facing < 0
+        corners = np.array([origin, origin + u, origin + u + v, origin + v])
+        xs = corners @ right * scale + x_offset
+        ys = y_offset - corners @ up * scale
+        left, rightmost = max(0, int(np.floor(xs.min()))), min(size - 1, int(np.ceil(xs.max())))
+        top, bottom = max(0, int(np.floor(ys.min()))), min(size - 1, int(np.ceil(ys.max())))
+        if rightmost < left or bottom < top:
+            continue
+        su = np.array([u @ right * scale, -(u @ up) * scale])
+        sv = np.array([v @ right * scale, -(v @ up) * scale])
+        determinant = su[0] * sv[1] - su[1] * sv[0]
+        if abs(determinant) < 1e-9:
+            continue
+        x = np.arange(left, rightmost + 1)[None, :] + 0.5 - xs[0]
+        y = np.arange(top, bottom + 1)[:, None] + 0.5 - ys[0]
+        a = (x * sv[1] - y * sv[0]) / determinant
+        b = (su[0] * y - su[1] * x) / determinant
+        inside = (a >= 0) & (a <= 1) & (b >= 0) & (b <= 1)
+        if decal["mode"] == "oval":
+            inside &= (a - 0.5) ** 2 + (b - 0.5) ** 2 <= 0.25
+        depth = origin @ toward_viewer + a * (u @ toward_viewer) + b * (v @ toward_viewer)
+        window = depths[top:bottom + 1, left:rightmost + 1]
+        visible = inside & (depth >= window - DECAL_DEPTH_TOLERANCE)
+        if not visible.any():
+            continue
+        s0, s1, t0, t1 = decal["crop"]
+        across = 1.0 - a[visible] if flip else a[visible]
+        colour = _sample(decal["image"], s0 + across * (s1 - s0), t0 + b[visible] * (t1 - t0))
+        shade = _brightness((normal if not flip else -normal)[None, :], light, toward_viewer)[0]
+        target = pixels[top:bottom + 1, left:rightmost + 1]
+        target[visible] = np.clip(np.rint(colour * shade), 0, 255).astype(np.uint8)
+        window[visible] = np.maximum(window[visible], depth[visible])
+
+
+def _paint_sphere(decal, pixels, depths, toward_viewer, right, up, scale, x_offset, y_offset, light, size):
+    centre = np.asarray(decal["centre"], dtype=float)
+    pole = np.asarray(decal["pole"], dtype=float)
+    radius = float(np.linalg.norm(pole))
+    if radius < 1e-9:
+        return
+    axis = pole / radius
+    west = np.asarray(decal["x"], dtype=float)
+    west = west - axis * (west @ axis)
+    if np.linalg.norm(west) < 1e-9:
+        return
+    west /= np.linalg.norm(west)
+    north = np.cross(axis, west)
+    cx = centre @ right * scale + x_offset
+    cy = y_offset - centre @ up * scale
+    reach = radius * scale
+    left, rightmost = max(0, int(np.floor(cx - reach))), min(size - 1, int(np.ceil(cx + reach)))
+    top, bottom = max(0, int(np.floor(cy - reach))), min(size - 1, int(np.ceil(cy + reach)))
+    if rightmost < left or bottom < top:
+        return
+    dx = (np.arange(left, rightmost + 1)[None, :] + 0.5 - cx) / scale
+    dy = -(np.arange(top, bottom + 1)[:, None] + 0.5 - cy) / scale
+    reach2 = dx ** 2 + dy ** 2
+    inside = reach2 <= radius ** 2
+    h = np.sqrt(np.maximum(0.0, radius ** 2 - reach2))
+    relative = (dx[..., None] * right + dy[..., None] * up + h[..., None] * toward_viewer)
+    depth = centre @ toward_viewer + h
+    window = depths[top:bottom + 1, left:rightmost + 1]
+    visible = inside & (depth >= window - DECAL_DEPTH_TOLERANCE)
+    if not visible.any():
+        return
+    points = relative[visible]
+    latitude = np.arcsin(np.clip(points @ axis / radius, -1.0, 1.0))
+    longitude = np.mod(np.arctan2(points @ north, points @ west), 2 * math.pi)
+    gores = int(decal["gores"])
+    gore = np.minimum(gores - 1, np.floor(longitude / (2 * math.pi / gores)))
+    middle = (gore + 0.5) * 2 * math.pi / gores
+    width, height = 2 * math.pi * radius, math.pi * radius
+    x = width * (gore + 0.5) / gores + (longitude - middle) * radius * np.cos(latitude)
+    y = height / 2 + latitude * radius
+    colour = _sample(decal["image"], x / width, y / height)
+    shade = _brightness(points / radius, light, toward_viewer)
+    target = pixels[top:bottom + 1, left:rightmost + 1]
+    target[visible] = np.clip(np.rint(colour * shade[:, None]), 0, 255).astype(np.uint8)
+    window[visible] = np.maximum(window[visible], depth[visible])
 
 
 def _linear_to_srgb(value: float) -> int:
@@ -456,7 +663,8 @@ def _raster_batch(faces, xs, ys, zs, denominator, left, rightmost, top, bottom,
         pixels_flat[pixel] = fills[face_at]
 
 
-def render(occurrences, azimuth: float, elevation: float, size: int, pad: float, *, framing=None):
+def render(occurrences, azimuth: float, elevation: float, size: int, pad: float, *, framing=None,
+           decals=None):
     toward_viewer, right, up = camera_basis(azimuth, elevation)
     light = np.array([0.35, -0.45, 0.82], dtype=float)
     light /= np.linalg.norm(light)
@@ -542,6 +750,8 @@ def render(occurrences, azimuth: float, elevation: float, size: int, pad: float,
                                   left[batch], rightmost[batch], top[batch] + first, bottom[batch],
                                   width_class, rows, fills[batch],
                                   pixels_flat, depths_flat, size)
+    if decals:
+        _paint_decals(decals, pixels, depths, toward_viewer, right, up, scale, x_offset, y_offset, light)
     return Image.fromarray(pixels)
 
 
@@ -679,6 +889,7 @@ def main(argv=None) -> int:
 
     source, shape = build_shape(args.source)
     occurrences = tessellate_occurrences(shape, args.tolerance, args.angular_tolerance, cache_entry=source)
+    decals = load_decal_art(source, getattr(shape, PRINT_DECALS_ATTR, None) or [])
     views = [parse_view(value) for value in (args.view or ["iso"])]
     out = args.out or source.parent / "snap" / "review"
     out.mkdir(parents=True, exist_ok=True)
@@ -687,7 +898,7 @@ def main(argv=None) -> int:
     tiles = []
     for label, azimuth, elevation in views:
         path = out / f"{label}.png"
-        image = render(occurrences, azimuth, elevation, args.size, args.pad)
+        image = render(occurrences, azimuth, elevation, args.size, args.pad, decals=decals)
         image.save(path)
         tiles.append((label, image))
         print(path)

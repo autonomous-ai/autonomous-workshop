@@ -213,8 +213,16 @@ a piece at any other size:
 | `sphere` | `pd.print_sphere(ball, piece)` | checks the ball is `diameter_mm` within 0.5 mm, before you fuse it |
 | `fold` | `pd.print_fold(body, piece, at)` | checks the flat face at `at` holds one `page_mm` page |
 
+`print_block(block, piece, spine=None)` takes the direction the spine faces
+(along the block's width; default toward the width axis's minimum), and
+`print_sphere(ball, piece, pole=(0, 0, 1))` the axis through the poles.
+
 Each call tags what it made with the piece's id and the digest of its
-contract entry. `check_print_pieces.py <part>` builds the part and fails a
+contract entry, and tags a `print-decal`: where the piece's art shows on
+the part. `render_review` draws every decal of a part entry with its art
+from `print/art/`, so the round's views, sheet and Display Pose
+comparisons show the part as the buyer sees it after applying the paper.
+An assembly render shows none. `check_print_pieces.py <part>` builds the part and fails a
 hosted piece with no feature, a recess or slot filled again later, a block
 or ball no longer in the part, a feature made from another contract entry,
 and a piece placed on the wrong part. `make_round` runs it on every hosting

@@ -2053,6 +2053,9 @@ def _takes_instance(function):
         return False
 
 
+TAGS = []
+
+
 def _kept(instance):
     """The round's kept build of the part (issue #101), or None to build it."""
     try:
@@ -2060,7 +2063,36 @@ def _kept(instance):
     except ImportError:
         return None
     bundle = brepbundle.for_entry(PROJECT / PART, instance=instance, purpose="display-pose")
-    return None if bundle is None else bundle.shape
+    if bundle is None:
+        return None
+    TAGS[:] = bundle.tags
+    return bundle.shape
+
+
+def _with_decals(placed, built):
+    """ADR 0091: the part's Print Piece decals, moved into the Display Pose
+    with the part, for the review render. A pose that does more than move
+    the part shows none."""
+    try:
+        from features import print_details
+    except ImportError:
+        return placed
+    tags = TAGS or [tag for module in list(sys.modules.values())
+                    for tag in (getattr(module, "PRINT_DETAIL_TAGS", None) or [])
+                    if isinstance(module, type(sys)) and isinstance(tag, dict)]
+    decals = [print_details.read_decal(tag.get("name")) for tag in tags if tag.get("kind") == "print-decal"]
+    decals = [decal for decal in decals if decal is not None]
+    try:
+        move = placed.location * built.location.inverse()
+        from build123d import Location
+
+        expected = (move * Location(tuple(built.bounding_box().center()))).position
+        if (expected - placed.bounding_box().center()).length > 0.5:
+            decals = []
+        placed._print_decals = [print_details.move_decal(decal, move) for decal in decals]
+    except Exception:  # noqa: BLE001 - a render without decals is still a render
+        pass
+    return placed
 
 
 def gen_step():
@@ -2074,9 +2106,10 @@ def gen_step():
         built = _kept(1)
         if built is None:
             built = module.gen_step(instance=1) if _takes_instance(module.gen_step) else module.gen_step()
-        return place(built, None, instance=1)
+        return _with_decals(place(built, None, instance=1), built)
     built = _kept(None)
-    return place(module.gen_step() if built is None else built, None)
+    built = module.gen_step() if built is None else built
+    return _with_decals(place(built, None), built)
 '''
 
 

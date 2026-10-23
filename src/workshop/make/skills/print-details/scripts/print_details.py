@@ -112,6 +112,7 @@ RECESS_DEPTH = 0.6             # mm; above min_cut_depth, so the floor prints
 PRINT_CLEARANCE = 0.2          # mm a recess or slot is longer than its piece
 SLOT_CLEARANCE = 0.3           # mm a card slot is wider than the card
 STAND_TAB = 5.0                # mm of tab under a standing card (print_sheets.py)
+WRAP_OVERLAP = 5.0             # mm of glue overlap on a band (print_sheets.py)
 SLOT_DEPTH = STAND_TAB + 0.5
 PRINT_SIZE_TOLERANCE = 0.5     # mm a block, ball or face may differ from the contract
 # The tag a print call records names its piece and the digest of the piece's
@@ -258,6 +259,70 @@ def _piece(piece: str, ways: tuple) -> tuple:
         raise PrintLimitError(f"print piece {piece!r} is a {spec['way']} piece; this call places "
                               f"{' or '.join(ways)} pieces", f"pd.{_PRINT_CALLS[spec['way']]}(...)")
     return spec, section["stocks"][spec["stock"]]
+
+
+# A decal is where a piece's art shows on the finished part, for the review
+# renders (ADR 0091 decision 8). Each is tagged `print-decal`, its frame in
+# the tag's name so it survives a round's kept B-rep: `print-decal:<piece>:
+# <mode>:<s0,s1,t0,t1>:<origin>:<u>:<v>`, the art from s0..s1 across and
+# t0..t1 up drawn on the parallelogram origin + a*u + b*v (`quad`, `oval`,
+# or `card`, seen from both sides), or `print-decal:<piece>:sphere:<gores>:
+# <centre>:<pole>:<x>` for a gore strip round a ball (pole's length is the
+# radius; x points at the first gore's west edge).
+DECAL_KIND = "print-decal"
+DECAL_MODES = ("quad", "oval", "card", "sphere")
+
+
+def _numbers(values) -> str:
+    return ",".join("%.4f" % float(v) for v in values)
+
+
+def _decal(piece: str, mode: str, head, *vectors) -> None:
+    """Tag one decal; see DECAL_KIND."""
+    b = _b3d()
+    fields = [DECAL_KIND, piece, mode, _numbers(head) if mode != "sphere" else str(int(head))]
+    fields += [_numbers(tuple(vector)) for vector in vectors]
+    if mode == "sphere":
+        centre, pole = _vec(vectors[0]), _vec(vectors[1])
+        shape = b.Pos(*tuple(centre)) * b.Sphere(max(pole.length, 1e-3))
+    else:
+        origin, u, v = (_vec(vector) for vector in vectors)
+        shape = b.Face(b.Wire.make_polygon([origin, origin + u, origin + u + v, origin + v], close=True))
+    _tag(DECAL_KIND, [shape], ":".join(fields))
+
+
+def read_decal(name: str) -> dict | None:
+    """The decal a `print-decal` tag's name encodes, as plain numbers, or None."""
+    parts = str(name).split(":")
+    try:
+        if len(parts) != 7 or parts[0] != DECAL_KIND or parts[2] not in DECAL_MODES:
+            return None
+        vectors = [tuple(float(v) for v in part.split(",")) for part in parts[4:]]
+        if any(len(vector) != 3 for vector in vectors):
+            return None
+        if parts[2] == "sphere":
+            return {"piece": parts[1], "mode": "sphere", "gores": int(parts[3]),
+                    "centre": vectors[0], "pole": vectors[1], "x": vectors[2]}
+        crop = tuple(float(v) for v in parts[3].split(","))
+        if len(crop) != 4:
+            return None
+        return {"piece": parts[1], "mode": parts[2], "crop": crop,
+                "origin": vectors[0], "u": vectors[1], "v": vectors[2]}
+    except ValueError:
+        return None
+
+
+def move_decal(decal: dict, location) -> dict:
+    """``decal`` moved by a build123d Location, as a part's Display Pose moves
+    the part it is on."""
+    b = _b3d()
+    point = lambda p: tuple((location * b.Location(tuple(float(c) for c in p))).position)
+    origin = point((0, 0, 0))
+    direction = lambda d: tuple(a - o for a, o in zip(point(d), origin))
+    if decal["mode"] == "sphere":
+        return {**decal, "centre": point(decal["centre"]), "pole": direction(decal["pole"]),
+                "x": direction(decal["x"])}
+    return {**decal, "origin": point(decal["origin"]), "u": direction(decal["u"]), "v": direction(decal["v"])}
 
 
 _PRINT_CALLS = {"flat": "print_recess", "sticker": "print_recess", "stand": "print_slot",
@@ -1326,8 +1391,26 @@ class Details:
         spec, _stock = _piece(piece, ("flat", "sticker"))
         width, height = (float(v) + PRINT_CLEARANCE for v in spec["size_mm"])
         arch = "oval" if spec.get("outline") == "oval" else "flat"
-        return self._place_cuts(host, at, "print-recess", (width, height, arch), RECESS_DEPTH,
-                                False, angle, f"print-recess:{piece}:{piece_digest(spec)}")
+        result = self._place_cuts(host, at, "print-recess", (width, height, arch), RECESS_DEPTH,
+                                  False, angle, f"print-recess:{piece}:{piece_digest(spec)}")
+        art_w, art_h = (float(v) for v in spec["size_mm"])
+        for point in self._points(at):
+            spot = self._turned(host, point, angle)
+            up = spot.normal.cross(spot.x)
+            floor = spot.point - spot.normal * RECESS_DEPTH
+            _decal(piece, "oval" if arch == "oval" else "quad", (0, 1, 0, 1),
+                   floor - spot.x * (art_w / 2) - up * (art_h / 2), spot.x * art_w, up * art_h)
+        return result
+
+    def _turned(self, host, point, angle):
+        """The spot at `point` with its local X turned `angle` about the
+        normal, as a cut's outline is turned."""
+        b = _b3d()
+        spot = self.spot(host, point)
+        if angle:
+            spot = _Spot(spot.point, spot.normal,
+                         _unit(spot.x.rotate(b.Axis((0, 0, 0), tuple(spot.normal)), angle)))
+        return spot
 
     @_collecting
     def print_slot(self, host, piece: str, at, angle: float = 0.0):
@@ -1337,8 +1420,15 @@ class Details:
         spec, stock = _piece(piece, ("stand",))
         length = float(spec["slot_mm"]) + PRINT_CLEARANCE
         across = float(stock["caliper_mm"]) + SLOT_CLEARANCE
-        return self._place_cuts(host, at, "print-slot", (length, across, "flat"), SLOT_DEPTH,
-                                False, angle, f"print-slot:{piece}:{piece_digest(spec)}")
+        result = self._place_cuts(host, at, "print-slot", (length, across, "flat"), SLOT_DEPTH,
+                                  False, angle, f"print-slot:{piece}:{piece_digest(spec)}")
+        card_w, card_h = (float(v) for v in spec["size_mm"])
+        tab = STAND_TAB / (card_h + STAND_TAB)
+        for point in self._points(at):
+            spot = self._turned(host, point, angle)
+            _decal(piece, "card", (0, 1, tab, 1), spot.point - spot.x * (card_w / 2),
+                   spot.x * card_w, spot.normal * card_h)
+        return result
 
     def _measured(self, kind, piece, solid, want):
         size = sorted(solid.bounding_box().size)
@@ -1350,22 +1440,68 @@ class Details:
                 f"within {PRINT_SIZE_TOLERANCE:g} mm", f"a solid of {wanted} mm")
 
     @_collecting
-    def print_block(self, block, piece: str):
+    def print_block(self, block, piece: str, spine=None):
         """Check and tag the block a `wrap` piece wraps: `block` is the solid
         you built for it, before you fuse it to the part; its box must match
-        `block_mm` within PRINT_SIZE_TOLERANCE. Returns `block` unchanged."""
-        spec, _stock = _piece(piece, ("wrap",))
+        `block_mm` within PRINT_SIZE_TOLERANCE. Returns `block` unchanged.
+        `spine` is the direction the spine faces, along the block's width
+        axis (default: toward the width axis's minimum); the cover's art is
+        drawn on the block for the review renders."""
+        spec, stock = _piece(piece, ("wrap",))
         self._measured("print-block", piece, block, spec["block_mm"])
         _tag("print-block", [block], f"print-block:{piece}:{piece_digest(spec)}")
+        self._wrap_decals(piece, spec, stock, block, spine)
         return block
 
+    def _wrap_decals(self, piece, spec, stock, block, spine):
+        """The cover's panels on the block's faces: back, spine, front left to
+        right, as print_sheets.py lays the art; a band adds the far side."""
+        import itertools
+        b = _b3d()
+        box = block.bounding_box()
+        size = (box.size.X, box.size.Y, box.size.Z)
+        axes = [b.Vector(1, 0, 0), b.Vector(0, 1, 0), b.Vector(0, 0, 1)]
+        want = [float(v) for v in spec["block_mm"]]
+        order = min(itertools.permutations(range(3)),
+                    key=lambda p: sum(abs(size[p[k]] - want[k]) for k in range(3)))
+        height_axis, width_axis, depth_axis = (axes[k] for k in order)
+        h, w, d = (size[k] for k in order)
+        up = height_axis
+        s = _unit(_vec(spine)) if spine is not None else -width_axis
+        if abs(s.dot(width_axis)) < 0.99:
+            raise PrintLimitError(f"print-block {piece}: spine must point along the block's width "
+                                  f"axis {tuple(width_axis)}", f"spine={tuple(-width_axis)}")
+        normal = s.cross(up)                    # the back cover's outward normal
+        panels = [w, d, w] if spec["around"] == "cover" else [w, d, w, d]
+        caliper = float(stock["caliper_mm"])
+        total = sum(panels) + caliper * (len(panels) - 1)
+        if spec["around"] == "band":
+            total += WRAP_OVERLAP
+        centre = box.center()
+        start = 0.0
+        for length in panels:
+            right = (-normal).cross(up)
+            # a cover faces along the depth axis, d/2 out; a spine w/2 out
+            half = (d if abs(normal.dot(depth_axis)) > 0.5 else w) / 2
+            face = centre + normal * half
+            _decal(piece, "quad", (start / total, (start + length) / total, 0, 1),
+                   face - right * (length / 2) - up * (h / 2), right * length, up * h)
+            start += length + caliper
+            normal = right
+
     @_collecting
-    def print_sphere(self, ball, piece: str):
+    def print_sphere(self, ball, piece: str, pole=(0, 0, 1)):
         """Check and tag the ball a `sphere` gore strip wraps: its box must be
         `diameter_mm` every way within PRINT_SIZE_TOLERANCE. Returns `ball`."""
         spec, _stock = _piece(piece, ("sphere",))
         self._measured("print-sphere", piece, ball, [spec["diameter_mm"]] * 3)
         _tag("print-sphere", [ball], f"print-sphere:{piece}:{piece_digest(spec)}")
+        b = _b3d()
+        axis = _unit(_vec(pole))
+        reference = b.Vector(1, 0, 0) if abs(axis.X) < 0.9 else b.Vector(0, 1, 0)
+        west = _unit(reference - axis * reference.dot(axis))
+        _decal(piece, "sphere", int(spec["gores"]), ball.bounding_box().center(),
+               axis * (float(spec["diameter_mm"]) / 2), west)
         return ball
 
     @_collecting
@@ -1394,6 +1530,10 @@ class Details:
                 f"{page[0]:g} x {page[1]:g} mm page must fit on it",
                 f"a face of at least {page[0]:g} x {page[1]:g} mm")
         _tag("print-fold", [face], f"print-fold:{piece}:{piece_digest(spec)}")
+        page_w, page_h = (float(v) for v in spec["page_mm"])
+        up = spot.normal.cross(spot.x)
+        _decal(piece, "quad", (0, 1 / int(spec["pages"]), 0, 1),
+               spot.point - spot.x * (page_w / 2) - up * (page_h / 2), spot.x * page_w, up * page_h)
         return host
 
 
