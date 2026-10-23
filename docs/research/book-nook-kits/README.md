@@ -9,6 +9,7 @@ Research for designing printed book nooks as assembly kits in the style of Robot
 | [rolife-2026-book-nooks.md](rolife-2026-book-nooks.md) | Two 2026 book nooks, every manual page read: TGB18 Sunset Isle, TGE05 Nostalgic Corner Shop. Shell, faked depth, lighting, glue-free assembly. |
 | [rolife-2026-houses.md](rolife-2026-houses.md) | Four 2026 kits: DH201 Leafree Café, DH102 Oxygen Oasis, DG186 Haunted Candy House, TGB19 Wisdom Stationery Shop. Materials, books, props, hinge, manual layout. |
 | [rolife-dh103-pagestory.md](rolife-dh103-pagestory.md) | DH103 Pagestory Books (08/2026), the reference the owner chose. Its manual is not published; facts come from community reviews. |
+| [rolife-assembly-trees.md](rolife-assembly-trees.md) | How six 2026 manuals structure assembly: step trees, wiring, access order, what paper lands on, tools and spares (for ADR 0092). |
 | [fetch-sources.sh](fetch-sources.sh) | Re-downloads the nine 2026 manuals into `sources/manuals-2026/`. |
 
 `sources/` holds the PDFs, the rendered page tiles, the product images and the review photos. They are Robotime's and reviewers' material, about 315 MB, and are kept out of git (listed in `.git/info/exclude`). On this machine they sit beside these notes; elsewhere, run `fetch-sources.sh`.
