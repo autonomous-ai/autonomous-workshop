@@ -8,6 +8,7 @@ from pathlib import Path
 
 from workshop.errors import ContractError
 from workshop.wish.catalogues import (
+    BOUGHT_PART_HEX,
     BOUGHT_PARTS_FILE,
     CATALOGUE_DIRECTORY,
     FILAMENTS_FILE,
@@ -67,6 +68,24 @@ class CatalogueTest(unittest.TestCase):
                        "filaments[2].id repeats 'navy'", "category must be one of",
                        "sizes[0] must be {what, mm}", "pack must be how many come in one pack"):
             self.assertIn(needle, message)
+
+    def test_no_filament_may_take_the_reserved_bought_part_colour(self):
+        # Owner decision Q29: Bought Parts are magenta in every STEP, a colour
+        # no spool may have, nor one the colour gate cannot tell from it.
+        self.assertEqual(BOUGHT_PART_HEX, "#ff00ff")
+        for hex_code in (BOUGHT_PART_HEX, "#fd01fe"):
+            filaments = _filaments()
+            filaments["filaments"][0]["hex"] = hex_code
+            self.assertIn("filaments[0].hex is %s, the reserved colour of Bought Parts" % hex_code,
+                          self._refused(filaments, _bought()))
+        filaments = _filaments()
+        filaments["filaments"][0]["hex"] = "#fa00ff"
+        self.assertIn("navy", parse_catalogues(filaments, _bought()).filaments)
+
+    def test_the_run_local_gate_holds_the_same_reserved_colour(self):
+        from tests.make.test_kit_tree import kit_tree
+
+        self.assertEqual(kit_tree.BOUGHT_PART_HEX, BOUGHT_PART_HEX)
 
     def test_a_catalogue_needs_its_schema_and_entries(self):
         message = self._refused({"filaments": []}, {"schema_version": 1, "parts": []})

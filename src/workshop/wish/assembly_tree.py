@@ -30,6 +30,7 @@ The shape, in brief::
 
 from __future__ import annotations
 
+import copy
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple
@@ -67,11 +68,14 @@ class ContractAssemblyTree:
     """The validated ``assembly_tree`` section, kept as the exact JSON the
     contract sealed. ``component_of`` maps every printed and Bought Part to
     the Unique Geometry of its Component; ``unconfirmed`` names the catalogue
-    entries the tree uses that the owner has not confirmed."""
+    entries the tree uses that the owner has not confirmed; ``catalogue``
+    holds those entries, every one the tree uses, as they read when the
+    contract was parsed."""
 
     section: Dict[str, Any]
     component_of: Mapping[str, str] = field(default_factory=dict)
     unconfirmed: Tuple[str, ...] = ()
+    catalogue: Mapping[str, Any] = field(default_factory=dict)
 
     @property
     def root(self) -> str:
@@ -79,6 +83,34 @@ class ContractAssemblyTree:
 
     def to_dict(self) -> Dict[str, Any]:
         return self.section
+
+    def catalogue_snapshot(self) -> Dict[str, Any]:
+        """``{"filaments": {id: entry}, "bought_parts": {id: entry}}``: the
+        catalogue entries this tree uses, each as plain JSON. A run seals it
+        beside the contract, so Make's tree gates (ADR 0092 decision 8) read
+        each printed Part's colour and each Bought Part's sizes from the Wish."""
+
+        return copy.deepcopy(dict(self.catalogue))
+
+
+def _snapshot(
+    printed: Mapping[str, Mapping[str, Any]], bought: Mapping[str, Mapping[str, Any]],
+    materials: Any, catalogues: Catalogues,
+) -> Dict[str, Any]:
+    filaments = {}
+    for item in printed.values():
+        entry = catalogues.filaments[item["filament"]]
+        filaments[entry.id] = {"name": entry.name, "hex": entry.hex, "kind": entry.kind,
+                               "confirmed": entry.confirmed}
+    names = [item["bought"] for item in bought.values()] + [
+        name for name in (materials or ()) if isinstance(name, str)
+    ]
+    parts = {}
+    for name in names:
+        entry = catalogues.parts[name]
+        parts[entry.id] = {"name": entry.name, "category": entry.category,
+                           "sizes": copy.deepcopy(list(entry.sizes)), "confirmed": entry.confirmed}
+    return {"filaments": dict(sorted(filaments.items())), "bought_parts": dict(sorted(parts.items()))}
 
 
 def _mnemonic(identifier: str) -> str:
@@ -444,7 +476,8 @@ def parse_assembly_tree(
     if len(errors) != before:
         return None
     return ContractAssemblyTree(
-        section=value, component_of=component_of, unconfirmed=tuple(sorted(unconfirmed))
+        section=value, component_of=component_of, unconfirmed=tuple(sorted(unconfirmed)),
+        catalogue=_snapshot(printed, bought, value.get("materials"), catalogues),
     )
 
 

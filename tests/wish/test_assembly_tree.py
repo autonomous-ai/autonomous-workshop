@@ -164,6 +164,29 @@ class AssemblyTreeTest(unittest.TestCase):
         self.assertEqual(contract.references[0].camera, (-60.0, 20.0))
         self.assertTrue(all(item.text for item in contract.interfaces))
 
+    def test_the_catalogue_snapshot_holds_every_entry_the_tree_uses(self):
+        contract = self._parse(_tree_block())
+        snapshot = contract.kit_catalogue()
+        self.assertEqual(sorted(snapshot["filaments"]), ["dark-blue", "dark-oak", "navy", "oak"])
+        self.assertEqual(snapshot["filaments"]["navy"]["hex"], "#112233")
+        # Bought Parts and the material list, never an unused entry.
+        self.assertEqual(sorted(snapshot["bought_parts"]), [
+            "battery-box-2aa-switch", "clear-jar-6x7", "foam-tape", "led-3v-cool-white",
+            "steel-pin-1.5x29.5", "tweezers"])
+        self.assertEqual(snapshot["bought_parts"]["led-3v-cool-white"]["category"], "lamp")
+        self.assertFalse(snapshot["bought_parts"]["battery-box-2aa-switch"]["confirmed"])
+        # A copy: changing it changes nothing the contract holds.
+        snapshot["filaments"].clear()
+        self.assertTrue(contract.kit_catalogue()["filaments"])
+        # Older schemas seal none.
+        block = _tree_block()
+        block["schema_version"] = 6
+        del block["assembly_tree"]
+        for piece in block["print"]["pieces"]:
+            piece["on"] = "cabinet"
+            piece["id"] = piece["id"].split("-", 1)[1]
+        self.assertIsNone(parse_design_contract(_contract_text(block)).kit_catalogue())
+
     def test_print_sheets_and_guides_are_optional_at_schema_7(self):
         block = _tree_block()
         del block["print"]
@@ -415,11 +438,12 @@ class AssemblyTreeTest(unittest.TestCase):
         for needle in ("sparkle-purple", "brass-hinge", "requirements[0].id"):
             self.assertIn(needle, message)
 
-    def test_no_run_can_seal_schema_7_until_its_gates_exist(self):
+    def test_no_run_can_seal_schema_7_until_its_manual_exists(self):
         contract = self._parse(_tree_block())
         with self.assertRaises(ContractError) as caught:
             contract.check_sealable()
-        self.assertIn("issue #136", str(caught.exception))
+        self.assertIn("issue #137", str(caught.exception))
+        self.assertNotIn("#136", str(caught.exception))
         block = _tree_block()
         block["schema_version"] = 6
         del block["assembly_tree"]
@@ -443,6 +467,10 @@ class AssemblyTreeTest(unittest.TestCase):
         # The packaged catalogues validate the example as well as the fake.
         contract = parse_design_contract(_contract_text(_tree_block()))
         self.assertIn("filaments.json:navy", contract.assembly_tree.unconfirmed)
+        # Every lamp seed gives the lead diameter Make's lead-route gate sweeps.
+        for entry in catalogues.parts.values():
+            if entry.category == "lamp":
+                self.assertIn("lead diameter", [size["what"] for size in entry.sizes], entry.id)
 
 
 if __name__ == "__main__":

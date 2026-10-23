@@ -193,7 +193,10 @@ instances.)
     `{"id": "P02-steel-pin", "bought": "<Bought Part id>"}`. Both ids come
     from the owner's catalogues, `src/workshop/wish/catalogues/filaments.json`
     and `bought-parts.json`. A colour or Bought Part outside them is refused:
-    the owner approves one by adding it to the catalogue. Tools and
+    the owner approves one by adding it to the catalogue. No filament may be
+    the reserved magenta `#ff00ff`: it marks Bought Parts, which every STEP
+    and render shows in it as bought, not printed (ADR 0092 decision 5,
+    owner decision Q29). Tools and
     consumables (tweezers, foam tape and dots, glue, a screwdriver) are never
     Parts; they go in `materials`.
   - `steps[]`, in Manual order with rising numbers, each `{"id":
@@ -236,9 +239,20 @@ instances.)
     Component's Parts are exactly the printed and Bought Parts of one
     subtree, made as many times per toy as the geometry's `count`. A Print
     Piece belongs to the Component whose subtree applies it; one applied
-    above every Component belongs to the join, which Make checks in assembly
-    rounds. Steps above the Components join Components and stay recorded as
-    Interfaces.
+    above every Component belongs to the join. Make's `paper` gate checks a
+    piece where its host is (ADR 0092 decision 8): a piece on a printed Part,
+    or on a Sub-assembly inside one Component, in that Component's round;
+    one on a Sub-assembly across Components in assembly rounds, carried by
+    exactly one of their parts; one on a Bought Part has no printed feature.
+    Steps above the Components join Components and stay recorded as
+    Interfaces. In Make each printed Part is one solid labelled with its id
+    in its filament's colour, and each Bought Part one labelled body in
+    `#ff00ff` (`make-round/SKILL.md`, "The kit's Assembly Tree"). Final
+    verification lists every Bought Part body with its catalogue id in
+    `measure/not-printed.json`, which ships beside the STEP files. A body
+    that does not match the tree is a labelling slip the run repairs; a
+    tree that does not hold together stops the run (ADR 0092 decision 10,
+    Q28).
   - `materials`: the tools and consumables the Manual lists, catalogue ids
     whose category is `tool` or `consumable`.
 
@@ -288,9 +302,9 @@ instances.)
   optional; a contract with no Print Sheet stays 4 or 5. `7` is schema 6
   plus `assembly_tree` (ADR 0092), with `print` and `guides[]` optional and
   the Print Pieces' ids and hosts in the Part form above. A schema 7
-  contract is validated, but `workshop wish|fix --contract` refuse to seal
-  it until its tree gates (issue #136) and Manual (issue #137) exist, so
-  that no Print Piece or Part goes unchecked in Make. Schema 3 is schema 2 plus a `camera` on every
+  contract is validated, and Make's tree gates (ADR 0092 decision 8) check
+  it, but `workshop wish|fix --contract` refuse to seal it until its Manual
+  (issue #137) exists. Schema 3 is schema 2 plus a `camera` on every
   reference; from schema 3 every Component file defines
   `assembly_pose(shape, pose)`, even one in no Interface. A schema 3
   contract has no Interface text, a schema 2 contract no cameras and a

@@ -109,8 +109,10 @@ Launch six subagents in one message, one per slot, each with this brief:
     toy read as this Trend's;
   - `## Signature Motion`: what moves, what drives it, and what the player
     does;
-  - `## Palette`: one line per Unique Geometry, its id and the one filament
-    colour every Component of it prints in.
+  - `## Palette`: one line per printed Part, its Part id and its one
+    filament from the catalogue (`src/workshop/wish/catalogues/filaments.json`,
+    ADR 0092 decision 4); a contract without an Assembly Tree has no Parts
+    and gives one line per Unique Geometry instead.
 - Generate one Concept Image: the assembled toy in its Display Pose, one
   subject fully inside the frame, in the Palette's colours, by writing a prompt to `<slot>/prompt.txt`
   and running `generate_image.py --prompt-file <slot>/prompt.txt --out

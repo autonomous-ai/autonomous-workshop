@@ -293,9 +293,21 @@ cannot be explained in one clear Manual step is a bad split.
    names nothing. Fix every error. Its warnings name each catalogue entry the
    owner has not confirmed yet; list them for Stage 4.
 
-Make may not change the tree. Until Make's tree gates (issue #136) and the
-Manual (issue #137) exist, `workshop wish|fix --contract` refuse to seal a
-schema 7 contract: say so at the hand-off instead of starting a run.
+Make may not change the tree: its tree gates (ADR 0092 decision 8) check
+every body, Print Piece and Bought Part against it. In the pilot a contract
+tree defect (the tree itself missing, adding or duplicating a Part against
+the Print Sheet or catalogue side, or otherwise inconsistent) stops the run
+for the owner (decision 10). A labelling slip, a built body that does not
+match a sound tree, is repaired in the run like any gate (owner decision
+Q28, 2026-10-23). Once the owner has approved the tree in Stage 4, treat any
+contract defect found later the same way, whoever finds it (a gate, a
+review, an image check): log it as a row of the toy's `TREE-ISSUES.md`
+(format in `build-a-toy`'s Step 3) and report it to the owner; never change
+the tree yourself to make it go away. Bought Parts render in the reserved
+magenta `#ff00ff` (bought, not printed): never name a filament of that
+colour, nor draw a Bought Part in it on a reference image. Until the Manual (issue #137) exists, `workshop wish|fix --contract`
+refuse to seal a schema 7 contract: say so at the hand-off instead of
+starting a run.
 
 ## Stage 3 - Reference images
 
