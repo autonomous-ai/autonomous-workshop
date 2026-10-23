@@ -70,9 +70,16 @@ uv run workshop wish --contract build-a-toy/r00/CONTRACT.md --inventor <inventor
 
 **Show the person the exact command and wait for explicit approval.** Then run
 it. When the receipt prints, check that its `References:` line reports as
-many images as the contract lists, and its `Guides:` line as many Guide
-Images. If the counts differ, stop: the likeness
-gate will score the wrong set.
+many images as the contract lists, its `Guides:` line as many Guide
+Images, and its `Print art:` line as many print art files. If the counts
+differ, stop: the likeness gate will score the wrong set.
+
+A schema 6 toy (ADR 0091) ships its Print Sheets: the accepted receipt
+lists each on a `Print Sheet:` line, and the toy archive holds them under
+`make/print/sheets/` (`print-sheets.pdf`, one `sheet-<stock>-<n>.png` per
+page) beside the STEP models. Detection reads those previews with the
+contract's `print` section: a piece missing from the sheets, or art that is
+not the approved art, is a finding.
 
 Done when: the run is started, the receipt's reference count matches, and
 the wish id is in the ledger.

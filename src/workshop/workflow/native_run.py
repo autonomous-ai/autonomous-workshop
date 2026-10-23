@@ -85,6 +85,7 @@ from workshop.release.renders import (
 )
 from workshop.make.native import NativeMade, validate_build_groups
 from workshop.make.role_agents import make_role_agent_files
+from workshop.make.print_sheets import verify_made_print_sheets
 from workshop.make.blocked_reports import (
     run_blocked_reports,
     verify_no_open_blocked_reports,
@@ -3244,6 +3245,27 @@ def _sealed_guide_inputs(run_root: Path, wish_sha256: str) -> dict[str, tuple[Pa
         if isinstance(item, dict) and isinstance(item.get("name"), str)
         and isinstance(item.get("sha256"), str) and item["name"].startswith("guide-")
     }
+
+
+def _sealed_print_art(run_root: Path, wish_sha256: str) -> dict[str, str]:
+    """Each sealed print art file (ADR 0091) -> the sha256 the Wish bound."""
+
+    content = (Path(run_root) / "WISH.json").read_bytes()
+    if _sha256(content) != wish_sha256:
+        raise StateConflict("materialized Wish differs from the run binding")
+    document = _strict_json_bytes(content, label="materialized Wish")
+    return {
+        item["name"]: item["sha256"]
+        for item in (document.get("references") or () if isinstance(document, dict) else ())
+        if isinstance(item, dict) and isinstance(item.get("name"), str)
+        and isinstance(item.get("sha256"), str) and item["name"].startswith("print-")
+    }
+
+
+def _print_sheet_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """The Print Sheets the current Make's acceptance checked (ADR 0091)."""
+
+    return _latest_make_check(host_state_root, "print_sheets")
 
 
 def _run_contract_amendments(paths: NativeRunPaths, wish_sha256: str) -> list[dict[str, Any]]:
@@ -8128,6 +8150,14 @@ def _evaluate_make_stage(
         )
         if guides:
             product_checks["guides"] = guides
+        # ADR 0091: the installed print section and art are the sealed ones,
+        # and the sheets laid out; the host rebuilds no geometry for it.
+        print_sheets = verify_made_print_sheets(
+            run.run_root, made, sealed_contract,
+            _sealed_print_art(run.run_root, checkpoint.wish_sha256),
+        )
+        if print_sheets:
+            product_checks["print_sheets"] = print_sheets
         if blocked_reports:
             product_checks["blocked_reports"] = blocked_reports
         if contract_amendments:
@@ -10920,6 +10950,7 @@ def _native_receipt(
         _reference_conflict_history(paths.host_state) if paths is not None else []
     )
     guides = _guide_history(paths.host_state) if paths is not None else []
+    print_sheets = _print_sheet_history(paths.host_state) if paths is not None else []
     contract_amendments = (
         _contract_amendment_history(paths.host_state) if paths is not None else []
     )
@@ -11194,6 +11225,9 @@ def _native_receipt(
     if guides:
         # ADR 0089: the Guide Image account, only in a run that sealed one.
         receipt["guides"] = guides
+    if print_sheets:
+        # ADR 0091: the Print Sheets Make delivered, only for a toy with any.
+        receipt["print_sheets"] = print_sheets
     if checkpoint.effort is not None:
         receipt["workflow"] = checkpoint.effort
     receipt["agent"] = checkpoint.manager_id

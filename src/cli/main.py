@@ -515,6 +515,16 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                         % (guide.get("file", "?"), conflict.get("guide", "?"),
                            conflict.get("contract", "?"))
                     )
+    print_sheets = receipt.get("print_sheets")
+    if isinstance(print_sheets, (list, tuple)):
+        # ADR 0091: each Print Sheet the toy ships, by stock.
+        for sheet in print_sheets:
+            if isinstance(sheet, Mapping):
+                print(
+                    "Print Sheet: %s (%s), %s piece(s) — %s"
+                    % (sheet.get("sheet", "?"), sheet.get("stock", "?"),
+                       sheet.get("pieces", "?"), sheet.get("pdf", "?"))
+                )
     blocked = receipt.get("blocked_reports")
     if isinstance(blocked, (list, tuple)):
         # Issue #88: every Blocked Report, how it was cleared and how long it

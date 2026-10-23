@@ -1,8 +1,10 @@
 # ADR 0091: Print Sheets carry colour and detail on paper
 
-- Status: Accepted. Implemented and deterministically tested: decisions 1
-  to 3, the sealing half of 4 (schema 6 and `--print-art`) and 10 (the image
-  budget). Not yet implemented: the rest.
+- Status: Accepted; implemented and deterministically tested, not yet
+  validated by a live run. Decision 7's host rerun is the full gate only on
+  routes the host reverifies (Forge, Quest); for Spark (ADR 0061) the host
+  checks the install, the art and the layout on the sealed bytes and
+  rebuilds no geometry.
 - Date: 2026-10-23
 - Amends: ADR 0089 (what a Design Contract seals; schema 6 keeps schema 5),
   ADR 0062/0063 (what Make delivers beside STEP and what the CAD gate checks),
@@ -73,8 +75,9 @@ checks that the plastic it lands on fits it, or ships the sheet.
    | `fold` | Accordion pages on a face (open book) | Page size and page count |
    | `stand` | Card cut-out standing in a slot | Outline size and slot length |
 
-   - **Recesses.** `flat` and `sticker` pieces always sit in a recess about
-     0.4 mm deep, sized to the piece.
+   - **Recesses.** `flat` and `sticker` pieces always sit in a recess 0.6 mm
+     deep (above the print-details cut-depth minimum), 0.2 mm longer than
+     the piece each way.
    - **Sizes.** Every size is in mm, and the contract is the truth.
    - **No free pieces.** A piece with no host is refused.
 
@@ -139,6 +142,9 @@ checks that the plastic it lands on fits it, or ships the sheet.
      0084).
    - **Workers.** Component Workers are given the art and sizes of the
      pieces their Component hosts.
+   - **Assembly renders.** A decal is in its part's own frame, so an
+     assembly render draws none; the per-Component renders and their
+     Display Pose comparisons do.
 
 9. **Release ships the sheets.** The sheet PDFs travel beside the STEP files
    in the Make output and the Release package, hash-bound like them. Spark
@@ -184,11 +190,12 @@ checks that the plastic it lands on fits it, or ships the sheet.
 
 Each step is its own PR with contract and failure-path tests:
 
-1. Schema 6, sealing the art and the larger image budget.
-2. `design-a-toy`: authoring the art, the CC0 sources and the sheet proof in
-   Stage 4.
-3. The layout tool and the `verify_project` gate.
-4. Renders with the art applied, and the reviewer and worker packets.
-5. The host's Release rerun and packaging.
+1. The larger image budget (decision 10).
+2. Schema 6 and sealing the art.
+3. The layout tool, and `design-a-toy` authoring and proofing the art.
+4. The print-details Print Piece calls and the paper gate in `make_round`
+   and `verify_project`.
+5. Renders with the art applied.
+6. The host's acceptance check and packaging.
 
 Night Charms Hall is the first toy to use it.
