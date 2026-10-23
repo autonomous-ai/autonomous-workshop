@@ -25,6 +25,7 @@ Every run this skill starts, whether `wish` or `fix`, uses:
 | `--max-tokens` | `100000000` | **This is the real backstop.** With 360-minute turns and unlimited resume, a run stops when its tokens run out |
 | `--ref` | every contract reference, every run | The assembly round scores every sealed reference that no current component round already scored (ADR 0072). A description of an image is no substitute for the image |
 | `--guide` | every contract Guide Image (`guides[]`, schema 5), every run, after the `--ref` images | Guide Images explain the design to the Manager and the workers and are never compared (ADR 0089); the contract refuses a run that leaves one out |
+| `--print-art` | every contract print art file (`print.art`, schema 6), every run, after the `--guide` images | The art printed on the toy's Print Sheets (ADR 0091), never compared as a likeness target; the contract refuses a run that leaves one out |
 | `--check-motion` | `true` when the contract has any moving part, on **every** `wish`, `fix` and `resume` | `workshop resume` reselects this option and defaults it to `false`. Broken God v01 was resumed without it, and its final verification skipped the motion check and shipped with its wings unverified |
 | `--effort`, `--model` | only if the person passed them | Both are frozen for the run and cannot change on resume, so never raise them yourself |
 
@@ -63,14 +64,22 @@ Build the command:
 uv run workshop wish --contract build-a-toy/r00/CONTRACT.md --inventor <inventor> \
   --ref <contract-dir>/ref-01-<slug>.png --ref ... \
   [--guide <contract-dir>/guide-01-<slug>.png --guide ...] \
+  [--print-art <contract-dir>/print-01-<slug>.png --print-art ...] \
   --no-publish --turn-minutes 360 --max-tokens 100000000 [--check-motion true]
 ```
 
 **Show the person the exact command and wait for explicit approval.** Then run
 it. When the receipt prints, check that its `References:` line reports as
-many images as the contract lists, and its `Guides:` line as many Guide
-Images. If the counts differ, stop: the likeness
-gate will score the wrong set.
+many images as the contract lists, its `Guides:` line as many Guide
+Images, and its `Print art:` line as many print art files. If the counts
+differ, stop: the likeness gate will score the wrong set.
+
+A schema 6 toy (ADR 0091) ships its Print Sheets: the accepted receipt
+lists each on a `Print Sheet:` line, and the toy archive holds them under
+`make/print/sheets/` (`print-sheets.pdf`, one `sheet-<stock>-<n>.png` per
+page) beside the STEP models. Detection reads those previews with the
+contract's `print` section: a piece missing from the sheets, or art that is
+not the approved art, is a finding.
 
 Done when: the run is started, the receipt's reference count matches, and
 the wish id is in the ledger.
@@ -180,6 +189,7 @@ uv run workshop fix "<previous-run-workspace>" --prompt-file build-a-toy/r<NN>/b
   --contract <contract-dir>/CONTRACT.md \
   --ref <contract-dir>/ref-01-<slug>.png --ref ... \
   [--guide <contract-dir>/guide-01-<slug>.png --guide ...] \
+  [--print-art <contract-dir>/print-01-<slug>.png --print-art ...] \
   --no-publish --turn-minutes 360 --max-tokens 100000000 [--check-motion true]
 ```
 

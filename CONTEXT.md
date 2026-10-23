@@ -500,6 +500,23 @@ A chess set has six, not thirty-two. It is the unit a Design Contract names
 before any Component exists.
 _Avoid_: Piece type, part shape
 
+**Print Sheet**:
+One printed A4 sheet of paper, sticker, card or clear film stock that ships
+in the box with the toy's printed parts. The maker prints it; the buyer cuts
+out, folds and applies its pieces while assembling, as in a Rolife kit. It
+carries every colour and pattern that one filament colour cannot: covers,
+spines, pictures, notices, textures, skies, glazing. Any Design Contract may
+declare one.
+_Avoid_: Sticker sheet, decal sheet, label sheet, paper props
+
+**Print Piece**:
+One cut-out on a Print Sheet, applied to one face, block, sphere or slot of
+one Unique Geometry in one of six ways: laid flat, stuck as a sticker,
+wrapped round a block, wrapped round a sphere as joined gores, folded into
+pages, or stood up as a card cut-out in a slot. Its art is approved with the
+Reference Images and sealed in the Design Contract.
+_Avoid_: Sticker, decal, label, insert
+
 **Focal Component**:
 The one component of a toy's design allowed to dominate the composition,
 chosen and paid for in the design before any image exists. It is a part of
