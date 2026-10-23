@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from workshop.errors import ContractError
+from workshop.wish.print_sheets import ContractPrint, parse_print_section
 
 # Both limits are input guards on agent-supplied text, not design judgements
 # (ADR 0072, "Limits"). The assembly limit traces to commit deed467e.
@@ -28,11 +29,14 @@ MAX_GEOMETRY_REQUIREMENTS = 4
 # gives every Interface the text of what it imposes on each Component it
 # joins (ADR 0084). Schema 5 keeps all three and adds Guide Images, which
 # explain the design and are never compared with the model (ADR 0089).
-SCHEMA_VERSIONS = (1, 2, 3, 4, 5)
+# Schema 6 keeps all four, makes Guide Images optional, and requires the
+# Print Sheets section (ADR 0091).
+SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6)
 INTERFACES_SCHEMA_VERSION = 2
 CAMERA_SCHEMA_VERSION = 3
 INTERFACE_TEXT_SCHEMA_VERSION = 4
 GUIDE_SCHEMA_VERSION = 5
+PRINT_SCHEMA_VERSION = 6
 MAX_GUIDE_SHOWS_CHARS = 500
 MAX_GUIDE_STEPS = 24
 MAX_GUIDE_STEP_CHARS = 300
@@ -50,10 +54,10 @@ _GEOMETRY_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _INSTANCE_REFERENCE = re.compile(r"^([a-z0-9]+(?:-[a-z0-9]+)*)#([0-9]+)$")
 _REQUIREMENT_ID = re.compile(r"^R[0-9]{2}$")
 _REFERENCE_FILE = re.compile(
-    r"^ref-(?:0[1-9]|[1-9][0-9])-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$"
+    r"^ref-(?:0[1-9]|[1-9][0-9]{1,2})-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$"
 )
 _GUIDE_FILE = re.compile(
-    r"^guide-(?:0[1-9]|[1-9][0-9])-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$"
+    r"^guide-(?:0[1-9]|[1-9][0-9]{1,2})-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$"
 )
 
 
@@ -164,8 +168,11 @@ class DesignContract:
     requirements: Tuple[ContractRequirement, ...]
     # None for a schema 1 contract, which has no Interfaces section.
     interfaces: Optional[Tuple[ContractInterface, ...]] = None
-    # None before schema 5, which has no Guide Images (ADR 0089).
+    # None before schema 5, which has no Guide Images (ADR 0089), and for a
+    # schema 6 contract that lists none.
     guides: Optional[Tuple[ContractGuide, ...]] = None
+    # None before schema 6, which has no Print Sheets (ADR 0091).
+    print_sheets: Optional[ContractPrint] = None
 
     def reference_labels(self) -> Dict[str, str]:
         """Sealed file name -> the label Contract Mode uses in Make round summaries."""
@@ -223,6 +230,29 @@ class DesignContract:
                 "under its file names and in its order" % "; ".join(errors)
             )
 
+    def check_print_art_names(self, names: Sequence[str]) -> None:
+        """Refuse print art that would not seal as this contract's art.
+
+        The same rule as ``check_reference_names`` (ADR 0091): exactly the
+        files ``print.art`` lists, in its order. A contract before schema 6
+        takes no print art at all.
+        """
+
+        expected = list(self.print_sheets.art_files) if self.print_sheets is not None else []
+        errors: List[str] = []
+        if len(names) != len(expected):
+            errors.append(
+                "it lists %d print art image(s) but %d were given" % (len(expected), len(names))
+            )
+        for position, (given, listed) in enumerate(zip(names, expected), start=1):
+            if given != listed:
+                errors.append("print art %d seals as %s, not %s" % (position, given, listed))
+        if errors:
+            raise ContractError(
+                "design contract: %s; pass the contract's print art with --print-art, "
+                "under its file names and in its order" % "; ".join(errors)
+            )
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "schema_version": self.schema_version,
@@ -252,6 +282,11 @@ class DesignContract:
             **(
                 {"guides": [item.to_dict() for item in self.guides]}
                 if self.guides is not None
+                else {}
+            ),
+            **(
+                {"print": self.print_sheets.to_dict()}
+                if self.print_sheets is not None
                 else {}
             ),
         }
@@ -402,7 +437,7 @@ def _parse_guides(
         if not isinstance(file_name, str) or _GUIDE_FILE.fullmatch(file_name) is None:
             errors.append("%s.file must look like guide-NN-<slug>.png, .jpg, or .webp" % label)
             file_name = None
-        elif int(file_name[len("guide-"):len("guide-NN")]) != index + 1:
+        elif int(file_name.split("-")[1]) != index + 1:
             errors.append("%s.file must be numbered guide-%02d" % (label, index + 1))
             file_name = None
         shows = item.get("shows")
@@ -751,7 +786,7 @@ def parse_design_contract(text: str) -> DesignContract:
 
     schema_version = block.get("schema_version")
     if isinstance(schema_version, bool) or schema_version not in SCHEMA_VERSIONS:
-        errors.append("schema_version must be 1, 2, 3, 4 or 5")
+        errors.append("schema_version must be 1, 2, 3, 4, 5 or 6")
 
     title = block.get("title")
     if not isinstance(title, str) or not title.strip():
@@ -767,27 +802,37 @@ def parse_design_contract(text: str) -> DesignContract:
     references = _parse_references(
         block.get("references"), geometry_ids, errors,
         cameras=schema_version in (
-            CAMERA_SCHEMA_VERSION, INTERFACE_TEXT_SCHEMA_VERSION, GUIDE_SCHEMA_VERSION
+            CAMERA_SCHEMA_VERSION, INTERFACE_TEXT_SCHEMA_VERSION, GUIDE_SCHEMA_VERSION,
+            PRINT_SCHEMA_VERSION,
         ),
     )
     requirements = _parse_requirements(block.get("requirements"), geometry_ids, errors)
     interfaces: Optional[Tuple[ContractInterface, ...]] = None
+    counts = {item.id: item.count for item in geometries}
     if schema_version in (
         INTERFACES_SCHEMA_VERSION, CAMERA_SCHEMA_VERSION,
-        INTERFACE_TEXT_SCHEMA_VERSION, GUIDE_SCHEMA_VERSION,
+        INTERFACE_TEXT_SCHEMA_VERSION, GUIDE_SCHEMA_VERSION, PRINT_SCHEMA_VERSION,
     ):
-        counts = {item.id: item.count for item in geometries}
         interfaces = _parse_interfaces(
             block.get("interfaces"), counts, errors,
-            text=schema_version in (INTERFACE_TEXT_SCHEMA_VERSION, GUIDE_SCHEMA_VERSION),
+            text=schema_version in (
+                INTERFACE_TEXT_SCHEMA_VERSION, GUIDE_SCHEMA_VERSION, PRINT_SCHEMA_VERSION,
+            ),
         )
     elif "interfaces" in block:
         errors.append("interfaces need schema_version 2 or later")
     guides: Optional[Tuple[ContractGuide, ...]] = None
-    if schema_version == GUIDE_SCHEMA_VERSION:
+    if schema_version == GUIDE_SCHEMA_VERSION or (
+        schema_version == PRINT_SCHEMA_VERSION and "guides" in block
+    ):
         guides = _parse_guides(block.get("guides"), geometry_ids, errors)
     elif "guides" in block:
-        errors.append("guides need schema_version 5")
+        errors.append("guides need schema_version 5 or later")
+    print_sheets: Optional[ContractPrint] = None
+    if schema_version == PRINT_SCHEMA_VERSION:
+        print_sheets = parse_print_section(block.get("print"), counts, errors)
+    elif "print" in block:
+        errors.append("print needs schema_version 6")
 
     assembly_count = sum(1 for item in requirements if item.scope == "assembly")
     if assembly_count > MAX_ASSEMBLY_REQUIREMENTS:
@@ -819,4 +864,5 @@ def parse_design_contract(text: str) -> DesignContract:
         requirements=requirements,
         interfaces=interfaces,
         guides=guides,
+        print_sheets=print_sheets,
     )

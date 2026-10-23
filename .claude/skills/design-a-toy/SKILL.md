@@ -93,6 +93,12 @@ Drive to a written spec containing:
 - **Handling check.** How the toy survives being held, rolled, posed or
   dropped: which parts break or come loose first, and that nothing load-bearing
   is under 3 mm.
+- **Colour and paper.** The filament colour of each Unique Geometry, one
+  colour per Component, and everything the images show that one colour
+  cannot carry - pictures, covers, spines, page text, textures, skies,
+  glazing - as printed paper the buyer applies (see Print Sheets, after
+  Stage 3b): which pieces, on which part, and how each is applied. A toy with
+  any becomes a schema 6 contract.
 
 When the toy has any moving part — a wheel, an axle, a joint, a hinge, a
 sliding or spinning part — also drive to:
@@ -262,13 +268,13 @@ Each image must be:
 
 - **800x800 or smaller.** The likeness gate extracts a silhouette, normalizes
   height, and does not read color. Resolution beyond this buys no accuracy and
-  spends the Wish's 48 MiB reference budget.
+  spends the Wish's 480 MiB image budget.
 - **One subject, fully inside the frame.** The gate rejects a reference whose
   subject touches the image boundary. The assembled toy counts as one subject; a
   scene, a diorama or a populated board position does not.
-- **Named `ref-NN-<slug>.png`**, numbered from `01` in order with no gaps.
-  Lowercase kebab slug. `png`, `jpg`, or `webp`. At most 99 images, at most
-  12 MiB each.
+- **Named `ref-NN-<slug>.png`**, numbered from `01` in order with no gaps
+  (`ref-100-<slug>` after `ref-99`). Lowercase kebab slug. `png`, `jpg`, or
+  `webp`. At most 999 images, at most 12 MiB each.
 
 Iterate each image against criteria stated up front — silhouette reads the
 component's role at thumbnail size, one focal point, contrast holds against
@@ -413,6 +419,65 @@ the Transformation section, each part keeps one colour in every panel, no
 panel shows a part, joint or move the contract does not have, and the robot
 and car panels keep the reference images' proportions. Fix a disagreement by
 editing the panel. The contract wins over a Guide Image, never the other way.
+
+### Print Sheets
+
+Each Component prints in one filament colour. Anything the images show in
+more colours or finer detail than one colour can carry goes on paper instead
+(ADR 0091): pictures, notices, labels, book covers and spines, page text,
+stone, wood and floor textures, wallpaper, skies, maps, glazing. The maker
+prints these on A4 **Print Sheets** and ships them; the buyer cuts them out
+with scissors, folds them and applies them. Decide this in Stage 1 with the
+human, as a question about the toy ("the portrait and the notices are printed
+paper in a shallow recess; the books are printed covers wrapped round plain
+blocks"), never as a question about stocks or millimetres.
+
+Write the contract as schema 6 with a `print` section
+([CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md)): the stocks, one
+`art[]` entry per image and one `pieces[]` entry per thing the buyer cuts out.
+Choose each piece's way from what it lands on:
+
+| What it is | `way` | Stock |
+|---|---|---|
+| A picture, notice, texture or sky on a face | `flat`, into a recess about 0.4 mm deep | `paper` |
+| Glazing in a frame | `flat` | `film` |
+| A label or small sign that must stay put | `sticker` | `sticker` |
+| A closed book, a box | `wrap` (`cover` or `band`) round a printed block | `paper` |
+| A globe | `sphere` | `paper` |
+| An open book, a scroll's pages | `fold` | `paper` |
+| A cloud, tree or far roof layer that stands up | `stand`, in a slot | `card` |
+
+Keep Kit-style economy: a shelf row of books is one `flat` spine strip, not a
+piece per book; one art file may serve several pieces (`count`, or several
+pieces naming it). The block, recess, sphere, fold face or slot each piece
+lands on is part of its Unique Geometry: say so in that geometry's rows.
+
+**Art.** Find patterns first: wallpaper, wood grain, stone, brick, fabric,
+paper and sky come from CC0 stock (ambientCG, Poly Haven, public-domain
+pattern scans), recorded with `source` and `"licence": "CC0-1.0"`; never use
+anything that is not CC0. Draw only what stock cannot give (a portrait, a
+notice's words, a book's cover) with AI generation, matching the reference
+images' palette and style. Make every art file the shape of its piece laid
+flat and at least 300 dpi at its printed size: a `wrap` cover is back, spine
+and front, left to right; a `sphere` strip is the whole joined gore strip;
+a `fold` strip is every page, left to right.
+
+**Proof.** Lay the sheets out with the same tool the run's gate uses:
+
+```sh
+uv run python src/workshop/make/skills/print-details/scripts/print_sheets.py \
+  --contract CONTRACT.md --art <contract-dir> -o <contract-dir>/print-proof
+```
+
+It exits 1 and names every failure: a piece that fits no A4 sheet, a cut
+edge under 5 mm, art missing, the wrong shape or under 300 dpi. Fix the
+contract or the art until it passes. Its `sheet-<stock>-<n>.png` previews
+are the sheet proof Stage 4 shows.
+
+The Reference Images and the art must agree: where a reference shows a
+printed area, its placement, size and overall colour are the reference's,
+and its content is the art's. The run judges it that way, so redraw a
+reference whose printed area shows something the art does not, or the art.
 
 ## Stage 3c - Check that what the images show can be printed
 
@@ -842,6 +907,14 @@ Show each Guide Image too, after the references, with one line on what it
 explains ("guide-01 - the colour-coded transformation, car to robot, seven
 steps"). Approving the images approves the Guide Images.
 
+For a schema 6 contract, show the print art and the sheet proof last: each
+art image with one line on the piece it becomes and how the buyer applies it
+("print-03 - the spell book's cover, wrapped round each of the six desk
+books"), then every `sheet-<stock>-<n>.png` from the passing proof, with the
+stock in plain words ("two sheets of thin paper, one of stickers, one of
+card"). Approving the images approves the art and the sheets. A change to a
+piece's art, size or count reruns the proof and shows the sheets again.
+
 Wait for explicit approval of the images. If the human wants a change - a
 different shape, proportion, count, pose or feature - fix the images by AI
 editing or regeneration, amend the contract so it says what the new images
@@ -851,7 +924,8 @@ which is the one the likeness gate scores. Repeat until the human approves.
 
 ## Stage 5 - Write the contract and hand off
 
-Write `CONTRACT.md` beside the reference images: the prose, then the
+Write `CONTRACT.md` beside the reference images and any guide and print
+art: the prose, then the
 `design-contract` block, both reconciled with the approved images, exactly as
 [CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md) requires. Confirm the
 block's `references[].file` entries now match Stage 3's images one for one —

@@ -117,6 +117,43 @@ class WishReferenceContractTest(unittest.TestCase):
             )
 
 
+class WishImageBudgetTest(unittest.TestCase):
+    """ADR 0091 decision 10: 999 images and 480 MiB, numbered past 99."""
+
+    def test_budget_is_999_images_and_480_mib(self):
+        self.assertEqual(MAX_WISH_REFERENCES, 999)
+        self.assertEqual(MAX_WISH_REFERENCE_TOTAL_BYTES, 480 * 1024 * 1024)
+        self.assertEqual(MAX_WISH_REFERENCE_BYTES, 12 * 1024 * 1024)
+
+    def test_references_number_past_99_with_three_digits(self):
+        references = [
+            _reference(index, sha256="%064x" % index, size=1) for index in range(1, 102)
+        ]
+
+        wish = Wish.create("wish-many", "a crowded nook", references=references)
+
+        self.assertEqual(wish.references[99].path, "wish-references/ref-100-side.png")
+        self.assertEqual(wish.references[100].index, 101)
+        self.assertEqual(Wish(**wish.to_dict()), wish)
+
+    def test_names_keep_one_spelling_per_number(self):
+        for name in (
+            "ref-100-side.png",
+            "ref-999-side.png",
+            "guide-123-steps.png",
+        ):
+            with self.subTest(name=name):
+                WishReference.from_value(_reference(name=name), "wish reference")
+        for name in (
+            "ref-0100-side.png",
+            "ref-1000-side.png",
+            "ref-001-side.png",
+            "ref-1-side.png",
+        ):
+            with self.subTest(name=name), self.assertRaisesRegex(ContractError, "look like ref-NN"):
+                WishReference.from_value(_reference(name=name), "wish reference")
+
+
 if __name__ == "__main__":
     unittest.main()
 
@@ -146,3 +183,35 @@ class WishGuideImageTest(unittest.TestCase):
             Wish.create("wish-g", "toy", references=[_reference(1), _guide(2)])
         with self.assertRaisesRegex(ContractError, "repeat the same bytes"):
             Wish.create("wish-g", "toy", references=[_reference(1), _guide(1, sha256="01" * 32)])
+
+
+def _print_art(index=1, slug="sky", **overrides):
+    value = {"name": "print-%02d-%s.png" % (index, slug), "sha256": ("%02x" % (150 + index)) * 32}
+    value.update(overrides)
+    return _reference(index, slug, **value)
+
+
+class WishPrintArtTest(unittest.TestCase):
+    """ADR 0091: print art seals as print-NN files after every guide."""
+
+    def test_print_art_follows_the_guides_numbered_from_01(self):
+        wish = Wish.create(
+            "wish-p", "toy",
+            references=[_reference(1), _guide(1), _print_art(1), _print_art(2, "cover")],
+        )
+        self.assertEqual([item.kind for item in wish.references], ["ref", "guide", "print", "print"])
+        self.assertEqual([item.print_art for item in wish.references], [False, False, True, True])
+        self.assertFalse(any(item.guide for item in wish.references[2:]))
+        self.assertEqual(wish.references[3].path, "wish-references/print-02-cover.png")
+        self.assertEqual(Wish(**wish.to_dict()), wish)
+        Wish.create("wish-p", "toy", references=[_reference(1), _print_art(1)])
+
+    def test_print_art_out_of_place_or_order_is_refused(self):
+        with self.assertRaisesRegex(ContractError, "print art every guide"):
+            Wish.create("wish-p", "toy", references=[_reference(1), _print_art(1), _guide(1)])
+        with self.assertRaisesRegex(ContractError, "print art every guide"):
+            Wish.create("wish-p", "toy", references=[_print_art(1), _reference(1)])
+        with self.assertRaisesRegex(ContractError, "numbered print-01"):
+            Wish.create("wish-p", "toy", references=[_reference(1), _print_art(2)])
+        with self.assertRaisesRegex(ContractError, "repeat the same bytes"):
+            Wish.create("wish-p", "toy", references=[_reference(1), _print_art(1, sha256="01" * 32)])

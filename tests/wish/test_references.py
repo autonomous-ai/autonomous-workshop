@@ -115,6 +115,29 @@ class LoadWishReferencesTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "at most %d" % MAX_WISH_REFERENCES):
             load_wish_references([hero] * MAX_WISH_REFERENCES, [hero])
 
+    def test_print_art_loads_after_the_guides_as_print_nn(self):
+        hero = self._image("ref-01-hero.png")
+        steps = self._image("guide-01-steps.png", size=(80, 40))
+        sky = self._image("print-01-night-sky.png", size=(60, 90))
+        cover = self._image("Book cover.png", size=(90, 60))
+
+        loaded = load_wish_references([hero], [steps], [sky, cover])
+
+        self.assertEqual(
+            [item.reference.name for item in loaded],
+            ["ref-01-hero.png", "guide-01-steps.png", "print-01-night-sky.png",
+             "print-02-book-cover.png"],
+        )
+        self.assertEqual([item.reference.print_art for item in loaded], [False, False, True, True])
+        self.assertEqual(
+            [item.reference.name for item in load_wish_references([], [], [sky])],
+            ["print-01-night-sky.png"],
+        )
+        with self.assertRaisesRegex(ContractError, "repeats the bytes"):
+            load_wish_references([hero], [], [hero])
+        with self.assertRaisesRegex(ContractError, "at most %d" % MAX_WISH_REFERENCES):
+            load_wish_references([hero] * (MAX_WISH_REFERENCES - 1), [hero], [hero])
+
     def test_unsupported_or_unreadable_files_are_rejected_by_name(self):
         gif = self._image("spinner.gif")
         text = self.root / "notes.txt"

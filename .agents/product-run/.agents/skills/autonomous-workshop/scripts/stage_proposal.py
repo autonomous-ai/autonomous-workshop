@@ -2061,9 +2061,13 @@ def _wish_has_sealed_references(run_root: Path, wish_sha256: str) -> bool:
     """
 
     references = _materialized_wish(run_root, wish_sha256).get("references")
-    # A Guide Image (ADR 0089) is sealed beside them but never accounted for.
+    # A Guide Image (ADR 0089) and print art (ADR 0091) are sealed beside
+    # them but never accounted for.
     return isinstance(references, list) and any(
-        not (isinstance(item, dict) and str(item.get("name", "")).startswith("guide-"))
+        not (
+            isinstance(item, dict)
+            and str(item.get("name", "")).startswith(("guide-", "print-"))
+        )
         for item in references
     )
 
@@ -2758,7 +2762,7 @@ def _verified_guides(value: Any, label: str) -> list[dict[str, Any]]:
     the Design Contract. The verifier already refused a missing step."""
 
     guides = _array(value, label + " guides")
-    if not 1 <= len(guides) <= 99:
+    if not 1 <= len(guides) <= 999:
         raise ProposalError("%s lists an invalid number of guides" % label)
     for index, raw in enumerate(guides, 1):
         item_label = "%s guide %d" % (label, index)

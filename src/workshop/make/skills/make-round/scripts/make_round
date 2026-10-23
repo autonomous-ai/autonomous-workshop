@@ -1213,6 +1213,10 @@ def print_context(cad: Path, nozzle: float, angle: float, bed: str | None = None
                 ("make_round", Path(__file__)),
             )
         }
+        # ADR 0091: the paper gate's tool, when the skill tree has one.
+        paper = cad.parents[1] / "print-details" / "scripts" / "check_print_pieces.py"
+        sources["check_print_pieces.py"] = (hashlib.sha256(paper.read_bytes()).hexdigest()
+                                            if paper.is_file() else None)
         packages = {name: package_version(name) for name in ("numpy", "scipy")}
     except (OSError, PackageNotFoundError):
         return None
@@ -1254,6 +1258,55 @@ def reusable_print(item: dict | None) -> bool:
         isinstance(item.get(gate), dict) and item[gate].get("verdict") == "PASS"
         for gate in PRINT_GATES
     )
+
+
+# ADR 0091: the paper gate. A part hosting a Print Piece runs the print-details skill's
+# check_print_pieces.py beside the print gates; its verdict joins the part's.
+PRINT_PIECES_FILE = Path("print") / "pieces.json"
+
+
+def paper_hosts(project: Path) -> tuple[set, str | None]:
+    """``(roles hosting a Print Piece, install error)`` for a schema 6 run.
+
+    The roles come from the sealed contract. The error is set when the
+    project's installed ``print/pieces.json`` is missing or holds another
+    print section than the contract's: every hosting part then fails its
+    paper gate until the Workshop Manager installs it."""
+
+    contract = sealed_contract(project)
+    if contract is None and run_root(project) is None:
+        # Outside a run (the host's Release rerun of a copied project): the
+        # installed section stands; the host checks it against the seal.
+        try:
+            contract = json.loads((project / PRINT_PIECES_FILE).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            contract = None
+    section = contract.get("print") if isinstance(contract, dict) else None
+    if not isinstance(section, dict):
+        return set(), None
+    roles = {str(piece.get("on", "")).split("#")[0] for piece in section.get("pieces") or ()
+             if isinstance(piece, dict)}
+    try:
+        installed = json.loads((project / PRINT_PIECES_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return roles, ("the Print Pieces are not installed: run print_details.py --install-print "
+                       "<cad-project> --wish <run>/WISH.json")
+    if not isinstance(installed, dict) or installed.get("print") != section:
+        return roles, ("print/pieces.json is not the sealed contract's print section: reinstall it "
+                       "from WISH.json; it is never edited")
+    return roles, None
+
+
+def parse_paper(stdout: str, returncode: int) -> dict:
+    """The verdict and every failing piece from a check_print_pieces run."""
+
+    failures = [line[len("FAIL "):].strip() for line in (stdout or "").splitlines()
+                if line.startswith("FAIL ")]
+    if returncode == 0:
+        return {"verdict": "PASS", "failures": []}
+    if not failures:
+        failures = ["check_print_pieces exit %d" % returncode]
+    return {"verdict": "FAIL", "failures": failures}
 
 
 def diff_parts(previous: dict, current: dict) -> list[str]:
@@ -1375,6 +1428,12 @@ def render_summary(summary: dict) -> str:
             lines.append("  mesh  %-4s %-28s%s" % (mesh["verdict"], role, why))
             for edge in (mesh.get("edges") or [])[:4]:
                 lines.append("    non-manifold edge %s" % edge)
+        paper = gates.get("paper")
+        if paper is not None:
+            # ADR 0091: every Print Piece this part hosts, by its feature.
+            lines.append("  paper %-4s %-28s" % (paper["verdict"], role))
+            for failure in (paper.get("failures") or [])[:6]:
+                lines.append("    %s" % failure)
     for role, keys in sorted((summary.get("repeated_print_defects") or {}).items()):
         lines.append("  again FAIL %-28s  failed last round too: %s; repair from the report's feature column"
                      % (role, ", ".join(keys[:4])))
@@ -1814,9 +1873,11 @@ def guarded_run(project: Path) -> bool:
 # workshop/wish/contracts.py. This script is materialized into a run as a
 # standalone tool and cannot import the host package.
 WISH_REFERENCES_DIR = "wish-references"
-SEALED_NAME = re.compile(r"^(ref-(?:0[1-9]|[1-9][0-9])-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?)\.(?:png|jpg|webp)$")
+SEALED_NAME = re.compile(r"^(ref-(?:0[1-9]|[1-9][0-9]{1,2})-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?)\.(?:png|jpg|webp)$")
 # A Guide Image (ADR 0089) is sealed beside the references and never scored.
-GUIDE_NAME = re.compile(r"^guide-(?:0[1-9]|[1-9][0-9])-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$")
+GUIDE_NAME = re.compile(r"^guide-(?:0[1-9]|[1-9][0-9]{1,2})-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$")
+# ADR 0091: print art is printed on the Print Sheets, never a likeness target.
+PRINT_ART_NAME = re.compile(r"^print-(?:0[1-9]|[1-9][0-9]{1,2})-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$")
 # The Workshop Manager's account of each step a Guide Image draws, in the
 # CAD project root (ADR 0089).
 GUIDE_STEPS_NAME = "guide-steps.json"
@@ -1992,6 +2053,9 @@ def _takes_instance(function):
         return False
 
 
+TAGS = []
+
+
 def _kept(instance):
     """The round's kept build of the part (issue #101), or None to build it."""
     try:
@@ -1999,7 +2063,36 @@ def _kept(instance):
     except ImportError:
         return None
     bundle = brepbundle.for_entry(PROJECT / PART, instance=instance, purpose="display-pose")
-    return None if bundle is None else bundle.shape
+    if bundle is None:
+        return None
+    TAGS[:] = bundle.tags
+    return bundle.shape
+
+
+def _with_decals(placed, built):
+    """ADR 0091: the part's Print Piece decals, moved into the Display Pose
+    with the part, for the review render. A pose that does more than move
+    the part shows none."""
+    try:
+        from features import print_details
+    except ImportError:
+        return placed
+    tags = TAGS or [tag for module in list(sys.modules.values())
+                    for tag in (getattr(module, "PRINT_DETAIL_TAGS", None) or [])
+                    if isinstance(module, type(sys)) and isinstance(tag, dict)]
+    decals = [print_details.read_decal(tag.get("name")) for tag in tags if tag.get("kind") == "print-decal"]
+    decals = [decal for decal in decals if decal is not None]
+    try:
+        move = placed.location * built.location.inverse()
+        from build123d import Location
+
+        expected = (move * Location(tuple(built.bounding_box().center()))).position
+        if (expected - placed.bounding_box().center()).length > 0.5:
+            decals = []
+        placed._print_decals = [print_details.move_decal(decal, move) for decal in decals]
+    except Exception:  # noqa: BLE001 - a render without decals is still a render
+        pass
+    return placed
 
 
 def gen_step():
@@ -2013,9 +2106,10 @@ def gen_step():
         built = _kept(1)
         if built is None:
             built = module.gen_step(instance=1) if _takes_instance(module.gen_step) else module.gen_step()
-        return place(built, None, instance=1)
+        return _with_decals(place(built, None, instance=1), built)
     built = _kept(None)
-    return place(module.gen_step() if built is None else built, None)
+    built = module.gen_step() if built is None else built
+    return _with_decals(place(built, None), built)
 '''
 
 
@@ -2046,8 +2140,9 @@ def sealed_references(project: Path):
     for item in items:
         name = item.get("name") if isinstance(item, dict) else None
         digest = item.get("sha256") if isinstance(item, dict) else None
-        if isinstance(name, str) and GUIDE_NAME.fullmatch(name):
-            # ADR 0089: a Guide Image is never compared with the model.
+        if isinstance(name, str) and (GUIDE_NAME.fullmatch(name) or PRINT_ART_NAME.fullmatch(name)):
+            # ADR 0089: a Guide Image is never compared with the model; nor
+            # is print art (ADR 0091), which the Print Sheet gate checks.
             continue
         match = SEALED_NAME.fullmatch(name) if isinstance(name, str) else None
         if match is None or not isinstance(digest, str):
@@ -4976,11 +5071,14 @@ def make_round(args) -> int:
     # Issue #101: every gate of every part, and a component round's Keep-out
     # Envelope checks (2c), read the round's kept build, so they run at once.
     gate_jobs = []
+    hosts, paper_error = paper_hosts(project)
     for role in sorted(digests):
         prior = previous_print.get(role)
         if (
             not args.all_parts and role not in changed and same_context
             and reusable_print(prior)
+            and (role not in hosts or ((prior.get("paper") or {}).get("verdict") == "PASS"
+                                       and paper_error is None))
         ):
             printing[role] = prior
             continue
@@ -4999,6 +5097,13 @@ def make_round(args) -> int:
             if env:
                 job["extra_env"] = env
             gate_jobs.append((role, gate, job))
+        if role in hosts and paper_error is None:
+            job = {"command": [python, str(cad.parents[1] / "print-details" / "scripts" / "check_print_pieces.py"),
+                               str(part)],
+                   "cwd": project, "log": out / ("paper-%s.log" % role)}
+            if env:
+                job["extra_env"] = env
+            gate_jobs.append((role, "paper", job))
     # 2c. a separable Interface's Keep-out Envelope, checked on this
     # Component alone: either side repairs without touching the other (ADR 0082).
     envelopes, envelope_pending = {}, []
@@ -5017,6 +5122,7 @@ def make_round(args) -> int:
         gates = {}
         for gate, (log, done) in runs.items():
             parsed = (parse_mesh(done.stdout, done.returncode) if gate == "mesh" else
+                      parse_paper(done.stdout, done.returncode) if gate == "paper" else
                       (parse_thickness if gate == "thickness" else parse_overhang)(done.stdout))
             if done.returncode == 3:
                 parsed["verdict"] = "UNVERIFIED"
@@ -5043,6 +5149,12 @@ def make_round(args) -> int:
             "measured_round": round_index,
             "logs": logs,
         }
+        if role in hosts:
+            # ADR 0091: a hosting part's paper gate; an install error fails it.
+            paper = gates.get("paper") or {"verdict": "FAIL", "failures": [paper_error or "not checked"]}
+            printing[role]["paper"] = paper
+            if paper["verdict"] != "PASS":
+                printing[role]["verdict"] = "FAIL"
         repeated = repeated_defects(prior, printing[role])
         if repeated:
             printing[role]["repeated_defects"] = repeated
@@ -5059,6 +5171,8 @@ def make_round(args) -> int:
             "measured_round": round_index,
             "logs": {},
         }
+        if role in hosts:
+            printing[role]["paper"] = {"verdict": "FAIL", "failures": ["build failed"]}
     # The B-rep each check read (issue #101): its log's "[brep] ... read"
     # lines, none when it built from source.
     brep_logs = {"%s-%s" % (gate, role): job["log"] for role, gate, job in gate_jobs}
