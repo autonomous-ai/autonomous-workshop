@@ -138,12 +138,22 @@ class KitManualTest(unittest.TestCase):
         self.assertEqual(front["included"], ["tweezers", "foam-tape", "Screwdriver"])
         self.assertEqual(front["self_prepared"], ["Scissors", "Batteries for P04-battery-box (battery-box-2aa-switch)"])
         self.assertEqual(front["warnings"], ["Small parts warning.", "Battery warning."])
+        # Q29: every Bought Part is listed as bought, not printed.
+        self.assertEqual(front["not_printed"], [
+            "P01-hinge-pin  steel-pin-1.5x29.5  x1", "P02-jar  clear-jar-6x7  x1",
+            "P03-ball-led  led-3v-cool-white  x1", "P04-battery-box  battery-box-2aa-switch  x1"])
+        self.assertEqual(report["not_printed"], [
+            {"body": "P01-hinge-pin#1", "bought": "steel-pin-1.5x29.5"},
+            {"body": "P02-jar#1", "bought": "clear-jar-6x7"},
+            {"body": "P03-ball-led#1", "bought": "led-3v-cool-white"},
+            {"body": "P04-battery-box#1", "bought": "battery-box-2aa-switch"}])
         self.assertEqual(report["company"], {"name": "Test Co", "after_sales": "help@example.invalid",
                                              "confirmed": True})
         text = pdf_text(pdf)
         for needle in ("Assembly Manual", "Included tools", "Self-prepared", "Warnings",
                        "Check all Parts against the material lists before you start.", "Light check",
-                       "Join the LED to the battery box", "Bag 1", "Printed", "Paper", "Bought",
+                       "Join the LED to the battery box", "Bag 1", "Printed", "Paper", "Bought, not printed",
+                       "These come bought. Do not print them", "P02-jar clear-jar-6x7 x1",
                        "Set the door between the lugs and push the pin down.", "Correct", "Incorrect",
                        "P01-hinge-pin: 29.5 mm, 1:1", "M01-spine-strip [printed side out]",
                        "Lead of P03-ball-led comes out: Out of the hole under the dais.",
@@ -305,7 +315,7 @@ def gen_step():
 
 
 def bought_parts():
-    return _bodies(BOUGHT, (0.6, 0.6, 0.6)) if BOUGHT else None
+    return _bodies(BOUGHT, (1.0, 0.0, 1.0)) if BOUGHT else None
 
 
 def assembly_pose(shape, pose, instance=1):
@@ -342,6 +352,13 @@ class RealGeometryManualTest(unittest.TestCase):
                 self.assertEqual(kit_manual.main([str(project), "--company", str(company)]), 0)
                 outputs.append((project / "manual" / "manual.pdf").read_bytes())
             self.assertEqual(outputs[0], outputs[1])
+            # Q29 on real geometry: the Bought Parts read back in the
+            # reserved magenta and the printed Parts in their filaments.
+            plan = kit_tree.Plan(kit)
+            geometry = kit_tree.CadGeometry(project, {"desk": 2})
+            bodies = [body for role in ("case", "cabinet") for body in geometry.component(role, 1)]
+            self.assertIn("#ff00ff", {colour for body in bodies for colour in body.colours})
+            self.assertEqual(kit_tree.colour_failures(plan, bodies), [])
 
 
 if __name__ == "__main__":

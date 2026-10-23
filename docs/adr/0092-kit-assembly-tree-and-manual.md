@@ -3,8 +3,10 @@
 - Status: Accepted (owner, 2026-10-23). Implementation steps 2 (issue
   #135), 3 (issue #136) and 4 (issue #137) are implemented: schema 7 parses
   and lints, the catalogues ship seeded and unconfirmed, design-a-toy
-  drafts the tree, Make's tree gates (decision 8) and the pilot's stop on a
-  tree defect (decision 10) exist, and final verification writes the
+  drafts the tree, Make's tree gates (decision 8), the pilot's stop on a
+  contract tree defect (decision 10, split from labelling slips by the
+  owner on 2026-10-23) and the not-printed colour and list of Bought Parts
+  (decision 5, owner, 2026-10-23) exist, and final verification writes the
   Manual (decision 9), which the host checks and Release ships. `workshop
   wish|fix` now seal schema 7 contracts. The gates are tested on
   deterministic fakes; the Manual also on a small real build123d project.
@@ -97,6 +99,25 @@ both are decided together. Six 2026 Rolife manuals were read page by page
    - A Bought Part outside it needs the owner's approval.
    - Consumables carry spares by pack size. Wire is cut to 1:1 gauges.
      Printed Parts are not printed spare in the pilot.
+   - **Bought Parts are visibly not printed** (owner decision Q29,
+     2026-10-23).
+     - Every Bought Part body in every STEP and render carries one
+       reserved colour, pure magenta `#ff00ff`, which no filament may
+       take. It is one named constant (`BOUGHT_PART_HEX`) in the
+       catalogue validator and in the run-local tree gate, held equal by a
+       test.
+     - The catalogue validator refuses a filament of that colour, or one
+       the colour gate cannot tell from it. The colour gate refuses a
+       printed Part in it and a Bought Part without it.
+     - Final verification writes `measure/not-printed.json`: every Bought
+       Part body of the toy (`<id>#n`, numbered across the toy) with its
+       catalogue id. It is read from the tree, so it is deterministic, and
+       reconciliation proves the bodies match it. The host checks it
+       before Make is accepted, the receipt carries it, Release ships it
+       beside the STEP files (`make/models/cad/not-printed.json`), and
+       the Manual's front page and bought column say these are bought,
+       not printed. Its pictures draw them in neutral grey, as the buyer
+       sees them.
 
 6. **The contract declares the tree (schema 7).**
    - Every Part and Assembly Step has an id of a code plus a kebab-case
@@ -139,7 +160,10 @@ both are decided together. Six 2026 Rolife manuals were read page by page
      every catalogued Bought Part the contract cites matches exactly one
      leaf. A missing, extra or duplicated Part fails, and so does a
      duplicated id or mnemonic. design-a-toy checks the Print Sheet and
-     catalogue sides at approval.
+     catalogue sides at approval. Decision 10 says which failures stop
+     the run.
+   - **Colour.** Each printed Part is in its filament's colour, and each
+     Bought Part in the reserved not-printed colour (decision 5).
    - **Insertion.**
      - Each input is inserted alone. Moving several inputs at once is
        refused.
@@ -169,11 +193,12 @@ both are decided together. Six 2026 Rolife manuals were read page by page
    - Content:
      - a front page of included tools (tweezers, foam tape and dots, a
        screwdriver when there are screws or a battery box, printed jigs)
-       and self-prepared ones (scissors, batteries), with warnings and
+       and self-prepared ones (scissors, batteries), with warnings, every
+       Bought Part under "Bought, not printed" (decision 5, Q29) and
        "check all Parts first";
      - the light Check Step;
      - one section per Component, with its bag and a three-column material
-       list (printed / paper / bought);
+       list (printed / paper / bought, not printed);
      - the join sections above the Components;
      - exploded renders per step, 1:1 gauges, printed-side and peel marks,
        Sub-assembly labels, correct/incorrect pictures where marked, and a
@@ -215,6 +240,27 @@ both are decided together. Six 2026 Rolife manuals were read page by page
     itself. Each one is logged in the toy's `TREE-ISSUES.md`. After the
     pilot the owner decides which kinds may be repaired automatically.
 
+    *Amended by the owner, 2026-10-23 (Q28).* Two kinds are told apart:
+    - A **contract tree defect** is the sealed tree itself failing to
+      hold together. Examples: a Print Piece or Bought Part the tree
+      cannot account for against the Print Sheet or catalogue side, a
+      leaf that is an input of two steps, a Part in no step or no
+      Component, or a leads step below its lamps. It is unchanged: it
+      stops the run with a need to the owner, is recorded in
+      `measure/tree-defects.json` (every later round of that tree
+      refuses), is logged in `TREE-ISSUES.md`, and is never repaired in
+      the run.
+    - A **labelling slip** is a sound tree that the built bodies do not
+      match: a body with a wrong or unknown Part label, a missing or
+      duplicated body, a Part built in another Component, or a wrong
+      colour. It is an ordinary gate failure. The Component Worker
+      repairs it in its next round, or the Manager in the next assembly
+      round, like any other gate. It records nothing, refuses no later
+      round and does not stop the run; final verification and the host
+      still refuse a Make with one open. A review that sees a Part
+      missing from a model of a sound tree lists it as an ordinary
+      difference.
+
 ## Not decided here
 
 - Whether Night Charms Hall keeps its 14 Components or is cut differently.
@@ -233,6 +279,12 @@ both are decided together. Six 2026 Rolife manuals were read page by page
   catalogue) passes the gates. Only the exploded views, the "in the box"
   image and the Component Reviewer catch it. Decision 10 measures how often
   this happens.
+- Since Q28, `TREE-ISSUES.md` logs only contract tree defects. Labelling
+  slips appear in round summaries like any failing gate, so the pilot no
+  longer counts how often workers mislabel bodies as a tree issue.
+- Since Q29, every render and STEP shows Bought Parts in magenta rather
+  than their real look. A Component Reviewer compares them by form, not
+  colour, and the not-printed list travels with every STEP.
 - Insertion checks run per step, not only per Coupled Interface, so assembly
   rounds sweep more conditions.
 - Two catalogues, filaments and Bought Parts, become owned data the owner

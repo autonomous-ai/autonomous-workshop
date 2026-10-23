@@ -29,14 +29,17 @@ What the Manual holds, in order
    self-prepared items: scissors when there are Print Pieces, and batteries
    for each power source. The company's warnings (small parts always,
    batteries with a power source) and "check all Parts first". Printed jigs
-   are not in the tree's schema yet, so none is listed.
+   are not in the tree's schema yet, so none is listed. Every Bought Part
+   under "Bought, not printed" with its count and catalogue name (owner
+   decision Q29): the STEP models them, in the reserved magenta, only for
+   fit.
 2. **Check Steps** (``assembly_tree.checks``), each with the Parts it
    connects and a picture of them where they sit in the toy.
 3. **One section per Component**, in the Manual order of its first step: its
    bag (bags are numbered by section), a picture of the finished Component,
-   a three-column material list (printed / paper / bought) with counts per
-   toy, a 1:1 gauge for every Bought Part with a fixed length (wire, pins,
-   tubes: a catalogue ``length`` size), and its steps.
+   a three-column material list (printed / paper / bought, not printed)
+   with counts per toy, a 1:1 gauge for every Bought Part with a fixed
+   length (wire, pins, tubes: a catalogue ``length`` size), and its steps.
 4. **One join section per step across Components**, in Manual order, each
    with its own material list.
 5. **Completion picture**, and the after-sales contact.
@@ -130,6 +133,9 @@ JOINT_LABELS = {
     "bend": "Bend", "roll": "Roll", "leads": "Join the leads",
 }
 CHECK_PARTS_FIRST = "Check all Parts against the material lists before you start."
+# Q29: Bought Parts are bought, never printed; the Manual says so.
+NOT_PRINTED = "Bought, not printed"
+NOT_PRINTED_NOTE = "These come bought. Do not print them: the models show them only for fit."
 PEEL = "peel"
 PRINTED_SIDE = "printed side out"
 
@@ -361,7 +367,10 @@ def plan_manual(kit: dict, company: dict) -> dict:
         "title": str(kit.get("title") or "") or plan.step[plan.root].get("output", ""),
         "tree_sha256": tool.tree_digest(kit),
         "front": {"included": included, "self_prepared": prepared, "warnings": warnings,
-                  "check_first": CHECK_PARTS_FIRST},
+                  "check_first": CHECK_PARTS_FIRST,
+                  "not_printed": ["%s  %s  x%d" % (part, _bought_entry(plan, part).get("name", part),
+                                                    int(plan.totals.get(part, 1))) for part in sorted(plan.bought)]},
+        "not_printed": [{"body": item["body"], "bought": item["bought"]} for item in tool.not_printed(plan)],
         "checks": checks,
         "sections": [sections[key] for key in order],
         "completion": plan.root,
@@ -774,6 +783,12 @@ def draw_pdf(document: dict, plan, images: dict, path: Path) -> int:
         top = pages.need(8 + LINE_MM * len(lines))
         _text(c, left, top - 5, [heading], "Helvetica-Bold", 11, ACCENT)
         _text(c, left, top - 10, lines, "Helvetica", 10)
+    if front.get("not_printed"):
+        lines = [line for row in [NOT_PRINTED_NOTE] + ["- " + row for row in front["not_printed"]]
+                 for line in _lines(row, "Helvetica", 10, width)]
+        top = pages.need(8 + LINE_MM * len(lines))
+        _text(c, left, top - 5, [NOT_PRINTED], "Helvetica-Bold", 11, ACCENT)
+        _text(c, left, top - 10, lines, "Helvetica", 10)
     top = pages.need(12)
     _text(c, left, top - 7, [front["check_first"]], "Helvetica-Bold", 11)
     legend = ["! = watch this step: compare it with the correct and incorrect pictures",
@@ -845,7 +860,7 @@ def _band(c, top: float, title: str, badge: str = "") -> None:
 
 
 def _materials(c, pages: Pages, columns, left: float, width: float) -> None:
-    headings = ("Printed", "Paper", "Bought")
+    headings = ("Printed", "Paper", NOT_PRINTED)
     column_w = width / 3.0
     rows = max(len(column) for column in columns) if any(columns) else 1
     per_page = int((PAGE_MM[1] - 2 * MARGIN_MM - FOOTER_MM - 12) // LINE_MM)

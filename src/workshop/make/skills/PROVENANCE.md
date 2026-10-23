@@ -2397,11 +2397,14 @@ Display Pose entry moves them into the pose. The `cad`, `make-round` and
 
 `make-round/scripts/kit_tree.py` is new and host-owned: it installs a
 schema 7 Design Contract's Assembly Tree (`tree/kit.json`), reconciles each
-Component's labelled bodies with the tree's leaves, checks Part colours,
+Component's labelled bodies with the tree's leaves (a mismatch is a
+repairable labelling slip; only a contract tree defect stops the run),
+checks Part colours (Bought Parts in the reserved `#ff00ff`), writes the
+final `measure/not-printed.json` list of Bought Part bodies,
 compiles each joining step to `check_motion` `assembly_sequence` /
 `linear_motion_collision` conditions and sweeps them, and sweeps each lead
 route. `make_round` runs it in component and assembly rounds (a `tree`
-line), refuses every round after a tree defect, and routes a schema 7
+line), refuses every round after a contract tree defect, and routes a schema 7
 Print Piece's `paper` gate by its host. `print-details`'
 `check_print_pieces.py` reads the tree for the same routing. In the
 vendored `cad` tree, `verify_project` runs `kit_tree.py --final` before the

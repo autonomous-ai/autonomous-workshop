@@ -28,8 +28,9 @@ CHECK_PIECES = ROOTS["print-details"] / "scripts" / "check_print_pieces.py"
 VERIFIER = ROOTS["cad"] / "scripts" / "verify_project"
 
 
-def report_line(verdict="PASS", defects=(), failures=(), digest="d" * 64, scope="assembly"):
+def report_line(verdict="PASS", defects=(), failures=(), digest="d" * 64, scope="assembly", slips=()):
     return json.dumps({"kind": "kit-tree-report", "verdict": verdict, "defects": list(defects),
+                       "slips": list(slips),
                        "failures": list(failures), "conditions": [{"id": "S07-furniture"}], "routes": [],
                        "tree_sha256": digest, "scope": scope})
 
@@ -192,6 +193,26 @@ class RoundTreeGateTest(unittest.TestCase):
         _, _, summary, printed = self.round(self.project, line + "\n", 1, 1)
         self.assertFalse(summary["checks_ok"])
         self.assertIn("S03-hang-door#1 cannot go in alone", printed)
+
+    def test_a_labelling_slip_fails_the_round_but_the_run_continues(self):
+        # Owner decision Q28: a body that does not match a sound tree is
+        # repaired in the next round; nothing is recorded, nothing refuses.
+        slip = {"kind": "missing", "part": "B02-cabinet-door", "detail": "no body labelled B02-cabinet-door"}
+        line = report_line("FAIL", slips=[slip], digest=TOOL.tree_digest(self.kit), failures=[
+            "labelling slip: missing B02-cabinet-door: no body labelled B02-cabinet-door; rebuild or relabel "
+            "the body to match the tree"])
+        module, _, summary, printed = self.round(self.project, line + "\n", 1, 1)
+        self.assertFalse(summary["checks_ok"])
+        self.assertEqual(summary["tree"]["verdict"], "FAIL")
+        self.assertNotIn("need", summary["tree"])
+        self.assertNotIn("TREE DEFECT", printed)
+        self.assertIn("labelling slip", printed)
+        self.assertFalse((self.project / "measure" / "tree-defects.json").exists())
+        self.assertEqual(module.tree_refusal(self.project), "")
+        # The next round runs, and with the body built it passes its tree line.
+        _, _, summary, _ = self.round(self.project, report_line(digest=TOOL.tree_digest(self.kit)) + "\n", 0, 1)
+        self.assertEqual(summary["tree"]["verdict"], "PASS")
+        self.assertTrue(summary["checks_ok"])
 
     def test_a_tree_defect_fails_the_round_and_stops_every_later_one(self):
         digest = TOOL.tree_digest(self.kit)

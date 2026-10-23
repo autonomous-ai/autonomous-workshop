@@ -1,8 +1,10 @@
 """ADR 0092 decision 8: the Assembly Tree gates, against a deterministic fake
 geometry of axis-aligned boxes. Every failure the issue names has its fake:
-a missing body, an extra body and a duplicated leaf; a blocked insertion and
-a non-parallel joint; a simultaneous move; a closed lead route; and a
-lead-joining step below the lamps' common Sub-assembly."""
+a missing body, an extra body and a duplicated leaf (labelling slips, owner
+decision Q28); a blocked insertion and a non-parallel joint; a simultaneous
+move; a closed lead route; a lead-joining step below the lamps' common
+Sub-assembly (a contract tree defect); and the reserved Bought Part colour
+and not-printed list (Q29)."""
 
 from __future__ import annotations
 
@@ -101,8 +103,9 @@ class BoxGeometry:
         for item in self.layout.get((role, instance), ()):
             label, shape = item[0], item[1]
             solids = item[2] if len(item) > 2 else 1
+            default = kit_tree.BOUGHT_PART_HEX if label and label.startswith("P") else HEX
             found.append(kit_tree.Body(label, shape, solids=solids,
-                                       colours=(self.colours.get(label, HEX),)))
+                                       colours=(self.colours.get(label, default),)))
         return found
 
     def bounds(self, shapes):
@@ -274,49 +277,68 @@ class KitTreeGateTest(unittest.TestCase):
         self.assertIn("C01-desk-body#1", steps[2]["inputs"]["obstacle_parts"])
         self.assertNotIn("C01-desk-body#2", steps[1]["inputs"]["obstacle_parts"])
 
-    # -- tree defects (ADR 0092 decision 10) -------------------------------
+    # -- labelling slips (Q28) and contract tree defects (decision 10) -----
 
-    def test_a_missing_body_is_a_tree_defect(self):
+    def slips(self, report):
+        self.assertEqual(report["verdict"], "FAIL", report)
+        self.assertEqual(report["defects"], [])
+        return [(d["kind"], d["part"]) for d in report["slips"]]
+
+    def test_a_missing_body_is_a_labelling_slip_not_a_tree_defect(self):
         layout = replace(copy.deepcopy(LAYOUT), "cabinet", "B02-cabinet-door", drop=True)
         report = self.component("cabinet", BoxGeometry(layout))
-        self.assertEqual(report["verdict"], "DEFECT")
-        self.assertEqual([(d["kind"], d["part"]) for d in report["defects"]], [("missing", "B02-cabinet-door")])
+        self.assertEqual(self.slips(report), [("missing", "B02-cabinet-door")])
+        self.assertIn("labelling slip: missing B02-cabinet-door: part_cabinet builds no body labelled "
+                      "B02-cabinet-door; rebuild or relabel", report["failures"][0])
         # No sweep runs on a Component that does not match its tree.
         self.assertEqual(report["conditions"], [])
-        self.assertIn("TREE DEFECT: stop", kit_tree.render(report))
+        rendered = kit_tree.render(report)
+        self.assertNotIn("TREE DEFECT", rendered)
+        self.assertIn("LABELLING SLIP", rendered)
+        # The next round, the body built, passes.
+        self.assertEqual(self.component("cabinet")["verdict"], "PASS")
 
-    def test_an_extra_body_is_a_tree_defect(self):
+    def test_a_wrongly_labelled_body_is_a_slip(self):
+        layout = copy.deepcopy(LAYOUT)
+        layout[("cabinet", 1)][3] = ("B02-cabinet-dor", LAYOUT[("cabinet", 1)][3][1])
+        kinds = self.slips(self.component("cabinet", BoxGeometry(layout)))
+        self.assertEqual(sorted(kinds), [("extra", "B02-cabinet-dor"), ("missing", "B02-cabinet-door")])
+
+    def test_an_extra_body_is_a_labelling_slip(self):
         layout = replace(copy.deepcopy(LAYOUT), "cabinet", None,
                          add=("B03-cabinet-shelf", box((41, 41, 6), (69, 59, 7))))
         layout[("cabinet", 1)].append((None, box((0, 0, 50), (1, 1, 51))))
         report = self.component("cabinet", BoxGeometry(layout))
-        kinds = [(d["kind"], d["part"]) for d in report["defects"]]
+        kinds = self.slips(report)
         self.assertIn(("extra", "B03-cabinet-shelf"), kinds)
         self.assertIn(("extra", "(unlabelled)"), kinds)
         # A Part of another Component built here is extra too.
         layout = replace(copy.deepcopy(LAYOUT), "cabinet", None,
                          add=("C01-desk-body", box((0, 0, 60), (1, 1, 61))))
         report = self.component("cabinet", BoxGeometry(layout))
-        self.assertIn("is a Part of desk", report["defects"][0]["detail"])
+        self.assertIn("is a Part of desk", report["slips"][0]["detail"])
 
-    def test_a_duplicated_leaf_is_a_tree_defect(self):
+    def test_a_duplicated_body_is_a_slip_and_a_duplicated_leaf_a_tree_defect(self):
         layout = replace(copy.deepcopy(LAYOUT), "cabinet", None,
                          add=("D01-inkwell", box((60, 35, 20), (63, 40, 24))))
         report = self.component("cabinet", BoxGeometry(layout))
-        self.assertEqual([(d["kind"], d["part"]) for d in report["defects"]], [("duplicated", "D01-inkwell")])
+        self.assertEqual(self.slips(report), [("duplicated", "D01-inkwell")])
         # One printed Part built as two solids is duplicated as well; a
         # bought STEP of several solids is still one Bought Part.
         layout = copy.deepcopy(LAYOUT)
         layout[("cabinet", 1)][3] = ("B02-cabinet-door", LAYOUT[("cabinet", 1)][3][1], 2)
         layout[("cabinet", 1)][1] = ("P02-jar", LAYOUT[("cabinet", 1)][1][1], 3)
         report = self.component("cabinet", BoxGeometry(layout))
-        self.assertEqual([(d["kind"], d["part"]) for d in report["defects"]], [("duplicated", "B02-cabinet-door")])
-        # A leaf that is an input of two steps, in a tampered install.
+        self.assertEqual(self.slips(report), [("duplicated", "B02-cabinet-door")])
+        # A leaf that is an input of two steps, in a tampered install: the
+        # contract's tree itself, a tree defect that stops the run.
         kit = copy.deepcopy(self.kit)
         steps = kit["assembly_tree"]["steps"]
         steps[5]["inputs"].append({"id": "P02-jar", "direction": [0, 0, 1]})
         report = self.component("case", kit=kit)
+        self.assertEqual(report["verdict"], "DEFECT")
         self.assertIn(("duplicated", "P02-jar"), [(d["kind"], d["part"]) for d in report["defects"]])
+        self.assertIn("TREE DEFECT: stop", kit_tree.render(report))
 
     def test_a_print_piece_or_bought_part_the_tree_cannot_account_for_is_a_defect(self):
         kit = copy.deepcopy(self.kit)
@@ -389,6 +411,46 @@ class KitTreeGateTest(unittest.TestCase):
         self.assertEqual(report["failures"], [
             "B02-cabinet-door is #ff0000, not its filament dark-oak (#112233): colour it #112233"])
 
+    def test_a_bought_part_without_the_reserved_colour_fails(self):
+        # Q29: every Bought Part body is the not-printed magenta.
+        report = self.component("cabinet", BoxGeometry(colours={"P02-jar": HEX}))
+        self.assertEqual(report["verdict"], "FAIL")
+        self.assertEqual(report["defects"], [])
+        self.assertEqual(report["failures"], [
+            "P02-jar is a Bought Part in #112233, not the reserved not-printed colour #ff00ff: "
+            "colour it #ff00ff"])
+        plan = kit_tree.Plan(self.kit)
+        bare = kit_tree.Body("P01-hinge-pin", box((0, 0, 0), (1, 1, 1)))
+        self.assertIn("P01-hinge-pin is a Bought Part in uncoloured", kit_tree.colour_failures(plan, [bare])[0])
+
+    def test_a_printed_part_in_the_reserved_colour_fails(self):
+        report = self.component("cabinet", BoxGeometry(colours={"B02-cabinet-door": "#ff00ff"}))
+        self.assertEqual(report["verdict"], "FAIL")
+        self.assertEqual(report["failures"], [
+            "B02-cabinet-door is a printed Part in #ff00ff, the reserved colour of Bought Parts: "
+            "colour it its filament dark-oak (#112233)"])
+
+    def test_final_verification_lists_every_bought_body_as_not_printed(self):
+        listed = kit_tree.not_printed(self.plan)
+        self.assertEqual([(item["body"], item["bought"], item["component"]) for item in listed], [
+            ("P01-hinge-pin#1", "steel-pin-1.5x29.5", "cabinet"),
+            ("P02-jar#1", "clear-jar-6x7", "cabinet"),
+            ("P03-ball-led#1", "led-3v-cool-white", "case"),
+            ("P04-battery-box#1", "battery-box-2aa-switch", "case")])
+        document = kit_tree.not_printed_document(self.kit)
+        self.assertEqual(document["colour"], "#ff00ff")
+        self.assertEqual(document["bodies"], listed)
+        self.assertIn("never printed", document["note"])
+        self.assertEqual(document, kit_tree.not_printed_document(copy.deepcopy(self.kit)))
+        # A Bought Part made in every copy of a repeated step is listed once per body.
+        kit = copy.deepcopy(self.kit)
+        cabinet = next(item for item in kit["assembly_tree"]["steps"] if item["id"] == "S03-hang-door")
+        cabinet["count"] = 1
+        pins = next(entry for entry in cabinet["inputs"] if entry["id"] == "P01-hinge-pin")
+        pins["count"] = 2
+        self.assertEqual([item["body"] for item in kit_tree.not_printed(kit_tree.Plan(kit))][:2],
+                         ["P01-hinge-pin#1", "P01-hinge-pin#2"])
+
     def test_assembly_and_final_verification_check_across_components(self):
         # A desk set where the cabinet's way down crosses it.
         layout = replace(copy.deepcopy(LAYOUT), "desk", "C01-desk-body", box((38, 38, 5), (72, 62, 15)),
@@ -400,11 +462,20 @@ class KitTreeGateTest(unittest.TestCase):
         # Set on its sockets the desk overlaps the cabinet set before it:
         # an interference at the seat, not a move made together.
         self.assertIn("S07-furniture: S04-dress-desk#1 cannot go in alone", report["failures"][0])
-        # Final verification reconciles every Component and every instance.
+        # Final verification reconciles every Component and every instance;
+        # a body missing there is a slip that fails it, not a tree defect.
         layout = replace(copy.deepcopy(LAYOUT), "desk", "C01-desk-body", drop=True, instance=2)
         report = self.assembly(BoxGeometry(layout), final=True)
-        self.assertEqual([(d["kind"], d["part"], d.get("instance")) for d in report["defects"]],
+        self.assertEqual(report["verdict"], "FAIL")
+        self.assertEqual(report["defects"], [])
+        self.assertEqual([(d["kind"], d["part"], d.get("instance")) for d in report["slips"]],
                          [("missing", "C01-desk-body", 2)])
+        self.assertIn("labelling slip (instance 2): missing C01-desk-body", report["failures"][0])
+        # An assembly round names the Component whose round says how.
+        report = self.assembly(BoxGeometry(layout))
+        self.assertEqual(report["verdict"], "FAIL")
+        self.assertEqual([(d["kind"], d["part"]) for d in report["slips"]], [("unreconciled", "desk")])
+        self.assertEqual(report["conditions"], [])
 
 
 class KitTreeInstallTest(unittest.TestCase):
@@ -459,7 +530,7 @@ class KitTreeInstallTest(unittest.TestCase):
             # The owner amended the tree: the old defect stops nothing.
             self.assertIsNone(kit_tree.open_defects(cad, "b" * 64))
 
-    def test_the_command_line_exits_3_on_a_defect_and_writes_the_final_report(self):
+    def test_the_command_line_exits_1_on_a_slip_3_on_a_tree_defect_and_writes_the_final_report(self):
         with tempfile.TemporaryDirectory() as temporary:
             cad = Path(temporary)
             (cad / "tree").mkdir()
@@ -474,7 +545,9 @@ class KitTreeInstallTest(unittest.TestCase):
             kit_tree.run = fake_run
             try:
                 with unittest.mock.patch("sys.stdout"):
-                    self.assertEqual(kit_tree.main([str(cad), "--component", "cabinet"]), 3)
+                    # A labelling slip fails the round and records nothing.
+                    self.assertEqual(kit_tree.main([str(cad), "--component", "cabinet"]), 1)
+                    self.assertFalse((cad / "measure" / "tree-defects.json").exists())
                     self.assertEqual(kit_tree.main([str(cad), "--final"]), 0)
             finally:
                 kit_tree.run = original
@@ -482,6 +555,22 @@ class KitTreeInstallTest(unittest.TestCase):
             self.assertEqual(report["kind"], "kit-tree-report")
             self.assertEqual(report["verdict"], "PASS")
             self.assertEqual(report["leaves"]["pieces"], ["M01-spine-strip", "M02-desk-book"])
+            listed = json.loads((cad / "measure" / "not-printed.json").read_text())
+            self.assertEqual(listed, kit_tree.not_printed_document(sealed_kit()))
+            self.assertEqual(listed["bodies"], report["not_printed"])
+            self.assertFalse((cad / "measure" / "tree-defects.json").exists())
+            # A contract tree defect exits 3 and is recorded.
+            kit = sealed_kit()
+            kit["assembly_tree"]["steps"][5]["inputs"].append({"id": "P02-jar", "direction": [0, 0, 1]})
+            (cad / "tree" / "kit.json").write_text(json.dumps(kit))
+            kit_tree.run = lambda project, mode, role, nozzle, geometry=None: original(
+                project, mode, role, nozzle, BoxGeometry())
+            try:
+                with unittest.mock.patch("sys.stdout"):
+                    self.assertEqual(kit_tree.main([str(cad), "--final"]), 3)
+            finally:
+                kit_tree.run = original
+            self.assertEqual(kit_tree.open_defects(cad, kit_tree.tree_digest(kit))["scope"], "final")
 
     def test_self_check(self):
         with unittest.mock.patch("sys.stdout"):

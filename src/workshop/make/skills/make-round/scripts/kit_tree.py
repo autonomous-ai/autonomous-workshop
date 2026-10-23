@@ -20,7 +20,10 @@ solid per printed Part of the Component: the label is the Part id
 (``A01-desk``). A Component that holds Bought Parts also defines
 ``bought_parts()``, which returns one labelled body per Bought Part
 (``P01-steel-pin``), modelled to its catalogue size, in the same frame as
-``gen_step()``; it is never printed, so the print gates never see it. When one
+``gen_step()``, and coloured :data:`BOUGHT_PART_HEX`, the reserved colour no
+filament may take, so every render and STEP shows it is not printed (owner
+decision Q29, 2026-10-23); it is never printed, so the print gates never see
+it. When one
 Component instance holds a Part more than once (four legs), the copies are
 labelled ``<id>#1`` to ``<id>#4``. Every body is placed into the assembly by
 the Component's own ``assembly_pose(shape, None)`` (``instance=n`` for the
@@ -31,14 +34,24 @@ is looked through; a solid reached without a Part label is an extra body.
 The gates
 ---------
 - **Reconciliation.** Every body, every Print Piece and every cited Bought
-  Part matches exactly one leaf. A missing, extra or duplicated Part (a label
-  twice, one label on two solids, a body no leaf names, a Part of another
-  Component) is a **tree defect**. So is a Print Piece or Bought Part the
-  sealed install cannot account for, and a leads step below the smallest
-  Sub-assembly holding its lamps. In the pilot (ADR 0092 decision 10) a
-  tree defect stops the run: nothing repairs the tree automatically.
+  Part matches exactly one leaf. Two kinds of mismatch differ (owner
+  decision Q28, 2026-10-23):
+
+  - A **contract tree defect**: the sealed tree itself does not hold
+    together. A Print Piece or Bought Part the install cannot account for,
+    a leaf that is an input of two steps, a Part in no step or no
+    Component, and a leads step below the smallest Sub-assembly holding its
+    lamps. In the pilot (ADR 0092 decision 10) it stops the run: it is
+    recorded in ``measure/tree-defects.json`` and nothing repairs the tree.
+  - A **labelling slip**: the tree holds together but the built bodies do
+    not match it: a missing, extra or duplicated body (a label twice, one
+    label on two solids, a body no leaf names, a Part of another
+    Component). It is an ordinary failure the round's author repairs like
+    a print gate; it records nothing and stops nothing.
 - **Colour.** Every printed Part's body carries its filament's colour, so
-  the review renders show the kit as it prints.
+  the review renders show the kit as it prints, and never
+  :data:`BOUGHT_PART_HEX`; every Bought Part's body carries that reserved
+  colour.
 - **Insertion.** Each Assembly Step that joins (a joint of peg-socket,
   tab-slot, pin-hinge, foam-tape, glue or paper) becomes one
   ``assembly_sequence`` of ``linear_motion_collision`` conditions
@@ -67,7 +80,14 @@ Components in assembly rounds (``--assembly``) and in final verification
 ``measure/tree-report.json`` for the host). The ``paper`` gate follows the same
 split: :func:`paper_plan` says which Component round checks each Print Piece.
 
-Exit status: 0 pass, 1 a repairable failure, 3 a tree defect, 2 bad usage.
+Final verification also writes ``measure/not-printed.json``: every Bought
+Part body of the toy, ``<id>#n`` numbered across the whole toy, with its
+catalogue id, so the STEP's reserved-colour bodies are listed as bought, not
+printed (Q29). The host checks it, the receipt carries it and Release ships
+it beside the STEP files.
+
+Exit status: 0 pass, 1 a repairable failure (a labelling slip included), 3 a
+contract tree defect, 2 bad usage.
 The last stdout line is the JSON report with ``--json``.
 """
 
@@ -91,8 +111,16 @@ KIT_KIND = "kit-tree"
 REPORT_KIND = "kit-tree-report"
 INSTALL_SCHEMA = 1
 TREE_SCHEMA_VERSION = 7
-# The pilot's ledger of tree defects (ADR 0092 decision 10), under measure/.
+# The pilot's ledger of contract tree defects (ADR 0092 decision 10), under measure/.
 DEFECTS_FILE = "tree-defects.json"
+# Final verification's list of every Bought Part body (Q29), under measure/.
+NOT_PRINTED_FILE = "not-printed.json"
+NOT_PRINTED_KIND = "kit-not-printed"
+# The one colour every Bought Part body carries in every STEP and render, and
+# no filament may take: a clearly artificial magenta, never a stocked spool
+# (owner decision Q29, 2026-10-23). The host's catalogue validator holds the
+# same value (workshop.wish.catalogues.BOUGHT_PART_HEX); a test keeps them one.
+BOUGHT_PART_HEX = "#ff00ff"
 
 JOINS = ("peg-socket", "tab-slot", "pin-hinge", "foam-tape", "glue")
 PAPER = "paper"
@@ -471,7 +499,8 @@ class Body:
 
 
 def reconcile(expected: Counter, bodies: list[Body], plan: Plan, geometry: str) -> list[dict]:
-    """Missing, extra and duplicated Parts of one Component instance."""
+    """Missing, extra and duplicated bodies of one Component instance: each a
+    labelling slip (Q28), repaired in the next round, never a tree defect."""
 
     defects = []
     found = Counter(body.label for body in bodies if body.label is not None)
@@ -501,16 +530,41 @@ def reconcile(expected: Counter, bodies: list[Body], plan: Plan, geometry: str) 
     return defects
 
 
+def slip_failure(slip: dict) -> str:
+    """A labelling slip as the failure line its round's author repairs."""
+
+    where = " (instance %d)" % slip["instance"] if "instance" in slip else ""
+    return "labelling slip%s: %s %s: %s; rebuild or relabel the body to match the tree" % (
+        where, slip["kind"], slip["part"], slip["detail"])
+
+
 def colour_failures(plan: Plan, bodies: list[Body]) -> list[str]:
+    """Each printed Part in its filament's colour and never the reserved
+    Bought Part colour; each Bought Part in the reserved colour (Q29)."""
+
     failures = []
     filaments = plan.catalogue.get("filaments") or {}
     for body in bodies:
         match = PART_LABEL.match(body.label or "")
         part = plan.parts.get(match.group(1)) if match else None
-        if part is None or "filament" not in part:
+        if part is None:
+            continue
+        if "bought" in part:
+            wrong = sorted({colour or "uncoloured" for colour in body.colours
+                            if not _same_colour(colour, BOUGHT_PART_HEX)})
+            if not body.colours or wrong:
+                failures.append("%s is a Bought Part in %s, not the reserved not-printed colour %s: colour it %s"
+                                % (body.label, ", ".join(wrong) or "uncoloured", BOUGHT_PART_HEX,
+                                   BOUGHT_PART_HEX))
+            continue
+        if "filament" not in part:
             continue
         want = (filaments.get(part["filament"]) or {}).get("hex")
         if want is None:
+            continue
+        if any(_same_colour(colour, BOUGHT_PART_HEX) for colour in body.colours):
+            failures.append("%s is a printed Part in %s, the reserved colour of Bought Parts: colour it its "
+                            "filament %s (%s)" % (body.label, BOUGHT_PART_HEX, part["filament"], want))
             continue
         wrong = sorted({colour or "uncoloured" for colour in body.colours if not _same_colour(colour, want)})
         if not body.colours or wrong:
@@ -707,18 +761,20 @@ def check_component(plan: Plan, geometry, role: str, nozzle: float) -> dict:
     """Everything one Component's round checks: its bodies against its
     leaves, their colours, and every step and route wholly inside it."""
 
-    report = {"scope": "component:%s" % role, "defects": [], "failures": [], "conditions": [], "routes": []}
+    report = {"scope": "component:%s" % role, "defects": [], "slips": [], "failures": [], "conditions": [],
+              "routes": []}
     expected = plan.expected_labels(role)
     instances = geometry.instances(role)
     for instance in instances:
         bodies = geometry.component(role, instance)
-        defects = reconcile(expected, bodies, plan, role)
-        for defect in defects:
+        slips = reconcile(expected, bodies, plan, role)
+        for slip in slips:
             if len(instances) > 1:
-                defect["instance"] = instance
-        report["defects"] += defects
+                slip["instance"] = instance
+        report["slips"] += slips
+        report["failures"] += [slip_failure(slip) for slip in slips]
         report["failures"] += colour_failures(plan, bodies)
-        if defects:
+        if slips:
             continue
         checked = _check(role, plan, geometry, keyed(plan, role, bodies), nozzle)
         for key in ("conditions", "failures", "routes"):
@@ -733,25 +789,27 @@ def check_assembly(plan: Plan, geometry, nozzle: float, *, reconcile_all: bool =
     also reconciles and colour-checks every Component."""
 
     report = {"scope": "final" if reconcile_all else "assembly", "defects": structure_defects(plan),
-              "failures": [], "conditions": [], "routes": []}
+              "slips": [], "failures": [], "conditions": [], "routes": []}
     bodies: dict[str, Body] = {}
     for role in sorted(plan.component_parts):
         expected = plan.expected_labels(role)
         for instance in range(1, int(plan.geometries[role]["count"]) + 1):
             built = geometry.component(role, instance)
-            defects = reconcile(expected, built, plan, role)
+            slips = reconcile(expected, built, plan, role)
             if reconcile_all:
-                for defect in defects:
+                for slip in slips:
                     if plan.geometries[role]["count"] > 1:
-                        defect["instance"] = instance
-                report["defects"] += defects
+                        slip["instance"] = instance
+                report["slips"] += slips
+                report["failures"] += [slip_failure(slip) for slip in slips]
                 report["failures"] += colour_failures(plan, built)
-            elif defects and not any(item["part"] == role for item in report["defects"]):
-                report["defects"].append(_defect(
-                    "unreconciled", role, "part_%s does not match its leaves; its component round names how"
-                    % role, component=role))
+            elif slips and not any(item["part"] == role for item in report["slips"]):
+                slip = _defect("unreconciled", role, "part_%s does not match its leaves; its component round "
+                               "names how" % role, component=role)
+                report["slips"].append(slip)
+                report["failures"].append(slip_failure(slip))
             bodies.update(keyed(plan, role, built, instance))
-    if not report["defects"]:
+    if not report["defects"] and not report["slips"]:
         checked = _check(None, plan, geometry, bodies, nozzle)
         for key in ("conditions", "failures", "routes"):
             report[key] += checked[key]
@@ -1000,17 +1058,45 @@ def _apart(box, grown) -> bool:
 
 
 def summarise(report: dict) -> dict:
+    report.setdefault("slips", [])
     report["verdict"] = "DEFECT" if report["defects"] else "FAIL" if report["failures"] else "PASS"
     return report
 
 
 def defect_need(report: dict) -> str:
-    """The need a tree defect stops the run with (ADR 0092 decision 10)."""
+    """The need a contract tree defect stops the run with (ADR 0092
+    decision 10). A labelling slip never reaches here (Q28)."""
 
     shown = "; ".join("%s %s: %s" % (item["kind"], item["part"], item["detail"]) for item in report["defects"][:6])
     return ("Tree defect, reported to the owner, never repaired in the run (ADR 0092 decision 10): %s. "
-            "Log it in the toy's TREE-ISSUES.md and correct the Design Contract's Assembly Tree or the "
-            "Component's Part labels." % shown)
+            "Log it in the toy's TREE-ISSUES.md and correct the Design Contract's Assembly Tree." % shown)
+
+
+def not_printed(plan: Plan) -> list[dict]:
+    """Every Bought Part body of the whole toy, never printed (Q29): one entry
+    per occurrence, ``<id>#n`` numbered across the toy as the gates key it,
+    with its Component and catalogue id. It reads the tree, not geometry, so
+    it is deterministic; reconciliation proves the bodies match it."""
+
+    entries = (plan.catalogue.get("bought_parts") or {})
+    found = []
+    for part in sorted(plan.bought):
+        catalogue_id = plan.parts[part]["bought"]
+        for n in range(1, plan.totals.get(part, 0) + 1):
+            found.append({"body": "%s#%d" % (part, n), "part": part, "bought": catalogue_id,
+                          "name": str((entries.get(catalogue_id) or {}).get("name", "")),
+                          "component": plan.component_of.get(part)})
+    return found
+
+
+def not_printed_document(kit: dict) -> dict:
+    """``measure/not-printed.json``: the list final verification writes."""
+
+    return {"kind": NOT_PRINTED_KIND, "schema_version": 1, "tree_sha256": tree_digest(kit),
+            "colour": BOUGHT_PART_HEX,
+            "note": "Bought Parts: bought, never printed. Each is modelled in the STEP for fit only and "
+                    "coloured %s; do not print these bodies." % BOUGHT_PART_HEX,
+            "bodies": not_printed(Plan(kit))}
 
 
 def defects_path(project: Path) -> Path:
@@ -1048,8 +1134,12 @@ def render(report: dict) -> str:
     lines += ["DEFECT %s %s: %s" % (item["kind"], item["part"], item["detail"]) for item in report["defects"]]
     lines += ["FAIL %s" % item for item in report["failures"]]
     if report["defects"]:
-        lines.append("TREE DEFECT: stop. Do not change the model to hide it; the Workshop Manager stops the run "
-                     "with this need: %s" % defect_need(report))
+        lines.append("TREE DEFECT: stop. The sealed contract's tree does not hold together; do not change the "
+                     "model to hide it; the Workshop Manager stops the run with this need: %s"
+                     % defect_need(report))
+    elif report.get("slips"):
+        lines.append("LABELLING SLIP: the built bodies do not match the tree; repair them in the next round "
+                     "like any failing gate (Q28). The run continues.")
     return "\n".join(lines)
 
 
@@ -1074,6 +1164,7 @@ def run(project: Path, mode: str, role: str | None, nozzle: float, geometry=None
         report["leaves"] = {
             "printed": sorted(plan.printed), "bought": sorted(plan.bought), "pieces": sorted(plan.pieces),
         }
+        report["not_printed"] = not_printed(plan)
     return summarise(report)
 
 
@@ -1122,6 +1213,9 @@ def main(argv=None) -> int:
         (project / "measure").mkdir(exist_ok=True)
         (project / "measure" / REPORT_FILE).write_text(json.dumps(report, indent=1, sort_keys=True) + "\n",
                                                       encoding="utf-8")
+        (project / "measure" / NOT_PRINTED_FILE).write_text(
+            json.dumps(not_printed_document(read_install(project)), indent=1, sort_keys=True) + "\n",
+            encoding="utf-8")
         if report["defects"]:
             record_defects(project, report, report["tree_sha256"])
     print(render(report))

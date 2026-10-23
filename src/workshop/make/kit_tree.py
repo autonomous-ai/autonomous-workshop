@@ -11,9 +11,14 @@ without rebuilding any geometry (ADR 0061), that
 - the installed tree is the one the sealed contract and catalogue give;
 - the final report is for that tree, passed, and reconciled every leaf:
   every printed Part, every Bought Part and every Print Piece;
-- no tree defect of that tree is on record: in the pilot a tree defect
-  stops the run for the owner (ADR 0092 decision 10), so a Make that
-  carries one is never accepted.
+- no contract tree defect of that tree is on record: in the pilot a
+  contract tree defect stops the run for the owner (ADR 0092 decision 10),
+  so a Make that carries one is never accepted. A labelling slip (built
+  bodies that do not match a sound tree, owner decision Q28) is never
+  recorded there: it fails its round and the final report, and is repaired;
+- ``measure/not-printed.json`` lists exactly the Bought Part bodies the tree
+  gives, each with its catalogue id, in the reserved not-printed colour
+  (owner decision Q29); its bodies join the account the receipt carries.
 
 The run-local tool is ``make-round/scripts/kit_tree.py``; the install
 document here is built the same way, and a test holds the two together.
@@ -27,11 +32,14 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Mapping
 
 from workshop.errors import ContractError
+from workshop.wish.catalogues import BOUGHT_PART_HEX
 
 TREE_SCHEMA_VERSION = 7
 INSTALL_PATH = "tree/kit.json"
 REPORT_PATH = "measure/tree-report.json"
 DEFECTS_PATH = "measure/tree-defects.json"
+NOT_PRINTED_PATH = "measure/not-printed.json"
+NOT_PRINTED_KIND = "kit-not-printed"
 KIT_KIND = "kit-tree"
 REPORT_KIND = "kit-tree-report"
 INSTALL_SCHEMA = 1
@@ -65,6 +73,31 @@ def _leaves(contract: Mapping[str, Any]) -> dict[str, list[str]]:
         "bought": sorted(item["id"] for item in tree["parts"] if "bought" in item),
         "pieces": sorted(item["id"] for item in pieces or ()),
     }
+
+
+def not_printed(contract: Mapping[str, Any], catalogue: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Every Bought Part body of the toy, ``<id>#n`` across the whole toy, as
+    the run-local ``kit_tree.not_printed`` lists it: the count is the Part's
+    occurrences under the root, from the tree alone."""
+
+    tree = contract["assembly_tree"]
+    steps = list(tree["steps"])
+    totals: dict[str, int] = {steps[-1]["id"]: int(steps[-1]["count"])}
+    for item in reversed(steps):
+        node = item["id"]
+        totals.setdefault(node, int(item["count"]))
+        for entry in item["inputs"]:
+            totals[entry["id"]] = totals[node] * int(entry.get("count", 1))
+    owner = {part: item["geometry"] for item in tree["components"] for part in item["parts"]}
+    entries = catalogue.get("bought_parts") or {}
+    found = []
+    for part in sorted(item["id"] for item in tree["parts"] if "bought" in item):
+        catalogue_id = next(item["bought"] for item in tree["parts"] if item["id"] == part)
+        for n in range(1, totals.get(part, 0) + 1):
+            found.append({"body": "%s#%d" % (part, n), "part": part, "bought": catalogue_id,
+                          "name": str((entries.get(catalogue_id) or {}).get("name", "")),
+                          "component": owner.get(part)})
+    return found
 
 
 def verify_made_tree(
@@ -122,9 +155,24 @@ def verify_made_tree(
             + [str(item) for item in failures or ()]
         )[:400] or "it did not pass"
         raise ContractError("the Assembly Tree gates did not pass: %s" % shown)
+    if report.get("slips"):
+        raise ContractError("the Assembly Tree gates did not pass: a labelling slip is open")
     leaves = _leaves(contract)
     if report.get("leaves") != leaves:
         raise ContractError("%s does not account for every leaf of the sealed tree" % REPORT_PATH)
+    # Q29: the Bought Part bodies, bought and never printed, listed beside
+    # the STEP for the receipt and the Release archive.
+    bodies = not_printed(contract, catalogue)
+    listed = json_file(NOT_PRINTED_PATH, "final verification wrote no %s for the Bought Parts" % NOT_PRINTED_PATH)
+    if (
+        not isinstance(listed, Mapping)
+        or listed.get("kind") != NOT_PRINTED_KIND
+        or listed.get("tree_sha256") != digest
+        or listed.get("colour") != BOUGHT_PART_HEX
+        or listed.get("bodies") != bodies
+        or report.get("not_printed") != bodies
+    ):
+        raise ContractError("%s is not the sealed tree's list of Bought Part bodies" % NOT_PRINTED_PATH)
     conditions = report.get("conditions") or []
     return {
         "printed_parts": len(leaves["printed"]),
@@ -135,7 +183,12 @@ def verify_made_tree(
         ),
         "lead_routes_across_components": len(report.get("routes") or []),
         "report": (prefix / REPORT_PATH).as_posix(),
+        "not_printed": {
+            "path": (prefix / NOT_PRINTED_PATH).as_posix(),
+            "colour": BOUGHT_PART_HEX,
+            "bodies": [{"body": item["body"], "bought": item["bought"]} for item in bodies],
+        },
     }
 
 
-__all__ = ["install_document", "tree_digest", "verify_made_tree"]
+__all__ = ["install_document", "not_printed", "tree_digest", "verify_made_tree"]

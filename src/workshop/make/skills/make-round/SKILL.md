@@ -703,7 +703,9 @@ labelled solid per printed Part of the Component, its label the Part id
 (`cadgen.srgb(<hex>)`; `tree/kit.json` `catalogue.filaments`). A Component
 that holds Bought Parts also defines `bought_parts()`, returning one labelled
 body per Bought Part (`P02-steel-pin`) at its catalogue size, in the same
-frame as `gen_step()`; it is never printed. When one Component instance
+frame as `gen_step()`, coloured the reserved not-printed magenta `#ff00ff`
+(`cadgen.srgb("#ff00ff")`), which no filament takes; it is never printed.
+When one Component instance
 holds a Part more than once, the copies are `<id>#1`, `<id>#2`, ... in Manual
 order: copy k of a step takes the next `count` copies of each of its inputs.
 Instance n of a geometry whose count is above 1 is the n-th copy of its
@@ -712,8 +714,9 @@ its labels. Unlabelled nodes are looked through; a solid reached without a
 Part label is an extra body.
 
 **What the gates check.** `kit_tree.py` reconciles every body, Print Piece
-and cited Bought Part with exactly one leaf; checks each printed Part's
-colour; sweeps each input of each joining step alone from wholly outside
+and cited Bought Part with exactly one leaf; checks each printed Part is in
+its filament's colour and never `#ff00ff`, and each Bought Part in
+`#ff00ff`; sweeps each input of each joining step alone from wholly outside
 the rest of its Sub-assembly to its seat, against only what is already
 assembled, along its declared direction (a `check_motion`
 `assembly_sequence` of `linear_motion_collision` conditions, overlap above
@@ -727,22 +730,37 @@ non-parallel joint); and sweeps a sphere of each lamp's lead diameter plus
 checked in that Component's round (its `tree` line); a step across
 Components in every assembly round and in final verification, which also
 reconciles every Component and writes `measure/tree-report.json` for the
-host. The `paper` gate follows the same split: a Print Piece on a printed
+host, and `measure/not-printed.json`: every Bought Part body of the toy
+(`<id>#n` across the toy) with its catalogue id, which the host checks, the
+receipt lists and Release ships beside the STEP files. The `paper` gate
+follows the same split: a Print Piece on a printed
 Part, or on a Sub-assembly inside one Component, is that Component's to
 carry; one on a Bought Part has no printed feature; one on a Sub-assembly
 across Components must be carried by exactly one of their parts, which
 assembly rounds and final verification check.
 
-**A tree defect stops the run** (decision 10, the pilot). A missing, extra or
-duplicated Part, or a leads step below its lamps' smallest common
-Sub-assembly, prints `TREE DEFECT` with a need, records
-`measure/tree-defects.json`, and from then on `make_round` refuses every
-round of that tree. A worker reports it to the Manager and changes nothing;
-the Manager stops the run with the need it names (`stage_proposal.py need
---stage make --status waiting`). Nothing in the run repairs the tree or
-relabels bodies to hide it: the owner corrects the contract, and the
-build-a-toy loop logs the defect in the toy's `TREE-ISSUES.md`. Insertion,
-colour and lead-route failures are repairs like a print gate's.
+**A labelling slip is repaired; a contract tree defect stops the run**
+(decision 10 as the owner amended it on 2026-10-23, Q28).
+
+- A **labelling slip** means the tree holds together but the built bodies
+  do not match it: a body with a wrong or unknown Part label, a missing,
+  extra or duplicated body, a Part built in another Component, or a wrong
+  colour. The `tree` line fails with `labelling slip: ...` lines. Repair it
+  in the next round like any failing gate: the Component Worker in its
+  component round, the Manager in the next assembly round. It records
+  nothing and stops nothing.
+- A **contract tree defect** means the sealed tree itself does not hold
+  together: a Print Piece or Bought Part it cannot account for, a leaf in
+  two steps, a Part in no step or no Component, or a leads step below its
+  lamps' smallest common Sub-assembly. It prints `TREE DEFECT` with a need,
+  records `measure/tree-defects.json`, and from then on `make_round`
+  refuses every round of that tree. A worker reports it to the Manager and
+  changes nothing; the Manager stops the run with the need it names
+  (`stage_proposal.py need --stage make --status waiting`). Nothing in the
+  run repairs the tree: the owner corrects the contract, and the
+  build-a-toy loop logs the defect in the toy's `TREE-ISSUES.md`.
+
+Insertion and lead-route failures are repairs like a print gate's.
 
 **The Manual** (ADR 0092 decision 9). Final verification, after the tree
 gates and the Print Sheets pass, runs
@@ -754,8 +772,9 @@ gates and the Print Sheets pass, runs
 which writes `manual/manual.pdf` and its report `manual/manual.json`. It is
 deterministic: the same tree and build give the same bytes. It builds every
 Component as the final tree gate does and draws, from one fixed camera:
-a front page of tools, warnings and "check all Parts first"; the Check
-Steps; one section per Component (bag, printed / paper / bought material
+a front page of tools, warnings, every Bought Part under "Bought, not
+printed" (Q29) and "check all Parts first"; the Check Steps; one section
+per Component (bag, printed / paper / "bought, not printed" material
 list, 1:1 gauges, one exploded picture per step with arrows along each
 insertion direction, a correct/incorrect pair for an `error_prone` step);
 one join section per step across Components; the completion picture and

@@ -465,7 +465,11 @@ def _copy_made_tree(
             continue
         if not cad_relative.parts:
             continue
-        if cad_relative.parts[0] == "measure":
+        if cad_relative.as_posix() == "measure/not-printed.json":
+            # ADR 0092, owner decision Q29: the Bought Part bodies of the
+            # STEP files, bought and never printed, ship beside the models.
+            destination = "%s/models/cad/not-printed.json" % destination_root
+        elif cad_relative.parts[0] == "measure":
             destination = "%s/verification/reports/%s" % (
                 destination_root,
                 PurePosixPath(*cad_relative.parts[1:]).as_posix(),

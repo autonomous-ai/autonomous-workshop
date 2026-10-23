@@ -240,12 +240,17 @@ are separate. Frozen older runs retain their materialized rules and tools.
    tree and the build (`make-round/scripts/kit_manual.py`, ADR 0092
    decision 9); the host checks it too, and Release ships it. Never write,
    edit or reword the Manual: its text is the contract's own.
-   Make never changes the tree. A `TREE DEFECT` (a missing, extra or
-   duplicated Part, from a round or from any review that sees one) stops
-   the run: do not repair it or have a worker relabel around it; stop at
-   once with the need the round prints (`stage_proposal.py --run-root .
-   need --stage make --status waiting --reason ...`). `make_round` refuses
-   every later round of that tree.
+   Make never changes the tree. A `labelling slip` (built bodies that do
+   not match a sound tree: a wrong or unknown Part label, a body missing,
+   extra or duplicated, a wrong colour) is an ordinary gate failure: the
+   worker repairs it in its next component round, you in the next
+   assembly round (owner decision Q28). A `TREE DEFECT` (the sealed tree
+   itself does not hold together) stops the run: do not repair it or have
+   a worker relabel around it; stop at once with the need the round
+   prints (`stage_proposal.py --run-root . need --stage make --status
+   waiting --reason ...`). `make_round` refuses every later round of that
+   tree. Bought Part bodies are always the reserved magenta `#ff00ff`;
+   final verification lists them in `measure/not-printed.json`.
 
    When the sealed Design Contract has an `interfaces` section (ADR 0082),
    implement its Interfaces; do not invent others. A shared file is then a

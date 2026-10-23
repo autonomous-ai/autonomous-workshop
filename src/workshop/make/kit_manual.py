@@ -10,7 +10,9 @@ sealed bytes and without rebuilding any geometry (ADR 0061), that
 - every leaf of the tree (printed Part, Bought Part, Print Piece) is in
   exactly one section's material list, and every Assembly Step and Check
   Step is in it;
-- the PDF is the one the report names.
+- the PDF is the one the report names;
+- it lists every Bought Part body as bought, not printed, exactly as the
+  tree gives them (owner decision Q29).
 
 Release adds nothing: it ships the accepted PDF beside the STEP files and the
 Print Sheets. A route whose host reruns final verification (Forge, Quest)
@@ -27,7 +29,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Mapping
 
 from workshop.errors import ContractError
-from workshop.make.kit_tree import TREE_SCHEMA_VERSION, install_document, tree_digest
+from workshop.make.kit_tree import TREE_SCHEMA_VERSION, install_document, not_printed, tree_digest
 
 MANUAL_DIRECTORY = "manual"
 PDF_PATH = "manual/manual.pdf"
@@ -114,6 +116,9 @@ def verify_made_manual(
     checks = [item.get("id") for item in report.get("checks") or () if isinstance(item, Mapping)]
     if checks != [item["id"] for item in tree.get("checks") or ()]:
         raise ContractError("the kit Manual does not show every Check Step first")
+    bodies = [{"body": item["body"], "bought": item["bought"]} for item in not_printed(contract, catalogue)]
+    if report.get("not_printed") != bodies:
+        raise ContractError("the kit Manual does not list every Bought Part body as bought, not printed")
     pdf = read(PDF_PATH)
     pdf_sha256 = hashlib.sha256(pdf).hexdigest()
     named = report.get("pdf") if isinstance(report.get("pdf"), Mapping) else {}
@@ -126,6 +131,7 @@ def verify_made_manual(
         "pages": report.get("pages"),
         "sections": len(sections),
         "check_steps": len(checks),
+        "not_printed": len(bodies),
         "after_sales_confirmed": company.get("confirmed") is True,
     }
 

@@ -59,8 +59,17 @@ class MadeKitManualTest(unittest.TestCase):
         self.assertEqual(account["pdf_sha256"], self.report["pdf"]["sha256"])
         self.assertEqual(account["sections"], 5)
         self.assertEqual(account["check_steps"], 1)
+        self.assertEqual(account["not_printed"], 4)
         self.assertTrue(account["after_sales_confirmed"])
         json.dumps(account)
+
+    def test_a_manual_that_does_not_list_the_bought_bodies_as_not_printed_is_refused(self):
+        # Q29: the Manual names every Bought Part body as bought, not printed.
+        self.rewrite({**self.report, "not_printed": self.report["not_printed"][1:]})
+        self.assertIn("every Bought Part body as bought, not printed", self.refused())
+        del self.report["not_printed"]
+        self.rewrite(self.report)
+        self.assertIn("every Bought Part body as bought, not printed", self.refused())
 
     def test_an_earlier_contract_checks_nothing(self):
         self.assertIsNone(verify_made_manual(self.run_root, self.made(), dict(self.contract, schema_version=6), None))

@@ -535,6 +535,16 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                kit_tree.get("print_pieces", "?"), kit_tree.get("insertions_across_components", "?"),
                kit_tree.get("lead_routes_across_components", "?"))
         )
+        listed = kit_tree.get("not_printed")
+        if isinstance(listed, Mapping) and isinstance(listed.get("bodies"), (list, tuple)):
+            # Q29: the Bought Part bodies in the STEP, bought, never printed.
+            print(
+                "Not printed (bought, %s in the STEP): %s — %s"
+                % (listed.get("colour", "?"),
+                   ", ".join("%s (%s)" % (item.get("body", "?"), item.get("bought", "?"))
+                             for item in listed["bodies"] if isinstance(item, Mapping)) or "none",
+                   listed.get("path", "?"))
+            )
     kit_manual = receipt.get("kit_manual")
     if isinstance(kit_manual, Mapping):
         # ADR 0092 decision 9: the kit's Manual, written by Make.
