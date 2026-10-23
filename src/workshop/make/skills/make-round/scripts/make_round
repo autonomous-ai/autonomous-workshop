@@ -1211,9 +1211,12 @@ def print_context(cad: Path, nozzle: float, angle: float, bed: str | None = None
                 ("meshlib.py", cad / "meshlib.py"),
                 ("printlib.py", cad / "printlib.py"),
                 ("make_round", Path(__file__)),
-                ("check_print_pieces.py", cad.parents[1] / "print-details" / "scripts" / "check_print_pieces.py"),
             )
         }
+        # ADR 0091: the paper gate's tool, when the skill tree has one.
+        paper = cad.parents[1] / "print-details" / "scripts" / "check_print_pieces.py"
+        sources["check_print_pieces.py"] = (hashlib.sha256(paper.read_bytes()).hexdigest()
+                                            if paper.is_file() else None)
         packages = {name: package_version(name) for name in ("numpy", "scipy")}
     except (OSError, PackageNotFoundError):
         return None
