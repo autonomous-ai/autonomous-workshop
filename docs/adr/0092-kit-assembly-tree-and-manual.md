@@ -1,10 +1,13 @@
 # ADR 0092: An Assembly Tree splits a toy into kit Parts and writes its Manual
 
-- Status: Accepted (owner, 2026-10-23). Implementation step 2 (issue #135)
-  is implemented: schema 7 parses and lints, the catalogues ship seeded and
-  unconfirmed, and design-a-toy drafts the tree. Steps 3-7 are not, so
-  `workshop wish|fix` refuse to seal a schema 7 contract until the tree
-  gates (#136) and the Manual (#137) exist.
+- Status: Accepted (owner, 2026-10-23). Implementation steps 2 (issue
+  #135) and 3 (issue #136) are implemented: schema 7 parses and lints, the
+  catalogues ship seeded and unconfirmed, design-a-toy drafts the tree, and
+  Make's tree gates (decision 8) and the pilot's stop on a tree defect
+  (decision 10) exist, tested on deterministic fakes; no live run has
+  exercised them, because steps 4-7 are not implemented and `workshop
+  wish|fix` refuse to seal a schema 7 contract until the Manual (#137)
+  exists.
 - Date: 2026-10-23
 - Amends: ADR 0091 (what a Print Piece lands on; its id form), ADR 0082
   (Components are subtrees of the Assembly Tree), ADR 0088 (insertion paths

@@ -221,6 +221,28 @@ are separate. Frozen older runs retain their materialized rules and tools.
    hosting part does and the sheets lay out (`print/sheets/`, ADR 0091). The
    printed paper carries the art: no part models, embosses or paints it.
 
+   When the sealed Design Contract is schema 7 (ADR 0092), install its
+   Assembly Tree too, before any worker starts:
+
+   ```bash
+   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/kit_tree.py --install <cad-project> --wish WISH.json
+   ```
+
+   It writes `tree/kit.json`; never edit it. Tell each Component Worker its
+   Component's Parts (`assembly_tree.components`), each printed Part's
+   filament, its Bought Parts, and the steps inside it with their insertion
+   directions and lead routes. Each Part is one labelled body
+   (`make-round/SKILL.md`, "The kit's Assembly Tree"). Component rounds check
+   the steps inside each Component; your assembly rounds and final
+   verification check the joins across Components and write
+   `measure/tree-report.json`, which the host checks before accepting Make.
+   Make never changes the tree. A `TREE DEFECT` (a missing, extra or
+   duplicated Part, from a round or from any review that sees one) stops
+   the run: do not repair it or have a worker relabel around it; stop at
+   once with the need the round prints (`stage_proposal.py --run-root .
+   need --stage make --status waiting --reason ...`). `make_round` refuses
+   every later round of that tree.
+
    When the sealed Design Contract has an `interfaces` section (ADR 0082),
    implement its Interfaces; do not invent others. A shared file is then a
    Shared Helper and holds only what two or more Components must agree on:

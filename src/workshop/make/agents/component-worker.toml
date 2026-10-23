@@ -65,6 +65,21 @@ one section a failure you cannot place requires.
   `paper` line fails until every hosted piece is in the part. The printed
   paper carries the picture, text or texture: never model, emboss or
   engrave it.
+- Under a schema 7 Design Contract (ADR 0092) your Component is several kit
+  Parts, which the Manager lists with their filaments. Return from
+  `gen_step()` one solid per printed Part, labelled with its Part id
+  (`A03-hat`) and coloured with its filament's hex from
+  `tree/kit.json` (`catalogue.filaments`, `cadgen.srgb(hex)`). Define
+  `bought_parts()` returning one labelled body per Bought Part
+  (`P02-steel-pin`) at its catalogue size, in the same frame; it is never
+  printed. Label repeated copies `<id>#1`, `<id>#2`, ... in Manual order.
+  A piece's `on` may name one of your Parts or a Sub-assembly: place its
+  print feature on that Part. Your round's `tree` line sweeps each input of
+  your steps into its seat along its direction, alone, and each lead route;
+  repair a blocked insertion, a non-parallel joint, a closed route or a
+  wrong colour like a print gate. A `TREE DEFECT` (a Part missing, extra or
+  duplicated) is not yours to repair: change nothing, report it to the
+  Manager with the need the round prints, and stop.
 - End every point, chisel, keel, crest and V underside in a flat land at
   least one print minimum across (0.8 mm at a 0.4 mm nozzle; never the
   geometry's wall_min_mm, which sizes load-bearing sections):

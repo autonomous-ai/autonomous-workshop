@@ -293,9 +293,16 @@ cannot be explained in one clear Manual step is a bad split.
    names nothing. Fix every error. Its warnings name each catalogue entry the
    owner has not confirmed yet; list them for Stage 4.
 
-Make may not change the tree. Until Make's tree gates (issue #136) and the
-Manual (issue #137) exist, `workshop wish|fix --contract` refuse to seal a
-schema 7 contract: say so at the hand-off instead of starting a run.
+Make may not change the tree: its tree gates (ADR 0092 decision 8) check
+every body, Print Piece and Bought Part against it, and in the pilot a
+missing, extra or duplicated Part stops the run for the owner (decision 10).
+Once the owner has approved the tree in Stage 4, treat any such Part found
+later the same way, whoever finds it (a gate, a review, an image check): log
+it as a row of the toy's `TREE-ISSUES.md` (format in `build-a-toy`'s Step 3)
+and report it to the owner; never change the tree yourself to make it go
+away. Until the Manual (issue #137) exists, `workshop wish|fix --contract`
+refuse to seal a schema 7 contract: say so at the hand-off instead of
+starting a run.
 
 ## Stage 3 - Reference images
 
