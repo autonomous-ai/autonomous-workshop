@@ -2739,3 +2739,91 @@ class WishGuideImageCommandTest(unittest.TestCase):
         self.assertIn("Guide step: guide-01-steps.png Fold. — checked: state folded", stdout.getvalue())
         self.assertIn("Guide Conflict: guide-01-steps.png shows four discs; the Design Contract "
                       "requires sixteen discs", stdout.getvalue())
+
+
+def _print_contract(tmp):
+    """A schema 6 contract with one reference, no Guide Image and one piece of
+    print art (ADR 0091), and both images under the names it lists."""
+
+    from PIL import Image
+
+    block = _contract_block(
+        schema_version=6,
+        references=[{"file": "ref-01-antisol.png", "shows": "assembly", "camera": [-90, 15]}],
+        interfaces=[],
+        print={
+            "stocks": {"sticker": {"name": "paper decal", "caliper_mm": 0.15}},
+            "art": [{"file": "print-01-disc-map.png", "shows": "A map of one disc world."}],
+            "pieces": [{
+                "id": "disc-map", "art": "print-01-disc-map.png", "stock": "sticker",
+                "way": "sticker", "on": "world-disc", "where": "The disc's top recess.",
+                "size_mm": [24, 24], "outline": "oval", "count": 16,
+            }],
+        },
+    )
+    contract_path = Path(tmp) / "CONTRACT.md"
+    contract_path.write_text(_contract_text(block), encoding="utf-8")
+    art = Path(tmp) / "print-01-disc-map.png"
+    Image.new("RGB", (300, 300), "green").save(art)
+    return contract_path, _contract_image(tmp), art
+
+
+class WishPrintArtCommandTest(unittest.TestCase):
+    """``workshop wish --contract --print-art`` (ADR 0091)."""
+
+    def run_wish(self, *arguments):
+        stdout, stderr = StringIO(), StringIO()
+        with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(
+            "cli.main.start_native_run", return_value=native_receipt()
+        ) as start, redirect_stdout(stdout), redirect_stderr(stderr):
+            result = main(("wish", *arguments))
+        return result, start, stdout.getvalue(), stderr.getvalue()
+
+    def test_print_art_seals_after_the_references_and_is_announced_apart(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            contract, image, art = _print_contract(tmp)
+            result, start, stdout, _ = self.run_wish(
+                "--contract", str(contract), "--ref", str(image), "--print-art", str(art)
+            )
+            self.assertEqual(result, 0)
+            sealed = start.call_args.args[0]
+            self.assertEqual([item.name for item in sealed.references],
+                             ["ref-01-antisol.png", "print-01-disc-map.png"])
+            self.assertEqual(sealed.context["design_contract"]["print"]["pieces"][0]["count"], 16)
+            self.assertIn("1 reference(s), 1 print art image(s), 1 Print Piece(s)", stdout)
+            self.assertIn("References: 1 image(s)", stdout)
+            self.assertIn("Print art: 1 image(s)", stdout)
+
+    def test_missing_or_misnamed_print_art_refuses_and_starts_no_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            contract, image, art = _print_contract(tmp)
+            result, start, _, stderr = self.run_wish("--contract", str(contract), "--ref", str(image))
+            self.assertEqual(result, 2)
+            start.assert_not_called()
+            self.assertIn("1 print art image(s) but 0 were given", stderr)
+            other = Path(tmp) / "map.png"
+            art.rename(other)
+            result, start, _, stderr = self.run_wish(
+                "--contract", str(contract), "--ref", str(image), "--print-art", str(other)
+            )
+            self.assertEqual(result, 2)
+            start.assert_not_called()
+            self.assertIn("print-01-map.png, not print-01-disc-map.png", stderr)
+
+    def test_print_art_needs_a_contract_and_is_never_a_reference_or_guide(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            contract, image, art = _print_contract(tmp)
+            result, start, _, stderr = self.run_wish("A toy", "--print-art", str(art))
+            self.assertEqual(result, 2)
+            start.assert_not_called()
+            self.assertIn("--print-art attaches a Design Contract's print art", stderr)
+            result, _, _, stderr = self.run_wish(
+                "--contract", str(contract), "--ref", str(image), "--ref", str(art)
+            )
+            self.assertEqual(result, 2)
+            self.assertIn("lists 1 reference image(s) but 2 were given", stderr)
+            result, _, _, stderr = self.run_wish(
+                "--contract", str(contract), "--ref", str(image), "--guide", str(art)
+            )
+            self.assertEqual(result, 2)
+            self.assertIn("lists 0 guide image(s) but 1 were given", stderr)

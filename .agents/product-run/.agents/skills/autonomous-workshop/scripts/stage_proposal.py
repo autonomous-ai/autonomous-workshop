@@ -2061,9 +2061,13 @@ def _wish_has_sealed_references(run_root: Path, wish_sha256: str) -> bool:
     """
 
     references = _materialized_wish(run_root, wish_sha256).get("references")
-    # A Guide Image (ADR 0089) is sealed beside them but never accounted for.
+    # A Guide Image (ADR 0089) and print art (ADR 0091) are sealed beside
+    # them but never accounted for.
     return isinstance(references, list) and any(
-        not (isinstance(item, dict) and str(item.get("name", "")).startswith("guide-"))
+        not (
+            isinstance(item, dict)
+            and str(item.get("name", "")).startswith(("guide-", "print-"))
+        )
         for item in references
     )
 

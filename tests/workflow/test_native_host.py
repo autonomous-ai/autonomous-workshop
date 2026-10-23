@@ -3644,7 +3644,9 @@ class NativeHostTest(unittest.TestCase):
             (root / "MAKE-OPTIONS.json").write_text(json.dumps({"schema_version": 1, "check_motion": True}))
             self.assertTrue(_frozen_check_motion(root))
             sealed = [{"name": "ref-01-whole.png", "sha256": "1" * 64},
-                      {"name": "guide-01-steps.png", "sha256": "2" * 64}]
+                      {"name": "guide-01-steps.png", "sha256": "2" * 64},
+                      # ADR 0091: print art is neither a reference nor a guide.
+                      {"name": "print-01-sky.png", "sha256": "3" * 64}]
             wish = json.dumps({"references": sealed, "context": {"design_contract": self.GUIDE_CONTRACT}})
             (root / "WISH.json").write_text(wish)
             digest = hashlib.sha256(wish.encode()).hexdigest()
