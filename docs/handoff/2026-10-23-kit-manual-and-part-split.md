@@ -8,6 +8,46 @@ The owner writes in Vietnamese. Reply in Vietnamese and keep it short. They
 judge toys by images, never by contract rows. Ground every claim in a source
 you actually opened: the owner caught invented web sources once already.
 
+## Update (2026-10-23, later): Print Sheets are on main
+
+**Read this first.** Since this handoff was written, the Print Sheets
+feature has been built and merged into `main` (PR #134, which lands #128 to
+#133). The decisions in "Already decided" below are now code. The design is
+in `docs/adr/0091-print-sheets-carry-colour-and-detail-on-paper.md`; the
+terms Print Sheet and Print Piece are in `CONTEXT.md`. It has passed its
+tests but has not yet been validated by a live run.
+
+### What Workshop now does
+
+| Where | What |
+|---|---|
+| Design Contract schema 6 | A `print` section declares `stocks` (paper, sticker, card, film, each with a caliper), sealed `art[]` (`print-NN-<slug>`, CC0 stock only, source recorded) and `pieces[]`. Each piece has `id`, `art`, `stock`, `way` (flat, sticker, wrap, sphere, fold or stand), `on` (a Unique Geometry or `<id>#<n>`), `where`, its sizes in mm and an optional `count`. `workshop wish/fix --print-art` seals the art. Guide Images are optional from schema 6. |
+| Layout | `print-details/scripts/print_sheets.py` lays the pieces out on A4 sheets, one stock per page, numbered `<stock>-<n>`. It writes a print-at-100 % PDF with cut and fold lines, piece ids and a scale bar, plus a PNG per sheet. It is deterministic. |
+| design-a-toy | Stage 1 decides colour per part and what goes on paper. A new "Print Sheets" section covers which way to use, CC0 art and the proof made with the same tool. Stage 4 shows the art and the sheets. |
+| Parts | Component Workers place each piece with `pd.print_recess`, `print_slot`, `print_block`, `print_sphere` and `print_fold`. These read the sizes from the installed contract (`print/pieces.json`). A recess is 0.6 mm deep and 0.2 mm larger than its piece; a card slot is the caliper plus 0.3 mm wide. |
+| Gates | `make_round` runs a `paper` gate on every part that hosts a piece. Final verification runs it again and lays out the sheets into `print/sheets/`. Before accepting Make, the host checks the install, the art hashes and the layout on the sealed bytes. |
+| Review | Each part's renders draw the art where the buyer applies it, including in the Display Pose. The reviewer judges a printed area's place, size and outline, never its drawing. Assembly renders show no art. |
+| Release | The toy archive ships `make/print/` beside the STEP files: `pieces.json`, `art/`, `sheets/print-sheets.pdf` and one PNG per sheet. |
+
+### What it means for this brainstorm
+
+- **Every printed piece names the part it lands on** (`on`) and the feature
+  that receives it. So a part split has to say which part carries each
+  recess, slot, block or ball, and a manual step that applies a piece can
+  name both the piece id and the part.
+- **Ids already exist for the manual.** Sheets are `<stock>-<n>` and pieces
+  have contract ids. A Rolife-style manual can cite them; there is no
+  part-ID scheme for printed plastic parts yet.
+- **Still not modelled (all still open here):**
+  - a filament colour per part;
+  - sub-assemblies, bags and bought parts (wire, beads, LEDs, film sold
+    pre-cut);
+  - two-sided print, folding boxes and die-cut pieces;
+  - any assembly manual. Spark Release still makes no new PDF.
+- **Night Charms Hall waits.** Its rework as the first schema 6 toy waits
+  until this brainstorm ends, so the part split and the Print Sheets are
+  designed together.
+
 ## The two problems
 
 The owner is moving book nooks (and later other toys) toward the assembly-kit
@@ -71,8 +111,9 @@ paragraphs, which is not a manual.
   truth, and the STEP must match them within ±0.5 mm.
 - **Checks and release.** A gate in Make's `verify_project`, rerun by the
   host at Release. The PDF ships beside the STEP.
-- **Status.** ADR 0091 and contract schema 6 come next. The paper thickness
-  defaults are still being set from what Vietnamese print shops stock.
+- **Status.** Built and on `main`; see the update above. Paper defaults
+  are VN print-shop stocks: matte couche 120 gsm (0.10 mm), paper decal
+  (0.15 mm), Ivory 300 gsm (0.45 mm), laser OHP film 100 µm (0.10 mm).
 
 Print Sheets settle *how* colour and detail travel on paper. They do not
 settle the part split or the manual, which is this handoff.
