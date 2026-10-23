@@ -17,6 +17,8 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from workshop.errors import ContractError
+from workshop.wish.assembly_tree import ContractAssemblyTree, parse_assembly_tree
+from workshop.wish.catalogues import Catalogues, load_catalogues
 from workshop.wish.print_sheets import ContractPrint, parse_print_section
 
 # Both limits are input guards on agent-supplied text, not design judgements
@@ -30,13 +32,21 @@ MAX_GEOMETRY_REQUIREMENTS = 4
 # joins (ADR 0084). Schema 5 keeps all three and adds Guide Images, which
 # explain the design and are never compared with the model (ADR 0089).
 # Schema 6 keeps all four, makes Guide Images optional, and requires the
-# Print Sheets section (ADR 0091).
-SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6)
+# Print Sheets section (ADR 0091). Schema 7 keeps all five, makes the Print
+# Sheets optional, and requires the Assembly Tree that splits the toy into
+# kit Parts (ADR 0092).
+SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7)
 INTERFACES_SCHEMA_VERSION = 2
 CAMERA_SCHEMA_VERSION = 3
 INTERFACE_TEXT_SCHEMA_VERSION = 4
 GUIDE_SCHEMA_VERSION = 5
 PRINT_SCHEMA_VERSION = 6
+TREE_SCHEMA_VERSION = 7
+# A run may seal these. Schema 7 parses and validates, but its tree gates
+# (ADR 0092 decision 8, issue #136) and its Manual (decision 9, issue #137)
+# are not implemented: Make would check its Print Pieces against nothing,
+# so `workshop wish|fix --contract` refuses it until they are.
+SEALABLE_SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6)
 MAX_GUIDE_SHOWS_CHARS = 500
 MAX_GUIDE_STEPS = 24
 MAX_GUIDE_STEP_CHARS = 300
@@ -171,8 +181,22 @@ class DesignContract:
     # None before schema 5, which has no Guide Images (ADR 0089), and for a
     # schema 6 contract that lists none.
     guides: Optional[Tuple[ContractGuide, ...]] = None
-    # None before schema 6, which has no Print Sheets (ADR 0091).
+    # None before schema 6, which has no Print Sheets (ADR 0091), and for a
+    # schema 7 contract that has none.
     print_sheets: Optional[ContractPrint] = None
+    # None before schema 7, which has no Assembly Tree (ADR 0092).
+    assembly_tree: Optional[ContractAssemblyTree] = None
+
+    def check_sealable(self) -> None:
+        """Refuse a contract no run can seal yet (schema 7: see
+        ``SEALABLE_SCHEMA_VERSIONS``)."""
+
+        if self.schema_version not in SEALABLE_SCHEMA_VERSIONS:
+            raise ContractError(
+                "design contract: schema_version %d is validated, but its Assembly Tree gates "
+                "(issue #136) and Manual (issue #137) are not implemented yet, so no run can seal "
+                "it" % self.schema_version
+            )
 
     def reference_labels(self) -> Dict[str, str]:
         """Sealed file name -> the label Contract Mode uses in Make round summaries."""
@@ -287,6 +311,11 @@ class DesignContract:
             **(
                 {"print": self.print_sheets.to_dict()}
                 if self.print_sheets is not None
+                else {}
+            ),
+            **(
+                {"assembly_tree": self.assembly_tree.to_dict()}
+                if self.assembly_tree is not None
                 else {}
             ),
         }
@@ -759,8 +788,12 @@ def _parse_interfaces(
     return tuple(interfaces)
 
 
-def parse_design_contract(text: str) -> DesignContract:
+def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) -> DesignContract:
     """Parse and validate the fenced ``design-contract`` block inside ``text``.
+
+    A schema 7 contract's Parts are checked against ``catalogues``, the
+    owner's filament and Bought Part catalogues (ADR 0092); without it the
+    packaged catalogues are read. No older schema reads them.
 
     Every failure this function can detect is collected and raised together
     in one ``ContractError`` (ADR 0072: "The refusal names every failure at
@@ -786,7 +819,7 @@ def parse_design_contract(text: str) -> DesignContract:
 
     schema_version = block.get("schema_version")
     if isinstance(schema_version, bool) or schema_version not in SCHEMA_VERSIONS:
-        errors.append("schema_version must be 1, 2, 3, 4, 5 or 6")
+        errors.append("schema_version must be 1, 2, 3, 4, 5, 6 or 7")
 
     title = block.get("title")
     if not isinstance(title, str) or not title.strip():
@@ -803,7 +836,7 @@ def parse_design_contract(text: str) -> DesignContract:
         block.get("references"), geometry_ids, errors,
         cameras=schema_version in (
             CAMERA_SCHEMA_VERSION, INTERFACE_TEXT_SCHEMA_VERSION, GUIDE_SCHEMA_VERSION,
-            PRINT_SCHEMA_VERSION,
+            PRINT_SCHEMA_VERSION, TREE_SCHEMA_VERSION,
         ),
     )
     requirements = _parse_requirements(block.get("requirements"), geometry_ids, errors)
@@ -812,18 +845,20 @@ def parse_design_contract(text: str) -> DesignContract:
     if schema_version in (
         INTERFACES_SCHEMA_VERSION, CAMERA_SCHEMA_VERSION,
         INTERFACE_TEXT_SCHEMA_VERSION, GUIDE_SCHEMA_VERSION, PRINT_SCHEMA_VERSION,
+        TREE_SCHEMA_VERSION,
     ):
         interfaces = _parse_interfaces(
             block.get("interfaces"), counts, errors,
             text=schema_version in (
                 INTERFACE_TEXT_SCHEMA_VERSION, GUIDE_SCHEMA_VERSION, PRINT_SCHEMA_VERSION,
+                TREE_SCHEMA_VERSION,
             ),
         )
     elif "interfaces" in block:
         errors.append("interfaces need schema_version 2 or later")
     guides: Optional[Tuple[ContractGuide, ...]] = None
     if schema_version == GUIDE_SCHEMA_VERSION or (
-        schema_version == PRINT_SCHEMA_VERSION and "guides" in block
+        schema_version in (PRINT_SCHEMA_VERSION, TREE_SCHEMA_VERSION) and "guides" in block
     ):
         guides = _parse_guides(block.get("guides"), geometry_ids, errors)
     elif "guides" in block:
@@ -831,8 +866,26 @@ def parse_design_contract(text: str) -> DesignContract:
     print_sheets: Optional[ContractPrint] = None
     if schema_version == PRINT_SCHEMA_VERSION:
         print_sheets = parse_print_section(block.get("print"), counts, errors)
+    elif schema_version == TREE_SCHEMA_VERSION and "print" in block:
+        print_sheets = parse_print_section(block.get("print"), counts, errors, tree=True)
     elif "print" in block:
-        errors.append("print needs schema_version 6")
+        errors.append("print needs schema_version 6 or later")
+    assembly_tree: Optional[ContractAssemblyTree] = None
+    if schema_version == TREE_SCHEMA_VERSION:
+        pieces = ()
+        if isinstance(block.get("print"), dict) and isinstance(block["print"].get("pieces"), list):
+            pieces = tuple(item for item in block["print"]["pieces"] if isinstance(item, dict))
+        if catalogues is None:
+            try:
+                catalogues = load_catalogues()
+            except ContractError as exc:
+                errors.append(str(exc))
+        if catalogues is not None:
+            assembly_tree = parse_assembly_tree(
+                block.get("assembly_tree"), counts, pieces, catalogues, errors
+            )
+    elif "assembly_tree" in block:
+        errors.append("assembly_tree needs schema_version 7")
 
     assembly_count = sum(1 for item in requirements if item.scope == "assembly")
     if assembly_count > MAX_ASSEMBLY_REQUIREMENTS:
@@ -865,4 +918,5 @@ def parse_design_contract(text: str) -> DesignContract:
         interfaces=interfaces,
         guides=guides,
         print_sheets=print_sheets,
+        assembly_tree=assembly_tree,
     )

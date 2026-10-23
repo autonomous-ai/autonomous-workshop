@@ -35,8 +35,14 @@ has a Rejections log.
      soft daylight, a three-quarter view from above, and no text or other
      objects. It also carries an explicit exclusion for everything the human
      has rejected, from the Rejections log in `NOTES.md`.
+   - The shared block also limits **plastic to the stocked filaments**: list
+     the colours in `src/workshop/wish/catalogues/filaments.json` by name and
+     say that every plastic surface is one flat colour from that list
+     (ADR 0092). Paper areas - pictures, book covers and spines, wallpaper,
+     skies, notices - may use any colour, because they are printed.
    - The **concept line** names the idea, its form, its colours and the
-     detail that makes it this concept.
+     detail that makes it this concept. Each plastic colour it names is one
+     from the list.
 2. **Redraw from images** when the human asks for one concept in another's
    style, or sends a picture. Attach images with `--ref`, the concept to keep
    first and the style to copy second, and say so in the prompt ("the first

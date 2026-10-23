@@ -44,6 +44,7 @@ workshop = [
   "contributors/schemas/*.json",
   "runtime/schemas/*.json",
   "make/schemas/*.json",
+  "wish/catalogues/*.json",
   "make/agents/*.toml",
   "make/skills/*",
   "make/skills/**/*",

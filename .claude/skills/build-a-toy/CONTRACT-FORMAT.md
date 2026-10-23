@@ -161,7 +161,9 @@ instances.)
     images. Print art is never compared with the model as a likeness target.
   - `pieces[]`: `{"id", "art", "stock", "way", "on", "where", ...}`. `id` is
     lowercase kebab case and unique; `on` is the Unique Geometry it lands on,
-    or one instance `<id>#<n>`; `where` says which face, block, sphere or
+    or one instance `<id>#<n>`. In schema 7 (ADR 0092) a piece is a Part:
+    `id` is `M01-<mnemonic>` or `N01-<mnemonic>` and `on` names a printed
+    Part, a Bought Part or a step's Sub-assembly in `assembly_tree`. `where` says which face, block, sphere or
     slot (at most 300 characters); optional `count` (1 to 99) is how many
     copies are printed. `way` and its sizes, all in mm, the contract's
     sizes being the truth the model must match within ±0.5 mm:
@@ -178,6 +180,104 @@ instances.)
     Scissors rules: every cut edge is at least 5 mm (a `wrap`'s height, a
     `fold`'s page, a flat or standing piece's sides); small shelf books are
     one spine strip, never one piece each.
+- `assembly_tree` (schema 7, ADR 0092): the toy as a Rolife-style kit, the
+  **Assembly Tree** its Manual is written from. Its leaves are the Parts the
+  buyer handles, every inner node is an Assembly Step, and the last step is
+  the finished toy. It is `{"parts": [...], "steps": [...], "components":
+  [...], "materials": [...]}`:
+  - Every id is a code plus a kebab-case mnemonic, and no code or mnemonic
+    repeats anywhere in the tree or the Print Pieces.
+  - `parts[]`: a printed Part is `{"id": "A03-hat", "name": "<at most 80
+    characters>", "filament": "<filament id>"}`. Its letter, A to K, groups
+    Parts by colour: one letter is one filament. A Bought Part is
+    `{"id": "P02-steel-pin", "bought": "<Bought Part id>"}`. Both ids come
+    from the owner's catalogues, `src/workshop/wish/catalogues/filaments.json`
+    and `bought-parts.json`. A colour or Bought Part outside them is refused:
+    the owner approves one by adding it to the catalogue. Tools and
+    consumables (tweezers, foam tape and dots, glue, a screwdriver) are never
+    Parts; they go in `materials`.
+  - `steps[]`, in Manual order with rising numbers, each `{"id":
+    "S07-teacher-desk-items", "output": "<the Sub-assembly's name, at most 80
+    characters>", "count": <how many times it is made per toy>, "joint":
+    "<kind>", "inputs": [...], "text": "<one short English instruction, at
+    most 200 characters>"}`, optionally `"error_prone": true` (the Manual
+    adds a correct/incorrect picture) and `"leads"`. The Sub-assembly takes
+    the step's id. Each input is `{"id": "<Part, Print Piece or earlier
+    step>", "direction": [x, y, z], "count": n}`; `count` (default 1) is how
+    many one making of the step takes, and a step's `count` equals its parent
+    step's count times that. The finished toy is made once. `joint` is one
+    of:
+
+    | `joint` | What the step does | Inputs |
+    |---|---|---|
+    | `peg-socket`, `tab-slot`, `pin-hinge`, `foam-tape` | joins its inputs | two or more |
+    | `glue` | joins them, as a last resort, with `glue_reason` | two or more |
+    | `paper` | applies Print Pieces to their host | two or more |
+    | `fold`, `cut`, `bend`, `roll` | reshapes one input | exactly one |
+    | `leads` | joins the LED leads of `lamps` | one or more |
+
+    In a joining or `paper` step the first input is what the others go into
+    and takes no `direction`; every later input has its one straight
+    insertion `direction`, in the assembly frame. A reshaping or `leads` step
+    takes none. A `leads` step lists `lamps`, Bought Parts whose catalogue
+    category is `lamp`, each already in its Sub-assembly: it sits at or above
+    the smallest Sub-assembly holding every lamp it joins. A step that
+    encloses a lead declares it in `leads`: `{"lamp": "<lamp Part>",
+    "route_mm": [[x, y, z], ...], "exit": "<where it comes out>"}`, two or
+    more points in the assembly frame.
+  - Every Part and every Print Piece is the input of exactly one step, and
+    every step but the last feeds exactly one later step. A Print Piece is
+    applied in the first `paper` step above it that joins, once its host is
+    in that Sub-assembly, and its `count` equals how many times the tree
+    applies it.
+  - `components[]`: `{"geometry": "<Unique Geometry id>", "parts": [<its
+    printed and Bought Parts>]}`, exactly one per Unique Geometry. Every
+    printed and Bought Part belongs to exactly one Component, and a
+    Component's Parts are exactly the printed and Bought Parts of one
+    subtree, made as many times per toy as the geometry's `count`. A Print
+    Piece belongs to the Component whose subtree applies it; one applied
+    above every Component belongs to the join, which Make checks in assembly
+    rounds. Steps above the Components join Components and stay recorded as
+    Interfaces.
+  - `materials`: the tools and consumables the Manual lists, catalogue ids
+    whose category is `tool` or `consumable`.
+
+  An abridged cabinet, one Component of five Parts with a spine strip and a
+  pin hinge, placed in the case:
+
+  ```json
+  "assembly_tree": {
+    "parts": [
+      {"id": "B01-cabinet-carcass", "name": "Cabinet carcass", "filament": "dark-oak"},
+      {"id": "B02-cabinet-door", "name": "Cabinet door", "filament": "dark-oak"},
+      {"id": "D01-inkwell", "name": "Inkwell", "filament": "dark-blue"},
+      {"id": "P01-hinge-pin", "bought": "steel-pin-1.5x29.5"},
+      {"id": "P02-jar", "bought": "clear-jar-6x7"}
+    ],
+    "steps": [
+      {"id": "S01-cabinet-shelf", "output": "Cabinet with jar and inkwell", "count": 1,
+       "joint": "peg-socket", "text": "Press the jar and the inkwell onto the upper shelf.",
+       "inputs": [{"id": "B01-cabinet-carcass"}, {"id": "P02-jar", "direction": [0, 1, 0]},
+                  {"id": "D01-inkwell", "direction": [0, 1, 0]}]},
+      {"id": "S02-cabinet-spines", "output": "Cabinet with book spines", "count": 1,
+       "joint": "paper", "text": "Lay the spine strip in the lower shelf's recess.",
+       "inputs": [{"id": "S01-cabinet-shelf"}, {"id": "M01-spine-strip", "direction": [0, 1, 0]}]},
+      {"id": "S03-hang-door", "output": "Cabinet", "count": 1, "joint": "pin-hinge",
+       "error_prone": true, "text": "Set the door between the lugs and push the pin down.",
+       "inputs": [{"id": "S02-cabinet-spines"}, {"id": "B02-cabinet-door", "direction": [1, 0, 0]},
+                  {"id": "P01-hinge-pin", "direction": [0, 0, -1]}]}
+    ],
+    "components": [
+      {"geometry": "cabinet", "parts": ["B01-cabinet-carcass", "B02-cabinet-door",
+                                        "D01-inkwell", "P01-hinge-pin", "P02-jar"]}
+    ],
+    "materials": ["tweezers"]
+  }
+  ```
+
+  (Abridged: the case's Parts and Component, the step placing the cabinet in
+  it, and `print.pieces` with `M01-spine-strip` on `B01-cabinet-carcass` are
+  left out. `tests/wish/test_assembly_tree.py` holds a whole example.)
 - `geometries[]`: one entry per **Unique Geometry**. `id` is lowercase kebab
   case. `count` is how many Components the toy has with this shape.
   `wall_min_mm` is the minimum wall.
@@ -185,7 +285,12 @@ instances.)
   3 plus a `text` on every Interface (ADR 0084). `5` is schema 4 plus a
   non-empty `guides[]` (ADR 0089); a contract with no Guide Image stays 4.
   `6` is schema 5 plus the `print` section (ADR 0091), with `guides[]`
-  optional; a contract with no Print Sheet stays 4 or 5. Schema 3 is schema 2 plus a `camera` on every
+  optional; a contract with no Print Sheet stays 4 or 5. `7` is schema 6
+  plus `assembly_tree` (ADR 0092), with `print` and `guides[]` optional and
+  the Print Pieces' ids and hosts in the Part form above. A schema 7
+  contract is validated, but `workshop wish|fix --contract` refuse to seal
+  it until its tree gates (issue #136) and Manual (issue #137) exist, so
+  that no Print Piece or Part goes unchecked in Make. Schema 3 is schema 2 plus a `camera` on every
   reference; from schema 3 every Component file defines
   `assembly_pose(shape, pose)`, even one in no Interface. A schema 3
   contract has no Interface text, a schema 2 contract no cameras and a
@@ -257,6 +362,10 @@ A contract is ready only when all of these hold. Report every failure at once.
   Components it names.
 - The prose carries the blunt-edge and detail rules above, states no
   minimum below the library's, and every detail left out has its row.
+- For schema 7, every tree rule above holds, and
+  `python3 .claude/skills/design-a-toy/scripts/contract_lint.py CONTRACT.md`
+  reports no error. It runs the host's own parser and warns for each
+  catalogue entry the owner has not confirmed.
 - **At most 16 assembly-scoped requirements, and at most 4 per Unique
   Geometry** (ADR 0072). Both limits are input guards whose provenance the ADR
   records, not judgements about the toy. A contract that exceeds either one is
