@@ -190,3 +190,30 @@ and on a wall, imports the library from an installed copy, and runs the cad
 skill's own `check_thickness --nozzle` and `check_overhang --angle` on each.
 It exits non-zero on any failure. The Workshop test suite runs it; you need
 not run it in a product run.
+
+## Print Sheets
+
+A schema 6 Design Contract's `print` section (ADR 0091) declares the paper
+the maker prints and ships with the toy: every Print Piece, the stock it is
+cut from, the sealed art printed on it and the Unique Geometry it lands on.
+`print_sheets.py` lays every piece out on A4 sheets, one stock per page, and
+checks the layout:
+
+```sh
+"$WORKSHOP_PYTHON" .agents/skills/print-details/scripts/print_sheets.py \
+  --contract <run>/WISH.json --art <run>/wish-references -o <cad-project>/print-sheets
+```
+
+It writes `print-sheets.pdf` (print at 100 %: art clipped to each cut line,
+cut lines solid, fold lines dashed, ids and a 50 mm scale bar),
+`sheet-<stock>-<n>.png` previews and `print-sheets.json`. It exits 1 and
+names every failure: a piece that fits no A4 sheet, a cut edge under 5 mm,
+art that is missing, the wrong shape for its piece or under 300 dpi at its
+printed size. The same inputs give the same bytes. Never place or edit a
+piece by hand; fix the contract's sizes or ask for the art.
+
+How each `way` lies flat: a `wrap` cover is back, spine and front left to
+right, each fold adding the stock's caliper, and a `band` adds a 5 mm glue
+overlap; a `sphere` is one strip of joined gores, `pi * d` wide; a `fold` is
+every page left to right; a `stand` card has a 5 mm tab, `slot_mm` wide,
+under it for its slot.

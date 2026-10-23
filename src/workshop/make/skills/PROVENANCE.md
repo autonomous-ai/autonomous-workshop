@@ -2362,3 +2362,11 @@ every step a guide's contract entry lists has one `checked` or `skipped`
 entry; `component-acceptance.json` carries the account as `guides`. This
 changes the `make-round` and `cad` fingerprints; materialized runs keep their
 copied bytes.
+
+## Local change: print-details lays out Print Sheets (2026-10-23, ADR 0091)
+
+`print-details/scripts/print_sheets.py` is new and host-owned. It reads a
+schema 6 Design Contract's `print` section and its sealed art, lays every
+Print Piece out on A4 pages with reportlab, renders PNG previews with
+pypdfium2 and reports the layout checks. It changes no vendored tree and
+no existing print-details feature; only the `print-details` lock moves.
