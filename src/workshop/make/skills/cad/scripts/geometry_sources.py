@@ -130,6 +130,12 @@ def geometry_source_paths(project: Path, roots: Iterable[Path] | None = None) ->
             continue
         found.add(root)
         found.update(imported_modules(project, root))
+    # ADR 0091: print-details' Print Piece calls read each piece's sizes from
+    # the installed print section, so it decides the shape of every part
+    # that imports the library.
+    pieces = project / "print" / "pieces.json"
+    if pieces.is_file() and any(path.name == "print_details.py" for path in found):
+        found.add(pieces.resolve())
     return sorted(path.relative_to(project).as_posix() for path in found if project in path.parents)
 
 

@@ -2370,3 +2370,16 @@ schema 6 Design Contract's `print` section and its sealed art, lays every
 Print Piece out on A4 pages with reportlab, renders PNG previews with
 pypdfium2 and reports the layout checks. It changes no vendored tree and
 no existing print-details feature; only the `print-details` lock moves.
+
+## Local change: the Print Sheet gate (2026-10-23, ADR 0091)
+
+`print-details` gains the Print Piece calls (`print_recess`, `print_slot`,
+`print_block`, `print_sphere`, `print_fold`), an `oval` recess outline,
+`--install-print`, and `scripts/check_print_pieces.py`, which builds one
+part and checks every Print Piece it hosts. `make-round` runs that script
+as each hosting part's `paper` gate and reports it on a `paper` line.
+In the vendored `cad` tree, `verify_project` runs it on every hosting part
+and lays out the sheets in final verification (`_run_print_sheets`), and
+`geometry_sources.py` counts `print/pieces.json` as a Geometry Source of a
+part that imports print-details. The `cad`, `make-round` and
+`print-details` locks move; a resync must keep these lines.

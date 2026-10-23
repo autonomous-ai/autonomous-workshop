@@ -81,6 +81,8 @@ from typing import Sequence
 SCRIPTS_DIR = Path(__file__).resolve().parent
 IMAGE_SCRIPTS_DIR = SCRIPTS_DIR.parents[1] / "image-to-cad" / "scripts"
 MAKE_ROUND_SCRIPT = SCRIPTS_DIR.parents[1] / "make-round" / "scripts" / "make_round"
+# ADR 0091: the Print Sheet gate's two tools.
+PRINT_DETAILS_SCRIPTS = SCRIPTS_DIR.parents[1] / "print-details" / "scripts"
 COMPONENT_ACCEPTANCE_NAME = "component-acceptance.json"
 POWER_SCRIPTS_DIR = (
     SCRIPTS_DIR.parents[1] / "electromechanical-integration" / "scripts"
@@ -1274,6 +1276,51 @@ def _inspect_geometry(runner: Runner, entry_args: list[str]) -> int:
     return runner.inspect_batch(requests)
 
 
+def _run_print_sheets(runner: Runner, project: Path, parts: list[Path]) -> int:
+    """The Print Sheet gate (ADR 0091): every part hosting a Print Piece
+    still carries its feature (`check_print_pieces.py`), and the installed
+    print section lays out on A4 sheets that pass (`print_sheets.py`, which
+    writes the sheets to `print/sheets/`). Nothing runs for a toy without
+    Print Sheets. The installed section must be the sealed contract's."""
+
+    if not MAKE_ROUND_SCRIPT.is_file():
+        return 0
+    hosts, error = runpy.run_path(str(MAKE_ROUND_SCRIPT))["paper_hosts"](project)
+    if not hosts:
+        return 0
+    if error is not None:
+        print(f"[verify_project] print sheets: {error}", flush=True)
+        runner.records.append({"command": f"print sheets  # FAILED: {error}", "status": "rc=1",
+                               "seconds": 0.0})
+        return 1
+    failures = 0
+    built = set()
+    for part in parts:
+        role = part.name.removesuffix(ENTRY_SUFFIX).removeprefix(PART_PREFIX)
+        if role not in hosts:
+            continue
+        built.add(role)
+        failures += runner.command(
+            [sys.executable, PRINT_DETAILS_SCRIPTS / "check_print_pieces.py", _path_arg(part, runner.cwd)],
+            replay_success_stdout=True,
+        ) != 0
+    for role in sorted(hosts - built):
+        detail = f"a Print Piece lands on {role}, but the project has no part_{role}{ENTRY_SUFFIX}"
+        print(f"[verify_project] print sheets: {detail}", flush=True)
+        runner.records.append({"command": f"print sheets  # FAILED: {detail}", "status": "rc=1",
+                               "seconds": 0.0})
+        failures += 1
+    print_dir = project / "print"
+    failures += runner.command(
+        [sys.executable, PRINT_DETAILS_SCRIPTS / "print_sheets.py",
+         "--contract", _path_arg(print_dir / "pieces.json", runner.cwd),
+         "--art", _path_arg(print_dir / "art", runner.cwd),
+         "-o", _path_arg(print_dir / "sheets", runner.cwd)],
+        replay_success_stdout=True,
+    ) != 0
+    return 1 if failures else 0
+
+
 def _run_print_gates(
     runner: Runner,
     project: Path,
@@ -1486,6 +1533,8 @@ def _sweep_tool_paths(*, image_derived: bool) -> list[Path]:
         SCRIPTS_DIR / "geometry_sources.py",
         POWER_SCRIPTS_DIR / "check_power",
         CADGEN_PACKAGE_DIR,
+        PRINT_DETAILS_SCRIPTS / "check_print_pieces.py",
+        PRINT_DETAILS_SCRIPTS / "print_sheets.py",
     ]
     if image_derived:
         paths.extend([
@@ -2025,6 +2074,10 @@ def _final(
         )
         if not _run_or_stop(runner, render_args):
             return 1
+
+    # ADR 0091: the Print Sheet gate, cheap, before the print sweep.
+    if _run_print_sheets(runner, project, parts) != 0:
+        return 1
 
     # Last, where the print sweep has always run. Two independent reasons put it
     # here rather than straight after interference: a clash or an invalid solid
