@@ -46,6 +46,9 @@ PRINT_ART_FILE = re.compile(
     r"^print-(?:0[1-9]|[1-9][0-9]{1,2})-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$"
 )
 _PIECE_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+# Schema 7 (ADR 0092): a Print Piece is a Part, with a code and a mnemonic,
+# M01-<slug> or N01-<slug>.
+_TREE_PIECE_ID = re.compile(r"^[MN][0-9]{2}-[a-z0-9]+(?:-[a-z0-9]+)*$")
 _HOST = re.compile(r"^([a-z0-9]+(?:-[a-z0-9]+)*)(?:#([0-9]+))?$")
 _URL = re.compile(r"^https?://\S+$")
 
@@ -226,9 +229,12 @@ def _check_way(item: Mapping[str, Any], way: str, label: str, errors: List[str])
 
 def _parse_pieces(
     value: Any, stocks: Mapping[str, Any], art: List[str], counts: Mapping[str, int],
-    errors: List[str],
+    errors: List[str], tree: bool = False,
 ) -> Tuple[set, set]:
-    """Check every piece; return the stocks and art files the pieces use."""
+    """Check every piece; return the stocks and art files the pieces use.
+
+    With ``tree`` (schema 7), each id is a Part id, ``M01-<slug>``, and the
+    Assembly Tree checks what ``on`` names."""
 
     used_stocks: set = set()
     used_art: set = set()
@@ -242,8 +248,12 @@ def _parse_pieces(
             errors.append("%s must be an object" % label)
             continue
         identifier = item.get("id")
-        if not isinstance(identifier, str) or _PIECE_ID.fullmatch(identifier) is None:
-            errors.append("%s.id must be lowercase kebab case" % label)
+        pattern = _TREE_PIECE_ID if tree else _PIECE_ID
+        if not isinstance(identifier, str) or pattern.fullmatch(identifier) is None:
+            errors.append(
+                "%s.id must look like M01-<kebab-case mnemonic> or N01-<...> (schema_version 7)"
+                % label if tree else "%s.id must be lowercase kebab case" % label
+            )
         elif identifier in seen:
             errors.append("%s.id repeats an earlier piece id: %r" % (label, identifier))
         else:
@@ -269,7 +279,8 @@ def _parse_pieces(
             errors.append("%s.art must be a file print.art lists" % label)
         else:
             used_art.add(piece_art)
-        _check_host(item.get("on"), counts, label, errors)
+        if not tree:
+            _check_host(item.get("on"), counts, label, errors)
         if not _text(item.get("where"), MAX_WHERE_CHARS):
             errors.append("%s.where must say in at most %d characters which face, block, sphere or "
                           "slot it lands on" % (label, MAX_WHERE_CHARS))
@@ -279,16 +290,19 @@ def _parse_pieces(
 
 
 def parse_print_section(
-    value: Any, counts: Mapping[str, int], errors: List[str]
+    value: Any, counts: Mapping[str, int], errors: List[str], tree: bool = False
 ) -> Optional[ContractPrint]:
     """Schema 6's ``print`` section, or None after appending every failure.
 
     ``counts`` maps each Unique Geometry id to its count, so a piece may
-    land on one instance, ``<id>#<n>``, as an Interface may.
+    land on one instance, ``<id>#<n>``, as an Interface may. With ``tree``
+    (schema 7, ADR 0092) a piece's id is ``M01-<slug>`` and its ``on`` names
+    a printed Part, Bought Part or Sub-assembly, which the Assembly Tree's
+    parser checks instead.
     """
 
     if not isinstance(value, dict):
-        errors.append("print must be an object with stocks, art and pieces (schema_version 6)")
+        errors.append("print must be an object with stocks, art and pieces (schema_version 6 or 7)")
         return None
     before = len(errors)
     unknown = sorted(set(value) - {"stocks", "art", "pieces"})
@@ -296,7 +310,7 @@ def parse_print_section(
         errors.append("print has unknown field(s): %s" % ", ".join(unknown))
     stocks = _parse_stocks(value.get("stocks"), errors)
     art = _parse_art(value.get("art"), errors)
-    used_stocks, used_art = _parse_pieces(value.get("pieces"), stocks, art, counts, errors)
+    used_stocks, used_art = _parse_pieces(value.get("pieces"), stocks, art, counts, errors, tree)
     for key in sorted(set(stocks) - used_stocks):
         errors.append("print.stocks.%s is declared but no piece is cut from it" % key)
     for file_name in art:

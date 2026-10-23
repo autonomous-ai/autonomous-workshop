@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "about": "The Bought Parts, tools and consumables the maker buys (ADR 0092 decision 5). Every Bought Part of a schema 7 Design Contract names one id here; anything outside it needs the owner's approval, which is adding it here. Seeded for Night Charms Hall from its contract's purchased parts: every entry is unconfirmed, and its pack size and source are left empty until the owner supplies them. Sizes are the limits that contract states, not supplier data.",
+  "parts": [
+    {"id": "battery-box-2aa-switch", "name": "In-line 2 x AA battery box with a slide switch on its lid", "category": "power",
+     "sizes": [{"what": "outer box", "max_mm": [108, 21.5, 16.5]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "led-3v-warm-white", "name": "Pre-wired micro LED, 3 V, warm white, fine enamelled leads", "category": "lamp",
+     "sizes": [{"what": "bead diameter", "max_mm": [2.2]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "led-3v-cool-white", "name": "Pre-wired micro LED, 3 V, cool white, fine enamelled leads", "category": "lamp",
+     "sizes": [{"what": "bead diameter", "max_mm": [2.2]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "steel-pin-1.5x29.5", "name": "Steel pin 1.5 x 29.5", "category": "fastener",
+     "sizes": [{"what": "diameter", "mm": [1.5]}, {"what": "length", "mm": [29.5]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "screw-m2x8-pan-self-tapping", "name": "M2 x 8 self-tapping pan-head screw", "category": "fastener",
+     "sizes": [{"what": "thread", "mm": [2]}, {"what": "length", "mm": [8]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "clear-jar-6x7", "name": "Clear jar 6 across and 7 tall", "category": "container",
+     "sizes": [{"what": "diameter", "max_mm": [6]}, {"what": "height", "max_mm": [7]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "foam-tape", "name": "Double-sided foam tape", "category": "consumable",
+     "sizes": [], "pack": null, "source": null, "confirmed": false},
+    {"id": "foam-dots", "name": "Double-sided foam dots", "category": "consumable",
+     "sizes": [], "pack": null, "source": null, "confirmed": false},
+    {"id": "glue", "name": "Glue", "category": "consumable",
+     "sizes": [], "pack": null, "source": null, "confirmed": false},
+    {"id": "tweezers", "name": "Tweezers", "category": "tool",
+     "sizes": [], "pack": null, "source": null, "confirmed": false},
+    {"id": "screwdriver", "name": "Small screwdriver for the M2 screws and the battery box", "category": "tool",
+     "sizes": [], "pack": null, "source": null, "confirmed": false}
+  ]
+}
