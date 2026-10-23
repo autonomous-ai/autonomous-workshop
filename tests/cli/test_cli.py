@@ -2832,7 +2832,7 @@ class WishPrintArtCommandTest(unittest.TestCase):
 class WishAssemblyTreeCommandTest(unittest.TestCase):
     """``workshop wish --contract`` with a schema 7 contract (ADR 0092)."""
 
-    def test_a_valid_schema_7_contract_refuses_to_seal_until_its_gates_exist(self):
+    def test_a_valid_schema_7_contract_refuses_to_seal_until_its_manual_exists(self):
         from tests.wish.test_assembly_tree import _tree_block
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -2846,4 +2846,5 @@ class WishAssemblyTreeCommandTest(unittest.TestCase):
             self.assertEqual(result, 2)
             start.assert_not_called()
             self.assertIn("schema_version 7 is validated", stderr.getvalue())
-            self.assertIn("issue #136", stderr.getvalue())
+            self.assertIn("Manual (issue #137)", stderr.getvalue())
+            self.assertNotIn("#136", stderr.getvalue())

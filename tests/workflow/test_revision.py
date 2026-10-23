@@ -104,6 +104,18 @@ class RevisionTest(unittest.TestCase):
         # as the reference-image fields above.
         bare, _ = prepare_revision(self.source, "Widen the rim")
         self.assertNotIn("design_contract", bare.context)
+        self.assertNotIn("kit_catalogue", wish.context)
+
+    def test_seals_a_schema_7_catalogue_snapshot_beside_the_contract(self):
+        """ADR 0092: Make's tree gates read Part colours and lead sizes from
+        the Wish, so the snapshot is sealed with the contract."""
+        snapshot = {"filaments": {"navy": {"name": "Navy", "hex": "#1f2a44", "kind": "opaque",
+                                           "confirmed": False}}, "bought_parts": {}}
+        wish, _ = prepare_revision(
+            self.source, "Widen the rim", design_contract={"schema_version": 7},
+            kit_catalogue=snapshot,
+        )
+        self.assertEqual(wish.context["kit_catalogue"], snapshot)
 
     def test_accepts_an_unreleased_archive_and_records_its_status(self):
         """A --no-publish toy is a correction source; a Factory draft is not."""
