@@ -93,12 +93,25 @@ Drive to a written spec containing:
 - **Handling check.** How the toy survives being held, rolled, posed or
   dropped: which parts break or come loose first, and that nothing load-bearing
   is under 3 mm.
-- **Colour and paper.** The filament colour of each Unique Geometry, one
-  colour per Component, and everything the images show that one colour
-  cannot carry - pictures, covers, spines, page text, textures, skies,
-  glazing - as printed paper the buyer applies (see Print Sheets, after
-  Stage 3b): which pieces, on which part, and how each is applied. A toy with
-  any becomes a schema 6 contract.
+- **Kit or one print.** Whether the buyer assembles the toy from loose Parts,
+  Rolife-style (a book nook does), or receives each Component as one
+  printed object. A kit gets an Assembly Tree (Stage 2b) and a schema 7
+  contract.
+- **Colour and paper.** The filament colour of each printed Part, from the
+  owner's filament catalogue (`src/workshop/wish/catalogues/filaments.json`).
+  In a kit, each printed Part is one colour and a Component may hold Parts
+  in several colours, with no cap on how many: a black hat and a brass
+  stand on an oak desk are three Parts, never merged into the desk. A
+  colour outside the catalogue needs the owner's approval, which is the
+  owner adding it to the catalogue. Everything the images show that a
+  filament cannot carry - pictures, covers, spines, page text, textures,
+  skies, glazing - is printed paper the buyer applies (see Print Sheets,
+  after Stage 3b): which pieces, on which part, and how each is applied. A
+  toy with any becomes a schema 6 contract, or schema 7 for a kit.
+- **Bought Parts.** Every purchased part (battery box, LED, pin, screw,
+  clear jar, bead, wire) from the owner's Bought Part catalogue
+  (`bought-parts.json`), within its size limits. One outside it needs the
+  owner's approval, the same way.
 
 When the toy has any moving part — a wheel, an axle, a joint, a hinge, a
 sliding or spinning part — also drive to:
@@ -230,8 +243,59 @@ do not silently drop decisions. Ask the human which *features* to give up, in
 plain words about the toy ("keep the moving jaw or the separate claws?"), never
 as contract rows.
 
-Do not show the block to the human and do not wait for approval. Go straight to
-Stage 3.
+Do not show the block to the human and do not wait for approval. For a kit,
+go to Stage 2b; otherwise go straight to Stage 3.
+
+## Stage 2b - Draft the Assembly Tree and the Component cut
+
+A kit's contract is schema 7 (ADR 0092): it adds the `assembly_tree`
+section of [CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md). Draft it
+now, after the concept is chosen and before any Reference Image, because the
+Component cut decides which reference images there are. Read
+`docs/research/book-nook-kits/rolife-assembly-trees.md` first. A split that
+cannot be explained in one clear Manual step is a bad split.
+
+1. **List the Parts.** Every thing the buyer handles: one printed Part per
+   body of one filament colour (`A01-<mnemonic>` to `K99-...`, one letter
+   per filament), each Print Piece (`M01-...`) and each Bought Part
+   (`P01-...`) from the catalogue. Tools, foam tape and dots, glue and jigs
+   are not Parts: list them in `materials`.
+2. **Order the steps** as Rolife does:
+   - furniture and props are finished and dressed outside the room, then
+     placed whole;
+   - walls and ceilings are dressed while open or loose, then joined;
+   - the interior goes in floor first, and the front and roof come last;
+   - wiring is laid before anything closes over it: a step that encloses
+     a lead declares its route and where it comes out, and the step that
+     joins the leads sits at or above the smallest Sub-assembly holding
+     every lamp it joins;
+   - the light test comes first. It is a Check Step, outside the tree.
+
+   Each step joins its inputs with one joint kind (peg and socket, tab and
+   slot, steel-pin hinge or foam tape; glue only with a stated reason), and
+   every input that moves goes in alone along one straight direction.
+   Applying a Print Piece is its own `paper` step, anywhere after its host
+   exists. Write each step's instruction as one short English sentence, and
+   mark a step a buyer could easily get wrong `error_prone`.
+3. **Cut the Components.** Choose the subtrees that get their own reference
+   image, worker and review: each Component is one contiguous subtree, and
+   every printed and Bought Part belongs to exactly one. Each Component is
+   one Unique Geometry, and its subtree is made as many times as that
+   geometry's `count`. Prefer few Components of several Parts to many
+   single-Part ones: a teacher's desk with its hat, ball and books is one
+   Component of seven Parts in four colours, not seven Components. The
+   steps above the Components join them, and each join is an Interface.
+4. **Lint.** Run
+   `python3 .claude/skills/design-a-toy/scripts/contract_lint.py CONTRACT.md`
+   on the draft. It runs the host's own parser and refuses a Part in two
+   Components, a non-contiguous Component, a duplicate id or mnemonic, a
+   colour or Bought Part outside the catalogues and a Print Piece whose `on`
+   names nothing. Fix every error. Its warnings name each catalogue entry the
+   owner has not confirmed yet; list them for Stage 4.
+
+Make may not change the tree. Until Make's tree gates (issue #136) and the
+Manual (issue #137) exist, `workshop wish|fix --contract` refuse to seal a
+schema 7 contract: say so at the hand-off instead of starting a run.
 
 ## Stage 3 - Reference images
 
@@ -275,6 +339,21 @@ Each image must be:
 - **Named `ref-NN-<slug>.png`**, numbered from `01` in order with no gaps
   (`ref-100-<slug>` after `ref-99`). Lowercase kebab slug. `png`, `jpg`, or
   `webp`. At most 999 images, at most 12 MiB each.
+
+Every image prompt limits plastic to the filament catalogue's colours: name
+the colour of each printed Part from `filaments.json` ("the desk dark oak,
+the hat black, the stand brass") and say that every plastic surface is one of
+those flat colours. Paper areas are free: printed art may use any colour.
+
+For a kit, also generate the **kit images** the human approves the tree
+from, with AI generation like the references: one **exploded view** per
+Component, its Parts pulled apart along their insertion directions, each in
+its own filament colour, with every Print Piece and Bought Part in it; and
+one **"in the box" flat lay** of every Part laid out loose, printed Parts
+grouped by colour, the Print Sheets and Bought Parts beside them. Name them
+`kit-NN-<slug>.png`. They are never sealed or passed to a run; the contract
+and its tree win wherever they disagree. Check each by count against the
+tree: every Part of the Component appears once, and nothing else does.
 
 Iterate each image against criteria stated up front — silhouette reads the
 component's role at thumbnail size, one focal point, contrast holds against
@@ -361,6 +440,12 @@ For each image, take its alpha silhouette and check:
    showing what the contract forbids becomes a Reference Conflict in every
    review of that Component.
 
+8. **Part colours** (kit). For each printed Part an image shows, sample its
+   colour where the Part is lit flat and compare it with its filament's
+   `hex` in `filaments.json`. A large miss (another colour family, or a
+   light colour drawn dark) is a disagreement: regenerate or edit the image
+   with the Part's colour named in the prompt. Shading is not a miss.
+
 A measurement is a **disagreement** when it is off by more than 5% of the
 dimension it measures and by more than 0.5 mm. The 0.5 mm floor is for small
 features, where 5% is less than the measuring error. Any count, side or
@@ -422,9 +507,10 @@ editing the panel. The contract wins over a Guide Image, never the other way.
 
 ### Print Sheets
 
-Each Component prints in one filament colour. Anything the images show in
-more colours or finer detail than one colour can carry goes on paper instead
-(ADR 0091): pictures, notices, labels, book covers and spines, page text,
+Each printed Part prints in one filament colour: a Component prints in one
+colour unless it is a kit Component of several Parts (Stage 2b). Anything
+the images show in more colours or finer detail than its Part's colour can
+carry goes on paper instead (ADR 0091): pictures, notices, labels, book covers and spines, page text,
 stone, wood and floor textures, wallpaper, skies, maps, glazing. The maker
 prints these on A4 **Print Sheets** and ships them; the buyer cuts them out
 with scissors, folds them and applies them. Decide this in Stage 1 with the
@@ -432,7 +518,7 @@ human, as a question about the toy ("the portrait and the notices are printed
 paper in a shallow recess; the books are printed covers wrapped round plain
 blocks"), never as a question about stocks or millimetres.
 
-Write the contract as schema 6 with a `print` section
+Write the contract as schema 6 (schema 7 for a kit) with a `print` section
 ([CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md)): the stocks, one
 `art[]` entry per image and one `pieces[]` entry per thing the buyer cuts out.
 Choose each piece's way from what it lands on:
@@ -450,7 +536,9 @@ Choose each piece's way from what it lands on:
 Keep Kit-style economy: a shelf row of books is one `flat` spine strip, not a
 piece per book; one art file may serve several pieces (`count`, or several
 pieces naming it). The block, recess, sphere, fold face or slot each piece
-lands on is part of its Unique Geometry: say so in that geometry's rows.
+lands on is part of its Unique Geometry: say so in that geometry's rows. In
+a kit, a piece is a Part (`M01-<mnemonic>`), and its `on` names the printed
+Part, Bought Part or Sub-assembly it lands on.
 
 **Art.** Find patterns first: wallpaper, wood grain, stone, brick, fabric,
 paper and sky come from CC0 stock (ambientCG, Poly Haven, public-domain
@@ -915,6 +1003,18 @@ stock in plain words ("two sheets of thin paper, one of stickers, one of
 card"). Approving the images approves the art and the sheets. A change to a
 piece's art, size or count reruns the proof and shows the sheets again.
 
+For a kit, show the kit images after the references: each Component's
+exploded view with one line naming its Parts and their colours ("the
+teacher's desk - seven Parts: dark-oak desk, black hat, brass stand, clear
+ball, three green books"), then the "in the box" flat lay. Approving them
+approves the tree and the Component cut. Before showing them, reconcile the
+tree's Print Sheet and Bought Part sides: `contract_lint.py` passes, every
+Print Piece is one leaf applied as many times as it is printed, and every
+Bought Part is one catalogued leaf. List each unconfirmed catalogue entry
+the tree uses, in plain words, as a question for the owner ("is the 2.2 mm
+cool-white LED the one in stock?"). A change to a Part, its colour or the
+cut redraws the exploded views it touches and the flat lay.
+
 Wait for explicit approval of the images. If the human wants a change - a
 different shape, proportion, count, pose or feature - fix the images by AI
 editing or regeneration, amend the contract so it says what the new images
@@ -933,7 +1033,9 @@ that is what lets `workshop wish --contract` seal this exact file, byte for
 byte, as the run's hash-checked objective.
 
 Approving the images is the go-ahead. Do not ask again: write the contract
-and hand off to the `build-a-toy` skill straight away with the path to this
+and hand off to the `build-a-toy` skill straight away (for a schema 7 kit,
+only once its Make gates exist; until then report the contract as designed
+and unbuilt) with the path to this
 `CONTRACT.md`. That skill owns every run this design
 starts, round 0 through every correction, always under `--contract`. Do not print a bare `workshop wish` command here.
 
