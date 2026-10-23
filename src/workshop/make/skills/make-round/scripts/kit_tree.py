@@ -1109,6 +1109,11 @@ def main(argv=None) -> int:
     except (OSError, ValueError, KeyError, TypeError) as error:
         print("kit_tree: %s" % error, file=sys.stderr)
         return EXIT_USAGE
+    except Exception as error:  # noqa: BLE001 - a Component's own source failed to build or place
+        # On stdout too, so the round's tree line names it.
+        print("kit_tree: building the Components failed: %s: %s" % (type(error).__name__, error))
+        print("kit_tree: building the Components failed: %s: %s" % (type(error).__name__, error), file=sys.stderr)
+        return EXIT_FAIL
     manifest = {"conditions": report["conditions"]}
     if args.manifest:
         Path(args.manifest).write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n", encoding="utf-8")
