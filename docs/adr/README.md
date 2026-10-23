@@ -48,3 +48,4 @@ ADR. Small factual corrections that do not change the decision are allowed.
 - [0089: Guide Images explain the design and are never compared](0089-guide-images-explain-the-design-and-are-never-compared.md)
 - [0090: Builds write Wiki Rules back to the upstream wiki, and the owner resyncs it](0090-wiki-rules-written-back-upstream.md)
 - [0091: Print Sheets carry colour and detail on paper](0091-print-sheets-carry-colour-and-detail-on-paper.md)
+- [0092: An Assembly Tree splits a toy into kit Parts and writes its Manual](0092-kit-assembly-tree-and-manual.md) (proposed)

@@ -504,7 +504,8 @@ _Avoid_: Piece type, part shape
 
 **Part**:
 One thing the buyer finds in the box and handles: a printed body in one
-filament colour, a Print Piece, or a Bought Part. It is a leaf of the
+filament colour from the maker's stocked filaments, a Print Piece, or a
+Bought Part. It is a leaf of the
 Assembly Tree.
 _Avoid_: Piece, Component (a Component may hold many Parts)
 
@@ -554,7 +555,7 @@ _Avoid_: Sticker sheet, decal sheet, label sheet, paper props
 
 **Print Piece**:
 One cut-out on a Print Sheet, applied to one face, block, sphere or slot of
-one Unique Geometry in one of six ways: laid flat, stuck as a sticker,
+one printed Part, Bought Part or Sub-assembly in one of six ways: laid flat, stuck as a sticker,
 wrapped round a block, wrapped round a sphere as joined gores, folded into
 pages, or stood up as a card cut-out in a slot. Its art is approved with the
 Reference Images and sealed in the Design Contract.
