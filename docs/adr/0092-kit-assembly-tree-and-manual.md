@@ -1,13 +1,14 @@
 # ADR 0092: An Assembly Tree splits a toy into kit Parts and writes its Manual
 
 - Status: Accepted (owner, 2026-10-23). Implementation steps 2 (issue
-  #135) and 3 (issue #136) are implemented: schema 7 parses and lints, the
-  catalogues ship seeded and unconfirmed, design-a-toy drafts the tree, and
-  Make's tree gates (decision 8) and the pilot's stop on a tree defect
-  (decision 10) exist, tested on deterministic fakes; no live run has
-  exercised them, because steps 4-7 are not implemented and `workshop
-  wish|fix` refuse to seal a schema 7 contract until the Manual (#137)
-  exists.
+  #135), 3 (issue #136) and 4 (issue #137) are implemented: schema 7 parses
+  and lints, the catalogues ship seeded and unconfirmed, design-a-toy
+  drafts the tree, Make's tree gates (decision 8) and the pilot's stop on a
+  tree defect (decision 10) exist, and final verification writes the
+  Manual (decision 9), which the host checks and Release ships. `workshop
+  wish|fix` now seal schema 7 contracts. The gates are tested on
+  deterministic fakes; the Manual also on a small real build123d project.
+  No live run has exercised any of them yet (steps 5-7).
 - Date: 2026-10-23
 - Amends: ADR 0091 (what a Print Piece lands on; its id form), ADR 0082
   (Components are subtrees of the Assembly Tree), ADR 0088 (insertion paths
@@ -100,8 +101,9 @@ both are decided together. Six 2026 Rolife manuals were read page by page
 6. **The contract declares the tree (schema 7).**
    - Every Part and Assembly Step has an id of a code plus a kebab-case
      mnemonic:
-     - printed Parts `A03-hat`, the letters A–K grouped by filament
-       colour;
+     - printed Parts `A03-hat`, every letter except M, N, P and S, one per
+       filament colour (the owner's decision on 2026-10-23; it replaced
+       "the letters A–K grouped by filament colour");
      - Bought Parts `P02-steel-pin`;
      - Print Pieces `M01-spine-strip`, with M/N, a change to ADR 0091's id
        form;
@@ -179,6 +181,33 @@ both are decided together. Six 2026 Rolife manuals were read page by page
      - an after-sales contact from company configuration.
    - Text is short English. Every judgement lives in the contract; Make
      writes no prose.
+   - As implemented (issue #137): `make-round/scripts/kit_manual.py` runs
+     in final verification after the tree gates and Print Sheets and writes
+     `manual/manual.pdf` and `manual/manual.json`.
+     - The light Check Steps are the tree's `checks` (`{id, text, parts}`,
+       lamps and their power); a tree with a lamp tests every lamp in one.
+     - A Component's section is every step wholly inside it; a step across
+       Components is its own join section; a step holding no Part (a fold
+       of a Print Piece) joins the section of the step it feeds. So every
+       leaf is in exactly one material list. Bags are numbered by section.
+     - The screwdriver is added when a Bought Part is a screw (a fastener
+       with a `thread` size) or a power source; scissors when there are
+       Print Pieces; batteries for each power source. Printed jigs are not
+       in the schema yet, so none is listed.
+     - Gauges are drawn 1:1 for every Bought Part with a catalogue
+       `length`.
+     - Pictures are the build's own bodies, built as the final tree gate
+       builds them and shaded by `render_review`'s software rasteriser from
+       one fixed camera. An exploded picture backs each moving input out
+       along its insertion direction. The incorrect picture of an
+       `error_prone` step is the same view with each moving input turned
+       half a turn about the axis across its direction; when that changes
+       no visible pixel, or nothing moves, a fixed placeholder says so.
+     - The after-sales contact and warnings are company configuration,
+       `make-round/company.json`; its contact is an owner placeholder until
+       the owner confirms it, and the receipt says so.
+     - The host checks the report and the PDF hash; a route whose host
+       reruns final verification also proves the Manual byte-identical.
 
 10. **Tree defects are watched in the pilot.** Every missing, extra or
     duplicated Part, whether a gate or an image review catches it, stops

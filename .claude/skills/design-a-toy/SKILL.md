@@ -256,8 +256,8 @@ Component cut decides which reference images there are. Read
 cannot be explained in one clear Manual step is a bad split.
 
 1. **List the Parts.** Every thing the buyer handles: one printed Part per
-   body of one filament colour (`A01-<mnemonic>` to `K99-...`, one letter
-   per filament), each Print Piece (`M01-...`) and each Bought Part
+   body of one filament colour (`A01-<mnemonic>`, any letter but M, N, P
+   and S, one letter per filament), each Print Piece (`M01-...`) and each Bought Part
    (`P01-...`) from the catalogue. Tools, foam tape and dots, glue and jigs
    are not Parts: list them in `materials`.
 2. **Order the steps** as Rolife does:
@@ -269,7 +269,8 @@ cannot be explained in one clear Manual step is a bad split.
      a lead declares its route and where it comes out, and the step that
      joins the leads sits at or above the smallest Sub-assembly holding
      every lamp it joins;
-   - the light test comes first. It is a Check Step, outside the tree.
+   - the light test comes first. It is a Check Step, outside the tree:
+     list it in `checks` with every lamp and its power source.
 
    Each step joins its inputs with one joint kind (peg and socket, tab and
    slot, steel-pin hinge or foam tape; glue only with a stated reason), and
@@ -300,9 +301,8 @@ Once the owner has approved the tree in Stage 4, treat any such Part found
 later the same way, whoever finds it (a gate, a review, an image check): log
 it as a row of the toy's `TREE-ISSUES.md` (format in `build-a-toy`'s Step 3)
 and report it to the owner; never change the tree yourself to make it go
-away. Until the Manual (issue #137) exists, `workshop wish|fix --contract`
-refuse to seal a schema 7 contract: say so at the hand-off instead of
-starting a run.
+away. Make writes the kit's Manual from the tree with the step texts as
+written (decision 9), so write each `text` as the buyer should read it.
 
 ## Stage 3 - Reference images
 

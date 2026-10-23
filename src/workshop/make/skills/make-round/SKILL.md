@@ -744,6 +744,29 @@ relabels bodies to hide it: the owner corrects the contract, and the
 build-a-toy loop logs the defect in the toy's `TREE-ISSUES.md`. Insertion,
 colour and lead-route failures are repairs like a print gate's.
 
+**The Manual** (ADR 0092 decision 9). Final verification, after the tree
+gates and the Print Sheets pass, runs
+
+```bash
+"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/kit_manual.py <cad-project>
+```
+
+which writes `manual/manual.pdf` and its report `manual/manual.json`. It is
+deterministic: the same tree and build give the same bytes. It builds every
+Component as the final tree gate does and draws, from one fixed camera:
+a front page of tools, warnings and "check all Parts first"; the Check
+Steps; one section per Component (bag, printed / paper / bought material
+list, 1:1 gauges, one exploded picture per step with arrows along each
+insertion direction, a correct/incorrect pair for an `error_prone` step);
+one join section per step across Components; the completion picture and
+the after-sales contact from `make-round/company.json`. Every sentence is
+the contract's own (`text`, names, lead `exit`s) or a fixed label: nobody
+writes or edits the Manual. It fails only when the tree cannot be written
+(a step with no instruction, an unknown Part id, a leaf in no or two
+material lists, which a sealed contract never gives) or a Component fails
+to build. The host accepts Make only with a passing Manual for the sealed
+tree, and Release ships the PDF in `make/manual/`.
+
 ## Record assembly visual feedback
 
 The native Manager performs the assembly's visual judgment. Python renders and hashes
