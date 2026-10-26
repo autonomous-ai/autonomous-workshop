@@ -517,6 +517,13 @@ Every model and render shows it in one reserved magenta no filament takes,
 and the toy ships a list of its bodies as not printed.
 _Avoid_: Purchased part, hardware, accessory
 
+**Panel**:
+A flat printed Part of the toy's one standard thickness, in one filament
+colour, joined to other Panels by tab and slot. Furniture, boxes, the shell
+and frames are built from Panels; a small round or 3D prop, such as an
+inkwell or a hat, is printed whole instead.
+_Avoid_: Board, sheet (a Print Sheet is paper), plate
+
 **Assembly Tree**:
 How a toy's Parts become the finished toy: Parts are its leaves, every inner
 node is an Assembly Step, and the finished toy is its root. The Manual is

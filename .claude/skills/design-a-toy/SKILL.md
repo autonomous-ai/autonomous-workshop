@@ -96,7 +96,9 @@ Drive to a written spec containing:
 - **Kit or one print.** Whether the buyer assembles the toy from loose Parts,
   Rolife-style (a book nook does), or receives each Component as one
   printed object. A kit gets an Assembly Tree (Stage 2b) and a schema 7
-  contract.
+  contract. A kit is flat-pack: its furniture, boxes, shell and frames are
+  flat Panels joined by tab and slot, and only small round or 3D props
+  print whole (Stage 2b).
 - **Colour and paper.** The filament colour of each printed Part, from the
   owner's filament catalogue (`src/workshop/wish/catalogues/filaments.json`).
   In a kit, each printed Part is one colour and a Component may hold Parts
@@ -260,6 +262,27 @@ cannot be explained in one clear Manual step is a bad split.
    and S, one letter per filament), each Print Piece (`M01-...`) and each Bought Part
    (`P01-...`) from the catalogue. Tools, foam tape and dots, glue and jigs
    are not Parts: list them in `materials`.
+
+   Draft the printed Parts **flat-pack** (owner decisions Q33-Q37,
+   2026-10-26), as Rolife does (TGB19 page 14: a shelf is two slotted side
+   panels with its shelves and bars slotted between them):
+   - Furniture, boxes, the shell and frames are separate flat **Panels**,
+     `"form": "panel"`, joined by tab and slot. Each prints flat without
+     support, and its relief prints face-up and crisp.
+   - Small round or 3D props (an inkwell, a ring pull, a feather fan, a
+     crystal ball, a hat) are `"form": "solid"`, printed whole.
+   - Every Panel of the toy is one thickness, `panel_mm` (default 2.0 mm,
+     five 0.4 mm lines). A Panel that must be thicker states its
+     `thickness_mm` and `thickness_reason`; do not reach for one without a
+     reason a buyer would see (a moulding that cannot be relief on 2 mm).
+   - A Panel is one filament colour. Its relief detail (a door's arch
+     moulding, a frame) prints on its face; texture and colour go on Print
+     Pieces.
+   - Tabs press into slots without glue. Never write a clearance into the
+     contract: it is one printer setting, `TAB_SLOT_CLEARANCE` in
+     `print-details` (an estimate until the pilot's fit coupon).
+   - A box closes with each Panel entering alone: the last Panel slides in
+     along grooves, so no step moves two Panels at once.
 2. **Order the steps** as Rolife does:
    - furniture and props are finished and dressed outside the room, then
      placed whole;
@@ -284,15 +307,20 @@ cannot be explained in one clear Manual step is a bad split.
    one Unique Geometry, and its subtree is made as many times as that
    geometry's `count`. Prefer few Components of several Parts to many
    single-Part ones: a teacher's desk with its hat, ball and books is one
-   Component of seven Parts in four colours, not seven Components. The
+   Component of seven Parts in four colours, not seven Components, and a
+   flat-pack cabinet is one Component of about six Panels plus its props,
+   not one Component per Panel. The
    steps above the Components join them, and each join is an Interface.
 4. **Lint.** Run
    `python3 .claude/skills/design-a-toy/scripts/contract_lint.py CONTRACT.md`
    on the draft. It runs the host's own parser and refuses a Part in two
    Components, a non-contiguous Component, a duplicate id or mnemonic, a
    colour or Bought Part outside the catalogues and a Print Piece whose `on`
-   names nothing. Fix every error. Its warnings name each catalogue entry the
-   owner has not confirmed yet; list them for Stage 4.
+   names nothing, and a printed Part without its `form` or a Panel off
+   `panel_mm` without a reason. Fix every error. Its warnings name each
+   catalogue entry the owner has not confirmed yet, which you list for
+   Stage 4, and each Panel of another thickness with its reason, which you
+   give a verdict in the working notes.
 
 Make may not change the tree: its tree gates (ADR 0092 decision 8) check
 every body, Print Piece and Bought Part against it. In the pilot a contract
@@ -358,15 +386,24 @@ the colour of each printed Part from `filaments.json` ("the desk dark oak,
 the hat black, the stand brass") and say that every plastic surface is one of
 those flat colours. Paper areas are free: printed art may use any colour.
 
-For a kit, also generate the **kit images** the human approves the tree
-from, with AI generation like the references: one **exploded view** per
-Component, its Parts pulled apart along their insertion directions, each in
-its own filament colour, with every Print Piece and Bought Part in it; and
-one **"in the box" flat lay** of every Part laid out loose, printed Parts
-grouped by colour, the Print Sheets and Bought Parts beside them. Name them
-`kit-NN-<slug>.png`. They are never sealed or passed to a run; the contract
-and its tree win wherever they disagree. Check each by count against the
-tree: every Part of the Component appears once, and nothing else does.
+For a kit, also generate the one **kit image** the human approves the tree
+from, with AI generation like the references: an **"in the box" flat lay**
+of every Part laid out loose, each as many times as the toy holds it, in its
+own filament colour, printed Parts grouped by colour, the Print Sheets and
+Bought Parts beside them, with no arrows. Name it `kit-01-<slug>.png`. It is
+never sealed or passed to a run; the contract and its tree win wherever they
+disagree. Check it against the tree by count (every Part appears as often
+as the toy holds it, and nothing else does) and by handedness: each Panel's
+slots, knuckles and relief on the side and edge the contract puts them,
+not mirrored.
+
+Do not generate exploded views (owner decision Q31, 2026-10-26). Image
+models cannot draw them correctly: in eight regenerate-and-review rounds
+they mirrored Parts, pointed arrows backwards or at the wrong seat, left
+inputs sitting in place and dropped one arrow while fixing another. The
+exploded views with arrows come only from Make's deterministic Manual,
+rendered from the built STEP, and the owner reviews them in the Manual
+after the build.
 
 Iterate each image against criteria stated up front — silhouette reads the
 component's role at thumbnail size, one focal point, contrast holds against
@@ -458,6 +495,15 @@ For each image, take its alpha silhouette and check:
    `hex` in `filaments.json`. A large miss (another colour family, or a
    light colour drawn dark) is a disagreement: regenerate or edit the image
    with the Part's colour named in the prompt. Shading is not a miss.
+
+9. **Visible faces.** Every face an image shows must be visible from its
+   Reference Camera in the Display Pose. For each moving or opening part (a
+   door, a lid, a flap), name the faces the camera sees with the part in
+   its Display Pose, and compare them with what the image draws. A door's
+   outer face drawn together with the interior behind it, from a camera
+   that would see the door's plain back, is a disagreement: no build can
+   show it. Fix it by changing the composition (the open door continues the
+   side panel forward) or the camera, never by accepting it.
 
 A measurement is a **disagreement** when it is off by more than 5% of the
 dimension it measures and by more than 0.5 mm. The 0.5 mm floor is for small
@@ -1016,17 +1062,18 @@ stock in plain words ("two sheets of thin paper, one of stickers, one of
 card"). Approving the images approves the art and the sheets. A change to a
 piece's art, size or count reruns the proof and shows the sheets again.
 
-For a kit, show the kit images after the references: each Component's
-exploded view with one line naming its Parts and their colours ("the
-teacher's desk - seven Parts: dark-oak desk, black hat, brass stand, clear
-ball, three green books"), then the "in the box" flat lay. Approving them
-approves the tree and the Component cut. Before showing them, reconcile the
+For a kit, show the "in the box" flat lay after the references, with one
+line per Component naming its Parts and their colours ("the teacher's desk
+- seven Parts: dark-oak desk, black hat, brass stand, clear ball, three
+green books"). Approving the references and the flat lay approves the tree
+and the Component cut; say that the exploded views come in the Manual after
+the build, where the owner reviews them. Before showing it, reconcile the
 tree's Print Sheet and Bought Part sides: `contract_lint.py` passes, every
 Print Piece is one leaf applied as many times as it is printed, and every
 Bought Part is one catalogued leaf. List each unconfirmed catalogue entry
 the tree uses, in plain words, as a question for the owner ("is the 2.2 mm
 cool-white LED the one in stock?"). A change to a Part, its colour or the
-cut redraws the exploded views it touches and the flat lay.
+cut redraws the flat lay.
 
 Wait for explicit approval of the images. If the human wants a change - a
 different shape, proportion, count, pose or feature - fix the images by AI
