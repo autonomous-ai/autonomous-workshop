@@ -25,7 +25,7 @@ Research for designing printed book nooks as assembly kits in the style of Robot
 
 1. Colour belongs to the material, never paint. Rolife prints its boards at the factory; a printed kit prints each part in one filament colour and moves everything multi-coloured to printed paper or stickers.
 2. Books are never assembled one by one:
-   - a shelf row is one printed strip of many spines (TGB19 H24/H25);
+   - no printed strip of shelf spines was found in the 2026 manuals; TGB19 H24/H25 and S22/S23, once read as spine rows, are printed lids of colour-pencil and pen boxes on a sloped display (TGB19-13, -14; corrected 2026-10-26);
    - a loose or stacked book is a plain block wrapped in a printed cover (TGB19 Y-blocks with V-covers, TGB18 B16 + M7);
    - an open book is an accordion-folded paper strip on a cover board (TGE05 M24).
 3. Pictures, posters, notices, labels, stone and floor textures, and the sky behind windows are printed paper; windows are clear film.

@@ -18,7 +18,7 @@ No manual states a total part count; parts show IDs and quantities only.
 
 ## 3. Books (TGB19)
 - Single books: blank foam block Y1–Y5 (grid P29) wrapped in a printed paper cover (V10/V11/V25/V24/V30–V34), four drawn folds (TGB19-14..17).
-- Shelf rows: printed boards or strips showing many spines (S22/S23, H24/H25), slotted or glued in as one piece (TGB19-14).
+- Display boxes, not shelf rows: H24 is a flat printed lid showing a box of colour pencils, taped onto box S18; H25 ×2 are smaller pencil sets on S/2 bases; S22/S23 are printed blocks showing trays of pens, stacked with tape. All sit on the sloped display L34/L35 (TGB19-13, -14). No printed strip of book spines was found (corrected 2026-10-26).
 - Stacks: C4 blocks wrapped with V13/V14 (TGB19-20).
 - Scrolls: paper rolled round a short rod (V37–V40 on L17, V35 on L12) (TGB19-11, -17). Booklets: folded paper G1–G5 (TGB19-11).
 - No open books; nearest is a flat printed newspaper or menu M18/M36 on a table (DH201-05, -12).
@@ -63,7 +63,7 @@ Wire lengths are drawn 1:1 beside a ruler.
 
 ## 9. Recommendations for Night Charms Hall (3D-printed, one filament colour per part)
 - Print as single-colour parts: case shell and arch (navy); gallery, stair, desks, cabinet carcass (walnut); railing (brown or gold); lancet tracery (black); hat (purple); crystal ball (translucent); ink bottles (black); torch brackets (black); flames (translucent amber). Fewer, larger parts per colour, like Rolife's 3–12-part furniture.
-- Supply as paper or stickers: inside stone wrap; night-sky sheet behind the lancets under clear film; one printed spine strip per alcove shelf row (TGB19 S22/S23); open-book pages on a printed open-book base; portrait and notices; jar labels; floor and desk-top prints; loose and stacked books as plain printed blocks in 2–3 colours with sticker covers (TGB19 Y-block method).
+- Supply as paper or stickers: inside stone wrap; night-sky sheet behind the lancets under clear film; one printed spine strip per alcove shelf row (a Workshop choice; no Rolife example found); open-book pages on a printed open-book base; portrait and notices; jar labels; floor and desk-top prints; loose and stacked books as plain printed blocks in 2–3 colours with sticker covers (TGB19 Y-block method).
 - Bought parts: feathers or paper quills on wire, wand rods, a clear jar (like DH201 T50).
 - Cabinet hinge: printed knuckles or a 1 mm wire pin through printed eyes (T27 + T57 method).
 - Lighting: two torch LEDs on one lead to a USB-C board or 2×AAA switch box behind the case; printed wire groove along back wall and gallery; 1:1 wire-length template; light test first.
