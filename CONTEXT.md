@@ -60,7 +60,7 @@ choosing it. That someone is a person picking a direction in a Concept Round,
 or the judges in a Trend contest. It proves nothing about the toy and is never
 a Reference Image. A chosen Concept Image becomes one only after it passes the
 same reconciliation with the Design Contract as any other image.
-_Avoid_: Preview Image, hero, concept art, thumbnail, mockup
+_Avoid_: Preview Image, direction image, hero, concept art, thumbnail, mockup
 
 **Concept Round**:
 One batch of Concept Images, shown side by side for a person to pick from or
@@ -81,6 +81,16 @@ one subject to build toward. The Workshop Manager and every Component Worker
 read it; nothing compares it with the model, and the Component Reviewer never
 sees it. Where it disagrees with the Design Contract, the contract wins.
 _Avoid_: Step sheet reference, extra reference, guide reference
+
+**Contract Proof**:
+Exact images drawn from a Design Contract's numbers alone, before the person's
+review, to check the contract rather than to build toward. Every number its
+drawer had to choose is a gap in the contract, and laid over a Reference Image
+it shows where the image disagrees with the numbers. The person approves it
+beside the Reference Images, and its views of each Part are sealed as that
+Component's Guide Images; it is never a Reference Image and nothing compares
+it with the model.
+_Avoid_: Contract Preview, preview render, CAD reference
 
 **Signature Motion**:
 The one movement a toy's play centres on, made by parts in contact or sharing
