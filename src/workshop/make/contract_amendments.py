@@ -64,9 +64,9 @@ MAX_AMENDMENT_REASON = 1000
 GEOMETRY_SCOPE = "geometry:"
 INTERFACE_ROW = "interface:"
 # ADR 0093: an owner amendment of a schema 8 prose section, which only an
-# owner amends (never an in-run Contract Amendment) and which unlocks no
-# Component: the reviewer judges rows, never prose. Kept in step with
-# make_round.
+# owner amends (never an in-run Contract Amendment). The worker builds from
+# it, so it unlocks every Component whose geometry names the section (owner
+# decision 2026-10-26). Kept in step with make_round.
 PROSE_ROW = "prose:"
 PROSE_SCOPE = "prose"
 # Names that identify the Workshop Manager; kept in step with make_round.
@@ -593,12 +593,20 @@ def owner_contract_changes(
 def owner_affects(contract: Mapping[str, Any], changes: Sequence[Mapping[str, Any]]) -> list[str]:
     """The Components whose own contract rows an owner amendment changes: the
     geometry a requirement is scoped to, and every Component an Interface
-    joins. An assembly row is no Component's row; the assembly round, the
-    blind review and the final verification read it."""
+    joins, and under schema 8 every geometry whose ``prose_sections`` names
+    a changed prose section (ADR 0093). An assembly row is no Component's
+    row; the assembly round, the blind review and the final verification
+    read it."""
 
     affected: set[str] = set()
     for change in changes:
-        if change["row"].startswith(INTERFACE_ROW):
+        if change["row"].startswith(PROSE_ROW):
+            heading = change["row"][len(PROSE_ROW):]
+            for item in contract.get("geometries") or ():
+                if isinstance(item, dict) and isinstance(item.get("id"), str) \
+                        and heading in (item.get("prose_sections") or ()):
+                    affected.add(item["id"])
+        elif change["row"].startswith(INTERFACE_ROW):
             for item in contract.get("interfaces") or ():
                 if isinstance(item, dict) and INTERFACE_ROW + str(item.get("id")) == change["row"]:
                     affected |= _roles(item.get("components"))

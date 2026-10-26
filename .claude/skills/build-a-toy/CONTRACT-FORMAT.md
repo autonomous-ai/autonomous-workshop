@@ -345,7 +345,9 @@ instances.)
   the Component Reviewer never reads prose, so every visible claim the
   reviewer must judge still needs its row. An owner amendment on resume may
   change a section's text, never which sections exist or which geometry
-  names them; an in-run Contract Amendment never changes prose.
+  names them; it unlocks every Component whose geometry names the changed
+  section, as a changed row does. An in-run Contract Amendment never
+  changes prose.
 - `schema_version`: `4` is schema 3 plus a `text` on every Interface (ADR
   0084). `5` is schema 4 plus a
   non-empty `guides[]` (ADR 0089).

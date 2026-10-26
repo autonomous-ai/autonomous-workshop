@@ -2447,8 +2447,10 @@ the old cap of 16, which refused the 22 sealed rows the finalizer required.
 In `make-round`, under a schema 8 Design Contract a component round's
 `summary.json` `contract` gains `prose`, the Component's prose sections
 (`component_prose`), copied from the sealed contract as an owner amendment
-left them (`prose:<heading>` rows); the review packet, the contract-rows hash
-and the carry key never include prose. `has_assembly_tree` in `make_round`
+left them (`prose:<heading>` rows); the review packet never includes prose,
+but the contract-rows hash, and so the carry key, does: an owner's prose
+change unlocks every Component naming the section (owner decision
+2026-10-26). `has_assembly_tree` in `make_round`
 and `kit_tree.py` decides a kit by its sealed tree, so a schema 8 kit takes
 the tree gates and a schema 8 toy without a tree takes none. The `cad` and
 `make-round` locks move; a resync must keep these lines.

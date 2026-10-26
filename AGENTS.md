@@ -316,10 +316,11 @@ sections (`prose_sections`) and every geometry be named by a Guide Image,
 the two extra views of its three-view sheet. The sealed contract carries
 the named sections as `prose`; a component round writes its Component's
 sections into the worker's `summary.json` `contract` and never into the
-review packet, the contract-rows hash or the carry key. The worker reads
-its rows, Interface text and prose, and rows win; the Component Reviewer
-still judges by rows and the reference. Only an owner amendment changes
-prose, and it unlocks no Component. A Contract Proof before Stage 4 and the
+review packet; they join its contract-rows hash and so its carry key. The
+worker reads its rows, Interface text and prose, and rows win; the
+Component Reviewer still judges by rows and the reference. Only an owner
+amendment changes prose, and it unlocks every Component whose geometry
+names the changed section. A Contract Proof before Stage 4 and the
 printability choice belong to `design-a-toy`. Schema 1 to 7 contracts and
 frozen runs keep what they sealed.
 Preserve useful deterministic contracts and tests; do not reintroduce removed

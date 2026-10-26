@@ -2168,8 +2168,10 @@ def component_prose(project: Path, role: str) -> list | None:
     Component (ADR 0093), ``[{"heading", "text"}]`` in its geometry's
     ``prose_sections`` order, copied from the sealed contract as an owner
     amendment left them. Only the worker reads them, in the round summary:
-    the review packet never carries prose, and no prose joins the contract
-    rows a review binds. None before schema 8 and outside Contract Mode."""
+    the review packet never carries prose. They join the Component's
+    contract-rows hash (``contract_rows``), so a changed section unlocks the
+    Component and its review stops carrying, as a changed row does. None
+    before schema 8 and outside Contract Mode."""
 
     contract = current_contract(project)
     if contract is None or contract_schema(project) < PROSE_SCHEMA_VERSION:
@@ -2902,6 +2904,12 @@ def contract_rows(project: Path, role: str) -> str:
                 rows["interfaces"] = [i for i in contract.get("interfaces") or () if isinstance(i, dict)
                                       and isinstance(i.get("components"), list)
                                       and role in reference_roles(i["components"])]
+            if type(schema) is int and schema >= PROSE_SCHEMA_VERSION:
+                # ADR 0093 (owner decision 2026-10-26): the worker builds from
+                # its prose sections, so they bind its rows too. A changed
+                # section unlocks every Component naming it and stops its
+                # review carrying, the same as a changed row.
+                rows["prose"] = component_prose(project, role)
             # An amended assembly row binds every Component (ADR 0085). The
             # key appears only then, so a run without one keeps its hashes.
             amended = amended_assembly_rows(project)
