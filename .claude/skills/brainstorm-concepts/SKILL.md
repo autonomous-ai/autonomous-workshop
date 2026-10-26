@@ -133,6 +133,13 @@ Mark each chosen concept: a **Đã chọn** badge on its card and a dated line i
 `NOTES.md` with any changes the human asked for. Republish the page, refresh
 the standalone copy (step 6), and stop. Brainstorming continues only if the human asks for more.
 
+The chosen Concept Image goes on to `design-a-toy` Stage 1, which owns two
+steps that start there: it redraws the chosen Concept Image from three
+sides, and it shows the human true-size ways to make each fine detail that
+may not print or read at the print minimums (solid at the minimum, on a
+Print Sheet, enlarged, left out) for the human to pick. If the human starts
+on either here, follow that stage.
+
 ## Prompt gotchas
 
 These are what the image model gets wrong, and how to steer it:
