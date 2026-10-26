@@ -1408,7 +1408,8 @@ class WishContractCommandTest(unittest.TestCase):
             message = stderr.getvalue()
             self.assertIn("title", message)
             self.assertIn("inventor", message)
-            self.assertIn("at most 16 assembly", message)
+            # ADR 0093 decision 6: 17 assembly rows are no longer a failure.
+            self.assertNotIn("at most 16", message)
             self.assertIn("does not exist", message)
 
     def test_contract_and_a_typed_objective_are_exclusive(self):
