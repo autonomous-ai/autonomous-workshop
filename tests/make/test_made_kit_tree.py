@@ -122,6 +122,11 @@ class MadeKitTreeTest(unittest.TestCase):
 
     def test_an_earlier_schema_has_no_tree_to_check(self):
         self.assertIsNone(verify_made_tree(self.run_root, self.made(), {"schema_version": 6}, None))
+        # ADR 0093: a schema 8 toy without a tree is no kit; a schema 8 kit is checked.
+        self.assertIsNone(verify_made_tree(self.run_root, self.made(), {"schema_version": 8}, None))
+        kit = dict(self.contract, schema_version=8)
+        with self.assertRaisesRegex(Exception, "kit_catalogue"):
+            verify_made_tree(self.run_root, self.made(), kit, None)
 
     def test_an_install_that_is_not_the_sealed_tree_is_refused(self):
         edited = copy.deepcopy(self.install)

@@ -3406,6 +3406,77 @@ class InterfaceTextDeliveryTest(unittest.TestCase):
                 self.assertNotEqual(second["visual"]["packet_sha256"], first["visual"]["packet_sha256"])
                 self.assertNotEqual(second["carry_key"], first["carry_key"])
 
+    BODY_PROSE = "The body is a lacquered cylinder with a riveted ferrule and three bands."
+
+    def _prose_root(self, tmp):
+        """A schema 8 contract (ADR 0093): the body names two prose sections,
+        one of them shared with the base."""
+
+        context = self._contract(schema=4)
+        contract = context["design_contract"]
+        contract["schema_version"] = 8
+        sections = {"body": ["Body", "Body and base"], "base": ["Body and base"], "wing": ["Wing"]}
+        for geometry in contract["geometries"]:
+            geometry["prose_sections"] = sections[geometry["id"]]
+        contract["prose"] = [{"heading": "Body", "text": self.BODY_PROSE},
+                             {"heading": "Body and base", "text": "Both are dark walnut."},
+                             {"heading": "Wing", "text": "A thin blade."}]
+        project = self._run_root(tmp, self.REFS, context=context)
+        self._edits = 0
+        return project
+
+    def test_a_schema_8_summary_carries_the_components_prose_and_the_packet_none(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._prose_root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            self.assertEqual(summary["contract"]["prose"], [
+                {"heading": "Body", "text": self.BODY_PROSE},
+                {"heading": "Body and base", "text": "Both are dark walnut."},
+            ])
+            packet = json.loads(Path(summary["visual"]["packet"]).read_text())
+            self.assertNotIn("prose", packet["contract"])
+            self.assertNotIn(self.BODY_PROSE, json.dumps(packet))
+            self.assertEqual({key: value for key, value in summary["contract"].items() if key != "prose"},
+                             packet["contract"])
+            self.assertIn("prose 2 section(s) for the worker in summary.json: Body; Body and base",
+                          module.render_summary(summary))
+
+    def test_a_prose_change_moves_neither_the_packet_nor_the_carry_key(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._prose_root(tmp)
+            module, calls = load_module(), []
+            _, first = self._component(module, project, calls)
+            rows = module.contract_rows(project, "body")
+            self._wish(project, lambda contract: contract["prose"][0].update(text="A plain cylinder."))
+            _, second = self._component(module, project, calls, edit=False)
+            self.assertEqual(second["contract"]["prose"][0]["text"], "A plain cylinder.")
+            packets = [json.loads(Path(item["visual"]["packet"]).read_text()) if item["visual"].get("packet")
+                       else None for item in (first, second)]
+            if packets[1] is not None:
+                self.assertEqual(packets[1]["contract"], packets[0]["contract"])
+            self.assertEqual(second["carry_key"], first["carry_key"])
+            self.assertEqual(module.contract_rows(project, "body"), rows)
+
+    def test_an_owner_prose_amendment_reaches_the_worker(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._prose_root(tmp)
+            module = load_module()
+            owners = [{"changes": [{"row": "prose:Body", "scope": "prose", "from": self.BODY_PROSE,
+                                    "to": "A plain cylinder."}]}]
+            with mock.patch.object(module, "owner_amendments", return_value=owners):
+                prose = module.component_prose(project, "body")
+            self.assertEqual(prose[0], {"heading": "Body", "text": "A plain cylinder."})
+
+    def test_before_schema_8_the_summary_carries_no_prose(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            self.assertNotIn("prose", summary["contract"])
+            self.assertIsNone(module.component_prose(project, "body"))
+            self.assertNotIn("  prose ", module.render_summary(summary))
+
     def test_before_schema_4_the_packet_carries_no_contract(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = self._root(tmp, schema=3)

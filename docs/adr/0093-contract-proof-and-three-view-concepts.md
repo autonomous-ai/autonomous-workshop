@@ -1,7 +1,16 @@
 # ADR 0093: A Contract Proof checks the contract, and concepts are drawn from three sides
 
-- Status: Proposed. The owner accepted every decision below on 2026-10-26;
-  nothing is implemented yet.
+- Status: Accepted by the owner on 2026-10-26. The host half is implemented
+  and deterministically tested: decision 6 (no row limits at seal, in
+  `verify_project` or in the finalizer; requirement ids run to `R999`),
+  decision 7 (Design Contract schema 8: every geometry names its prose
+  `###` sections, sealed as `prose`, which a component round writes into
+  its worker's `summary.json` `contract` and never into the review packet)
+  and decision 5's host check (schema 8 refuses a geometry no Guide Image
+  names). Schema 8 is schema 7 with the Assembly Tree optional, so kits and
+  other toys share it. Decisions 1 to 4 and decision 5's three-view drawing
+  belong to `design-a-toy` and `brainstorm-concepts` and are not built here.
+  Nothing is validated by a live run yet.
 - Date: 2026-10-26
 - Amends: `design-a-toy` Stage 3's rule that no image is built from the
   contract's numbers; ADR 0072 (row limits); ADR 0080 (what a Component
