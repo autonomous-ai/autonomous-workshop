@@ -44,6 +44,12 @@ Commands:
       when given, the Proof below it at that camera, every Proof render at one
       scale with a 10 mm bar. At most 2048 pixels a side.
 
+  carry ORIGINAL.png EDITED.png ENTRY --camera=AZ,EL -o OUT.png [--line TEXT]
+      The trial of a Proof-edited Component reference (ADR 0093): the
+      original AI image | the AI edit of the Proof render | the Proof at the
+      camera, each fitted to one tile, with the detail checklist's result as
+      one plain line under them.
+
 Write a camera with "=" (--camera=-90,0), or a negative azimuth reads as a
 flag.
 
@@ -245,6 +251,41 @@ def compare(ai_path: Path, entry: Path, camera, out: Path, title=None, size=800,
     return result
 
 
+def fit_tile(image: Image.Image, tile: int, background=None):
+    """The image scaled to fit a tile x tile square, centred on its own
+    corner colour (or `background`)."""
+    image = image.convert("RGB")
+    fitted = image.copy()
+    fitted.thumbnail((tile, tile), Image.LANCZOS)
+    cell = Image.new("RGB", (tile, tile), background or corner_background(image))
+    cell.paste(fitted, ((tile - fitted.width) // 2, (tile - fitted.height) // 2))
+    return cell
+
+
+def with_caption(sheet: Image.Image, text: str, height: int = 48):
+    """The sheet with one line of text in a white band under it."""
+    out = Image.new("RGB", (sheet.width, sheet.height + height), (255, 255, 255))
+    out.paste(sheet, (0, 0))
+    ImageDraw.Draw(out).text((8, sheet.height + 12), text, fill=(0, 0, 0), font=_font(22))
+    return out
+
+
+def carry_sheet(original: Image.Image, edited: Image.Image, proof: Image.Image,
+                line: str = "", tile: int = 640):
+    """original | Proof-edited | Proof, one tile each, with the checklist line."""
+    sheet = labelled_row([fit_tile(original, tile), fit_tile(edited, tile), fit_tile(proof, tile)],
+                         ["Original AI image", "Edited from the Proof", "Proof"])
+    return with_caption(sheet, line) if line else sheet
+
+
+def carry(original: Path, edited: Path, entry: Path, camera, out: Path, line=""):
+    proof, _ = render(occurrences(entry), camera, size=800)
+    sheet = carry_sheet(Image.open(original), Image.open(edited), proof, line)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    sheet.save(out)
+    return {"out": str(out), "size": list(sheet.size)}
+
+
 def contract_block(text: str):
     match = re.search(r"```design-contract\s*\n(.*?)\n```", text, re.S)
     if not match:
@@ -399,6 +440,13 @@ def main(argv=None) -> int:
                    help="AZ,EL or AZ,EL=AI.png; give the Reference Camera and the two guide cameras")
     p.add_argument("-o", "--out", type=Path, required=True)
     p.add_argument("--title")
+    p = sub.add_parser("carry")
+    p.add_argument("original", type=Path)
+    p.add_argument("edited", type=Path)
+    p.add_argument("entry", type=Path)
+    p.add_argument("--camera", type=parse_camera, required=True)
+    p.add_argument("-o", "--out", type=Path, required=True)
+    p.add_argument("--line", default="", help="the checklist result, one plain line")
     a = parser.parse_args(argv)
     try:
         if a.command == "render":
@@ -421,6 +469,8 @@ def main(argv=None) -> int:
                 camera, _, ai = text.partition("=")
                 views.append((parse_camera(camera), Path(ai) if ai else None))
             print(json.dumps(guide(a.entry, views, a.out, a.title)))
+        elif a.command == "carry":
+            print(json.dumps(carry(a.original, a.edited, a.entry, a.camera, a.out, a.line)))
     except (OSError, ValueError, AttributeError, ImportError) as exc:
         print(f"proof_views: {exc}", file=sys.stderr)
         return 1

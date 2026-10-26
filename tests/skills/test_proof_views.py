@@ -82,5 +82,33 @@ class InputTests(unittest.TestCase):
                 proof_views.combined_entry(proof)
 
 
+class CarryTests(unittest.TestCase):
+    def test_fit_tile_keeps_the_aspect_inside_a_square(self):
+        wide = Image.new("RGB", (400, 100), BACKGROUND)
+        ImageDraw.Draw(wide).rectangle((150, 30, 250, 70), fill=(40, 40, 40))
+        tile = proof_views.fit_tile(wide, 200)
+        self.assertEqual(tile.size, (200, 200))
+        self.assertEqual(tile.getpixel((5, 5)), BACKGROUND)
+        self.assertEqual(tile.getpixel((100, 100)), (40, 40, 40))
+
+    def test_caption_adds_a_band_under_the_sheet(self):
+        sheet = Image.new("RGB", (300, 100), (10, 10, 10))
+        out = proof_views.with_caption(sheet, "12 of 12 details kept", height=40)
+        self.assertEqual(out.size, (300, 140))
+        self.assertEqual(out.getpixel((0, 0)), (10, 10, 10))
+        self.assertEqual(out.getpixel((299, 139)), (255, 255, 255))
+
+    def test_carry_sheet_lays_out_three_tiles_and_the_line(self):
+        images = [Image.new("RGB", (80, 120), colour) for colour in ((200, 0, 0), (0, 200, 0), (0, 0, 200))]
+        bare = proof_views.carry_sheet(*images, tile=100)
+        width = 3 * 100 + 2 * proof_views.GAP
+        self.assertEqual(bare.size, (width, 100 + proof_views.HEADER))
+        captioned = proof_views.carry_sheet(*images, line="all details kept", tile=100)
+        self.assertGreater(captioned.height, bare.height)
+        for i, colour in enumerate(((200, 0, 0), (0, 200, 0), (0, 0, 200))):
+            self.assertEqual(bare.getpixel((i * (100 + proof_views.GAP) + 50,
+                                            proof_views.HEADER + 50)), colour)
+
+
 if __name__ == "__main__":
     unittest.main()

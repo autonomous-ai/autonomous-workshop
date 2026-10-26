@@ -412,7 +412,8 @@ Images and the AI views of Guide Images.** No hand-written ray caster, no
 procedural renderer, no parametric CAD script, no matplotlib, no SVG
 assembled from coordinates draws one of them. CAD in this skill only checks:
 the Contract Proof (Stage 3a) and Stage 1's true-size renders of a detail's
-ways. A Proof is never a Reference Image, and nothing compares it with the
+ways. The one exception is a trial: a Component reference AI-edited from
+the Proof render (Stage 3a, last subsection), which the owner chooses. A Proof is never a Reference Image, and nothing compares it with the
 model Make builds.
 
 The reason is division of labour. A reference image is **concept art that
@@ -541,6 +542,41 @@ Record the guesses, findings and compares in the working notes.
 Done when: `GUESSES.md` is empty, `FINDINGS.md` has no contradiction, every
 compare shows no difference over the tolerance that its Component's rows do
 not name, and all of it ran on the contract as it now stands.
+
+### Trial: a Component reference edited from the Proof
+
+An option being trialled (ADR 0093, owner decision 2026-10-26), not the
+default. In the cabinet pilot, AI-editing the exact Proof render gave
+references within about 0.2 mm on the first try, where six rounds of free
+generation never came closer than 1-2 mm. The risk is the other way: the
+edit draws only what the contract says and can drop what the concept drew.
+Use it for **Component references only**, once the Proof's guesses are zero;
+the assembly reference stays AI-drawn from the chosen Concept Image.
+
+1. **Checklist.** Before editing, list every detail of the original: the
+   Component's AI reference, or its view of the chosen Concept Image. One
+   line per feature, count, colour, surface detail and ornament ("four
+   round rivets on each strap", "wood grain running vertically", "a black
+   ring pull with a hole").
+2. **Edit.** Render the Proof at the reference camera
+   (`proof_views.py render`) and AI-edit that render (`gen_image.py`, the
+   render as IMAGE 1, the original as IMAGE 2): keep every outline and
+   position of IMAGE 1, and give it the materials, colours and details of
+   IMAGE 2.
+3. **Check.** A fresh subagent checks the edit against the checklist from
+   [carry-check-prompt.md](carry-check-prompt.md), with the details the
+   contract leaves out or puts on paper quoted as `<NAMED>`; those are not
+   losses. Its reply is one plain line.
+4. **Lost details.** Re-edit naming each lost detail, up to Stage 3's round
+   cap. When details are still lost, fall back to the AI-drawn reference.
+5. **Sheet.** Compose the owner's comparison with the check's line:
+   ```sh
+   uv run python .claude/skills/design-a-toy/scripts/proof_views.py carry <original.png> \
+     <edited.png> <proof>/part_<id>.step.py --camera=AZ,EL --line "<the check's line>" -o <out.png>
+   ```
+
+The owner chooses at Stage 4 which image becomes the Reference Image. The
+one chosen goes through Stages 3b to 3e like any reference.
 
 ## Stage 3b - Reconcile every image with the contract
 
@@ -1194,6 +1230,12 @@ private Artifact page (load the `artifact-design` skill first) that works at
 phone width and shows the whole set in one look, and give the human its link
 plus each file path. Do not show the contract, the requirement rows, the
 measurement table or millimetre lists unless the human asks.
+
+Show a Component reference made by the Stage 3a trial as its `carry`
+sheet: the original AI image, the image edited from the Proof and the Proof,
+with the checklist's line under them ("14 of 14 details kept; the arch's
+rim is named as left out"). The owner chooses which of the two becomes the
+Reference Image; until they do, neither is sealed.
 
 Show each reference as its Stage 3a compare: the AI image, the Contract
 Proof at the same camera and their 50% overlay, side by side. The human
