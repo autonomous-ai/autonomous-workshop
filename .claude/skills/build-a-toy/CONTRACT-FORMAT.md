@@ -183,13 +183,26 @@ instances.)
 - `assembly_tree` (schema 7, ADR 0092): the toy as a Rolife-style kit, the
   **Assembly Tree** its Manual is written from. Its leaves are the Parts the
   buyer handles, every inner node is an Assembly Step, and the last step is
-  the finished toy. It is `{"parts": [...], "steps": [...], "components":
-  [...], "checks": [...], "materials": [...]}`. Make writes the kit's
+  the finished toy. It is `{"panel_mm": <mm>, "parts": [...], "steps":
+  [...], "components": [...], "checks": [...], "materials": [...]}`. Make writes the kit's
   Manual from it (ADR 0092 decision 9), using only this section's words:
   - Every id is a code plus a kebab-case mnemonic, and no code or mnemonic
     repeats anywhere in the tree or the Print Pieces.
+  - `panel_mm` (optional, default 2.0, from 0.8 to 10): the toy's one
+    standard panel thickness, five 0.4 mm lines by default (owner decision
+    Q34, 2026-10-26).
   - `parts[]`: a printed Part is `{"id": "A03-hat", "name": "<at most 80
-    characters>", "filament": "<filament id>"}`. Its letter groups Parts by
+    characters>", "filament": "<filament id>", "form": "panel" | "solid"}`
+    (owner decision Q33, 2026-10-26). Furniture, boxes, the shell and frames
+    are built from flat **Panels** joined by tab and slot, each `panel`;
+    small round or 3D props (an inkwell, a ring pull, a crystal ball, a hat)
+    are `solid`, printed whole. A panel is `panel_mm` thick; one of another
+    thickness adds `"thickness_mm"` and a `"thickness_reason"` (at most 300
+    characters), which `contract_lint.py` lists for a verdict. A solid takes
+    neither. A panel is one filament colour: relief (a door's arch moulding,
+    a frame) prints on its face, and texture and colour go on Print Pieces
+    (Q37). The tab-slot clearance is no contract field: it is the printer's
+    `TAB_SLOT_CLEARANCE` in `print-details` (Q35, an estimate). Its letter groups Parts by
     colour: any letter except M and N (Print Pieces), P (Bought Parts) and S
     (steps), one letter per filament and one filament per letter. A Bought Part is
     `{"id": "P02-steel-pin", "bought": "<Bought Part id>"}`. Both ids come
@@ -265,15 +278,19 @@ instances.)
     whose category is `tool` or `consumable`. The Manual adds a screwdriver
     by itself when a Bought Part is a screw or a power source.
 
+  A box closes with each panel entering alone: the last panel slides in
+  along grooves, so no step needs two inputs to move together (Q36).
+
   An abridged cabinet, one Component of five Parts with a spine strip and a
-  pin hinge, placed in the case:
+  pin hinge, placed in the case (a real flat-pack cabinet is about six panel
+  Parts plus its props):
 
   ```json
   "assembly_tree": {
     "parts": [
-      {"id": "B01-cabinet-carcass", "name": "Cabinet carcass", "filament": "dark-oak"},
-      {"id": "B02-cabinet-door", "name": "Cabinet door", "filament": "dark-oak"},
-      {"id": "D01-inkwell", "name": "Inkwell", "filament": "dark-blue"},
+      {"id": "B01-cabinet-carcass", "name": "Cabinet carcass", "filament": "dark-oak", "form": "panel"},
+      {"id": "B02-cabinet-door", "name": "Cabinet door", "filament": "dark-oak", "form": "panel"},
+      {"id": "D01-inkwell", "name": "Inkwell", "filament": "dark-blue", "form": "solid"},
       {"id": "P01-hinge-pin", "bought": "steel-pin-1.5x29.5"},
       {"id": "P02-jar", "bought": "clear-jar-6x7"}
     ],
@@ -384,7 +401,8 @@ A contract is ready only when all of these hold. Report every failure at once.
   Components it names.
 - The prose carries the blunt-edge and detail rules above, states no
   minimum below the library's, and every detail left out has its row.
-- For schema 7, every tree rule above holds, and
+- For schema 7, every tree rule above holds, every printed Part is a
+  `panel` or a `solid`, every panel off `panel_mm` states its reason, and
   `python3 .claude/skills/design-a-toy/scripts/contract_lint.py CONTRACT.md`
   reports no error. It runs the host's own parser and warns for each
   catalogue entry the owner has not confirmed.

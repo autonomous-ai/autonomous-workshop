@@ -77,11 +77,11 @@ def _tree_block():
         },
         "assembly_tree": {
             "parts": [
-                {"id": "A01-case-shell", "name": "Case shell", "filament": "navy"},
-                {"id": "B01-cabinet-carcass", "name": "Cabinet carcass", "filament": "dark-oak"},
-                {"id": "B02-cabinet-door", "name": "Cabinet door", "filament": "dark-oak"},
-                {"id": "C01-desk-body", "name": "Student desk", "filament": "oak"},
-                {"id": "D01-inkwell", "name": "Inkwell", "filament": "dark-blue"},
+                {"id": "A01-case-shell", "name": "Case shell", "filament": "navy", "form": "panel"},
+                {"id": "B01-cabinet-carcass", "name": "Cabinet carcass", "filament": "dark-oak", "form": "panel"},
+                {"id": "B02-cabinet-door", "name": "Cabinet door", "filament": "dark-oak", "form": "panel"},
+                {"id": "C01-desk-body", "name": "Student desk", "filament": "oak", "form": "panel"},
+                {"id": "D01-inkwell", "name": "Inkwell", "filament": "dark-blue", "form": "solid"},
                 {"id": "P01-hinge-pin", "bought": "steel-pin-1.5x29.5"},
                 {"id": "P02-jar", "bought": "clear-jar-6x7"},
                 {"id": "P03-ball-led", "bought": "led-3v-cool-white"},
@@ -256,7 +256,7 @@ class AssemblyTreeTest(unittest.TestCase):
         block["assembly_tree"]["parts"][2]["id"] = "B01-cabinet-leaf"
         self.assertIn("repeats the id B01 (B01-cabinet-carcass)", self._refused(block))
         block = _tree_block()
-        block["assembly_tree"]["parts"].append({"id": "C02-inkwell", "name": "Inkwell", "filament": "oak"})
+        block["assembly_tree"]["parts"].append({"id": "C02-inkwell", "name": "Inkwell", "filament": "oak", "form": "solid"})
         self.assertIn("repeats the mnemonic 'inkwell' (D01-inkwell)", self._refused(block))
         # A step's mnemonic counts too.
         block = _tree_block()
@@ -292,6 +292,58 @@ class AssemblyTreeTest(unittest.TestCase):
         block["assembly_tree"]["parts"][4]["filament"] = "oak"  # D01-inkwell, beside C01's oak
         self.assertIn("oak already has letter C (C01-desk-body), so D01-inkwell cannot use D",
                       self._refused(block))
+
+    def test_every_printed_part_is_a_panel_or_a_solid(self):
+        # Owner decision Q33, 2026-10-26: flat panels joined by tab and slot,
+        # small round or 3D props printed whole.
+        contract = self._parse(_tree_block())
+        self.assertEqual(contract.assembly_tree.panel_mm, 2.0)
+        block = _tree_block()
+        del block["assembly_tree"]["parts"][0]["form"]
+        self.assertIn("parts[0]: a printed Part is {id, name, filament, form}", self._refused(block))
+        block = _tree_block()
+        block["assembly_tree"]["parts"][0]["form"] = "box"
+        self.assertIn("parts[0].form must be panel", self._refused(block))
+        # A Bought Part takes no form: it is not printed.
+        block = _tree_block()
+        block["assembly_tree"]["parts"][5]["form"] = "solid"
+        self.assertIn("parts[5]: a Bought Part is exactly {id, bought}", self._refused(block))
+
+    def test_a_panel_is_the_toys_panel_thickness_unless_it_says_why(self):
+        # Owner decision Q34, 2026-10-26: one standard thickness, default 2.0 mm.
+        block = _tree_block()
+        block["assembly_tree"]["panel_mm"] = 1.6
+        self.assertEqual(self._parse(block).assembly_tree.panel_mm, 1.6)
+        door = block["assembly_tree"]["parts"][2]
+        door["thickness_mm"] = 1.6
+        self._parse(block)
+        door["thickness_mm"] = 3.0
+        self.assertIn("B02-cabinet-door", self._refused(block))
+        self.assertIn("is a 3 mm panel, but the toy's panels are 1.6 mm (panel_mm): a panel of "
+                      "another thickness states its thickness_reason", self._refused(block))
+        door["thickness_reason"] = "The door carries a 1 mm arch moulding in relief."
+        contract = self._parse(block)
+        self.assertEqual(contract.to_dict()["assembly_tree"]["parts"][2]["thickness_mm"], 3.0)
+        # A reason needs a thickness it explains.
+        door["thickness_mm"] = 1.6
+        self.assertIn("thickness_reason explains nothing", self._refused(block))
+        del door["thickness_mm"]
+        self.assertIn("thickness_reason explains a thickness_mm it does not state", self._refused(block))
+
+    def test_a_solid_takes_no_panel_thickness_and_panel_mm_is_bounded(self):
+        block = _tree_block()
+        block["assembly_tree"]["parts"][4]["thickness_mm"] = 2.0  # D01-inkwell is a solid
+        self.assertIn("parts[4] is a solid: thickness_mm and thickness_reason belong to a panel",
+                      self._refused(block))
+        for bad in (0.4, 12, True, "2.0"):
+            block = _tree_block()
+            block["assembly_tree"]["panel_mm"] = bad
+            self.assertIn("assembly_tree.panel_mm must be the toy's one panel thickness",
+                          self._refused(block))
+        block = _tree_block()
+        block["assembly_tree"]["parts"][2]["thickness_mm"] = 0.5
+        block["assembly_tree"]["parts"][2]["thickness_reason"] = "Thin."
+        self.assertIn("parts[2].thickness_mm must be 0.8 to 10 mm", self._refused(block))
 
     def test_a_lamp_is_tested_in_a_check_step_first(self):
         block = _tree_block()
@@ -375,7 +427,7 @@ class AssemblyTreeTest(unittest.TestCase):
         _step(block, "S07-furniture")["inputs"].pop(1)
         self.assertIn("S03-hang-door's Sub-assembly is used by no later step", self._refused(block))
         block = _tree_block()
-        block["assembly_tree"]["parts"].append({"id": "D02-quill", "name": "Quill", "filament": "dark-blue"})
+        block["assembly_tree"]["parts"].append({"id": "D02-quill", "name": "Quill", "filament": "dark-blue", "form": "solid"})
         self.assertIn("D02-quill is in no Assembly Step", self._refused(block))
         block = _tree_block()
         _step(block, "S08-wiring")["inputs"].append({"id": "D01-inkwell"})

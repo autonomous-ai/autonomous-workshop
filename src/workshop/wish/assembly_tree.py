@@ -32,6 +32,13 @@ The shape, in brief::
 ``checks`` holds the Check Steps (ADR 0092 decision 1): light tests the
 Manual shows first, outside the tree. A tree with a lamp has one, and every
 lamp is in a Check Step with a power Bought Part.
+
+Every printed Part names its ``form`` (owner decisions Q33 and Q34,
+2026-10-26): a ``panel`` is a flat printed Part joined by tab and slot, at
+the toy's one standard thickness ``panel_mm`` (default 2.0 mm) unless it
+carries a ``thickness_mm`` with its ``thickness_reason``; a ``solid`` is a
+small round or 3D prop printed whole and takes neither. Only what the
+contract states is checked here; the built thickness is Make's to match.
 """
 
 from __future__ import annotations
@@ -64,6 +71,18 @@ MAX_NAME_CHARS = 80
 MAX_REASON_CHARS = 300
 MAX_EXIT_CHARS = 200
 MAX_STEPS = 999
+# Printed Part forms (owner decision Q33, 2026-10-26): furniture, boxes,
+# shell and frames are flat panels joined by tab and slot; small round or 3D
+# props print as solids.
+PANEL = "panel"
+SOLID = "solid"
+FORMS = (PANEL, SOLID)
+# The toy's one standard panel thickness (owner decision Q34, 2026-10-26):
+# five 0.4 mm lines. To be tuned after the pilot.
+PANEL_MM_DEFAULT = 2.0
+# A panel is at least the 0.4 mm nozzle's minimum wall, two lines.
+PANEL_MM_MIN = 0.8
+PANEL_MM_MAX = 10.0
 
 _SLUG = r"[a-z0-9]+(?:-[a-z0-9]+)*"
 PART_ID = re.compile(r"^([A-LO-RT-Z])([0-9]{2})-(%s)$" % _SLUG)
@@ -87,6 +106,12 @@ class ContractAssemblyTree:
     component_of: Mapping[str, str] = field(default_factory=dict)
     unconfirmed: Tuple[str, ...] = ()
     catalogue: Mapping[str, Any] = field(default_factory=dict)
+
+    @property
+    def panel_mm(self) -> float:
+        """The toy's one standard panel thickness (owner decision Q34)."""
+
+        return float(self.section.get("panel_mm", PANEL_MM_DEFAULT))
 
     @property
     def root(self) -> str:
@@ -171,8 +196,69 @@ class _Ids:
         return fresh
 
 
+def _thickness(value: Any) -> bool:
+    return (
+        not isinstance(value, bool) and isinstance(value, (int, float))
+        and PANEL_MM_MIN <= value <= PANEL_MM_MAX
+    )
+
+
+def _panel_mm(value: Mapping[str, Any], errors: List[str]) -> Optional[float]:
+    """The toy's standard panel thickness, ``panel_mm`` (default 2.0 mm)."""
+
+    if "panel_mm" not in value:
+        return PANEL_MM_DEFAULT
+    if not _thickness(value["panel_mm"]):
+        errors.append(
+            "assembly_tree.panel_mm must be the toy's one panel thickness, %g to %g mm "
+            "(default %g)" % (PANEL_MM_MIN, PANEL_MM_MAX, PANEL_MM_DEFAULT)
+        )
+        return None
+    return float(value["panel_mm"])
+
+
+def _check_form(item: Mapping[str, Any], label: str, panel_mm: Optional[float], errors: List[str]) -> bool:
+    """A printed Part's form: a panel at the toy's panel thickness unless it
+    states its own with a reason, or a solid with neither."""
+
+    form = item.get("form")
+    if form not in FORMS:
+        errors.append(
+            "%s.form must be panel (a flat printed Part joined by tab and slot) or solid "
+            "(a small round or 3D prop printed whole)" % label
+        )
+        return False
+    if form == SOLID:
+        if "thickness_mm" in item or "thickness_reason" in item:
+            errors.append("%s is a solid: thickness_mm and thickness_reason belong to a panel" % label)
+            return False
+        return True
+    if "thickness_mm" not in item:
+        if "thickness_reason" in item:
+            errors.append("%s.thickness_reason explains a thickness_mm it does not state" % label)
+            return False
+        return True
+    thickness = item["thickness_mm"]
+    if not _thickness(thickness):
+        errors.append("%s.thickness_mm must be %g to %g mm" % (label, PANEL_MM_MIN, PANEL_MM_MAX))
+        return False
+    if panel_mm is not None and thickness != panel_mm and not _text(item.get("thickness_reason"), MAX_REASON_CHARS):
+        errors.append(
+            "%s is a %g mm panel, but the toy's panels are %g mm (panel_mm): a panel of another "
+            "thickness states its thickness_reason" % (label, thickness, panel_mm)
+        )
+        return False
+    if panel_mm is not None and thickness == panel_mm and "thickness_reason" in item:
+        errors.append(
+            "%s.thickness_reason explains nothing: the panel is the toy's own %g mm" % (label, panel_mm)
+        )
+        return False
+    return True
+
+
 def _parse_parts(
-    value: Any, catalogues: Catalogues, ids: _Ids, used: Set[str], errors: List[str]
+    value: Any, catalogues: Catalogues, ids: _Ids, used: Set[str], errors: List[str],
+    panel_mm: Optional[float] = PANEL_MM_DEFAULT,
 ) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]]]:
     """The printed and Bought Parts, each by id."""
 
@@ -220,8 +306,15 @@ def _parse_parts(
                 used.add("bought-parts.json:%s" % entry.id)
             bought[identifier] = item
             continue
-        if set(item) != {"id", "name", "filament"}:
-            errors.append("%s: a printed Part is exactly {id, name, filament}" % label)
+        if not {"id", "name", "filament", "form"} <= set(item) <= {
+            "id", "name", "filament", "form", "thickness_mm", "thickness_reason"
+        }:
+            errors.append(
+                "%s: a printed Part is {id, name, filament, form}, and a panel may add "
+                "thickness_mm and thickness_reason" % label
+            )
+            continue
+        if not _check_form(item, label, panel_mm, errors):
             continue
         if not _text(item["name"], MAX_NAME_CHARS):
             errors.append("%s.name must name the Part in at most %d characters" % (label, MAX_NAME_CHARS))
@@ -430,12 +523,13 @@ def parse_assembly_tree(
         errors.append("assembly_tree must be an object with parts, steps and components (schema_version 7)")
         return None
     before = len(errors)
-    unknown = sorted(set(value) - {"parts", "steps", "components", "materials", "checks"})
+    unknown = sorted(set(value) - {"parts", "steps", "components", "materials", "checks", "panel_mm"})
     if unknown:
         errors.append("assembly_tree has unknown field(s): %s" % ", ".join(unknown))
     ids = _Ids(errors)
     unconfirmed: Set[str] = set()
-    printed, bought = _parse_parts(value.get("parts"), catalogues, ids, unconfirmed, errors)
+    panel_mm = _panel_mm(value, errors)
+    printed, bought = _parse_parts(value.get("parts"), catalogues, ids, unconfirmed, errors, panel_mm)
     leaves: Dict[str, str] = {key: "printed" for key in printed}
     leaves.update({key: "bought" for key in bought})
     piece_by_id: Dict[str, Mapping[str, Any]] = {}
@@ -758,13 +852,17 @@ def _check_materials(value: Any, catalogues: Catalogues, unconfirmed: Set[str], 
 __all__ = [
     "CHECK_ID",
     "ContractAssemblyTree",
+    "FORMS",
     "JOINS",
     "JOINTS",
     "LEADS",
+    "PANEL",
+    "PANEL_MM_DEFAULT",
     "PAPER",
     "PART_ID",
     "PIECE_ID",
     "SHAPINGS",
+    "SOLID",
     "STEP_ID",
     "parse_assembly_tree",
 ]

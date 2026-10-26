@@ -2424,3 +2424,13 @@ reads the after-sales contact and warnings from `company.json`.
 vendored `cad` tree, `verify_project` runs the tool after the Print Sheets
 (`_run_kit_manual`) and lists both files among its sweep's tool paths. The
 `cad` and `make-round` locks move; a resync must keep these lines.
+
+## Local change: the kit panel fit (2026-10-26, owner decision Q35)
+
+`print-details/scripts/print_details.py` gains `TAB_SLOT_CLEARANCE` (0.15 mm
+per side), the press-fit, glue-free clearance of a kit panel's tab in its
+slot. It is one printer setting shared by every toy, never set per contract,
+and is marked an estimate (`TAB_SLOT_CLEARANCE_IS_ESTIMATE`) until the kit
+pilot's printed fit coupon replaces it. `--limits` prints it after the
+limits table, and the skill's Limits section names it. No feature reads it
+yet. The `print-details` lock moves; a resync must keep these lines.

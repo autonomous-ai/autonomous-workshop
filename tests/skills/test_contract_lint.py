@@ -74,7 +74,7 @@ class ContractLintTest(unittest.TestCase):
         block["assembly_tree"]["parts"][2]["id"] = "B01-cabinet-leaf"
         self.assertIn("repeats the id B01", self._errors(block))
         block = _tree_block()
-        block["assembly_tree"]["parts"].append({"id": "C02-inkwell", "name": "Inkwell", "filament": "oak"})
+        block["assembly_tree"]["parts"].append({"id": "C02-inkwell", "name": "Inkwell", "filament": "oak", "form": "solid"})
         self.assertIn("repeats the mnemonic 'inkwell'", self._errors(block))
 
         block = _tree_block()
@@ -88,6 +88,21 @@ class ContractLintTest(unittest.TestCase):
         block = _tree_block()
         block["print"]["pieces"][0]["on"] = "B09-shelf"
         self.assertIn("M01-spine-strip.on 'B09-shelf' names nothing that exists", self._errors(block))
+
+    def test_a_panel_of_another_thickness_needs_its_reason_and_is_listed(self):
+        # Owner decision Q34, 2026-10-26: one standard panel thickness.
+        block = _tree_block()
+        block["assembly_tree"]["parts"][2]["thickness_mm"] = 3.0
+        self.assertIn("a panel of another thickness states its thickness_reason", self._errors(block))
+        block["assembly_tree"]["parts"][2]["thickness_reason"] = "The door's arch moulding."
+        code, findings = self._lint(block)
+        self.assertEqual(code, 0, findings)
+        self.assertIn({"level": "warn", "check": "panel",
+                       "message": "B02-cabinet-door is a 3 mm panel, not the toy's 2 mm: "
+                                  "The door's arch moulding."}, findings)
+        block = _tree_block()
+        del block["assembly_tree"]["parts"][4]["form"]
+        self.assertIn("a printed Part is {id, name, filament, form}", self._errors(block))
 
     def test_facts_are_still_linted_beside_the_schema(self):
         facts = {"envelope": {"x": [0, 30], "y": [0, 30], "z": [0, 8]},

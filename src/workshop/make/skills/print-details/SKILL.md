@@ -134,6 +134,12 @@ print defect; read the report row before changing numbers again.
 | material between two cut copies | 1.60 mm | `printing/wall-thickness-and-hollowing.md` |
 | steepest face looking down | 45 deg gate, designed to 38 | `printing/overhangs-and-print-orientation.md` |
 
+`--limits` also prints the one fit every kit panel shares, the press-fit,
+glue-free clearance of a tab in its slot: `TAB_SLOT_CLEARANCE`, 0.15 mm per
+side (owner decision Q35, 2026-10-26). It is a printer setting, never a
+contract's, and an **estimate** until a printed fit coupon (tab and slot
+pairs at stepped clearances) in the kit pilot replaces it.
+
 The Component Reviewer asks for detail within the same limits, and places
 it by three rules a size alone does not show: a detail on another detail (a
 rivet on a band or a rim) needs a host wider than the detail plus 0.5 mm on
