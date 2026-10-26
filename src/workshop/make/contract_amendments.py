@@ -63,6 +63,12 @@ MAX_AMENDMENT_TEXT = 4000
 MAX_AMENDMENT_REASON = 1000
 GEOMETRY_SCOPE = "geometry:"
 INTERFACE_ROW = "interface:"
+# ADR 0093: an owner amendment of a schema 8 prose section, which only an
+# owner amends (never an in-run Contract Amendment) and which unlocks no
+# Component: the reviewer judges rows, never prose. Kept in step with
+# make_round.
+PROSE_ROW = "prose:"
+PROSE_SCOPE = "prose"
 # Names that identify the Workshop Manager; kept in step with make_round.
 MANAGER_NAMES = frozenset({"workshop-manager", "manager", "workshop manager"})
 _VERDICT_KEYS = frozenset({"contradiction", "smallest", "visible_in", "references_checked", "reason"})
@@ -527,7 +533,7 @@ def owner_contract_changes(
     errors: list[str] = []
     changes: list[dict[str, Any]] = []
     for key in sorted(set(current) | set(amended)):
-        if key in ("requirements", "interfaces"):
+        if key in ("requirements", "interfaces", "prose"):
             continue
         if current.get(key) != amended.get(key):
             errors.append("it changes %s" % key)
@@ -560,6 +566,21 @@ def owner_contract_changes(
             elif old.get("text") != new.get("text"):
                 row = INTERFACE_ROW + str(old.get("id"))
                 changes.append({"row": row, "scope": row, "from": old.get("text"), "to": new.get("text")})
+    # ADR 0093: a schema 8 contract seals the prose sections its geometries
+    # name. Their text is prose, which an owner may amend; which sections
+    # exist and which geometry names them stay sealed.
+    old_prose = [item for item in current.get("prose") or () if isinstance(item, dict)]
+    new_prose = [item for item in amended.get("prose") or () if isinstance(item, dict)]
+    if ("prose" in current) != ("prose" in amended) or [
+        item.get("heading") for item in old_prose
+    ] != [item.get("heading") for item in new_prose]:
+        errors.append("it adds, removes, renames or reorders a prose section a geometry names")
+    else:
+        for old, new in zip(old_prose, new_prose):
+            if old.get("text") != new.get("text"):
+                row = PROSE_ROW + str(old.get("heading"))
+                changes.append({"row": row, "scope": PROSE_SCOPE, "from": old.get("text"),
+                                "to": new.get("text")})
     if errors:
         raise ContractError(
             "an owner amendment changes only requirement text, Interface text and prose; "
@@ -600,6 +621,11 @@ def apply_owner_amendments(
                 items = [
                     item for item in amended.get("interfaces") or ()
                     if isinstance(item, dict) and INTERFACE_ROW + str(item.get("id")) == row
+                ]
+            elif row.startswith(PROSE_ROW):
+                items = [
+                    item for item in amended.get("prose") or ()
+                    if isinstance(item, dict) and PROSE_ROW + str(item.get("heading")) == row
                 ]
             else:
                 items = [

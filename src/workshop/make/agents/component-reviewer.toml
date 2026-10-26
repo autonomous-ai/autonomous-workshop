@@ -112,7 +112,8 @@ each packet you judge.
   contract's, not the plastic's, so a drawing that differs from the
   reference inside a printed area is not a difference; a printed area in
   the wrong place, of the wrong size or outline, or missing, is one.
-- Under a schema 7 Design Contract (ADR 0092) the renders colour each
+- Under a Design Contract with an Assembly Tree (schema 7, ADR 0092, or a
+  schema 8 kit) the renders colour each
   printed Part with its catalogue filament. A Part whose colour is not the
   one the reference shows for it (a black hat rendered brass, a navy shell
   rendered oak) is a difference: name the Part and both colours. Bought

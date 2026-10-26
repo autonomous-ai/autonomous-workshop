@@ -2403,6 +2403,28 @@ class StageProposalToolTest(unittest.TestCase):
         self.run_make_round_one(assignment, invented)
         self.assert_made_round_one(assignment, invented)
 
+    def test_make_accepts_more_than_sixteen_sealed_assembly_rows(self):
+        # ADR 0093 decision 6: a contract has no row limit, so the review
+        # carries every sealed row, here 22 as in Night Charms Hall.
+        requirements = tuple("Assembly row %d is visible." % index for index in range(1, 23))
+        assignment, invented, _ = self.seal_contract_wish(requirements)
+        self.create_product(
+            invented=invented,
+            schema_version=9,
+            requirements_source="contract",
+            critical_form_requirements=self.contract_review_rows(requirements),
+        )
+        self.run_make_round_one(assignment, invented)
+        self.assert_made_round_one(assignment, invented)
+
+    def test_make_still_limits_a_managers_own_rows_to_sixteen(self):
+        self.create_product(critical_form_requirements=[
+            {"requirement": "Manager row %d." % index, "blind_evidence": "Seen.", "matches": True}
+            for index in range(17)
+        ])
+        result = self.run_make_round_one(self.assignment, self.invented, expected=2)
+        self.assertIn("critical form requirements exceed the limit", result.stderr)
+
     def test_make_refuses_a_contract_mode_review_whose_rows_or_source_differ(self):
         requirements = self.CONTRACT_REQUIREMENTS
         assignment, invented, _ = self.seal_contract_wish(requirements)

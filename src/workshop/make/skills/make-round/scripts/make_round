@@ -1287,7 +1287,7 @@ def paper_hosts(project: Path) -> tuple[set, str | None]:
         return set(), None
     roles = {str(piece.get("on", "")).split("#")[0] for piece in section.get("pieces") or ()
              if isinstance(piece, dict)}
-    if contract.get("schema_version") == TREE_SCHEMA_VERSION or (project / KIT_INSTALL).is_file():
+    if has_assembly_tree(contract) or (project / KIT_INSTALL).is_file():
         # ADR 0092: a piece's `on` names a Part or a Sub-assembly; the tree
         # says which Component's round checks it.
         kit, kit_error = kit_state(project)
@@ -1330,11 +1330,21 @@ def parse_paper(stdout: str, returncode: int) -> dict:
 # round those across Components. A contract tree defect stops the run
 # (decision 10); a labelling slip, built bodies that do not match a sound
 # tree, is an ordinary failure repaired in the next round (owner decision
-# Q28, 2026-10-23).
+# Q28, 2026-10-23). A schema 8 contract has a tree only when it is a kit
+# (ADR 0093).
 TREE_SCHEMA_VERSION = 7
 KIT_INSTALL = Path("tree") / "kit.json"
 KIT_TREE_SCRIPT = Path(__file__).resolve().with_name("kit_tree.py")
 _KIT_TREE = []
+
+
+def has_assembly_tree(contract) -> bool:
+    """Whether a sealed Design Contract is a kit (kit_tree.py's rule)."""
+
+    if not isinstance(contract, dict):
+        return False
+    schema = contract.get("schema_version")
+    return type(schema) is int and schema >= TREE_SCHEMA_VERSION and isinstance(contract.get("assembly_tree"), dict)
 
 
 def kit_tree():
@@ -1359,7 +1369,7 @@ def kit_state(project: Path) -> tuple[dict | None, str | None]:
         if run_root(project) is not None or not (project / KIT_INSTALL).is_file():
             return None, None
         return kit_tree().install_state(project, None)
-    if contract.get("schema_version") != TREE_SCHEMA_VERSION:
+    if not has_assembly_tree(contract):
         return None, None
     try:
         wish = json.loads((run_root(project) / "WISH.json").read_text(encoding="utf-8"))
@@ -1675,6 +1685,10 @@ def render_summary(summary: dict) -> str:
     if contract is not None:
         lines.append("  contract %d requirement row(s), %d Interface(s) in summary.json and the packet" % (
             len(contract.get("requirements") or ()), len(contract.get("interfaces") or ())))
+        if contract.get("prose") is not None:
+            # ADR 0093: the worker's prose, never in the packet.
+            lines.append("  prose %d section(s) for the worker in summary.json: %s" % (
+                len(contract["prose"]), "; ".join(str(item.get("heading")) for item in contract["prose"])))
     for item in summary.get("reference_cameras") or []:
         amended = (" (amended from %g,%g)" % tuple(item["amended_from"])) if item.get("amended_from") else ""
         lines.append("  camera %s %s at %g,%g in the Display Pose%s" % (item["label"], item["file"], item["camera"][0], item["camera"][1], amended))
@@ -2142,6 +2156,31 @@ def component_contract(project: Path, role: str) -> dict | None:
                   and role in reference_roles(item["components"])]
     return {"schema_version": contract_schema(project), "component": role, "geometry": geometry,
             "requirements": requirements, "interfaces": interfaces}
+
+
+# ADR 0093: the row an owner amendment of a schema 8 prose section names.
+PROSE_ROW = "prose:"
+PROSE_SCHEMA_VERSION = 8
+
+
+def component_prose(project: Path, role: str) -> list | None:
+    """The prose sections a schema 8 Design Contract names for this
+    Component (ADR 0093), ``[{"heading", "text"}]`` in its geometry's
+    ``prose_sections`` order, copied from the sealed contract as an owner
+    amendment left them. Only the worker reads them, in the round summary:
+    the review packet never carries prose, and no prose joins the contract
+    rows a review binds. None before schema 8 and outside Contract Mode."""
+
+    contract = current_contract(project)
+    if contract is None or contract_schema(project) < PROSE_SCHEMA_VERSION:
+        return None
+    geometry = next((item for item in contract.get("geometries") or ()
+                     if isinstance(item, dict) and item.get("id") == role), None)
+    names = geometry.get("prose_sections") if isinstance(geometry, dict) else None
+    texts = {item.get("heading"): item.get("text") for item in contract.get("prose") or ()
+             if isinstance(item, dict)}
+    return [{"heading": name, "text": texts.get(name)} for name in names or ()
+            if isinstance(name, str)]
 
 
 def place_hook_missing(part: Path) -> str:
@@ -3600,6 +3639,10 @@ def apply_owner_amendments(contract: dict, owners: list) -> dict:
             if row.startswith("interface:"):
                 items = [item for item in amended.get("interfaces") or ()
                          if isinstance(item, dict) and "interface:%s" % item.get("id") == row]
+            elif row.startswith(PROSE_ROW):
+                # ADR 0093: an owner's change to a schema 8 prose section.
+                items = [item for item in amended.get("prose") or ()
+                         if isinstance(item, dict) and PROSE_ROW + str(item.get("heading")) == row]
             else:
                 items = [item for index, item in enumerate(amended.get("requirements") or ())
                          if isinstance(item, dict) and (item.get("id") == row or "requirements[%d]" % index == row)]
@@ -5508,6 +5551,11 @@ def make_round(args) -> int:
         if delivered is not None:
             # ADR 0084: the worker reads its rows from the sealed contract.
             summary["contract"] = delivered
+            # ADR 0093: and under schema 8 its prose sections, which its
+            # reviewer never reads.
+            prose = component_prose(project, component)
+            if prose is not None:
+                summary["contract"] = {**delivered, "prose": prose}
         if guides:
             summary["guides"] = guide_view(guides)
         if rulings:
