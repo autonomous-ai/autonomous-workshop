@@ -126,5 +126,9 @@ never reviewed against what they describe.
   1 gains the printability choice.
 - `design_contract.py` drops both row limits, and the new schema adds prose
   sections the host can address. The component worker's instructions and
-  round summary carry those sections.
+  round summary carry those sections. Because the worker builds from them,
+  a Component's sections join its contract-rows hash and carry key: an
+  owner amendment that changes a section's text unlocks every Component
+  whose geometry names it, as a changed row does (owner decision
+  2026-10-26).
 - Every Component has Guide Images, so ADR 0089's "may" becomes "does".

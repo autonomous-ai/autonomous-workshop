@@ -3442,7 +3442,10 @@ class InterfaceTextDeliveryTest(unittest.TestCase):
             self.assertIn("prose 2 section(s) for the worker in summary.json: Body; Body and base",
                           module.render_summary(summary))
 
-    def test_a_prose_change_moves_neither_the_packet_nor_the_carry_key(self):
+    def test_a_prose_change_moves_the_rows_and_carry_key_but_never_the_packet(self):
+        # Owner decision 2026-10-26: the worker builds from its prose, so a
+        # changed section binds like a changed row; the reviewer still never
+        # reads it.
         with tempfile.TemporaryDirectory() as tmp:
             project = self._prose_root(tmp)
             module, calls = load_module(), []
@@ -3455,7 +3458,43 @@ class InterfaceTextDeliveryTest(unittest.TestCase):
                        else None for item in (first, second)]
             if packets[1] is not None:
                 self.assertEqual(packets[1]["contract"], packets[0]["contract"])
-            self.assertEqual(second["carry_key"], first["carry_key"])
+                self.assertNotIn("A plain cylinder.", json.dumps(packets[1]))
+            self.assertNotEqual(second["carry_key"], first["carry_key"])
+            self.assertNotEqual(module.contract_rows(project, "body"), rows)
+
+    def test_an_owner_prose_amendment_unlocks_only_the_components_naming_the_section(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._prose_root(tmp)
+            module = load_module()
+            roles = ("body", "base", "wing")
+            before = {role: module.contract_rows(project, role) for role in roles}
+            for heading, unlocked in (("Body", {"body"}), ("Body and base", {"body", "base"})):
+                with self.subTest(heading=heading):
+                    owners = [{"changes": [{"row": "prose:" + heading, "scope": "prose", "from": "x",
+                                            "to": "Amended."}]}]
+                    with mock.patch.object(module, "owner_amendments", return_value=owners):
+                        after = {role: module.contract_rows(project, role) for role in roles}
+                    self.assertEqual({role for role in roles if after[role] != before[role]}, unlocked)
+                    # The changed rows hash is what round_policy unlocks a locked Component on.
+                    locked = {"phase": module.LOCKED, "identity": "A", "round": 3, "shape_rounds": 0,
+                              "unlocks": [], "reviewed": {"round": 3, "identity": "A", "carry_key": "k",
+                                                          "agrees": True, "accepted": False,
+                                                          "imported_helpers": {},
+                                                          "contract_rows": before["wing"]}}
+                    self.assertFalse(module.round_policy(
+                        locked, {"identity": "B", "contract_rows": after["wing"]})["admit"])
+                    locked["reviewed"]["contract_rows"] = before["body"]
+                    self.assertTrue(module.round_policy(
+                        locked, {"identity": "B", "contract_rows": after["body"]})["admit"])
+
+    def test_before_schema_8_no_prose_joins_the_rows(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module = load_module()
+            rows = module.contract_rows(project, "body")
+            # A stray prose list in an older sealed contract binds nothing.
+            self._wish(project, lambda contract: contract.update(
+                prose=[{"heading": "Body", "text": "x"}]))
             self.assertEqual(module.contract_rows(project, "body"), rows)
 
     def test_an_owner_prose_amendment_reaches_the_worker(self):
