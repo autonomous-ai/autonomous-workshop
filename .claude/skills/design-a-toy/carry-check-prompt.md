@@ -7,8 +7,10 @@ Inputs:
   carry every detail of the original at the contract's sizes.
 - `<CHECKLIST>`: the original's details, one per line: each feature, count,
   colour, surface detail and ornament.
-- `<NAMED>`: the details the Design Contract deliberately leaves out or moves
-  to paper, quoted from its rows. These are not losses.
+- `<NAMED>`: every Design Contract statement that makes the Component
+  differ from the original, quoted: details it leaves out or moves to paper,
+  and forms it fixes otherwise (a strap set in a pocket where the original
+  laid it over the frame). These are not losses.
 
 Measuring scripts that read an image are allowed; never draw or edit one.
 
@@ -17,7 +19,8 @@ verdict:
 - **kept**: present, with the same count, colour and side as the original.
   A different size or position is not a loss; the contract decides those.
 - **lost**: missing, or with another count, colour or side.
-- **named**: missing, and `<NAMED>` quotes it as left out or on paper.
+- **named**: missing or changed, and `<NAMED>` quotes the contract
+  statement that leaves it out, puts it on paper or gives it that form.
 
 Then compare the two images yourself, and add every detail of the original
 the checklist left out, with its verdict.
