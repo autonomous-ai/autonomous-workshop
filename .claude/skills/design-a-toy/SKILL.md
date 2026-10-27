@@ -502,6 +502,13 @@ and laid over an image it shows where the image and the numbers disagree.
    Proof subagent, which still has seen no image, and repeat until its list
    is empty. The cabinet pilot listed 17 guesses, among them the door's arch
    curve, the inkwells' bulb and almost the whole feather fan.
+
+   Only a choice that changes what can be seen or how a mechanism or motion
+   works is a guess (owner decision, 2026-10-27). Any other choice is free
+   and never starts another round: which copy is `#1`, a Part's turn on the
+   bed, how the Proof models paper. The Proof lists those under "Free
+   choices"; leave them out of the contract. The ADR 0093 cabinet pilot ran
+   three more Proof rounds, about an hour, on such choices alone.
 3. **Contradictions.** Fix each one in `FINDINGS.md` as Stage 3b resolves a
    disagreement. Some live in the numbers alone: Night Charms Hall's cabinet
    door plate (19.5 x 25.3) could not cover its face (21.6 x 30.8), and no

@@ -64,7 +64,9 @@ never reviewed against what they describe.
    its true size. The Proof:
    - lists every number it had to choose; the list must reach zero, each
      guess becoming a contract number, or the word "free" where the choice
-     truly does not matter;
+     truly does not matter; only a choice that changes what can be seen or
+     how a mechanism or motion works counts as a guess (owner, 2026-10-27),
+     and any other choice is the Proof's to make freely;
    - is rendered at each reference's camera beside the AI image, with a 50%
      overlay, and every difference is resolved as Stage 3b resolves a
      disagreement (an image that looks better amends the contract;

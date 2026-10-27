@@ -32,11 +32,18 @@ print-details library on purpose (`TAB_SLOT_CLEARANCE`, the `limits()` at the
 contract's nozzle) is read from the library, not chosen.
 
 1. **Guesses.** Every time you choose a number, a shape, a position, a curve
-   or a colour the contract does not fix, keep going with your best choice
-   and write it down. A choice the contract marks "free" is not a guess.
+   or a colour the contract does not fix, keep going with your best choice.
+   It is a guess only when another choice would change what can be seen
+   (a shape, size, position or visible colour, or what a camera sees) or
+   how a mechanism works (a fit, clearance, joint, insertion or motion). A
+   choice the contract marks "free" is not a guess, and neither is any
+   choice that changes neither: which copy gets label `#1`, how a Part is
+   turned on the bed, how the Proof stands in for paper or a bought part.
+   Make those freely and list them under "Free choices" at the end of
+   `GUESSES.md`, one line each, outside the table.
    Write `<OUT>/GUESSES.md`: a table with columns #, Component or Part, what
    the contract leaves open, the value you used, the words you read that
-   left it open (quoted, at most 120 characters). One row per choice, even
+   left it open (quoted, at most 120 characters). One row per guess, even
    a small one: an arch curve, a vane's outline, a rivet pitch, which face
    a chamfer starts from.
 2. **Build.** Run the CAD skill's `scripts/gen` on every entry with
