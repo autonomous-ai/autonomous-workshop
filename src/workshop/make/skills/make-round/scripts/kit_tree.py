@@ -144,12 +144,24 @@ EXIT_PASS, EXIT_FAIL, EXIT_USAGE, EXIT_DEFECT = 0, 1, 2, 3
 # install
 
 
-def install_document(contract: dict, catalogue: dict | None) -> dict:
-    """The exact install a sealed schema 7 contract and its catalogue
-    snapshot give. The host builds the same document to check Make."""
+def has_assembly_tree(contract) -> bool:
+    """Whether a sealed Design Contract is a kit: schema 7 always has an
+    Assembly Tree, a schema 8 contract when it is a kit (ADR 0093). The
+    host's workshop.make.kit_tree holds the same rule."""
 
-    if not isinstance(contract, dict) or contract.get("schema_version") != TREE_SCHEMA_VERSION:
-        raise ValueError("the sealed Design Contract is not schema 7: it has no Assembly Tree")
+    if not isinstance(contract, dict):
+        return False
+    schema = contract.get("schema_version")
+    return type(schema) is int and schema >= TREE_SCHEMA_VERSION and isinstance(contract.get("assembly_tree"), dict)
+
+
+def install_document(contract: dict, catalogue: dict | None) -> dict:
+    """The exact install a sealed kit contract (schema 7, or a schema 8 kit)
+    and its catalogue snapshot give. The host builds the same document to
+    check Make."""
+
+    if not has_assembly_tree(contract):
+        raise ValueError("the sealed Design Contract has no Assembly Tree: it is not a kit")
     if not isinstance(catalogue, dict):
         raise ValueError("the Wish seals no kit_catalogue beside its schema 7 contract")
     section = contract.get("print")

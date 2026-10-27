@@ -344,7 +344,13 @@ Design Contract (ADR 0084) the round writes the Component's contract into
 the packet itself, bound by the packet hash: `contract` holds its geometry
 row, its `requirements` rows and the `text` of every Interface that names it
 (`<id>` or `<id>#<n>`). The summary's `contract` holds the same for the
-worker. Before schema 4 the packet has no `contract`, and the request also
+worker; under a schema 8 Design Contract (ADR 0093) it also holds `prose`,
+each prose section the Component's geometry names (`heading`, `text`),
+copied from the sealed contract as an owner amendment left it. Only the
+worker reads prose: the packet never carries it. It joins the
+Component's contract-rows hash, and so its carry key: a changed section
+unlocks every Component whose geometry names it, and their reviews stop
+carrying, exactly as a changed row does. Before schema 4 the packet has no `contract`, and the request also
 carries that geometry's contract lines. Write its answer unchanged with the
 exact packet hash from the summary:
 
@@ -678,6 +684,10 @@ the run root's `CONTRACT-AMENDMENTS.json`, and for a run whose objective is
 its contract also writes the amended `objective`. Rounds read the owner's
 rows after every applied in-run amendment, so a locked Component whose own
 rows changed unlocks as above; an owner's assembly row binds no Component.
+A schema 8 owner amendment may also change a sealed prose section's text
+(row `prose:<heading>`), never which sections exist or which geometry names
+them. Every Component whose geometry names the section unlocks, as for its
+own row, and its worker builds from the new text. An in-run Contract Amendment never changes prose.
 `--contract-amendments` lists each owner amendment after the in-run ones,
 and from then on `--propose-amendment` is refused. The host refuses an
 owner amendment for a run whose `make_round` or finalizer lacks the marker
@@ -685,8 +695,8 @@ owner amendment for a run whose `make_round` or finalizer lacks the marker
 
 ### The kit's Assembly Tree (ADR 0092)
 
-A schema 7 Design Contract splits the toy into kit Parts and joins them in
-an Assembly Tree, in Manual order. Before any worker starts, the Workshop
+A schema 7 Design Contract, and a schema 8 kit (ADR 0093), splits the toy
+into kit Parts and joins them in an Assembly Tree, in Manual order. Before any worker starts, the Workshop
 Manager installs the tree beside the Print Sheets:
 
 ```bash

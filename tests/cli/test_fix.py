@@ -168,6 +168,8 @@ class FixContractCommandTest(unittest.TestCase):
             block["requirements"] = [
                 {"id": "R%02d" % index, "scope": "assembly", "text": "Requirement %d." % index}
                 for index in range(1, 18)
+            ] + [
+                {"id": "R18", "scope": "geometry:does-not-exist", "text": "Missing geometry."}
             ]
             contract_path.write_text(_contract_text(block), encoding="utf-8")
             with patch("workshop.workflow.revision.prepare_revision") as prepare, patch(
@@ -183,7 +185,9 @@ class FixContractCommandTest(unittest.TestCase):
             message = stderr.getvalue()
             self.assertIn("title", message)
             self.assertIn("inventor", message)
-            self.assertIn("at most 16 assembly", message)
+            self.assertIn("does not exist", message)
+            # ADR 0093 decision 6: 17 assembly rows are no longer a failure.
+            self.assertNotIn("at most 16", message)
 
     def test_a_correction_without_contract_is_unchanged(self):
         wish = Wish.create(

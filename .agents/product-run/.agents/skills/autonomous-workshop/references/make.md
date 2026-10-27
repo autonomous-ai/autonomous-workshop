@@ -221,8 +221,9 @@ are separate. Frozen older runs retain their materialized rules and tools.
    hosting part does and the sheets lay out (`print/sheets/`, ADR 0091). The
    printed paper carries the art: no part models, embosses or paints it.
 
-   When the sealed Design Contract is schema 7 (ADR 0092), install its
-   Assembly Tree too, before any worker starts:
+   When the sealed Design Contract has an `assembly_tree` (schema 7, ADR
+   0092, or a schema 8 kit, ADR 0093), install its Assembly Tree too,
+   before any worker starts:
 
    ```bash
    "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/kit_tree.py --install <cad-project> --wish WISH.json
@@ -305,10 +306,15 @@ are separate. Frozen older runs retain their materialized rules and tools.
    `part_<id>.step.py` path it writes; the shared files it builds on,
    including `features/print_details.py`; its
    sealed `geometry:<id>` reference and declared camera; only that
-   Component's Design Contract rows; every Guide Image the contract seals
+   Component's Design Contract rows; under a schema 8 Design Contract (ADR
+   0093) the prose sections its geometry's `prose_sections` names, copied
+   verbatim from the sealed contract's `prose` (the worker reads them with
+   its rows, and its rows win where they differ; never send them to its
+   reviewer); every Guide Image the contract seals
    (ADR 0089) that names no `geometries` or whose `geometries` names this
    Component, by path with what it `shows`; the nozzle; and the shape-repair
-   limit (5). The worker writes the first draft, runs the round above until build
+   limit (5). Each component round's `summary.json` repeats the rows,
+   Interface text and prose under `contract`. The worker writes the first draft, runs the round above until build
    and print pass, then reports in 10 lines or fewer and waits:
    `make_round` refuses to change a passing round's geometry before its
    review is recorded (ADR 0081). The worker may view its

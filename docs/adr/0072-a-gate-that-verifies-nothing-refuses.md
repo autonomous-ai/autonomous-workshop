@@ -110,6 +110,10 @@ to the old behaviour would recreate this ADR's defect.
 
 ### Limits
 
+**Removed by ADR 0093** (decision 6): no Design Contract has a row limit
+now, and the final verifier and the finalizer take every sealed row. The
+record below explains where the two numbers came from.
+
 - **Assembly-scoped rows: at most 16.** This number comes from commit
   `deed467e`, which added it with ADR 0026 as an input guard. ADR 0026 does
   not mention it and no test pins it. It is kept here as a guard on

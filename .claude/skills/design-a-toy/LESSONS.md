@@ -35,9 +35,8 @@ file.
   had to be redone.
 - **How to apply:** for a scene inside a box, put one plan question in
   Stage 1: what stands against each wall (left, back left/centre/right,
-  right) and on the floor (front left/centre/right). Then iterate a single
-  direction image with the owner, one change per round, and start
-  component images and measurement only after an explicit OK on it.
+  right) and on the floor (front left/centre/right). Settle the answer on
+  the chosen Concept Image's three views (SKILL.md Stage 1).
 
 ### Check every prop against the scene's period before the owner does
 - **Why:** a modern mug and an electric bell-shaded lamp in a 19th-century

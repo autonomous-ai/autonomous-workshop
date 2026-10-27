@@ -564,5 +564,49 @@ class AssemblyTreeTest(unittest.TestCase):
                 self.assertIn("lead diameter", [size["what"] for size in entry.sizes], entry.id)
 
 
+def _schema_8_kit(block):
+    """The same kit as schema 8 (ADR 0093): each geometry names its prose
+    section and one Guide Image names every geometry."""
+
+    block["schema_version"] = 8
+    for geometry in block["geometries"]:
+        geometry["prose_sections"] = [geometry["name"]]
+    block["guides"] = [{"file": "guide-01-views.png", "shows": "Every Component from two more sides.",
+                        "geometries": [item["id"] for item in block["geometries"]]}]
+    prose = "# Kit Nook\n\n" + "".join(
+        "### %s\n\nThe %s, described.\n\n" % (item["name"], item["name"].lower())
+        for item in block["geometries"])
+    return block, prose
+
+
+class SchemaEightKitTest(unittest.TestCase):
+    """ADR 0093: schema 8 keeps every schema 7 feature, with the tree optional."""
+
+    def test_a_schema_8_kit_seals_its_tree_and_prose(self):
+        block, prose = _schema_8_kit(_tree_block())
+        contract = parse_design_contract(_contract_text(block, prose=prose), catalogues=_catalogues())
+        contract.check_sealable()
+        self.assertEqual(contract.schema_version, 8)
+        self.assertEqual(contract.to_dict()["assembly_tree"], block["assembly_tree"])
+        self.assertEqual(contract.to_dict()["print"], block["print"])
+        self.assertIsNotNone(contract.kit_catalogue())
+        self.assertEqual([item.heading for item in contract.prose], ["Case", "Cabinet", "Student desk"])
+
+    def test_a_schema_8_toy_without_a_tree_reads_no_catalogue(self):
+        block, prose = _schema_8_kit(_tree_block())
+        del block["assembly_tree"]
+        for piece in block["print"]["pieces"]:
+            piece["on"] = "cabinet"
+            piece["id"] = piece["id"].split("-", 1)[1]
+        contract = parse_design_contract(_contract_text(block, prose=prose), catalogues=None)
+        self.assertIsNone(contract.assembly_tree)
+        self.assertIsNone(contract.kit_catalogue())
+        # Without a tree a piece id is a schema 6 id, not a Part id.
+        block, prose = _schema_8_kit(_tree_block())
+        del block["assembly_tree"]
+        with self.assertRaises(ContractError):
+            parse_design_contract(_contract_text(block, prose=prose), catalogues=None)
+
+
 if __name__ == "__main__":
     unittest.main()

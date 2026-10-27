@@ -2434,3 +2434,23 @@ and is marked an estimate (`TAB_SLOT_CLEARANCE_IS_ESTIMATE`) until the kit
 pilot's printed fit coupon replaces it. `--limits` prints it after the
 limits table, and the skill's Limits section names it. No feature reads it
 yet. The `print-details` lock moves; a resync must keep these lines.
+
+## Local change: no row limits, and a worker's prose sections (2026-10-26, ADR 0093)
+
+A Workshop-local change (ADR 0093 decisions 6 and 7). In the vendored `cad`
+tree, `verify_project`'s signature-review preflight takes one
+`geometry_form_requirements` entry per sealed geometry-scoped row and, for a
+`requirements_source: "contract"` review, one `critical_form_requirements`
+entry per sealed assembly row, however many the contract has; a Workshop
+Manager's own rows keep the limit of 16. Night Charms Hall's run stopped on
+the old cap of 16, which refused the 22 sealed rows the finalizer required.
+In `make-round`, under a schema 8 Design Contract a component round's
+`summary.json` `contract` gains `prose`, the Component's prose sections
+(`component_prose`), copied from the sealed contract as an owner amendment
+left them (`prose:<heading>` rows); the review packet never includes prose,
+but the contract-rows hash, and so the carry key, does: an owner's prose
+change unlocks every Component naming the section (owner decision
+2026-10-26). `has_assembly_tree` in `make_round`
+and `kit_tree.py` decides a kit by its sealed tree, so a schema 8 kit takes
+the tree gates and a schema 8 toy without a tree takes none. The `cad` and
+`make-round` locks move; a resync must keep these lines.

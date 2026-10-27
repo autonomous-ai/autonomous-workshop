@@ -29,7 +29,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Mapping
 
 from workshop.errors import ContractError
-from workshop.make.kit_tree import TREE_SCHEMA_VERSION, install_document, not_printed, tree_digest
+from workshop.make.kit_tree import has_assembly_tree, install_document, not_printed, tree_digest
 
 MANUAL_DIRECTORY = "manual"
 PDF_PATH = "manual/manual.pdf"
@@ -51,14 +51,14 @@ def verify_made_manual(
     contract: Mapping[str, Any] | None,
     catalogue: Any,
 ) -> dict[str, Any] | None:
-    """The accepted Manual's account, or None for a contract before schema 7.
+    """The accepted Manual's account, or None for a contract without an Assembly Tree.
     ``catalogue`` is the Wish's sealed ``kit_catalogue``. Raises
     ContractError naming what is wrong."""
 
-    if not isinstance(contract, Mapping) or contract.get("schema_version") != TREE_SCHEMA_VERSION:
+    if not has_assembly_tree(contract):
         return None
     if not isinstance(catalogue, Mapping):
-        raise ContractError("the Wish seals no kit_catalogue beside its schema 7 Design Contract")
+        raise ContractError("the Wish seals no kit_catalogue beside its kit Design Contract")
     product_root = Path(run_root).joinpath(*PurePosixPath(made.product_root).parts)
     entries = {entry.path: entry for entry in made.product_manifest.entries}
     prefix = PurePosixPath(made.cad_project_path)

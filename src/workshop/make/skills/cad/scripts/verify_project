@@ -320,9 +320,10 @@ def _required_signature_review(project: Path) -> str:
         geometries_with_rows: list[str] = []
         if has_geometry_rows:
             geometry_requirements = review.get("geometry_form_requirements")
-            if not isinstance(geometry_requirements, list) or not 1 <= len(
-                geometry_requirements
-            ) <= 16:
+            # One entry per sealed geometry-scoped row, however many the
+            # contract has (ADR 0093 removed ADR 0072's row limits); the
+            # finalizer holds them to the sealed rows exactly.
+            if not isinstance(geometry_requirements, list) or not geometry_requirements:
                 raise ValueError(
                     "signature review must enumerate geometry form requirements"
                 )
@@ -454,7 +455,12 @@ def _required_signature_review(project: Path) -> str:
     ) not in (1, 2, 3, 4):
         raise ValueError("signature review must record one to four review rounds")
     requirements = review.get("critical_form_requirements")
-    if not isinstance(requirements, list) or not 1 <= len(requirements) <= 16:
+    # A contract's assembly rows have no limit (ADR 0093); the 16 stays a
+    # guard on the rows a Workshop Manager writes for itself.
+    limit = None if review.get("requirements_source") == "contract" else 16
+    if not isinstance(requirements, list) or not requirements or (
+        limit is not None and len(requirements) > limit
+    ):
         raise ValueError("signature review must enumerate critical form requirements")
     for requirement in requirements:
         if not isinstance(requirement, dict) or set(requirement) != {

@@ -536,7 +536,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         skill = text("src/workshop/make/skills/make-round/SKILL.md")
         self.assertIn("`reference_conflicts` (at most 12)", skill)
         design = text(".claude/skills/design-a-toy/SKILL.md")
-        self.assertIn('Write the block as `"schema_version": 4`', design)
+        self.assertIn('Write the block as `"schema_version": 8`', design)
         self.assertIn("**Joint features.**", design)
         contract_format = text(".claude/skills/build-a-toy/CONTRACT-FORMAT.md")
         self.assertIn('"schema_version": 4', contract_format)
