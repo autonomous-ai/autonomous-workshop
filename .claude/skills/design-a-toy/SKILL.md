@@ -289,7 +289,15 @@ of a kit, and give every `geometries[]` entry its `prose_sections`: the
 exact `###` heading text of each section that describes it
 (`"prose_sections": ["Door (B06)", "Strap hinges (C01, two) and ring pull
 (C02)"]`). A section that describes several Components, such as a joint
-between two of them, may be named by each. The host hands a Component's
+between two of them, may be named by each.
+
+Prose written once for the whole toy goes in `###` sections too: the
+frame and Display Pose, the print stances, the fit and clearance rules and
+the assembly order. Every Component names each of them that it is built in
+or to. A section runs only from its `###` heading to the next heading, so
+text under a `##` heading and outside any `###` reaches no worker: the
+cabinet pilot's frame, tab clearance and stances did not, until they got
+sections of their own. The host hands a Component's
 sections to its Component Worker with its rows. Rows still win: where a
 section and a row disagree, the worker follows the row, and the Component
 Reviewer judges by the rows and the reference alone.
@@ -449,16 +457,18 @@ the colour of each printed Part from `filaments.json` ("the desk dark oak,
 the hat black, the stand brass") and say that every plastic surface is one of
 those flat colours. Paper areas are free: printed art may use any colour.
 
-For a kit, also generate the one **kit image** the human approves the tree
-from, with AI generation like the references: an **"in the box" flat lay**
-of every Part laid out loose, each as many times as the toy holds it, in its
-own filament colour, printed Parts grouped by colour, the Print Sheets and
-Bought Parts beside them, with no arrows. Name it `kit-01-<slug>.png`. It is
-never sealed or passed to a run; the contract and its tree win wherever they
-disagree. Check it against the tree by count (every Part appears as often
-as the toy holds it, and nothing else does) and by handedness: each Panel's
-slots, knuckles and relief on the side and edge the contract puts them,
-not mirrored.
+For a kit, also make the one **kit image** the human approves the tree
+from: an **"in the box" flat lay** of every Part laid out loose, each as
+many times as the toy holds it, in its own filament colour, printed Parts
+grouped by colour, the Print Sheets and Bought Parts beside them, with no
+arrows. Render it from the Contract Proof's Part entries (Stage 3a), each
+Part flat in one true scale, never with AI: image models never got a flat
+lay's counts, handedness and scale right (the cabinet pilot plateaued at
+4-7 major errors over eight rounds), and a render from the Proof is exact
+by construction. Name it `kit-01-<slug>.png`. It is never sealed or passed
+to a run. Still check it against the tree by count (every Part appears as
+often as the toy holds it, and nothing else does): a miss is a Proof or
+tree defect.
 
 Do not generate exploded views (owner decision Q31, 2026-10-26). Image
 models cannot draw them correctly: in eight regenerate-and-review rounds
@@ -502,6 +512,13 @@ and laid over an image it shows where the image and the numbers disagree.
    Proof subagent, which still has seen no image, and repeat until its list
    is empty. The cabinet pilot listed 17 guesses, among them the door's arch
    curve, the inkwells' bulb and almost the whole feather fan.
+
+   Only a choice that changes what can be seen or how a mechanism or motion
+   works is a guess (owner decision, 2026-10-27). Any other choice is free
+   and never starts another round: which copy is `#1`, a Part's turn on the
+   bed, how the Proof models paper. The Proof lists those under "Free
+   choices"; leave them out of the contract. The ADR 0093 cabinet pilot ran
+   three more Proof rounds, about an hour, on such choices alone.
 3. **Contradictions.** Fix each one in `FINDINGS.md` as Stage 3b resolves a
    disagreement. Some live in the numbers alone: Night Charms Hall's cabinet
    door plate (19.5 x 25.3) could not cover its face (21.6 x 30.8), and no
@@ -564,11 +581,15 @@ the assembly reference stays AI-drawn from the chosen Concept Image.
    position of IMAGE 1, and give it the materials, colours and details of
    IMAGE 2.
 3. **Check.** A fresh subagent checks the edit against the checklist from
-   [carry-check-prompt.md](carry-check-prompt.md), with the details the
-   contract leaves out or puts on paper quoted as `<NAMED>`; those are not
-   losses. Its reply is one plain line.
+   [carry-check-prompt.md](carry-check-prompt.md), with `<NAMED>` holding
+   every contract statement that makes the Component differ from the
+   original: details left out or put on paper, and every form the contract
+   fixes otherwise (a strap set in a pocket where the original laid it over
+   the frame, a gap where it drew a seam). Those are not losses. Its reply
+   is one plain line.
 4. **Lost details.** Re-edit naming each lost detail, up to Stage 3's round
-   cap. When details are still lost, fall back to the AI-drawn reference.
+   cap. Never re-edit a detail back in that the contract decides against.
+   When details are still lost, fall back to the AI-drawn reference.
 5. **Sheet.** Compose the owner's comparison with the check's line:
    ```sh
    uv run python .claude/skills/design-a-toy/scripts/proof_views.py carry <original.png> \
@@ -841,7 +862,9 @@ groove, slot, notch, curl, proud detail and cut-away the contract gives, turn
 it into the stance the contract names and check that it prints without
 support: an open-top groove or slot is free; one whose opening faces sideways
 across the build direction has a roof, which fails unless it is a ledge under
-1 deep or rises at 52 degrees. A finger groove 3 deep printed on the part's
+1 deep or rises at 52 degrees (Make's `check_overhang` fails below 45;
+52 is the design margin over it, from the wiki's "Do not design at the
+limit"). A finger groove 3 deep printed on the part's
 side is a 3 mm cantilevered roof. When a detail fails, change the stance
 before the detail. Then check each feature's width or thickness against its
 geometry's `wall_min_mm`: a feature under the floor either grows, or the

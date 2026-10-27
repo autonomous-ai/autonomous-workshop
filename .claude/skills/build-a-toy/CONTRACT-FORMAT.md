@@ -337,7 +337,10 @@ instances.)
   heading and have text. One section may be named by several geometries
   ("Spine housing and heart core"). A section runs from the line after its
   heading to the next heading of level 1 to 3; `####` subheadings stay in
-  it, and the design-contract block belongs to no section. `wish --contract`
+  it, and the design-contract block belongs to no section. Text under a
+  `##` heading outside every `###` reaches no worker, so prose written once
+  for the whole toy (the frame, stances, fit rules, assembly order) gets
+  `###` sections of its own, named by every geometry built in or to it. `wish --contract`
   seals the named sections inside the contract as `prose`
   (`[{"heading", "text"}]`, in prose order), and each component round
   writes its Component's sections into its `summary.json` `contract`, for
