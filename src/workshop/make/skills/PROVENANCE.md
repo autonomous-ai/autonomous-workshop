@@ -2472,4 +2472,7 @@ printed Parts, and hashes the new tool into its print context. In the
 vendored `cad` tree, `verify_project`'s print sweep gates a kit's
 Components Part by Part the same way, PRINTABLE or not, and hashes
 `kit_print_parts.py` into its sweep closure. Non-kit projects are gated as
-before. The `cad` and `make-round` locks move; a resync must keep these lines.
+before. A Component that both defines `print_parts()` and hosts a Print
+Piece keeps its paper gate beside its Parts (the pilot's resumed round
+crashed sorting the paper job's unnamed key with the Part names). The `cad`
+and `make-round` locks move; a resync must keep these lines.

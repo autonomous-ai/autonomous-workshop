@@ -5504,7 +5504,7 @@ def make_round(args) -> int:
             part_records = {
                 name: {"verdict": worst_verdict(item.values()), "identity": part_identities[role][name],
                        **{gate: item[gate] for gate in PRINT_GATES}}
-                for name, item in sorted(by_target.items()) if name is not None}
+                for name, item in sorted((n, i) for n, i in by_target.items() if n is not None)}
             gates.update({gate: combined_gate(gate, part_records) for gate in PRINT_GATES})
         printing[role] = {
             "verdict": worst_verdict(gates.values()),

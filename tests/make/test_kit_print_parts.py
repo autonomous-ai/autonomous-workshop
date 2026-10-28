@@ -201,6 +201,20 @@ class KitRoundTest(unittest.TestCase):
         render = next(c for c in self.round.calls if Path(c[1]).name == "render_review")
         self.assertEqual(Path(render[2]).name, "part_cabinet.step.py")
 
+    def test_a_kit_component_hosting_a_print_piece_gates_its_parts_and_its_paper(self):
+        # The cabinet pilot (wish-20261028-051153-3f1061cd) crashed here: the paper
+        # gate's job has no Part name, and sorting it beside the Part names raised.
+        module = load_module()
+        with mock.patch.object(module, "paper_hosts", return_value=({"cabinet"}, None)):
+            self.round.main(module, ["--component", "part_cabinet.step.py"], 1)
+        rounds = sorted((self.project / "measure" / "component-rounds" / "cabinet").iterdir())
+        summary = json.loads((rounds[-1] / "summary.json").read_text())
+        record = summary["print"]["cabinet"]
+        self.assertEqual(record["verdict"], "PASS")
+        self.assertEqual(sorted(record["parts"]), CABINET)
+        self.assertIn("paper", record)
+        self.assertTrue(any(Path(c[1]).name == "check_print_pieces.py" for c in self.round.calls))
+
     def test_one_failing_part_fails_the_round_and_is_named(self):
         self.round.failing = {("B02-cabinet-door", "check_overhang")}
         module, summary, printed = self.component()
