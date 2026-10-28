@@ -2454,3 +2454,22 @@ change unlocks every Component naming the section (owner decision
 and `kit_tree.py` decides a kit by its sealed tree, so a schema 8 kit takes
 the tree gates and a schema 8 toy without a tree takes none. The `cad` and
 `make-round` locks move; a resync must keep these lines.
+
+## Local change: each kit Part is gated alone in its print stance (2026-10-28, ADR 0092)
+
+A Workshop-local change (ADR 0092, owner decision of 2026-10-28). The
+Night Charms Cabinet pilot's component rounds gated the cabinet's assembled
+`gen_step()` in its Display Pose: its flat top board and shelf failed
+`check_overhang` as inner ceilings and a 0.80 mm web read 0.66 mm. In
+`make-round`, the new `scripts/kit_print_parts.py` describes a kit
+Component's `print_parts()` (every printed Part alone in its print stance,
+bottom at Z 0) and writes one generated gate entry per Part under the
+project's `__cadgen__/print-parts/`; `make_round` gates each Part with
+`check_mesh`, `check_overhang` and `check_thickness`, records each Part's
+verdict and B-rep identity under `print.<role>.parts` (reuse compares
+them), refuses a `print_parts()` that is missing or is not the Component's
+printed Parts, and hashes the new tool into its print context. In the
+vendored `cad` tree, `verify_project`'s print sweep gates a kit's
+Components Part by Part the same way, PRINTABLE or not, and hashes
+`kit_print_parts.py` into its sweep closure. Non-kit projects are gated as
+before. The `cad` and `make-round` locks move; a resync must keep these lines.

@@ -233,7 +233,10 @@ are separate. Frozen older runs retain their materialized rules and tools.
    Component's Parts (`assembly_tree.components`), each printed Part's
    filament, its Bought Parts, and the steps inside it with their insertion
    directions and lead routes. Each Part is one labelled body
-   (`make-round/SKILL.md`, "The kit's Assembly Tree"). Component rounds check
+   (`make-round/SKILL.md`, "The kit's Assembly Tree"), and each Component
+   file also defines `print_parts()`, every printed Part alone in its
+   print stance, bottom at Z 0: the print gates measure each Part alone,
+   never the assembled Component (owner decision 2026-10-28). Component rounds check
    the steps inside each Component; your assembly rounds and final
    verification check the joins across Components and write
    `measure/tree-report.json`, which the host checks before accepting Make.

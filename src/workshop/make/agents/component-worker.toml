@@ -83,6 +83,14 @@ requires.
   (`P02-steel-pin`) at its catalogue size, in the same frame, coloured the
   reserved not-printed magenta `cadgen.srgb("#ff00ff")`; it is never
   printed, and no printed Part may take that colour. Label repeated copies `<id>#1`, `<id>#2`, ... in Manual order.
+  Also define `print_parts()` returning `{Part id: shape}`: every printed
+  Part of your Component, once per Part id (no `#n`; copies are one Part),
+  each alone in the stance it prints in, bottom at Z 0, centred in X and Y;
+  never a Bought Part or Print Piece. The print gates measure each of these
+  Parts alone, never your assembled `gen_step()`; a failure names its Part
+  (`cabinet/B04-top-board`). Repair a `parts FAIL` line (no
+  `print_parts()`, a Part missing, or one that is not your printed Part)
+  like a print gate.
   A piece's `on` may name one of your Parts or a Sub-assembly: place its
   print feature on that Part. Your round's `tree` line sweeps each input of
   your steps into its seat along its direction, alone, and each lead route;

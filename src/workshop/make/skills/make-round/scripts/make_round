@@ -1194,6 +1194,56 @@ def unmeasurable(parsed: dict, stdout: str) -> dict:
     return parsed
 
 
+def parse_gate(gate: str, done) -> dict:
+    """One print (or paper) gate run's verdict, as a round records it."""
+    parsed = (parse_mesh(done.stdout, done.returncode) if gate == "mesh" else
+              parse_paper(done.stdout, done.returncode) if gate == "paper" else
+              (parse_thickness if gate == "thickness" else parse_overhang)(done.stdout))
+    if done.returncode == 3:
+        parsed["verdict"] = "UNVERIFIED"
+        parsed["failures"] = ["geometry analysis cancelled or its time allowance exhausted"]
+    elif done.returncode == GATE_UNMEASURABLE:
+        unmeasurable(parsed, done.stdout)
+    elif done.returncode not in (0, 1):
+        # 0 pass, 1 measured-and-failed; anything else is the tool
+        # failing to measure, which is never a printability verdict.
+        parsed["verdict"] = "FAIL"
+        parsed["failures"] = (
+            ["check_%s exit %d: %s" % (gate, done.returncode, tail(done.stderr)[:60])]
+            + parsed["failures"]
+        )[:4]
+    return parsed
+
+
+def worst_verdict(gates) -> str:
+    verdicts = {gate.get("verdict") for gate in gates}
+    return next((v for v in ("FAIL", "UNMEASURABLE", "UNVERIFIED") if v in verdicts), "PASS")
+
+
+def combined_gate(gate: str, parts: dict) -> dict:
+    """A kit Component's verdict of one print gate over its Parts (ADR 0092,
+    2026-10-28): the worst Part's, every failure and defect named by its Part."""
+    results = {name: item[gate] for name, item in parts.items()}
+    combined = {
+        "verdict": worst_verdict(results.values()),
+        "failures": ["%s: %s" % (name, failure) for name, result in results.items()
+                     for failure in (result.get("failures") or [])][:8],
+        "defects": ["%s:%s" % (name, key) for name, result in results.items()
+                    for key in (result.get("defects") or [])],
+        "failing_parts": [name for name, result in results.items() if result.get("verdict") != "PASS"],
+    }
+    if gate == "thickness":
+        values = [r["thinnest_mm"] for r in results.values() if r.get("thinnest_mm") is not None]
+        combined["thinnest_mm"] = min(values) if values else None
+    elif gate == "overhang":
+        values = [r["overhang_mm2"] for r in results.values() if r.get("overhang_mm2") is not None]
+        combined["overhang_mm2"] = max(values) if values else None
+    else:
+        combined["edges"] = ["%s: %s" % (name, edge) for name, result in results.items()
+                             for edge in (result.get("edges") or [])]
+    return combined
+
+
 def print_context(cad: Path, nozzle: float, angle: float, bed: str | None = None) -> dict | None:
     """Inputs to this print measurement, without importing numerical libraries.
 
@@ -1218,6 +1268,9 @@ def print_context(cad: Path, nozzle: float, angle: float, bed: str | None = None
         paper = cad.parents[1] / "print-details" / "scripts" / "check_print_pieces.py"
         sources["check_print_pieces.py"] = (hashlib.sha256(paper.read_bytes()).hexdigest()
                                             if paper.is_file() else None)
+        # ADR 0092 (2026-10-28): how a kit Component's Parts are described and gated.
+        sources["kit_print_parts.py"] = (hashlib.sha256(KIT_PRINT_PARTS_SCRIPT.read_bytes()).hexdigest()
+                                         if KIT_PRINT_PARTS_SCRIPT.is_file() else None)
         packages = {name: package_version(name) for name in ("numpy", "scipy")}
     except (OSError, PackageNotFoundError):
         return None
@@ -1241,10 +1294,29 @@ def round_bed(project: Path) -> str:
     return "x".join("%g" % value for value in bed)
 
 
-def reusable_print(item: dict | None) -> bool:
-    """Only a recorded PASS of every gate, with its original tool logs, reuses."""
+def reusable_print(item: dict | None, parts: dict | None = None) -> bool:
+    """Only a recorded PASS of every gate, with its original tool logs, reuses.
+
+    A kit Component's record (ADR 0092, 2026-10-28) holds each Part's gates
+    and B-rep identity; it reuses only when ``parts``, this round's
+    ``{Part id: identity}`` from print_parts(), names the same Parts with the
+    same identities, each of which passed. A record without Parts never
+    stands for a kit Component, nor one with Parts for anything else."""
     if not isinstance(item, dict) or item.get("verdict") != "PASS":
         return False
+    recorded = item.get("parts")
+    if (parts is None) != (recorded is None):
+        return False
+    if parts is not None:
+        if not isinstance(recorded, dict) or not all(isinstance(value, str) for value in parts.values()):
+            return False
+        if {key: (value or {}).get("identity") if isinstance(value, dict) else None
+                for key, value in recorded.items()} != parts:
+            return False
+        if not all(value.get("verdict") == "PASS"
+                   and all((value.get(gate) or {}).get("verdict") == "PASS" for gate in PRINT_GATES)
+                   for value in recorded.values()):
+            return False
     if not {"thickness", "overhang", "mesh", "measured_round", "logs"} <= item.keys():
         return False
     if not isinstance(item["logs"], dict) or not item["logs"]:
@@ -1336,6 +1408,11 @@ TREE_SCHEMA_VERSION = 7
 KIT_INSTALL = Path("tree") / "kit.json"
 KIT_TREE_SCRIPT = Path(__file__).resolve().with_name("kit_tree.py")
 _KIT_TREE = []
+# ADR 0092, owner decision 2026-10-28: a kit Component's print gates measure
+# each printed Part alone in its print stance, from its print_parts().
+KIT_PRINT_PARTS_SCRIPT = Path(__file__).resolve().with_name("kit_print_parts.py")
+KIT_PRINT_DIR = ("__cadgen__", "print-parts")
+_KIT_PRINT_PARTS = []
 
 
 def has_assembly_tree(contract) -> bool:
@@ -1356,6 +1433,26 @@ def kit_tree():
         spec.loader.exec_module(module)
         _KIT_TREE.append(module)
     return _KIT_TREE[0]
+
+
+def kit_print_parts():
+    """The kit_print_parts.py module beside this script."""
+
+    if not _KIT_PRINT_PARTS:
+        spec = importlib.util.spec_from_file_location("make_round_kit_print_parts", KIT_PRINT_PARTS_SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _KIT_PRINT_PARTS.append(module)
+    return _KIT_PRINT_PARTS[0]
+
+
+def kit_print_roles(kit: dict | None, roles) -> set[str]:
+    """The roles whose print gates measure each Part from print_parts():
+    every Component of a kit's tree (ADR 0092, 2026-10-28). Nothing else."""
+
+    if kit is None or not KIT_PRINT_PARTS_SCRIPT.is_file():
+        return set()
+    return {role for role in roles if kit_print_parts().printed_parts(kit, role) is not None}
 
 
 def kit_state(project: Path) -> tuple[dict | None, str | None]:
@@ -1520,15 +1617,42 @@ def at_features(gate: dict) -> str:
     return "  at " + ", ".join(defects[:4]) + (" ..." if len(defects) > 4 else "")
 
 
+def gate_lines(label: str, gates: dict) -> list[str]:
+    """The wall, overhang and mesh lines of one printed object."""
+    lines = []
+    wall = gates["thickness"]
+    thin = "" if wall.get("thinnest_mm") is None else "  thinnest %.2f mm" % wall["thinnest_mm"]
+    failing = ("FAIL", "UNMEASURABLE")
+    why = ("  " + "; ".join(wall["failures"])) if wall["verdict"] in failing and wall["failures"] else ""
+    lines.append("  wall  %-4s %-28s%s%s%s" % (wall["verdict"], label, thin, why, at_features(wall)))
+    over = gates["overhang"]
+    area = "" if over.get("overhang_mm2") is None else "  largest %.0f mm2" % over["overhang_mm2"]
+    why = ("  " + "; ".join(over["failures"])) if over["verdict"] in failing and over["failures"] else ""
+    lines.append("  over  %-4s %-28s%s%s%s" % (over["verdict"], label, area, why, at_features(over)))
+    mesh = gates.get("mesh")
+    if mesh is not None:
+        why = ("  " + "; ".join(mesh["failures"])) if mesh["verdict"] in failing and mesh["failures"] else ""
+        lines.append("  mesh  %-4s %-28s%s" % (mesh["verdict"], label, why))
+        for edge in (mesh.get("edges") or [])[:4]:
+            lines.append("    non-manifold edge %s" % edge)
+    return lines
+
+
 def render_summary(summary: dict) -> str:
     lines = [
         "make_round r%04d  %s  %s  changed %d/%d part(s)"
         % (summary["round"], summary.get("scope", "assembly"), summary["project"], len(summary["changed"]), len(summary["parts"]))
     ]
-    for role in summary["checked"]:
-        item = summary["build"][role]
+    # A kit Component's Parts are gated again when its print_parts() changed
+    # though its assembled build did not (ADR 0092, 2026-10-28): show them too.
+    regated = [role for role, item in sorted((summary.get("print") or {}).items())
+               if role not in summary["checked"] and isinstance(item, dict)
+               and ("parts" in item or "print_parts" in item) and item.get("measured_round") == summary["round"]]
+    for role in [*summary["checked"], *regated]:
+        item = summary["build"].get(role, {"verdict": "PASS", "failures": []})
         extra = ("  " + "; ".join(item["failures"])) if item["verdict"] == "FAIL" and item["failures"] else ""
-        lines.append("  build %-4s %-28s%s" % (item["verdict"], role, extra))
+        if role in summary["build"]:
+            lines.append("  build %-4s %-28s%s" % (item["verdict"], role, extra))
         for refusal in item.get("detail_refusals") or []:
             lines.append("  refuse %s at %s: %s; passes with %s" % (
                 refusal["feature"], refusal["site"], refusal["reason"], refusal["passes"]))
@@ -1538,21 +1662,19 @@ def render_summary(summary: dict) -> str:
         gates = (summary.get("print") or {}).get(role)
         if gates is None:
             continue
-        wall = gates["thickness"]
-        thin = "" if wall.get("thinnest_mm") is None else "  thinnest %.2f mm" % wall["thinnest_mm"]
-        failing = ("FAIL", "UNMEASURABLE")
-        why = ("  " + "; ".join(wall["failures"])) if wall["verdict"] in failing and wall["failures"] else ""
-        lines.append("  wall  %-4s %-28s%s%s%s" % (wall["verdict"], role, thin, why, at_features(wall)))
-        over = gates["overhang"]
-        area = "" if over.get("overhang_mm2") is None else "  largest %.0f mm2" % over["overhang_mm2"]
-        why = ("  " + "; ".join(over["failures"])) if over["verdict"] in failing and over["failures"] else ""
-        lines.append("  over  %-4s %-28s%s%s%s" % (over["verdict"], role, area, why, at_features(over)))
-        mesh = gates.get("mesh")
-        if mesh is not None:
-            why = ("  " + "; ".join(mesh["failures"])) if mesh["verdict"] in failing and mesh["failures"] else ""
-            lines.append("  mesh  %-4s %-28s%s" % (mesh["verdict"], role, why))
-            for edge in (mesh.get("edges") or [])[:4]:
-                lines.append("    non-manifold edge %s" % edge)
+        if gates.get("print_parts"):
+            # ADR 0092 (2026-10-28): a kit Component's print_parts() was refused.
+            lines.append("  parts FAIL %-28s  nothing was gated; repair print_parts():" % role)
+            for line in gates["print_parts"][:8]:
+                lines.append("    %s" % line)
+        elif gates.get("parts") is not None:
+            # Each printed Part alone in its print stance, from print_parts().
+            lines.append("  parts %-4s %-28s  %d printed Part(s), each gated alone in its print stance"
+                         % (gates["verdict"], role, len(gates["parts"])))
+            for name, part_gates in gates["parts"].items():
+                lines += gate_lines("%s/%s" % (role, name), part_gates)
+        else:
+            lines += gate_lines(role, gates)
         paper = gates.get("paper")
         if paper is not None:
             # ADR 0091: every Print Piece this part hosts, by its feature.
@@ -1578,7 +1700,7 @@ def render_summary(summary: dict) -> str:
         elif tree.get("slips"):
             lines.append("  tree  labelling slip: the bodies do not match the tree; repair them in the next round "
                          "like any failing gate (Q28)")
-    unchecked = [r for r in summary["parts"] if r not in summary["checked"]]
+    unchecked = [r for r in summary["parts"] if r not in summary["checked"] and r not in regated]
     if unchecked:
         lines.append("  build skip %d unchanged part(s): %s" % (len(unchecked), ", ".join(unchecked[:6]) + (" ..." if len(unchecked) > 6 else "")))
         if summary.get("reused"):
@@ -5159,6 +5281,17 @@ def make_round(args) -> int:
     if component is not None:
         reproductions[component] = len(builds)
         builds.append(reproduction_job(python, entry, project, out))
+    # ADR 0092 (owner decision 2026-10-28): each kit Component's printed
+    # Parts, alone in their print stances, built once beside the rest.
+    kit, kit_error = kit_state(project)
+    part_roles = [part.name.removeprefix("part_").removesuffix(".step.py") for part in parts]
+    kit_roles = kit_print_roles(kit, part_roles)
+    describes = {}
+    for part, role in zip(parts, part_roles):
+        if role in kit_roles:
+            describes[role] = len(builds)
+            builds.append({"command": [python, str(KIT_PRINT_PARTS_SCRIPT), "describe", str(part)],
+                           "cwd": project, "log": out / ("print-parts-%s.log" % role)})
     instances = kept_instances(entry, component, interfaces, display_pose) if keep and component is not None else []
     for number in instances:
         builds.append(brep_job(python, cad, entry, project, brep_root / component / ("instance-%d" % number),
@@ -5189,6 +5322,9 @@ def make_round(args) -> int:
     def check_env(role):
         root, read_back = kept.get(role, (None, None))
         return brep_env(root, read_back)
+
+    described = {role: kit_print_parts().parse(built[index].stdout, built[index].returncode)
+                 for role, index in describes.items()}
 
     changed = diff_parts(state.get("parts", {}), digests) if not args.all_parts else sorted(digests)
     # The geometry this round scored: the Component's identity, or every
@@ -5260,11 +5396,21 @@ def make_round(args) -> int:
     # Envelope checks (2c), read the round's kept build, so they run at once.
     gate_jobs = []
     hosts, paper_error = paper_hosts(project)
+    # ADR 0092 (2026-10-28): a kit Component whose print_parts() is not its
+    # printed Parts fails its print verdict with the repair, and nothing is
+    # gated in place of its Parts.
+    kit_refusals = {role: kit_print_parts().failures(kit, role, described.get(role))
+                    for role in sorted(kit_roles & set(digests))}
+    kit_refusals = {role: lines for role, lines in kit_refusals.items() if lines}
+    part_identities = {role: kit_print_parts().identities(described[role])
+                       for role in kit_roles & set(digests) if role not in kit_refusals}
     for role in sorted(digests):
         prior = previous_print.get(role)
+        if role in kit_refusals:
+            continue
         if (
             not args.all_parts and role not in changed and same_context
-            and reusable_print(prior)
+            and reusable_print(prior, part_identities.get(role))
             and (role not in hosts or ((prior.get("paper") or {}).get("verdict") == "PASS"
                                        and paper_error is None))
         ):
@@ -5272,26 +5418,35 @@ def make_round(args) -> int:
             continue
         part = next(p for p in parts if p.name.removeprefix("part_").removesuffix(".step.py") == role)
         env = check_env(role)
-        for gate, extra in (
-            ("thickness", ["--nozzle", str(args.nozzle), "--report", str(out / ("thickness-%s.md" % role))]),
-            ("overhang", ["--angle", str(args.overhang_angle), "--report", str(out / ("overhang-%s.md" % role))]),
-            # Issue #108: mesh validity (non-manifold edges, an open or wrongly
-            # wound mesh, the bed) needs only the part, so it fails here
-            # rather than first at assembly or final verification.
-            ("mesh", ["--bed", bed]),
-        ):
-            job = {"command": [python, str(cad / ("check_" + gate)), str(part), *extra],
-                   "cwd": project, "log": out / ("%s-%s.log" % (gate, role))}
-            if env:
-                job["extra_env"] = env
-            gate_jobs.append((role, gate, job))
+        if role in part_identities:
+            # Each Part alone, through its own entry; it builds from source.
+            scope_dir = "component-%s" % component if component is not None else "assembly"
+            entries = kit_print_parts().write_entries(
+                part, project.joinpath(*KIT_PRINT_DIR, scope_dir, role), sorted(part_identities[role]))
+            targets = [(name, path, "%s-%s" % (role, name), {}) for name, path in entries.items()]
+        else:
+            targets = [(None, part, role, env)]
+        for name, target, label, target_env in targets:
+            for gate, extra in (
+                ("thickness", ["--nozzle", str(args.nozzle), "--report", str(out / ("thickness-%s.md" % label))]),
+                ("overhang", ["--angle", str(args.overhang_angle), "--report", str(out / ("overhang-%s.md" % label))]),
+                # Issue #108: mesh validity (non-manifold edges, an open or wrongly
+                # wound mesh, the bed) needs only the part, so it fails here
+                # rather than first at assembly or final verification.
+                ("mesh", ["--bed", bed]),
+            ):
+                job = {"command": [python, str(cad / ("check_" + gate)), str(target), *extra],
+                       "cwd": project, "log": out / ("%s-%s.log" % (gate, label))}
+                if target_env:
+                    job["extra_env"] = target_env
+                gate_jobs.append((role, name, gate, job))
         if role in hosts and paper_error is None:
             job = {"command": [python, str(cad.parents[1] / "print-details" / "scripts" / "check_print_pieces.py"),
                                str(part)],
                    "cwd": project, "log": out / ("paper-%s.log" % role)}
             if env:
                 job["extra_env"] = env
-            gate_jobs.append((role, "paper", job))
+            gate_jobs.append((role, None, "paper", job))
     # 2c. a separable Interface's Keep-out Envelope, checked on this
     # Component alone: either side repairs without touching the other (ADR 0082).
     envelopes, envelope_pending = {}, []
@@ -5301,7 +5456,6 @@ def make_round(args) -> int:
     # 2d. ADR 0092: a schema 7 contract's Assembly Tree, in the scope this
     # round owns: a component round the checks wholly inside its Component,
     # an assembly round those across Components.
-    kit, kit_error = kit_state(project)
     tree, tree_jobs = None, []
     if kit is not None or kit_error is not None:
         if build_failures:
@@ -5310,7 +5464,7 @@ def make_round(args) -> int:
             tree = finish_tree(project, {}, kit_error)
         else:
             tree_jobs.append(tree_job(project, out, args.nozzle, component))
-    checked = run_all([job for _role, _gate, job in gate_jobs]
+    checked = run_all([job for _role, _name, _gate, job in gate_jobs]
                       + [job for _key, _side, _reference, job in envelope_pending] + tree_jobs)
     if tree_jobs:
         done = checked[-1]
@@ -5318,41 +5472,50 @@ def make_round(args) -> int:
         tree = finish_tree(project, parse_tree(done.stdout, done.returncode))
     envelopes = finish_envelopes(envelopes, envelope_pending, checked[len(gate_jobs):])
     measured: dict[str, dict] = {}
-    for (role, gate, job), done in zip(gate_jobs, checked):
-        measured.setdefault(role, {})[gate] = (job["log"], done)
-    for role, runs in measured.items():
+    for (role, name, gate, job), done in zip(gate_jobs, checked):
+        measured.setdefault(role, {}).setdefault(name, {})[gate] = (job["log"], done)
+    for role, lines in kit_refusals.items():
+        # A free repair, like a print gate: the round fails and says why.
+        refused = {"verdict": "FAIL", "failures": ["print_parts() refused"], "defects": []}
+        printing[role] = {
+            "verdict": "FAIL",
+            "thickness": {**refused, "thinnest_mm": None},
+            "overhang": {**refused, "overhang_mm2": None},
+            "mesh": {**refused, "edges": []},
+            "measured_round": round_index,
+            "logs": {},
+            "parts": {},
+            "print_parts": lines,
+        }
+        if role not in changed:
+            changed.append(role)
+    for role, targets in measured.items():
         prior = previous_print.get(role)
         logs = {}
-        gates = {}
-        for gate, (log, done) in runs.items():
-            parsed = (parse_mesh(done.stdout, done.returncode) if gate == "mesh" else
-                      parse_paper(done.stdout, done.returncode) if gate == "paper" else
-                      (parse_thickness if gate == "thickness" else parse_overhang)(done.stdout))
-            if done.returncode == 3:
-                parsed["verdict"] = "UNVERIFIED"
-                parsed["failures"] = ["geometry analysis cancelled or its time allowance exhausted"]
-            elif done.returncode == GATE_UNMEASURABLE:
-                unmeasurable(parsed, done.stdout)
-            elif done.returncode not in (0, 1):
-                # 0 pass, 1 measured-and-failed; anything else is the tool
-                # failing to measure, which is never a printability verdict.
-                parsed["verdict"] = "FAIL"
-                parsed["failures"] = (
-                    ["check_%s exit %d: %s" % (gate, done.returncode, tail(done.stderr)[:60])]
-                    + parsed["failures"]
-                )[:4]
-            gates[gate] = parsed
-            if log.is_file():
-                logs[str(log.resolve())] = hashlib.sha256(log.read_bytes()).hexdigest()
-        verdicts = {g["verdict"] for g in gates.values()}
+        by_target = {}
+        for name, runs in targets.items():
+            gates = by_target.setdefault(name, {})
+            for gate, (log, done) in runs.items():
+                gates[gate] = parse_gate(gate, done)
+                if log.is_file():
+                    logs[str(log.resolve())] = hashlib.sha256(log.read_bytes()).hexdigest()
+        gates = by_target.get(None, {})
+        if role in part_identities:
+            part_records = {
+                name: {"verdict": worst_verdict(item.values()), "identity": part_identities[role][name],
+                       **{gate: item[gate] for gate in PRINT_GATES}}
+                for name, item in sorted(by_target.items()) if name is not None}
+            gates.update({gate: combined_gate(gate, part_records) for gate in PRINT_GATES})
         printing[role] = {
-            "verdict": next((v for v in ("FAIL", "UNMEASURABLE", "UNVERIFIED") if v in verdicts), "PASS"),
+            "verdict": worst_verdict(gates.values()),
             "thickness": gates["thickness"],
             "overhang": gates["overhang"],
             "mesh": gates["mesh"],
             "measured_round": round_index,
             "logs": logs,
         }
+        if role in part_identities:
+            printing[role]["parts"] = part_records
         if role in hosts:
             # ADR 0091: a hosting part's paper gate; an install error fails it.
             paper = gates.get("paper") or {"verdict": "FAIL", "failures": [paper_error or "not checked"]}
@@ -5364,6 +5527,11 @@ def make_round(args) -> int:
             printing[role]["repeated_defects"] = repeated
         if printing[role]["verdict"] in ("FAIL", "UNMEASURABLE") and role not in changed:
             changed.append(role)
+    for role in sorted(set(part_identities) - set(printing)):
+        # A kit Component with no printed Part (ADR 0092, 2026-10-28): nothing to gate.
+        parts_none = {}
+        printing[role] = {"verdict": "PASS", "measured_round": round_index, "logs": {}, "parts": parts_none,
+                          **{gate: combined_gate(gate, parts_none) for gate in PRINT_GATES}}
     for role in build_failures:
         # A part that did not build has no solid to measure. Say that, rather
         # than reporting an absent gate as a pass.
@@ -5379,7 +5547,8 @@ def make_round(args) -> int:
             printing[role]["paper"] = {"verdict": "FAIL", "failures": ["build failed"]}
     # The B-rep each check read (issue #101): its log's "[brep] ... read"
     # lines, none when it built from source.
-    brep_logs = {"%s-%s" % (gate, role): job["log"] for role, gate, job in gate_jobs}
+    brep_logs = {"%s-%s" % (gate, role if name is None else "%s-%s" % (role, name)): job["log"]
+                 for role, name, gate, job in gate_jobs}
     brep_logs.update(("envelope %s" % key, job["log"]) for key, _side, _reference, job in envelope_pending)
 
     # 3. the references this round shows its reader, each composed beside the
