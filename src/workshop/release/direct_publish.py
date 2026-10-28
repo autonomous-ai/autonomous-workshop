@@ -16,7 +16,7 @@ import hashlib
 import json
 import re
 import stat
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import Any, Mapping, Optional, Sequence
 
@@ -133,6 +133,9 @@ class DirectSource:
     readme: Optional[bytes]
     archive_sha256: Optional[str] = None
     publication: Optional[Mapping[str, Any]] = None
+    # Every project file the build reads, including ones that stay local
+    # (``ref/``); only derived caches are left out.
+    inputs: Mapping[str, Path] = field(default_factory=dict)
 
     def host_path_files(self) -> list[str]:
         """Text files that still name a machine's home directory."""
@@ -193,18 +196,23 @@ def _regular_files(root: Path) -> list[tuple[str, Path]]:
     return files
 
 
-def _select(pairs: Sequence[tuple[str, Path]]) -> tuple[dict[str, Path], list[tuple[str, str]]]:
+def _select(
+    pairs: Sequence[tuple[str, Path]],
+) -> tuple[dict[str, Path], list[tuple[str, str]], dict[str, Path]]:
     kept: dict[str, Path] = {}
     dropped: list[tuple[str, str]] = []
+    inputs: dict[str, Path] = {}
     for relative, path in pairs:
+        if relative in inputs:
+            raise ContractError("two archive files map to one project path: %s" % relative)
         reason = _classify(relative)
+        if reason != "derived cache":
+            inputs[relative] = path
         if reason is not None:
             dropped.append((relative, reason))
-        elif relative in kept:
-            raise ContractError("two archive files map to one project path: %s" % relative)
         else:
             kept[relative] = path
-    return kept, dropped
+    return kept, dropped, inputs
 
 
 def load_cad_project(root: Path) -> DirectSource:
@@ -213,7 +221,7 @@ def load_cad_project(root: Path) -> DirectSource:
     root = Path(root).resolve(strict=True)
     if not root.is_dir():
         raise ContractError("--cad-dir must be a directory")
-    files, dropped = _select(_regular_files(root))
+    files, dropped, inputs = _select(_regular_files(root))
     readme = files.get("README.md")
     return DirectSource(
         kind="cad-project",
@@ -221,6 +229,7 @@ def load_cad_project(root: Path) -> DirectSource:
         files=files,
         dropped=tuple(dropped),
         readme=readme.read_bytes() if readme is not None else None,
+        inputs=inputs,
     )
 
 
@@ -284,7 +293,7 @@ def load_public_toy_archive(root: Path) -> DirectSource:
         if mapped is None:
             raise ContractError("archive file outside the CAD projection: %s" % path)
         pairs.append((mapped, root / path))
-    files, dropped = _select(sorted(pairs))
+    files, dropped, inputs = _select(sorted(pairs))
     readme = files.get("README.md")
     return DirectSource(
         kind="public-toy-archive",
@@ -294,7 +303,218 @@ def load_public_toy_archive(root: Path) -> DirectSource:
         readme=readme.read_bytes() if readme is not None else None,
         archive_sha256=observed["artifact_sha256"],
         publication=publication if isinstance(publication, Mapping) else None,
+        inputs=inputs,
     )
+
+
+# --------------------------------------------------------------------- evidence
+#
+# A direct publication needs a fresh passing print-gate run of the exact bytes
+# it publishes. autonomous-product-to-cad's ``verify_project --fresh
+# --print-gates`` writes STEP (with a wall-clock header) and a Markdown record
+# that binds no bytes, so the publish tool runs it, parses the record it just
+# wrote, and binds the result to the hashes of every source and STEP file in
+# this evidence file. The file travels in ``measure/``, so a packed archive
+# carries it, and any later change to a source or STEP makes it stale.
+
+EVIDENCE_PATH = "measure/direct-publish-evidence.json"
+EVIDENCE_KIND = "workshop.direct-publish-evidence"
+PIPELINE_RECORD_PATH = "measure/verification-pipeline.md"
+VERIFY_ARGUMENTS = ("--fresh", "--print-gates")
+PRINT_GATES = ("check_mesh", "check_overhang", "check_thickness")
+_SUBJECT_SUFFIXES = frozenset((".py", ".step", ".stp"))
+_RECORD_ROW = re.compile(r"^\|\s*\d+\s*\|\s*`(?P<command>.*)`\s*\|\s*(?P<status>[^|]+?)\s*\|")
+_GATE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_./-]{0,127}$")
+
+
+def evidence_subject(source: DirectSource) -> dict[str, Any]:
+    """Hash every source and STEP file the build reads, renders and reports aside.
+
+    ``measure/*.json`` manifests (mounts, motion, power) are gate inputs and
+    count; the evidence file itself does not.
+    """
+
+    files = []
+    for path, location in sorted(source.inputs.items()):
+        pure = PurePosixPath(path)
+        if pure.parts[0] == "snap" or path == EVIDENCE_PATH:
+            continue
+        suffix = pure.suffix.casefold()
+        manifest = pure.parts[0] == "measure" and suffix == ".json"
+        if suffix not in _SUBJECT_SUFFIXES and not manifest:
+            continue
+        files.append({"path": path, "sha256": hashlib.sha256(location.read_bytes()).hexdigest()})
+    if not any(entry["path"].endswith((".step", ".stp")) for entry in files):
+        raise ContractError("the project has no STEP to bind evidence to")
+    return {"sha256": hashlib.sha256(_canonical_json(files)).hexdigest(), "files": files}
+
+
+def parse_pipeline_record(text: str) -> list[dict[str, Any]]:
+    """Read the newest run's rows from ``verification-pipeline.md``.
+
+    Each row becomes its gate (the script's name, or ``measure/<audit>`` for a
+    local audit), the entry it measured, and ``pass``, ``fail`` or
+    ``skipped``. Anything but ``rc=0`` or ``skipped`` is a failure: a refusal,
+    an interrupted gate, or an ``accepted-fail`` the verifier let through.
+    """
+
+    newest = text.split("\n---\n", 1)[0]
+    rows = []
+    for line in newest.splitlines():
+        match = _RECORD_ROW.match(line.strip())
+        if match is None:
+            continue
+        command, status = match.group("command"), match.group("status").strip()
+        words = command.split("  #", 1)[0].split()
+        gate, target = None, None
+        if command.startswith("delete cache "):
+            gate = "delete-cache"
+        elif len(words) == 1 or "#" in command:
+            gate = words[0] if words else "unknown"
+        else:
+            for index, word in enumerate(words):
+                name = PurePosixPath(word).name
+                if "python" in name and index + 1 < len(words):
+                    continue
+                parent = PurePosixPath(word).parent.name
+                gate = ("measure/" + name) if parent == "measure" else name
+                target = next(
+                    (PurePosixPath(rest).name for rest in words[index + 1:] if rest.endswith(".step.py")),
+                    None,
+                )
+                break
+        result = "pass" if status == "rc=0" else "skipped" if status == "skipped" else "fail"
+        rows.append({"gate": gate or "unknown", "target": target, "status": status, "result": result})
+    if not rows:
+        raise ContractError("the verification record has no gate rows")
+    return rows
+
+
+def build_evidence(
+    source: DirectSource,
+    *,
+    record: bytes,
+    exit_code: int,
+    arguments: Sequence[str],
+    verifier_sha256: str,
+    recorded_at: str,
+) -> dict[str, Any]:
+    """The evidence document for one verifier run on ``source``'s current bytes."""
+
+    return {
+        "schema_version": 1,
+        "kind": EVIDENCE_KIND,
+        "verifier": {
+            "name": "autonomous-product-to-cad skills/cad/scripts/verify_project",
+            "sha256": verifier_sha256,
+        },
+        "arguments": list(arguments),
+        "exit_code": int(exit_code),
+        "recorded_at": recorded_at,
+        "record_sha256": hashlib.sha256(record).hexdigest(),
+        "gates": parse_pipeline_record(record.decode("utf-8", "replace")),
+        "subject": evidence_subject(source),
+    }
+
+
+@dataclass(frozen=True)
+class KnownGateFailure:
+    """One owner-declared gate failure that may not stop publication."""
+
+    gate: str
+    reason: str
+
+    @classmethod
+    def parse(cls, value: str) -> "KnownGateFailure":
+        gate, separator, reason = value.partition(":")
+        gate, reason = gate.strip(), reason.strip()
+        if not separator or not _GATE.fullmatch(gate) or not reason:
+            raise ContractError("--known-gate-failure must be GATE:REASON, e.g. check_thickness:<why>")
+        return cls(gate, reason)
+
+    def to_dict(self) -> dict[str, str]:
+        return {"gate": self.gate, "reason": self.reason}
+
+
+@dataclass(frozen=True)
+class EvidenceStatus:
+    """Whether the publication's exact bytes carry acceptable gate evidence."""
+
+    state: str  # "pass", "missing", "stale" or "fail"
+    problems: tuple[str, ...]
+    declared: tuple[KnownGateFailure, ...]
+    document: Optional[Mapping[str, Any]]
+
+    @property
+    def acceptable(self) -> bool:
+        return self.state == "pass"
+
+    def summary(self) -> Optional[dict[str, Any]]:
+        """What the publication records about its evidence."""
+
+        if self.document is None or not self.acceptable:
+            return None
+        return {
+            "kind": EVIDENCE_KIND,
+            "subject_sha256": self.document["subject"]["sha256"],
+            "verifier_sha256": self.document["verifier"]["sha256"],
+            "arguments": list(self.document["arguments"]),
+            "recorded_at": self.document["recorded_at"],
+            "exit_code": self.document["exit_code"],
+            "known_gate_failures": [failure.to_dict() for failure in self.declared],
+        }
+
+
+def evaluate_evidence(
+    source: DirectSource, known_failures: Sequence[KnownGateFailure] = ()
+) -> EvidenceStatus:
+    """Accept only a fresh run of both flags whose every failure is declared."""
+
+    declared = tuple(known_failures)
+    if len({failure.gate for failure in declared}) != len(declared):
+        raise ContractError("declare each known gate failure once")
+    location = source.files.get(EVIDENCE_PATH)
+    if location is None:
+        return EvidenceStatus("missing", ("no %s; run with --verify" % EVIDENCE_PATH,), declared, None)
+    try:
+        document = json.loads(location.read_bytes())
+        if document.get("kind") != EVIDENCE_KIND or document.get("schema_version") != 1:
+            raise ValueError("kind")
+        recorded = document["subject"]
+        gates = list(document["gates"])
+        arguments = list(document["arguments"])
+        exit_code = document["exit_code"]
+    except (ValueError, KeyError, TypeError, AttributeError) as exc:
+        raise ContractError("%s is malformed" % EVIDENCE_PATH) from exc
+    current = evidence_subject(source)
+    if recorded.get("sha256") != current["sha256"]:
+        before = {entry["path"]: entry["sha256"] for entry in recorded.get("files", [])}
+        after = {entry["path"]: entry["sha256"] for entry in current["files"]}
+        changed = sorted(path for path in before.keys() | after.keys() if before.get(path) != after.get(path))
+        return EvidenceStatus(
+            "stale",
+            ("sources or STEPs changed since verification: %s" % ", ".join(changed[:12]),),
+            declared,
+            document,
+        )
+    problems = []
+    for flag in VERIFY_ARGUMENTS:
+        if flag not in arguments:
+            problems.append("verification ran without %s" % flag)
+    ran = {row["gate"] for row in gates if row.get("result") != "skipped"}
+    for gate in PRINT_GATES:
+        if gate not in ran:
+            problems.append("print gate %s did not run" % gate)
+    failed = sorted({row["gate"] for row in gates if row.get("result") == "fail"})
+    names = {failure.gate for failure in declared}
+    for gate in failed:
+        if gate not in names:
+            problems.append("undeclared gate failure: %s" % gate)
+    for gate in sorted(names - set(failed)):
+        problems.append("declared failure %s did not fail; remove it" % gate)
+    if exit_code != 0 and not failed:
+        problems.append("verifier exited %s without a failing gate row" % exit_code)
+    return EvidenceStatus("fail" if problems else "pass", tuple(problems), declared, document)
 
 
 def inventor_name(inventors_root: Path, inventor_id: str) -> str:
@@ -323,6 +543,7 @@ class DirectPublishProvenance:
     source_kind: str
     source_name: str
     source_artifact_sha256: Optional[str]
+    evidence: Optional[Mapping[str, Any]] = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -336,6 +557,7 @@ class DirectPublishProvenance:
                 "name": self.source_name,
                 "artifact_sha256": self.source_artifact_sha256,
             },
+            "evidence": None if self.evidence is None else dict(self.evidence),
         }
 
 
@@ -398,6 +620,7 @@ def stage_direct_publication(
     summary: str,
     what_arrives: Sequence[str] = (),
     limitations: Sequence[str] = (),
+    evidence: Optional[Mapping[str, Any]] = None,
 ) -> DirectPublication:
     """Write ``made/`` and ``release/`` under an empty private ``workspace``.
 
@@ -483,6 +706,7 @@ def stage_direct_publication(
             source_kind=source.kind,
             source_name=source.root.name,
             source_artifact_sha256=source.archive_sha256,
+            evidence=evidence,
         ),
         taste=_InventorName(inventor_display_name),
     )
@@ -498,6 +722,15 @@ def stage_direct_publication(
 
 __all__ = [
     "DIRECT_PUBLISH_KIND",
+    "EVIDENCE_PATH",
+    "EvidenceStatus",
+    "KnownGateFailure",
+    "PIPELINE_RECORD_PATH",
+    "VERIFY_ARGUMENTS",
+    "build_evidence",
+    "evaluate_evidence",
+    "evidence_subject",
+    "parse_pipeline_record",
     "DirectPublication",
     "DirectPublishContext",
     "DirectPublishProvenance",
