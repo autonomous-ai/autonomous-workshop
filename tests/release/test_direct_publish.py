@@ -72,6 +72,8 @@ def write_project(root):
     (root / "measure" / "check.md").write_text("print gates: not recorded here\n")
     (root / "ref").mkdir()
     (root / "ref" / "concept.png").write_bytes(png())
+    (root / "inputs").mkdir()
+    (root / "inputs" / "request.md").write_text("the owner's private request\n")
     return root
 
 
@@ -187,6 +189,7 @@ class DirectPublishTest(unittest.TestCase):
         self.assertIn("dry run, nothing is read from the credential store or sent", out)
         self.assertIn("title:         %s" % TITLE, out)
         self.assertIn("ref/concept.png (reference material is not published)", out)
+        self.assertIn("inputs/request.md (working material is not published)", out)
         self.assertIn("cad/part_arm.step (one STEP crosses: the primary)", out)
         self.assertIn("Playtest (recorded as not-run)", out)
         self.assertNotIn("public:", out)
@@ -369,6 +372,18 @@ class DirectPublishTest(unittest.TestCase):
             facts = json.loads(archive.read("workshop-product-facts.json"))
             self.assertIn("cad/" + EVIDENCE_PATH, archive.namelist())
         self.assertEqual(facts["wish"]["evidence"], evidence)
+
+    def test_a_verifier_cache_with_lock_files_stays_local(self):
+        cache = self.project / "__cadgen__" / "models"
+        cache.mkdir(parents=True)
+        (cache / ".widget.step.generation.lock").write_text("")
+        (cache / "widget.glb").write_bytes(b"glTF")
+        write_evidence(self.project)
+        code, out, err = self.run_tool()
+        self.assertEqual(code, 0, err)
+        self.assertNotIn("cad/__cadgen__", out)
+        self.assertIn("__cadgen__/models/widget.glb (derived cache)", out)
+        self.assertIn("evidence:      pass", out)
 
     def test_live_refuses_without_evidence(self):
         self.store_credential()

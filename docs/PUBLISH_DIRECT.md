@@ -200,7 +200,7 @@ The table covers what Factory or Release needs, whether a toy archive (or a
 | NativeRelease contract, stage checkpoints, Release gate | No | **Skipped.** No `release.json`, checkpoint or gate exists. |
 | `project.json` design notes, import metadata (category `toys`, tag `toy`, no prompt) | Not applicable | Produced by the unchanged adapter. |
 | Token usage sent with the import | No | Omitted. No Workshop budget exists to report. |
-| Wish reference images | Yes, `ref/` | Dropped, as the wrapper documents. Spark never ships Wish references either. |
+| Wish reference images, the owner's request | `ref/`; a raw project also has `inputs/`, `transcripts/` | Dropped, as the toy-archive packer drops them. Spark never ships Wish references either. |
 | Sanitized text (no host paths) | Yes; `toy_archive` sanitizes | The archive is already sanitized, and so is a `--cad-dir` staged by the wrapper. For a raw project the dry run warns about each text file that names a home directory. Workshop's own handoff does not sanitize either. |
 | Secret scan, size limits (96 MiB Pack, 95 MiB file), STEP only | n/a | The same `build_pack` checks apply. Mesh files and hidden files are refused. |
 | Part colours | Colour lives in the STEP (multi-material) | Not written, the same as Spark: Make-output imports skip the colour effect, so Factory renders its own mesh colours. |

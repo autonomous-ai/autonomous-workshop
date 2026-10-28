@@ -56,7 +56,13 @@ _ARCHIVE_METADATA = frozenset(("MANIFEST.json", "README.md", "SANITIZATION.json"
 _WORKSHOP_RUN_MARKERS = ("wish", "match", "invent", "release", "make/made.json", "make/product")
 # Reference and concept images are the owner's working material, not a
 # listing asset; the Spark carrier likewise never ships Wish references.
-_DROPPED_TOP_DIRECTORIES = {"ref": "reference material is not published"}
+_DROPPED_TOP_DIRECTORIES = {
+    "ref": "reference material is not published",
+    # The owner's request and agent transcripts; the toy-archive packer
+    # drops them too.
+    "inputs": "working material is not published",
+    "transcripts": "working material is not published",
+}
 _DROPPED_DIRECTORIES = frozenset(("__cadgen__", "__pycache__"))
 # ADR 0062: STEP is the only geometry format Workshop ships.
 _MESH_SUFFIXES = frozenset(
@@ -168,6 +174,9 @@ def _classify(relative: str) -> Optional[str]:
     """Return why a CAD-project file stays local, or None to keep it."""
 
     pure = PurePosixPath(relative)
+    # A cache is dropped whole, lock files and all, before anything else.
+    if _DROPPED_DIRECTORIES & {part.casefold() for part in pure.parts[:-1]}:
+        return "derived cache"
     if any(part.startswith(".") for part in pure.parts):
         raise ContractError("hidden file in the project: %s" % relative)
     if pure.suffix.casefold() in _MESH_SUFFIXES:
@@ -176,8 +185,6 @@ def _classify(relative: str) -> Optional[str]:
         )
     if len(pure.parts) > 1 and pure.parts[0] in _DROPPED_TOP_DIRECTORIES:
         return _DROPPED_TOP_DIRECTORIES[pure.parts[0]]
-    if _DROPPED_DIRECTORIES & {part.casefold() for part in pure.parts[:-1]}:
-        return "derived cache"
     return None
 
 
