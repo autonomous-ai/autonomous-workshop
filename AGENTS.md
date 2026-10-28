@@ -145,7 +145,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0083-compare-in-the-display-pose-at-the-reference-camera.md`, and
 `docs/adr/0084-interface-text-and-reference-conflicts.md`, and
 `docs/adr/0085-in-run-contract-amendments-for-invisible-fixes.md`, and
-`docs/adr/0093-contract-proof-and-three-view-concepts.md` before changing the CLI, runtime,
+`docs/adr/0093-contract-proof-and-three-view-concepts.md`, and
+`docs/adr/0094-one-gate-one-proof-reader-and-no-duplicate-reads.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -323,6 +324,15 @@ amendment changes prose, and it unlocks every Component whose geometry
 names the changed section. A Contract Proof before Stage 4 and the
 printability choice belong to `design-a-toy`. Schema 1 to 7 contracts and
 frozen runs keep what they sealed.
+ADR 0094 makes the Contract Proof run make_round's own print gates, so design
+and Make share one gate; 45 degrees is the only overhang limit, 52 being the
+print-details library's design margin. One Proof subagent is kept for the
+whole design and one fresh one reads the finished contract; `design-a-toy`'s
+Stage 3e (claims, lint, audit) is gone and Stage 3b reads the Proof compares.
+`build-a-toy` detection scores no likeness and reads Make's gate rows. For new
+runs a geometry-scoped row binds its Component's review instead of a separate
+blind read. Spark keeps Make's own verification (ADR 0061): the host does not
+rerun the verifier for it.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 
