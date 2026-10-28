@@ -25,3 +25,9 @@ built and checked. Printing, shipping, delivery, and review are
 Operations-owned stages outside the executable Workshop lifecycle.
 
 Public API: `workshop.release`.
+
+`direct_publish.py` stages a CAD project built outside Workshop into the same
+Spark carrier, and checks its gate evidence: a `verify_project --fresh
+--print-gates` run bound to the exact source and STEP bytes. The publish
+effect itself stays in the host adapter that `tools/publish_direct.py`
+composes. See `docs/PUBLISH_DIRECT.md`.

@@ -2200,6 +2200,142 @@ def _factory_receipt(
     )
 
 
+def _sealed_release_inputs(
+    context: Any,
+    sealed_root: Path,
+    sealed_manifest: ArtifactManifest,
+) -> Dict[str, Any]:
+    """Validate one sealed Release against its context, before any network I/O."""
+
+    if not callable(getattr(context, "assert_current", None)):
+        raise ContractError("FactoryReleaseWriter requires a ReleaseContext")
+    context.assert_current()
+    release_root = _assert_sealed_release(sealed_root, sealed_manifest)
+    release_sha256 = require_sha256(
+        sealed_manifest.artifact_sha256, "sealed Release sha256"
+    )
+    page, page_content = _release_page(release_root)
+    if page.get("schema_version") == LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION:
+        # Preserve the schema-v3 rich-page projection exactly. Schema v4
+        # deliberately has no Factory-authored use-case or story content.
+        _factory_content_copy(page)
+    manual_content, manual_sha256, manual_path = _release_manual(
+        release_root, sealed_manifest, page
+    )
+    product_artifact_sha256 = require_sha256(
+        page.get("product_artifact_sha256"), "Release product artifact sha256"
+    )
+    if product_artifact_sha256 != context.made.artifact_sha256:
+        raise ContractError("Release page describes different Made bytes")
+    playtest_sha256 = require_sha256(
+        page.get("playtest_evidence_artifact_sha256"),
+        "Release Playtest evidence sha256",
+    )
+    if page.get("schema_version") != MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION and FACTORY_MADE_FORBIDDEN_PAGE_FIELDS & set(context.made.product):
+        raise ContractError("Made product facts contain Release page fields")
+    # ``public_title`` is host-owned override state that never touches
+    # Make's sealed bytes or the immutable Release page on disk: it
+    # rides only this in-memory ReleaseContext. When present it becomes
+    # the public/Factory-facing name; the sealed page's own title is
+    # still recorded beside it in the product facts sent to Factory, so
+    # the rename is explicit rather than hidden.
+    public_title = getattr(context, "public_title", None)
+    release_record = dict(page)
+    if public_title:
+        release_record["public_title"] = public_title
+    return {
+        "release_root": release_root,
+        "release_sha256": release_sha256,
+        "page": page,
+        "page_content": page_content,
+        "manual_content": manual_content,
+        "manual_sha256": manual_sha256,
+        "manual_path": manual_path,
+        "product_artifact_sha256": product_artifact_sha256,
+        "playtest_sha256": playtest_sha256,
+        "effective_title": public_title or page.get("title"),
+        "release_record": release_record,
+        "make_output": page.get("schema_version") == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION,
+    }
+
+
+def _release_handoff(
+    context: Any,
+    inputs: Mapping[str, Any],
+    *,
+    preserve_import_root: bool,
+) -> Tuple[Dict[str, Any], Mapping[str, Any], Mapping[str, Any]]:
+    """Build the product facts, exact handoff ZIP and import metadata."""
+
+    make_output = inputs["make_output"]
+    product_facts = {
+        "schema_version": 2,
+        "kind": "workshop.product-facts",
+        "source_artifact_sha256": inputs["product_artifact_sha256"],
+        "release_sha256": inputs["release_sha256"],
+        "playtest_evidence_sha256": inputs["playtest_sha256"],
+        "inventor": {"name": context.taste.name},
+        "wish": context.wish.to_dict(),
+        "product": dict(context.made.product),
+        "release": inputs["release_record"],
+        ("publication_anchor" if make_output else "manual"): {
+            "path": inputs["manual_path"],
+            "sha256": inputs["manual_sha256"],
+        },
+    }
+    with tempfile.TemporaryDirectory(prefix="workshop-release-effect-") as temporary:
+        pack = Path(temporary) / "model-handoff.zip"
+        handoff = _build_model_handoff(
+            context,
+            pack,
+            product_facts,
+            inputs["page_content"],
+            inputs["manual_content"],
+            preserve_import_root=preserve_import_root,
+        )
+    # Factory defaults an omitted category to its first active category,
+    # which is not a safe classification rule for Workshop products. Send
+    # the canonical Toys & Games slug explicitly; an inactive/unknown slug
+    # is a proven-no-effect rejection rather than a silent fallback. Prompt
+    # remains deliberately omitted: Workshop will not fabricate or collapse
+    # the exact Wish into Factory's optional prompt field; the sealed
+    # facts/page retain that provenance.
+    metadata = _normalize_import(
+        {
+            "status": "draft",
+            "title": inputs["effective_title"],
+            "description": inputs["page"].get("summary"),
+            "category": FACTORY_TOY_CATEGORY_SLUG,
+            "tags": ["toy"],
+        }
+    )
+    return product_facts, handoff, metadata
+
+
+def build_release_handoff(
+    context: Any,
+    sealed_root: Path,
+    sealed_manifest: ArtifactManifest,
+) -> Mapping[str, Any]:
+    """Return the exact handoff a first import of this Release would send.
+
+    Nothing is authenticated, recorded or sent. This is the offline view of
+    the bytes and metadata ``FactoryReleaseWriter`` uploads when the product
+    has no earlier import, so an operator can inspect them before an effect.
+    """
+
+    inputs = _sealed_release_inputs(context, sealed_root, sealed_manifest)
+    product_facts, handoff, metadata = _release_handoff(
+        context, inputs, preserve_import_root=inputs["make_output"]
+    )
+    return {
+        **handoff,
+        "product_facts": product_facts,
+        "metadata": dict(metadata),
+        "page": inputs["page"],
+    }
+
+
 class FactoryReleaseWriter:
     """Import one exact sealed handoff as an authenticated private draft."""
 
@@ -3213,77 +3349,27 @@ class FactoryReleaseWriter:
         sealed_root: Path,
         sealed_manifest: ArtifactManifest,
     ) -> Receipt:
-        if not callable(getattr(context, "assert_current", None)):
-            raise ContractError("FactoryReleaseWriter requires a ReleaseContext")
-        context.assert_current()
-        release_root = _assert_sealed_release(sealed_root, sealed_manifest)
-        release_sha256 = require_sha256(
-            sealed_manifest.artifact_sha256, "sealed Release sha256"
-        )
-        page, page_content = _release_page(release_root)
-        if page.get("schema_version") == LEGACY_RELEASE_PRODUCT_SCHEMA_VERSION:
-            # Preserve the schema-v3 rich-page projection exactly. Schema v4
-            # deliberately has no Factory-authored use-case or story content.
-            _factory_content_copy(page)
-        manual_content, manual_sha256, manual_path = _release_manual(
-            release_root, sealed_manifest, page
-        )
-        product_artifact_sha256 = require_sha256(
-            page.get("product_artifact_sha256"), "Release product artifact sha256"
-        )
-        if product_artifact_sha256 != context.made.artifact_sha256:
-            raise ContractError("Release page describes different Made bytes")
-        playtest_sha256 = require_sha256(
-            page.get("playtest_evidence_artifact_sha256"),
-            "Release Playtest evidence sha256",
-        )
-        if page.get("schema_version") != MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION and FACTORY_MADE_FORBIDDEN_PAGE_FIELDS & set(context.made.product):
-            raise ContractError("Made product facts contain Release page fields")
-        # ``public_title`` is host-owned override state that never touches
-        # Make's sealed bytes or the immutable Release page on disk: it
-        # rides only this in-memory ReleaseContext. When present it becomes
-        # the public/Factory-facing name; the sealed page's own title is
-        # still recorded beside it in the product facts sent to Factory, so
-        # the rename is explicit rather than hidden.
-        public_title = getattr(context, "public_title", None)
-        effective_title = public_title or page.get("title")
-        release_record = dict(page)
-        if public_title:
-            release_record["public_title"] = public_title
+        inputs = _sealed_release_inputs(context, sealed_root, sealed_manifest)
+        release_root = inputs["release_root"]
+        release_sha256 = inputs["release_sha256"]
+        page = inputs["page"]
+        page_content = inputs["page_content"]
+        manual_content = inputs["manual_content"]
+        manual_path = inputs["manual_path"]
+        product_artifact_sha256 = inputs["product_artifact_sha256"]
+        playtest_sha256 = inputs["playtest_sha256"]
+        make_output = inputs["make_output"]
         identity = self.session.login()
         client = FactoryClient(self.session.authenticated_transport)
 
-        make_output = page.get("schema_version") == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION
         previous_import = self.ledger.latest(context.wish.product_id, "factory-import")
         preserve_import_root = make_output and (
             previous_import is None
             or previous_import.request.get("import_root_mapping") == FACTORY_IMPORT_ROOT_MAPPING
         )
-        product_facts = {
-            "schema_version": 2,
-            "kind": "workshop.product-facts",
-            "source_artifact_sha256": product_artifact_sha256,
-            "release_sha256": release_sha256,
-            "playtest_evidence_sha256": playtest_sha256,
-            "inventor": {"name": context.taste.name},
-            "wish": context.wish.to_dict(),
-            "product": dict(context.made.product),
-            "release": release_record,
-            ("publication_anchor" if make_output else "manual"): {
-                "path": manual_path,
-                "sha256": manual_sha256,
-            },
-        }
-        with tempfile.TemporaryDirectory(prefix="workshop-release-effect-") as temporary:
-            pack = Path(temporary) / "model-handoff.zip"
-            handoff = _build_model_handoff(
-                context,
-                pack,
-                product_facts,
-                page_content,
-                manual_content,
-                preserve_import_root=preserve_import_root,
-            )
+        product_facts, handoff, metadata = _release_handoff(
+            context, inputs, preserve_import_root=preserve_import_root
+        )
         primary = handoff["primary_model"]
         made_root = Path(context.made.artifact_root).resolve(strict=True)
         part_colors = {} if make_output else _sealed_part_colors(made_root, context.made.artifact_manifest)
@@ -3291,22 +3377,6 @@ class FactoryReleaseWriter:
             part_colors = _package_part_colors(
                 made_root, context.made.artifact_manifest
             )
-        # Factory defaults an omitted category to its first active category,
-        # which is not a safe classification rule for Workshop products. Send
-        # the canonical Toys & Games slug explicitly; an inactive/unknown slug
-        # is a proven-no-effect rejection rather than a silent fallback. Prompt
-        # remains deliberately omitted: Workshop will not fabricate or collapse
-        # the exact Wish into Factory's optional prompt field; the sealed
-        # facts/page retain that provenance.
-        metadata = _normalize_import(
-            {
-                "status": "draft",
-                "title": effective_title,
-                "description": page.get("summary"),
-                "category": FACTORY_TOY_CATEGORY_SLUG,
-                "tags": ["toy"],
-            }
-        )
         request = {
             "method": "POST",
             "api_origin": _api_origin(DEFAULT_FACTORY_API),
@@ -3780,6 +3850,7 @@ __all__ = [
     "FactoryPublicTransition",
     "FactoryReleaseWriter",
     "HttpResponse",
+    "build_release_handoff",
     "factory_credentials_from_environment",
     "urllib_transport",
 ]
