@@ -9,10 +9,9 @@ so the same defect must get the same id in every round.
 |---|---|---|
 | `envelope` | geometry | assembled extents disagree with `envelope_mm` |
 | `extents:<geometry>` | geometry | a Component built to the geometry disagrees with `extents_mm` |
-| `wall:<geometry>` | geometry | thinnest wall is below `wall_min_mm`, or no report proves it |
+| `print:<geometry>` | print | a print gate of a Component built to it did not pass in final verification, or no row proves it ran |
 | `count:<geometry>` | geometry | the number of Components built to it differs from `count` |
 | `unmapped:<geometry>` | geometry | no Component could be mapped to the geometry at all |
-| `likeness:<ref-stem>` | likeness | IoU below 0.90, or the score could not be produced |
 | `requirement:<id>` | requirements | the review has no contract-bound row for it (should not happen for a run started with `--contract`) |
 
 Anything that could not be measured is a finding, never a pass. That rule is
@@ -61,26 +60,29 @@ contract's numbers are decisions, not estimates.
   still a finding.
 - `count:<geometry>`: the number of Components mapped to the geometry, against
   `count`. Say what the count was read from.
-- `wall:<geometry>`: read the thinnest wall from
-  `<toy-dir>/make/verification/reports/thickness-<role>.md` for each mapped
-  Component. If the report is missing, raise the finding as *unverified*.
+## Print (Make's own gates)
 
-## Likeness (deterministic score)
+Read `<toy-dir>/make/verification/CAD-GATE.json`, final verification's
+record: a Markdown table with one row per command and its result. For each
+mapped Component, find the `check_mesh`, `check_overhang` and
+`check_thickness` rows that name its source (`part_<role>.step.py`, or the
+report path `measure/overhang-<role>.md` and `measure/thickness-<role>.md`;
+for a kit Component, the rows of each of its Parts). Raise
+`print:<geometry>` when any of them is not `rc=0`, quoting the row, and as
+*unverified* when one of the three is missing. Do not run the gates
+yourself and do not measure walls against `wall_min_mm`: Make gates every
+wall at the nozzle's print minimum, and its result is the one this layer
+reports.
 
-Score each contract reference against the geometry it `shows`. Use
-`assembled.step` for `assembly`, and one mapped Component copy for
-`geometry:<id>`:
+## No likeness score
 
-```bash
-uv run python src/workshop/make/skills/image-to-cad/scripts/render_views.py \
-  "$R/step/<file>.step" --match <contract-dir>/<ref-file> --label <ref-stem> \
-  --min 0.90 --search-fov 0,25,40 -o "$R/likeness/<ref-stem>" --json
-```
-
-Read `views[0].iou`. At or above 0.90 passes. A `MASK SUSPECT` stop means the
-reference image's mask is broken, not the model. Flatten the image with
-`image-to-cad/scripts/ref_silhouette.py` and score again. Record both scores,
-and do not raise the finding against the toy for a mask problem.
+Nothing scores silhouettes. ADR 0076 removed IoU from Make: a Component
+passes on its Component Reviewer's agreement or on a recorded Component
+Acceptance, and the blind review judges the assembly against its reference.
+Do not run `render_views.py --match`. Copy each Component Acceptance and
+Reference Conflict from the run's receipt (`workshop status --json`) into
+`notes` in `findings.json`, never into `findings`: Make already reports
+them, and a fix round cannot turn a reviewer's disagreement into a pass.
 
 ## Motion (deterministic sweep)
 
@@ -125,7 +127,8 @@ Write `<contract-dir>/build-a-toy/r<NN>/findings.json`:
     {"id": "extents:world-disc", "contract": [30, 30, 6], "measured": [30.0, 30.0, 4.2],
      "evidence": "inspect entryFacts.size of part_world_mercury_sol.step", "unverified": false}
   ],
-  "passed": ["envelope", "likeness:ref-01-hero"]
+  "notes": ["Component Acceptance: world-disc after 5 Shape Rounds (receipt)"],
+  "passed": ["envelope", "print:world-disc"]
 }
 ```
 
