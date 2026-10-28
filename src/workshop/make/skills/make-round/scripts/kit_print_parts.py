@@ -10,8 +10,8 @@ measured inside a large model on a coarse grid. Each kit Part prints alone,
 so its file also defines ``print_parts()``, returning ``{Part id: shape}``:
 every printed Part of the Component, once per Part id (copies are the same
 Part), each alone in the stance it prints in, bottom at Z 0. Bought Parts and
-Print Pieces are never printed and are not in it. It is the same convention
-as the Contract Proof's ``print_<Part>`` entries.
+Print Pieces are never printed and are not in it. The Contract Proof writes
+the same ``print_parts()`` and gates it with ``make_round --print-gates-only``.
 
 ``describe`` builds ``print_parts()`` once and prints one JSON line,
 ``{"kind": "kit-print-parts", "parts": {id: {"identity", "bottom_mm",

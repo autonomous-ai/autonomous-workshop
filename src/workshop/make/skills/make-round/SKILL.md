@@ -729,8 +729,9 @@ Part label is an extra body.
 file also defines `print_parts()`, returning `{Part id: shape}`: every
 printed Part of the Component, once per Part id (copies are the same Part,
 so no `#n`), each alone in the stance it prints in, bottom at Z 0 (centred
-in X and Y is fine). Bought Parts and Print Pieces are not in it. It is the
-Contract Proof's `print_<Part>` convention. `check_mesh`, `check_overhang`
+in X and Y is fine). Bought Parts and Print Pieces are not in it. The
+Contract Proof writes the same `print_parts()` and gates it with this
+skill's own code (`make_round --print-gates-only`). `check_mesh`, `check_overhang`
 and `check_thickness` measure each of those Parts on its own, in component
 rounds, assembly rounds and final verification, never `gen_step()`'s
 assembled Component: assembled, a flat top board is an inner ceiling over
@@ -936,6 +937,7 @@ Every gate `make_round` runs, exactly as it runs it. `$C` is
 | build a part | `"$WORKSHOP_PYTHON" $C/gen part_<role>.step.py --write --json` | exit code, and the sibling `part_<role>.step` it writes |
 | print gates | `"$WORKSHOP_PYTHON" $C/check_thickness part_<role>.step.py --nozzle N --report <round>/thickness-<role>.md`, `$C/check_overhang ... --angle A --report <round>/overhang-<role>.md`, `$C/check_mesh part_<role>.step.py --bed WxDxH` | each `RESULT:` line and exit code; `check_mesh`'s `[edge ]` rows name non-manifold edges |
 | a kit Component's Parts | `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/kit_print_parts.py describe part_<role>.step.py`, then the print gates on each `__cadgen__/print-parts/<scope>/<role>/part_<Part>.step.py` it writes, reports `<round>/<gate>-<role>-<Part>.md` | the JSON line's `parts` (identity, `bottom_mm`) or `error`; each gate as above |
+| print gates only | `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-dir> --print-gates-only [--component part_<role>.step.py] --nozzle N --overhang-angle A [--contract CONTRACT.md]`: the build, print gates and paper gate above on every part, a kit Component Part by Part (its tree from `--contract` or `tree/kit.json`), outside a Workshop run (inside one it refuses), with no nonce, freeze or round history; writes only under `<cad-dir>` (`measure/print-gates/`, `__cadgen__/print-parts/print-gates/`). The Contract Proof runs it | the round's `build`, `wall`, `over`, `mesh`, `parts` and `paper` lines; exit 1 on any failure |
 | build a sample | `PYTHONPATH=<project> "$WORKSHOP_PYTHON" $C/gen samples/<name>.step.py --write --json`, then both print gates | exit codes and gate verdicts |
 | keep-out envelope | `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/check_envelope part_<role>.step.py --envelope <round>/envelope-<id>.json --role inside\|outside --json` | `ok` and the per-pose volumes outside or inside the envelope |
 | interface interference | `"$WORKSHOP_PYTHON" $C/inspect interfere measure/interface-rounds/<id>/rNNNN/interface_<id>.step.py --format json` | `ok` and each clash's parts and volume |

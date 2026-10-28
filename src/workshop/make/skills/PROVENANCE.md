@@ -2476,3 +2476,18 @@ before. A Component that both defines `print_parts()` and hosts a Print
 Piece keeps its paper gate beside its Parts (the pilot's resumed round
 crashed sorting the paper job's unnamed key with the Part names). The `cad`
 and `make-round` locks move; a resync must keep these lines.
+
+## Local change: the Contract Proof runs Make's print gates (2026-10-28)
+
+A Workshop-local change (owner, 2026-10-28). The ADR 0093 cabinet pilot
+stopped after three component rounds because `design-a-toy`'s Contract
+Proof gated each kit Part flat with its own `check_*` calls while Make
+gated the assembled Component. `make_round --print-gates-only` builds every
+part of a CAD directory and runs a round's own print gates on it (the same
+job, parser and record functions, now shared by component and assembly
+rounds), a kit Component Part by Part from its `print_parts()` with its tree
+read from `--contract` or `tree/kit.json`, outside a Workshop run (it
+refuses inside one) with no nonce, Shared Helper
+freeze or round history, writing only inside the directory. Rounds gate
+exactly as before. The `make-round` lock moves; a resync must keep these
+lines.
