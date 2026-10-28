@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contract lint for design-a-toy Stage 3e: one fact, one value, everywhere.
+"""Contract lint for design-a-toy: one fact, one value, everywhere.
 
     python3 contract_lint.py CONTRACT.md [FACTS.json] [--claims CLAIMS.json] [--json]
 
@@ -9,7 +9,10 @@ Interface poses) and in the requirement rows. The toy's Stage 3d model
 script is the one place those numbers are computed. This tool compares them
 and never judges design: it reports where two statements of one fact
 disagree, so an amendment that changed one of them cannot leave the others
-behind.
+behind. design-a-toy runs it with the contract alone (Stage 2b, Stage 4):
+the host parser and the kit-tree checks. FACTS.json and CLAIMS.json are
+optional; since ADR 0094 the Contract Proof's fresh read finds a fact an
+amendment changed in one place only, and the skill no longer asks for them.
 
 FACTS.json is written by the toy's model script (millimetres, assembly frame,
 Display Pose):
@@ -25,7 +28,7 @@ Display Pose):
       "moves": {"wing#1": [{"rotation_deg": 60}], "shin#1": [{"translation": [0, 0, 19.25]}]}
     }
 
-CLAIMS.json is the Stage 3e extraction: every number the prose and the rows
+CLAIMS.json, when given, is an extraction: every number the prose and the rows
 state about a Component, transcribed by a fresh reader, never computed:
 
     [{"kind": "move", "component": "wing", "deg": 90, "joint": "wing-hinge", "quote": "..."},

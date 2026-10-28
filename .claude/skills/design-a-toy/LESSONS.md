@@ -92,7 +92,7 @@ file.
   coordinates denied: rails that "meet" 3.4 apart, a "square" 4 x 2 newel,
   bosses "clear of" rings they bear on, a stand narrower than its ring, a
   door plate running through the hinge pin where only knuckles were bored.
-- **How to apply:** before Stage 3e recompute each meet, touch, clear of,
+- **How to apply:** before the fresh Proof read recompute each meet, touch, clear of,
   beside, square and parallel from the stated ranges. For a pin hinge, say
   where the leaf's edge stops beside the knuckles.
 

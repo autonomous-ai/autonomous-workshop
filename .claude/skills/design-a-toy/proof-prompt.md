@@ -58,7 +58,16 @@ contract's nozzle) is read from the library, not chosen.
    step of a stated motion (sweep it at 10 degree steps or finer with
    `scripts/inspect interfere` or a distance check), "meets", "flush",
    "clear of", "level with". A contradiction hidden behind another part in
-   every view is still a contradiction.
+   every view is still a contradiction. So is one fact stated in two places
+   with two values: a box, an envelope, a move's angle or a position given
+   in the prose, a requirement row, an Interface text or the block
+   (`envelope_mm`, `extents_mm`, Interface poses) that do not agree. Quote
+   both.
+   Under a heading "Placement", list every detail you model on another
+   detail or on a curved host that breaks the print-details placement rules:
+   a host narrower than the detail plus 0.5 mm on each side, a raised detail
+   standing less than 0.5 mm above a concave host anywhere across the curve,
+   or copies in a row closer than 0.5 mm.
 4. **Print gates.** On every printable entry (each `part_` entry of a toy
    that prints each Component whole, or each `print_` entry of a kit), run
    Make's own gates from the CAD skill, in Make's order: `scripts/check_mesh
