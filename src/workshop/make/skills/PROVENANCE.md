@@ -2516,3 +2516,12 @@ apply, keeps the component-identities sidecar every run writes, points its
 waiting rule, the Blocked Report answers and the amendment proposal JSON at
 their one home, and says the `--fresh` host rebuild is Forge and Quest's. The
 `make-round` lock moves; a resync must keep these lines.
+
+## Local change: a schema 9 kit samples insertion at two print lines (2026-10-29)
+
+A Workshop-local change (owner, 2026-10-29, ADR 0094). Design Contract
+schema 9 states no `wall_min_mm`, so `make-round/scripts/kit_tree.py`'s
+insertion sweep samples no coarser than two print lines (0.8 mm at a 0.4 mm
+nozzle) when a geometry states none; a schema 7 or 8 kit keeps the smaller
+of two print lines and its geometries' `wall_min_mm`. The `make-round` lock
+moves; a resync must keep these lines.

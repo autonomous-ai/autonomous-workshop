@@ -62,7 +62,8 @@ The gates
   already assembled: the base and the inputs before it. Overlap above
   0.001 mm3 fails; seated contact at the seat is allowed. The sweep samples
   no coarser than the thinnest wall it could miss: the smaller of two print
-  lines and the involved geometries' ``wall_min_mm``. An input blocked only by
+  lines and the involved geometries' ``wall_min_mm`` (two print lines alone
+  for a schema 9 contract, which states none). An input blocked only by
   an input of the same step that went in before it can go in only together
   with it: a simultaneous move, refused. Every joint the input engages at
   its seat must slide along the direction: each pair of mating faces (two
@@ -393,7 +394,9 @@ class Plan:
         return None
 
     def wall_mm(self, geometries, nozzle: float) -> float:
-        walls = [float(self.geometries[g]["wall_min_mm"]) for g in geometries if g in self.geometries]
+        # A schema 9 geometry states no wall_min_mm (ADR 0094): two print lines.
+        walls = [float(self.geometries[g]["wall_min_mm"]) for g in geometries
+                 if g in self.geometries and "wall_min_mm" in self.geometries[g]]
         return min([PRINT_LINES * nozzle, *walls])
 
 
