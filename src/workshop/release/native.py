@@ -1248,6 +1248,38 @@ class NativeRelease:
         )
 
 
+def make_output_release_product(
+    facts: Mapping[str, Any],
+    *,
+    product_artifact_sha256: str,
+    source_document: Mapping[str, str] | None,
+) -> dict[str, Any]:
+    """Derive the schema-6 site metadata from Made facts; nothing is authored.
+
+    Title and summary are Make's own, the optional text lists pass through
+    only when Make wrote them, and Playtest is truthfully ``not-run``.
+    """
+
+    def optional_texts(name: str) -> list[str]:
+        value = facts.get(name)
+        return list(value) if isinstance(value, (list, tuple)) and all(isinstance(item, str) for item in value) else []
+
+    return validate_release_product({
+        "schema_version": MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION,
+        "kind": "workshop.release-package",
+        "status": MAKE_OUTPUT_RELEASE_PRODUCT_STATUS,
+        "title": facts["title"][:300].rstrip(),
+        "summary": facts["summary"],
+        "what_arrives": optional_texts("what_arrives"),
+        "limitations": optional_texts("limitations"),
+        "product_artifact_sha256": product_artifact_sha256,
+        "playtest_status": DIRECT_RELEASE_PLAYTEST_STATUS,
+        "playtest_evidence_artifact_sha256": playtest_omission_sha256(),
+        "claims": direct_release_claims(),
+        "source_document": None if source_document is None else dict(source_document),
+    }, release_schema_version=4)
+
+
 def prepare_make_output_release(run_root: Path, made: NativeMade) -> NativeRelease:
     """Seal a deterministic publication carrier without changing Make output.
 
@@ -1266,24 +1298,11 @@ def prepare_make_output_release(run_root: Path, made: NativeMade) -> NativeRelea
     source = candidates[0] if candidates else None
     document = None if source is None else {"source_path": source.path, "sha256": source.sha256}
     facts = canonical_made.product
-    def optional_texts(name: str) -> list[str]:
-        value = facts.get(name)
-        return list(value) if isinstance(value, (list, tuple)) and all(isinstance(item, str) for item in value) else []
-
-    product = validate_release_product({
-        "schema_version": MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION,
-        "kind": "workshop.release-package",
-        "status": MAKE_OUTPUT_RELEASE_PRODUCT_STATUS,
-        "title": facts["title"][:300].rstrip(),
-        "summary": facts["summary"],
-        "what_arrives": optional_texts("what_arrives"),
-        "limitations": optional_texts("limitations"),
-        "product_artifact_sha256": made.product_manifest.artifact_sha256,
-        "playtest_status": DIRECT_RELEASE_PLAYTEST_STATUS,
-        "playtest_evidence_artifact_sha256": playtest_omission_sha256(),
-        "claims": direct_release_claims(),
-        "source_document": document,
-    }, release_schema_version=4)
+    product = make_output_release_product(
+        facts,
+        product_artifact_sha256=made.product_manifest.artifact_sha256,
+        source_document=document,
+    )
     contents = {
         NATIVE_RELEASE_PRODUCT_PATH: _canonical_json(product),
         NATIVE_RELEASE_PLAYTEST_OMISSION_PATH: _canonical_json(playtest_omission_record()),
@@ -1393,5 +1412,6 @@ __all__ = [
     "direct_release_claims",
     "playtest_omission_record",
     "playtest_omission_sha256",
+    "make_output_release_product",
     "prepare_make_output_release",
 ]
