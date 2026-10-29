@@ -248,3 +248,10 @@ uv run workshop wish "<showcase Wish>"
 
 Never publish a checked-in fixture, old outbox, hand-authored receipt, or legacy
 bundle as if it were the output of a current run.
+
+## Toys built outside Workshop
+
+A CAD project built in autonomous-product-to-cad does not run a Wish. It
+publishes through `tools/publish_direct.py`, which uses this same Spark
+carrier and Factory adapter and records that no Workshop gate ran. See
+[Publish directly from a CAD project](PUBLISH_DIRECT.md).
