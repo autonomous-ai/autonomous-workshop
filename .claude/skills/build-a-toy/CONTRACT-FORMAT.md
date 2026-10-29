@@ -241,17 +241,23 @@ instances.)
     | `glue` | joins them, as a last resort, with `glue_reason` | two or more |
     | `paper` | applies Print Pieces to their host | two or more |
     | `fold`, `cut`, `bend`, `roll` | reshapes one input | exactly one |
-    | `leads` | joins the LED leads of `lamps` | one or more |
+    | `leads` | joins the leads of `lamps`, its Wired Parts, by its `method` | one or more |
 
     In a joining or `paper` step the first input is what the others go into
     and takes no `direction`; every later input has its one straight
     insertion `direction`, in the assembly frame. A reshaping or `leads` step
-    takes none. A `leads` step lists `lamps`, Bought Parts whose catalogue
-    category is `lamp`, each already in its Sub-assembly: it sits at or above
-    the smallest Sub-assembly holding every lamp it joins. A step that
-    encloses a lead declares it in `leads`: `{"lamp": "<lamp Part>",
+    takes none. A `leads` step lists `lamps`, its Wired Parts, each already
+    in its Sub-assembly: it sits at or above the smallest Sub-assembly
+    holding every part it joins. A Wired Part is a Bought Part whose
+    catalogue category is `lamp` or, from ADR 0095, any Bought Part whose
+    entry has a `lead diameter` (a lever switch, a resistor, a wire). A
+    `leads` step may name its `method`, `twist`, `solder` or `connector`,
+    which titles it in the Manual; a `solder` step adds the soldering iron,
+    solder and the soldering warning. No other step takes a `method`. A step
+    that encloses a lead declares it in `leads`: `{"lamp": "<Wired Part>",
     "route_mm": [[x, y, z], ...], "exit": "<where it comes out>"}`, two or
-    more points in the assembly frame.
+    more points in the assembly frame; the route is swept at the part's lead
+    diameter.
   - Every Part and every Print Piece is the input of exactly one step, and
     every step but the last feeds exactly one later step. A Print Piece is
     applied in the first `paper` step above it that joins, once its host is
@@ -279,8 +285,10 @@ instances.)
     Q28).
   - `checks`: the Check Steps the Manual shows first, outside the tree:
     `{"id": "light-test", "text": "<one short English instruction>",
-    "parts": [<lamp and power Bought Parts>]}`, each naming at least one lamp
-    and one power source; the id is a kebab-case mnemonic no other id uses.
+    "parts": [<lamp, power, cell, contact, switch, wire or other Bought
+    Parts>]}`, each naming at least one lamp and one `power` or `cell` part,
+    so a light test may hold the switch and its contacts; the id is a
+    kebab-case mnemonic no other id uses.
     A tree with a lamp tests every lamp in one; otherwise `checks` is left
     out.
   - `materials`: the tools and consumables the Manual lists, catalogue ids
@@ -371,9 +379,11 @@ instances.)
   there. Schema 8 adds two requirements: every geometry names its
   `prose_sections`, and `guides[]` is required with every geometry named in
   some guide's `geometries`. `9` (ADR 0094) is schema 8 with
-  `wall_min_mm` refused on every geometry. Use `9` for every new contract;
-  1 to 8 stay valid, with exactly their earlier rules, for contracts and
-  runs sealed before it. Schema 3 is schema 2 plus a `camera` on every
+  `wall_min_mm` refused on every geometry. `10` (ADR 0095) is schema 9 plus
+  the optional `electrical` section below. Use `10` for a toy with anything
+  electrical and `9` or `10` for any other new contract; 1 to 9 refuse
+  `electrical` and stay valid, with exactly their earlier rules, for
+  contracts and runs sealed before it. Schema 3 is schema 2 plus a `camera` on every
   reference; from schema 3 every Component file defines
   `assembly_pose(shape, pose)`, even one in no Interface. A schema 3
   contract has no Interface text, a schema 2 contract no cameras and a
@@ -426,6 +436,61 @@ instances.)
   or level agrees with each one's `extents_mm` and every Interface range
   that places it, and a Component thinner or thicker than its neighbours
   states its thickness in its own row.
+
+- `electrical` (schema 10, ADR 0095, optional): the circuit the owner
+  approved, from design-a-toy's Electrical grill. A toy without it is
+  unpowered. The Macintosh fidget's:
+
+  ```json
+  "electrical": {
+    "parts": [
+      {"id": "cells", "bought": "cell-aaa", "count": 2, "role": "source"},
+      {"id": "plate", "bought": "contact-aaa-plate", "role": "connector"},
+      {"id": "spring", "bought": "contact-aaa-spring", "role": "connector"},
+      {"id": "bridge", "bought": "contact-aaa-bridge", "role": "connector"},
+      {"id": "switch", "bought": "microswitch-mini-lever", "role": "switch"},
+      {"id": "resistor", "bought": "resistor-75r", "role": "controller"},
+      {"id": "led", "bought": "led-5mm-amber-diffused", "role": "load"},
+      {"id": "wire", "bought": "wire-28awg", "role": "wire"}
+    ],
+    "paths": [{"id": "screen-light", "load": "led", "current_ma": 12.7,
+               "sequence": ["cells", "plate", "switch", "resistor", "led", "spring", "bridge", "cells"]}],
+    "supply_v": {"min": 2.4, "nominal": 3.0, "max": 3.2},
+    "standby_ma": 0,
+    "runtime_h": 60,
+    "switch_logic": "The floppy fully in presses the NO microswitch: lit. Out: dark.",
+    "assembled_by": "maker",
+    "joins": "solder",
+    "batteries_included": false
+  }
+  ```
+
+  - `parts[]`: `{"id", "bought", "role"}` and an optional `count`. `id` is
+    the part's kebab-case name in this circuit and in Make's power report;
+    `bought` is a Bought Part catalogue id; `role` is one of `check_power`'s
+    roles and fits its category: `power` and `cell` play `source`,
+    `contact` `connector`, `switch` `switch`, `lamp` `load`, `wire` `wire`,
+    and `other` (a resistor, a regulator, a motor) `protection`,
+    `controller`, `connector`, `load`, `actuator` or `inlet`. There is at
+    least one source.
+  - `paths[]`: exactly `{"id", "load", "current_ma", "sequence"}`, one per
+    load. The sequence begins and ends at its source, holds its `load`
+    exactly once and no other source or load, and leaves wires out (Make's
+    report adds them). Every part but a wire is on some path.
+  - `supply_v` (`min` <= `nominal` <= `max`), `standby_ma` (>= 0, the drain
+    with the switch off), `runtime_h` (> 0), `switch_logic` (one sentence),
+    `assembled_by` (`maker` or `buyer`), `joins` (`solder` or
+    `solderless`) and `batteries_included` (true or false).
+  - The section's parts are sealed with their catalogue snapshot, so a toy
+    that is no kit still carries its Bought Parts. A kit that has the
+    section names in it every tree Bought Part of an electrical category,
+    and nothing else.
+  - Make writes `measure/power.json` for the circuit with the
+    `electromechanical-integration` skill and runs final verification with
+    `--powered`. The host accepts Make only when that report is this circuit
+    (same ids, roles, sources, loads and sequences, wires aside, each path
+    rated for its `current_ma`, the source's voltage covering `supply_v`)
+    and the final record passed `check_power`.
 
 ## Validation before any run
 

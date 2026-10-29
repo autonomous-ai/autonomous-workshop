@@ -146,7 +146,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0084-interface-text-and-reference-conflicts.md`, and
 `docs/adr/0085-in-run-contract-amendments-for-invisible-fixes.md`, and
 `docs/adr/0093-contract-proof-and-three-view-concepts.md`, and
-`docs/adr/0094-one-gate-one-proof-reader-and-no-duplicate-reads.md` before changing the CLI, runtime,
+`docs/adr/0094-one-gate-one-proof-reader-and-no-duplicate-reads.md`, and
+`docs/adr/0095-powered-toys.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -334,6 +335,21 @@ runs a geometry-scoped row binds its Component's review instead of a separate
 blind read. Design Contract schema 9 is schema 8 without `wall_min_mm`, which
 Make never measured; a schema 9 kit samples insertion at two print lines. Spark keeps Make's own verification (ADR 0061): the host does not
 rerun the verifier for it.
+ADR 0095 adds Design Contract schema 10, schema 9 plus an optional
+`electrical` section: a powered toy's circuit as catalogue Bought Parts in
+`check_power`'s roles, each path from source through one load and back with
+its current, the supply, standby drain, runtime, switch logic, and who
+assembles and solders it. The section seals its catalogue snapshot, so a
+toy that is no kit carries its Bought Parts; a kit names the same entries
+in both. Any Bought Part with a lead diameter is a Wired Part a leads step
+may join, by an optional `twist`, `solder` or `connector` method, and the
+Manual adds the soldering tools and warning and one line for loose cells.
+For a stated circuit `make_round --full` passes `verify_project --powered`,
+and an image-derived run without one names `--powered` or `--unpowered`.
+Before Make is accepted the host checks, without rerunning the gate, that
+the sealed `measure/power.json` is that circuit and the final record passed
+`check_power`. No Workshop electrical gate is added; schema 1 to 9 and
+frozen runs keep what they sealed.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

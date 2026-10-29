@@ -544,9 +544,24 @@ _Avoid_: Build order, BOM
 One join in the Assembly Tree, turning its inputs (Parts or earlier
 Sub-assemblies) into one Sub-assembly, possibly made N times. It may have a
 single input, as a fold, cut or bend does. Joining LED leads is an Assembly
-Step that sits at or above the smallest Sub-assembly holding every lamp it
-joins; a step that encloses a lead says where the lead comes out.
+Step that sits at or above the smallest Sub-assembly holding every Wired
+Part it joins, twisted, soldered or plugged; a step that encloses a lead
+says where the lead comes out.
 _Avoid_: Big step, page, instruction
+
+**Wired Part**:
+A Bought Part with leads to join: a lamp, or any Bought Part whose catalogue
+entry gives a lead diameter, such as a lever switch, a resistor or a wire.
+Its lead routes are swept at that diameter.
+_Avoid_: Electronic part, component (a Component is printed geometry)
+
+**Electrical section**:
+The part of a Design Contract that states a powered toy's circuit: its
+Bought Parts in their electrical roles, each path from the source through
+its switch and load and back, the supply, standby drain, runtime, switch
+logic, and who assembles and solders it. Make's power report must be this
+circuit before Make is accepted. A Design Contract without it is unpowered.
+_Avoid_: Wiring diagram, BOM, power plan
 
 **Tree defect**:
 A sealed Assembly Tree that does not hold together: a Part missing, extra or

@@ -112,6 +112,20 @@ Drive to a written spec containing:
   (`bought-parts.json`), within its size limits. One outside it needs the
   owner's approval, the same way.
 
+When the toy has anything electrical — a light, a switch, a battery, a motor
+— also drive to:
+
+- **Electrical** (ADR 0095). The circuit, part by part, from the source
+  through its switch and resistor to each load and back (cells, contacts,
+  switch, resistor, LED, wire, each a catalogue Bought Part); the switch
+  logic in one sentence (what the buyer does and what lights); the standby
+  drain with the switch off (a mechanical switch in series is 0 mA); each
+  load's current and the runtime on the stated cells; and who assembles it
+  (the maker or the buyer) and whether its joins are soldered or
+  solderless. A buyer kit prefers solderless parts. These become the
+  contract's `electrical` section (schema 10, CONTRACT-FORMAT.md); the
+  owner approves the circuit with the images.
+
 When the toy has any moving part — a wheel, an axle, a joint, a hinge, a
 sliding or spinning part — also drive to:
 
@@ -972,6 +986,15 @@ Check every item:
 6. **Axles are long enough.** Each purchased axle or pin covers the press depth
    plus every layer it passes through, in a length the contract's supplier
    actually stocks.
+7. **A switch is pressed where the contract says** (ADR 0095). When a moving
+   part works a switch, model the switch lever's operating zone (from its
+   free position past its pre-travel to its operating point) as a
+   validation envelope, and check the moving part against it in each end
+   pose: it must reach the zone in the pose that switches on (the floppy
+   fully *in*) and clear it in the pose that switches off (*out*). Write the
+   two poses into the motion plan below as two `check_motion` conditions:
+   blocked at *in*, clear at *out*. This is a method, not yet tested by a
+   live run.
 
 A failed check is resolved in this order, keeping the look:
 
