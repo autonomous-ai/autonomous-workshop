@@ -962,6 +962,7 @@ def _load_sealed_contract(
     except (OSError, UnicodeError) as exc:
         raise WorkshopError("cannot read design contract file") from exc
     contract = parse_design_contract(text)
+    contract.check_sealable()
     contract.check_reference_names(
         [item.reference.name for item in references if item.reference.kind == "ref"]
     )

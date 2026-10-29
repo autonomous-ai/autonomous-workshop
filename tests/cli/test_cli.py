@@ -2827,3 +2827,23 @@ class WishPrintArtCommandTest(unittest.TestCase):
             )
             self.assertEqual(result, 2)
             self.assertIn("lists 0 guide image(s) but 1 were given", stderr)
+
+
+class WishAssemblyTreeCommandTest(unittest.TestCase):
+    """``workshop wish --contract`` with a schema 7 contract (ADR 0092)."""
+
+    def test_a_valid_schema_7_contract_refuses_to_seal_until_its_gates_exist(self):
+        from tests.wish.test_assembly_tree import _tree_block
+
+        with tempfile.TemporaryDirectory() as tmp:
+            contract = Path(tmp) / "CONTRACT.md"
+            contract.write_text(_contract_text(_tree_block()), encoding="utf-8")
+            stdout, stderr = StringIO(), StringIO()
+            with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(
+                "cli.main.start_native_run", return_value=native_receipt()
+            ) as start, redirect_stdout(stdout), redirect_stderr(stderr):
+                result = main(("wish", "--contract", str(contract)))
+            self.assertEqual(result, 2)
+            start.assert_not_called()
+            self.assertIn("schema_version 7 is validated", stderr.getvalue())
+            self.assertIn("issue #136", stderr.getvalue())
