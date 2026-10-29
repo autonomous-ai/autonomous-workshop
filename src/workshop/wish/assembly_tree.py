@@ -31,7 +31,8 @@ The shape, in brief::
 
 ``checks`` holds the Check Steps (ADR 0092 decision 1): light tests the
 Manual shows first, outside the tree. A tree with a lamp has one, and every
-lamp is in a Check Step with a power Bought Part.
+lamp is in a Check Step with a power or cell Bought Part; from ADR 0095 the
+step may also hold the contacts, switch and wire between them.
 
 Every printed Part names its ``form`` (owner decisions Q33 and Q34,
 2026-10-26): a ``panel`` is a flat printed Part joined by tab and slot, at
@@ -57,8 +58,13 @@ JOINS = ("peg-socket", "tab-slot", "pin-hinge", "foam-tape", "glue")
 PAPER = "paper"
 # One-input steps: the input is reshaped, not joined (ADR 0092 decision 2).
 SHAPINGS = ("fold", "cut", "bend", "roll")
-# A step that joins LED leads (ADR 0092 decision 2).
+# A step that joins the leads of Wired Parts: LEDs, and from ADR 0095 any
+# Bought Part whose catalogue entry has a ``lead diameter`` (a switch, a
+# battery contact, a resistor, hookup wire). Its ``lamps`` field keeps its
+# schema 7 name and holds any Wired Part. ``method`` (ADR 0095) says how the
+# leads are joined; ``solder`` puts the iron and a heat warning in the Manual.
 LEADS = "leads"
+LEAD_METHODS = ("twist", "solder", "connector")
 JOINTS = JOINS + (PAPER,) + SHAPINGS + (LEADS,)
 # Printed Part letters: every letter except M and N (Print Pieces), P (Bought
 # Parts) and S (steps), one letter per filament colour (ADR 0092 decision 6,
@@ -87,8 +93,11 @@ PANEL_MM_MAX = 10.0
 _SLUG = r"[a-z0-9]+(?:-[a-z0-9]+)*"
 PART_ID = re.compile(r"^([A-LO-RT-Z])([0-9]{2})-(%s)$" % _SLUG)
 CHECK_ID = re.compile(r"^%s$" % _SLUG)
-# Bought Part categories a Check Step may connect: lamps and their power.
-CHECK_CATEGORIES = ("lamp", "power")
+# Bought Part categories a Check Step may connect: lamps, their power (a
+# battery box, or cells in their contacts) and, from ADR 0095, the switch and
+# wire between them.
+CHECK_CATEGORIES = ("lamp", "power", "cell", "contact", "switch", "wire", "other")
+CHECK_POWER = ("power", "cell")
 STEP_ID = re.compile(r"^S([0-9]{2})-(%s)$" % _SLUG)
 PIECE_ID = re.compile(r"^([MN])([0-9]{2})-(%s)$" % _SLUG)
 
@@ -389,7 +398,7 @@ def _parse_steps(
         errors.append("assembly_tree.steps must list 1 to %d Assembly Steps in Manual order" % MAX_STEPS)
         return steps, parent
     allowed = {"id", "output", "count", "joint", "inputs", "text", "error_prone", "leads",
-               "lamps", "glue_reason"}
+               "lamps", "glue_reason", "method"}
     known_steps: Set[str] = set()
     last_number = 0
     for index, item in enumerate(value):
@@ -441,8 +450,15 @@ def _parse_steps(
             if not isinstance(lamps, list) or not lamps or len(set(map(str, lamps))) != len(lamps):
                 errors.append("%s: a leads step names the lamps whose leads it joins, each once" % label)
                 valid = False
+            method = item.get("method")
+            if method is not None and method not in LEAD_METHODS:
+                errors.append("%s.method must be one of %s" % (label, ", ".join(LEAD_METHODS)))
+                valid = False
         elif "lamps" in item:
             errors.append("%s.lamps belongs to a leads step only" % label)
+            valid = False
+        elif "method" in item:
+            errors.append("%s.method belongs to a leads step only" % label)
             valid = False
         inputs = item.get("inputs")
         if not isinstance(inputs, list) or not inputs:
@@ -601,17 +617,22 @@ def _check_leads(
     bought: Mapping[str, Mapping[str, Any]], catalogues: Catalogues, errors: List[str],
 ) -> None:
     """A leads step sits at or above the smallest Sub-assembly holding every
-    lamp it joins; a step that encloses a lead says where it comes out."""
+    Wired Part it joins; a step that encloses a lead says where it comes out.
+    A Wired Part is a lamp or, from ADR 0095, any Bought Part whose catalogue
+    entry gives a ``lead diameter``, the size Make sweeps its route at."""
 
     def lamp(identifier: Any) -> bool:
         entry = bought.get(identifier) if isinstance(identifier, str) else None
-        return entry is not None and catalogues.parts[entry["bought"]].category == "lamp"
+        if entry is None:
+            return False
+        part = catalogues.parts[entry["bought"]]
+        return part.category == "lamp" or part.lead_diameter_mm is not None
 
     for step in steps:
         below = _leaves_under(step["id"], children)
         for name in step.get("lamps") or ():
             if not lamp(name):
-                errors.append("%s.lamps names %r, which is no lamp Bought Part" % (step["id"], name))
+                errors.append("%s.lamps names %r, which is no Wired Part (a lamp, or a Bought Part with a lead diameter)" % (step["id"], name))
             elif name not in below:
                 errors.append(
                     "%s joins the leads of %s, which is not yet in its Sub-assembly: a leads step "
@@ -630,7 +651,7 @@ def _check_leads(
                 errors.append("%s must be exactly {lamp, route_mm, exit}" % label)
                 continue
             if not lamp(lead["lamp"]):
-                errors.append("%s.lamp must name a lamp Bought Part" % label)
+                errors.append("%s.lamp must name a Wired Part (a lamp, or a Bought Part with a lead diameter)" % label)
             elif lead["lamp"] not in below:
                 errors.append("%s.lamp %s is not in this step's Sub-assembly" % (label, lead["lamp"]))
             route = lead["route_mm"]
@@ -812,13 +833,13 @@ def _check_checks(
             for part in parts:
                 kind = category(part)
                 if kind not in CHECK_CATEGORIES:
-                    errors.append("%s.parts names %r, which is no lamp or power Bought Part" % (label, part))
+                    errors.append("%s.parts names %r, which is no lamp, power, cell, contact, switch, wire or other Bought Part" % (label, part))
                     continue
                 kinds.add(kind)
                 if kind == "lamp":
                     tested.add(part)
-            if kinds and kinds != set(CHECK_CATEGORIES):
-                errors.append("%s connects lamps to their power: it names at least one of each" % label)
+            if kinds and ("lamp" not in kinds or not kinds & set(CHECK_POWER)):
+                errors.append("%s connects lamps to their power: it names at least one lamp and one power or cell part" % label)
     for lamp in lamps:
         if lamp not in tested:
             errors.append(
@@ -856,6 +877,7 @@ __all__ = [
     "JOINS",
     "JOINTS",
     "LEADS",
+    "LEAD_METHODS",
     "PANEL",
     "PANEL_MM_DEFAULT",
     "PAPER",

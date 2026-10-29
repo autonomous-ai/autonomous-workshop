@@ -352,9 +352,9 @@ class AssemblyTreeTest(unittest.TestCase):
         block = _tree_block()
         check = block["assembly_tree"]["checks"][0]
         check["parts"] = ["P03-ball-led"]
-        self.assertIn("names at least one of each", self._refused(block))
+        self.assertIn("names at least one lamp and one power or cell part", self._refused(block))
         check["parts"] = ["P03-ball-led", "P04-battery-box", "P02-jar"]
-        self.assertIn("P02-jar', which is no lamp or power Bought Part", self._refused(block))
+        self.assertIn("P02-jar', which is no lamp, power, cell, contact, switch, wire or other Bought Part", self._refused(block))
         check["parts"] = ["P03-ball-led", "P04-battery-box"]
         check["id"] = "case-shell"
         self.assertIn("repeats the mnemonic 'case-shell'", self._refused(block))
@@ -484,7 +484,7 @@ class AssemblyTreeTest(unittest.TestCase):
     def test_a_leads_step_sits_above_every_lamp_it_joins(self):
         block = _tree_block()
         _step(block, "S08-wiring")["lamps"] = ["P02-jar"]
-        self.assertIn("names 'P02-jar', which is no lamp Bought Part", self._refused(block))
+        self.assertIn("names 'P02-jar', which is no Wired Part", self._refused(block))
         # A second lamp on each desk, and the leads joined in the case alone,
         # before the desks are placed.
         block = _tree_block()
