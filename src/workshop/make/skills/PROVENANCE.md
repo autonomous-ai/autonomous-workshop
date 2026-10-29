@@ -2525,3 +2525,12 @@ insertion sweep samples no coarser than two print lines (0.8 mm at a 0.4 mm
 nozzle) when a geometry states none; a schema 7 or 8 kit keeps the smaller
 of two print lines and its geometries' `wall_min_mm`. The `make-round` lock
 moves; a resync must keep these lines.
+
+## Local change: make_round --full names the power class (2026-10-29)
+
+A Workshop-local fix. The vendored `verify_project` refuses an
+image-derived final run that is neither `--powered` nor `--unpowered`, and
+`make-round/scripts/make_round`'s `--full` passed `--image-derived` alone, so
+every Contract Mode `--full` was refused. It now passes `--powered` when
+`measure/power.json` exists and `--unpowered` otherwise. The `make-round`
+lock moves; a resync must keep these lines.
