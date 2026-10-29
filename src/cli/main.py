@@ -985,7 +985,8 @@ def _load_sealed_contract(
     ``ContractError`` is left to propagate and abort ``wish`` entirely. The
     same holds for reference images that would not seal under the names the
     contract lists. The third value is a schema 7 contract's catalogue
-    snapshot (ADR 0092), sealed beside it as ``kit_catalogue``; None before.
+    snapshot (ADR 0092), and from schema 10 its Electrical section's (ADR
+    0095), sealed beside it as ``kit_catalogue``; None when it has neither.
     """
 
     try:

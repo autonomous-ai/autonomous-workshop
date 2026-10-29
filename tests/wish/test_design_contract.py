@@ -503,7 +503,7 @@ class InterfaceTextTest(unittest.TestCase):
         self.assertIn("text needs schema_version 4", self._refused(camera))
 
     def test_an_unknown_schema_is_refused(self):
-        self.assertIn("schema_version must be 1, 2, 3, 4, 5, 6, 7, 8 or 9", self._refused(_block(schema_version=10)))
+        self.assertIn("schema_version must be 1, 2, 3, 4, 5, 6, 7, 8, 9 or 10", self._refused(_block(schema_version=11)))
 
 
 def _guide_block(**overrides):
