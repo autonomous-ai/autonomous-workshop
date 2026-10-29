@@ -231,6 +231,29 @@ class KitManualTest(unittest.TestCase):
         _project, document, code = self.write(kit, name="other")
         self.assertIn("Check Step light-test has no instruction", "; ".join(document["failures"]))
 
+    def test_loose_cells_and_a_soldered_leads_step_reach_the_front_page(self):
+        # ADR 0095: two loose cells are the batteries themselves; a soldered
+        # leads step needs the iron, solder and the company's heat warning.
+        kit = manual_kit()
+        kit["catalogue"]["bought_parts"]["battery-box-2aa-switch"].update(category="cell", name="AAA cell")
+        wiring = next(item for item in kit["assembly_tree"]["steps"] if item["id"] == "S08-wiring")
+        wiring["method"] = "solder"
+        company = copy.deepcopy(COMPANY)
+        company["warnings"]["soldering"] = "Soldering warning."
+        document = kit_manual.plan_manual(kit, company)
+        self.assertEqual(document["failures"], [])
+        front = document["front"]
+        self.assertEqual(front["self_prepared"], ["Scissors", "Batteries: 1 x AAA cell", "Soldering iron", "Solder"])
+        self.assertEqual(front["warnings"], ["Small parts warning.", "Battery warning.", "Soldering warning."])
+        self.assertEqual(kit_manual.LEAD_METHOD_LABELS["solder"], "Solder the leads")
+        # Without the company's warning nothing is written.
+        self.assertIn("a leads step is soldered, but the company configuration has no soldering warning",
+                      kit_manual.plan_manual(kit, COMPANY)["failures"])
+
+    def test_the_packaged_company_configuration_warns_of_soldering(self):
+        company = json.loads((TOOL.parent.parent / "company.json").read_text())
+        self.assertIn("soldering", company["warnings"])
+
     def test_the_packaged_company_configuration_is_an_unconfirmed_placeholder(self):
         company = kit_manual.load_company(kit_manual.COMPANY_FILE)
         self.assertFalse(company["after_sales"]["confirmed"])

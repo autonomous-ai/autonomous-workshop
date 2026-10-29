@@ -61,8 +61,10 @@ assembled, along its declared direction (a `check_motion`
 0.001 mm3 fails, contact at the seat allowed, sampled no coarser than the
 thinnest wall); refuses an input that only goes in together with another
 (a simultaneous move) and a mating face pair at an angle to the direction (a
-non-parallel joint); and sweeps a sphere of each lamp's lead diameter plus
-0.4 mm along every declared lead route.
+non-parallel joint); and sweeps a sphere of each Wired Part's lead diameter
+plus 0.4 mm along every declared lead route. A Wired Part is a lamp or, from
+ADR 0095, any Bought Part whose catalogue entry has a `lead diameter` (a
+lever switch, a resistor, a wire).
 
 **Where each check runs.** A step whose Parts all belong to one Component is
 checked in that Component's round (its `tree` line); a step across
@@ -122,4 +124,8 @@ writes or edits the Manual. It fails only when the tree cannot be written
 (a step with no instruction, an unknown Part id, a leaf in no or two
 material lists, which a sealed contract never gives) or a Component fails
 to build. The host accepts Make only with a passing Manual for the sealed
-tree, and Release ships the PDF in `make/manual/`.
+tree, and Release ships the PDF in `make/manual/`. A leads step's `method`
+(ADR 0095) titles it: `twist`, `solder` or `connector`. A soldered step adds
+a soldering iron and solder to the self-prepared tools and the company's
+`warnings.soldering` to the front page (no warning, no Manual); loose cells
+print one `Batteries: N x <name>` line.

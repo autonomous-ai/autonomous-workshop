@@ -2610,3 +2610,15 @@ insertion sweep samples no coarser than two print lines (0.8 mm at a 0.4 mm
 nozzle) when a geometry states none; a schema 7 or 8 kit keeps the smaller
 of two print lines and its geometries' `wall_min_mm`. The `make-round` lock
 moves; a resync must keep these lines.
+
+## Local change: powered toys (2026-10-29)
+
+A Workshop-local change (ADR 0095). `make-round/scripts/make_round`'s
+`--full` names the verifier's power class: `--powered` for a schema 10
+contract with an `electrical` section or an image-derived run with
+`measure/power.json`, otherwise `--unpowered` for an image-derived run, which
+the vendored `verify_project` refuses to guess. `kit_manual.py` titles a
+leads step by its `method`, adds the soldering tools and
+`company.json`'s new `warnings.soldering` for a soldered one, and prints one
+batteries line for loose cells. `SKILL.md` and `references/kit-tree.md` say
+so. The `make-round` lock moves; a resync must keep these lines.

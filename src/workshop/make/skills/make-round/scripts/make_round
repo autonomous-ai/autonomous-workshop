@@ -580,8 +580,10 @@ def record_visual(project, feedback_path, full=False, component=None, check_moti
         motion_option = summary.get("check_motion") if check_motion is None else check_motion
         if motion_option is not None:
             command += ["--check-motion", str(motion_option).lower()]
-        if summary["refs"] or summary.get("sealed"):
+        image_derived = bool(summary["refs"] or summary.get("sealed"))
+        if image_derived:
             command.append("--image-derived")
+        command += power_options(project, image_derived)
         done = run(command, cwd=project, log=out / "verify.log", timeout=FULL_TIMEOUT_SECONDS)
         summary["full"] = {"ok": done.returncode == 0, "returncode": done.returncode, "tail": tail(done.stdout or done.stderr)}
         summary["ok"] = done.returncode == 0
@@ -2218,6 +2220,32 @@ def sealed_contract(project: Path) -> dict | None:
     context = wish.get("context") if isinstance(wish, dict) else None
     contract = context.get("design_contract") if isinstance(context, dict) else None
     return contract if isinstance(contract, dict) else None
+
+
+ELECTRICAL_SCHEMA_VERSION = 10
+
+
+def powered_contract(project: Path) -> bool:
+    """Whether the sealed contract states a circuit (schema 10, ADR 0095)."""
+
+    contract = sealed_contract(project)
+    return (contract_schema(project) >= ELECTRICAL_SCHEMA_VERSION
+            and isinstance((contract or {}).get("electrical"), dict))
+
+
+def power_options(project: Path, image_derived: bool) -> list:
+    """The final verifier's power classification (ADR 0095). A contract with
+    a circuit always runs the powered gate, which refuses without
+    ``measure/power.json``; check_power runs on any power.json there is.
+    An image-derived run without a circuit must still name its class, which
+    the verifier refuses to guess: ``--powered`` when Make wrote a power
+    report (a schema 7-9 kit with a lamp), otherwise ``--unpowered``."""
+
+    if powered_contract(project):
+        return ["--powered"]
+    if not image_derived:
+        return []
+    return ["--powered"] if (project / "measure" / "power.json").is_file() else ["--unpowered"]
 
 
 def camera_contract(project: Path) -> bool:
