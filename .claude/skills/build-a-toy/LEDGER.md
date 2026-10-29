@@ -60,7 +60,7 @@ One entry per stop of an attempt, in order.
 | `visible` | whether a reference image must be redrawn |
 | `approved` | null until approved: `owner <date>` for a visible change (or for one the owner approved before the loop), `not-needed` for an invisible one |
 | `applied` | true once the amendment is in `CONTRACT.md` and re-audited; it needs `approved` |
-| `reaudit` | the whole-contract Stage 3b/3c/3d notes; required once applied |
+| `reaudit` | the whole-contract Stage 3a/3b/3c/3d notes; required once applied |
 | `recurrence_acknowledged` | `owner <date>` when the owner let a contradiction that came back be fixed again |
 | `resume` | null until tried: `resumed` when the stopped run took the applied, invisible fix as an owner amendment (`workshop resume --amend-contract`, issue #100), `refused` when the run predates it and the loop relaunched instead. `ledger.py next` prints `resume-amendment` while an applied invisible entry of the last attempt has none |
 | `design_check` | `name`, `issue` (or null when the check landed with no issue) and `status` (`proposed`, `open`, `merged`) of the `design-a-toy` check that catches the class |

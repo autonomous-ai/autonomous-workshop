@@ -1944,9 +1944,11 @@ def _validate_review_print_gates(
     print gates, so the product is not print-ready and must say so.  A
     non-empty mapping has to name real, passing reports whose bytes hash to what
     the review recorded, and to cover both gates -- a wall measurement with no
-    overhang measurement is half an answer.  The host reruns the verifier in the
-    tier the product declares, so this binds the *review* to the same evidence
-    rather than standing in for that gate.
+    overhang measurement is half an answer.  This binds the *review* to the
+    same evidence the final verifier read.  For Forge and Quest the host reruns
+    the verifier in the tier the product declares; Spark accepts Make's output
+    without rerunning it (ADR 0061), so for Spark this check and the in-run
+    final verifier are the print-ready evidence.
     """
 
     bindings = review["print_gate_sha256s"]
@@ -2114,6 +2116,57 @@ def _sealed_geometry_requirement_rows(
 _GEOMETRY_PACKET_VIEWS = ("sheet",)
 
 
+def _component_review_backing(
+    project_path: Path, geometry: str, summary: Mapping[str, Any]
+) -> Optional[dict[str, Any]]:
+    """The proven Component Review that stands as one geometry's evidence,
+    or None when the blind critic must read that geometry.
+
+    A Component passes on its independent Component Reviewer's recorded
+    judgement of its own sheet (ADR 0076, ADR 0077). Where that reviewer is
+    proven -- the Component's state binds the reviewer's native agent id
+    (issue #77), which the host checks at Make acceptance -- a blind read of
+    the same sheet adds nothing, so the review is the evidence. It counts when
+    it agrees, or is a Component Acceptance, and judged the Component's
+    contract rows met (``matches_plan``); a carried review still names the
+    round it judged. An older run, a runtime that cannot prove its reviewer
+    (Codex today), a Component with no review and an acceptance whose
+    reviewer found the rows unmet keep the blind read. Returns ``{"round",
+    "reason"}``: the reviewed round and the reviewer's own reason."""
+
+    review = summary.get("review")
+    if not isinstance(review, dict):
+        return None
+    state_path = (
+        project_path / "measure/component-rounds" / geometry / "make-round-state.json"
+    )
+    try:
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    reviewer = review.get("reviewer")
+    reviewed_round = review.get("round")
+    reason = review.get("reason")
+    if (
+        not isinstance(state, dict)
+        or not isinstance(reviewer, str)
+        or not reviewer
+        or state.get("reviewer_id") != reviewer
+        or type(reviewed_round) is not int
+        or type(summary.get("round")) is not int
+        or not 1 <= reviewed_round <= summary["round"]
+        or not isinstance(reason, str)
+        or not reason.strip()
+        or review.get("matches_plan") is not True
+    ):
+        return None
+    if review.get("agrees") is not True and not isinstance(
+        summary.get("accepted"), dict
+    ):
+        return None
+    return {"round": reviewed_round, "reason": reason}
+
+
 def _validate_geometry_requirements(
     run_root: Path,
     *,
@@ -2122,18 +2175,25 @@ def _validate_geometry_requirements(
     project_relative: PurePosixPath,
 ) -> None:
     """Bind every geometry-scoped row (ADR 0072, issue 54) to a current,
-    passing Component's hashed visual packet, and count one blind read per
-    Unique Geometry that carries such a row.
+    passing Component's hashed visual packet, and check each row's evidence.
 
-    Each Unique Geometry's blind read records its own ``review_rounds``
-    (issue 55), separate from the assembly review's. Binding a row's
-    ``packet_sha256`` to the Component's *current* passing packet is what
-    lets an unaffected geometry's read carry forward unchanged across a
-    repair: a Component nobody repaired still has the same packet hash, so
-    its row needs no new round, while a repaired Component's packet hash
-    moves and its row must rebind -- the same reasoning ADR 0069 uses to
-    carry byte-identical parts forward. Assembly-scoped reads have no such
-    per-Component binding, so any geometry change still invalidates them."""
+    A Component with a proven Component Review (``_component_review_backing``)
+    has that review as its evidence: its rows bind the packet the reviewer
+    judged and quote the reviewer's ``reason`` verbatim as ``blind_evidence``,
+    and the blind critic does not read that geometry. Every other Unique
+    Geometry with such a row keeps one blind read in ``geometry_blind_reads``,
+    ordered by first row, with its own ``review_rounds`` (issue 55), separate
+    from the assembly review's; the field is left out when no geometry needs
+    one. A review that lists a blind read for every geometry (the shape before
+    proven reviews counted) is still accepted.
+
+    Binding a row's ``packet_sha256`` to the Component's *current* passing
+    packet is what lets an unaffected geometry's evidence carry forward
+    unchanged across a repair: a Component nobody repaired still has the same
+    packet hash, so its row needs no new round, while a repaired Component's
+    packet hash moves and its row must rebind -- the same reasoning ADR 0069
+    uses to carry byte-identical parts forward. Assembly-scoped reads have no
+    such per-Component binding, so any geometry change still invalidates them."""
 
     requirements = _array(
         review["geometry_form_requirements"],
@@ -2154,6 +2214,7 @@ def _validate_geometry_requirements(
     project_path = run_root.joinpath(*project_relative.parts)
 
     distinct_geometries: list[str] = []
+    unbacked: list[str] = []
     for index, (raw_requirement, (geometry, text)) in enumerate(
         zip(requirements, sealed_rows), 1
     ):
@@ -2182,7 +2243,7 @@ def _validate_geometry_requirements(
                 "Make geometry form requirements must match the sealed contract's "
                 "geometry requirements exactly"
             )
-        _bounded_text(
+        evidence = _bounded_text(
             requirement["blind_evidence"],
             "Make geometry form requirement %d evidence" % index,
             1_000,
@@ -2221,11 +2282,13 @@ def _validate_geometry_requirements(
                 "Make geometry form requirement %d has no bound Component visual "
                 "packet: %s" % (index, reason)
             )
+        backing = _component_review_backing(project_path, geometry, summary)
+        packet_round = summary["round"] if backing is None else backing["round"]
         packet_relative = (
             project_relative
             / "measure/component-rounds"
             / geometry
-            / ("r%04d" % summary["round"])
+            / ("r%04d" % packet_round)
             / "visual-packet.json"
         )
         packet, packet_content, _ = _read_json(
@@ -2238,6 +2301,12 @@ def _validate_geometry_requirements(
                 "Make geometry form requirement %d is not bound to its Component's "
                 "current visual packet" % index
             )
+        if backing is not None and evidence != backing["reason"]:
+            raise ProposalError(
+                "Make geometry form requirement %d must quote its Component Review "
+                "of r%04d verbatim: its blind_evidence is the review's reason in "
+                "that round's summary.json" % (index, backing["round"])
+            )
         images = packet.get("images")
         suffix = "/visual/%s.png" % view
         if not isinstance(images, dict) or not any(
@@ -2249,17 +2318,30 @@ def _validate_geometry_requirements(
             )
         if geometry not in distinct_geometries:
             distinct_geometries.append(geometry)
+        if backing is None and geometry not in unbacked:
+            unbacked.append(geometry)
 
+    raw_blind_reads = review.get("geometry_blind_reads")
+    if raw_blind_reads is None:
+        if unbacked:
+            raise ProposalError(
+                "Make geometry blind reads are required for each Unique Geometry "
+                "whose Component has no proven Component Review: %s"
+                % ", ".join(unbacked)
+            )
+        return
     blind_reads = _array(
-        review["geometry_blind_reads"], "Make geometry blind reads", nonempty=True
+        raw_blind_reads, "Make geometry blind reads", nonempty=True
     )
-    if len(blind_reads) != len(distinct_geometries):
+    expected = unbacked if len(blind_reads) == len(unbacked) else distinct_geometries
+    if len(blind_reads) != len(expected):
         raise ProposalError(
             "Make geometry blind reads must have exactly one entry per Unique "
-            "Geometry with a geometry-scoped requirement"
+            "Geometry with a geometry-scoped requirement and no proven Component "
+            "Review"
         )
     for index, (raw_blind_read, geometry) in enumerate(
-        zip(blind_reads, distinct_geometries), 1
+        zip(blind_reads, expected), 1
     ):
         blind_read = _fields(
             raw_blind_read,
@@ -2384,10 +2466,11 @@ def _validate_signature_review(
     if design_contract is not None:
         review_fields = review_fields | {"requirements_source", "blind_rereads"}
     if sealed_geometry_rows:
-        review_fields = review_fields | {
-            "geometry_form_requirements",
-            "geometry_blind_reads",
-        }
+        review_fields = review_fields | {"geometry_form_requirements"}
+        # A geometry whose Component has a proven Component Review needs no
+        # blind read; the field is required only for the others (below).
+        if isinstance(review, dict) and "geometry_blind_reads" in review:
+            review_fields = review_fields | {"geometry_blind_reads"}
     review = _fields(review, review_fields, "Make signature review")
     expected_schema_version = 9 if design_contract is not None else 8
     if (

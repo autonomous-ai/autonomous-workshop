@@ -72,7 +72,7 @@ uv run workshop wish --contract build-a-toy/r00/CONTRACT.md --inventor <inventor
 it. When the receipt prints, check that its `References:` line reports as
 many images as the contract lists, its `Guides:` line as many Guide
 Images, and its `Print art:` line as many print art files. If the counts
-differ, stop: the likeness gate will score the wrong set.
+differ, stop: the reviewers would judge the wrong set.
 
 A schema 6 toy (ADR 0091) ships its Print Sheets: the accepted receipt
 lists each on a `Print Sheet:` line, and the toy archive holds them under
@@ -370,9 +370,10 @@ one of these: fold it as above.) Fix the contract:
    rows verbatim, a `signature` of `<check>:<component>` (the
    `design-a-toy` check that covers this class, and the Component), and the
    amendment.
-2. **Re-audit the whole contract** with `design-a-toy` Stages 3b (for every
-   image the amendment touches), 3c, 3d and 3e: every Component and every check,
-   not only the changed row. Record the notes' path in `reaudit`. A new
+2. **Re-audit the whole contract** with `design-a-toy` Stages 3a (the
+   Contract Proof on the amended contract, with a fresh read when a shape,
+   size or position changed), 3b (for every image the amendment touches), 3c
+   and 3d: every Component and every check, not only the changed row. Record the notes' path in `reaudit`. A new
    contradiction the re-audit finds goes into the same amendment.
 3. **Give `design-a-toy` a check that would have caught it**, when it has
    none: open a harness issue and fix it like any harness defect, and record
@@ -424,8 +425,8 @@ contract is skipped. Back up `CONTRACT.md`, review the draft, then copy it
 over `CONTRACT.md` and add `amend-<x>` to `contract_versions`. Append each
 printed entry to `in_run_amendments` with `contract_version: amend-<x>`. It
 needs no owner approval (the run's Contract Reviewer found it invisible) and
-no separate re-audit beyond Stage 3c and 3d on the rows it changed, and
-Stage 3e's lint on the folded contract. A change
+no separate re-audit beyond the Contract Proof (Stage 3a) on the folded
+contract and Stage 3c and 3d on the rows it changed. A change
 `fold` refuses (the row no longer reads as the run quoted it, because an
 outer-loop amendment changed it since) is folded by hand, leaving `folded:
 false` until it is; `ledger.py next` lists it as pending. A refused

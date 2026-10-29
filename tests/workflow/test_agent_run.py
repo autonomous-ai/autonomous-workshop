@@ -687,6 +687,48 @@ class AgentRunTest(unittest.TestCase):
         self.assertEqual(after.input_sha256s[".agents/skills/autonomous-workshop/SKILL.md"],
                          before.input_sha256s[".agents/skills/autonomous-workshop/SKILL.md"])
 
+    def test_review_refresh_of_make_brings_its_companion_references(self):
+        # A run materialized before make.md pointed at its companions gets
+        # them with the refreshed make.md, and nothing else of the skill.
+        marker = self.skill / "references/token-budget-v1.md"
+        marker.write_bytes(b"token rules\n")
+        make = self.skill / "references/make.md"
+        make.write_bytes(b"old make contract\n")
+        run = self.create()
+        prefix = ".agents/skills/autonomous-workshop/"
+        self.assertNotIn(prefix + "references/make-older-runs.md",
+                         run.snapshot().input_sha256s)
+        make.write_bytes(b"new make contract; read make-older-runs.md\n")
+        (self.skill / "references/make-older-runs.md").write_bytes(b"older runs\n")
+        (self.skill / "references/make-forge-quest.md").write_bytes(b"forge and quest\n")
+        (self.skill / "references/unrelated-v2.md").write_bytes(b"not a companion\n")
+        changes = run.refresh_domain_skill_tools(
+            {}, reason="refresh make", token_budget_skill_root=self.skill
+        )
+        self.assertEqual(
+            sorted((c["path"], c["previous_sha256"] is None) for c in changes),
+            [(prefix + "references/make-forge-quest.md", True),
+             (prefix + "references/make-older-runs.md", True),
+             (prefix + "references/make.md", False)],
+        )
+        inputs = run.snapshot().input_sha256s
+        self.assertNotIn(prefix + "references/unrelated-v2.md", inputs)
+        self.assertEqual(
+            (run.run_root / prefix / "references/make-older-runs.md").read_bytes(),
+            b"older runs\n",
+        )
+
+    def test_review_refresh_without_make_introduces_no_companion(self):
+        marker = self.skill / "references/token-budget-v1.md"
+        marker.write_bytes(b"token rules\n")
+        run = self.create()
+        (self.skill / "references/make-older-runs.md").write_bytes(b"older runs\n")
+        self.assertEqual(
+            run.refresh_domain_skill_tools(
+                {}, reason="refresh", token_budget_skill_root=self.skill),
+            (),
+        )
+
     def test_create_materializes_custom_agent_roster_and_executable_skills(self):
         cad = self.root / "cad-skill"
         (cad / "scripts").mkdir(parents=True)

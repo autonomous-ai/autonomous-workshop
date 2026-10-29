@@ -3,12 +3,8 @@ name: autonomous-workshop
 description: Run, resume, or diagnose one Autonomous Workshop Wish through its frozen Spark, Forge, or Quest effort route using native Manager Goals, tools, and subagents while preserving deterministic host gates and host-controlled effects.
 ---
 
-**Motion policy:** read run-root `MAKE-OPTIONS.json`. When `check_motion` is
-false (the default for new runs), skip motion sweeps, required animation and
-motion review below; report motion unverified. When true, retain the full
-motion contract. A missing options file in an older run retains mandatory
-motion verification. See the root `AGENTS.md` operator-selected policy.
-
+**Motion policy:** follow run-root `MAKE-OPTIONS.json` `check_motion` as the
+root `AGENTS.md` says; false (the default) leaves motion unverified.
 
 # Autonomous Workshop
 
@@ -98,27 +94,15 @@ few decisions and checks that make it real.
 - For Spark, treat the low reasoning profile as a focus constraint rather than
   a quality waiver: choose the signature interaction early, keep one complete
   build on the critical path, batch independent tool work, and spend additional
-  cycles only on a concrete failing check or visible product defect. A sealed
-  reference that has not been scored, or scores below its floor, is a failing
-  check, and an organic feature the reference shows built as a plain box is a
-  visible defect (ADR 0074).
+  cycles only on a concrete failing check or visible product defect. An
+  organic feature the reference shows built as a plain box is a visible
+  defect.
 - For Forge and Quest, spend high reasoning where it changes the concept and
-  exact final product. Invent begins with a 20-minute high-reasoning turn and
-  receives one decisive 10-minute medium recovery when needed. Make begins
-  with one 16-minute medium proof runway and resumes the same Goal at high
-  reasoning as soon as its exact proof-ready marker exists. Later turns retain
-  60 minutes, and every stage compacts at 256k. These
-  boundaries and compacted context are focus constraints, not quality waivers. In Make, the
-  first persisted deliverable is the smallest exact causal or kinematic proof
-  plus neutral held/signature blockout renders under
-  `<cad-project>/review/early-proof/`. Inspect it before authoring the complete
-  part tree or detailed final geometry. Batch mandatory reads, author source as
-  the next durable action, and use root inspection for this cheap early
-  direction check. One independent native critic must still blindly review the
-  canonical final images before learning the Wish, then compare every exact
-  positive and negative held-form requirement. Self-review cannot pass that
-  final boundary. If the early proof is expensive or
-  ambiguous, simplify the mechanism while preserving the signature magic.
+  exact final product. Their frozen proof turns and Make differences are in
+  [references/make-forge-quest.md](references/make-forge-quest.md); a proof
+  turn's host prompt is exact. One independent native critic must still
+  blindly review the canonical final images before learning the Wish;
+  self-review cannot pass that final boundary.
 
 ## Run one native Goal for the current stage
 

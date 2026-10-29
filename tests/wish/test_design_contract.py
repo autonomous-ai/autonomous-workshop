@@ -503,7 +503,7 @@ class InterfaceTextTest(unittest.TestCase):
         self.assertIn("text needs schema_version 4", self._refused(camera))
 
     def test_an_unknown_schema_is_refused(self):
-        self.assertIn("schema_version must be 1, 2, 3, 4, 5, 6, 7 or 8", self._refused(_block(schema_version=9)))
+        self.assertIn("schema_version must be 1, 2, 3, 4, 5, 6, 7, 8 or 9", self._refused(_block(schema_version=10)))
 
 
 def _guide_block(**overrides):
@@ -796,3 +796,51 @@ class ProseSectionTest(unittest.TestCase):
         self.assertNotIn("prose", sealed)
         self.assertTrue(all("prose_sections" not in item for item in sealed["geometries"]))
         self.assertIsNone(contract.prose)
+
+
+class NoWallSchemaTest(unittest.TestCase):
+    """ADR 0094: schema 9 is schema 8 with ``wall_min_mm`` refused."""
+
+    def _schema9(self):
+        block = _prose_block(schema_version=9)
+        for geometry in block["geometries"]:
+            del geometry["wall_min_mm"]
+        return block
+
+    def _refused(self, block):
+        with self.assertRaises(ContractError) as caught:
+            parse_design_contract(_contract_text(block, prose=_PROSE))
+        return str(caught.exception)
+
+    def test_a_schema_9_contract_seals_without_wall_min(self):
+        block = self._schema9()
+        contract = parse_design_contract(_contract_text(block, prose=_PROSE))
+        self.assertEqual(contract.schema_version, 9)
+        self.assertIsNone(contract.geometries[0].wall_min_mm)
+        sealed = contract.to_dict()
+        self.assertEqual(sealed["geometries"], block["geometries"])
+        self.assertTrue(all("wall_min_mm" not in item for item in sealed["geometries"]))
+        self.assertEqual(contract.geometries[0].prose_sections, ("Wing",))
+        contract.check_sealable()
+
+    def test_schema_9_refuses_a_wall_min_naming_it(self):
+        block = self._schema9()
+        block["geometries"][1]["wall_min_mm"] = 1.2
+        message = self._refused(block)
+        self.assertIn("geometries[1].wall_min_mm is not part of schema_version 9", message)
+        self.assertNotIn("geometries[0]", message)
+
+    def test_schema_9_keeps_schema_8s_prose_and_guide_rules(self):
+        block = self._schema9()
+        block["guides"][1]["geometries"] = ["wing"]
+        self.assertIn("geometry 'heart-core' is named by no guides[] entry's geometries", self._refused(block))
+        block = self._schema9()
+        del block["geometries"][0]["prose_sections"]
+        self.assertIn("geometries[0].prose_sections must name at least one", self._refused(block))
+
+    def test_schema_8_still_requires_its_wall_min(self):
+        block = _prose_block()
+        del block["geometries"][0]["wall_min_mm"]
+        self.assertIn("geometries[0].wall_min_mm must be a positive number", self._refused(block))
+        sealed = parse_design_contract(_contract_text(_prose_block(), prose=_PROSE)).to_dict()
+        self.assertEqual(sealed["geometries"][0]["wall_min_mm"], 1.2)

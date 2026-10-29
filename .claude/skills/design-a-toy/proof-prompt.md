@@ -19,12 +19,15 @@ Work in `<OUT>`, a CAD project laid out as Make lays one out:
   Z 0, and its `assembly_pose(shape, pose, instance=1)` returns the shape
   placed in the Display Pose when `pose` is None (ADR 0083), for each
   instance up to the geometry's `count`.
-- For a kit (an `assembly_tree`), a Component of several Parts is
-  `PRINTABLE = False`, and each printed Part also gets
-  `<OUT>/print_<part-id>.step.py` returning that Part alone in its print
-  stance, `PRINTABLE = True`. Each printed Part is coloured with its
-  filament's `hex` from `filaments.json`; every Bought Part is magenta
-  `#ff00ff`.
+- For a kit (an `assembly_tree`), each Component's `part_<geometry-id>.step.py`
+  is what Make's Component Worker writes (ADR 0092): its `gen_step()`
+  returns one body per Part, labelled with the Part id (copies `<id>#1`,
+  `<id>#2`), and it also defines `print_parts()`, returning
+  `{Part id: shape}`: every printed Part of the Component once (no `#n`),
+  each alone in the stance it prints in, bottom at Z 0, and never a Bought
+  Part or a Print Piece. Make's print gates measure those Parts, never the
+  assembled Component. Each printed Part is coloured with its filament's
+  `hex` from `filaments.json`; every Bought Part is magenta `#ff00ff`.
 
 Use only numbers the contract states, or numbers that follow from them by
 arithmetic you can show. A printer setting the contract leaves to the
@@ -58,21 +61,45 @@ contract's nozzle) is read from the library, not chosen.
    step of a stated motion (sweep it at 10 degree steps or finer with
    `scripts/inspect interfere` or a distance check), "meets", "flush",
    "clear of", "level with". A contradiction hidden behind another part in
-   every view is still a contradiction.
-4. **Print gates.** On every printable entry (each `part_` entry of a toy
-   that prints each Component whole, or each `print_` entry of a kit), run
-   Make's own gates from the CAD skill, in Make's order: `scripts/check_mesh
-   <entry>`, and when it passes, `scripts/check_overhang <entry> --angle 45`
-   and `scripts/check_thickness <entry> --nozzle <NOZZLE>`. Add every
-   failure to `FINDINGS.md` under a heading of its own: the entry, the gate,
+   every view is still a contradiction. So is one fact stated in two places
+   with two values: a box, an envelope, a move's angle or a position given
+   in the prose, a requirement row, an Interface text or the block
+   (`envelope_mm`, `extents_mm`, Interface poses) that do not agree. Quote
+   both.
+   Under a heading "Placement", list every detail you model on another
+   detail or on a curved host that breaks the print-details placement rules:
+   a host narrower than the detail plus 0.5 mm on each side, a raised detail
+   standing less than 0.5 mm above a concave host anywhere across the curve,
+   or copies in a row closer than 0.5 mm.
+4. **Print gates.** Run Make's own print gates, the code a Make round runs,
+   with this one command from the repository root:
+
+   ```
+   uv run python src/workshop/make/skills/make-round/scripts/make_round <OUT> --print-gates-only --nozzle <NOZZLE> --overhang-angle 45 --contract <CONTRACT>
+   ```
+
+   It builds every `part_` entry and gates it as Make does: `check_mesh`,
+   `check_overhang` and `check_thickness`, a kit Component Part by Part from
+   its `print_parts()`. It prints a `wall`, `over` and `mesh` line per part
+   (per Part of a kit: `cabinet/B04-top-board`), each failure with the
+   region it names; it exits 1 on any failure and writes only inside
+   `<OUT>`, its reports under `<OUT>/measure/print-gates/`. Never run the CAD
+   skill's `check_` scripts yourself: only this command measures what Make
+   measures. A `parts FAIL` line is your modelling, not the contract's: fix
+   `print_parts()` and run it again. Add every gate failure to
+   `FINDINGS.md` under a heading of its own: the part (and Part), the gate,
    the region it names and the contract words that put the material there.
    Never change the model to pass a gate: a failing gate on the contract's
    own numbers is the finding. Also list, under "At the limit", every wall,
    web, land, relief or cut the contract sizes exactly at its print minimum
-   (a 0.80 web at a 0.8 minimum): it passes here and can fail in Make, where
-   the gate measures it inside a larger model on a coarser grid (the
-   cabinet pilot's 0.80 notch web read 0.66). The designer gives each one
-   margin.
+   (a 0.80 web at a 0.8 minimum): it can pass here and fail in Make, whose
+   model of it differs in detail and can be measured on a coarser grid (the
+   cabinet pilot's 0.80 notch web read 0.66). List there too every
+   down-facing face the contract designs to rise between 45 and 52 degrees
+   from the bed (a 45 degree chamfer under a ledge): the gate fails below
+   45, and a face designed that close lands past it once tessellated; 52 is
+   the print-details library's design margin (`_DESIGN_MARGIN`). The
+   designer gives each one margin.
 
 Change nothing outside `<OUT>`, and never edit the contract. Reply with the
 number of guesses, contradictions and print-gate failures, and the path of

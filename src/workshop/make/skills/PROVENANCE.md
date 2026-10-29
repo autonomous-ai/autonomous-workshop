@@ -2476,3 +2476,52 @@ before. A Component that both defines `print_parts()` and hosts a Print
 Piece keeps its paper gate beside its Parts (the pilot's resumed round
 crashed sorting the paper job's unnamed key with the Part names). The `cad`
 and `make-round` locks move; a resync must keep these lines.
+
+## Local change: the Contract Proof runs Make's print gates (2026-10-28)
+
+A Workshop-local change (owner, 2026-10-28). The ADR 0093 cabinet pilot
+stopped after three component rounds because `design-a-toy`'s Contract
+Proof gated each kit Part flat with its own `check_*` calls while Make
+gated the assembled Component. `make_round --print-gates-only` builds every
+part of a CAD directory and runs a round's own print gates on it (the same
+job, parser and record functions, now shared by component and assembly
+rounds), a kit Component Part by Part from its `print_parts()` with its tree
+read from `--contract` or `tree/kit.json`, outside a Workshop run (it
+refuses inside one) with no nonce, Shared Helper
+freeze or round history, writing only inside the directory. Rounds gate
+exactly as before. The `make-round` lock moves; a resync must keep these
+lines.
+
+## Local change: a proven Component Review is a geometry's evidence (2026-10-28)
+
+A Workshop-local change (owner decision of 2026-10-28). In the vendored
+`cad` tree, `verify_project`'s signature-review preflight accepts a schema 9
+review whose `geometry_form_requirements` stand without
+`geometry_blind_reads`, and a `geometry_blind_reads` that lists only some of
+the Unique Geometries with rows, each at most once and in row order: the
+Make finalizer decides which geometry a proven Component Review covers and
+which still needs a blind read. The `cad` skill's text no longer says the
+host reruns the verifier or performs a fresh rebuild for Spark (ADR 0061):
+only Forge and Quest have that host gate (`SKILL.md`,
+`references/step-generation.md`, `references/print-optimisation.md`,
+`references/run-cost.md`). The `cad` lock moves; a resync must keep these
+lines.
+
+## Local change: a shorter make-round tool card (2026-10-28)
+
+A Workshop-local change (owner decision of 2026-10-28). `make-round/SKILL.md`
+moves the `workshop fix` carry-forward policy to `references/fix-runs.md` and
+the kit's Assembly Tree to `references/kit-tree.md`, read only when they
+apply, keeps the component-identities sidecar every run writes, points its
+waiting rule, the Blocked Report answers and the amendment proposal JSON at
+their one home, and says the `--fresh` host rebuild is Forge and Quest's. The
+`make-round` lock moves; a resync must keep these lines.
+
+## Local change: a schema 9 kit samples insertion at two print lines (2026-10-29)
+
+A Workshop-local change (owner, 2026-10-29, ADR 0094). Design Contract
+schema 9 states no `wall_min_mm`, so `make-round/scripts/kit_tree.py`'s
+insertion sweep samples no coarser than two print lines (0.8 mm at a 0.4 mm
+nozzle) when a geometry states none; a schema 7 or 8 kit keeps the smaller
+of two print lines and its geometries' `wall_min_mm`. The `make-round` lock
+moves; a resync must keep these lines.

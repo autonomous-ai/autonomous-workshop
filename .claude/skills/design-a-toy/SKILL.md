@@ -73,9 +73,8 @@ Drive to a written spec containing:
   stance by the face that lies on the bed.
 - **Blunt free edges.** Every point, chisel, keel and V underside ends in a
   flat land at least one print minimum across: 0.8 mm at Workshop's 0.4 mm
-  nozzle. The land is sized by the printer, never by a geometry's
-  `wall_min_mm`, which is a strength floor for load-bearing sections: a
-  3.0 mm land would turn a 3.5 mm claw into a stub. A wing tip, a horn, a crest feather or a vault ridge is drawn and
+  nozzle. The land is sized by the printer, never by a load-bearing
+  section's thickness: a 3.0 mm land would turn a 3.5 mm claw into a stub. A wing tip, a horn, a crest feather or a vault ridge is drawn and
   specified with that land, never as a knife edge. The print gate fails every
   straight knife edge as a thin wall, however its angle is tuned.
 - **Every joint, pinned.** For each pair of Components that join: the joint
@@ -122,8 +121,8 @@ sliding or spinning part — also drive to:
   diameter, joint range in degrees. "Rolls freely" or "poses well" is prose for
   the spec, never a requirement.
 - **The Display Pose.** One fixed arrangement of every moving part. The assembly
-  reference image and the built toy both use it, so the likeness gate compares
-  one silhouette against one silhouette.
+  reference image and the built toy both use it, so every review compares
+  one pose against one pose.
 
 Only when the human explicitly asks for a playable game, also drive to:
 
@@ -189,8 +188,8 @@ Every contract's prose carries the blunt-edge rule, word for word, in its
 print section: "Every point, chisel, keel and V underside ends in a flat land
 at least 0.8 mm across (one print minimum at a 0.4 mm nozzle)." The 0.8 mm
 changes only with the nozzle: a contract for a larger nozzle states that
-nozzle's print minimum instead. It never takes a geometry's `wall_min_mm`,
-which sizes load-bearing sections, not lands. A requirement row that names a
+nozzle's print minimum instead. It never takes a load-bearing section's
+thickness. A requirement row that names a
 sharp form says so too: "each wing ends in a chisel tip with a 0.8 mm land",
 never "a sharp chisel tip".
 
@@ -216,9 +215,9 @@ notice. Name each
 them, even though the files do not exist yet. A toy with more than one
 component also gets one `"shows": "assembly"` reference, listed first.
 
-Write the block as `"schema_version": 8` (ADR 0093), for every toy, kit or
+Write the block as `"schema_version": 9` (ADR 0094), for every toy, kit or
 not: [CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md) gives what
-schema 8 adds to the earlier schemas, and Stage 2b adds a kit's Assembly
+schema 9 keeps of the earlier schemas (schema 8 without `wall_min_mm`), and Stage 2b adds a kit's Assembly
 Tree to the same block. Every reference gets a `camera`
 (ADR 0083), which Stage 3b fills in once the image exists, and every place
 two or more Components meet gets an `interfaces[]` entry (ADR 0082): a peg in a socket, a
@@ -435,18 +434,17 @@ incomplete.
 A generated image is allowed to be looser than the spec in surface detail. That
 is a feature. The spec carries the millimetres, the image carries the silhouette
 and the read. It is **not** allowed to disagree with the spec in proportion,
-landmark position, count or side. Make is scored on the silhouette, so an image
-that draws a different body from the one the contract dimensions will fail the
-likeness gate however well Make builds. Stage 3b closes that gap before
-anything is sealed.
+landmark position, count or side. Make's reviewers judge the build against
+the image, so an image that draws a different body from the one the contract
+dimensions fails review however well Make builds. Stage 3b closes that gap
+before anything is sealed.
 
 Each image must be:
 
-- **800x800 or smaller.** The likeness gate extracts a silhouette, normalizes
-  height, and does not read color. Resolution beyond this buys no accuracy and
+- **800x800 or smaller.** Resolution beyond this buys the reviewers nothing and
   spends the Wish's 480 MiB image budget.
-- **One subject, fully inside the frame.** The gate rejects a reference whose
-  subject touches the image boundary. The assembled toy counts as one subject; a
+- **One subject, fully inside the frame.** A subject that touches the image
+  boundary cannot be compared whole. The assembled toy counts as one subject; a
   scene, a diorama or a populated board position does not.
 - **Named `ref-NN-<slug>.png`**, numbered from `01` in order with no gaps
   (`ref-100-<slug>` after `ref-99`). Lowercase kebab slug. `png`, `jpg`, or
@@ -461,8 +459,8 @@ For a kit, also make the one **kit image** the human approves the tree
 from: an **"in the box" flat lay** of every Part laid out loose, each as
 many times as the toy holds it, in its own filament colour, printed Parts
 grouped by colour, the Print Sheets and Bought Parts beside them, with no
-arrows. Render it from the Contract Proof's Part entries (Stage 3a), each
-Part flat in one true scale, never with AI: image models never got a flat
+arrows. Render it from the Contract Proof's Parts (each kit Component's
+`print_parts()`, Stage 3a), each Part flat in one true scale, never with AI: image models never got a flat
 lay's counts, handedness and scale right (the cabinet pilot plateaued at
 4-7 major errors over eight rounds), and a render from the Proof is exact
 by construction. Name it `kit-01-<slug>.png`. It is never sealed or passed
@@ -486,9 +484,9 @@ condition. Take the best image at the cap and note what fell short.
 Web imagery may be used as material to edit while composing an image. Judge
 whether a source is safe to build from, and **record the source URL of every web
 image you edit from** in the working notes beside the images. Never pass a found
-image through as the reference itself: the likeness gate writes a measured
-similarity score into the toy's public archive, and what that score describes
-must be the Inventor's own expression.
+image through as the reference itself: the reference is sealed into the toy's
+public archive beside the build, and what it shows must be the Inventor's own
+expression.
 
 ## Stage 3a - Contract Proof
 
@@ -503,12 +501,16 @@ and laid over an image it shows where the image and the numbers disagree.
    needs no image and runs while Stage 3 draws. Spawn a fresh subagent with
    [proof-prompt.md](proof-prompt.md), its paths filled in: the contract,
    `<contract-dir>/proof/` and the contract's nozzle. Give it nothing else.
-   It writes the CAD project, `GUESSES.md` and `FINDINGS.md`.
+   It writes the CAD project, `GUESSES.md` and `FINDINGS.md`. Keep this one
+   subagent for the whole design: every amendment goes to it, and it updates
+   the model it already has. A fresh reader per round rebuilt the cabinet
+   pilot from nothing six times, about 1.1 cost units and 20 minutes each,
+   and its rounds 4 to 6 found no real defect.
 2. **Guesses to zero.** Close every row of `GUESSES.md` in the contract,
    prose and row together: a number, an outline or a position, decided as
    the Inventor from the chosen Concept Image and the images. Where the
    choice truly does not matter, write "free" in the contract at that spot
-   (a hidden face's preview colour). Send the amended contract to the same
+   (a hidden face's preview colour). Send the amended contract to the kept
    Proof subagent, which still has seen no image, and repeat until its list
    is empty. The cabinet pilot listed 17 guesses, among them the door's arch
    curve, the inkwells' bulb and almost the whole feather fan.
@@ -545,20 +547,30 @@ and laid over an image it shows where the image and the numbers disagree.
    draws the door taller; 24.5 holds"). The Component Reviewer then lists it
    as a Reference Conflict from the first round, not as a difference.
 5. **Print gates.** `FINDINGS.md` lists every failure of Make's own print
-   gates (`check_mesh`, `check_overhang`, `check_thickness` at the
-   contract's nozzle) on the Proof's printable entries. Stage 3c resolves
-   them.
+   gates, run by Make's own code on every printable Part in its print
+   stance at the contract's nozzle, and every placement and At the limit
+   item. Stage 3c resolves them.
+6. **Fresh read.** When `GUESSES.md` is empty and `FINDINGS.md` has no
+   contradiction, spawn one **fresh** Proof subagent with the same prompt
+   on the contract as it stands, before Stage 4. The kept subagent reads
+   the contract as it already modelled it; a fresh one finds the silences
+   the kept one filled from memory and a fact an amendment changed in one
+   place only. Close what it finds with the kept subagent. Run another
+   fresh read only after a change to a shape, size or position (a Stage 4
+   change, a `build-a-toy` root amendment), never after a change of words
+   alone.
 
-The Proof runs again after **every** amendment, from here to Stage 5:
-send the amended contract to the Proof subagent (a fresh one once its
-context is gone, never one that has seen an image), then redo the compares
-and print gates the change touches.
+The Proof runs again after **every** amendment, from here to Stage 5 and in
+every `build-a-toy` root amendment: send the amended contract to the kept
+Proof subagent (a new one only once its context is gone, never one that has
+seen an image), then redo the compares and print gates the change touches.
 
 Record the guesses, findings and compares in the working notes.
 
-Done when: `GUESSES.md` is empty, `FINDINGS.md` has no contradiction, every
-compare shows no difference over the tolerance that its Component's rows do
-not name, and all of it ran on the contract as it now stands.
+Done when: `GUESSES.md` is empty, `FINDINGS.md` has no contradiction, the
+fresh read found nothing open, every compare shows no difference over the
+tolerance that its Component's rows do not name, and all of it ran on the
+contract as it now stands.
 
 ### Trial: a Component reference edited from the Proof
 
@@ -597,62 +609,35 @@ the assembly reference stays AI-drawn from the chosen Concept Image.
    ```
 
 The owner chooses at Stage 4 which image becomes the Reference Image. The
-one chosen goes through Stages 3b to 3e like any reference.
+one chosen goes through Stages 3b to 3d like any reference.
 
 ## Stage 3b - Reconcile every image with the contract
 
 An image that passes its own criteria can still describe a different toy.
-Before Stage 4, **measure** every image against the drafted contract. Do not
-judge by eye. Measuring scripts are allowed here. They read an image; they do
-not draw one. Stage 3a's overlays are the first instrument: the Proof sits at
-contract scale beside each image, so read aspect, landmarks, masses and every
-dimensioned feature off them, and measure the image alone only for what the
-Proof does not draw.
+Before Stage 4, reconcile every image with the drafted contract from its
+Stage 3a compare: the Proof at contract scale beside the image and laid
+over it. The Proof is the contract's numbers drawn at the image's camera, so
+the overlay shows every place the two part. Do not measure the image by
+hand for what the Proof draws. Measuring scripts are allowed; they read an
+image and never draw one.
 
-For each image, take its alpha silhouette and check:
+Read off every compare, the assembly image's and each Component's:
 
-1. **Aspect.** Compare the silhouette's width to height with the contract's
-   ratio in the view the image shows. For a component, that is its extents; for
-   the assembly, the envelope in the Display Pose. A component image must show
-   the view its extents describe, orthographic front or side, so the two
-   ratios compare.
-2. **Landmarks.** Scale the image to the contract's height and draw the
-   contract's datums over it. For the assembly, these are every stated Z height
-   and X position: base top, pelvis, heart, hinge axes, shoulders, crest top.
-   For a component, they are its named features: window centre, hole
-   positions, bend angle. Read off where the image puts each one.
-3. **Masses.** Compare the width of each major body at its own height with the
-   contract dimension. A torso, a head, a base or a wing root are examples. A
-   56 mm torso drawn as a 33 mm skeleton is a disagreement even when the
-   overall aspect matches. In the assembly image, measure each body's left
-   and right edge too, not only its width, against the bodies above and
-   below it: a shin block drawn flush under its thigh but contracted 4 mm
-   wider on the outer side only reads as a leg shifted sideways, though each
-   width alone passes.
-4. **Counts, sides and orientation.** Tooth, blade, spoke and finger counts;
-   which side the eye or the claw is on; which way a hole faces. Count blades
-   and teeth by machine (edge crossings along a scan line), not by eye.
-5. **Every dimensioned feature.** Go through the contract, prose and block,
-   and list every millimetre number that describes something an image shows:
-   a hole or window diameter, a blade or rib width, a shaft diameter, a claw
-   or segment length, a gap, a depth seen from the side. Measure each one in
-   the image at contract scale, one row per number. A number with no row
-   means Stage 3b is not done. Broken God round 0 passed checks 1 to 4 and
-   still shipped crude parts: the contract said a 20 mm heart window, 5-8 mm
-   wing blades and 18 mm claws, and the images drew 9 mm, 11-13 mm and
-   37 mm. Make followed the numbers, and every part came out a different
-   shape from its picture.
+1. **Outline.** The silhouette's width at every height, and every place it
+   steps in or out, stands proud, curls or is cut away. A detail the
+   contract writes as a groove on a plain face, where the image draws it
+   changing the silhouette, is a disagreement.
+2. **Landmarks and masses.** Every stated height and position, and each
+   body's width and both its edges against the bodies above and below it:
+   a block drawn flush under its neighbour but contracted wider on one side
+   reads as shifted, though its width passes.
+3. **Counts, sides and orientation.** Teeth, blades, spokes, rivets,
+   fingers; which side a feature is on; which way a hole faces. Count by
+   machine (edge crossings along a scan line), not by eye.
 
-   Then the **outline**. In each component image, measure the silhouette's width at
-   every tenth of its height and every place it steps in or out, stands
-   proud, curls or is cut away. Each one is a contract statement of outline:
-   how far it stands proud, where it steps and where it is cut away. A
-   detail the contract writes as an engraved line or a groove on a plain face
-   while the image draws it changing the silhouette is a disagreement,
-   however the feature list reads ("four fingers, a thumb: drawn, ok" passed
-   a fist the contract kept as a box).
+Then check what the overlay does not decide:
 
-6. **Reference Camera.** Estimate, by eye, the camera each image shows its
+4. **Reference Camera.** Estimate, by eye, the camera each image shows its
    subject from: `[AZ, EL]` in degrees, in the Display Pose (assembly)
    frame, rounded to 15 degrees, in the convention
    [CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md) gives (AZ -90 is
@@ -663,9 +648,9 @@ For each image, take its alpha silhouette and check:
    above"), and the camera into the image's `references[]` entry. Make
    renders the Component from exactly this camera beside its image, so a
    camera that shows the wrong side wastes a run. There is no silhouette
-   pose search; the estimate is yours.
-
-7. **Joint features.** For every joint feature an Interface puts on a
+   pose search; the estimate is yours, and the compare made at it shows a
+   wrong estimate at once.
+5. **Joint features.** For every joint feature an Interface puts on a
    Component (a peg, a socket, a plug, a seat face), look at that
    Component's image from its Reference Camera. If the camera can see the
    feature, the image must show it as the Interface `text` contracts it:
@@ -674,14 +659,12 @@ For each image, take its alpha silhouette and check:
    If the camera cannot see it, the image need not show it. An image left
    showing what the contract forbids becomes a Reference Conflict in every
    review of that Component.
-
-8. **Part colours** (kit). For each printed Part an image shows, sample its
+6. **Part colours** (kit). For each printed Part an image shows, sample its
    colour where the Part is lit flat and compare it with its filament's
    `hex` in `filaments.json`. A large miss (another colour family, or a
    light colour drawn dark) is a disagreement: regenerate or edit the image
    with the Part's colour named in the prompt. Shading is not a miss.
-
-9. **Visible faces.** Every face an image shows must be visible from its
+7. **Visible faces.** Every face an image shows must be visible from its
    Reference Camera in the Display Pose. For each moving or opening part (a
    door, a lid, a flap), name the faces the camera sees with the part in
    its Display Pose, and compare them with what the image draws. A door's
@@ -690,11 +673,12 @@ For each image, take its alpha silhouette and check:
    show it. Fix it by changing the composition (the open door continues the
    side panel forward) or the camera, never by accepting it.
 
-A measurement is a **disagreement** when it is off by more than 5% of the
+A difference is a **disagreement** when it is off by more than 5% of the
 dimension it measures and by more than 0.5 mm. The 0.5 mm floor is for small
 features, where 5% is less than the measuring error. Any count, side or
-orientation that differs is also a disagreement. Record every check in the
-working notes as a table: image, check, contract value, image value, verdict.
+orientation that differs is also a disagreement. Record each disagreement in
+the working notes: image, what differs, contract value, image value,
+resolution.
 
 **Resolve each disagreement by judging which one is right.** Do not assume the
 contract wins. Look at the image as the Inventor would, against the Taste:
@@ -704,25 +688,27 @@ contract wins. Look at the image as the Inventor would, against the Taste:
   match the image. Change the prose and the block together, and derive the new
   numbers from the image's measured proportions. Redo every feasibility check
   the changed numbers touch: gear centres, joint ranges, clearances, walls,
-  bed size. Then re-measure **every** image against the
-  amended contract, because one changed height can move five landmarks.
+  bed size. The kept Proof subagent rebuilds on the amended contract; then
+  read **every** compare again, because one changed height can move five
+  landmarks.
 - **The contract is better, or the image is not buildable as drawn.** Then fix
   the image by AI editing or regeneration, never by hand. An anisotropic resize
   of the keyed silhouette may close a residual aspect gap of up to 20%. It
   cannot fix a landmark or a mass that sits in the wrong place.
 
-The assembly image matters most. The final likeness gate scores it against the
-whole built toy, so its landmarks and masses must match the contract before
+The assembly image matters most: the blind review judges the built toy
+against it, so its landmarks and masses must match the contract before
 anything else is accepted.
 
 Make these decisions yourself and keep going. Do not show the human the
-disagreement table or a contract diff: they review the images in Stage 4, and
+disagreement list or a contract diff: they review the images in Stage 4, and
 the contract follows whatever images they approve.
 
-Done when: no disagreement remains, and every dimensioned feature has its
-row. A disagreement you cannot close after the round cap is not waved through:
-raise it at Stage 4 as a visible difference in the picture ("the image shows
-three horns, the build will have two").
+Done when: no disagreement remains on any compare, and every image has its
+camera. A disagreement you cannot close after the round cap is not waved
+through: keep the image and name it in that Component's row (Stage 3a step
+4), and raise it at Stage 4 as a visible difference in the picture ("the
+image shows three horns, the build will have two").
 
 ### Guide Images
 
@@ -821,18 +807,17 @@ reference whose printed area shows something the art does not, or the art.
 
 ## Stage 3c - Check that what the images show can be printed
 
-The build is scored against these images, so everything they show must be
-printable at the size the contract gives it. Otherwise Make has to simplify it,
-and a simplified part looks crude next to its picture. Workshop prints with a
-0.4 mm nozzle, and its print gate refuses any part that needs support.
+Make builds against these images, so everything they show must be
+printable at the size the contract gives it. Otherwise Make has to simplify
+it, and a simplified part looks crude next to its picture. Workshop prints
+with a 0.4 mm nozzle, and its print gate refuses any part that needs
+support.
 
-Start from the Contract Proof's print gates (Stage 3a step 5): Make's own
-`check_thickness`, `check_overhang` and `check_mesh`, run on the contract's
-numbers at its nozzle. They replace measuring scaled AI images for every
-feature the Proof models: resolve each failure they name with the lists
-below. The checks below the table still run, because no gate sees them: a
-detail the Proof does not model, stacked and curved placements, hidden
-joints and ceilings over moving parts.
+Start from the Contract Proof's `FINDINGS.md` (Stage 3a step 5). Its print
+gates are Make's own, run by Make's own code on every printable Part in its
+print stance at the contract's nozzle, so a Part that passes there passes
+the same gates in Make. Resolve every failure it names with the lists
+below. Do not measure scaled AI images for anything the Proof models.
 
 Every fine detail at risk was answered by the human in Stage 1. One you find
 now that has no answer goes back to the human the same way, with true-size
@@ -857,23 +842,22 @@ at Workshop's 0.4 mm nozzle they are:
 | An engraved or inset cut | 0.5 mm deep | `min_cut_depth` |
 | Material between two cut copies: slits or windows side by side | 1.6 mm | `min_web` |
 
-Then check every feature **against its print stance and its floor**. For each
-groove, slot, notch, curl, proud detail and cut-away the contract gives, turn
-it into the stance the contract names and check that it prints without
-support: an open-top groove or slot is free; one whose opening faces sideways
-across the build direction has a roof, which fails unless it is a ledge under
-1 deep or rises at 52 degrees (Make's `check_overhang` fails below 45;
-52 is the design margin over it, from the wiki's "Do not design at the
-limit"). A finger groove 3 deep printed on the part's
-side is a 3 mm cantilevered roof. When a detail fails, change the stance
-before the detail. Then check each feature's width or thickness against its
-geometry's `wall_min_mm`: a feature under the floor either grows, or the
-contract lowers that geometry's floor and names why.
+The overhang gate fails a down-facing face steeper than 45 degrees from
+vertical; 45 is the only limit. The print-details library designs its own
+details 7 degrees inside it, at 52, because the facets of a face designed
+exactly at the limit can land past it. The Proof's "At the limit" list
+names every face the contract puts between 45 and 52 degrees and every
+wall, web, land, relief or cut sized exactly at its minimum. Give each one
+margin where that changes nothing a reference shows (a 52 degree cone
+instead of 45, a 0.9 web instead of 0.8); leave the rest and note it in the
+working notes.
 
-Then check every **stacked or curved placement**: each detail the images draw
-on another detail (rivets on a band, a boss on a rim) or on a curved host (a
-band round a helm, rivets round a chin). Size each detail at its minimum, or
-at its contract size when that is larger, and check:
+Then check every **stacked or curved placement**, which the Proof's
+`FINDINGS.md` lists for every detail it models and you check for any it
+does not: each detail the images draw on another detail (rivets on a band,
+a boss on a rim) or on a curved host (a band round a helm, rivets round a
+chin). Size each detail at its minimum, or at its contract size when that is
+larger, and check:
 
 - **The host holds it.** The host is at least the detail's size plus 0.5 mm
   on each side: a 2.0 mm rivet needs a band or ridge at least 3.0 mm wide.
@@ -921,15 +905,9 @@ The nose bar and the chin rivets get the same check, each against its own
 host: rivets on the nose bar need a bar at least 3.0 mm wide, and the chin
 holds only as many 2.0 mm rivets as its length allows at a 2.5 mm pitch.
 
-Then check support. Name each geometry's print stance. In that stance, find
-every form the image shows that would print over air: an underside flatter
-than 45 degrees from vertical, a hanging claw or hook, a dome or lip that
-overhangs, a bridge longer than 12 mm. Workshop's print gate fails a part
-that needs support, and it cannot be told that a part is allowed support.
-
-Resolve each problem in this order of preference, and keep the look. A fine
-detail at risk takes the way the human picked in Stage 1; you resolve the
-rest:
+Resolve every print-gate failure, and every other problem above, in this
+order of preference, and keep the look. A fine detail at risk takes the way
+the human picked in Stage 1; you resolve the rest:
 
 1. **Make the whole toy bigger**, when many details are too small together and
    the bed still fits.
@@ -945,95 +923,18 @@ rest:
    the Component's requirement row.
 
 Any change to size, shape or stance amends the contract. Run Stage 2's
-shared-face check again on every row and Interface the change touches. When
-an image no longer shows what the contract says, fix the image by AI editing.
-Then redo Stage 3b for every image you touched, and the assembly image.
+shared-face check again on every row and Interface the change touches, and
+send the amended contract to the kept Proof subagent. When an image no
+longer shows what the contract says, fix the image by AI editing, then redo
+Stage 3b for every image you touched, and the assembly image.
 
-Then check every hidden joint the contract pins, which no image shows. For
-each Component, take its print stance and its bed face, and for each peg,
-socket, collar, pin or boss it carries:
-
-- **Nothing stands on the bed face.** A peg or collar on the bed face lifts
-  the part off the bed. Mating faces that print face down cannot also carry
-  pegs; move the pegs to the other side of the joint or change the stance.
-- **Nothing prints over air.** A collar, lip or boss that sticks out sideways
-  in the print stance hangs unsupported. A socket or pin hole that runs
-  parallel to the bed needs a teardrop or pointed top.
-- **Both sides agree.** The peg and its socket have the same axis and
-  position on the two mating Components, and the clearance is at least
-  0.2 mm a side.
-
-Resolve each problem with the list above. A resolution that moves a visible
-feature from one Component to another is a visible change: redo the images it
-touches. Compute the checks with a script only when the joints are too many to
-check reliably by hand.
-
-Then check every **ceiling over a moving part**, when the toy has one. A part
-that turns or slides through the inside of another part empties the space it
-sweeps: the other part may not stand anything there, from its bed up to the
-moving part's far face plus the clearance. In that other part's print stance,
-every ceiling, overhang or bridge over the swept space prints over air. For
-every moving part, take its full travel plus the clearance, and for every
-other part it passes through:
-
-- **Clearance first.** The ceiling sits at least the clearance beyond the
-  moving part's far face.
-- **Each ceiling point is bridged or vaulted.** It has support on both sides
-  along one line within 12 mm, or the ceiling rises from the nearest support
-  at 50 degrees (1.19 mm per mm) and still fits inside the part, with its
-  minimum wall behind it.
-- **Each seat holds.** A hinge, axle or bore seat in such a ceiling sits at
-  the height its pin needs: a vault that lifts the seat shortens the pin's
-  press depth.
-
-The swept space includes everything the contract fixes on the moving part:
-every gear at its tip radius (a 24-tooth gear at pitch radius 16 is a full
-disc unless the contract trims it), every boss, the teeth the travel needs
-plus one spare at each end, and the plate and blades. Leaving a piece out can
-only hide a failure. When the moving parts turn about axes normal to the
-other part's bed, compute the check with
-`python .claude/skills/design-a-toy/scripts/swept_ceiling.py CHECK.json --map`;
-its docstring gives the input. Otherwise sample the sweep by hand in each bed
-layer.
-
-Resolve a failure with the list above: a different stance or a split, so the
-ceiling becomes a wall or a bed face, comes before reshaping. A vault that
-lifts a seat changes its pin, and an opening that lets the travel through
-changes what the images show.
-
-Worked example: Broken God's spine housing (attempt 15, amend-i). The housing
-prints on its front face, the mating plane at Y 7.3, and builds toward its
-back wall, whose front face at Y 17.5 carries both wing hinge seats (X ±16,
-Z 198.8). Each wing's 24-tooth sector gear (pitch radius 16, tip radius 17.1)
-turns 35 degrees in the layer Y 11.8 to 17.1, and the heart pinion (tip
-radius 9.25 on X 0, Z 180.9) turns in front of the housing's pillar.
-
-| Check | Value | Limit | Verdict |
-|---|---|---|---|
-| Back wall behind the sector layer | Y 17.5 | 17.1 + 0.5 = 17.6 | fails |
-| Hinge seat, nearest support | 18.0 mm (the gear is a full disc round the seat) | bridge within 12 | fails |
-| Hinge seat, vault height | Y 39.1 | 17.5, where the Ø3 × 16 dowel is pressed 6.3 | fails |
-| Pillar face over the pinion, bridge | 19.5 mm | 12 | fails |
-
-Nothing caught this before the run. Amend-e had checked the hinge seats
-against the root bosses only, not the sector layer behind them, so the worker
-spent its rounds on the back wall's overhangs and then reported itself
-blocked. Keeping the wings below Z 206.2 inside the housing, the first fix
-proposed, still fails the check (the seat's vault reaches Y 27.1, nearest
-support 8.0), and Stage 3d refutes it anyway: the teeth that mesh through the
-35 degree travel reach Z 208.6 even without a spare tooth. The fix has to
-change the stance or split the housing, so that the back wall prints as a
-wall or on its own face.
-
-Record every check in the working notes as a table: image or joint, feature,
-size at contract scale, minimum, verdict, resolution.
+Record every failure and its resolution in the working notes: Part,
+feature, gate or check, value, minimum, resolution.
 
 Done when: the Proof's print gates pass on the contract as it now stands,
-every feature the images show meets its minimum, every stacked or
-curved detail fits its host or is on paper or left out and named, every form and
-every hidden joint has a support-free stance, every ceiling over a moving
-part's sweep is bridged or vaulted with its seats held, and every change is in
-both the contract and the images.
+every At the limit item has margin or a note, every stacked or curved
+detail fits its host or is on paper or left out and named, and every change
+is in both the contract and the images.
 
 ## Stage 3d - Check that the mechanism can move
 
@@ -1101,6 +1002,63 @@ limit, verdict, resolution.
 Bring the Interfaces up to date with what you fixed: every mesh and every
 swept clearance is a coupled Interface whose pose table matches the sweep
 you just ran, and every envelope still holds its side through the travel.
+
+Then check every **ceiling over a moving part**, when the toy has one. A part
+that turns or slides through the inside of another part empties the space it
+sweeps: the other part may not stand anything there, from its bed up to the
+moving part's far face plus the clearance. In that other part's print stance,
+every ceiling, overhang or bridge over the swept space prints over air. For
+every moving part, take its full travel plus the clearance, and for every
+other part it passes through:
+
+- **Clearance first.** The ceiling sits at least the clearance beyond the
+  moving part's far face.
+- **Each ceiling point is bridged or vaulted.** It has support on both sides
+  along one line within 12 mm, or the ceiling rises from the nearest support
+  at 50 degrees (1.19 mm per mm) and still fits inside the part, with its
+  minimum wall behind it.
+- **Each seat holds.** A hinge, axle or bore seat in such a ceiling sits at
+  the height its pin needs: a vault that lifts the seat shortens the pin's
+  press depth.
+
+The swept space includes everything the contract fixes on the moving part:
+every gear at its tip radius (a 24-tooth gear at pitch radius 16 is a full
+disc unless the contract trims it), every boss, the teeth the travel needs
+plus one spare at each end, and the plate and blades. Leaving a piece out can
+only hide a failure. When the moving parts turn about axes normal to the
+other part's bed, compute the check with
+`python .claude/skills/design-a-toy/scripts/swept_ceiling.py CHECK.json --map`;
+its docstring gives the input. Otherwise sample the sweep by hand in each bed
+layer.
+
+Resolve a failure with Stage 3c's support list: a different stance or a split, so the
+ceiling becomes a wall or a bed face, comes before reshaping. A vault that
+lifts a seat changes its pin, and an opening that lets the travel through
+changes what the images show.
+
+Worked example: Broken God's spine housing (attempt 15, amend-i). The housing
+prints on its front face, the mating plane at Y 7.3, and builds toward its
+back wall, whose front face at Y 17.5 carries both wing hinge seats (X ±16,
+Z 198.8). Each wing's 24-tooth sector gear (pitch radius 16, tip radius 17.1)
+turns 35 degrees in the layer Y 11.8 to 17.1, and the heart pinion (tip
+radius 9.25 on X 0, Z 180.9) turns in front of the housing's pillar.
+
+| Check | Value | Limit | Verdict |
+|---|---|---|---|
+| Back wall behind the sector layer | Y 17.5 | 17.1 + 0.5 = 17.6 | fails |
+| Hinge seat, nearest support | 18.0 mm (the gear is a full disc round the seat) | bridge within 12 | fails |
+| Hinge seat, vault height | Y 39.1 | 17.5, where the Ø3 × 16 dowel is pressed 6.3 | fails |
+| Pillar face over the pinion, bridge | 19.5 mm | 12 | fails |
+
+Nothing caught this before the run. Amend-e had checked the hinge seats
+against the root bosses only, not the sector layer behind them, so the worker
+spent its rounds on the back wall's overhangs and then reported itself
+blocked. Keeping the wings below Z 206.2 inside the housing, the first fix
+proposed, still fails the check (the seat's vault reaches Y 27.1, nearest
+support 8.0), and Stage 3d refutes it anyway: the teeth that mesh through the
+35 degree travel reach Z 208.6 even without a spare tooth. The fix has to
+change the stance or split the housing, so that the back wall prints as a
+wall or on its own face.
 
 Then check every **travel stop** the contract names: each hard stop that a
 host Component's material puts at an extreme of a motion ("hard stops on
@@ -1199,48 +1157,10 @@ Record every claim in the working notes as a table: requirement, camera,
 landmarks, projected numbers, verdict, resolution.
 
 Done when: every check passes on the contract as amended, the motion plan is
-in the contract, the Interfaces match it, every named travel stop has a
+in the contract, the Interfaces match it, every ceiling over a moving part's
+sweep is bridged or vaulted with its seats held, every named travel stop has a
 printable site at each extreme it ends, and every camera-named composition
 claim holds from its camera.
-
-## Stage 3e - Lint the contract and have it audited
-
-Stages 3b to 3d check the contract against the images and the model one fact
-at a time, and one author does them. Two failures get past that: the same
-fact stated twice that an amendment changed in one place only (an envelope
-left at the old depth, a move still at its old angle), and the author
-reading the contract as they meant it. This stage checks both, and runs again
-after **every** amendment: Stage 4's changes, `build-a-toy`'s root
-amendments and folded in-run amendments.
-
-1. **Facts.** The Stage 3d model script writes the facts the contract states
-   more than once: the Display Pose box, each Component's box and X span at
-   each 1 mm of Z, a geometry's extents in its own frame when they are not
-   its box, and each Component's moves and posing ranges.
-   [`scripts/contract_lint.py`](scripts/contract_lint.py)'s docstring gives
-   the format.
-2. **Claims.** A fresh subagent that has not seen this design transcribes
-   every move angle, placed range, feature size and envelope size the prose,
-   the rows and the Interface texts state into `claims.json`, from
-   [claims-prompt.md](claims-prompt.md) with its paths filled in. It copies
-   numbers; it never computes or judges.
-3. **Lint.** Run
-   `python3 .claude/skills/design-a-toy/scripts/contract_lint.py CONTRACT.md facts.json --claims claims.json`.
-   It compares the block (`envelope_mm`, `extents_mm`, Interface poses) and
-   every claim with the facts, every feature size with its geometry's floor,
-   and warns where a Component, or two it joins, keeps one X edge while the
-   other steps. Fix every error in the contract or the model, whichever is
-   wrong. Check every warning against the assembly image's edges there, and
-   record the verdict.
-4. **Audit.** Another fresh subagent audits the contract against the images
-   from [audit-prompt.md](audit-prompt.md): outlines, neighbouring edges,
-   printing in each stance, and contradictions. Resolve every finding as
-   Stage 3b resolves a disagreement, and redo the checks it touches.
-
-Record the lint output, the claims file and the audit in the working notes.
-
-Done when: the lint reports no error, every warning and audit finding has a
-recorded verdict, and both ran on the contract as it now stands.
 
 ## Stage 4 - Visual review
 
@@ -1252,7 +1172,7 @@ how many parts use it, and the camera it is seen from with its cue
 private Artifact page (load the `artifact-design` skill first) that works at
 phone width and shows the whole set in one look, and give the human its link
 plus each file path. Do not show the contract, the requirement rows, the
-measurement table or millimetre lists unless the human asks.
+disagreement list or millimetre lists unless the human asks.
 
 Show a Component reference made by the Stage 3a trial as its `carry`
 sheet: the original AI image, the image edited from the Proof and the Proof,
@@ -1304,9 +1224,10 @@ cut redraws the flat lay.
 Wait for explicit approval of the images. If the human wants a change - a
 different shape, proportion, count, pose or feature - fix the images by AI
 editing or regeneration, amend the contract so it says what the new images
-show, and redo Stages 3a to 3e for **every** image. Then update the same
+show, and redo Stages 3a to 3d for **every** image (with a fresh read,
+Stage 3a step 6, when a shape changed). Then update the same
 Artifact page and show only the images that changed, each with its compare,
-always with the assembly image, which is the one the likeness gate scores. Repeat until the human approves.
+always with the assembly image, which the blind review judges the build by. Repeat until the human approves.
 
 ## Stage 5 - Write the contract and hand off
 
@@ -1325,9 +1246,10 @@ and unbuilt) with the path to this
 `CONTRACT.md`. That skill owns every run this design
 starts, round 0 through every correction, always under `--contract`. Do not print a bare `workshop wish` command here.
 
-Then state plainly what happens next: Make builds against these images, the
-silhouette-likeness gate re-checks every round at IoU >= 0.90, and every
-correction runs through `build-a-toy`, not back through this skill.
+Then state plainly what happens next: Make builds against these images, each
+Component Reviewer judges its Component against its reference every round,
+the blind review judges the assembly, and every correction runs through
+`build-a-toy`, not back through this skill.
 
 ## Write back what the design taught
 
@@ -1345,7 +1267,7 @@ say so and change nothing.
 ## What this skill does not do
 
 - It does not run Workshop, publish, or touch a live run.
-- It does not add a checkpoint inside Make. Once the Wish is sealed, the
-  likeness gate is the enforcement.
+- It does not add a checkpoint inside Make. Once the Wish is sealed, Make's
+  gates and reviews are the enforcement.
 - It does not widen the Inventor's Taste to accommodate an idea. That is a
   human edit to `inventors/<id>/TASTE.md`, made deliberately and separately.

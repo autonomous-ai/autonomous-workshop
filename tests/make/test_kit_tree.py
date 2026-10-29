@@ -266,6 +266,17 @@ class KitTreeGateTest(unittest.TestCase):
         block["geometries"][1]["wall_min_mm"] = 0.6
         cabinet = self.component("cabinet", kit=sealed_kit(block))
         self.assertEqual(cabinet["conditions"][0]["inputs"]["steps"][0]["thresholds"]["maxStepMm"], 0.6)
+        # ADR 0094: a schema 9 geometry states no wall_min_mm; the sweep
+        # samples at two print lines, even where an older floor was thinner.
+        block = sealed_block()
+        block["geometries"][1]["wall_min_mm"] = 0.6
+        kit = sealed_kit(block)
+        for geometry in kit["geometries"]:
+            del geometry["wall_min_mm"]
+        cabinet = self.component("cabinet", kit=kit)
+        for sequence in cabinet["conditions"]:
+            for step in sequence["inputs"]["steps"]:
+                self.assertEqual(step["thresholds"]["maxStepMm"], 0.8)
 
     def test_each_copy_of_an_input_goes_in_alone(self):
         report = self.assembly()

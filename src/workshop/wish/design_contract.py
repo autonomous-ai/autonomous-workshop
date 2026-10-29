@@ -38,8 +38,11 @@ from workshop.wish.print_sheets import ContractPrint, parse_print_section
 # ADR 0093 adds: every Unique Geometry names the prose ``###`` sections that
 # describe it (``prose_sections``), which Make delivers to its Component
 # Worker, and every Unique Geometry is named by at least one Guide Image, the
-# two extra views of its three-view sheet.
-SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7, 8)
+# two extra views of its three-view sheet. Schema 9 is schema 8 without
+# ``wall_min_mm`` (ADR 0094): Make gates every wall at the nozzle's print
+# minimum and never measured a per-geometry floor, so a schema 9 geometry
+# states none and refuses one.
+SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7, 8, 9)
 INTERFACES_SCHEMA_VERSION = 2
 CAMERA_SCHEMA_VERSION = 3
 INTERFACE_TEXT_SCHEMA_VERSION = 4
@@ -47,10 +50,11 @@ GUIDE_SCHEMA_VERSION = 5
 PRINT_SCHEMA_VERSION = 6
 TREE_SCHEMA_VERSION = 7
 PROSE_SCHEMA_VERSION = 8
+NO_WALL_SCHEMA_VERSION = 9
 # A run may seal these. Schema 7 became sealable once every gate it needs was
 # wired: Make's tree gates (ADR 0092 decision 8, issue #136) and its Manual
 # (decision 9, issue #137), which the host checks before Make is accepted.
-SEALABLE_SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7, 8)
+SEALABLE_SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7, 8, 9)
 MAX_GUIDE_SHOWS_CHARS = 500
 MAX_GUIDE_STEPS = 24
 MAX_GUIDE_STEP_CHARS = 300
@@ -132,7 +136,9 @@ class ContractGeometry:
     name: str
     count: int
     extents_mm: Tuple[float, float, float]
-    wall_min_mm: float
+    # The geometry's minimum wall before schema 9; None from schema 9 on,
+    # which states none (ADR 0094).
+    wall_min_mm: Optional[float]
     # The exact ``###`` heading texts of the prose sections that describe this
     # geometry (schema 8, ADR 0093); None before schema 8.
     prose_sections: Optional[Tuple[str, ...]] = None
@@ -143,8 +149,9 @@ class ContractGeometry:
             "name": self.name,
             "count": self.count,
             "extents_mm": list(self.extents_mm),
-            "wall_min_mm": self.wall_min_mm,
         }
+        if self.wall_min_mm is not None:
+            value["wall_min_mm"] = self.wall_min_mm
         if self.prose_sections is not None:
             value["prose_sections"] = list(self.prose_sections)
         return value
@@ -396,11 +403,12 @@ def _scope(value: Any, geometry_ids: Optional[frozenset], label: str, errors: Li
 
 
 def _parse_geometries(
-    value: Any, errors: List[str], prose: bool = False
+    value: Any, errors: List[str], prose: bool = False, wall: bool = True
 ) -> Tuple[Tuple[ContractGeometry, ...], frozenset]:
     """The Unique Geometries; ``prose`` (schema 8) requires each one's
     ``prose_sections``, and before schema 8 the field is refused rather than
-    ignored."""
+    ignored. ``wall`` (before schema 9) requires each one's ``wall_min_mm``;
+    from schema 9 on it is refused (ADR 0094)."""
 
     if not isinstance(value, list) or not value:
         errors.append("geometries must be a non-empty list")
@@ -429,7 +437,14 @@ def _parse_geometries(
             errors.append("%s.count must be a positive integer" % label)
         extents = _dimensions(item.get("extents_mm"), "%s.extents_mm" % label, errors)
         wall_min = item.get("wall_min_mm")
-        if isinstance(wall_min, bool) or not isinstance(wall_min, (int, float)) or wall_min <= 0:
+        if not wall:
+            if "wall_min_mm" in item:
+                errors.append(
+                    "%s.wall_min_mm is not part of schema_version 9: Make gates every "
+                    "wall at the nozzle's print minimum (ADR 0094)" % label
+                )
+            wall_min = None
+        elif isinstance(wall_min, bool) or not isinstance(wall_min, (int, float)) or wall_min <= 0:
             errors.append("%s.wall_min_mm must be a positive number" % label)
             wall_min = 0.0
         sections: Optional[Tuple[str, ...]] = None
@@ -456,7 +471,7 @@ def _parse_geometries(
                     name=name if isinstance(name, str) else "",
                     count=count if isinstance(count, int) and not isinstance(count, bool) else 0,
                     extents_mm=extents,
-                    wall_min_mm=float(wall_min),
+                    wall_min_mm=None if wall_min is None else float(wall_min),
                     prose_sections=sections,
                 )
             )
@@ -969,7 +984,7 @@ def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) ->
 
     schema_version = block.get("schema_version")
     if isinstance(schema_version, bool) or schema_version not in SCHEMA_VERSIONS:
-        errors.append("schema_version must be 1, 2, 3, 4, 5, 6, 7 or 8")
+        errors.append("schema_version must be 1, 2, 3, 4, 5, 6, 7, 8 or 9")
     # Each feature below starts at one schema and carries into every later
     # one; an unknown schema reads as none of them.
     version = (
@@ -989,7 +1004,8 @@ def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) ->
     envelope_mm = _dimensions(block.get("envelope_mm"), "envelope_mm", errors)
 
     geometries, geometry_ids = _parse_geometries(
-        block.get("geometries"), errors, prose=version >= PROSE_SCHEMA_VERSION
+        block.get("geometries"), errors, prose=version >= PROSE_SCHEMA_VERSION,
+        wall=version < NO_WALL_SCHEMA_VERSION,
     )
     references = _parse_references(
         block.get("references"), geometry_ids, errors,
@@ -1006,9 +1022,9 @@ def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) ->
     elif "interfaces" in block:
         errors.append("interfaces need schema_version 2 or later")
     guides: Optional[Tuple[ContractGuide, ...]] = None
-    # Guide Images: required at schema 5, optional at 6 and 7, required at 8,
-    # where every Unique Geometry is named by one (ADR 0093 decision 5).
-    if version in (GUIDE_SCHEMA_VERSION, PROSE_SCHEMA_VERSION) or (
+    # Guide Images: required at schema 5, optional at 6 and 7, required from
+    # 8 on, where every Unique Geometry is named by one (ADR 0093 decision 5).
+    if version == GUIDE_SCHEMA_VERSION or version >= PROSE_SCHEMA_VERSION or (
         version > GUIDE_SCHEMA_VERSION and "guides" in block
     ):
         guides = _parse_guides(block.get("guides"), geometry_ids, errors)
@@ -1018,7 +1034,7 @@ def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) ->
                 if geometry.id not in guided:
                     errors.append(
                         "geometry %r is named by no guides[] entry's geometries; under "
-                        "schema_version 8 every Unique Geometry has Guide Images" % geometry.id
+                        "schema_version 8 or later every Unique Geometry has Guide Images" % geometry.id
                     )
     elif "guides" in block:
         errors.append("guides need schema_version 5 or later")

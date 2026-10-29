@@ -35,7 +35,7 @@ rivet, boss or dome is at least 2.0 mm across, a raised band, rim or rib
 
 - "Every point, chisel, keel and V underside ends in a flat land at least
   0.8 mm across (one print minimum at a 0.4 mm nozzle)." The 0.8 mm is the
-  nozzle's print minimum, never a geometry's `wall_min_mm`.
+  nozzle's print minimum, never a load-bearing section's thickness.
 - "A drawn detail under the print minimums is enlarged to the minimum; when
   the enlarged detail does not fit its spot, it is left out, and this
   contract names it."
@@ -329,7 +329,11 @@ instances.)
   left out. `tests/wish/test_assembly_tree.py` holds a whole example.)
 - `geometries[]`: one entry per **Unique Geometry**. `id` is lowercase kebab
   case. `count` is how many Components the toy has with this shape.
-  `wall_min_mm` is the minimum wall.
+  `wall_min_mm` is the minimum wall, required before schema 9 and refused
+  from schema 9 on (ADR 0094): Make gates every wall at the nozzle's print
+  minimum and never measured a per-geometry floor, and a kit's insertion
+  sweep then samples at two print lines (0.8 mm at a 0.4 mm nozzle). A
+  section the toy needs thicker for strength says so in its rows.
 - `geometries[].prose_sections` (schema 8, ADR 0093, required there and
   refused before it): a non-empty list of distinct heading texts, each
   exactly the text after `### ` of one level-3 heading in the prose, outside
@@ -366,9 +370,10 @@ instances.)
   optional as in schema 7, with Part ids and hosts only when the tree is
   there. Schema 8 adds two requirements: every geometry names its
   `prose_sections`, and `guides[]` is required with every geometry named in
-  some guide's `geometries`. Use `8` for every new contract; 1 to 7 stay
-  valid, with exactly their earlier rules, for contracts and runs sealed
-  before it. Schema 3 is schema 2 plus a `camera` on every
+  some guide's `geometries`. `9` (ADR 0094) is schema 8 with
+  `wall_min_mm` refused on every geometry. Use `9` for every new contract;
+  1 to 8 stay valid, with exactly their earlier rules, for contracts and
+  runs sealed before it. Schema 3 is schema 2 plus a `camera` on every
   reference; from schema 3 every Component file defines
   `assembly_pose(shape, pose)`, even one in no Interface. A schema 3
   contract has no Interface text, a schema 2 contract no cameras and a
@@ -448,9 +453,11 @@ A contract is ready only when all of these hold. Report every failure at once.
   `python3 .claude/skills/design-a-toy/scripts/contract_lint.py CONTRACT.md`
   reports no error. It runs the host's own parser and warns for each
   catalogue entry the owner has not confirmed.
-- For schema 8, every geometry names its `prose_sections`, each one exactly
-  one `###` heading with text, and every geometry is named in some guide's
-  `geometries`.
+- For schema 8 and 9, every geometry names its `prose_sections`, each one
+  exactly one `###` heading with text, and every geometry is named in some
+  guide's `geometries`.
+- For schema 9, no geometry states `wall_min_mm`. Schema 9 is schema 8
+  without it, and `design-a-toy` writes every new contract as schema 9.
 - No row count is limited: ADR 0093 removed ADR 0072's guards of 16
   assembly-scoped rows and 4 per Unique Geometry.
 - The whole file is at most 40,000 characters. Nothing in the host checks
