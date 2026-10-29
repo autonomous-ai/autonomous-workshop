@@ -35,9 +35,8 @@ file.
   had to be redone.
 - **How to apply:** for a scene inside a box, put one plan question in
   Stage 1: what stands against each wall (left, back left/centre/right,
-  right) and on the floor (front left/centre/right). Then iterate a single
-  direction image with the owner, one change per round, and start
-  component images and measurement only after an explicit OK on it.
+  right) and on the floor (front left/centre/right). Settle the answer on
+  the chosen Concept Image's three views (SKILL.md Stage 1).
 
 ### Check every prop against the scene's period before the owner does
 - **Why:** a modern mug and an electric bell-shaded lamp in a 19th-century
@@ -165,12 +164,12 @@ file.
   brings back a different object.
 
 ### When the models keep moving a part, change the composition, not the prompt
-- **Why:** in seven tries on two models a cabinet "under the stair" landed
-  on the dais; as a niche in the stair's solid side it was drawn right at
-  once, and the owner preferred it.
+- **Why:** a cabinet "under the stair" landed on the dais in seven tries,
+  and an open door lay flat beside its cabinet or hung on its far edge in
+  four of six; a niche in the stair's side and "the open door continues the
+  side panel forward" were drawn right at once.
 - **How to apply:** after three generations put a part in the same wrong
-  spot, offer a layout that builds it into a neighbour the model already
-  draws, and amend the contract to it.
+  spot, build it into a neighbour the model already draws; amend the contract.
 
 ### Redraw fresh after about four chained edits, counting the whole lineage
 - **Why:** editing an edit accumulates blur; the owner saw it after five,

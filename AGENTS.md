@@ -144,7 +144,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0082-interfaces-between-components.md`, and
 `docs/adr/0083-compare-in-the-display-pose-at-the-reference-camera.md`, and
 `docs/adr/0084-interface-text-and-reference-conflicts.md`, and
-`docs/adr/0085-in-run-contract-amendments-for-invisible-fixes.md` before changing the CLI, runtime,
+`docs/adr/0085-in-run-contract-amendments-for-invisible-fixes.md`, and
+`docs/adr/0093-contract-proof-and-three-view-concepts.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -306,6 +307,22 @@ in its review packet and join the carry key, the request stays the packet
 path and hash, and a reviewer who thinks a ruling wrong lists a Ruling
 Dispute instead of a difference. A dispute costs no Shape Round and never
 reaches the worker; a dispute-only review agrees.
+ADR 0093 amends ADR 0072, ADR 0080 and ADR 0089 for new contracts: no
+Design Contract has a row limit (ADR 0072's 16 assembly rows and 4 per
+Unique Geometry are gone at seal, in `verify_project` and in the finalizer),
+and Design Contract schema 8, schema 7 with the Assembly Tree optional so
+kits and other toys share it, makes every geometry name its prose `###`
+sections (`prose_sections`) and every geometry be named by a Guide Image,
+the two extra views of its three-view sheet. The sealed contract carries
+the named sections as `prose`; a component round writes its Component's
+sections into the worker's `summary.json` `contract` and never into the
+review packet; they join its contract-rows hash and so its carry key. The
+worker reads its rows, Interface text and prose, and rows win; the
+Component Reviewer still judges by rows and the reference. Only an owner
+amendment changes prose, and it unlocks every Component whose geometry
+names the changed section. A Contract Proof before Stage 4 and the
+printability choice belong to `design-a-toy`. Schema 1 to 7 contracts and
+frozen runs keep what they sealed.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

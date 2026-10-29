@@ -221,8 +221,9 @@ are separate. Frozen older runs retain their materialized rules and tools.
    hosting part does and the sheets lay out (`print/sheets/`, ADR 0091). The
    printed paper carries the art: no part models, embosses or paints it.
 
-   When the sealed Design Contract is schema 7 (ADR 0092), install its
-   Assembly Tree too, before any worker starts:
+   When the sealed Design Contract has an `assembly_tree` (schema 7, ADR
+   0092, or a schema 8 kit, ADR 0093), install its Assembly Tree too,
+   before any worker starts:
 
    ```bash
    "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/kit_tree.py --install <cad-project> --wish WISH.json
@@ -232,10 +233,17 @@ are separate. Frozen older runs retain their materialized rules and tools.
    Component's Parts (`assembly_tree.components`), each printed Part's
    filament, its Bought Parts, and the steps inside it with their insertion
    directions and lead routes. Each Part is one labelled body
-   (`make-round/SKILL.md`, "The kit's Assembly Tree"). Component rounds check
+   (`make-round/SKILL.md`, "The kit's Assembly Tree"), and each Component
+   file also defines `print_parts()`, every printed Part alone in its
+   print stance, bottom at Z 0: the print gates measure each Part alone,
+   never the assembled Component (owner decision 2026-10-28). Component rounds check
    the steps inside each Component; your assembly rounds and final
    verification check the joins across Components and write
    `measure/tree-report.json`, which the host checks before accepting Make.
+   Final verification then writes the kit's Manual into `manual/` from the
+   tree and the build (`make-round/scripts/kit_manual.py`, ADR 0092
+   decision 9); the host checks it too, and Release ships it. Never write,
+   edit or reword the Manual: its text is the contract's own.
    Make never changes the tree. A `labelling slip` (built bodies that do
    not match a sound tree: a wrong or unknown Part label, a body missing,
    extra or duplicated, a wrong colour) is an ordinary gate failure: the
@@ -301,10 +309,15 @@ are separate. Frozen older runs retain their materialized rules and tools.
    `part_<id>.step.py` path it writes; the shared files it builds on,
    including `features/print_details.py`; its
    sealed `geometry:<id>` reference and declared camera; only that
-   Component's Design Contract rows; every Guide Image the contract seals
+   Component's Design Contract rows; under a schema 8 Design Contract (ADR
+   0093) the prose sections its geometry's `prose_sections` names, copied
+   verbatim from the sealed contract's `prose` (the worker reads them with
+   its rows, and its rows win where they differ; never send them to its
+   reviewer); every Guide Image the contract seals
    (ADR 0089) that names no `geometries` or whose `geometries` names this
    Component, by path with what it `shows`; the nozzle; and the shape-repair
-   limit (5). The worker writes the first draft, runs the round above until build
+   limit (5). Each component round's `summary.json` repeats the rows,
+   Interface text and prose under `contract`. The worker writes the first draft, runs the round above until build
    and print pass, then reports in 10 lines or fewer and waits:
    `make_round` refuses to change a passing round's geometry before its
    review is recorded (ADR 0081). The worker may view its

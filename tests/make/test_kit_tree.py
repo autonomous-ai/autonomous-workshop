@@ -514,8 +514,14 @@ class KitTreeInstallTest(unittest.TestCase):
             (root / "cad").mkdir()
             with self.assertRaisesRegex(ValueError, "kit_catalogue"):
                 kit_tree.install(root / "cad", self.wish(root, kit_catalogue=False))
-            with self.assertRaisesRegex(ValueError, "not schema 7"):
+            with self.assertRaisesRegex(ValueError, "has no Assembly Tree"):
                 kit_tree.install_document({"schema_version": 6}, {})
+            # ADR 0093: a schema 8 contract is a kit only when it has a tree.
+            with self.assertRaisesRegex(ValueError, "has no Assembly Tree"):
+                kit_tree.install_document({"schema_version": 8}, {})
+            for schema in (7, 8):
+                self.assertTrue(kit_tree.has_assembly_tree({"schema_version": schema, "assembly_tree": {}}))
+            self.assertFalse(kit_tree.has_assembly_tree({"schema_version": 6, "assembly_tree": {}}))
 
     def test_a_tree_defect_is_recorded_for_this_tree_only(self):
         with tempfile.TemporaryDirectory() as temporary:

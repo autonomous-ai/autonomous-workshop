@@ -3406,6 +3406,116 @@ class InterfaceTextDeliveryTest(unittest.TestCase):
                 self.assertNotEqual(second["visual"]["packet_sha256"], first["visual"]["packet_sha256"])
                 self.assertNotEqual(second["carry_key"], first["carry_key"])
 
+    BODY_PROSE = "The body is a lacquered cylinder with a riveted ferrule and three bands."
+
+    def _prose_root(self, tmp):
+        """A schema 8 contract (ADR 0093): the body names two prose sections,
+        one of them shared with the base."""
+
+        context = self._contract(schema=4)
+        contract = context["design_contract"]
+        contract["schema_version"] = 8
+        sections = {"body": ["Body", "Body and base"], "base": ["Body and base"], "wing": ["Wing"]}
+        for geometry in contract["geometries"]:
+            geometry["prose_sections"] = sections[geometry["id"]]
+        contract["prose"] = [{"heading": "Body", "text": self.BODY_PROSE},
+                             {"heading": "Body and base", "text": "Both are dark walnut."},
+                             {"heading": "Wing", "text": "A thin blade."}]
+        project = self._run_root(tmp, self.REFS, context=context)
+        self._edits = 0
+        return project
+
+    def test_a_schema_8_summary_carries_the_components_prose_and_the_packet_none(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._prose_root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            self.assertEqual(summary["contract"]["prose"], [
+                {"heading": "Body", "text": self.BODY_PROSE},
+                {"heading": "Body and base", "text": "Both are dark walnut."},
+            ])
+            packet = json.loads(Path(summary["visual"]["packet"]).read_text())
+            self.assertNotIn("prose", packet["contract"])
+            self.assertNotIn(self.BODY_PROSE, json.dumps(packet))
+            self.assertEqual({key: value for key, value in summary["contract"].items() if key != "prose"},
+                             packet["contract"])
+            self.assertIn("prose 2 section(s) for the worker in summary.json: Body; Body and base",
+                          module.render_summary(summary))
+
+    def test_a_prose_change_moves_the_rows_and_carry_key_but_never_the_packet(self):
+        # Owner decision 2026-10-26: the worker builds from its prose, so a
+        # changed section binds like a changed row; the reviewer still never
+        # reads it.
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._prose_root(tmp)
+            module, calls = load_module(), []
+            _, first = self._component(module, project, calls)
+            rows = module.contract_rows(project, "body")
+            self._wish(project, lambda contract: contract["prose"][0].update(text="A plain cylinder."))
+            _, second = self._component(module, project, calls, edit=False)
+            self.assertEqual(second["contract"]["prose"][0]["text"], "A plain cylinder.")
+            packets = [json.loads(Path(item["visual"]["packet"]).read_text()) if item["visual"].get("packet")
+                       else None for item in (first, second)]
+            if packets[1] is not None:
+                self.assertEqual(packets[1]["contract"], packets[0]["contract"])
+                self.assertNotIn("A plain cylinder.", json.dumps(packets[1]))
+            self.assertNotEqual(second["carry_key"], first["carry_key"])
+            self.assertNotEqual(module.contract_rows(project, "body"), rows)
+
+    def test_an_owner_prose_amendment_unlocks_only_the_components_naming_the_section(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._prose_root(tmp)
+            module = load_module()
+            roles = ("body", "base", "wing")
+            before = {role: module.contract_rows(project, role) for role in roles}
+            for heading, unlocked in (("Body", {"body"}), ("Body and base", {"body", "base"})):
+                with self.subTest(heading=heading):
+                    owners = [{"changes": [{"row": "prose:" + heading, "scope": "prose", "from": "x",
+                                            "to": "Amended."}]}]
+                    with mock.patch.object(module, "owner_amendments", return_value=owners):
+                        after = {role: module.contract_rows(project, role) for role in roles}
+                    self.assertEqual({role for role in roles if after[role] != before[role]}, unlocked)
+                    # The changed rows hash is what round_policy unlocks a locked Component on.
+                    locked = {"phase": module.LOCKED, "identity": "A", "round": 3, "shape_rounds": 0,
+                              "unlocks": [], "reviewed": {"round": 3, "identity": "A", "carry_key": "k",
+                                                          "agrees": True, "accepted": False,
+                                                          "imported_helpers": {},
+                                                          "contract_rows": before["wing"]}}
+                    self.assertFalse(module.round_policy(
+                        locked, {"identity": "B", "contract_rows": after["wing"]})["admit"])
+                    locked["reviewed"]["contract_rows"] = before["body"]
+                    self.assertTrue(module.round_policy(
+                        locked, {"identity": "B", "contract_rows": after["body"]})["admit"])
+
+    def test_before_schema_8_no_prose_joins_the_rows(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module = load_module()
+            rows = module.contract_rows(project, "body")
+            # A stray prose list in an older sealed contract binds nothing.
+            self._wish(project, lambda contract: contract.update(
+                prose=[{"heading": "Body", "text": "x"}]))
+            self.assertEqual(module.contract_rows(project, "body"), rows)
+
+    def test_an_owner_prose_amendment_reaches_the_worker(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._prose_root(tmp)
+            module = load_module()
+            owners = [{"changes": [{"row": "prose:Body", "scope": "prose", "from": self.BODY_PROSE,
+                                    "to": "A plain cylinder."}]}]
+            with mock.patch.object(module, "owner_amendments", return_value=owners):
+                prose = module.component_prose(project, "body")
+            self.assertEqual(prose[0], {"heading": "Body", "text": "A plain cylinder."})
+
+    def test_before_schema_8_the_summary_carries_no_prose(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            self.assertNotIn("prose", summary["contract"])
+            self.assertIsNone(module.component_prose(project, "body"))
+            self.assertNotIn("  prose ", module.render_summary(summary))
+
     def test_before_schema_4_the_packet_carries_no_contract(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = self._root(tmp, schema=3)

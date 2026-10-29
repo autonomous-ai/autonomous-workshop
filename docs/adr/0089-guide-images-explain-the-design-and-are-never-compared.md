@@ -1,7 +1,10 @@
 # ADR 0089: Guide Images explain the design and are never compared
 
 - Status: Accepted; implemented and deterministically tested; not yet
-  validated by a live run
+  validated by a live run. Amended by ADR 0093: a schema 8 Design Contract
+  requires Guide Images and names every Unique Geometry in some guide's
+  `geometries` (each Component's image is a three-view sheet), so a
+  Component that "may" have Guide Images under schema 8 does
 - Date: 2026-10-14
 - Issue: #122; amended by #125 (Guide Images scoped to Components,
   2026-10-16)

@@ -678,6 +678,36 @@ class ContractAmendmentTest(unittest.TestCase):
         for named in ("it changes references", "rescopes a requirement", "Interface wing-housing's kind"):
             self.assertIn(named, str(refused.exception))
 
+    def test_an_owner_may_amend_a_schema_8_prose_section_but_not_which_exist(self):
+        # ADR 0093: the sealed prose sections are prose; their text may
+        # change, which sections exist may not, and every Component whose
+        # geometry names the section unlocks (owner decision 2026-10-26).
+        current = {**CONTRACT, "schema_version": 8,
+                   "prose": [{"heading": "Wing", "text": "A blade."}, {"heading": "Housing", "text": "A drum."}]}
+        current["geometries"] = [
+            {"id": "wing", "prose_sections": ["Wing"]},
+            {"id": "spine-housing", "prose_sections": ["Housing"]},
+            {"id": "heart-core", "prose_sections": ["Housing", "Wing"]},
+        ]
+        amended = json.loads(json.dumps(current))
+        amended["prose"][1]["text"] = "A ribbed drum."
+        changes = owner_contract_changes(current, amended)
+        self.assertEqual(changes, [
+            {"row": "prose:Housing", "scope": "prose", "from": "A drum.", "to": "A ribbed drum."}])
+        self.assertEqual(owner_affects(current, changes), ["heart-core", "spine-housing"])
+        # Before schema 8 no geometry names a section, so nothing unlocks.
+        self.assertEqual(owner_affects(CONTRACT, changes), [])
+        applied = apply_owner_amendments(current, [{"changes": changes}])
+        self.assertEqual(applied["prose"][1]["text"], "A ribbed drum.")
+        self.assertEqual(self.module.apply_owner_amendments(current, [{"changes": changes}]), applied)
+        for change in (lambda value: value["prose"][0].update(heading="Wings"),
+                       lambda value: value["prose"].pop(),
+                       lambda value: value.pop("prose")):
+            renamed = json.loads(json.dumps(current))
+            change(renamed)
+            with self.assertRaisesRegex(ContractError, "renames or reorders a prose section"):
+                owner_contract_changes(current, renamed)
+
     def test_the_owner_objective_keeps_the_sealed_name_line(self):
         block = "```design-contract\n{}\n```\n"
         sealed = "Name this toy exactly: Broken God v09.\n\n# Broken God\nHard stops.\n" + block

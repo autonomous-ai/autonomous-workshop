@@ -77,11 +77,11 @@ def _tree_block():
         },
         "assembly_tree": {
             "parts": [
-                {"id": "A01-case-shell", "name": "Case shell", "filament": "navy"},
-                {"id": "B01-cabinet-carcass", "name": "Cabinet carcass", "filament": "dark-oak"},
-                {"id": "B02-cabinet-door", "name": "Cabinet door", "filament": "dark-oak"},
-                {"id": "C01-desk-body", "name": "Student desk", "filament": "oak"},
-                {"id": "D01-inkwell", "name": "Inkwell", "filament": "dark-blue"},
+                {"id": "A01-case-shell", "name": "Case shell", "filament": "navy", "form": "panel"},
+                {"id": "B01-cabinet-carcass", "name": "Cabinet carcass", "filament": "dark-oak", "form": "panel"},
+                {"id": "B02-cabinet-door", "name": "Cabinet door", "filament": "dark-oak", "form": "panel"},
+                {"id": "C01-desk-body", "name": "Student desk", "filament": "oak", "form": "panel"},
+                {"id": "D01-inkwell", "name": "Inkwell", "filament": "dark-blue", "form": "solid"},
                 {"id": "P01-hinge-pin", "bought": "steel-pin-1.5x29.5"},
                 {"id": "P02-jar", "bought": "clear-jar-6x7"},
                 {"id": "P03-ball-led", "bought": "led-3v-cool-white"},
@@ -126,6 +126,10 @@ def _tree_block():
                 {"geometry": "cabinet", "parts": ["B01-cabinet-carcass", "B02-cabinet-door",
                                                   "D01-inkwell", "P01-hinge-pin", "P02-jar"]},
                 {"geometry": "desk", "parts": ["C01-desk-body"]},
+            ],
+            "checks": [
+                {"id": "light-test", "parts": ["P03-ball-led", "P04-battery-box"],
+                 "text": "Join the LED to the battery box, switch on, then take them apart."},
             ],
             "materials": ["tweezers", "foam-tape"],
         },
@@ -252,7 +256,7 @@ class AssemblyTreeTest(unittest.TestCase):
         block["assembly_tree"]["parts"][2]["id"] = "B01-cabinet-leaf"
         self.assertIn("repeats the id B01 (B01-cabinet-carcass)", self._refused(block))
         block = _tree_block()
-        block["assembly_tree"]["parts"].append({"id": "C02-inkwell", "name": "Inkwell", "filament": "oak"})
+        block["assembly_tree"]["parts"].append({"id": "C02-inkwell", "name": "Inkwell", "filament": "oak", "form": "solid"})
         self.assertIn("repeats the mnemonic 'inkwell' (D01-inkwell)", self._refused(block))
         # A step's mnemonic counts too.
         block = _tree_block()
@@ -270,6 +274,95 @@ class AssemblyTreeTest(unittest.TestCase):
         block = _tree_block()
         block["assembly_tree"]["parts"][2]["filament"] = "oak"
         self.assertIn("letter B is dark-oak", self._refused(block))
+
+    def test_printed_letters_are_every_letter_but_m_n_p_and_s(self):
+        # Owner decision 2026-10-23 (Q27): not only A-K, one letter per filament.
+        renames = {"D01-inkwell": "Z01-inkwell", "C01-desk-body": "L01-desk-body"}
+        text = json.dumps(_tree_block())
+        for old, new in renames.items():
+            text = text.replace(old, new)
+        contract = self._parse(json.loads(text))
+        self.assertEqual(contract.assembly_tree.component_of["Z01-inkwell"], "cabinet")
+        for letter in "MNS":
+            block = json.loads(json.dumps(_tree_block()).replace("D01-inkwell", "%s07-inkwell" % letter))
+            self.assertIn("any letter but M, N, P and S", self._refused(block))
+
+    def test_one_filament_is_one_letter(self):
+        block = _tree_block()
+        block["assembly_tree"]["parts"][4]["filament"] = "oak"  # D01-inkwell, beside C01's oak
+        self.assertIn("oak already has letter C (C01-desk-body), so D01-inkwell cannot use D",
+                      self._refused(block))
+
+    def test_every_printed_part_is_a_panel_or_a_solid(self):
+        # Owner decision Q33, 2026-10-26: flat panels joined by tab and slot,
+        # small round or 3D props printed whole.
+        contract = self._parse(_tree_block())
+        self.assertEqual(contract.assembly_tree.panel_mm, 2.0)
+        block = _tree_block()
+        del block["assembly_tree"]["parts"][0]["form"]
+        self.assertIn("parts[0]: a printed Part is {id, name, filament, form}", self._refused(block))
+        block = _tree_block()
+        block["assembly_tree"]["parts"][0]["form"] = "box"
+        self.assertIn("parts[0].form must be panel", self._refused(block))
+        # A Bought Part takes no form: it is not printed.
+        block = _tree_block()
+        block["assembly_tree"]["parts"][5]["form"] = "solid"
+        self.assertIn("parts[5]: a Bought Part is exactly {id, bought}", self._refused(block))
+
+    def test_a_panel_is_the_toys_panel_thickness_unless_it_says_why(self):
+        # Owner decision Q34, 2026-10-26: one standard thickness, default 2.0 mm.
+        block = _tree_block()
+        block["assembly_tree"]["panel_mm"] = 1.6
+        self.assertEqual(self._parse(block).assembly_tree.panel_mm, 1.6)
+        door = block["assembly_tree"]["parts"][2]
+        door["thickness_mm"] = 1.6
+        self._parse(block)
+        door["thickness_mm"] = 3.0
+        self.assertIn("B02-cabinet-door", self._refused(block))
+        self.assertIn("is a 3 mm panel, but the toy's panels are 1.6 mm (panel_mm): a panel of "
+                      "another thickness states its thickness_reason", self._refused(block))
+        door["thickness_reason"] = "The door carries a 1 mm arch moulding in relief."
+        contract = self._parse(block)
+        self.assertEqual(contract.to_dict()["assembly_tree"]["parts"][2]["thickness_mm"], 3.0)
+        # A reason needs a thickness it explains.
+        door["thickness_mm"] = 1.6
+        self.assertIn("thickness_reason explains nothing", self._refused(block))
+        del door["thickness_mm"]
+        self.assertIn("thickness_reason explains a thickness_mm it does not state", self._refused(block))
+
+    def test_a_solid_takes_no_panel_thickness_and_panel_mm_is_bounded(self):
+        block = _tree_block()
+        block["assembly_tree"]["parts"][4]["thickness_mm"] = 2.0  # D01-inkwell is a solid
+        self.assertIn("parts[4] is a solid: thickness_mm and thickness_reason belong to a panel",
+                      self._refused(block))
+        for bad in (0.4, 12, True, "2.0"):
+            block = _tree_block()
+            block["assembly_tree"]["panel_mm"] = bad
+            self.assertIn("assembly_tree.panel_mm must be the toy's one panel thickness",
+                          self._refused(block))
+        block = _tree_block()
+        block["assembly_tree"]["parts"][2]["thickness_mm"] = 0.5
+        block["assembly_tree"]["parts"][2]["thickness_reason"] = "Thin."
+        self.assertIn("parts[2].thickness_mm must be 0.8 to 10 mm", self._refused(block))
+
+    def test_a_lamp_is_tested_in_a_check_step_first(self):
+        block = _tree_block()
+        del block["assembly_tree"]["checks"]
+        self.assertIn("P03-ball-led is a lamp in no Check Step", self._refused(block))
+        block = _tree_block()
+        check = block["assembly_tree"]["checks"][0]
+        check["parts"] = ["P03-ball-led"]
+        self.assertIn("names at least one of each", self._refused(block))
+        check["parts"] = ["P03-ball-led", "P04-battery-box", "P02-jar"]
+        self.assertIn("P02-jar', which is no lamp or power Bought Part", self._refused(block))
+        check["parts"] = ["P03-ball-led", "P04-battery-box"]
+        check["id"] = "case-shell"
+        self.assertIn("repeats the mnemonic 'case-shell'", self._refused(block))
+        check["id"] = "light-test"
+        check["text"] = ""
+        self.assertIn("checks[0].text must be one short English instruction", self._refused(block))
+        del check["text"]
+        self.assertIn("checks[0] must be exactly {id, text, parts}", self._refused(block))
 
     def test_a_bought_part_outside_the_catalogue_is_refused(self):
         block = _tree_block()
@@ -334,7 +427,7 @@ class AssemblyTreeTest(unittest.TestCase):
         _step(block, "S07-furniture")["inputs"].pop(1)
         self.assertIn("S03-hang-door's Sub-assembly is used by no later step", self._refused(block))
         block = _tree_block()
-        block["assembly_tree"]["parts"].append({"id": "D02-quill", "name": "Quill", "filament": "dark-blue"})
+        block["assembly_tree"]["parts"].append({"id": "D02-quill", "name": "Quill", "filament": "dark-blue", "form": "solid"})
         self.assertIn("D02-quill is in no Assembly Step", self._refused(block))
         block = _tree_block()
         _step(block, "S08-wiring")["inputs"].append({"id": "D01-inkwell"})
@@ -398,6 +491,7 @@ class AssemblyTreeTest(unittest.TestCase):
         block["assembly_tree"]["parts"].append({"id": "P05-desk-lamp", "bought": "led-3v-cool-white"})
         _step(block, "S04-dress-desk")["inputs"].append({"id": "P05-desk-lamp", "direction": [0, 0, -1]})
         _component(block, "desk")["parts"].append("P05-desk-lamp")
+        block["assembly_tree"]["checks"][0]["parts"].append("P05-desk-lamp")
         _step(block, "S05-case-lamp")["inputs"].append(
             _step(block, "S06-case-battery")["inputs"][1])
         _step(block, "S06-case-battery").update({
@@ -438,12 +532,9 @@ class AssemblyTreeTest(unittest.TestCase):
         for needle in ("sparkle-purple", "brass-hinge", "requirements[0].id"):
             self.assertIn(needle, message)
 
-    def test_no_run_can_seal_schema_7_until_its_manual_exists(self):
-        contract = self._parse(_tree_block())
-        with self.assertRaises(ContractError) as caught:
-            contract.check_sealable()
-        self.assertIn("issue #137", str(caught.exception))
-        self.assertNotIn("#136", str(caught.exception))
+    def test_a_run_may_seal_schema_7_now_its_manual_exists(self):
+        # Every schema 7 gate is wired: the tree gates (#136) and the Manual (#137).
+        self._parse(_tree_block()).check_sealable()
         block = _tree_block()
         block["schema_version"] = 6
         del block["assembly_tree"]
@@ -471,6 +562,50 @@ class AssemblyTreeTest(unittest.TestCase):
         for entry in catalogues.parts.values():
             if entry.category == "lamp":
                 self.assertIn("lead diameter", [size["what"] for size in entry.sizes], entry.id)
+
+
+def _schema_8_kit(block):
+    """The same kit as schema 8 (ADR 0093): each geometry names its prose
+    section and one Guide Image names every geometry."""
+
+    block["schema_version"] = 8
+    for geometry in block["geometries"]:
+        geometry["prose_sections"] = [geometry["name"]]
+    block["guides"] = [{"file": "guide-01-views.png", "shows": "Every Component from two more sides.",
+                        "geometries": [item["id"] for item in block["geometries"]]}]
+    prose = "# Kit Nook\n\n" + "".join(
+        "### %s\n\nThe %s, described.\n\n" % (item["name"], item["name"].lower())
+        for item in block["geometries"])
+    return block, prose
+
+
+class SchemaEightKitTest(unittest.TestCase):
+    """ADR 0093: schema 8 keeps every schema 7 feature, with the tree optional."""
+
+    def test_a_schema_8_kit_seals_its_tree_and_prose(self):
+        block, prose = _schema_8_kit(_tree_block())
+        contract = parse_design_contract(_contract_text(block, prose=prose), catalogues=_catalogues())
+        contract.check_sealable()
+        self.assertEqual(contract.schema_version, 8)
+        self.assertEqual(contract.to_dict()["assembly_tree"], block["assembly_tree"])
+        self.assertEqual(contract.to_dict()["print"], block["print"])
+        self.assertIsNotNone(contract.kit_catalogue())
+        self.assertEqual([item.heading for item in contract.prose], ["Case", "Cabinet", "Student desk"])
+
+    def test_a_schema_8_toy_without_a_tree_reads_no_catalogue(self):
+        block, prose = _schema_8_kit(_tree_block())
+        del block["assembly_tree"]
+        for piece in block["print"]["pieces"]:
+            piece["on"] = "cabinet"
+            piece["id"] = piece["id"].split("-", 1)[1]
+        contract = parse_design_contract(_contract_text(block, prose=prose), catalogues=None)
+        self.assertIsNone(contract.assembly_tree)
+        self.assertIsNone(contract.kit_catalogue())
+        # Without a tree a piece id is a schema 6 id, not a Part id.
+        block, prose = _schema_8_kit(_tree_block())
+        del block["assembly_tree"]
+        with self.assertRaises(ContractError):
+            parse_design_contract(_contract_text(block, prose=prose), catalogues=None)
 
 
 if __name__ == "__main__":

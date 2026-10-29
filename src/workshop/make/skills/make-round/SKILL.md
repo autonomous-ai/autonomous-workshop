@@ -269,6 +269,8 @@ component geometry.
   that did not build is reported as a gate failure, not a skip: there is no
   solid to measure. A round passes only when every gate passes on every part,
   so `built` and `printable at this nozzle` stay separate verdicts.
+  A kit Component is gated Part by Part instead, from its `print_parts()`
+  (see "The kit's Assembly Tree"), never assembled.
 - A round's builds all run at once (issue #101): `gen --write`, the
   reproduction build and `brepbundle.py build`, which builds the part once
   as a gate would and keeps it as a native B-rep bundle in cadgen's derived
@@ -344,7 +346,13 @@ Design Contract (ADR 0084) the round writes the Component's contract into
 the packet itself, bound by the packet hash: `contract` holds its geometry
 row, its `requirements` rows and the `text` of every Interface that names it
 (`<id>` or `<id>#<n>`). The summary's `contract` holds the same for the
-worker. Before schema 4 the packet has no `contract`, and the request also
+worker; under a schema 8 Design Contract (ADR 0093) it also holds `prose`,
+each prose section the Component's geometry names (`heading`, `text`),
+copied from the sealed contract as an owner amendment left it. Only the
+worker reads prose: the packet never carries it. It joins the
+Component's contract-rows hash, and so its carry key: a changed section
+unlocks every Component whose geometry names it, and their reviews stop
+carrying, exactly as a changed row does. Before schema 4 the packet has no `contract`, and the request also
 carries that geometry's contract lines. Write its answer unchanged with the
 exact packet hash from the summary:
 
@@ -678,6 +686,10 @@ the run root's `CONTRACT-AMENDMENTS.json`, and for a run whose objective is
 its contract also writes the amended `objective`. Rounds read the owner's
 rows after every applied in-run amendment, so a locked Component whose own
 rows changed unlocks as above; an owner's assembly row binds no Component.
+A schema 8 owner amendment may also change a sealed prose section's text
+(row `prose:<heading>`), never which sections exist or which geometry names
+them. Every Component whose geometry names the section unlocks, as for its
+own row, and its worker builds from the new text. An in-run Contract Amendment never changes prose.
 `--contract-amendments` lists each owner amendment after the in-run ones,
 and from then on `--propose-amendment` is refused. The host refuses an
 owner amendment for a run whose `make_round` or finalizer lacks the marker
@@ -685,8 +697,8 @@ owner amendment for a run whose `make_round` or finalizer lacks the marker
 
 ### The kit's Assembly Tree (ADR 0092)
 
-A schema 7 Design Contract splits the toy into kit Parts and joins them in
-an Assembly Tree, in Manual order. Before any worker starts, the Workshop
+A schema 7 Design Contract, and a schema 8 kit (ADR 0093), splits the toy
+into kit Parts and joins them in an Assembly Tree, in Manual order. Before any worker starts, the Workshop
 Manager installs the tree beside the Print Sheets:
 
 ```bash
@@ -712,6 +724,25 @@ Instance n of a geometry whose count is above 1 is the n-th copy of its
 subtree. `assembly_pose(shape, None)` moves the shape as a whole and keeps
 its labels. Unlabelled nodes are looked through; a solid reached without a
 Part label is an extra body.
+
+**Each Part prints alone** (owner decision 2026-10-28). A kit Component's
+file also defines `print_parts()`, returning `{Part id: shape}`: every
+printed Part of the Component, once per Part id (copies are the same Part,
+so no `#n`), each alone in the stance it prints in, bottom at Z 0 (centred
+in X and Y is fine). Bought Parts and Print Pieces are not in it. It is the
+Contract Proof's `print_<Part>` convention. `check_mesh`, `check_overhang`
+and `check_thickness` measure each of those Parts on its own, in component
+rounds, assembly rounds and final verification, never `gen_step()`'s
+assembled Component: assembled, a flat top board is an inner ceiling over
+air. The `parts` line and `print.<role>.parts` give each Part's verdict;
+the Component passes only when every Part does, and each failure names its
+Part (`cabinet/B04-top-board`). A missing `print_parts()`, a printed Part
+left out, or a Bought Part, Print Piece, copy, unknown Part or another
+Component's Part named in it fails the round's `parts` line with the
+repair, like a print gate, and nothing is gated in its place. A Part whose
+stance changed is gated again even when the assembled Component did not
+move. The tree, Interface, envelope, motion, paper and review checks still
+read the assembled Component.
 
 **What the gates check.** `kit_tree.py` reconciles every body, Print Piece
 and cited Bought Part with exactly one leaf; checks each printed Part is in
@@ -761,6 +792,30 @@ assembly rounds and final verification check.
   build-a-toy loop logs the defect in the toy's `TREE-ISSUES.md`.
 
 Insertion and lead-route failures are repairs like a print gate's.
+
+**The Manual** (ADR 0092 decision 9). Final verification, after the tree
+gates and the Print Sheets pass, runs
+
+```bash
+"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/kit_manual.py <cad-project>
+```
+
+which writes `manual/manual.pdf` and its report `manual/manual.json`. It is
+deterministic: the same tree and build give the same bytes. It builds every
+Component as the final tree gate does and draws, from one fixed camera:
+a front page of tools, warnings, every Bought Part under "Bought, not
+printed" (Q29) and "check all Parts first"; the Check Steps; one section
+per Component (bag, printed / paper / "bought, not printed" material
+list, 1:1 gauges, one exploded picture per step with arrows along each
+insertion direction, a correct/incorrect pair for an `error_prone` step);
+one join section per step across Components; the completion picture and
+the after-sales contact from `make-round/company.json`. Every sentence is
+the contract's own (`text`, names, lead `exit`s) or a fixed label: nobody
+writes or edits the Manual. It fails only when the tree cannot be written
+(a step with no instruction, an unknown Part id, a leaf in no or two
+material lists, which a sealed contract never gives) or a Component fails
+to build. The host accepts Make only with a passing Manual for the sealed
+tree, and Release ships the PDF in `make/manual/`.
 
 ## Record assembly visual feedback
 
@@ -880,6 +935,7 @@ Every gate `make_round` runs, exactly as it runs it. `$C` is
 |---|---|---|
 | build a part | `"$WORKSHOP_PYTHON" $C/gen part_<role>.step.py --write --json` | exit code, and the sibling `part_<role>.step` it writes |
 | print gates | `"$WORKSHOP_PYTHON" $C/check_thickness part_<role>.step.py --nozzle N --report <round>/thickness-<role>.md`, `$C/check_overhang ... --angle A --report <round>/overhang-<role>.md`, `$C/check_mesh part_<role>.step.py --bed WxDxH` | each `RESULT:` line and exit code; `check_mesh`'s `[edge ]` rows name non-manifold edges |
+| a kit Component's Parts | `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/kit_print_parts.py describe part_<role>.step.py`, then the print gates on each `__cadgen__/print-parts/<scope>/<role>/part_<Part>.step.py` it writes, reports `<round>/<gate>-<role>-<Part>.md` | the JSON line's `parts` (identity, `bottom_mm`) or `error`; each gate as above |
 | build a sample | `PYTHONPATH=<project> "$WORKSHOP_PYTHON" $C/gen samples/<name>.step.py --write --json`, then both print gates | exit codes and gate verdicts |
 | keep-out envelope | `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/check_envelope part_<role>.step.py --envelope <round>/envelope-<id>.json --role inside\|outside --json` | `ok` and the per-pose volumes outside or inside the envelope |
 | interface interference | `"$WORKSHOP_PYTHON" $C/inspect interfere measure/interface-rounds/<id>/rNNNN/interface_<id>.step.py --format json` | `ok` and each clash's parts and volume |

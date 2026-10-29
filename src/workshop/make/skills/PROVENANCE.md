@@ -2412,3 +2412,67 @@ Print Sheets (`_run_kit_tree`) and checks that a piece on a Sub-assembly
 across Components is carried by exactly one part. `check_motion` is
 unchanged. The `cad`, `make-round` and `print-details` locks move; a resync
 must keep these lines.
+
+## Local change: the kit's Manual (2026-10-23, ADR 0092 decision 9)
+
+`make-round/scripts/kit_manual.py` and `make-round/company.json` are new and
+host-owned: the tool writes a schema 7 kit's Manual (`manual/manual.pdf`
+and `manual/manual.json`) deterministically from `tree/kit.json` and the
+build, shading pictures with `render_review`'s rasteriser (unchanged), and
+reads the after-sales contact and warnings from `company.json`.
+`kit_tree.py`'s Part labels take every letter but M, N, P and S. In the
+vendored `cad` tree, `verify_project` runs the tool after the Print Sheets
+(`_run_kit_manual`) and lists both files among its sweep's tool paths. The
+`cad` and `make-round` locks move; a resync must keep these lines.
+
+## Local change: the kit panel fit (2026-10-26, owner decision Q35)
+
+`print-details/scripts/print_details.py` gains `TAB_SLOT_CLEARANCE` (0.15 mm
+per side), the press-fit, glue-free clearance of a kit panel's tab in its
+slot. It is one printer setting shared by every toy, never set per contract,
+and is marked an estimate (`TAB_SLOT_CLEARANCE_IS_ESTIMATE`) until the kit
+pilot's printed fit coupon replaces it. `--limits` prints it after the
+limits table, and the skill's Limits section names it. No feature reads it
+yet. The `print-details` lock moves; a resync must keep these lines.
+
+## Local change: no row limits, and a worker's prose sections (2026-10-26, ADR 0093)
+
+A Workshop-local change (ADR 0093 decisions 6 and 7). In the vendored `cad`
+tree, `verify_project`'s signature-review preflight takes one
+`geometry_form_requirements` entry per sealed geometry-scoped row and, for a
+`requirements_source: "contract"` review, one `critical_form_requirements`
+entry per sealed assembly row, however many the contract has; a Workshop
+Manager's own rows keep the limit of 16. Night Charms Hall's run stopped on
+the old cap of 16, which refused the 22 sealed rows the finalizer required.
+In `make-round`, under a schema 8 Design Contract a component round's
+`summary.json` `contract` gains `prose`, the Component's prose sections
+(`component_prose`), copied from the sealed contract as an owner amendment
+left them (`prose:<heading>` rows); the review packet never includes prose,
+but the contract-rows hash, and so the carry key, does: an owner's prose
+change unlocks every Component naming the section (owner decision
+2026-10-26). `has_assembly_tree` in `make_round`
+and `kit_tree.py` decides a kit by its sealed tree, so a schema 8 kit takes
+the tree gates and a schema 8 toy without a tree takes none. The `cad` and
+`make-round` locks move; a resync must keep these lines.
+
+## Local change: each kit Part is gated alone in its print stance (2026-10-28, ADR 0092)
+
+A Workshop-local change (ADR 0092, owner decision of 2026-10-28). The
+Night Charms Cabinet pilot's component rounds gated the cabinet's assembled
+`gen_step()` in its Display Pose: its flat top board and shelf failed
+`check_overhang` as inner ceilings and a 0.80 mm web read 0.66 mm. In
+`make-round`, the new `scripts/kit_print_parts.py` describes a kit
+Component's `print_parts()` (every printed Part alone in its print stance,
+bottom at Z 0) and writes one generated gate entry per Part under the
+project's `__cadgen__/print-parts/`; `make_round` gates each Part with
+`check_mesh`, `check_overhang` and `check_thickness`, records each Part's
+verdict and B-rep identity under `print.<role>.parts` (reuse compares
+them), refuses a `print_parts()` that is missing or is not the Component's
+printed Parts, and hashes the new tool into its print context. In the
+vendored `cad` tree, `verify_project`'s print sweep gates a kit's
+Components Part by Part the same way, PRINTABLE or not, and hashes
+`kit_print_parts.py` into its sweep closure. Non-kit projects are gated as
+before. A Component that both defines `print_parts()` and hosts a Print
+Piece keeps its paper gate beside its Parts (the pilot's resumed round
+crashed sorting the paper job's unnamed key with the Part names). The `cad`
+and `make-round` locks move; a resync must keep these lines.

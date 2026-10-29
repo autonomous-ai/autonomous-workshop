@@ -60,7 +60,7 @@ choosing it. That someone is a person picking a direction in a Concept Round,
 or the judges in a Trend contest. It proves nothing about the toy and is never
 a Reference Image. A chosen Concept Image becomes one only after it passes the
 same reconciliation with the Design Contract as any other image.
-_Avoid_: Preview Image, hero, concept art, thumbnail, mockup
+_Avoid_: Preview Image, direction image, hero, concept art, thumbnail, mockup
 
 **Concept Round**:
 One batch of Concept Images, shown side by side for a person to pick from or
@@ -81,6 +81,16 @@ one subject to build toward. The Workshop Manager and every Component Worker
 read it; nothing compares it with the model, and the Component Reviewer never
 sees it. Where it disagrees with the Design Contract, the contract wins.
 _Avoid_: Step sheet reference, extra reference, guide reference
+
+**Contract Proof**:
+Exact images drawn from a Design Contract's numbers alone, before the person's
+review, to check the contract rather than to build toward. Every number its
+drawer had to choose is a gap in the contract, and laid over a Reference Image
+it shows where the image disagrees with the numbers. The person approves it
+beside the Reference Images, and its views of each Part are sealed as that
+Component's Guide Images; it is never a Reference Image and nothing compares
+it with the model.
+_Avoid_: Contract Preview, preview render, CAD reference
 
 **Signature Motion**:
 The one movement a toy's play centres on, made by parts in contact or sharing
@@ -516,6 +526,13 @@ catalogue needs the owner's approval before a Design Contract may use it.
 Every model and render shows it in one reserved magenta no filament takes,
 and the toy ships a list of its bodies as not printed.
 _Avoid_: Purchased part, hardware, accessory
+
+**Panel**:
+A flat printed Part of the toy's one standard thickness, in one filament
+colour, joined to other Panels by tab and slot. Furniture, boxes, the shell
+and frames are built from Panels; a small round or 3D prop, such as an
+inkwell or a hat, is printed whole instead.
+_Avoid_: Board, sheet (a Print Sheet is paper), plate
 
 **Assembly Tree**:
 How a toy's Parts become the finished toy: Parts are its leaves, every inner

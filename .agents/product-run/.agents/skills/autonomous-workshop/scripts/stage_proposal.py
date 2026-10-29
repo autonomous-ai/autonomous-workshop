@@ -2416,7 +2416,10 @@ def _validate_signature_review(
         "Make critical form requirements",
         nonempty=True,
     )
-    if len(requirements) > 16:
+    # A contract's assembly rows have no limit (ADR 0093): they must match
+    # the sealed rows exactly, below. The 16 stays a guard on the rows a
+    # Workshop Manager writes for itself.
+    if design_contract is None and len(requirements) > 16:
         raise ProposalError("Make critical form requirements exceed the limit")
     requirement_texts: list[str] = []
     for index, raw_requirement in enumerate(requirements, 1):

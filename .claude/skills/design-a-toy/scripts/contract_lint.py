@@ -44,10 +44,15 @@ exception to the floor.
 Checks, each an error unless marked warn:
   schema       the host's own contract parser (workshop.wish.design_contract),
                every failure it names: for schema 7 (ADR 0092) the Assembly
-               Tree, its Components, ids and mnemonics, and the colours and
-               Bought Parts against the owner's catalogues
+               Tree, its Components, ids and mnemonics, the colours and
+               Bought Parts against the owner's catalogues, and every
+               printed Part's form: a panel at the toy's panel_mm unless it
+               states its thickness_reason, or a solid (owner decisions Q33
+               and Q34, 2026-10-26)
   catalogue    (warn) a schema 7 contract uses a catalogue entry the owner
                has not confirmed
+  panel        (warn) a schema 7 panel is not the toy's panel_mm: its
+               reason, for a recorded verdict
   envelope     block envelope_mm against the model's Display Pose box
   extents      block extents_mm (sorted) against the model (sorted)
   moves        every Interface pose against the model's moves for that mover
@@ -101,9 +106,18 @@ def schema_findings(text):
                 message = message[len(prefix):]
         return [{"level": "error", "check": "schema", "message": item} for item in message.split("; ")]
     tree = contract.assembly_tree
-    return [{"level": "warn", "check": "catalogue",
-             "message": "%s is not confirmed by the owner yet" % name}
-            for name in (tree.unconfirmed if tree is not None else ())]
+    if tree is None:
+        return []
+    findings = [{"level": "warn", "check": "catalogue",
+                 "message": "%s is not confirmed by the owner yet" % name}
+                for name in tree.unconfirmed]
+    for part in tree.to_dict()["parts"]:
+        if part.get("form") == "panel" and part.get("thickness_mm", tree.panel_mm) != tree.panel_mm:
+            findings.append({"level": "warn", "check": "panel",
+                             "message": "%s is a %g mm panel, not the toy's %g mm: %s" % (
+                                 part["id"], part["thickness_mm"], tree.panel_mm,
+                                 part["thickness_reason"])})
+    return findings
 
 
 def size(r):

@@ -2,11 +2,7 @@ import json
 import unittest
 
 from workshop.errors import ContractError
-from workshop.wish.design_contract import (
-    MAX_ASSEMBLY_REQUIREMENTS,
-    MAX_GEOMETRY_REQUIREMENTS,
-    parse_design_contract,
-)
+from workshop.wish.design_contract import parse_design_contract, prose_sections
 
 
 def _block(**overrides):
@@ -102,27 +98,42 @@ class DesignContractParsingTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "does not exist"):
             parse_design_contract(_contract_text(block))
 
-    def test_more_than_sixteen_assembly_requirements_refuses(self):
+    def test_more_than_sixteen_assembly_requirements_seal(self):
+        # ADR 0093 decision 6: ADR 0072's limit of 16 assembly rows is gone.
         block = _block()
         block["requirements"] = [
             {"id": "R%02d" % index, "scope": "assembly", "text": "Requirement %d." % index}
-            for index in range(1, MAX_ASSEMBLY_REQUIREMENTS + 2)
+            for index in range(1, 31)
         ]
 
-        with self.assertRaisesRegex(ContractError, "at most %d assembly" % MAX_ASSEMBLY_REQUIREMENTS):
-            parse_design_contract(_contract_text(block))
+        contract = parse_design_contract(_contract_text(block))
+        self.assertEqual(len(contract.requirements), 30)
 
-    def test_more_than_four_requirements_for_one_geometry_refuses(self):
+    def test_more_than_four_requirements_for_one_geometry_seal(self):
+        # ADR 0093 decision 6: a kit writes one row per Part it can see.
         block = _block()
         block["requirements"] = [
             {"id": "R%02d" % index, "scope": "geometry:world-disc", "text": "Requirement %d." % index}
-            for index in range(1, MAX_GEOMETRY_REQUIREMENTS + 2)
+            for index in range(1, 14)
         ]
 
-        with self.assertRaisesRegex(
-            ContractError, "at most %d requirements are allowed for geometry:world-disc" % MAX_GEOMETRY_REQUIREMENTS
-        ):
-            parse_design_contract(_contract_text(block))
+        contract = parse_design_contract(_contract_text(block))
+        self.assertEqual(len(contract.requirements), 13)
+
+    def test_requirement_ids_run_past_r99_with_three_digits(self):
+        block = _block()
+        block["requirements"] = [
+            {"id": "R%02d" % index, "scope": "assembly", "text": "Requirement %d." % index}
+            for index in range(1, 102)
+        ]
+        contract = parse_design_contract(_contract_text(block))
+        self.assertEqual(contract.requirements[-1].id, "R101")
+        for identifier in ("R1", "R001", "R1000", "r01"):
+            with self.subTest(identifier=identifier):
+                block = _block()
+                block["requirements"][0]["id"] = identifier
+                with self.assertRaisesRegex(ContractError, "requirements\\[0\\].id must look like R01"):
+                    parse_design_contract(_contract_text(block))
 
     def test_every_failure_is_named_at_once(self):
         block = _block(title="", inventor="")
@@ -492,7 +503,7 @@ class InterfaceTextTest(unittest.TestCase):
         self.assertIn("text needs schema_version 4", self._refused(camera))
 
     def test_an_unknown_schema_is_refused(self):
-        self.assertIn("schema_version must be 1, 2, 3, 4, 5, 6 or 7", self._refused(_block(schema_version=8)))
+        self.assertIn("schema_version must be 1, 2, 3, 4, 5, 6, 7 or 8", self._refused(_block(schema_version=9)))
 
 
 def _guide_block(**overrides):
@@ -637,3 +648,151 @@ class GuideImageTest(unittest.TestCase):
         older.check_guide_names([])
         with self.assertRaisesRegex(ContractError, "lists 0 guide image"):
             older.check_guide_names(["guide-01-transformation.png"])
+
+
+_PROSE = """# Broken God
+
+The god wakes on its shelf.
+
+## Components
+
+### Wing
+
+Each wing is a thin feathered blade with six primaries.
+
+#### Feathers
+
+The primaries fan 40 degrees.
+
+### Spine housing and heart core
+
+The housing is a ribbed drum; the heart core a faceted gem.
+
+```text
+### Not a heading inside a fence
+```
+
+## Print
+
+Everything prints flat.
+"""
+
+
+def _prose_block(**overrides):
+    """A schema 8 contract (ADR 0093): schema 5's guides, every geometry
+    named by one, and every geometry naming its prose sections."""
+
+    block = _guide_block()
+    block["schema_version"] = 8
+    sections = {
+        "wing": ["Wing"],
+        "spine-housing": ["Spine housing and heart core"],
+        "heart-core": ["Spine housing and heart core"],
+    }
+    for geometry in block["geometries"]:
+        geometry["prose_sections"] = sections[geometry["id"]]
+    block["guides"][0]["geometries"] = ["wing", "spine-housing"]
+    block["guides"][1]["geometries"] = ["heart-core", "wing"]
+    block.update(overrides)
+    return block
+
+
+class ProseSectionTest(unittest.TestCase):
+    """ADR 0093: a schema 8 geometry names the prose sections that describe
+    it, which seal inside the contract, and every geometry has Guide Images."""
+
+    def _refused(self, block, prose=_PROSE):
+        with self.assertRaises(ContractError) as caught:
+            parse_design_contract(_contract_text(block, prose=prose))
+        return str(caught.exception)
+
+    def test_a_schema_8_contract_seals_its_named_prose_sections(self):
+        block = _prose_block()
+        contract = parse_design_contract(_contract_text(block, prose=_PROSE))
+        self.assertEqual(contract.schema_version, 8)
+        self.assertEqual(contract.geometries[0].prose_sections, ("Wing",))
+        sealed = contract.to_dict()
+        self.assertEqual(sealed["geometries"], block["geometries"])
+        self.assertEqual(sealed["prose"], [
+            {"heading": "Wing", "text": "Each wing is a thin feathered blade with six primaries.\n\n"
+                                        "#### Feathers\n\nThe primaries fan 40 degrees."},
+            {"heading": "Spine housing and heart core",
+             "text": "The housing is a ribbed drum; the heart core a faceted gem.\n\n"
+                     "```text\n### Not a heading inside a fence\n```"},
+        ])
+        # No Assembly Tree: a schema 8 toy that is not a kit.
+        self.assertIsNone(contract.assembly_tree)
+        self.assertIsNone(contract.kit_catalogue())
+        self.assertNotIn("assembly_tree", sealed)
+
+    def test_a_section_never_runs_into_the_contract_block(self):
+        text = _contract_text(_prose_block(), prose="# T\n\n### Wing\n\nA blade.")
+        sections = prose_sections(text)
+        self.assertEqual(sections, [(1, "T", ""), (3, "Wing", "A blade.")])
+
+    def test_a_missing_heading_is_refused(self):
+        block = _prose_block()
+        block["geometries"][0]["prose_sections"] = ["Wings"]
+        self.assertIn("geometry 'wing' names prose section 'Wings', which is not a ### heading",
+                      self._refused(block))
+
+    def test_a_heading_at_another_level_or_in_a_fence_does_not_count(self):
+        for heading in ("Components", "Feathers", "Not a heading inside a fence"):
+            with self.subTest(heading=heading):
+                block = _prose_block()
+                block["geometries"][0]["prose_sections"] = [heading]
+                self.assertIn("which is not a ### heading", self._refused(block))
+
+    def test_a_duplicate_heading_is_refused(self):
+        prose = _PROSE + "\n### Wing\n\nAgain.\n"
+        self.assertIn("names prose section 'Wing', which is a ### heading 2 times",
+                      self._refused(_prose_block(), prose=prose))
+
+    def test_an_empty_section_is_refused(self):
+        prose = _PROSE.replace("Each wing is a thin feathered blade with six primaries.\n\n"
+                               "#### Feathers\n\nThe primaries fan 40 degrees.\n", "")
+        self.assertIn("prose section 'Wing' has no text", self._refused(_prose_block(), prose=prose))
+
+    def test_a_geometry_without_prose_sections_is_refused(self):
+        for value in (None, [], [""], "Wing", ["Wing", 3]):
+            with self.subTest(value=value):
+                block = _prose_block()
+                if value is None:
+                    del block["geometries"][1]["prose_sections"]
+                else:
+                    block["geometries"][1]["prose_sections"] = value
+                self.assertIn("geometries[1].prose_sections must name at least one prose ### heading",
+                              self._refused(block))
+        block = _prose_block()
+        block["geometries"][0]["prose_sections"] = ["Wing", "Wing"]
+        self.assertIn("geometries[0].prose_sections names a heading twice", self._refused(block))
+
+    def test_a_geometry_no_guide_names_is_refused(self):
+        block = _prose_block()
+        block["guides"][1]["geometries"] = ["wing"]
+        message = self._refused(block)
+        self.assertIn("geometry 'heart-core' is named by no guides[] entry's geometries", message)
+        self.assertNotIn("'wing' is named by no", message)
+        # A guide that names no geometries applies to all, but is no
+        # Component's own view.
+        block = _prose_block()
+        del block["guides"][1]["geometries"]
+        self.assertIn("geometry 'heart-core' is named by no guides", self._refused(block))
+        block = _prose_block()
+        del block["guides"]
+        self.assertIn("guides must be a non-empty list", self._refused(block))
+
+    def test_prose_sections_need_schema_8(self):
+        for version in (1, 5):
+            with self.subTest(version=version):
+                block = _guide_block() if version == 5 else _block(schema_version=1)
+                block["geometries"][0]["prose_sections"] = ["Wing"]
+                self.assertIn("geometries[0].prose_sections needs schema_version 8",
+                              self._refused(block))
+
+    def test_older_schemas_seal_no_prose(self):
+        contract = parse_design_contract(_contract_text(_guide_block(), prose=_PROSE))
+        sealed = contract.to_dict()
+        self.assertNotIn("prose", sealed)
+        self.assertTrue(all("prose_sections" not in item for item in sealed["geometries"]))
+        self.assertIsNone(contract.prose)

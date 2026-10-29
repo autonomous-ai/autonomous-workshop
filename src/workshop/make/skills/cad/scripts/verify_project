@@ -85,6 +85,11 @@ MAKE_ROUND_SCRIPT = SCRIPTS_DIR.parents[1] / "make-round" / "scripts" / "make_ro
 PRINT_DETAILS_SCRIPTS = SCRIPTS_DIR.parents[1] / "print-details" / "scripts"
 # ADR 0092: the Assembly Tree gates of a schema 7 Design Contract.
 KIT_TREE_SCRIPT = MAKE_ROUND_SCRIPT.with_name("kit_tree.py")
+# ADR 0092 decision 9: the kit's Manual, written from the tree and the build.
+KIT_MANUAL_SCRIPT = MAKE_ROUND_SCRIPT.with_name("kit_manual.py")
+# ADR 0092 (owner decision 2026-10-28): each kit Part, alone in its print stance.
+KIT_PRINT_PARTS_SCRIPT = MAKE_ROUND_SCRIPT.with_name("kit_print_parts.py")
+KIT_COMPANY_FILE = MAKE_ROUND_SCRIPT.parents[1] / "company.json"
 COMPONENT_ACCEPTANCE_NAME = "component-acceptance.json"
 POWER_SCRIPTS_DIR = (
     SCRIPTS_DIR.parents[1] / "electromechanical-integration" / "scripts"
@@ -317,9 +322,10 @@ def _required_signature_review(project: Path) -> str:
         geometries_with_rows: list[str] = []
         if has_geometry_rows:
             geometry_requirements = review.get("geometry_form_requirements")
-            if not isinstance(geometry_requirements, list) or not 1 <= len(
-                geometry_requirements
-            ) <= 16:
+            # One entry per sealed geometry-scoped row, however many the
+            # contract has (ADR 0093 removed ADR 0072's row limits); the
+            # finalizer holds them to the sealed rows exactly.
+            if not isinstance(geometry_requirements, list) or not geometry_requirements:
                 raise ValueError(
                     "signature review must enumerate geometry form requirements"
                 )
@@ -451,7 +457,12 @@ def _required_signature_review(project: Path) -> str:
     ) not in (1, 2, 3, 4):
         raise ValueError("signature review must record one to four review rounds")
     requirements = review.get("critical_form_requirements")
-    if not isinstance(requirements, list) or not 1 <= len(requirements) <= 16:
+    # A contract's assembly rows have no limit (ADR 0093); the 16 stays a
+    # guard on the rows a Workshop Manager writes for itself.
+    limit = None if review.get("requirements_source") == "contract" else 16
+    if not isinstance(requirements, list) or not requirements or (
+        limit is not None and len(requirements) > limit
+    ):
         raise ValueError("signature review must enumerate critical form requirements")
     for requirement in requirements:
         if not isinstance(requirement, dict) or set(requirement) != {
@@ -1362,6 +1373,138 @@ def _run_kit_tree(runner: Runner, project: Path, nozzle: float) -> int:
     ) != 0 else 0
 
 
+def _run_kit_manual(runner: Runner, project: Path) -> int:
+    """The kit's Manual (ADR 0092 decision 9): written deterministically
+    into manual/ from the installed Assembly Tree and the build, after the
+    tree gates and the Print Sheets passed. The host checks its report and
+    hash before Make is accepted. Nothing runs for an earlier contract."""
+
+    if not MAKE_ROUND_SCRIPT.is_file() or not KIT_MANUAL_SCRIPT.is_file():
+        return 0
+    tool = runpy.run_path(str(MAKE_ROUND_SCRIPT))
+    if "kit_state" not in tool:
+        return 0
+    kit, error = tool["kit_state"](project)
+    if kit is None and error is None:
+        return 0
+    if error is not None:
+        print(f"[verify_project] kit manual: {error}", flush=True)
+        runner.records.append({"command": f"kit manual  # FAILED: {error}", "status": "rc=1", "seconds": 0.0})
+        return 1
+    return 1 if runner.command(
+        [sys.executable, KIT_MANUAL_SCRIPT, _path_arg(project, runner.cwd)],
+        replay_success_stdout=True,
+    ) != 0 else 0
+
+
+def _kit_print_parts(project: Path) -> tuple[dict | None, object | None]:
+    """``(kit, kit_print_parts module)`` of a kit run, else ``(None, None)``.
+
+    ADR 0092 (owner decision 2026-10-28): every kit Part prints alone, so a
+    kit Component's print gates measure each Part its ``print_parts()``
+    returns, in its print stance, never the assembled Component."""
+
+    if not MAKE_ROUND_SCRIPT.is_file() or not KIT_PRINT_PARTS_SCRIPT.is_file():
+        return None, None
+    tool = runpy.run_path(str(MAKE_ROUND_SCRIPT))
+    if "kit_state" not in tool or "kit_print_parts" not in tool:
+        return None, None
+    kit, _error = tool["kit_state"](project)
+    if kit is None:
+        return None, None
+    return kit, tool["kit_print_parts"]()
+
+
+def _gate_entry(
+    runner: Runner,
+    project: Path,
+    entry: Path,
+    label: str,
+    *,
+    bed: tuple[float, float, float],
+    nozzle: float,
+    skip_thickness: bool,
+    overhang_angle: float,
+) -> int:
+    """The three print gates of one printed object; how many failed."""
+    entry_arg = _path_arg(entry, runner.cwd)
+    mesh_ok = runner.command(
+        [
+            sys.executable,
+            SCRIPTS_DIR / "check_mesh",
+            entry_arg,
+            "--bed",
+            f"{bed[0]:g}x{bed[1]:g}x{bed[2]:g}",
+        ],
+    ) == 0
+    if not mesh_ok:
+        # Overhang and thickness both decide inside-vs-outside by flood fill,
+        # which is undefined on a mesh that is not closed. Running them on a
+        # failed mesh produces numbers, not answers.
+        runner.skipped(f"check_overhang:{label}", "mesh gate failed")
+        if not skip_thickness:
+            runner.skipped(f"check_thickness:{label}", "mesh gate failed")
+        return 1
+
+    # Overhang and thickness are independent once the mesh is sound. Run
+    # both even when the first one fails so one repair round sees every
+    # printable defect in this part and in all remaining parts.
+    failures = runner.command(
+        [
+            sys.executable,
+            SCRIPTS_DIR / "check_overhang",
+            entry_arg,
+            "--angle",
+            str(overhang_angle),
+            "--report",
+            _path_arg(project / "measure" / f"overhang-{label}.md", runner.cwd),
+        ],
+    ) != 0
+    if not skip_thickness:
+        failures += runner.command(
+            [
+                sys.executable,
+                SCRIPTS_DIR / "check_thickness",
+                entry_arg,
+                "--nozzle",
+                str(nozzle),
+                "--report",
+                _path_arg(project / "measure" / f"thickness-{label}.md", runner.cwd),
+            ],
+        ) != 0
+    return int(failures)
+
+
+def _gate_kit_parts(
+    runner: Runner,
+    project: Path,
+    component: Path,
+    role: str,
+    kit: dict,
+    tool,
+    **gates,
+) -> int:
+    """Each printed Part of one kit Component, alone in its print stance
+    (ADR 0092, 2026-10-28); how many failed. A ``print_parts()`` that is not
+    the Component's printed Parts fails, and nothing is gated in its place."""
+    command = [sys.executable, KIT_PRINT_PARTS_SCRIPT, "describe", _path_arg(component, runner.cwd)]
+    returncode = runner.command(command)
+    if runner.dry_run:
+        names = tool.printed_parts(kit, role) or []
+    else:
+        described = tool.parse(runner.last_stdout, returncode)
+        refusals = tool.failures(kit, role, described)
+        if refusals:
+            for detail in refusals:
+                print(f"[verify_project] print parts: {detail}", flush=True)
+                runner.records.append({"command": f"print parts  # FAILED: {detail}", "status": "rc=1",
+                                       "seconds": 0.0})
+            return 1
+        names = sorted(described["parts"])
+    entries = tool.write_entries(component, project / "__cadgen__" / "print-parts" / "final" / role, names)
+    return sum(_gate_entry(runner, project, path, f"{role}-{name}", **gates) for name, path in entries.items())
+
+
 def _run_print_gates(
     runner: Runner,
     project: Path,
@@ -1371,6 +1514,7 @@ def _run_print_gates(
     nozzle: float,
     skip_thickness: bool,
     overhang_angle: float,
+    parts: list[Path] | None = None,
 ) -> int:
     """Audit every independent print target in one failure sweep.
 
@@ -1381,60 +1525,31 @@ def _run_print_gates(
     Failures are collected across parts rather than stopping at the first, so
     one repair round sees every printable defect in the project instead of
     peeling them off one run at a time.
+
+    A kit's Components (ADR 0092, owner decision 2026-10-28) are gated Part
+    by Part from their ``print_parts()``, whether or not they declare
+    PRINTABLE: each kit Part prints alone, in its own stance.
     """
     failures = 0
+    gates = {"bed": bed, "nozzle": nozzle, "skip_thickness": skip_thickness,
+             "overhang_angle": overhang_angle}
+    kit, tool = _kit_print_parts(project) if parts is not None else (None, None)
+    kit_roles: dict[str, Path] = {}
+    if kit is not None:
+        for part in parts:
+            role = part.name.removesuffix(ENTRY_SUFFIX).removeprefix(PART_PREFIX)
+            if part.name.startswith(PART_PREFIX) and tool.printed_parts(kit, role) is not None:
+                kit_roles[role] = part
 
     for printable in printables:
         role = printable.name.removesuffix(ENTRY_SUFFIX)
         if role.startswith(PART_PREFIX):
             role = role.removeprefix(PART_PREFIX)
-        entry_arg = _path_arg(printable, runner.cwd)
-
-        mesh_ok = runner.command(
-            [
-                sys.executable,
-                SCRIPTS_DIR / "check_mesh",
-                entry_arg,
-                "--bed",
-                f"{bed[0]:g}x{bed[1]:g}x{bed[2]:g}",
-            ],
-        ) == 0
-        if not mesh_ok:
-            failures += 1
-            # Overhang and thickness both decide inside-vs-outside by flood fill,
-            # which is undefined on a mesh that is not closed. Running them on a
-            # failed mesh produces numbers, not answers.
-            runner.skipped(f"check_overhang:{role}", "mesh gate failed")
-            if not skip_thickness:
-                runner.skipped(f"check_thickness:{role}", "mesh gate failed")
-            continue
-
-        # Overhang and thickness are independent once the mesh is sound. Run
-        # both even when the first one fails so one repair round sees every
-        # printable defect in this part and in all remaining parts.
-        failures += runner.command(
-            [
-                sys.executable,
-                SCRIPTS_DIR / "check_overhang",
-                entry_arg,
-                "--angle",
-                str(overhang_angle),
-                "--report",
-                _path_arg(project / "measure" / f"overhang-{role}.md", runner.cwd),
-            ],
-        ) != 0
-        if not skip_thickness:
-            failures += runner.command(
-                [
-                    sys.executable,
-                    SCRIPTS_DIR / "check_thickness",
-                    entry_arg,
-                    "--nozzle",
-                    str(nozzle),
-                    "--report",
-                    _path_arg(project / "measure" / f"thickness-{role}.md", runner.cwd),
-                ],
-            ) != 0
+            if role in kit_roles:
+                continue
+        failures += _gate_entry(runner, project, printable, role, **gates)
+    for role, component in sorted(kit_roles.items()):
+        failures += _gate_kit_parts(runner, project, component, role, kit, tool, **gates)
 
     if failures:
         print(
@@ -1577,6 +1692,9 @@ def _sweep_tool_paths(*, image_derived: bool) -> list[Path]:
         PRINT_DETAILS_SCRIPTS / "check_print_pieces.py",
         PRINT_DETAILS_SCRIPTS / "print_sheets.py",
         KIT_TREE_SCRIPT,
+        KIT_MANUAL_SCRIPT,
+        KIT_PRINT_PARTS_SCRIPT,
+        KIT_COMPANY_FILE,
     ]
     if image_derived:
         paths.extend([
@@ -2125,6 +2243,10 @@ def _final(
     if _run_print_sheets(runner, project, parts) != 0:
         return 1
 
+    # ADR 0092 decision 9: the kit's Manual, once its tree and sheets passed.
+    if _run_kit_manual(runner, project) != 0:
+        return 1
+
     # Last, where the print sweep has always run. Two independent reasons put it
     # here rather than straight after interference: a clash or an invalid solid
     # must not spend its voxel-grid budget, and on a multi-part project it is
@@ -2135,6 +2257,7 @@ def _final(
         runner,
         project,
         printables,
+        parts=parts,
         bed=bed,
         nozzle=nozzle,
         skip_thickness=skip_thickness,

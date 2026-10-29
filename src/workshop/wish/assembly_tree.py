@@ -24,8 +24,21 @@ The shape, in brief::
                             {"id": "C01-hat", "direction": [0, 0, -1]}],
                  "text": "Press the hat into the desk's socket."}],
       "components": [{"geometry": "teacher-desk", "parts": ["A01-desk", "C01-hat"]}],
+      "checks": [{"id": "light-test", "parts": ["P02-led", "P03-battery-box"],
+                  "text": "Join the LED to the battery box, switch on, then take it apart."}],
       "materials": ["tweezers"]
     }
+
+``checks`` holds the Check Steps (ADR 0092 decision 1): light tests the
+Manual shows first, outside the tree. A tree with a lamp has one, and every
+lamp is in a Check Step with a power Bought Part.
+
+Every printed Part names its ``form`` (owner decisions Q33 and Q34,
+2026-10-26): a ``panel`` is a flat printed Part joined by tab and slot, at
+the toy's one standard thickness ``panel_mm`` (default 2.0 mm) unless it
+carries a ``thickness_mm`` with its ``thickness_reason``; a ``solid`` is a
+small round or 3D prop printed whole and takes neither. Only what the
+contract states is checked here; the built thickness is Make's to match.
 """
 
 from __future__ import annotations
@@ -47,8 +60,10 @@ SHAPINGS = ("fold", "cut", "bend", "roll")
 # A step that joins LED leads (ADR 0092 decision 2).
 LEADS = "leads"
 JOINTS = JOINS + (PAPER,) + SHAPINGS + (LEADS,)
-# Printed Part letters, grouped by filament colour (ADR 0092 decision 6).
-PRINTED_LETTERS = "ABCDEFGHIJK"
+# Printed Part letters: every letter except M and N (Print Pieces), P (Bought
+# Parts) and S (steps), one letter per filament colour (ADR 0092 decision 6,
+# as the owner amended it on 2026-10-23).
+PRINTED_LETTERS = "ABCDEFGHIJKLOQRTUVWXYZ"
 MAX_COUNT = 99
 MAX_TEXT_CHARS = 200
 MAX_OUTPUT_CHARS = 80
@@ -56,9 +71,24 @@ MAX_NAME_CHARS = 80
 MAX_REASON_CHARS = 300
 MAX_EXIT_CHARS = 200
 MAX_STEPS = 999
+# Printed Part forms (owner decision Q33, 2026-10-26): furniture, boxes,
+# shell and frames are flat panels joined by tab and slot; small round or 3D
+# props print as solids.
+PANEL = "panel"
+SOLID = "solid"
+FORMS = (PANEL, SOLID)
+# The toy's one standard panel thickness (owner decision Q34, 2026-10-26):
+# five 0.4 mm lines. To be tuned after the pilot.
+PANEL_MM_DEFAULT = 2.0
+# A panel is at least the 0.4 mm nozzle's minimum wall, two lines.
+PANEL_MM_MIN = 0.8
+PANEL_MM_MAX = 10.0
 
 _SLUG = r"[a-z0-9]+(?:-[a-z0-9]+)*"
-PART_ID = re.compile(r"^([A-KP])([0-9]{2})-(%s)$" % _SLUG)
+PART_ID = re.compile(r"^([A-LO-RT-Z])([0-9]{2})-(%s)$" % _SLUG)
+CHECK_ID = re.compile(r"^%s$" % _SLUG)
+# Bought Part categories a Check Step may connect: lamps and their power.
+CHECK_CATEGORIES = ("lamp", "power")
 STEP_ID = re.compile(r"^S([0-9]{2})-(%s)$" % _SLUG)
 PIECE_ID = re.compile(r"^([MN])([0-9]{2})-(%s)$" % _SLUG)
 
@@ -76,6 +106,12 @@ class ContractAssemblyTree:
     component_of: Mapping[str, str] = field(default_factory=dict)
     unconfirmed: Tuple[str, ...] = ()
     catalogue: Mapping[str, Any] = field(default_factory=dict)
+
+    @property
+    def panel_mm(self) -> float:
+        """The toy's one standard panel thickness (owner decision Q34)."""
+
+        return float(self.section.get("panel_mm", PANEL_MM_DEFAULT))
 
     @property
     def root(self) -> str:
@@ -160,8 +196,69 @@ class _Ids:
         return fresh
 
 
+def _thickness(value: Any) -> bool:
+    return (
+        not isinstance(value, bool) and isinstance(value, (int, float))
+        and PANEL_MM_MIN <= value <= PANEL_MM_MAX
+    )
+
+
+def _panel_mm(value: Mapping[str, Any], errors: List[str]) -> Optional[float]:
+    """The toy's standard panel thickness, ``panel_mm`` (default 2.0 mm)."""
+
+    if "panel_mm" not in value:
+        return PANEL_MM_DEFAULT
+    if not _thickness(value["panel_mm"]):
+        errors.append(
+            "assembly_tree.panel_mm must be the toy's one panel thickness, %g to %g mm "
+            "(default %g)" % (PANEL_MM_MIN, PANEL_MM_MAX, PANEL_MM_DEFAULT)
+        )
+        return None
+    return float(value["panel_mm"])
+
+
+def _check_form(item: Mapping[str, Any], label: str, panel_mm: Optional[float], errors: List[str]) -> bool:
+    """A printed Part's form: a panel at the toy's panel thickness unless it
+    states its own with a reason, or a solid with neither."""
+
+    form = item.get("form")
+    if form not in FORMS:
+        errors.append(
+            "%s.form must be panel (a flat printed Part joined by tab and slot) or solid "
+            "(a small round or 3D prop printed whole)" % label
+        )
+        return False
+    if form == SOLID:
+        if "thickness_mm" in item or "thickness_reason" in item:
+            errors.append("%s is a solid: thickness_mm and thickness_reason belong to a panel" % label)
+            return False
+        return True
+    if "thickness_mm" not in item:
+        if "thickness_reason" in item:
+            errors.append("%s.thickness_reason explains a thickness_mm it does not state" % label)
+            return False
+        return True
+    thickness = item["thickness_mm"]
+    if not _thickness(thickness):
+        errors.append("%s.thickness_mm must be %g to %g mm" % (label, PANEL_MM_MIN, PANEL_MM_MAX))
+        return False
+    if panel_mm is not None and thickness != panel_mm and not _text(item.get("thickness_reason"), MAX_REASON_CHARS):
+        errors.append(
+            "%s is a %g mm panel, but the toy's panels are %g mm (panel_mm): a panel of another "
+            "thickness states its thickness_reason" % (label, thickness, panel_mm)
+        )
+        return False
+    if panel_mm is not None and thickness == panel_mm and "thickness_reason" in item:
+        errors.append(
+            "%s.thickness_reason explains nothing: the panel is the toy's own %g mm" % (label, panel_mm)
+        )
+        return False
+    return True
+
+
 def _parse_parts(
-    value: Any, catalogues: Catalogues, ids: _Ids, used: Set[str], errors: List[str]
+    value: Any, catalogues: Catalogues, ids: _Ids, used: Set[str], errors: List[str],
+    panel_mm: Optional[float] = PANEL_MM_DEFAULT,
 ) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]]]:
     """The printed and Bought Parts, each by id."""
 
@@ -171,6 +268,7 @@ def _parse_parts(
         errors.append("assembly_tree.parts must be a non-empty list")
         return printed, bought
     letters: Dict[str, Tuple[str, str]] = {}
+    colours: Dict[str, Tuple[str, str]] = {}
     for index, item in enumerate(value):
         label = "assembly_tree.parts[%d]" % index
         if not isinstance(item, dict):
@@ -180,8 +278,9 @@ def _parse_parts(
         match = PART_ID.fullmatch(identifier) if isinstance(identifier, str) else None
         if match is None:
             errors.append(
-                "%s.id must be a code and a kebab-case mnemonic: A01-<name> to K99-<name> for a "
-                "printed Part, P01-<name> for a Bought Part" % label
+                "%s.id must be a code and a kebab-case mnemonic: <letter>01-<name> for a printed "
+                "Part, any letter but M, N, P and S, one letter per filament; P01-<name> for a "
+                "Bought Part" % label
             )
             continue
         if not ids.add(identifier, label):
@@ -207,8 +306,15 @@ def _parse_parts(
                 used.add("bought-parts.json:%s" % entry.id)
             bought[identifier] = item
             continue
-        if set(item) != {"id", "name", "filament"}:
-            errors.append("%s: a printed Part is exactly {id, name, filament}" % label)
+        if not {"id", "name", "filament", "form"} <= set(item) <= {
+            "id", "name", "filament", "form", "thickness_mm", "thickness_reason"
+        }:
+            errors.append(
+                "%s: a printed Part is {id, name, filament, form}, and a panel may add "
+                "thickness_mm and thickness_reason" % label
+            )
+            continue
+        if not _check_form(item, label, panel_mm, errors):
             continue
         if not _text(item["name"], MAX_NAME_CHARS):
             errors.append("%s.name must name the Part in at most %d characters" % (label, MAX_NAME_CHARS))
@@ -229,7 +335,14 @@ def _parse_parts(
                 % (label, letter, letters[letter][0], letters[letter][1], identifier, filament.id)
             )
             continue
+        if filament.id in colours and colours[filament.id][0] != letter:
+            errors.append(
+                "%s: %s already has letter %s (%s), so %s cannot use %s: one filament is one letter"
+                % (label, filament.id, colours[filament.id][0], colours[filament.id][1], identifier, letter)
+            )
+            continue
         letters.setdefault(letter, (filament.id, identifier))
+        colours.setdefault(filament.id, (letter, identifier))
         printed[identifier] = item
     return printed, bought
 
@@ -410,12 +523,13 @@ def parse_assembly_tree(
         errors.append("assembly_tree must be an object with parts, steps and components (schema_version 7)")
         return None
     before = len(errors)
-    unknown = sorted(set(value) - {"parts", "steps", "components", "materials"})
+    unknown = sorted(set(value) - {"parts", "steps", "components", "materials", "checks", "panel_mm"})
     if unknown:
         errors.append("assembly_tree has unknown field(s): %s" % ", ".join(unknown))
     ids = _Ids(errors)
     unconfirmed: Set[str] = set()
-    printed, bought = _parse_parts(value.get("parts"), catalogues, ids, unconfirmed, errors)
+    panel_mm = _panel_mm(value, errors)
+    printed, bought = _parse_parts(value.get("parts"), catalogues, ids, unconfirmed, errors, panel_mm)
     leaves: Dict[str, str] = {key: "printed" for key in printed}
     leaves.update({key: "bought" for key in bought})
     piece_by_id: Dict[str, Mapping[str, Any]] = {}
@@ -473,6 +587,7 @@ def parse_assembly_tree(
         value.get("components"), geometries, printed, bought, parent, children, totals, errors
     )
     _check_materials(value.get("materials"), catalogues, unconfirmed, errors)
+    _check_checks(value, bought, catalogues, ids, errors)
     if len(errors) != before:
         return None
     return ContractAssemblyTree(
@@ -653,6 +768,65 @@ def _check_components(
     return owner
 
 
+def _check_checks(
+    value: Mapping[str, Any], bought: Mapping[str, Mapping[str, Any]], catalogues: Catalogues,
+    ids: _Ids, errors: List[str],
+) -> None:
+    """The Check Steps (ADR 0092 decision 1): each connects lamps to their
+    power and is taken apart again; it is no node of the tree. A tree with a
+    lamp tests every lamp in one."""
+
+    def category(identifier: Any) -> Optional[str]:
+        entry = bought.get(identifier) if isinstance(identifier, str) else None
+        return None if entry is None else catalogues.parts[entry["bought"]].category
+
+    lamps = sorted(key for key in bought if category(key) == "lamp")
+    checks = value.get("checks")
+    tested: Set[str] = set()
+    if checks is not None:
+        if not isinstance(checks, list) or not checks:
+            errors.append("assembly_tree.checks must list its Check Steps, or be left out")
+            checks = []
+        for index, item in enumerate(checks):
+            label = "assembly_tree.checks[%d]" % index
+            if not isinstance(item, dict) or set(item) != {"id", "text", "parts"}:
+                errors.append("%s must be exactly {id, text, parts}" % label)
+                continue
+            identifier = item["id"]
+            if not isinstance(identifier, str) or not CHECK_ID.fullmatch(identifier):
+                errors.append("%s.id must be a kebab-case mnemonic, such as light-test" % label)
+                continue
+            if identifier in ids.mnemonics or identifier in ids.codes:
+                errors.append("%s repeats the mnemonic %r (%s)"
+                              % (label, identifier, ids.mnemonics.get(identifier, ids.codes.get(identifier))))
+                continue
+            ids.mnemonics[identifier] = label
+            if not _text(item["text"], MAX_TEXT_CHARS):
+                errors.append("%s.text must be one short English instruction of at most %d characters"
+                              % (label, MAX_TEXT_CHARS))
+            parts = item["parts"]
+            if not isinstance(parts, list) or not parts or len(set(map(str, parts))) != len(parts):
+                errors.append("%s.parts must list its lamps and their power, each once" % label)
+                continue
+            kinds = set()
+            for part in parts:
+                kind = category(part)
+                if kind not in CHECK_CATEGORIES:
+                    errors.append("%s.parts names %r, which is no lamp or power Bought Part" % (label, part))
+                    continue
+                kinds.add(kind)
+                if kind == "lamp":
+                    tested.add(part)
+            if kinds and kinds != set(CHECK_CATEGORIES):
+                errors.append("%s connects lamps to their power: it names at least one of each" % label)
+    for lamp in lamps:
+        if lamp not in tested:
+            errors.append(
+                "%s is a lamp in no Check Step: the Manual tests every lamp first, in "
+                "assembly_tree.checks" % lamp
+            )
+
+
 def _check_materials(value: Any, catalogues: Catalogues, unconfirmed: Set[str], errors: List[str]) -> None:
     if value is None:
         return
@@ -676,14 +850,19 @@ def _check_materials(value: Any, catalogues: Catalogues, unconfirmed: Set[str], 
 
 
 __all__ = [
+    "CHECK_ID",
     "ContractAssemblyTree",
+    "FORMS",
     "JOINS",
     "JOINTS",
     "LEADS",
+    "PANEL",
+    "PANEL_MM_DEFAULT",
     "PAPER",
     "PART_ID",
     "PIECE_ID",
     "SHAPINGS",
+    "SOLID",
     "STEP_ID",
     "parse_assembly_tree",
 ]

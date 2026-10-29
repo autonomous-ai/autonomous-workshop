@@ -148,17 +148,18 @@ class GateContractTests(unittest.TestCase):
         self.assertFalse(passed)
         self.assertTrue(any("character limit" in reason for reason in reasons))
 
-    def test_fails_over_sixteen_assembly_requirements(self):
+    def test_passes_over_sixteen_assembly_requirements(self):
+        # ADR 0093 removed the row limits of ADR 0072.
         block = copy.deepcopy(_BLOCK)
         block["requirements"] = [
             {"id": "R%02d" % (index + 1), "scope": "assembly", "text": "Requirement %d." % index}
             for index in range(17)
         ]
         passed, reasons = self.tool.gate_contract(_contract_text(block=block))
-        self.assertFalse(passed)
-        self.assertTrue(any("assembly-scoped requirements" in reason for reason in reasons))
+        self.assertTrue(passed, reasons)
 
-    def test_fails_over_four_requirements_for_one_geometry(self):
+    def test_passes_over_four_requirements_for_one_geometry(self):
+        # ADR 0093 removed the row limits of ADR 0072.
         block = copy.deepcopy(_BLOCK)
         block["requirements"] = [
             {
@@ -169,8 +170,7 @@ class GateContractTests(unittest.TestCase):
             for index in range(5)
         ]
         passed, reasons = self.tool.gate_contract(_contract_text(block=block))
-        self.assertFalse(passed)
-        self.assertTrue(any("geometry:jaw" in reason for reason in reasons))
+        self.assertTrue(passed, reasons)
 
     def test_fails_when_the_block_does_not_validate(self):
         block = copy.deepcopy(_BLOCK)

@@ -1,15 +1,27 @@
 # ADR 0092: An Assembly Tree splits a toy into kit Parts and writes its Manual
 
 - Status: Accepted (owner, 2026-10-23). Implementation steps 2 (issue
-  #135) and 3 (issue #136) are implemented: schema 7 parses and lints, the
-  catalogues ship seeded and unconfirmed, design-a-toy drafts the tree, and
-  Make's tree gates (decision 8), the pilot's stop on a contract tree
-  defect (decision 10, split from labelling slips by the owner on
-  2026-10-23) and the not-printed colour and list of Bought Parts
-  (decision 5, owner, 2026-10-23) exist, tested on deterministic fakes; no live run has
-  exercised them, because steps 4-7 are not implemented and `workshop
-  wish|fix` refuse to seal a schema 7 contract until the Manual (#137)
-  exists.
+  #135), 3 (issue #136) and 4 (issue #137) are implemented: schema 7 parses
+  and lints, the catalogues ship seeded and unconfirmed, design-a-toy
+  drafts the tree, Make's tree gates (decision 8), the pilot's stop on a
+  contract tree defect (decision 10, split from labelling slips by the
+  owner on 2026-10-23) and the not-printed colour and list of Bought Parts
+  (decision 5, owner, 2026-10-23) exist, and final verification writes the
+  Manual (decision 9), which the host checks and Release ships. `workshop
+  wish|fix` now seal schema 7 contracts. The gates are tested on
+  deterministic fakes; the Manual also on a small real build123d project.
+  No live run has exercised any of them yet (steps 5-7).
+  Owner decisions of 2026-10-26 after the cabinet pilot's design (Q31,
+  Q33-Q37) amend decisions 1, 3, 4, 6, 7 and 8: design approval drops the
+  AI-drawn exploded views, and furniture, boxes, shell and frames are flat
+  Panels joined by tab and slot. Schema 7 states and lints each printed
+  Part's form and panel thickness; no Make gate measures a built panel's
+  thickness yet.
+  Owner decision of 2026-10-28 after the cabinet pilot's first Make run
+  adds decision 11: each printed Part is print-gated alone, in its print
+  stance, from the Component's `print_parts()`. It is implemented in
+  `make_round` and final verification and tested on deterministic fakes and
+  a small real build123d cabinet.
 - Date: 2026-10-23
 - Amends: ADR 0091 (what a Print Piece lands on; its id form), ADR 0082
   (Components are subtrees of the Assembly Tree), ADR 0088 (insertion paths
@@ -52,6 +64,8 @@ both are decided together. Six 2026 Rolife manuals were read page by page
    - **Manual Page**: one page presenting steps. One step may span pages,
      and one page may hold several steps.
    - **Manual**: the Rolife-style assembly book written from the tree.
+   - **Panel** (owner decision 2026-10-26, Q33): a flat printed Part of the
+     toy's one standard thickness, joined to other Panels by tab and slot.
 
 2. **What the tree holds.**
    - An Assembly Step may have one input (fold, cut to a gauge, bend, roll)
@@ -77,6 +91,9 @@ both are decided together. Six 2026 Rolife manuals were read page by page
    - Considered and rejected: one Component per single-colour Part. It
      would roughly double Night Charms Hall's Components and their review
      cost without improving the manual.
+   - Flat-pack does not change the cut (owner decision 2026-10-26, Q36). A
+     cabinet built from Panels stays one Component, of about six panel
+     Parts plus its props, not one Component per Panel.
 
 4. **Colour per Part, from stock.**
    - Each printed Part names one colour from a fixed catalogue of the
@@ -90,6 +107,9 @@ both are decided together. Six 2026 Rolife manuals were read page by page
      regenerates the image on a large miss.
    - Component renders colour each Part, and the Component Reviewer may
      list a wrong colour as a difference.
+   - **A Panel is one filament colour** (owner decision 2026-10-26, Q37).
+     Relief detail, such as a door's arch moulding or a frame, prints on
+     the Panel's face; texture and colour go on Print Pieces.
 
 5. **Bought Parts come from a catalogue.**
    - The catalogue lists battery boxes, LEDs, pins, screws, clear jars,
@@ -114,13 +134,16 @@ both are decided together. Six 2026 Rolife manuals were read page by page
        reconciliation proves the bodies match it. The host checks it
        before Make is accepted, the receipt carries it, Release ships it
        beside the STEP files (`make/models/cad/not-printed.json`), and
-       the Manual's bought column says these are bought, not printed.
+       the Manual's front page and bought column say these are bought,
+       not printed. Its pictures draw them in neutral grey, as the buyer
+       sees them.
 
 6. **The contract declares the tree (schema 7).**
    - Every Part and Assembly Step has an id of a code plus a kebab-case
      mnemonic:
-     - printed Parts `A03-hat`, the letters A–K grouped by filament
-       colour;
+     - printed Parts `A03-hat`, every letter except M, N, P and S, one per
+       filament colour (the owner's decision on 2026-10-23; it replaced
+       "the letters A–K grouped by filament colour");
      - Bought Parts `P02-steel-pin`;
      - Print Pieces `M01-spine-strip`, with M/N, a change to ADR 0091's id
        form;
@@ -137,6 +160,24 @@ both are decided together. Six 2026 Rolife manuals were read page by page
        picture.
    - A Print Piece's `on` names a printed Part, a Bought Part or a
      Sub-assembly. This amends ADR 0091, where it names a Unique Geometry.
+   - **Panel or solid** (owner decisions 2026-10-26, Q33 and Q34).
+     - Every printed Part names its `form`: `panel` or `solid`.
+     - The tree states the toy's one panel thickness, `panel_mm`, default
+       2.0 mm (five 0.4 mm lines), to be tuned after the pilot.
+     - A panel is `panel_mm` thick unless it states its own `thickness_mm`
+       with a `thickness_reason`; the lint lists every such panel for a
+       verdict. A solid takes neither.
+     - The parser checks only what the contract states. Matching a built
+       body to its panel thickness is Make's.
+     - A schema 7 draft written before this decision adds `form` to each
+       printed Part before it is sealed; a run already sealed keeps its
+       contract.
+   - **Tab and slot are press-fit and glue-free** (owner decision
+     2026-10-26, Q35). The clearance is one shared printer parameter, not a
+     contract field: `TAB_SLOT_CLEARANCE` in the `print-details` library,
+     0.15 mm per side. It is an estimate, pending research into Rolife's
+     fit, to be replaced by a printed fit coupon (several tab and slot
+     pairs at stepped clearances) in the pilot.
    - Schemas 1–6 and frozen runs are unchanged and get no Manual.
 
 7. **design-a-toy owns the split.**
@@ -147,8 +188,26 @@ both are decided together. Six 2026 Rolife manuals were read page by page
      - lay wiring before closing;
      - front and roof last;
      - a light test first.
-   - The owner approves it from images: one exploded view per Component
-     showing its Parts and colours, and one "in the box" flat lay.
+   - **Flat-pack** (owner decision 2026-10-26, Q33). Furniture, boxes, the
+     shell and frames are drafted as separate flat printed Panels joined by
+     tab and slot, as Rolife does (TGB19 page 14: a shelf from two slotted
+     side panels, L28, with its shelves and bars, L37; page tile
+     `docs/research/book-nook-kits/sources/manuals-2026/tiles/TGB19/TGB19-14.png`,
+     kept out of git, see that directory's README). Each Panel prints
+     flat without support, and its relief prints face-up and crisp. Small
+     round or 3D props (inkwells, a ring pull, a feather fan, a crystal
+     ball, a hat) print as solid Parts.
+   - *Amended by the owner, 2026-10-26 (Q31).* The owner approves the tree
+     at design time from the Reference Images and one "in the box" flat lay:
+     every Part, its count and colour, with no arrows. There are no
+     AI-generated exploded views. Exploded views with arrows come only from
+     the deterministic Manual (decision 9), rendered from the built STEP,
+     and the owner reviews them in the Manual after the build. Reason: in
+     the pilot, eight regenerate-and-review rounds never produced a correct
+     exploded view; the models mirrored Parts and misplaced or reversed
+     arrows (`toys-spec/nch-cabinet-pilot/PILOT-NOTES.md`, items 13-15).
+     This replaces "one exploded view per Component showing its Parts and
+     colours".
    - Make may not change the tree.
 
 8. **Deterministic tree gates.**
@@ -163,6 +222,9 @@ both are decided together. Six 2026 Rolife manuals were read page by page
    - **Insertion.**
      - Each input is inserted alone. Moving several inputs at once is
        refused.
+     - A box of Panels closes the same way (owner decision 2026-10-26,
+       Q36): each Panel enters alone, and the last one slides in along
+       grooves, so no step needs simultaneous moves.
      - Every joint an input engages is parallel to its declared direction.
      - Each step becomes `assembly_sequence` /
        `linear_motion_collision` conditions (ADR 0088), in Manual order.
@@ -189,11 +251,12 @@ both are decided together. Six 2026 Rolife manuals were read page by page
    - Content:
      - a front page of included tools (tweezers, foam tape and dots, a
        screwdriver when there are screws or a battery box, printed jigs)
-       and self-prepared ones (scissors, batteries), with warnings and
+       and self-prepared ones (scissors, batteries), with warnings, every
+       Bought Part under "Bought, not printed" (decision 5, Q29) and
        "check all Parts first";
      - the light Check Step;
      - one section per Component, with its bag and a three-column material
-       list (printed / paper / bought);
+       list (printed / paper / bought, not printed);
      - the join sections above the Components;
      - exploded renders per step, 1:1 gauges, printed-side and peel marks,
        Sub-assembly labels, correct/incorrect pictures where marked, and a
@@ -201,6 +264,33 @@ both are decided together. Six 2026 Rolife manuals were read page by page
      - an after-sales contact from company configuration.
    - Text is short English. Every judgement lives in the contract; Make
      writes no prose.
+   - As implemented (issue #137): `make-round/scripts/kit_manual.py` runs
+     in final verification after the tree gates and Print Sheets and writes
+     `manual/manual.pdf` and `manual/manual.json`.
+     - The light Check Steps are the tree's `checks` (`{id, text, parts}`,
+       lamps and their power); a tree with a lamp tests every lamp in one.
+     - A Component's section is every step wholly inside it; a step across
+       Components is its own join section; a step holding no Part (a fold
+       of a Print Piece) joins the section of the step it feeds. So every
+       leaf is in exactly one material list. Bags are numbered by section.
+     - The screwdriver is added when a Bought Part is a screw (a fastener
+       with a `thread` size) or a power source; scissors when there are
+       Print Pieces; batteries for each power source. Printed jigs are not
+       in the schema yet, so none is listed.
+     - Gauges are drawn 1:1 for every Bought Part with a catalogue
+       `length`.
+     - Pictures are the build's own bodies, built as the final tree gate
+       builds them and shaded by `render_review`'s software rasteriser from
+       one fixed camera. An exploded picture backs each moving input out
+       along its insertion direction. The incorrect picture of an
+       `error_prone` step is the same view with each moving input turned
+       half a turn about the axis across its direction; when that changes
+       no visible pixel, or nothing moves, a fixed placeholder says so.
+     - The after-sales contact and warnings are company configuration,
+       `make-round/company.json`; its contact is an owner placeholder until
+       the owner confirms it, and the receipt says so.
+     - The host checks the report and the PDF hash; a route whose host
+       reruns final verification also proves the Manual byte-identical.
 
 10. **Tree defects are watched in the pilot.** Every missing, extra or
     duplicated Part, whether a gate or an image review catches it, stops
@@ -229,6 +319,39 @@ both are decided together. Six 2026 Rolife manuals were read page by page
       missing from a model of a sound tree lists it as an ordinary
       difference.
 
+11. **Each printed Part is print-gated alone, in its print stance** (owner
+    decision 2026-10-28). Decision 8 said nothing of the print gates, so
+    they measured a kit Component as a part: its `gen_step()` compound, in
+    the Display Pose it is built in. In the cabinet pilot's first Make run
+    (`wish-20261028-051153-3f1061cd`, schema 8, an `assembly_tree`), the
+    flat top board B04 and shelf B05 failed `check_overhang` as inner
+    ceilings, 366 and 253 mm2 over air, and a 0.80 mm web read 0.66 mm in
+    `check_thickness` on the larger model's coarser grid. Each kit Part
+    prints alone, on its own.
+    - A kit Component's file also defines `print_parts()`, returning
+      `{Part id: shape}`: every printed Part of the Component, once per
+      Part id (copies are the same Part), each alone in its print stance,
+      bottom at Z 0, centred in X and Y. Bought Parts and Print Pieces are
+      not in it. It is the Contract Proof's `print_<Part>` convention.
+    - Component rounds, assembly rounds and final verification run
+      `check_mesh`, `check_overhang` and `check_thickness` on each of those
+      Parts separately (`make-round/scripts/kit_print_parts.py` writes one
+      generated entry per Part under `__cadgen__/print-parts/`). The
+      Component passes its print gates only when every Part does; each
+      failure names its Part and region.
+    - A kit Component without `print_parts()`, or whose `print_parts()`
+      leaves out a printed Part of its tree or names a Bought Part, a Print
+      Piece, a copy, another Component's Part or an unknown Part, fails the
+      round with the repair, a free repair like a print gate. Nothing ever
+      gates the assembled Component in its place.
+    - A round reuses a Part's passing gates only while the Part's B-rep
+      identity, the tools and the conditions are unchanged, so a Part
+      turned to another stance is gated again even when the assembled
+      Component did not move.
+    - The tree, Interface, Keep-out Envelope, motion and paper gates and the
+      review renders still read the assembled Component.
+    - Non-kit Components and frozen runs are gated as before.
+
 ## Not decided here
 
 - Whether Night Charms Hall keeps its 14 Components or is cut differently.
@@ -237,6 +360,10 @@ both are decided together. Six 2026 Rolife manuals were read page by page
   kettle, DG186 K boxes).
 - Hand or tool reach beyond the insertion corridor; tool-specific steps.
 - Two-sided print, die-cut pieces, and spare printed Parts.
+- Rolife's actual tab-slot fit. `TAB_SLOT_CLEARANCE` (0.15 mm per side) is an
+  estimate until the pilot's fit coupon (Q35).
+- A Make gate that measures each built panel against its stated thickness,
+  and whether `panel_mm` moves from 2.0 after the pilot (Q34).
 
 ## Consequences
 
@@ -244,8 +371,9 @@ both are decided together. Six 2026 Rolife manuals were read page by page
   so a multi-coloured object no longer has to merge into one colour or move
   wholly to paper.
 - A forgotten Part that is absent from every source (tree, STEP, sheets,
-  catalogue) passes the gates. Only the exploded views, the "in the box"
-  image and the Component Reviewer catch it. Decision 10 measures how often
+  catalogue) passes the gates. Only the "in the box" image, the Component
+  Reviewer and the owner's review of the Manual's exploded views after the
+  build catch it (Q31). Decision 10 measures how often
   this happens.
 - Since Q28, `TREE-ISSUES.md` logs only contract tree defects. Labelling
   slips appear in round summaries like any failing gate, so the pilot no
@@ -262,8 +390,8 @@ both are decided together. Six 2026 Rolife manuals were read page by page
 
 1. This ADR, accepted.
 2. design-a-toy and `CONTRACT-FORMAT.md`: schema 7, the tree, ids, the
-   catalogues, palette-limited image prompts, exploded-view and in-the-box
-   approval images.
+   catalogues, palette-limited image prompts, in-the-box approval image
+   (exploded-view approval images were dropped by Q31).
 3. The tree gates: reconciliation, insertion, lead route.
 4. The Manual generator.
 5. Pilot: Night Charms Hall's cabinet. One Component of several Parts, with

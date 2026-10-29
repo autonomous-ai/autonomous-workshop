@@ -5,7 +5,9 @@ directory as its reference images. It has two parts:
 
 1. **Prose.** The full spec that `design-a-toy` Stage 1 wrote, reconciled with
    the reference images the person approved. The Make agent reads it for
-   intent.
+   intent. From schema 8 (ADR 0093) the prose is split into one `###`
+   section per Component or Part, and each Component's Worker receives the
+   sections its geometry names (`prose_sections`, below).
 2. **One fenced `design-contract` block.** The checkable enumeration of that
    same spec. This skill checks conformance against the block.
 
@@ -41,7 +43,8 @@ rivet, boss or dome is at least 2.0 mm across, a raised band, rim or rib
 Every detail left out is named in a `requirements[]` row of its Component
 ("The brow band is a plain raised band and carries no rivets"): the
 Component Reviewer reads that Component's rows and Interface text, not the
-prose. Never write that a detail is "never left out", and never state a
+prose, even under schema 8, where the Component Worker reads its prose
+sections too. Never write that a detail is "never left out", and never state a
 smaller minimum, such as "every rivet at least 1.0 mm across".
 
 ## The block
@@ -145,6 +148,12 @@ instances.)
   Component Worker reads those for its Component, the Component Reviewer
   never sees one, and the contract wins wherever it disagrees. With
   `--check-motion true` the run must account for every step of every guide.
+  Required at schema 8 (ADR 0093 decision 5), where every Unique Geometry is
+  named in at least one guide's `geometries`: each Component's image is a
+  three-view sheet whose first view is its Reference Image and whose other
+  two are its Guide Images. A guide without `geometries` counts for no
+  geometry. `wish --contract` refuses a schema 8 contract with a geometry no
+  guide names.
 - `print` (schema 6, ADR 0091): the toy's **Print Sheets**, everything the
   maker prints on A4 and ships for the buyer to cut out with scissors, fold
   and apply. It is `{"stocks": {...}, "art": [...], "pieces": [...]}`:
@@ -183,13 +192,28 @@ instances.)
 - `assembly_tree` (schema 7, ADR 0092): the toy as a Rolife-style kit, the
   **Assembly Tree** its Manual is written from. Its leaves are the Parts the
   buyer handles, every inner node is an Assembly Step, and the last step is
-  the finished toy. It is `{"parts": [...], "steps": [...], "components":
-  [...], "materials": [...]}`:
+  the finished toy. It is `{"panel_mm": <mm>, "parts": [...], "steps":
+  [...], "components": [...], "checks": [...], "materials": [...]}`. Make writes the kit's
+  Manual from it (ADR 0092 decision 9), using only this section's words:
   - Every id is a code plus a kebab-case mnemonic, and no code or mnemonic
     repeats anywhere in the tree or the Print Pieces.
+  - `panel_mm` (optional, default 2.0, from 0.8 to 10): the toy's one
+    standard panel thickness, five 0.4 mm lines by default (owner decision
+    Q34, 2026-10-26).
   - `parts[]`: a printed Part is `{"id": "A03-hat", "name": "<at most 80
-    characters>", "filament": "<filament id>"}`. Its letter, A to K, groups
-    Parts by colour: one letter is one filament. A Bought Part is
+    characters>", "filament": "<filament id>", "form": "panel" | "solid"}`
+    (owner decision Q33, 2026-10-26). Furniture, boxes, the shell and frames
+    are built from flat **Panels** joined by tab and slot, each `panel`;
+    small round or 3D props (an inkwell, a ring pull, a crystal ball, a hat)
+    are `solid`, printed whole. A panel is `panel_mm` thick; one of another
+    thickness adds `"thickness_mm"` and a `"thickness_reason"` (at most 300
+    characters), which `contract_lint.py` lists for a verdict. A solid takes
+    neither. A panel is one filament colour: relief (a door's arch moulding,
+    a frame) prints on its face, and texture and colour go on Print Pieces
+    (Q37). The tab-slot clearance is no contract field: it is the printer's
+    `TAB_SLOT_CLEARANCE` in `print-details` (Q35, an estimate). Its letter groups Parts by
+    colour: any letter except M and N (Print Pieces), P (Bought Parts) and S
+    (steps), one letter per filament and one filament per letter. A Bought Part is
     `{"id": "P02-steel-pin", "bought": "<Bought Part id>"}`. Both ids come
     from the owner's catalogues, `src/workshop/wish/catalogues/filaments.json`
     and `bought-parts.json`. A colour or Bought Part outside them is refused:
@@ -253,18 +277,29 @@ instances.)
     that does not match the tree is a labelling slip the run repairs; a
     tree that does not hold together stops the run (ADR 0092 decision 10,
     Q28).
+  - `checks`: the Check Steps the Manual shows first, outside the tree:
+    `{"id": "light-test", "text": "<one short English instruction>",
+    "parts": [<lamp and power Bought Parts>]}`, each naming at least one lamp
+    and one power source; the id is a kebab-case mnemonic no other id uses.
+    A tree with a lamp tests every lamp in one; otherwise `checks` is left
+    out.
   - `materials`: the tools and consumables the Manual lists, catalogue ids
-    whose category is `tool` or `consumable`.
+    whose category is `tool` or `consumable`. The Manual adds a screwdriver
+    by itself when a Bought Part is a screw or a power source.
+
+  A box closes with each panel entering alone: the last panel slides in
+  along grooves, so no step needs two inputs to move together (Q36).
 
   An abridged cabinet, one Component of five Parts with a spine strip and a
-  pin hinge, placed in the case:
+  pin hinge, placed in the case (a real flat-pack cabinet is about six panel
+  Parts plus its props):
 
   ```json
   "assembly_tree": {
     "parts": [
-      {"id": "B01-cabinet-carcass", "name": "Cabinet carcass", "filament": "dark-oak"},
-      {"id": "B02-cabinet-door", "name": "Cabinet door", "filament": "dark-oak"},
-      {"id": "D01-inkwell", "name": "Inkwell", "filament": "dark-blue"},
+      {"id": "B01-cabinet-carcass", "name": "Cabinet carcass", "filament": "dark-oak", "form": "panel"},
+      {"id": "B02-cabinet-door", "name": "Cabinet door", "filament": "dark-oak", "form": "panel"},
+      {"id": "D01-inkwell", "name": "Inkwell", "filament": "dark-blue", "form": "solid"},
       {"id": "P01-hinge-pin", "bought": "steel-pin-1.5x29.5"},
       {"id": "P02-jar", "bought": "clear-jar-6x7"}
     ],
@@ -295,16 +330,45 @@ instances.)
 - `geometries[]`: one entry per **Unique Geometry**. `id` is lowercase kebab
   case. `count` is how many Components the toy has with this shape.
   `wall_min_mm` is the minimum wall.
-- `schema_version`: `4` for every new contract without a Guide Image: schema
-  3 plus a `text` on every Interface (ADR 0084). `5` is schema 4 plus a
-  non-empty `guides[]` (ADR 0089); a contract with no Guide Image stays 4.
+- `geometries[].prose_sections` (schema 8, ADR 0093, required there and
+  refused before it): a non-empty list of distinct heading texts, each
+  exactly the text after `### ` of one level-3 heading in the prose, outside
+  every fenced block. Each named heading must appear exactly once as a `###`
+  heading and have text. One section may be named by several geometries
+  ("Spine housing and heart core"). A section runs from the line after its
+  heading to the next heading of level 1 to 3; `####` subheadings stay in
+  it, and the design-contract block belongs to no section. Text under a
+  `##` heading outside every `###` reaches no worker, so prose written once
+  for the whole toy (the frame, stances, fit rules, assembly order) gets
+  `###` sections of its own, named by every geometry built in or to it. `wish --contract`
+  seals the named sections inside the contract as `prose`
+  (`[{"heading", "text"}]`, in prose order), and each component round
+  writes its Component's sections into its `summary.json` `contract`, for
+  the Component Worker only. Rows win wherever a section and a row differ;
+  the Component Reviewer never reads prose, so every visible claim the
+  reviewer must judge still needs its row. An owner amendment on resume may
+  change a section's text, never which sections exist or which geometry
+  names them; it unlocks every Component whose geometry names the changed
+  section, as a changed row does. An in-run Contract Amendment never
+  changes prose.
+- `schema_version`: `4` is schema 3 plus a `text` on every Interface (ADR
+  0084). `5` is schema 4 plus a
+  non-empty `guides[]` (ADR 0089).
   `6` is schema 5 plus the `print` section (ADR 0091), with `guides[]`
-  optional; a contract with no Print Sheet stays 4 or 5. `7` is schema 6
+  optional. `7` is schema 6
   plus `assembly_tree` (ADR 0092), with `print` and `guides[]` optional and
-  the Print Pieces' ids and hosts in the Part form above. A schema 7
-  contract is validated, and Make's tree gates (ADR 0092 decision 8) check
-  it, but `workshop wish|fix --contract` refuse to seal it until its Manual
-  (issue #137) exists. Schema 3 is schema 2 plus a `camera` on every
+  the Print Pieces' ids and hosts in the Part form above. Make's tree gates
+  (ADR 0092 decision 8) check a schema 7 kit, and final verification writes
+  its Manual (decision 9). `8` (ADR 0093) is schema 7 with `assembly_tree`
+  optional, so it serves every new contract, kit or not: a kit carries its
+  `assembly_tree` and gets the tree gates and Manual exactly as schema 7
+  does, and a toy that is not a kit omits it and gets neither; `print` is
+  optional as in schema 7, with Part ids and hosts only when the tree is
+  there. Schema 8 adds two requirements: every geometry names its
+  `prose_sections`, and `guides[]` is required with every geometry named in
+  some guide's `geometries`. Use `8` for every new contract; 1 to 7 stay
+  valid, with exactly their earlier rules, for contracts and runs sealed
+  before it. Schema 3 is schema 2 plus a `camera` on every
   reference; from schema 3 every Component file defines
   `assembly_pose(shape, pose)`, even one in no Interface. A schema 3
   contract has no Interface text, a schema 2 contract no cameras and a
@@ -342,7 +406,10 @@ instances.)
   - A `static` Interface has nothing more. No Kind takes another Kind's
     fields.
 - `requirements[]`: the visual requirements, meaning what a person would
-  judge by looking. `id` is `R` followed by two digits, unique. `scope` is
+  judge by looking. `id` is `R` followed by two digits (`R01`), or three
+  from `R100`, unique. There is no limit on how many rows a contract or a
+  Unique Geometry has (ADR 0093 decision 6): a kit writes one row per Part
+  for what can be seen. `scope` is
   `assembly` or `geometry:<id>`. That is the requirement's Requirement Scope.
   Write the text as one observable claim. A number already carried by a
   geometry field is not repeated here.
@@ -376,12 +443,16 @@ A contract is ready only when all of these hold. Report every failure at once.
   Components it names.
 - The prose carries the blunt-edge and detail rules above, states no
   minimum below the library's, and every detail left out has its row.
-- For schema 7, every tree rule above holds, and
+- For schema 7, every tree rule above holds, every printed Part is a
+  `panel` or a `solid`, every panel off `panel_mm` states its reason, and
   `python3 .claude/skills/design-a-toy/scripts/contract_lint.py CONTRACT.md`
   reports no error. It runs the host's own parser and warns for each
   catalogue entry the owner has not confirmed.
-- **At most 16 assembly-scoped requirements, and at most 4 per Unique
-  Geometry** (ADR 0072). Both limits are input guards whose provenance the ADR
-  records, not judgements about the toy. A contract that exceeds either one is
-  cut back by the person, not by you.
-- The whole file is at most 40,000 characters.
+- For schema 8, every geometry names its `prose_sections`, each one exactly
+  one `###` heading with text, and every geometry is named in some guide's
+  `geometries`.
+- No row count is limited: ADR 0093 removed ADR 0072's guards of 16
+  assembly-scoped rows and 4 per Unique Geometry.
+- The whole file is at most 40,000 characters. Nothing in the host checks
+  this number; it leaves room under the 50,000-character Wish objective
+  limit, which `wish --contract` enforces on the whole file.

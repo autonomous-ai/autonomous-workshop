@@ -21,10 +21,9 @@ from workshop.wish.assembly_tree import ContractAssemblyTree, parse_assembly_tre
 from workshop.wish.catalogues import Catalogues, load_catalogues
 from workshop.wish.print_sheets import ContractPrint, parse_print_section
 
-# Both limits are input guards on agent-supplied text, not design judgements
-# (ADR 0072, "Limits"). The assembly limit traces to commit deed467e.
-MAX_ASSEMBLY_REQUIREMENTS = 16
-MAX_GEOMETRY_REQUIREMENTS = 4
+# ADR 0072's row limits (16 assembly-scoped rows, 4 per Unique Geometry) are
+# gone (ADR 0093 decision 6): a kit writes one row per Part for what can be
+# seen. The file itself stays bounded by the Wish objective limit.
 # Schema 2 adds the Interfaces section (ADR 0082). Schema 1 contracts, sealed
 # before it, stay valid without one. Schema 3 keeps the Interfaces and gives
 # every reference its Reference Camera (ADR 0083). Schema 4 keeps both and
@@ -34,19 +33,24 @@ MAX_GEOMETRY_REQUIREMENTS = 4
 # Schema 6 keeps all four, makes Guide Images optional, and requires the
 # Print Sheets section (ADR 0091). Schema 7 keeps all five, makes the Print
 # Sheets optional, and requires the Assembly Tree that splits the toy into
-# kit Parts (ADR 0092).
-SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7)
+# kit Parts (ADR 0092). Schema 8 keeps all six, makes the Assembly Tree
+# optional again (a kit has one, any other toy has none), and requires what
+# ADR 0093 adds: every Unique Geometry names the prose ``###`` sections that
+# describe it (``prose_sections``), which Make delivers to its Component
+# Worker, and every Unique Geometry is named by at least one Guide Image, the
+# two extra views of its three-view sheet.
+SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7, 8)
 INTERFACES_SCHEMA_VERSION = 2
 CAMERA_SCHEMA_VERSION = 3
 INTERFACE_TEXT_SCHEMA_VERSION = 4
 GUIDE_SCHEMA_VERSION = 5
 PRINT_SCHEMA_VERSION = 6
 TREE_SCHEMA_VERSION = 7
-# A run may seal these. Schema 7 parses and validates, and Make's tree gates
-# (ADR 0092 decision 8, issue #136) exist, but its Manual (decision 9, issue
-# #137) does not: a kit would ship without the book it is assembled from, so
-# `workshop wish|fix --contract` refuses it until the Manual exists.
-SEALABLE_SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6)
+PROSE_SCHEMA_VERSION = 8
+# A run may seal these. Schema 7 became sealable once every gate it needs was
+# wired: Make's tree gates (ADR 0092 decision 8, issue #136) and its Manual
+# (decision 9, issue #137), which the host checks before Make is accepted.
+SEALABLE_SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7, 8)
 MAX_GUIDE_SHOWS_CHARS = 500
 MAX_GUIDE_STEPS = 24
 MAX_GUIDE_STEP_CHARS = 300
@@ -62,13 +66,19 @@ _GEOMETRY_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 # An Interface may name one instance of a Unique Geometry whose count is
 # above 1: ``wing#2`` (issue #80, ADR 0082).
 _INSTANCE_REFERENCE = re.compile(r"^([a-z0-9]+(?:-[a-z0-9]+)*)#([0-9]+)$")
-_REQUIREMENT_ID = re.compile(r"^R[0-9]{2}$")
+# R01..R99, then R100..R999: with no row limit (ADR 0093) a kit may pass 99 rows.
+_REQUIREMENT_ID = re.compile(r"^R(?:[0-9]{2}|[1-9][0-9]{2})$")
 _REFERENCE_FILE = re.compile(
     r"^ref-(?:0[1-9]|[1-9][0-9]{1,2})-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$"
 )
 _GUIDE_FILE = re.compile(
     r"^guide-(?:0[1-9]|[1-9][0-9]{1,2})-[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\.(?:png|jpg|webp)$"
 )
+# An ATX heading of the contract's prose (ADR 0093), and a line opening or
+# closing a fenced block, inside which no line is a heading.
+_HEADING = re.compile(r"^(#{1,6})[ \t]+(.*?)[ \t]*$")
+_FENCE_LINE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+_CONTRACT_FENCE_OPEN = re.compile(r"^ {0,3}```design-contract\s*$")
 
 
 @dataclass(frozen=True)
@@ -123,6 +133,35 @@ class ContractGeometry:
     count: int
     extents_mm: Tuple[float, float, float]
     wall_min_mm: float
+    # The exact ``###`` heading texts of the prose sections that describe this
+    # geometry (schema 8, ADR 0093); None before schema 8.
+    prose_sections: Optional[Tuple[str, ...]] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        value: Dict[str, Any] = {
+            "id": self.id,
+            "name": self.name,
+            "count": self.count,
+            "extents_mm": list(self.extents_mm),
+            "wall_min_mm": self.wall_min_mm,
+        }
+        if self.prose_sections is not None:
+            value["prose_sections"] = list(self.prose_sections)
+        return value
+
+
+@dataclass(frozen=True)
+class ContractProseSection:
+    """One prose ``###`` section a schema 8 geometry names (ADR 0093): its
+    exact heading text and the text from the line after the heading to the
+    next heading of level 3 or above, outside the design-contract block.
+    Sealed inside the contract so Make delivers it to the Component Worker."""
+
+    heading: str
+    text: str
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {"heading": self.heading, "text": self.text}
 
 
 @dataclass(frozen=True)
@@ -184,8 +223,12 @@ class DesignContract:
     # None before schema 6, which has no Print Sheets (ADR 0091), and for a
     # schema 7 contract that has none.
     print_sheets: Optional[ContractPrint] = None
-    # None before schema 7, which has no Assembly Tree (ADR 0092).
+    # None before schema 7, which has no Assembly Tree (ADR 0092), and for a
+    # schema 8 contract that is not a kit.
     assembly_tree: Optional[ContractAssemblyTree] = None
+    # Schema 8 (ADR 0093): every prose section some geometry names, in the
+    # order the prose gives them. None before schema 8.
+    prose: Optional[Tuple[ContractProseSection, ...]] = None
 
     def check_sealable(self) -> None:
         """Refuse a contract no run can seal yet (schema 7: see
@@ -193,12 +236,12 @@ class DesignContract:
 
         if self.schema_version not in SEALABLE_SCHEMA_VERSIONS:
             raise ContractError(
-                "design contract: schema_version %d is validated, but its Manual (issue #137) is "
-                "not implemented yet, so no run can seal it" % self.schema_version
+                "design contract: schema_version %d is validated, but no run can seal it yet"
+                % self.schema_version
             )
 
     def kit_catalogue(self) -> Optional[Dict[str, Any]]:
-        """The catalogue entries a schema 7 tree uses, sealed beside the
+        """The catalogue entries a schema 7 or 8 tree uses, sealed beside the
         contract (ADR 0092) so Make's tree gates read the colour of each
         printed Part and the size of each Bought Part from the Wish, not from
         whatever the owner's catalogue says later. None before schema 7."""
@@ -291,16 +334,7 @@ class DesignContract:
             "inventor": self.inventor,
             "envelope_mm": list(self.envelope_mm),
             "references": [item.to_dict() for item in self.references],
-            "geometries": [
-                {
-                    "id": item.id,
-                    "name": item.name,
-                    "count": item.count,
-                    "extents_mm": list(item.extents_mm),
-                    "wall_min_mm": item.wall_min_mm,
-                }
-                for item in self.geometries
-            ],
+            "geometries": [item.to_dict() for item in self.geometries],
             "requirements": [
                 {"id": item.id, "scope": item.scope, "text": item.text}
                 for item in self.requirements
@@ -323,6 +357,11 @@ class DesignContract:
             **(
                 {"assembly_tree": self.assembly_tree.to_dict()}
                 if self.assembly_tree is not None
+                else {}
+            ),
+            **(
+                {"prose": [item.to_dict() for item in self.prose]}
+                if self.prose is not None
                 else {}
             ),
         }
@@ -356,7 +395,13 @@ def _scope(value: Any, geometry_ids: Optional[frozenset], label: str, errors: Li
     return None
 
 
-def _parse_geometries(value: Any, errors: List[str]) -> Tuple[Tuple[ContractGeometry, ...], frozenset]:
+def _parse_geometries(
+    value: Any, errors: List[str], prose: bool = False
+) -> Tuple[Tuple[ContractGeometry, ...], frozenset]:
+    """The Unique Geometries; ``prose`` (schema 8) requires each one's
+    ``prose_sections``, and before schema 8 the field is refused rather than
+    ignored."""
+
     if not isinstance(value, list) or not value:
         errors.append("geometries must be a non-empty list")
         return (), frozenset()
@@ -387,6 +432,23 @@ def _parse_geometries(value: Any, errors: List[str]) -> Tuple[Tuple[ContractGeom
         if isinstance(wall_min, bool) or not isinstance(wall_min, (int, float)) or wall_min <= 0:
             errors.append("%s.wall_min_mm must be a positive number" % label)
             wall_min = 0.0
+        sections: Optional[Tuple[str, ...]] = None
+        if prose:
+            raw = item.get("prose_sections")
+            if (
+                not isinstance(raw, list) or not raw
+                or any(not isinstance(entry, str) or not entry.strip() for entry in raw)
+            ):
+                errors.append(
+                    "%s.prose_sections must name at least one prose ### heading "
+                    "(schema_version 8)" % label
+                )
+            elif len(set(raw)) != len(raw):
+                errors.append("%s.prose_sections names a heading twice" % label)
+            else:
+                sections = tuple(raw)
+        elif "prose_sections" in item:
+            errors.append("%s.prose_sections needs schema_version 8" % label)
         if identifier is not None:
             geometries.append(
                 ContractGeometry(
@@ -395,9 +457,89 @@ def _parse_geometries(value: Any, errors: List[str]) -> Tuple[Tuple[ContractGeom
                     count=count if isinstance(count, int) and not isinstance(count, bool) else 0,
                     extents_mm=extents,
                     wall_min_mm=float(wall_min),
+                    prose_sections=sections,
                 )
             )
     return tuple(geometries), frozenset(seen)
+
+
+def prose_sections(text: str) -> List[Tuple[int, str, str]]:
+    """``(level, heading, text)`` of every ATX heading of a contract file's
+    prose, in order (ADR 0093). A line inside a fenced block is never a
+    heading, and the design-contract block belongs to no section. A
+    section's text runs from the line after its heading to the next heading
+    of level 3 or above, without surrounding blank lines."""
+
+    found: List[Tuple[int, str, List[str]]] = []
+    fence: Optional[str] = None
+    in_contract = False
+    for line in text.splitlines():
+        marker = _FENCE_LINE.match(line)
+        if fence is not None:
+            closes = (
+                marker is not None
+                and marker.group(1)[0] == fence[0]
+                and len(marker.group(1)) >= len(fence)
+                and not line.strip()[len(marker.group(1)):].strip()
+            )
+            if closes:
+                fence = None
+            if in_contract:
+                in_contract = not closes
+            elif found:
+                found[-1][2].append(line)
+            continue
+        if marker is not None:
+            fence = marker.group(1)
+            if _CONTRACT_FENCE_OPEN.match(line):
+                in_contract = True
+            elif found:
+                found[-1][2].append(line)
+            continue
+        heading = _HEADING.match(line)
+        if heading is not None and len(heading.group(1)) <= 3:
+            found.append((len(heading.group(1)), heading.group(2), []))
+            continue
+        if found:
+            found[-1][2].append(line)
+    return [(level, heading, "\n".join(body).strip("\n").rstrip()) for level, heading, body in found]
+
+
+def _parse_prose(
+    text: str, geometries: Sequence[ContractGeometry], errors: List[str]
+) -> Tuple[ContractProseSection, ...]:
+    """Schema 8's prose sections (ADR 0093): each heading a geometry names is
+    exactly one ``###`` heading of the prose and has text; one section may
+    serve several geometries. Returned once each, in prose order."""
+
+    sections = prose_sections(text)
+    level_three: Dict[str, List[str]] = {}
+    for level, heading, body in sections:
+        if level == 3:
+            level_three.setdefault(heading, []).append(body)
+    named: set = set()
+    for geometry in geometries:
+        for heading in geometry.prose_sections or ():
+            found = level_three.get(heading, [])
+            if not found:
+                errors.append(
+                    "geometry %r names prose section %r, which is not a ### heading of the prose"
+                    % (geometry.id, heading)
+                )
+            elif len(found) > 1:
+                errors.append(
+                    "geometry %r names prose section %r, which is a ### heading %d times"
+                    % (geometry.id, heading, len(found))
+                )
+            elif not found[0].strip():
+                errors.append("prose section %r has no text" % heading)
+            else:
+                named.add(heading)
+    ordered: List[ContractProseSection] = []
+    for level, heading, body in sections:
+        if level == 3 and heading in named:
+            ordered.append(ContractProseSection(heading=heading, text=body))
+    return tuple(ordered)
 
 
 def reference_camera(value: Any) -> Optional[Tuple[float, float]]:
@@ -798,9 +940,10 @@ def _parse_interfaces(
 def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) -> DesignContract:
     """Parse and validate the fenced ``design-contract`` block inside ``text``.
 
-    A schema 7 contract's Parts are checked against ``catalogues``, the
-    owner's filament and Bought Part catalogues (ADR 0092); without it the
-    packaged catalogues are read. No older schema reads them.
+    A contract's Assembly Tree (schema 7, or a schema 8 kit) has its Parts
+    checked against ``catalogues``, the owner's filament and Bought Part
+    catalogues (ADR 0092); without it the packaged catalogues are read. A
+    contract without a tree never reads them.
 
     Every failure this function can detect is collected and raised together
     in one ``ContractError`` (ADR 0072: "The refusal names every failure at
@@ -826,7 +969,14 @@ def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) ->
 
     schema_version = block.get("schema_version")
     if isinstance(schema_version, bool) or schema_version not in SCHEMA_VERSIONS:
-        errors.append("schema_version must be 1, 2, 3, 4, 5, 6 or 7")
+        errors.append("schema_version must be 1, 2, 3, 4, 5, 6, 7 or 8")
+    # Each feature below starts at one schema and carries into every later
+    # one; an unknown schema reads as none of them.
+    version = (
+        schema_version
+        if not isinstance(schema_version, bool) and schema_version in SCHEMA_VERSIONS
+        else 0
+    )
 
     title = block.get("title")
     if not isinstance(title, str) or not title.strip():
@@ -838,47 +988,53 @@ def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) ->
 
     envelope_mm = _dimensions(block.get("envelope_mm"), "envelope_mm", errors)
 
-    geometries, geometry_ids = _parse_geometries(block.get("geometries"), errors)
+    geometries, geometry_ids = _parse_geometries(
+        block.get("geometries"), errors, prose=version >= PROSE_SCHEMA_VERSION
+    )
     references = _parse_references(
         block.get("references"), geometry_ids, errors,
-        cameras=schema_version in (
-            CAMERA_SCHEMA_VERSION, INTERFACE_TEXT_SCHEMA_VERSION, GUIDE_SCHEMA_VERSION,
-            PRINT_SCHEMA_VERSION, TREE_SCHEMA_VERSION,
-        ),
+        cameras=version >= CAMERA_SCHEMA_VERSION,
     )
     requirements = _parse_requirements(block.get("requirements"), geometry_ids, errors)
     interfaces: Optional[Tuple[ContractInterface, ...]] = None
     counts = {item.id: item.count for item in geometries}
-    if schema_version in (
-        INTERFACES_SCHEMA_VERSION, CAMERA_SCHEMA_VERSION,
-        INTERFACE_TEXT_SCHEMA_VERSION, GUIDE_SCHEMA_VERSION, PRINT_SCHEMA_VERSION,
-        TREE_SCHEMA_VERSION,
-    ):
+    if version >= INTERFACES_SCHEMA_VERSION:
         interfaces = _parse_interfaces(
             block.get("interfaces"), counts, errors,
-            text=schema_version in (
-                INTERFACE_TEXT_SCHEMA_VERSION, GUIDE_SCHEMA_VERSION, PRINT_SCHEMA_VERSION,
-                TREE_SCHEMA_VERSION,
-            ),
+            text=version >= INTERFACE_TEXT_SCHEMA_VERSION,
         )
     elif "interfaces" in block:
         errors.append("interfaces need schema_version 2 or later")
     guides: Optional[Tuple[ContractGuide, ...]] = None
-    if schema_version == GUIDE_SCHEMA_VERSION or (
-        schema_version in (PRINT_SCHEMA_VERSION, TREE_SCHEMA_VERSION) and "guides" in block
+    # Guide Images: required at schema 5, optional at 6 and 7, required at 8,
+    # where every Unique Geometry is named by one (ADR 0093 decision 5).
+    if version in (GUIDE_SCHEMA_VERSION, PROSE_SCHEMA_VERSION) or (
+        version > GUIDE_SCHEMA_VERSION and "guides" in block
     ):
         guides = _parse_guides(block.get("guides"), geometry_ids, errors)
+        if version >= PROSE_SCHEMA_VERSION:
+            guided = {entry for guide in guides for entry in guide.geometries or ()}
+            for geometry in geometries:
+                if geometry.id not in guided:
+                    errors.append(
+                        "geometry %r is named by no guides[] entry's geometries; under "
+                        "schema_version 8 every Unique Geometry has Guide Images" % geometry.id
+                    )
     elif "guides" in block:
         errors.append("guides need schema_version 5 or later")
+    # The Assembly Tree: required at schema 7, optional at 8 (a kit has one).
+    kit = version == TREE_SCHEMA_VERSION or (
+        version > TREE_SCHEMA_VERSION and "assembly_tree" in block
+    )
     print_sheets: Optional[ContractPrint] = None
-    if schema_version == PRINT_SCHEMA_VERSION:
+    if version == PRINT_SCHEMA_VERSION:
         print_sheets = parse_print_section(block.get("print"), counts, errors)
-    elif schema_version == TREE_SCHEMA_VERSION and "print" in block:
-        print_sheets = parse_print_section(block.get("print"), counts, errors, tree=True)
+    elif version > PRINT_SCHEMA_VERSION and "print" in block:
+        print_sheets = parse_print_section(block.get("print"), counts, errors, tree=kit)
     elif "print" in block:
         errors.append("print needs schema_version 6 or later")
     assembly_tree: Optional[ContractAssemblyTree] = None
-    if schema_version == TREE_SCHEMA_VERSION:
+    if kit:
         pieces = ()
         if isinstance(block.get("print"), dict) and isinstance(block["print"].get("pieces"), list):
             pieces = tuple(item for item in block["print"]["pieces"] if isinstance(item, dict))
@@ -892,24 +1048,10 @@ def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) ->
                 block.get("assembly_tree"), counts, pieces, catalogues, errors
             )
     elif "assembly_tree" in block:
-        errors.append("assembly_tree needs schema_version 7")
-
-    assembly_count = sum(1 for item in requirements if item.scope == "assembly")
-    if assembly_count > MAX_ASSEMBLY_REQUIREMENTS:
-        errors.append(
-            "at most %d assembly-scoped requirements are allowed, found %d"
-            % (MAX_ASSEMBLY_REQUIREMENTS, assembly_count)
-        )
-    per_geometry: Dict[str, int] = {}
-    for item in requirements:
-        if item.scope.startswith("geometry:"):
-            per_geometry[item.scope] = per_geometry.get(item.scope, 0) + 1
-    for scope, count in sorted(per_geometry.items()):
-        if count > MAX_GEOMETRY_REQUIREMENTS:
-            errors.append(
-                "at most %d requirements are allowed for %s, found %d"
-                % (MAX_GEOMETRY_REQUIREMENTS, scope, count)
-            )
+        errors.append("assembly_tree needs schema_version 7 or later")
+    prose: Optional[Tuple[ContractProseSection, ...]] = None
+    if version >= PROSE_SCHEMA_VERSION:
+        prose = _parse_prose(text, geometries, errors)
 
     if errors:
         raise ContractError("design contract: " + "; ".join(errors))
@@ -926,4 +1068,5 @@ def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) ->
         guides=guides,
         print_sheets=print_sheets,
         assembly_tree=assembly_tree,
+        prose=prose,
     )

@@ -45,6 +45,20 @@ REPORT_KIND = "kit-tree-report"
 INSTALL_SCHEMA = 1
 
 
+def has_assembly_tree(contract: Any) -> bool:
+    """Whether a sealed Design Contract is a kit: schema 7 always has an
+    Assembly Tree (ADR 0092), and a schema 8 contract has one when it is a
+    kit (ADR 0093). No earlier schema has one."""
+
+    if not isinstance(contract, Mapping):
+        return False
+    schema = contract.get("schema_version")
+    return (
+        type(schema) is int and schema >= TREE_SCHEMA_VERSION
+        and isinstance(contract.get("assembly_tree"), Mapping)
+    )
+
+
 def install_document(contract: Mapping[str, Any], catalogue: Any) -> dict[str, Any]:
     """The install a sealed schema 7 contract and its catalogue snapshot give."""
 
@@ -106,14 +120,14 @@ def verify_made_tree(
     contract: Mapping[str, Any] | None,
     catalogue: Any,
 ) -> dict[str, Any] | None:
-    """The accepted tree's account, or None for a contract before schema 7.
+    """The accepted tree's account, or None for a contract without an Assembly Tree.
     ``catalogue`` is the Wish's sealed ``kit_catalogue``. Raises
     ContractError naming what is wrong."""
 
-    if not isinstance(contract, Mapping) or contract.get("schema_version") != TREE_SCHEMA_VERSION:
+    if not has_assembly_tree(contract):
         return None
     if not isinstance(catalogue, Mapping):
-        raise ContractError("the Wish seals no kit_catalogue beside its schema 7 Design Contract")
+        raise ContractError("the Wish seals no kit_catalogue beside its kit Design Contract")
     product_root = Path(run_root).joinpath(*PurePosixPath(made.product_root).parts)
     entries = {entry.path: entry for entry in made.product_manifest.entries}
     prefix = PurePosixPath(made.cad_project_path)

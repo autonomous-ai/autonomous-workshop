@@ -481,6 +481,13 @@ def _copy_made_tree(
                 destination_root,
                 PurePosixPath(*cad_relative.parts[1:]).as_posix(),
             )
+        elif cad_relative.parts[0] == "manual":
+            # ADR 0092 decision 9: the kit's Manual ships beside the models
+            # and the Print Sheets; Make wrote it, Release adds nothing.
+            destination = "%s/manual/%s" % (
+                destination_root,
+                PurePosixPath(*cad_relative.parts[1:]).as_posix(),
+            )
         elif cad_relative.parts[0] == "snap":
             destination = "%s/verification/renders/%s" % (
                 destination_root,

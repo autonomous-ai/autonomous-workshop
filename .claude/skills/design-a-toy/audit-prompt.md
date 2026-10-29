@@ -21,7 +21,9 @@ rows, then compare with its reference image and the assembly image:
 3. **Printing.** In the print stance the contract names for the Component,
    is every groove, slot, notch, curl and proud detail printable without
    support (a face that hangs over open air must rise at least 52 degrees
-   from horizontal; a closed-top slot or groove across the build direction
+   from horizontal: Make's `check_overhang` fails below 45, and 52 is the
+   design margin that keeps a tessellated face above it, so a face between
+   45 and 52 is a finding, not a pass; a closed-top slot or groove across the build direction
    is a roof)? Is every feature at least the geometry's `wall_min_mm`, or
    named as an exception?
 4. **Contradictions.** Two statements of the contract about one fact that
