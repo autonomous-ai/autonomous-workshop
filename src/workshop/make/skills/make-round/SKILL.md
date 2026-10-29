@@ -269,6 +269,8 @@ component geometry.
   that did not build is reported as a gate failure, not a skip: there is no
   solid to measure. A round passes only when every gate passes on every part,
   so `built` and `printable at this nozzle` stay separate verdicts.
+  A kit Component is gated Part by Part instead, from its `print_parts()`
+  (see "The kit's Assembly Tree"), never assembled.
 - A round's builds all run at once (issue #101): `gen --write`, the
   reproduction build and `brepbundle.py build`, which builds the part once
   as a gate would and keeps it as a native B-rep bundle in cadgen's derived
@@ -723,6 +725,25 @@ subtree. `assembly_pose(shape, None)` moves the shape as a whole and keeps
 its labels. Unlabelled nodes are looked through; a solid reached without a
 Part label is an extra body.
 
+**Each Part prints alone** (owner decision 2026-10-28). A kit Component's
+file also defines `print_parts()`, returning `{Part id: shape}`: every
+printed Part of the Component, once per Part id (copies are the same Part,
+so no `#n`), each alone in the stance it prints in, bottom at Z 0 (centred
+in X and Y is fine). Bought Parts and Print Pieces are not in it. It is the
+Contract Proof's `print_<Part>` convention. `check_mesh`, `check_overhang`
+and `check_thickness` measure each of those Parts on its own, in component
+rounds, assembly rounds and final verification, never `gen_step()`'s
+assembled Component: assembled, a flat top board is an inner ceiling over
+air. The `parts` line and `print.<role>.parts` give each Part's verdict;
+the Component passes only when every Part does, and each failure names its
+Part (`cabinet/B04-top-board`). A missing `print_parts()`, a printed Part
+left out, or a Bought Part, Print Piece, copy, unknown Part or another
+Component's Part named in it fails the round's `parts` line with the
+repair, like a print gate, and nothing is gated in its place. A Part whose
+stance changed is gated again even when the assembled Component did not
+move. The tree, Interface, envelope, motion, paper and review checks still
+read the assembled Component.
+
 **What the gates check.** `kit_tree.py` reconciles every body, Print Piece
 and cited Bought Part with exactly one leaf; checks each printed Part is in
 its filament's colour and never `#ff00ff`, and each Bought Part in
@@ -914,6 +935,7 @@ Every gate `make_round` runs, exactly as it runs it. `$C` is
 |---|---|---|
 | build a part | `"$WORKSHOP_PYTHON" $C/gen part_<role>.step.py --write --json` | exit code, and the sibling `part_<role>.step` it writes |
 | print gates | `"$WORKSHOP_PYTHON" $C/check_thickness part_<role>.step.py --nozzle N --report <round>/thickness-<role>.md`, `$C/check_overhang ... --angle A --report <round>/overhang-<role>.md`, `$C/check_mesh part_<role>.step.py --bed WxDxH` | each `RESULT:` line and exit code; `check_mesh`'s `[edge ]` rows name non-manifold edges |
+| a kit Component's Parts | `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/kit_print_parts.py describe part_<role>.step.py`, then the print gates on each `__cadgen__/print-parts/<scope>/<role>/part_<Part>.step.py` it writes, reports `<round>/<gate>-<role>-<Part>.md` | the JSON line's `parts` (identity, `bottom_mm`) or `error`; each gate as above |
 | build a sample | `PYTHONPATH=<project> "$WORKSHOP_PYTHON" $C/gen samples/<name>.step.py --write --json`, then both print gates | exit codes and gate verdicts |
 | keep-out envelope | `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/check_envelope part_<role>.step.py --envelope <round>/envelope-<id>.json --role inside\|outside --json` | `ok` and the per-pose volumes outside or inside the envelope |
 | interface interference | `"$WORKSHOP_PYTHON" $C/inspect interfere measure/interface-rounds/<id>/rNNNN/interface_<id>.step.py --format json` | `ok` and each clash's parts and volume |

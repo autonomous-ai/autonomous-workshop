@@ -17,6 +17,11 @@
   Panels joined by tab and slot. Schema 7 states and lints each printed
   Part's form and panel thickness; no Make gate measures a built panel's
   thickness yet.
+  Owner decision of 2026-10-28 after the cabinet pilot's first Make run
+  adds decision 11: each printed Part is print-gated alone, in its print
+  stance, from the Component's `print_parts()`. It is implemented in
+  `make_round` and final verification and tested on deterministic fakes and
+  a small real build123d cabinet.
 - Date: 2026-10-23
 - Amends: ADR 0091 (what a Print Piece lands on; its id form), ADR 0082
   (Components are subtrees of the Assembly Tree), ADR 0088 (insertion paths
@@ -313,6 +318,39 @@ both are decided together. Six 2026 Rolife manuals were read page by page
       still refuse a Make with one open. A review that sees a Part
       missing from a model of a sound tree lists it as an ordinary
       difference.
+
+11. **Each printed Part is print-gated alone, in its print stance** (owner
+    decision 2026-10-28). Decision 8 said nothing of the print gates, so
+    they measured a kit Component as a part: its `gen_step()` compound, in
+    the Display Pose it is built in. In the cabinet pilot's first Make run
+    (`wish-20261028-051153-3f1061cd`, schema 8, an `assembly_tree`), the
+    flat top board B04 and shelf B05 failed `check_overhang` as inner
+    ceilings, 366 and 253 mm2 over air, and a 0.80 mm web read 0.66 mm in
+    `check_thickness` on the larger model's coarser grid. Each kit Part
+    prints alone, on its own.
+    - A kit Component's file also defines `print_parts()`, returning
+      `{Part id: shape}`: every printed Part of the Component, once per
+      Part id (copies are the same Part), each alone in its print stance,
+      bottom at Z 0, centred in X and Y. Bought Parts and Print Pieces are
+      not in it. It is the Contract Proof's `print_<Part>` convention.
+    - Component rounds, assembly rounds and final verification run
+      `check_mesh`, `check_overhang` and `check_thickness` on each of those
+      Parts separately (`make-round/scripts/kit_print_parts.py` writes one
+      generated entry per Part under `__cadgen__/print-parts/`). The
+      Component passes its print gates only when every Part does; each
+      failure names its Part and region.
+    - A kit Component without `print_parts()`, or whose `print_parts()`
+      leaves out a printed Part of its tree or names a Bought Part, a Print
+      Piece, a copy, another Component's Part or an unknown Part, fails the
+      round with the repair, a free repair like a print gate. Nothing ever
+      gates the assembled Component in its place.
+    - A round reuses a Part's passing gates only while the Part's B-rep
+      identity, the tools and the conditions are unchanged, so a Part
+      turned to another stance is gated again even when the assembled
+      Component did not move.
+    - The tree, Interface, Keep-out Envelope, motion and paper gates and the
+      review renders still read the assembled Component.
+    - Non-kit Components and frozen runs are gated as before.
 
 ## Not decided here
 

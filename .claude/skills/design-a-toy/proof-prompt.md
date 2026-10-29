@@ -67,7 +67,12 @@ contract's nozzle) is read from the library, not chosen.
    failure to `FINDINGS.md` under a heading of its own: the entry, the gate,
    the region it names and the contract words that put the material there.
    Never change the model to pass a gate: a failing gate on the contract's
-   own numbers is the finding.
+   own numbers is the finding. Also list, under "At the limit", every wall,
+   web, land, relief or cut the contract sizes exactly at its print minimum
+   (a 0.80 web at a 0.8 minimum): it passes here and can fail in Make, where
+   the gate measures it inside a larger model on a coarser grid (the
+   cabinet pilot's 0.80 notch web read 0.66). The designer gives each one
+   margin.
 
 Change nothing outside `<OUT>`, and never edit the contract. Reply with the
 number of guesses, contradictions and print-gate failures, and the path of
