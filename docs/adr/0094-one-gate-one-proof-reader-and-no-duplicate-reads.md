@@ -1,10 +1,11 @@
 # ADR 0094: One print gate, a kept Proof reader, and no duplicate reads
 
 - Status: Accepted by the owner on 2026-10-28 (proposals B, C, D and E of
-  `toys-spec/_workflow/SIMPLIFY.html`). Decisions 3 to 5 are implemented
-  in `design-a-toy` and `build-a-toy`. Decisions 1, 2 and 6 are
-  implemented on branch `workflow-simplify`; see the commits that cite
-  this ADR. Nothing is validated by a live run yet.
+  `toys-spec/_workflow/SIMPLIFY.html`). All six decisions are implemented
+  on branch `workflow-simplify` with deterministic tests: decision 1 as
+  `make_round --print-gates-only`, decision 6 in the Make finalizer,
+  `verify_project` and the product-run files. Nothing is validated by a
+  live run yet.
 - Date: 2026-10-28
 - Amends: ADR 0093 (the Proof's print gates and its rounds), ADR 0072 and
   issues #54/#55 (geometry blind reads), `design-a-toy` Stages 3b, 3c and
@@ -92,7 +93,9 @@ read 0.1, output 5) found:
 6. **No duplicate reads in Make, new runs only.**
    - A geometry-scoped requirement row is bound to its Component's current
      passing packet and to that Component's recorded agreeing review or
-     Component Acceptance, without a separate blind critic read. The
+     Component Acceptance, quoting the review's reason, without a separate
+     blind critic read. A geometry whose review is not proven (no bound
+     reviewer, as on Codex, or an older run) keeps its blind read. The
      assembly blind review is unchanged.
    - Text that serves only frozen runs, older schemas, Forge/Quest or fix
      runs moves out of the files a new Spark Make reads on every turn.
