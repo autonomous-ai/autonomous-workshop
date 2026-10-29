@@ -56,13 +56,13 @@ _ARCHIVE_METADATA = frozenset(("MANIFEST.json", "README.md", "SANITIZATION.json"
 _WORKSHOP_RUN_MARKERS = ("wish", "match", "invent", "release", "make/made.json", "make/product")
 # Reference and concept images are the owner's working material, not a
 # listing asset; the Spark carrier likewise never ships Wish references.
-_DROPPED_TOP_DIRECTORIES = {
-    "ref": "reference material is not published",
-    # The owner's request and agent transcripts; the toy-archive packer
-    # drops them too.
-    "inputs": "working material is not published",
-    "transcripts": "working material is not published",
-}
+_DROPPED_TOP_DIRECTORIES = {"ref": "reference material is not published"}
+# The owner's request, agent transcripts and whatever was studied alongside
+# them (another designer's model, comparison scripts). The toy-archive packer
+# drops them before staging, so they are never published and never part of
+# the bytes gate evidence binds.
+_WORKING_DIRECTORIES = frozenset(("inputs", "transcripts"))
+_WORKING_MATERIAL = "working material is not published"
 _DROPPED_DIRECTORIES = frozenset(("__cadgen__", "__pycache__"))
 # ADR 0062: STEP is the only geometry format Workshop ships.
 _MESH_SUFFIXES = frozenset(
@@ -140,7 +140,7 @@ class DirectSource:
     archive_sha256: Optional[str] = None
     publication: Optional[Mapping[str, Any]] = None
     # Every project file the build reads, including ones that stay local
-    # (``ref/``); only derived caches are left out.
+    # (``ref/``); derived caches and working material are left out.
     inputs: Mapping[str, Path] = field(default_factory=dict)
 
     def host_path_files(self) -> list[str]:
@@ -177,6 +177,8 @@ def _classify(relative: str) -> Optional[str]:
     # A cache is dropped whole, lock files and all, before anything else.
     if _DROPPED_DIRECTORIES & {part.casefold() for part in pure.parts[:-1]}:
         return "derived cache"
+    if len(pure.parts) > 1 and pure.parts[0] in _WORKING_DIRECTORIES:
+        return _WORKING_MATERIAL
     if any(part.startswith(".") for part in pure.parts):
         raise ContractError("hidden file in the project: %s" % relative)
     if pure.suffix.casefold() in _MESH_SUFFIXES:
@@ -213,7 +215,7 @@ def _select(
         if relative in inputs:
             raise ContractError("two archive files map to one project path: %s" % relative)
         reason = _classify(relative)
-        if reason != "derived cache":
+        if reason not in ("derived cache", _WORKING_MATERIAL):
             inputs[relative] = path
         if reason is not None:
             dropped.append((relative, reason))

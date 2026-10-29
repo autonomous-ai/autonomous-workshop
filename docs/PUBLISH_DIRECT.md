@@ -79,8 +79,10 @@ schema 1), which holds:
 - each gate row, as its gate (the script name, or `measure/<audit>.py`), the
   entry it measured and `pass`, `fail` or `skipped`;
 - the subject: the SHA-256 of every `.py`, `.step` and `.stp` file in the
-  project and every `measure/*.json` manifest, `ref/` included and renders
-  and reports left out.
+  project and every `measure/*.json` manifest. `ref/` is included, because a
+  source may import a reference STEP. Renders and reports are left out, and
+  so is working material (`inputs/`, `transcripts/`), which the toy-archive
+  wrapper drops before staging and which is never published.
 
 The file sits in `measure/`, so `toy_archive pack` carries it into
 `make/verification/reports/`, and an archive is checked the same way as a
