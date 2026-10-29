@@ -17,6 +17,7 @@ from unittest import mock
 from PIL import Image, ImageDraw
 
 from tests.integrations.test_factory import RootSelectingFactoryTransport, multipart_parts
+from workshop.integrations.factory import HttpResponse
 from workshop.errors import ContractError
 from workshop.release.direct_publish import (
     EVIDENCE_PATH,
@@ -136,6 +137,48 @@ def reseal(archive):
     }))
 
 
+class LateListingTransport(RootSelectingFactoryTransport):
+    """Factory makes the design public at once and lists it a few reads later."""
+
+    def __init__(self, unlisted_reads, publish_status=200):
+        super().__init__()
+        self.unlisted_reads = unlisted_reads
+        self.public_reads = 0
+        self.publish_status = publish_status
+        self.publishes = 0
+
+    def design(self):
+        design = super().design()
+        if self.public and self.public_reads <= self.unlisted_reads:
+            design["listing"] = None
+        return design
+
+    def __call__(self, method, url, headers, body, timeout):
+        if method == "POST" and url.endswith("/publish"):
+            self.calls.append((method, url, dict(headers), body, timeout))
+            self.publishes += 1
+            if self.publish_status != 200:
+                return HttpResponse(self.publish_status, {}, b'{"error":"refused"}')
+            self.public = True
+            return HttpResponse(200, {}, b"{}")
+        if self.public and method == "GET" and "/designs/" in url:
+            self.public_reads += 1
+        return super().__call__(method, url, headers, body, timeout)
+
+
+class FakeClock:
+    def __init__(self):
+        self.now = 0.0
+        self.sleeps = []
+
+    def sleep(self, seconds):
+        self.sleeps.append(seconds)
+        self.now += seconds
+
+    def __call__(self):
+        return self.now
+
+
 class NoNetwork:
     calls = 0
 
@@ -167,13 +210,15 @@ class DirectPublishTest(unittest.TestCase):
         self.store_credential()
         write_evidence(self.project, **evidence)
 
-    def run_tool(self, *arguments, transport=None, source=None):
+    def run_tool(self, *arguments, transport=None, source=None, clock=None):
         out, err = io.StringIO(), io.StringIO()
         transports = {} if transport is None else {"transport": transport}
+        timing = {} if clock is None else {"sleeper": clock.sleep, "clock": clock}
         code = TOOL.main(
             [*(source or ["--cad-dir", str(self.project)]), "--inventor", INVENTOR,
              "--product-id", PRODUCT_ID, *arguments],
             environment=self.environment, transports=transports, out=out, err=err,
+            **timing,
         )
         return code, out.getvalue(), err.getvalue()
 
@@ -273,6 +318,45 @@ class DirectPublishTest(unittest.TestCase):
         code, out, _ = self.run_tool()
         self.assertEqual(code, 0)
         self.assertIn("would publish it: measure/check.md", out)
+
+    def test_a_late_listing_is_awaited_without_publishing_twice(self):
+        self.ready()
+        transport, clock = LateListingTransport(unlisted_reads=3), FakeClock()
+        code, out, err = self.run_tool("--live", transport=transport, clock=clock)
+        self.assertEqual((code, err), (0, ""), out)
+        self.assertIn("public: https://www.autonomous.ai/toys/product/verified-toy", out)
+        self.assertEqual(transport.publishes, 1)
+        self.assertEqual(transport.imports, 1)
+        self.assertTrue(clock.sleeps)
+        self.assertTrue(all(seconds == TOOL.LISTING_POLL_SECONDS for seconds in clock.sleeps))
+        ledger = EffectLedger(TOOL.ledger_path(PRODUCT_ID, self.environment))
+        self.assertEqual(ledger.latest(PRODUCT_ID, "factory-publish").state, "succeeded")
+
+    def test_the_listing_wait_is_bounded_and_a_rerun_still_reconciles(self):
+        self.ready()
+        transport, clock = LateListingTransport(unlisted_reads=10_000), FakeClock()
+        code, _, err = self.run_tool("--live", transport=transport, clock=clock)
+        self.assertEqual(code, TOOL.EXIT_EFFECT)
+        self.assertIn("AmbiguousEffectError", err)
+        self.assertLessEqual(sum(clock.sleeps), TOOL.LISTING_WAIT_SECONDS)
+        self.assertGreaterEqual(sum(clock.sleeps) + TOOL.LISTING_POLL_SECONDS,
+                                TOOL.LISTING_WAIT_SECONDS)
+        self.assertEqual(transport.publishes, 1)
+        ledger = EffectLedger(TOOL.ledger_path(PRODUCT_ID, self.environment))
+        self.assertEqual(ledger.latest(PRODUCT_ID, "factory-publish").state, "unknown")
+        transport.unlisted_reads = 0
+        code, out, _ = self.run_tool("--live", transport=transport, clock=FakeClock())
+        self.assertEqual(code, 0, out)
+        self.assertEqual((transport.publishes, transport.imports), (1, 1))
+
+    def test_a_refused_publication_is_not_awaited(self):
+        self.ready()
+        transport, clock = LateListingTransport(unlisted_reads=0, publish_status=403), FakeClock()
+        code, _, err = self.run_tool("--live", transport=transport, clock=clock)
+        self.assertEqual(code, TOOL.EXIT_EFFECT)
+        self.assertIn("publish_direct: EffectError", err)
+        self.assertEqual(clock.sleeps, [])
+        self.assertEqual(transport.publishes, 1)
 
     def test_live_needs_the_inventors_own_credential(self):
         write_evidence(self.project)

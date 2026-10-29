@@ -51,6 +51,14 @@ Exit codes: `0` success, `2` input or state refusal, `3` Factory effect
 unproven. For exit `3`, re-run the same command. The ledger reconciles the
 earlier attempt and never uploads blindly.
 
+Factory makes a design public at once but creates its shop listing a little
+later; 20-90 s was observed on 2026-10-29. Workshop's public readback requires
+that listing. After the publish call, `--live` therefore re-reads every 10 s
+for up to 2 minutes. It does so only while the ledger records the publication
+as `unknown`, and it never sends the publish request again. A design whose
+listing never appears (Factory computed no `print_specs`) still ends with
+exit `3`.
+
 Every run, including a dry run, ends with `live: ready` or `live: refused` and
 lists each reason. `--live` checks these before it reads a credential:
 
