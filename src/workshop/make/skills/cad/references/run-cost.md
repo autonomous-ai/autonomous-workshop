@@ -12,7 +12,8 @@ build outside a restricted product run, clear only that project's `__cadgen__`
 before the retry. Inside a Workshop product run, do not delete protected cache
 directories: regenerate every affected target explicitly with `scripts/gen
 <targets...> --write --force`, then use the non-`--fresh` iterative preflight.
-The trusted host performs the authoritative isolated fresh rebuild.
+For Forge and Quest the trusted host performs the authoritative isolated
+fresh rebuild; Spark accepts Make's output without one (ADR 0061).
 
 ## Two measurements, and the second inverts the first
 

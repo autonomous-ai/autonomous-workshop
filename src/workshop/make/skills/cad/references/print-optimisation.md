@@ -99,7 +99,7 @@ leave a sliver (`wiki show fdm-multi-material-design`).
 In Workshop the union must also be the plate's own material: `printlib`
 refuses a `gen_print_union()` whose volume differs from the regions' summed
 volume (beyond 1e-5 of it, or 0.001 mm3) or whose bounding box sits more than
-0.01 mm off theirs. The mesh gates, and the host's print-ready rerun, then
+0.01 mm off theirs. The mesh gates, and for Forge and Quest the host's print-ready rerun, then
 never measure a stand-in that prints more easily than the object that ships.
 
 ## Which way is up — `check_overhang`

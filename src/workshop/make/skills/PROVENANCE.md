@@ -2491,3 +2491,19 @@ refuses inside one) with no nonce, Shared Helper
 freeze or round history, writing only inside the directory. Rounds gate
 exactly as before. The `make-round` lock moves; a resync must keep these
 lines.
+
+## Local change: a proven Component Review is a geometry's evidence (2026-10-28)
+
+A Workshop-local change (owner decision of 2026-10-28). In the vendored
+`cad` tree, `verify_project`'s signature-review preflight accepts a schema 9
+review whose `geometry_form_requirements` stand without
+`geometry_blind_reads`, and a `geometry_blind_reads` that lists only some of
+the Unique Geometries with rows, each at most once and in row order: the
+Make finalizer decides which geometry a proven Component Review covers and
+which still needs a blind read. The `cad` skill's text no longer says the
+host reruns the verifier or performs a fresh rebuild for Spark (ADR 0061):
+only Forge and Quest have that host gate (`SKILL.md`,
+`references/step-generation.md`, `references/print-optimisation.md`,
+`references/run-cost.md`). The `cad` lock moves; a resync must keep these
+lines.
+

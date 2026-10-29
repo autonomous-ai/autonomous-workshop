@@ -1293,6 +1293,52 @@ class VerifyProjectTierPlanTest(unittest.TestCase):
         ):
             validate(self.project)
 
+    def test_schema_nine_geometry_rows_need_blind_reads_only_for_some_geometries(self):
+        """A geometry whose proven Component Review is its evidence takes no
+        blind read; this gate cannot tell which, so it takes any in-order
+        subset of the geometries with rows and refuses anything else."""
+        import runpy
+
+        self._write_signature_review(
+            review_rounds=1, schema_version=9, requirements_source="contract"
+        )
+        review_path = self.project / "snap/SIGNATURE-REVIEW.json"
+        validate = runpy.run_path(str(self.verifier))["_required_signature_review"]
+        base = json.loads(review_path.read_text(encoding="utf-8"))
+        base["geometry_form_requirements"] = [
+            {
+                "requirement": "The %s must hold its shape." % geometry,
+                "geometry": geometry,
+                "blind_evidence": "Its Component Review agrees.",
+                "matches": True,
+                "packet_sha256": "0" * 64,
+                "view": "sheet",
+            }
+            for geometry in ("dome", "base")
+        ]
+
+        def write(reads):
+            review = dict(base)
+            if reads is not None:
+                review["geometry_blind_reads"] = [
+                    {"geometry": geometry, "blind_read": "A shape.", "review_rounds": 1}
+                    for geometry in reads
+                ]
+            review_path.write_text(
+                json.dumps(review, sort_keys=True, separators=(",", ":")),
+                encoding="utf-8",
+            )
+
+        for reads in (None, ["base"], ["dome"], ["dome", "base"]):
+            with self.subTest(reads=reads):
+                write(reads)
+                self.assertEqual(validate(self.project), _sha(review_path.read_bytes()))
+        for reads in (["base", "dome"], ["base", "base"], ["lid"]):
+            with self.subTest(reads=reads):
+                write(reads)
+                with self.assertRaisesRegex(ValueError, "at most one blind read per Unique"):
+                    validate(self.project)
+
     def test_schema_nine_blind_rereads_are_checked_structurally(self):
         """This in-sandbox gate has no sealed contract to bind a reread's
         citation against (issue 53); it only checks the field's shape."""

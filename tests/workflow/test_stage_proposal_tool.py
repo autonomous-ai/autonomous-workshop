@@ -2391,6 +2391,193 @@ class StageProposalToolTest(unittest.TestCase):
         )
         self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
+    REVIEWER_ID = "0123456789abcdef0"
+    DOME_REVIEW_REASON = "The dome reads as one smooth curve, as its reference shows."
+
+    def record_component_review(
+        self, project, role, *, round_number=1, reviewed_round=None, agrees=True,
+        matches_plan=True, accepted=False, bound=True, reason=None,
+    ):
+        """Record a Component Review on ``role``'s latest round the way
+        make_round does: on its summary and, when the runtime proves the
+        reviewer (issue #77), its id bound in the component state."""
+
+        round_root = project / "measure/component-rounds" / role
+        summary_path = round_root / ("r%04d" % round_number) / "summary.json"
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        reviewed = round_number if reviewed_round is None else reviewed_round
+        review = {
+            "reviewer": self.REVIEWER_ID, "agrees": agrees,
+            "reason": reason or self.DOME_REVIEW_REASON,
+            "matches_plan": matches_plan, "matches_reference": True,
+            "round": reviewed, "differences": [],
+        }
+        if reviewed != round_number:
+            review["carried_from"] = reviewed
+        summary["review"] = review
+        if accepted:
+            summary["accepted"] = {
+                "reviewer": self.REVIEWER_ID, "reason": review["reason"],
+                "shape_rounds": 5,
+            }
+        summary_path.write_text(json.dumps(summary), encoding="utf-8")
+        state_path = round_root / "make-round-state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        if bound:
+            state.update(reviewer_id=self.REVIEWER_ID, reviewer_wish="b" * 64)
+        state_path.write_text(json.dumps(state), encoding="utf-8")
+
+    def write_reviewed_geometry_review(self, project, rows, *, blind_reads=None):
+        """Geometry rows with no blind reads unless ``blind_reads`` is given."""
+
+        review_path = project / "snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_bytes())
+        review["geometry_form_requirements"] = rows
+        review.pop("geometry_blind_reads", None)
+        if blind_reads is not None:
+            review["geometry_blind_reads"] = blind_reads
+        review_path.write_bytes(canonical_json(review))
+
+    def reviewed_row(self, geometry, text, packet_sha256, reason=None):
+        row = self.geometry_review_row(geometry, text, packet_sha256)
+        row["blind_evidence"] = reason or self.DOME_REVIEW_REASON
+        return row
+
+    def test_make_takes_a_proven_component_review_as_the_geometrys_evidence(self):
+        # Owner decision 2026-10-28: the blind critic no longer re-reads a
+        # Component sheet its bound Component Reviewer already agreed with.
+        assignment, invented, project = self.create_geometry_contract_product(
+            [("dome", self.DOME_CURVE)]
+        )
+        packet_sha256 = self.write_component_round(project, "dome")
+        self.record_component_review(project, "dome")
+        self.write_reviewed_geometry_review(
+            project, [self.reviewed_row("dome", self.DOME_CURVE, packet_sha256)]
+        )
+        self.run_make_round_one(assignment, invented)
+        self.assert_made_round_one(assignment, invented)
+
+    def test_make_takes_a_component_acceptance_whose_rows_were_met(self):
+        assignment, invented, project = self.create_geometry_contract_product(
+            [("dome", self.DOME_CURVE)]
+        )
+        packet_sha256 = self.write_component_round(project, "dome")
+        self.record_component_review(project, "dome", agrees=False, accepted=True)
+        self.write_reviewed_geometry_review(
+            project, [self.reviewed_row("dome", self.DOME_CURVE, packet_sha256)]
+        )
+        self.run_make_round_one(assignment, invented)
+        self.assert_made_round_one(assignment, invented)
+
+    def assert_needs_a_blind_read_without_a_proven_review(self, **options):
+        assignment, invented, project = self.create_geometry_contract_product(
+            [("dome", self.DOME_CURVE)]
+        )
+        packet_sha256 = self.write_component_round(project, "dome")
+        self.record_component_review(project, "dome", **options)
+        self.write_reviewed_geometry_review(
+            project, [self.reviewed_row("dome", self.DOME_CURVE, packet_sha256)]
+        )
+        result = self.run_make_round_one(assignment, invented, expected=2)
+        self.assertIn(
+            "blind reads are required for each Unique Geometry whose "
+            "Component has no proven Component Review: dome",
+            result.stderr,
+        )
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_still_reads_blind_a_geometry_whose_reviewer_is_unbound(self):
+        # A runtime that cannot prove its reviewer (Codex today).
+        self.assert_needs_a_blind_read_without_a_proven_review(bound=False)
+
+    def test_make_still_reads_blind_an_acceptance_whose_rows_were_unmet(self):
+        self.assert_needs_a_blind_read_without_a_proven_review(
+            agrees=False, accepted=True, matches_plan=False
+        )
+
+    def test_make_still_reads_blind_a_geometry_whose_review_disagrees(self):
+        self.assert_needs_a_blind_read_without_a_proven_review(agrees=False)
+
+    def test_make_refuses_a_reviewed_row_that_does_not_quote_its_review(self):
+        assignment, invented, project = self.create_geometry_contract_product(
+            [("dome", self.DOME_CURVE)]
+        )
+        packet_sha256 = self.write_component_round(project, "dome")
+        self.record_component_review(project, "dome")
+        self.write_reviewed_geometry_review(
+            project,
+            [self.reviewed_row("dome", self.DOME_CURVE, packet_sha256,
+                               reason="Looks right to the Manager.")],
+        )
+        result = self.run_make_round_one(assignment, invented, expected=2)
+        self.assertIn("must quote its Component Review of r0001 verbatim", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_make_binds_a_carried_review_to_the_packet_it_judged(self):
+        assignment, invented, project = self.create_geometry_contract_product(
+            [("dome", self.DOME_CURVE)]
+        )
+        reviewed_packet = self.write_component_round(project, "dome")
+        # r0002 rebuilt the reviewed B-rep, so its review carries from r0001.
+        rerun_packet = self.write_component_round(project, "dome", round_number=2)
+        self.record_component_review(project, "dome", round_number=2, reviewed_round=1)
+        self.write_reviewed_geometry_review(
+            project, [self.reviewed_row("dome", self.DOME_CURVE, rerun_packet)]
+        )
+        result = self.run_make_round_one(assignment, invented, expected=2)
+        self.assertIn("not bound to its Component's current visual packet", result.stderr)
+        self.write_reviewed_geometry_review(
+            project, [self.reviewed_row("dome", self.DOME_CURVE, reviewed_packet)]
+        )
+        self.run_make_round_one(assignment, invented)
+        self.assert_made_round_one(assignment, invented)
+
+    def test_make_reads_blind_only_the_geometries_without_a_proven_review(self):
+        assignment, invented, project = self.create_geometry_contract_product(
+            [("dome", self.DOME_CURVE), ("base", self.BASE_MOUNT)]
+        )
+        dome_packet = self.write_component_round(project, "dome")
+        base_packet = self.write_component_round(project, "base")
+        self.record_component_review(project, "dome")
+        rows = [
+            self.reviewed_row("dome", self.DOME_CURVE, dome_packet),
+            self.geometry_review_row("base", self.BASE_MOUNT, base_packet),
+        ]
+        base_read = {"geometry": "base", "blind_read": "Four flush feet.", "review_rounds": 1}
+        dome_read = {"geometry": "dome", "blind_read": "One smooth dome.", "review_rounds": 1}
+        self.write_reviewed_geometry_review(project, rows, blind_reads=[dome_read])
+        result = self.run_make_round_one(assignment, invented, expected=2)
+        self.assertIn("ordered by first geometry-scoped requirement", result.stderr)
+        self.write_reviewed_geometry_review(project, rows)
+        result = self.run_make_round_one(assignment, invented, expected=2)
+        self.assertIn("Component has no proven Component Review: base", result.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+        self.write_reviewed_geometry_review(project, rows, blind_reads=[base_read])
+        self.run_make_round_one(assignment, invented)
+        self.assert_made_round_one(assignment, invented)
+
+    def test_make_still_accepts_a_blind_read_of_every_geometry(self):
+        # The shape before proven reviews counted, as a refreshed run wrote it.
+        assignment, invented, project = self.create_geometry_contract_product(
+            [("dome", self.DOME_CURVE), ("base", self.BASE_MOUNT)]
+        )
+        dome_packet = self.write_component_round(project, "dome")
+        base_packet = self.write_component_round(project, "base")
+        self.record_component_review(project, "dome")
+        self.write_reviewed_geometry_review(
+            project,
+            [
+                self.reviewed_row("dome", self.DOME_CURVE, dome_packet),
+                self.geometry_review_row("base", self.BASE_MOUNT, base_packet),
+            ],
+            blind_reads=[
+                {"geometry": "dome", "blind_read": "One smooth dome.", "review_rounds": 1},
+                {"geometry": "base", "blind_read": "Four flush feet.", "review_rounds": 1},
+            ],
+        )
+        self.run_make_round_one(assignment, invented)
+        self.assert_made_round_one(assignment, invented)
+
     def test_make_accepts_a_contract_mode_v9_review_matching_the_sealed_contract(self):
         requirements = self.CONTRACT_REQUIREMENTS
         assignment, invented, _ = self.seal_contract_wish(requirements)

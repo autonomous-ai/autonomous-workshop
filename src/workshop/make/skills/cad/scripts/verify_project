@@ -231,11 +231,15 @@ SIGNATURE_REVIEW_FIELDS_V9 = SIGNATURE_REVIEW_FIELDS | {
     "blind_rereads",
 }
 # Issue 54: a contract with geometry-scoped requirements additionally binds
-# each row to a Component's visual packet and counts one blind read per
-# Unique Geometry. Present only when the sealed contract has such rows; this
-# gate still cannot see the sealed contract, so it checks shape only.
+# each row to a Component's visual packet. A Unique Geometry whose Component
+# has a proven Component Review takes that review as its evidence; every other
+# one keeps a blind read, so `geometry_blind_reads` lists only those and is
+# left out when there are none. Present only when the sealed contract has such
+# rows; this gate cannot see the sealed contract or tell which reviews are
+# proven, so it checks shape only and the finalizer binds the rest.
 SIGNATURE_REVIEW_GEOMETRY_FIELDS = {"geometry_form_requirements", "geometry_blind_reads"}
 SIGNATURE_REVIEW_FIELDS_V9_GEOMETRY = SIGNATURE_REVIEW_FIELDS_V9 | SIGNATURE_REVIEW_GEOMETRY_FIELDS
+SIGNATURE_REVIEW_FIELDS_V9_REVIEWED_GEOMETRY = SIGNATURE_REVIEW_FIELDS_V9 | {"geometry_form_requirements"}
 # A packet binds only the sheet that holds every view (ADR 0087).
 GEOMETRY_PACKET_VIEWS = ("sheet",)
 BLIND_REREAD_IMAGES = ("iso", "signature")
@@ -314,7 +318,10 @@ def _required_signature_review(project: Path) -> str:
     schema_version = review.get("schema_version")
     if schema_version == 9:
         fields = set(review)
-        has_geometry_rows = fields == SIGNATURE_REVIEW_FIELDS_V9_GEOMETRY
+        has_geometry_rows = fields in (
+            SIGNATURE_REVIEW_FIELDS_V9_GEOMETRY,
+            SIGNATURE_REVIEW_FIELDS_V9_REVIEWED_GEOMETRY,
+        )
         if fields != SIGNATURE_REVIEW_FIELDS_V9 and not has_geometry_rows:
             raise ValueError("signature review fields do not match schema 9")
         if review.get("requirements_source") not in ("contract", "manager"):
@@ -369,14 +376,20 @@ def _required_signature_review(project: Path) -> str:
                     )
                 if geometry not in geometries_with_rows:
                     geometries_with_rows.append(geometry)
-            geometry_blind_reads = review.get("geometry_blind_reads")
-            if not isinstance(geometry_blind_reads, list) or not geometry_blind_reads:
+            # Absent when every such geometry's Component Review is its
+            # evidence; else one read per remaining geometry, in row order.
+            geometry_blind_reads = review.get("geometry_blind_reads", [])
+            if not isinstance(geometry_blind_reads, list) or (
+                "geometry_blind_reads" in review and not geometry_blind_reads
+            ):
                 raise ValueError("signature review geometry_blind_reads is invalid")
-            if [entry.get("geometry") if isinstance(entry, dict) else None
-                for entry in geometry_blind_reads] != geometries_with_rows:
+            read_geometries = [entry.get("geometry") if isinstance(entry, dict) else None
+                               for entry in geometry_blind_reads]
+            if read_geometries != [geometry for geometry in geometries_with_rows
+                                   if geometry in read_geometries]:
                 raise ValueError(
-                    "signature review must have exactly one blind read per Unique "
-                    "Geometry with a geometry-scoped requirement"
+                    "signature review must have at most one blind read per Unique "
+                    "Geometry with a geometry-scoped requirement, in row order"
                 )
             for entry in geometry_blind_reads:
                 if not isinstance(entry, dict) or set(entry) != {

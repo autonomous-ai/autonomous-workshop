@@ -24,8 +24,8 @@ or verification report, never by rewriting the generated STEP header.
 `__cadgen__` is a derived runtime cache, not a deliverable. Keep stable STEP,
 STL, GLB, render, source, and measurement files outside it. An Autonomous
 Workshop Make finalizer removes safe regular `__cadgen__` files before sealing
-because the independent `--fresh` host gate intentionally deletes and rebuilds
-that cache; sealing it would make byte stability impossible. A sandbox-protected
+because a fresh rebuild (the Forge and Quest host gate) intentionally deletes
+and rebuilds that cache; sealing it would make byte stability impossible. A sandbox-protected
 empty cache directory is harmless and may remain because Workshop inventories
 exact files rather than byte-free directory entries.
 
@@ -137,8 +137,10 @@ two declarations have to agree. A run **with** passing `--print-gates` seals
 root product status `full-with-thickness` and records the literal boolean
 `final_pipeline.print_ready_claim: true` in the hash-bound CAD verification
 JSON. A run **without** it seals `digitally-verified-not-print-ready` and
-`false`. The host reruns the verifier itself in the tier the pair names, so a
-claim the sealed project cannot reproduce is a refusal, not a downgrade.
+`false`. For Forge and Quest the host reruns the verifier itself in the tier
+the pair names, so a claim the sealed project cannot reproduce is a refusal,
+not a downgrade. Spark's host does not rerun it (ADR 0061): declare only what
+your own final `--print-gates` run showed.
 
 ## Generated vs imported STEP
 
