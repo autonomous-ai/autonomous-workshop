@@ -1,67 +1,39 @@
 # Make contract
 
-Motion requirements below apply only when immutable run-root
-`MAKE-OPTIONS.json` enables `check_motion`; false skips motion sweeps and
-required animation/review, with motion explicitly unverified. An older run
-without that file retains mandatory motion verification.
-
-
 Read `STAGE.json` once. It binds the sealed Wish, Invent result, selected
 Inventor, exact output root, round, transition, and any host rejection. Repair
 the cited bytes when a rejection exists; never resubmit unchanged work.
 
 Create or continue one Make Goal. Its objective is the exact printable product
 that satisfies the sealed concept and Wish. Its stopping condition is a
-successful `make` finalizer writing `agent-outcome.json`. Only an exact
-build-blocking contradiction may use the optional
-`make-invent-revision-v1.md` route.
+successful `make` finalizer writing `agent-outcome.json`.
+
+Motion follows run-root `MAKE-OPTIONS.json` `check_motion` (root `AGENTS.md`):
+false skips motion sweeps and the required animation and motion review, with
+motion explicitly unverified.
+
+This file is written for a new Spark Make. Read one more reference, once,
+only when it applies:
+
+- Forge or Quest: [make-forge-quest.md](make-forge-quest.md).
+- No run-root `MAKE-OPTIONS.json`, a Spark packet without
+  `inputs.workshop_selection`, or a sealed Design Contract below schema 4:
+  [make-older-runs.md](make-older-runs.md).
+- A fix run (`MAKE-OPTIONS.json` has `carry_unchanged: true`): the make-round
+  skill's `references/fix-runs.md`.
 
 ## Critical path
 
-For Forge and Quest, trust the sealed Invent contract. Do not repeat research,
-roster comparison, or broad concept exploration. For Spark, rank the complete
-roster once from `STAGE.json`'s compact `inventor_discovery_index`, read only
-the best three full custom-agent TOMLs, select the Inventor whose Taste owns
-the hardest-to-fake magic, and write one compact source with exactly
-`selected_inventor_id`, roster-covering `ranking`, `concept`, and `research`.
+For Spark, the accepted `inputs.workshop_selection` names the Inventor. Write
+one compact `--source` JSON with exactly `selected_inventor_id` and `ranking`
+copied verbatim from that assignment, plus the `concept` and `research` you
+author.
 
-For Spark outside Contract Mode and outside an early-proof turn, obtain
-references and expand the sealed Wish before writing any component source:
-follow
+For Spark outside Contract Mode, obtain references and expand the sealed Wish
+before writing any component source: follow
 [wish expansion](wish-expansion.md) and write
 `<cad-project>/WISH-EXPANSION.md` as the selected Inventor. The Wish itself is
 unchanged and still decides; the expansion only settles what it leaves open.
-
-During a frozen deep-v8 or deep-v9 proof turn, follow the host prompt literally. Create or
-continue the Make Goal immediately, then inspect the required stable
-instructions, stage packet, and sealed concept in one bounded batch rather than
-separate tool calls. Write source and its parent directories in the next file
-edit before optional reading or help discovery. The broad CAD skill is
-deliberately not applicable until the proof marker exists: the host already
-supplies the complete proof interface. Do not inspect an empty product tree,
-create an empty directory as separate work, or spawn an early critic. Persist
-exact mechanism/relationship evidence, neutral held/signature blockout images,
-and one compact root visual finding under
-`<cad-project>/review/early-proof/`. The canonical independent blind critic
-remains mandatory during final Make. The host-provided
-`.make-proof-ready.json` marker ends only that native turn; it never advances
-Make. The resumed high-reasoning turn must reuse the passing proof rather than
-restart, and only then loads the broad CAD skill.
-
-Replace the bracketed paths from `STAGE.json`; do not invoke help to rediscover
-this interface or configure a cache. The host binds a private writable
-`XDG_CACHE_HOME`. The proof entry defines exactly one module-scope `gen_step()`
-and returns the build123d shape. Generate and render it in this order inside
-one foreground tool call so no agent reasoning cycle separates the
-deterministic commands:
-
-```bash
-"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/gen <entry.step.py> --write
-"$WORKSHOP_PYTHON" .agents/skills/cad/scripts/render_product <entry.step> \
-  -o <cad-project>/review/early-proof/held.png \
-  --motion-sheet <cad-project>/review/early-proof/signature.png \
-  --motion-angles=-12,0,12
-```
 
 Before committing the form, follow
 [visual-reference-inspection.md](visual-reference-inspection.md): prefer the
@@ -70,23 +42,19 @@ original subject's anatomy and style, generate a concept view when the runtime
 has a built-in image tool, and label a text-derived interpretation as such
 only when none is usable rather than stopping the run.
 
-STEP is the only geometry format the toolchain writes. `render_product`
-tessellates the exact STEP in memory and there is no mesh export. The print
-gates do the same: `check_mesh`, `check_overhang` and `check_thickness` build
-each printable entry from source and measure its tessellation in the gate, so
-printability is checkable again without a mesh deliverable. Call a product
-print-ready only behind a passing `--print-gates` run at the nozzle the print
-will use.
+STEP is the only geometry format the toolchain writes. `render_product` and
+the print gates (`check_mesh`, `check_overhang`, `check_thickness`) build each
+printable entry from source and tessellate it in memory; there is no mesh
+export. Call a product print-ready only behind a passing `--print-gates` run
+at the nozzle the print will use.
 
 ## Keep the session small
 
 Every tool call re-sends the whole session, and the product budget counts that
 re-sent input. A document read once is paid again on every later request, and
-so is each empty poll. On 2026-09-11 one Spark Make spent 16 of its 75 tool
-calls on empty polls of a running command, each re-sending 100-140k tokens.
-These rules change how information is fetched, never which guidance applies.
-A host turn prompt or frozen profile that narrows reading, such as an
-early-proof or recovery turn, takes precedence over them.
+so is each empty poll. These rules change how information is fetched, never
+which guidance applies; a host turn prompt that narrows reading takes
+precedence over them.
 
 - Do not re-read or re-slice a stable reference already in this session unless
   a compaction dropped it. Always re-read what can change: the newest
@@ -94,76 +62,33 @@ early-proof or recovery turn, takes precedence over them.
   reports.
 - `playtest.md` and `release-deliver.md` belong to later stages; Make does not
   need them.
-- Learn a tool's flags from its documentation and `--help`, and a finalizer
-  requirement from its error message. Open tool, `cadgen` or
+- Learn a tool's flags from `make-round/SKILL.md` and `--help`, and a
+  finalizer requirement from its error message. Open tool, `cadgen` or
   `stage_proposal.py` source only for the function a failure names when those
-  do not answer. Seal each build group with `make-group` as its parts are
-  ready; run the `make` finalizer only on the complete product tree. Repair
-  everything a finalizer error names before rerunning it, never on unchanged
-  bytes.
-- Start a long command (`make_round`, `verify_project`, a multi-part `gen`, a
-  state or motion sheet) with `yield_time_ms: 300000`. If it is still running,
-  continue it with an empty `write_stdin` poll at `yield_time_ms: 300000`.
-  The Codex 0.158.0 tool description allows an empty-poll yield from 5000 to
-  300000 ms (ADR 0077). The yield is an upper bound, not a sleep: the poll
-  returns the moment the command exits, so a long yield never waits longer than
-  the work actually takes, and a short one only buys another full-price
-  request. When an `exec` cell yields with a cell id instead of finishing,
-  continue that cell with `wait` at the same large yield; `wait` at 1000 or
-  10000 is the same waste as a short `write_stdin` poll.
-- `1000` is not a waiting value. It appears in the `exec` pragma example
-  (`// @exec: {"yield_time_ms": 10000, "max_output_tokens": 1000}`) as an
-  **output** budget; copied onto a poll it is ten times worse than the 10000 ms
-  default, and below the 5000 ms floor an empty poll enforces anyway. If the
-  right yield is not obvious, omit `yield_time_ms` and take the default rather
-  than writing a small number. Never put a `sleep` between polls. Wait for a
-  child with one `wait_agent` at a long timeout (`timeout_ms: 300000`) rather
-  than repeated 10-second waits.
-- On Claude Code, `Bash` blocks until its command exits: run a long command
-  in the foreground with `timeout: 600000`; it returns as soon as the command
-  ends. A command you start with `run_in_background` records its exit status,
-  `<command> > "$TMPDIR/<job>.log" 2>&1; echo $? > "$TMPDIR/<job>.exit"`,
-  and you wait for it with one foreground `Bash` call with `timeout: 600000`:
-  `"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/wait_for.py
-  --exit-file "$TMPDIR/<job>.exit" --log "$TMPDIR/<job>.log"`. It checks
-  locally every 30 seconds, returns as soon as the job has ended with its
-  exit status and the log's last lines, and returns after 570 seconds at the
-  latest (ADR 0077, issue #112). Never wait with a fixed `sleep`, and never
-  queue several waits in one turn: run one, read what it returns, then decide.
+  do not answer. When the concept has a `build_plan`, seal each build group
+  with `make-group` as its parts are ready. Run the `make` finalizer only on
+  the complete product tree, and repair everything a finalizer error names
+  before rerunning it, never on unchanged bytes.
+- Wait for long commands and child agents exactly as root `AGENTS.md`
+  ("Wait for a long command") says, on Codex and on Claude Code.
 - Keep tool output bounded: read round summaries, not full logs, and open a
   log only for the failure the summary cannot place.
 
-## Ownership and pipeline
+## Ownership
 
 Make owns the stage inputs and output paths, independent blind review, bounded
 visual repair, final product contract, and Make finalizer. The materialized
-`cad` skill owns CAD planning, modeling methods, applicable progressive
-references, source layout, generation, exports, printability, geometry checks,
-image-derived checks, rendering mechanics, and CAD verification. Inventor
-guidance owns specialist form and character judgment. A CAD artifact or gate
-named here is a required Make outcome, not a replacement for an applicable
-CAD-skill step. The host retains stage authority and the final deterministic
-product gate.
+`cad` skill owns CAD planning, modeling methods, source layout, generation,
+printability, geometry checks, image-derived checks, rendering mechanics, and
+CAD verification; follow its applicable pipeline. Inventor guidance owns
+specialist form and character judgment. The host retains stage authority.
 
-Follow the applicable CAD pipeline when the frozen Make profile permits loading
-the skill. Existing early-proof turns keep their prescribed narrow commands and
-skill deferral. This ownership split does not change their handoff or introduce
-a direct Make route.
+## Pipeline
 
-Use one product funnel:
-
-For final Make, this reference owns the visual repair allowance and supersedes
-the older one-repair wording in economics references: allow three focused
-repair-and-rereview cycles after the initial independent review (four reviews
-total), within the run's remaining budget. Early-proof and manual-review limits
-are separate. Frozen older runs retain their materialized rules and tools.
-
-1. For Forge and Quest, write the smallest viable parametric baseline with
-   exactly one non-part combined `*.step.py` entry and one
-   `part_<role>.step.py` per printable part. For Spark, start with components
-   only: every distinct physical component, including the sole component of a
-   one-piece object, gets its own `part_<role>.step.py`. Do not author the
-   combined entry yet or hide component construction inside the assembly file.
+1. **Components and shared files.** Every distinct physical component,
+   including the sole component of a one-piece object, gets its own
+   `part_<role>.step.py`. Do not author the combined entry yet or hide
+   component construction inside the assembly file.
 
    A component is a piece the object really separates into at a natural seam:
    a limb at its joint, a head at the neck, a weapon, an armour plate at its
@@ -182,21 +107,20 @@ are separate. Frozen older runs retain their materialized rules and tools.
    4. Only then split the single form on a plane, and record in
       `GEOMETRY-NOTES.md` the overhang failure the split fixes.
 
-   In Spark you author no Component (ADR 0080). Settle the component list and
-   write only the shared files: `params.py` and anything under `features/`.
-   Fix every interface there before you spawn a worker: each joint's peg,
-   socket or collar dimensions and its position on both mating Components,
-   taken from the Design Contract. A Component Worker then writes that
-   Component's first `part_<id>.step.py` against those shared values. Spawn
-   no Inventor or other agent to author a Component; an Inventor's optional
-   design notes may inform the worker's brief, but an Inventor never runs
-   `make_round`.
+   In Spark you author no Component (ADR 0080). Settle the component list and write
+   only the shared files: `params.py` and anything under `features/`. Fix
+   every interface there before you spawn a worker: each joint's peg, socket
+   or collar dimensions and its position on both mating Components, taken
+   from the Design Contract. Spawn no Inventor or other agent to author a
+   Component; an Inventor's optional design notes may inform a worker's
+   brief, but an Inventor never runs `make_round`.
 
    With the shared files, copy the printable detail library into the
    project; workers build rivets, bosses, low domes, bands, rims, pipe ribs,
    inset panels, lancet windows, grille slits and teardrop bores with it
    instead of by hand, and blunt every point, chisel, keel and rib end to a
-   land one print minimum across (0.8 mm at a 0.4 mm nozzle) with its `blunt_tip` and `rib_end`:
+   land one print minimum across (0.8 mm at a 0.4 mm nozzle) with its
+   `blunt_tip` and `rib_end`:
 
    ```bash
    "$WORKSHOP_PYTHON" .agents/skills/print-details/scripts/print_details.py --install <cad-project>
@@ -232,29 +156,19 @@ are separate. Frozen older runs retain their materialized rules and tools.
    It writes `tree/kit.json`; never edit it. Tell each Component Worker its
    Component's Parts (`assembly_tree.components`), each printed Part's
    filament, its Bought Parts, and the steps inside it with their insertion
-   directions and lead routes. Each Part is one labelled body
-   (`make-round/SKILL.md`, "The kit's Assembly Tree"), and each Component
-   file also defines `print_parts()`, every printed Part alone in its
-   print stance, bottom at Z 0: the print gates measure each Part alone,
-   never the assembled Component (owner decision 2026-10-28). Component rounds check
-   the steps inside each Component; your assembly rounds and final
-   verification check the joins across Components and write
-   `measure/tree-report.json`, which the host checks before accepting Make.
-   Final verification then writes the kit's Manual into `manual/` from the
-   tree and the build (`make-round/scripts/kit_manual.py`, ADR 0092
-   decision 9); the host checks it too, and Release ships it. Never write,
-   edit or reword the Manual: its text is the contract's own.
-   Make never changes the tree. A `labelling slip` (built bodies that do
-   not match a sound tree: a wrong or unknown Part label, a body missing,
-   extra or duplicated, a wrong colour) is an ordinary gate failure: the
-   worker repairs it in its next component round, you in the next
-   assembly round (owner decision Q28). A `TREE DEFECT` (the sealed tree
-   itself does not hold together) stops the run: do not repair it or have
-   a worker relabel around it; stop at once with the need the round
-   prints (`stage_proposal.py --run-root . need --stage make --status
-   waiting --reason ...`). `make_round` refuses every later round of that
-   tree. Bought Part bodies are always the reserved magenta `#ff00ff`;
-   final verification lists them in `measure/not-printed.json`.
+   directions and lead routes. Each Part is one labelled body and each
+   Component file also defines `print_parts()`, every printed Part alone in
+   its print stance (`make-round/references/kit-tree.md`).
+   Component rounds check the steps inside each Component; your assembly
+   rounds and final verification check the joins across Components, write
+   `measure/tree-report.json` and the kit's Manual into `manual/`, which the
+   host checks before accepting Make. Never write, edit or reword the Manual.
+   Make never changes the tree. A `labelling slip` is an ordinary gate
+   failure: the worker repairs it in its next component round, you in the
+   next assembly round. A `TREE DEFECT` (the sealed tree itself does not hold
+   together) stops the run: do not repair it or have a worker relabel around
+   it; stop at once with the need the round prints (`stage_proposal.py
+   --run-root . need --stage make --status waiting --reason ...`).
 
    When the sealed Design Contract has an `interfaces` section (ADR 0082),
    implement its Interfaces; do not invent others. A shared file is then a
@@ -268,548 +182,361 @@ are separate. Frozen older runs retain their materialized rules and tools.
    `assert` naming the value. Take every gear, bearing, fastener and other
    standard element from `.agents/skills/cad/scripts/stdpart`
    (`bd_warehouse`, `py_gearworks`); never hand-write an involute.
-   `--shared-helpers` checks these rules before it builds a sample.
 
-   Then build a sample of each Shared Helper under `samples/<name>.step.py`,
-   for example a peg in its socket or a pinion on its sector. A sample
-   imports the Shared Helpers from the project (`import params`, `from
-   features.joints import ...`) and returns one printable piece. Run:
+   Then build a sample of each Shared Helper under `samples/<name>.step.py`
+   (a peg in its socket, a pinion on its sector) and run `make_round
+   <cad-project> --shared-helpers`. A pass freezes the Shared Helpers by
+   hash; component rounds refuse to start before it, so spawn no worker
+   until it passes. Repair a failing sample in the Shared Helper, never in a
+   worker's file.
 
-   ```bash
-   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
-     --shared-helpers
-   ```
+2. **Component Workers and Component Reviewers.** A component passes when
+   it builds, its print gates pass and its independent Component Reviewer
+   agrees it looks like its reference (ADR 0076). Only a `component-worker`
+   runs a component round, `make_round <cad-project> --component
+   part_<id>.step.py` (ADR 0080): a Workshop hook refuses it from you or any other agent and passes each
+   worker call a one-time nonce, and the host refuses Make output holding a
+   component round without one, so never run one another way.
 
-   It builds every sample and runs both print gates on it; a pass freezes
-   the Shared Helpers by hash. Component rounds refuse to start before that
-   freeze, so spawn no worker until it passes. Repair a failing sample in
-   the Shared Helper, never in a worker's file.
-2. For Spark, review and repair every component separately before assembly.
-   For each `part_<role>.step.py`, run:
+   Delegate each Component's authoring and loop (ADR 0077, ADR 0080). Once
+   the shared files are frozen, spawn one worker per Component, in parallel,
+   as a `component-worker` agent. Give it only: the component id and the
+   `part_<id>.step.py` path it writes; the shared files it builds
+   on, including `features/print_details.py`; its sealed `geometry:<id>`
+   reference and declared camera; only that Component's Design Contract
+   rows; the rows and text of every Interface its Component joins, and which
+   instances (`wing#1`, `wing#2`) they name; under a schema 8 Design
+   Contract (ADR 0093) the prose sections its geometry's `prose_sections`
+   names, copied verbatim from the sealed contract's `prose` (its rows win
+   where they differ; never send prose to its reviewer); every Guide Image
+   the contract seals that names no `geometries` or names this Component,
+   by path with what it `shows`; the nozzle; and the shape-repair limit (5).
+   Each component round's `summary.json` repeats the rows, Interface text
+   and prose under `contract`. The worker writes the first draft, runs its
+   round until build and print pass, then reports in 10 lines or fewer and
+   waits. The worker may view its own sealed reference image once. Neither
+   you nor a worker views a Component's rendered rounds (`sheet.png`, front,
+   top, iso, `compare-NN.png`); only its reviewer does. If the runtime refuses a spawn at its thread limit,
+   spawn the next worker when one finishes. Keep every worker's thread until
+   the assembly passes (ADR 0082), and send each later rerun or unlock to
+   the worker that already holds that Component.
 
-   ```bash
-   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
-     --component part_<role>.step.py
-   ```
-
-   A component passes on three things: it builds, its print gates pass, and
-   an independent reviewer agrees it looks like its reference (ADR 0076). Do
-   not use `--record-visual` for a component.
-
-   Only a `component-worker` runs a component round (ADR 0080). A Workshop
-   hook refuses the command above from you or any other agent, and passes
-   each worker call a one-time nonce that the round records. The host refuses
-   Make output holding a component round without a nonce it issued to a
-   worker for that Component, so do not run one another way (for example
-   through `python -c`); it will only have to be rerun.
-
-   Delegate each Component's authoring and loop (ADR 0077, ADR 0080). Once the
-   shared files are written, spawn one worker per Component, in parallel, as
-   a `component-worker` agent. Give it only: the component id and the
-   `part_<id>.step.py` path it writes; the shared files it builds on,
-   including `features/print_details.py`; its
-   sealed `geometry:<id>` reference and declared camera; only that
-   Component's Design Contract rows; under a schema 8 Design Contract (ADR
-   0093) the prose sections its geometry's `prose_sections` names, copied
-   verbatim from the sealed contract's `prose` (the worker reads them with
-   its rows, and its rows win where they differ; never send them to its
-   reviewer); every Guide Image the contract seals
-   (ADR 0089) that names no `geometries` or whose `geometries` names this
-   Component, by path with what it `shows`; the nozzle; and the shape-repair
-   limit (5). Each component round's `summary.json` repeats the rows,
-   Interface text and prose under `contract`. The worker writes the first draft, runs the round above until build
-   and print pass, then reports in 10 lines or fewer and waits:
-   `make_round` refuses to change a passing round's geometry before its
-   review is recorded (ADR 0081). The worker may view its
-   own sealed reference image once. Neither you nor a worker views a
-   Component's rendered rounds (`sheet.png`, front, top, iso and `compare-NN.png`); only its
-   reviewer does, and the worker acts on the reviewer's text. If the runtime
-   refuses a spawn at its thread limit, spawn the next worker when one
-   finishes.
-
-   When a worker reports build and print passing, you, not the worker, ask the
-   reviewer. Each Component has one reviewer: spawn it once as a
+   When a worker reports build and print passing, you, not the worker, ask
+   the reviewer. Each Component has one reviewer: spawn it once as a
    `component-reviewer` agent and send every later review of that Component
-   to the same thread as a follow-up, so its cached prefix survives. Never
-   spawn a second reviewer for a Component.
+   to the same thread, so its cached prefix survives. Never spawn a second
+   reviewer for a Component. The review request has one fixed shape and
+   nothing else: the round's `visual-packet.json` path and its packet sha256
+   from the worker's report. `make_round` writes the Component's contract
+   into the packet itself (its rows and Interface text), with the rulings
+   that bind the reviewer. Ask once per packet, never for a re-review of the
+   same packet, and never edit, filter or summarize the answer.
 
-   The review request has one fixed shape and nothing else: the round's
-   `visual-packet.json` path and its packet sha256 from the worker's report.
-   Under a schema 4 Design Contract (ADR 0084) `make_round` writes the
-   Component's contract into the packet itself: its requirement rows and the
-   text of every Interface that names it. Before schema 4 the packet has no
-   `contract`; add that Component's contract rows to the request as its
-   third item. Add no notes, no accepted differences and
-   no explanation of the renders; the reviewer's definition already explains
-   the print stance and the printing limits. Ask once per packet: never ask
-   for a re-review of the same packet, and never edit, filter or summarize
-   the answer.
+   Record the answer unchanged with `--component part_<id>.step.py
+   --record-review <review.json>`; its JSON, its verdicts, Reference
+   Conflicts, Ruling Disputes and refusals are in `make-round/SKILL.md`
+   ("Review a component round"). `reviewer` is the reviewer's native agent
+   id exactly as the runtime returned it when you spawned it (on Claude
+   Code, 17 lowercase hex characters), never a name; the Component's first
+   review binds it, and the host refuses Make output whose review names an
+   agent that is not this run's Component Reviewer or did not read every
+   image of its packet. A reviewer's `reference_conflicts` (the image shows
+   what the contract forbids; the contract wins) and `ruling_disputes` (it
+   thinks one of your rulings wrong) are not differences: a Reference
+   Conflict is not a difference, costs no shape round, and never reaches the
+   worker; it is reported when the run ends. Never repair toward the image
+   and never stop the run for it. If a Ruling Dispute shows the ruling was
+   wrong, answer through a Contract Amendment or a need, never by telling the
+   worker to repair toward it. If `--record-review` refuses an answer as
+   malformed, send the refusal line unchanged to the same reviewer thread
+   and record its corrected answer for the same packet. If it refuses because
+   you decided a Blocked Report of that Component after the round was
+   rendered, ask the worker to rerun its Component unchanged and send the new
+   packet; that rerun is not a shape round. After recording, tell the worker
+   only "review recorded for round N": it reads `review.json` in that round,
+   and a disagreement is its repair list for the next shape round.
 
-   Write its answer unchanged as
-   `{"round", "packet_sha256", "reviewer", "agrees", "matches_plan",
-   "matches_reference", "reason", "differences", "reference_conflicts",
-   "ruling_disputes"}`; `matches_plan` and `matches_reference` are the
-   reviewer's separate judgements against the plan and the references
-   (ADR 0087), and an agreement needs the first true and the second not false;
-   `differences` lists `{"feature", "reference", "model"}` (at most 12) and is
-   required when it disagrees. `reference_conflicts`, when the reviewer gives
-   it, lists `{"file", "reference", "contract"}` (at most 12): places where a
-   reference image shows what the Design Contract forbids. The Design
-   Contract wins: a Reference Conflict is not a difference, costs no shape
-   round, may stand beside an agreement, never reaches the worker, and is
-   reported to the person when the run ends so the image can be corrected.
-   Do not repair toward the image and do not stop the run for it.
-   `ruling_disputes`, when the reviewer gives it, lists `{"report",
-   "reason"}` (at most 12): a ruling in the packet's `rulings` the reviewer
-   thinks wrong. It is not a difference either: it costs no shape round,
-   may stand beside an agreement, and never reaches the worker; the ruling
-   stands. Read each one in the round's `ruling-disputes.json`; if it shows
-   the ruling was wrong, answer through the tools you already have (a
-   Contract Amendment or a need), never by telling the worker to repair
-   toward it. `reviewer` is the reviewer's native agent id,
-   exactly as the runtime returned it when you spawned it (on Claude Code, 17
-   lowercase hex characters), never a name. Record it with the same
-   `--component` argument plus `--record-review <review.json>`. The
-   Component's first review binds that id; `make_round` refuses a review
-   naming another id and tells you the bound one. The host refuses Make output
-   whose recorded review names an agent that is not this run's Component
-   Reviewer or that did not read every image of the packet it judged. If
-   `--record-review` refuses an answer as malformed (for example a
-   disagreement whose only findings are Reference Conflicts or Ruling
-   Disputes), send the refusal line unchanged to the same reviewer thread
-   and record its corrected answer for the same packet. If it refuses the
-   review because you decided a Blocked Report of that Component after the
-   round was rendered, do not resend the packet: ask the worker to rerun its
-   Component unchanged and send the new packet. That rerun is not a shape
-   round. A worker whose last review disagreed only on what your ruling
-   rules out reruns unchanged the same way, and the new packet gets a fresh
-   review instead of the old disagreement.
-
-   After recording, tell the worker only "review recorded for round N". The
-   worker reads the recorded review from that round itself; on a
-   disagreement it is the repair list for the next shape round.
-
-   Under a schema 3 Design Contract (ADR 0083) the reviewer may instead
-   answer `{"camera_mismatch": {"file", "reference", "model"}, "reason"}`:
-   the side of the model facing the reference's Reference Camera is not the
-   side the reference shows. Write it unchanged with `round`,
-   `packet_sha256` and `reviewer`, and no `agrees`, `differences` or
-   `reference_conflicts`, and
-   record it with `--record-review` the same way. It is not a disagreement
-   and not a shape round: tell the worker nothing and send it no repair. The
-   summary's `need:` line is the need. Stop the run with it at once, quoting
-   it unchanged:
-   `stage_proposal.py --run-root . need --stage make --status waiting
-   --reason "<the need line>"`. Do not correct the camera, the reference or
-   the model yourself. The run resumes after the host amends that one
-   camera (`CONTRACT-AMENDMENTS.json` beside `WISH.json`, written only by the
-   host). Then ask the worker to rerun its Component unchanged, which shows
-   the new view, and send that packet to the same reviewer. Keep every
-   worker's thread until the assembly passes (ADR 0082), and send each later
-   unlock to the worker that already holds that Component.
+   The reviewer may instead answer camera mismatch (schema 3 and later, ADR
+   0083): the side of the model facing the reference's Reference Camera is
+   not the side the reference shows. Record it the same way. It is not a
+   disagreement and not a shape round: tell the worker nothing. Stop the run
+   at once with the summary's `need:` line, quoted unchanged
+   (`stage_proposal.py --run-root . need --stage make --status waiting
+   --reason "<the need line>"`). Do not correct the camera, the reference or
+   the model. After the host amends that one camera
+   (`CONTRACT-AMENDMENTS.json` beside `WISH.json`), ask the worker to rerun
+   unchanged and send that packet to the same reviewer.
 
    Never end your turn while a Component Worker or a Component Reviewer
-   request is still running, or while a Blocked Report is open (below). Wait for it with the long wait, record what it
-   returns, and end your turn only on a stage proposal, a recorded need
-   (`stage_proposal.py ... need`), or a host stop. An ended turn is not a
-   wait: the session can end before a worker reports, and that worker's
-   current round is lost. On Claude Code a background agent's result
-   arrives as a notification only after your current tool call returns, so
-   when nothing is left to do but wait, run one foreground `Bash` wait with
-   `timeout: 600000`:
+   request is still running, or while a Blocked Report is open. On Claude
+   Code and on Codex, wait for it exactly as root `AGENTS.md` says.
 
-   ```bash
-   "$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/wait_for.py --timeout 300
-   ```
+   Workers never edit a shared file; they ask you. Edit it yourself, then
+   send back through its worker only each Component whose summary lists that
+   file under `imported_helpers` (ADR 0081). A rerun that rebuilds the
+   reviewed B-rep keeps its review and locks again; one whose B-rep moved
+   needs a new review, without spending a shape round. Once frozen, change a
+   Shared Helper only when it must change, and rerun `--shared-helpers` at
+   once to re-freeze it.
 
-   Add `--exit-file "$TMPDIR/<job>.exit"` for every background command of
-   yours still running, so the wait returns as soon as such a command ends
-   instead of after the full 300 seconds. Read every notification it returns
-   with, record each answer, and repeat until every running worker and
-   reviewer has reported. This is the long wait, not a poll: never run a
-   shorter one. Never queue several waits in one turn.
+   Every Component a separable or coupled Interface joins defines
+   `assembly_pose(shape, pose)`; from schema 3 every Component defines it and
+   `assembly_pose(shape, None)` is its Display Pose (ADR 0083), which its
+   round shows beside each reference at that reference's camera. Its own
+   round checks a separable Interface's Keep-out Envelope (the `keep` line).
+   One worker builds every instance of a geometry whose count is above 1 in
+   its one file (`make-round/SKILL.md`, "Instances"). Check each Coupled
+   Interface once every Component it joins is locked, with `make_round
+   <cad-project> --interface <interface-id>`; on a failure it unlocks the
+   contract's yielding Component and names it: send that worker only the
+   interface round's path. Its repair is not a shape round; rerun the check
+   after the Component is locked again. Only you run `--shared-helpers` and
+   `--interface`.
 
-   Workers never edit a shared file such as `params.py` or
-   `features/forms.py`; they ask you. Edit it yourself, then send back
-   through its worker only each Component whose summary lists that file
-   under `imported_helpers`: a change to a Shared Helper a Component does not
-   import stales nothing of it (ADR 0081). The edit unlocks those Components.
-   A rerun that rebuilds the reviewed B-rep keeps its review and locks again;
-   one whose B-rep moved needs a new review, without spending a shape round.
-   Once frozen, change a Shared Helper only when it must change, and rerun
-   `--shared-helpers` at once to re-freeze it; a component round's `frozen`
-   line names any frozen file that changed and every Component that imports
-   it.
+   For Spark with more than one Component, preview the whole object once
+   (ADR 0087) when every worker has reported its first passing round, before
+   you ask any reviewer: author the non-part combined `*.step.py` entry that
+   places the Components and run `make_round <cad-project>
+   --preview-assembly`. Open its `sheet.png` once and judge silhouette,
+   stance and shape language, then the proportion, scale and placement
+   between parts. Fix placement in the combined entry now. A size that comes
+   from a shared value is yours to fix in `params.py`, then rerun
+   `--shared-helpers`; a size inside one Component is not, because a passing
+   round may not change before its review. Preview again only after a
+   Component's size or placement changes, never after every round. A preview
+   is evidence only: not a round, not a pass, and no substitute for the gated
+   assembly review.
 
-   Give each worker the rows of every Interface its Component joins, with
-   each Interface's text under a schema 4 Design Contract; each component
-   round's `summary.json` repeats them under `contract`. A
-   Component in a separable or coupled Interface defines `assembly_pose(shape,
-   pose)`, which places it in assembly coordinates; under a schema 3 Design
-   Contract every Component defines it, and `assembly_pose(shape, None)` is
-   its Display Pose (ADR 0083). make_round refuses a schema 3 component round
-   whose file has none, before building anything. Its own round checks a
-   separable Interface's Keep-out Envelope (the `keep` line): the inside
-   Component stays inside in every declared pose, the outside one stays out.
-   An Interface may name one instance of a geometry whose count is above 1,
-   `wing#1` or `wing#2`. Its one worker builds every instance in the one
-   `part_wing.step.py`: tell that worker which instances its Interfaces
-   name. Its `assembly_pose(shape, pose, instance)` places instance n, and
-   `gen_step(instance=1)` may build a variant per instance; make_round
-   refuses an instance whose file's `assembly_pose` takes no `instance`.
-   Instances on both sides of one envelope are both checked in the wing's
-   own round.
+   Read each round summary's `shape` and `lock` lines; the round policy (ADR
+   0081) is in `make-round/SKILL.md`. A passing round is reviewed before its
+   geometry may change, a Component gets five shape rounds, and an agreeing
+   review, or a disagreeing one once the five are used (a component
+   acceptance, reported when the run ends and never recorded as the
+   person's decision), locks it.
 
-   Check each Coupled Interface (a gear mesh, a cam, a linkage, parts that
-   pass through one space at different times) once every Component it joins
-   is locked:
+   In Contract Mode name each component file after its Unique Geometry id,
+   `part_<id>.step.py`: its round then shows the sealed `geometry:<id>` image
+   automatically, and the assembly round never shows it against the whole
+   object. Outside Contract Mode, show a sealed Wish reference that depicts
+   one component in that component's round with `--ref
+   LABEL=wish-references/<file>`, and use `--ref` only when a reference
+   depicts that component by itself; motion checks belong to the assembled
+   object.
 
-   ```bash
-   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
-     --interface <interface-id>
-   ```
-
-   It refuses while a Component it joins is not locked at its current
-   geometry, places just those Components and checks, in order, that they do
-   not interfere where they are placed, then the coupled motion over the
-   sealed pose table together with every insertion path in
-   `measure/motion.json` that moves only these Components among themselves
-   (name the parts by their Interface references). A clash stops the check
-   before its motion sweep (issue #108). It builds a Component once even when the
-   Interface names two of its instances, and places each instance as its own
-   labelled part. On a failure it unlocks the contract's yielding Component
-   (for `wing#2`, the wing) and names it; send that worker only the
-   interface round's path.
-   The worker's repair is not a shape round; after the repaired Component is
-   reviewed and locked again, rerun the check. Only you run
-   `--shared-helpers` and `--interface`; the hook refuses both to workers.
-
+3. **Contract Contradictions, Blocked Reports and Contract Amendments.**
    When two Design Contract statements cannot both hold, for example two
    Components that print on a mating face that also carries a peg, stop and
    return a `waiting` need that quotes both statements (`SKILL.md`), unless
    its smallest fix is invisible and a Contract Reviewer confirms it as a
-   Contract Amendment (below). Do not choose between them. A print rule the contract states (the stance, "no
-   part needs support") is a statement too, so geometry that cannot print in
-   its stated stance is such a Contract Contradiction.
+   Contract Amendment (below). Do not choose between them. A print rule the
+   contract states (the stance, "no part needs support") is a statement too.
    A freedom the contract explicitly grants stays yours to decide.
 
-   A worker that is blocked records a Blocked Report (issue #88) before it
-   reports blocked: `make_round --component part_<id>.step.py
-   --report-blocked`, quoting its contract rows verbatim, beside its rounds
-   in `measure/blocked-reports.jsonl`. The same tool works on Codex and on
-   Claude Code. Every blocked report you receive is yours to clear, at once
-   and only through the tool:
-
-   ```bash
-   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
-     --clear-blocked <answer.json>
-   ```
+   A blocked worker records a Blocked Report (issue #88) before it reports
+   blocked. The same tool works on Codex and on Claude Code. Every report
+   is yours to clear, at once and only with `make_round <cad-project>
+   --clear-blocked <answer.json>`:
 
    - **Decision**, `{"report": N, "decision": "<ruling>"}`: a ruling inside
-     a freedom the contract grants, geometry the rows leave open. Send the
-     ruling to that worker unchanged. It answers with a new component round
-     or a new Blocked Report. The ruling also binds the Component Reviewer
-     (issue #97): every later packet of that Component carries it under
-     `rulings` (report, rows, the worker's request and your ruling), so
-     never add it to a review request yourself. When the report rules out a
-     repair a review asked for, write the ruling so it says what the
-     reviewer may no longer ask for and why (a print stance, a row).
+     a freedom the contract grants. Send it to that worker unchanged; it
+     answers with a new round or a new report. The ruling also binds the
+     Component Reviewer (issue #97) through every later packet of that
+     Component, so never add it to a review request yourself. When it rules out a repair a
+     review asked for, say what the reviewer may no longer ask for and why.
    - **Decision waiting on a Component**, `{"report": N, "decision":
-     "<ruling>", "waits_on": "part_<other>.step.py"}`: the ruling needs
-     another Component to change first (the wing keeps below the slot
-     top). Send that Component's worker the change. The report stays open,
-     waiting, until that Component's next passing round. That round's
-     summary has a `wake` line, and `--blocked-reports` marks the report
-     `WOKEN`; then clear it with a new decision and send it to the blocked
-     worker. Never leave a woken worker idle.
+     "<ruling>", "waits_on": "part_<other>.step.py"}`: send that Component's
+     worker the change. The
+     report stays open until that Component's next passing round, whose
+     summary has a `wake` line; then clear it with a new decision for the
+     blocked worker. Never leave a woken worker idle.
    - **Contract Contradiction**, `{"report": N, "need": "<one line quoting
-     every row of the report>"}`: the rows cannot both hold. The tool
-     prints the need command; seal it at once with `stage_proposal.py
-     --run-root . need --stage make --status waiting --reason "<the
-     need>"`.
-   - **Contract Amendment**, `{"report": N, "amendment": M}`: the rows
-     cannot both hold, and amendment M, proposed with `"report": N` and
-     confirmed by its Contract Reviewer (below), removed the contradiction.
-     Tell the worker its rows changed and to rerun its round; the round
-     delivers the amended rows.
+     every row of the report>"}`: seal the printed need at once with
+     `stage_proposal.py --run-root . need --stage make --status waiting
+     --reason "<the need>"`.
+   - **Contract Amendment**, `{"report": N, "amendment": M}`: amendment M,
+     proposed with `"report": N`, was applied. Tell the worker its rows
+     changed and to rerun.
+
+   Do not answer a blocked worker in prose alone. While any report is open
+   or waiting, `make_round` refuses an assembly round and `--full`, the
+   finalizer refuses the Make proposal, and the host refuses Make acceptance.
+   On Claude Code the host also refuses your turn end unless it ends on a
+   recorded need. After a compaction run `make_round <cad-project>
+   --blocked-reports`.
 
    **Contract Amendments (ADR 0085).** Before you turn a Contract
-   Contradiction into a need, ask whether its smallest fix changes anything
-   a sealed reference image shows. A clearance, a print stance, a hidden
-   face or a value no image shows does not; an outline, a proportion, a
-   member or a visible feature does. Only an invisible fix may be amended
-   inside the run, and only through the tool:
+   Contradiction into a need, ask whether its smallest fix changes anything a
+   sealed reference image shows. A clearance, a print stance, a hidden face
+   or a value no image shows does not; an outline, a proportion, a member or
+   a visible feature does. Only an invisible fix may be amended inside the
+   run:
 
-   ```bash
-   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
-     --propose-amendment <proposal.json>
-   ```
+   1. Write `{"rows": ["<statement>", "<statement>"], "changes": [{"from":
+      "<the whole requirement or Interface text, verbatim>", "to": "<its new
+      text>"}], "reason": "<why the rows cannot both hold and why this is the
+      smallest fix>", "report": N}` (leave out `report` when no Blocked
+      Report names the rows) and run `make_round <cad-project>
+      --propose-amendment <proposal.json>`. Change only requirement and
+      Interface text.
+   2. Spawn a **fresh** `contract-reviewer` (never a Component Reviewer,
+      never one that reviewed an earlier amendment) and send it exactly:
+      the packet path and its sha256, nothing else.
+   3. Record its JSON answer unchanged, adding `amendment`, `packet_sha256`
+      and `reviewer`, with `make_round <cad-project>
+      --record-amendment-review <review.json>`. Keep its `guides_wrong`
+      unchanged when the packet lists `guides`; the run reports them. On
+      Claude Code `reviewer` is the agent id the runtime returned when you
+      spawned it, and the host checks it started as a `contract-reviewer`
+      and read every sealed reference. On Codex it is the name you gave the
+      reviewer thread.
+   4. Applied, the tool names the Components whose rows changed: they unlock
+      and their next rounds read the amended rows; tell each one's worker.
+      Refused with the contradiction confirmed, nothing visible and
+      `smallest: false`, you get **one Smaller Retry**: the same rows, each
+      `to` its row's `from` with only words deleted, sent to another
+      **fresh** `contract-reviewer`, never the one who refused. The tool
+      refuses a retry that adds text, a third proposal for the same rows, and
+      a retry after any other refusal. Any other refusal or a refused retry
+      stops the run on the need the tool prints; clear the report with it, if
+      any, and seal it at once. A visible change always stops the run with a
+      need.
 
-   `proposal.json` is `{"rows": ["<statement>", "<statement>"], "changes":
-   [{"from": "<the whole requirement or Interface text, verbatim>", "to":
-   "<its new text>"}], "reason": "<why the rows cannot both hold and why
-   this is the smallest fix>", "report": N}`; leave out `report` when no
-   Blocked Report names the rows. Change only requirement text and, under
-   schema 4, Interface text; the tool refuses a reference, a geometry and an
-   Interface's kind, envelope or poses. It prints the packet path and
-   sha256. Spawn a **fresh** `contract-reviewer` for this amendment (never a
-   Component Reviewer, never one that reviewed an earlier amendment) and
-   send it exactly: the packet path and its sha256, nothing else. Wait for
-   its JSON answer with the long wait, then record it unchanged with the
-   reviewer's name, the amendment number and the packet hash added:
+   Never change a row any other way and never resolve a contradiction
+   silently in shared code. While an amendment awaits review, assembly
+   rounds, `--full` and the Make proposal are refused. After a compaction
+   run `make_round <cad-project> --contract-amendments`.
 
-   ```bash
-   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
-     --record-amendment-review <review.json>
-   ```
-
-   `review.json` is `{"amendment": M, "packet_sha256": "<hash>",
-   "reviewer": "<id>", "contradiction": ..., "smallest": ...,
-   "visible_in": [...], "references_checked": [...], "reason": "..."}`, plus
-   the reviewer's `"guides_wrong": [...]` unchanged when the packet lists
-   `guides` (ADR 0089): Guide Image panels the change would draw wrongly.
-   They never refuse the amendment; the run reports them so the owner
-   redraws those panels. On
-   Claude Code `reviewer` is the agent id the runtime returned when you
-   spawned it (17 lowercase hex characters), and the host checks that this
-   agent started as a `contract-reviewer` and read every sealed reference.
-   On Codex it is the name you gave the reviewer thread. The amendment
-   applies only when the reviewer confirmed all three; the tool then names
-   the Components whose rows changed. They unlock as for a Shared Helper
-   change and their next rounds read the amended rows: tell each one's
-   worker. Otherwise nothing changed. If the reviewer confirmed the
-   contradiction and found nothing visible but answered `smallest: false`,
-   you get **one Smaller Retry**: the tool prints the reviewer's reason,
-   which names the smaller change. Propose it once with
-   `--propose-amendment`: the same `rows`, each change from the same row,
-   and each `to` that row's `from` with only words deleted (shorter, no word
-   added or respelled; never invent new wording). Send its packet to
-   another **fresh** `contract-reviewer`, never the one who refused. The
-   tool refuses a retry that adds text, a third proposal for the same rows,
-   and a retry after any other refusal. If the retry is refused too, or the
-   refusal was a contradiction or visibility refusal, the tool prints a need
-   quoting the rows; clear the report with it, if any, and seal it at once. A visible
-   change always stops the run with a need; the owner and the outer loop
-   handle it. Never change a row any other way and never resolve a
-   contradiction silently in shared code. While an amendment awaits its
-   review, `make_round` refuses an assembly round and `--full` and the
-   finalizer refuses the Make proposal. Run `make_round <cad-project>
-   --contract-amendments` to list them, above all after a compaction. The
-   host replays every amendment against the sealed contract before it
-   accepts Make and the run report lists each one.
-
-   **Owner Contract Amendments (issue #100).** A run you stopped on a
-   Contract Contradiction need may be resumed with the owner's answer: the
-   host records an Owner Contract Amendment of requirement text, Interface
-   text and prose beside `WISH.json` (the run root's
-   `CONTRACT-AMENDMENTS.json`, written only by the host). After every
-   resume from such a need, run `make_round <cad-project>
+   **Owner Contract Amendments (issue #100).** After every resume from a
+   Contract Contradiction need, run `make_round <cad-project>
    --contract-amendments`. An `owner amendment` lists each changed row
-   before and after and the Components it unlocks; when that file holds an
-   `objective`, it replaces `WISH.json`'s objective, with the run's name
-   unchanged. Every round reads the owner's rows after the applied in-run
-   amendments. Ask each unlocked Component's worker to rerun its Component,
-   send the new packet to its reviewer as usual, and continue; locked
-   Components the owner's rows did not touch stay locked. An owner's
-   assembly row binds no Component: the assembly rounds, the blind review
-   and the final verification read it. From then on `--propose-amendment`
-   is refused: a further contradiction stops the run on a need for the
-   owner.
+   before and after and the Components it unlocks; when the run root's
+   `CONTRACT-AMENDMENTS.json` holds an `objective`, it replaces
+   `WISH.json`'s. Ask each unlocked Component's worker to rerun, send the new
+   packet to its reviewer, and continue; an owner's assembly row binds no
+   Component. From then on `--propose-amendment` is refused: a further
+   contradiction stops the run on a need.
 
-   Do not answer a blocked worker in prose alone: an answer the tool did not
-   record leaves the report open. While any Blocked Report is open or
-   waiting, `make_round` refuses an assembly round and `--full`, the
-   finalizer refuses the Make proposal, and the host refuses Make
-   acceptance. On Claude Code the host also refuses your turn end unless it
-   ends on a recorded need. Run `make_round <cad-project>
-   --blocked-reports` to list every report, its rows and its answers,
-   above all after a compaction. The run report lists every Blocked
-   Report, how you cleared it and how long it stayed open.
+4. **Assembly rounds.** Only after every component passes, begin
+   assembled-object rounds on the non-part combined `*.step.py` entry
+   (author it now if no preview did) with `make_round <cad-project>
+   --require-component-passes`. It refuses assembly review when a component
+   has no passing isolated round, its freshly built STEP changed afterward,
+   or a Coupled Interface has no current passing `--interface` check. Every
+   assembly round also runs `inspect interfere` on the entry; its `clash`
+   line names each pair of Components that interpenetrate where they are
+   placed, and any clash, or an entry that cannot build its parts through
+   cadgen, fails the round. Fix that before the blind review is spent.
 
-   Use explicit `--ref` only when a reference depicts that
-   component by itself; motion checks belong to the assembled object. A pass
-   is component-specific evidence, not permission to skip the combined
-   review. In Contract Mode (ADR 0074) name each component file after its
-   Unique Geometry id, `part_<id>.step.py`: its round then shows the sealed
-   `geometry:<id>` image automatically. Each `compare-NN.png` is a reference
-   beside the model, both at one height. Under a schema 3 Design Contract the
-   model is the Component in its Display Pose, `assembly_pose(shape, None)`,
-   seen from the reference's Reference Camera, and the assembly reference is
-   shown from its camera too; `front`, `top` and `iso` stay in the print
-   stance (ADR 0083). Before schema 3 the model is rendered in its print
-   stance at the reference's declared camera (`@AZ,EL` on the `--ref`, else
-   the front view). The reviewer
-   compares form there: thinner or blockier bodies, missing openings, merged
-   or missing members, simplified detail. No silhouette score is computed. The assembly round
-   never shows a component image against the whole object; one with no
-   current component pass fails there as missing. Outside Contract Mode, show
-   a sealed Wish reference that depicts one component in that component's
-   round with `--ref LABEL=wish-references/<file>`.
-
-   For Spark with more than one Component, preview the whole object once
-   (ADR 0087) when every worker has reported its first passing round, before
-   you ask any reviewer. Author the non-part combined `*.step.py` entry that
-   places the Components, and run:
-
-   ```bash
-   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
-     --preview-assembly
-   ```
-
-   Open its `sheet.png` once and judge silhouette, stance and shape language,
-   then the proportion, scale and placement between parts: head to body, limbs
-   to barrel, weapon to hand, the open spaces between them. Fix placement in
-   the combined entry now. A size that comes from a shared value is yours to
-   fix in `params.py`, then rerun `--shared-helpers`; a size inside one
-   Component is not, because a passing round may not change before its
-   review (ADR 0081), and its reviewer judges it against the contract rows.
-   Preview again only after a Component's size or placement changes, never
-   after every round. A preview is evidence only: not a round, not a pass,
-   and no substitute for the gated assembly review.
-
-   Read each round summary's `shape` and `lock` lines (ADR 0081). A round
-   that passed build and print is reviewed before its geometry may change;
-   only an unchanged rerun may run first. A shape round is the first
-   geometry-changing round after a disagreeing review; build and print
-   repairs, unchanged reruns and changes forced by a Shared Helper or an
-   assembly round are not. A Component gets five. An agreeing review locks
-   the Component; so does a disagreeing review once the five are used, which
-   is recorded as a component acceptance. Every acceptance is reported to the
-   person when the run ends; it is never recorded as the person's decision.
-   A locked Component's geometry changes only when a Shared Helper it imports
-   changes or you record an assembly unlock.
-3. Only after every component passes, begin assembled-object rounds on the
-   non-part combined `*.step.py` entry (author it now if no preview did) with:
-
-   ```bash
-   "$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-project> \
-     --require-component-passes
-   ```
-
-   This refuses assembly review when a component has no passing isolated round
-   or its freshly built STEP changed afterward, and, under an Interfaces
-   section, when a Coupled Interface has no current passing `--interface`
-   check. Every assembly round also runs the interference check final
-   verification runs, `inspect interfere` on the entry at its default
-   tolerance. Its `clash` line names each pair of Components that
-   interpenetrate where they are placed, with the volume and the X/Y/Z box,
-   and any clash fails the round. The entry must load its parts through
-   cadgen's build. An entry that cannot import or build them for the check
-   fails the round with that error, so fix it before the blind review is
-   spent. If an assembly repair
-   changes a component, first record why: cite the assembly round and the
-   finding you recorded there with `--record-visual`,
-   `{"assembly_round", "finding", "reason"}`, and run the same `--component`
-   argument plus `--record-unlock <unlock.json>`. It builds nothing. Then send
-   the Component back through its worker for its isolated review-and-fix
-   loop, and return to the assembled object. Forge and Quest retain their existing
-   whole-product baseline sequence.
-4. Generate explicit source targets with
-   `.agents/skills/cad/scripts/gen <entry.step.py> --write`, which writes the
-   sibling `.step`. That STEP is the only geometry artifact.
-5. Run `make_round` after each source repair and inspect its exact visual packet.
-   On the assembly round, open `sheet.png` once and judge silhouette and
+   On each assembly round open `sheet.png` once and judge silhouette and
    stance first, then proportion between parts, then whether surface detail
-   reads. Record `matches_plan` and `matches_reference` (null without
-   references) separately, with misplaced, missing or extra parts,
-   size/proportion mismatches, visible intersections and form defects as
-   findings with image evidence and a concrete repair, using `--record-visual`
-   on the assembly round. A wrong silhouette is usually repaired by a
-   different construction family, not by parameter nudges. Inspect the actual
-   views and every `compare-NN.png`, even when no reference image exists. Pending or inconclusive visual
-   feedback is not a pass. These self-checks do not replace independent review.
-   Run only additional narrow checks affected by an edit. `make_round` gates
-   every part that builds with `check_thickness`, `check_overhang` and
-   `check_mesh` at the fixed 0.4 mm nozzle standard, so a wall, overhang or
-   non-manifold defect surfaces in the round that caused it rather than at
-   final verification.
-6. Render the exact STEP to `<cad-project>/snap/iso.png` (at least 800×800 RGB)
-   and `<cad-project>/snap/signature.png` (at least 1200×800 RGB). When the
-   promise changes product geometry or state, generate distinct exact-state
-   STEPs and use `render_product --state-sheet ... --state-source ...` at one
-   fixed view. `--motion-sheet` rotates one unchanged shape and is only presentation
-   viewpoint evidence; it can never prove a state transition. The signature
-   sheet must show the promised states or interaction, not repeated angles.
-7. For a moving mechanism, also produce and review exact-state animation using
-   [motion review](motion-review-v1.md); still images cannot establish motion.
-   Give one independent native critic only the images and that animation. Record its blind held
-   object, volumetric form, subjects, action, and relationship. Then reveal the
-   Wish and concept and check every positive and negative held-form constraint.
-   In Contract Mode (a sealed Design Contract, ADR 0072), the host copies the
-   contract's assembly-scoped requirements into `critical_form_requirements`
-   at this reveal step; do not author that list. Allow up to three focused
-   repairs, each followed by regenerated preflight, images and an independent
-   rereview. Stop as soon as the review passes.
-8. Run the integrated final verifier once. Do not use it as an iteration loop.
-   Whenever the Wish has references, run it with `--image-derived`. The
-   finalizer refuses a toy with sealed references unless the current final
-   report ran in that mode (ADR 0072, Delivery 2); a plain final report cannot
-   substitute for it, no matter how cleanly it passed. In Contract Mode the
-   verifier fails unless every `geometry:<id>` image has a current component
-   round that passed its checks and its independent review (ADR 0076). It
-   writes `measure/component-acceptance.json` beside its report, and the
-   finalizer copies every component acceptance from it into `product.json`.
-   Do not author `component_acceptances` yourself.
+   reads, and every `compare-NN.png`. Record `matches_plan`,
+   `matches_reference` (null without references) and findings with
+   `--record-visual` (`make-round/SKILL.md`, "Record assembly visual
+   feedback"). A wrong silhouette is usually repaired by a different
+   construction family, not by parameter nudges. Pending or inconclusive
+   feedback is not a pass, and it does not replace the independent review.
+   If an assembly repair changes a component, first record why with
+   `--component part_<id>.step.py --record-unlock <unlock.json>`,
+   `{"assembly_round", "finding", "reason"}`, citing a finding recorded on
+   that assembly round; then send the Component back through its worker and
+   reviewer, and return to the assembled object.
 
-   **Guide Images (ADR 0089).** A schema 5 Design Contract may seal Guide
-   Images (`wish-references/guide-NN-<slug>`, its `guides[]`): a
-   transformation step sheet, extra views. Open each before you write the
-   shared files and the joints, and use it to plan how the Components meet
-   and move. A guide whose `geometries` lists Unique Geometry ids goes only
-   to those Components' workers, and a component round's `summary.json`
-   lists only the guides for its Component; a guide without `geometries`
-   goes to every worker. Nothing compares a Guide Image with the model, and where it
-   disagrees with the contract, the contract wins. Before the final
-   verifier, write `<cad-project>/guide-steps.json`:
-   `{"guides": [{"file": "guide-01-x.png", "steps": [{"step": "<a step
-   exactly as the contract's guides[] lists it>", "checked": "<the motion
-   state or pose you checked it in>"} or {"step": ..., "skipped": "<why>"}],
-   "conflicts": [{"guide": "<what the guide shows>", "contract": "<what the
-   contract requires>"}]}]}`. With `--check-motion true` the verifier fails
-   until every listed step has one entry; it counts them and never judges
-   them. The run reports the steps and the conflicts.
-9. Write product metadata and invoke the Make finalizer immediately.
+5. **Signature images.** Generate explicit source targets with
+   `.agents/skills/cad/scripts/gen <entry.step.py> --write`; that STEP is the
+   only geometry artifact. Render the exact STEP to `<cad-project>/snap/iso.png`
+   (at least 800×800 RGB) and `<cad-project>/snap/signature.png` (at least
+   1200×800 RGB). When the promise changes product geometry or state,
+   generate distinct exact-state STEPs and use `render_product --state-sheet
+   ... --state-source ...` at one fixed view. `--motion-sheet` rotates one
+   unchanged shape and is only presentation viewpoint evidence; it can never
+   prove a state transition. The signature sheet must show the promised
+   states or interaction, not repeated angles. For a moving mechanism with
+   motion enabled, also produce and review exact-state animation using
+   [motion review](motion-review-v1.md).
 
-Complete the blind signature review and, if needed, up to three focused repairs before
-running the integrated final verifier once. The review must separately match the exact subjects,
-action, and spatial/causal relationship; matching only nouns is a failure.
-Enumerate every explicit positive and negative held-form requirement from
-the Wish in the review's `critical_form_requirements`; each entry needs
-exact blind visual evidence. When `WISH-EXPANSION.md` exists, also enumerate
-its defining parts and negative spaces there; a choice the Wish does not
-require never fails a faithful build. Any visible departure from one of those
-requirements belongs in `blocking_visual_defects`, not in a nonblocking
-caveat. Use one critic and no more than four review rounds (initial plus three
-rereviews). On rereview, record fresh image observations before comparison and
-disclose that the critic already knows the Wish; do not claim naive recognition.
-After the fourth failed review, preserve the failures and finalize a truthful
-failed need rather than exceeding the allowance. Do not use the
-full verifier as the visual iteration loop. Any geometry change after the
-review invalidates the assembly-scoped read and requires a fresh blind read of
-the regenerated images; copying old prose and replacing hashes is not a
-review.
+6. **Blind review** (below), then **final verification**: run the integrated
+   final verifier once, never as an iteration loop. Whenever the Wish has
+   references, run it with `--image-derived`; the finalizer refuses a toy
+   with sealed references unless the current final report ran in that mode.
+   In Contract Mode the verifier fails unless every `geometry:<id>` image has
+   a current component round that passed its checks and its independent
+   review (ADR 0076). It writes `measure/component-acceptance.json` beside
+   its report, and the finalizer copies every component acceptance from it
+   into `product.json`; do not author `component_acceptances` yourself.
 
-In Contract Mode with geometry-scoped rows (ADR 0072, issue 55), a
-geometry-scoped repair has its own allowance, separate from the assembly
-review's: each Unique Geometry's `geometry_blind_reads` entry records its own
-`review_rounds`, one through four, exactly like the assembly review's
-`review_rounds`. Repairing one Component invalidates only that Component's own
-geometry-scoped requirement and blind read -- its row must rebind to the
-Component's new `visual-packet.json` hash -- and only that geometry's
-`review_rounds` needs to grow. A Unique Geometry nobody touched keeps the same
-packet hash it always had, so its row and blind read carry forward unchanged,
-at whatever `review_rounds` they were already at; do not spend a fresh blind
-read on a Component the repair never changed. The assembly-scoped read has no
-such per-Component binding, so any geometry change still invalidates it and
-still needs a fresh blind read of the regenerated iso/signature images.
+   **Guide Images (ADR 0089).** Open each sealed Guide Image
+   (`wish-references/guide-NN-<slug>`) before you write the shared files and
+   joints, and use it to plan how the Components meet and move. Nothing
+   compares a Guide Image with the model, and where it disagrees with the
+   contract, the contract wins. Before the final verifier, write
+   `<cad-project>/guide-steps.json`: `{"guides": [{"file":
+   "guide-01-x.png", "steps": [{"step": "<a step exactly as the contract's
+   guides[] lists it>", "checked": "<the motion state or pose you checked it
+   in>"} or {"step": ..., "skipped": "<why>"}], "conflicts": [{"guide":
+   "<what the guide shows>", "contract": "<what the contract requires>"}]}]}`.
+   With `--check-motion true` the verifier fails until every listed step has
+   one entry; it counts them and never judges them.
+
+7. Write product metadata and invoke the Make finalizer immediately.
 
 Do not manually delete `__cadgen__` or use `--fresh` inside the product
-sandbox. The trusted host owns the isolated fresh rebuild. The finalizer safely
-removes ordinary derived-cache files before hashing. If the sandbox protects a
-now-empty cache directory from removal, leave it in place: byte-free
-directories are ignored by both the finalizer and host gate, so never report an
-empty cache directory as a blocker. Keep temporary work, transcripts, and
-duplicate render families outside the sealed product tree.
+sandbox. The finalizer safely removes ordinary derived-cache files before
+hashing; byte-free cache directories are ignored by both the finalizer and
+host gate, so never report an empty cache directory as a blocker. Keep
+temporary work, transcripts, and duplicate render families outside the sealed
+product tree.
+
+## Blind review
+
+Complete the blind signature review and, if needed, up to three focused
+repairs, each followed by regenerated images and an independent rereview,
+before running the final verifier once. Give one independent native critic
+only the images (and the animation, when there is one). Record its blind held
+object, volumetric form, subjects, action, and relationship. Then reveal the
+Wish and concept and check every positive and negative held-form constraint.
+The review must separately match the exact subjects, action, and
+spatial/causal relationship; matching only nouns is a failure.
+
+Enumerate every explicit positive and negative held-form requirement from the
+Wish in `critical_form_requirements`; each entry needs exact blind visual
+evidence. In Contract Mode (ADR 0072) the host copies the contract's
+assembly-scoped requirements there at the reveal step; do not author that
+list. When `WISH-EXPANSION.md` exists, also enumerate its defining parts and
+negative spaces; a choice the Wish does not require never fails a faithful
+build. Any visible departure from one of those requirements belongs in
+`blocking_visual_defects`, not in a nonblocking caveat. Use one critic and no
+more than four review rounds (initial plus three rereviews). On rereview,
+record fresh image observations before comparison and disclose that the critic
+already knows the Wish; do not claim naive recognition. After the fourth
+failed review, preserve the failures and finalize a truthful failed need.
+Any geometry change after the review invalidates the assembly-scoped read and
+requires a fresh blind read of the regenerated images; copying old prose and
+replacing hashes is not a review.
+
+**Geometry-scoped rows.** In Contract Mode with geometry-scoped requirements,
+`geometry_form_requirements` has one row per sealed geometry row, in the
+contract's order, each `{"requirement", "geometry", "blind_evidence",
+"matches": true, "packet_sha256", "view": "sheet"}`. Its evidence is the
+Component's own review, not the critic:
+
+- When the Component's current passing round carries a recorded Component
+  Review by its bound reviewer (`reviewer_id` in its component state) that
+  agrees, or is a component acceptance, with `matches_plan` true, the row's
+  `packet_sha256` is the packet that review judged (the reviewed round's
+  `visual.packet_sha256`, also for a carried review) and its
+  `blind_evidence` is that review's `reason`, copied verbatim. The critic
+  does not read that geometry.
+- Every other geometry (a runtime that cannot bind its reviewer, as on
+  Codex today, an acceptance whose reviewer found the rows unmet) keeps one
+  critic read in `geometry_blind_reads`, `{"geometry", "blind_read",
+  "review_rounds"}`, ordered by first row, with its own one to four
+  `review_rounds`, and its rows bind the current round's packet with the
+  critic's evidence. Leave `geometry_blind_reads` out when no geometry needs
+  one.
+
+A row binds the Component's current passing packet, so a Component nobody
+repaired keeps its row unchanged across a repair, while a repaired
+Component's row must rebind. The assembly-scoped read has no such binding.
 
 ## Required final product
 
@@ -832,17 +559,13 @@ Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
   alone names no part. The colour has to be one the shop stocks: `beige`,
   `black`, `blue`, `cocoa_brown`, `cyan`, `dark_beige`, `dark_brown`,
   `dark_gray`, `gray`, `green`, `misty_blue`, `navy_blue`, `orange`,
-  `pine_green`, `red`, `reflex_blue`, `sunflower_yellow`, `white`, `yellow`.
-  That list is the filament palette the CAD skill stocks
-  (`cad/scripts/cadfilament.py`, Bambu Lab PLA Lite and PETG Basic); a colour
-  outside it is a spool nobody can load, and the host rejects it. The name is
-  what whoever loads the printer reads the spool off, so it travels with the
-  file — pick the colour first, then name the part;
+  `pine_green`, `red`, `reflex_blue`, `sunflower_yellow`, `white`, `yellow`
+  (the CAD skill's `cad/scripts/cadfilament.py` palette); the host rejects any
+  other. Pick the colour first, then name the part;
 - a surface colour on every leaf part of a multi-part model, authored as
   `Color(r, g, b)` with channels 0..1 taken directly from the sRGB hex you want
   the shop to show (`Color(0.82, 0.51, 0.18)` shows as `#d1822e`). Do not
-  pre-convert channels to linear; the STEP, the GLB, the host renders, and the
-  listing all read the sealed channels as sRGB;
+  pre-convert channels to linear;
 - `product.json` with nonempty `title` and `summary` strings. Both are
   customer copy that reaches the shop unchanged: the title is a sayable name
   of one to four words with no dimensions, part counts, or sentences, and
@@ -857,8 +580,7 @@ Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
   images, and print-gate reports.
 
 The root `assembled.*` files are sealed delivery copies of the final combined
-CAD output. They do not replace the self-contained CAD project or its isolated
-verification. Before finalizing, confirm every packet-named root file exists as
+CAD output. Before finalizing, confirm every packet-named root file exists as
 a nonempty regular file; a nested combined export alone is not publishable.
 
 The canonical schema-v8 review contains exactly: `schema_version`, `kind`,
@@ -877,9 +599,10 @@ to the CAD project, to its exact sha256. Bind every printable part's passing
 thickness and overhang reports there and seal product status
 `full-with-thickness` with `print_ready_claim: true`; leave the map empty and
 seal `digitally-verified-not-print-ready` with `false` when the round did not
-open the print gates, and then never call the product print-ready. The host
-reruns the verifier in the tier those two declarations name, so a claim the
-sealed project cannot reproduce is refused rather than downgraded.
+open the print gates, and then never call the product print-ready. Spark's
+host does not rerun the verifier (ADR 0061): the finalizer binds this review
+to the passing reports and seals the final verifier's report as you wrote it,
+so declare only what that `--print-gates` run showed.
 Every boolean is true; `review_rounds` is an integer from one through four; blockers are empty; each
 critical requirement has exactly `requirement`, `blind_evidence`, and
 `matches: true`. Evaluate form against the actual Wish: an exposed mechanism
@@ -887,33 +610,31 @@ or a flat component is not inherently a defect. Wrong required relationships,
 unresolved geometry defects, and unproved promised functions remain blockers.
 
 In Contract Mode, seal schema-v9 instead: the same fields as v8 plus
-`requirements_source`, set to `"contract"`. `critical_form_requirements` must
-be exactly the sealed contract's assembly-scoped requirements, in the
-contract's order and wording -- a missing, extra, reordered, or reworded row
-refuses, as does the wrong `requirements_source`. Every other schema-v8 rule
-still applies unchanged. Outside Contract Mode, keep sealing schema v8 exactly
-as before; do not add `requirements_source` there.
+`requirements_source`, set to `"contract"`, `blind_rereads`, and, when the
+contract has geometry-scoped rows, `geometry_form_requirements` and any
+`geometry_blind_reads` (above). `critical_form_requirements` must be exactly
+the sealed contract's assembly-scoped requirements, in the contract's order
+and wording -- a missing, extra, reordered, or reworded row refuses, as does
+the wrong `requirements_source`. Outside Contract Mode, keep sealing schema
+v8; do not add `requirements_source` there.
 
-Schema v9 also carries `blind_rereads`, always present and empty unless used.
-When the blind read never mentions a contract requirement, ask the critic one
-narrow targeted blind re-read question about the one image that bears on it
--- still blind, with no list of requirements and no intended answer revealed
--- and preserve the exact question and the critic's verbatim answer as one
-entry naming the image it concerns (`"iso"`, `"signature"`, or, for a
-geometry-scoped requirement, `"geometry:<id>"`). That requirement's
-`blind_evidence` may then cite the preserved answer. Using this path is a
-choice, not a requirement: a blind read that already covers a requirement
-needs no re-read, and asking one does not excuse a requirement the images
-never show.
+`blind_rereads` is always present and empty unless used. When the blind read
+never mentions a contract requirement, ask the critic one narrow targeted
+blind re-read question about the one image that bears on it -- still blind,
+with no list of requirements and no intended answer revealed -- and preserve
+the exact question and the critic's verbatim answer as one entry naming the
+image it concerns (`"iso"`, `"signature"`, or `"geometry:<id>"` for a
+geometry the critic reads). That requirement's `blind_evidence` may then cite
+the preserved answer. A blind read that already covers a requirement needs no
+re-read, and asking one does not excuse a requirement the images never show.
 
-Separate immutable user requirements from inventor-selected styling. In Spark,
-before the final review, revise nonessential naming, species, palette or
-styling decisions when the result suggests a better fit; preserve the previous
-choice and reason in `research.design_changes`. Keep the required function,
-constraints and distinctive experience. The final concept, product, manual
-and review must agree. Never retroactively rewrite a failed review or simply
-change hashes. Forge/Quest sealed concepts still require their existing
-authorized revision path. A missing function cannot become a styling change.
+Separate immutable user requirements from inventor-selected styling. Before
+the final review, revise nonessential naming, species, palette or styling
+decisions when the result suggests a better fit; preserve the previous choice
+and reason in `research.design_changes`. Keep the required function,
+constraints and distinctive experience. The final concept, product and review
+must agree. Never retroactively rewrite a failed review or simply change
+hashes. A missing function cannot become a styling change.
 
 Then run:
 
@@ -922,18 +643,17 @@ Then run:
   --run-root . make \
   --product-root <STAGE product_root> \
   --cad-project-path <path inside product root> \
-  --cad-verification-path <cad-project>/measure/verification-pipeline.md
+  --cad-verification-path <cad-project>/measure/verification-pipeline.md \
+  --source <spark-source.json>
 ```
 
 The verification path is the report `verify_project --report` wrote, relative
-to the product root and inside the declared CAD project.
-
-For Spark only, also pass `--source <spark-source.json>`. Do not pass it when
-`STAGE.json` already contains sealed assignment and Invented inputs. Complete
-the Goal and return immediately after the finalizer succeeds. The host seals
-the exact submitted bytes. Forge and Quest additionally run their isolated CAD
-verification; Spark accepts Make's output without repeating that verification.
+to the product root and inside the declared CAD project. Pass `--source` only
+for Spark, never when `STAGE.json` already contains sealed assignment and
+Invented inputs. Complete the Goal and return immediately after the finalizer
+succeeds. The host seals the exact submitted bytes; Spark accepts Make's
+output without repeating its verification.
 
 Digital evidence never proves a successful print, tactile fit, durability,
-comfort, discoverability, or human delight. Quest Playtest owns its separate
-evidence; Spark and Forge truthfully record Playtest as not run.
+comfort, discoverability, or human delight. Spark and Forge truthfully record
+Playtest as not run.

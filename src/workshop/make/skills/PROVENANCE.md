@@ -2507,3 +2507,12 @@ only Forge and Quest have that host gate (`SKILL.md`,
 `references/run-cost.md`). The `cad` lock moves; a resync must keep these
 lines.
 
+## Local change: a shorter make-round tool card (2026-10-28)
+
+A Workshop-local change (owner decision of 2026-10-28). `make-round/SKILL.md`
+moves the `workshop fix` carry-forward policy to `references/fix-runs.md` and
+the kit's Assembly Tree to `references/kit-tree.md`, read only when they
+apply, keeps the component-identities sidecar every run writes, points its
+waiting rule, the Blocked Report answers and the amendment proposal JSON at
+their one home, and says the `--fresh` host rebuild is Forge and Quest's. The
+`make-round` lock moves; a resync must keep these lines.

@@ -168,23 +168,38 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         playtest = " ".join(
             (reference_root / "playtest.md").read_text(encoding="utf-8").split()
         )
+        forge_quest = " ".join(
+            (reference_root / "make-forge-quest.md").read_text(encoding="utf-8").split()
+        )
 
         for required in (
-            "smallest viable parametric baseline",
-            "every distinct physical component",
-            "--component part_<role>.step.py",
+            "very distinct physical component",
+            "--component part_<id>.step.py",
             "--require-component-passes",
             "STEP is the only geometry format the toolchain writes",
             "Call a product print-ready only behind a passing `--print-gates` run",
             "one canonical final render family",
             "independent native critic",
             "blind held",
-            ".make-proof-ready",
-            "The trusted host owns the isolated fresh rebuild",
+            "[make-forge-quest.md](make-forge-quest.md)",
             "Spark and Forge truthfully record Playtest as not run",
+            # ADR 0061: Spark's host reruns no verifier and rebuilds nothing.
+            "Spark's host does not rerun the verifier (ADR 0061)",
         ):
             with self.subTest(reference="make", required=required):
                 self.assertIn(required, make)
+        self.assertNotIn("host owns the isolated fresh rebuild", make)
+        self.assertNotIn("The host reruns the verifier", make)
+        # Forge and Quest keep their baseline, proof turns and host rerun in
+        # the reference read only on those routes.
+        for required in (
+            "smallest viable parametric baseline",
+            ".make-proof-ready",
+            "isolated fresh rebuild",
+            "--motion-angles=-12,0,12",
+        ):
+            with self.subTest(reference="make-forge-quest", required=required):
+                self.assertIn(required, forge_quest)
         for required in (
             "Quest Playtest",
             "exact sealed Made revision",
@@ -216,7 +231,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         for required in (
             "[wish expansion](wish-expansion.md)",
             "`<cad-project>/WISH-EXPANSION.md`",
-            "For Spark outside Contract Mode and outside an early-proof turn",
+            "For Spark outside Contract Mode, obtain references and expand the sealed Wish",
             "The Wish itself is unchanged and still decides",
             "When `WISH-EXPANSION.md` exists, also enumerate",
             "a choice the Wish does not require never fails a faithful build",
@@ -227,7 +242,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         # component funnel it feeds.
         self.assertLess(
             make.index("[wish expansion](wish-expansion.md)"),
-            make.index("--component part_<role>.step.py"),
+            make.index("--component part_<id>.step.py"),
         )
         for required in (
             "new Spark Make only, outside Contract Mode and outside an early-proof turn",
@@ -338,19 +353,14 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             ).read_text(encoding="utf-8").split()
         )
         start = make.index("## Keep the session small")
-        section = make[start : make.index("## Ownership and pipeline", start)]
+        section = make[start : make.index("## Ownership", start)]
 
         for required in (
-            "`yield_time_ms: 300000`",
-            "upper bound, not a",
-            "continue that cell with `wait` at the same large yield",
-            "`1000` is not a waiting value",
-            "omit `yield_time_ms`",
-            "Never put a `sleep` between polls",
-            "one `wait_agent` at a long timeout",
+            # The waiting rule has one home, the constitution (below).
+            "Wait for long commands and child agents exactly as root `AGENTS.md`",
             "takes precedence over them",
             "Always re-read what can change",
-            "Seal each build group with `make-group`",
+            "seal each build group with `make-group`",
             "never on unchanged bytes",
         ):
             with self.subTest(required=required):
@@ -366,7 +376,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
             make,
         )
         # A compaction drops references/make.md from the session but keeps the
-        # constitution, so the waiting rule has to exist in both.
+        # constitution, so the waiting rule lives there.
         constitution = " ".join(
             (
                 REPOSITORY / ".agents/product-run/AGENTS.md"
@@ -381,12 +391,18 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         ):
             with self.subTest(constitution=required):
                 self.assertIn(required, constitution)
+        for required in (
+            "`yield_time_ms: 300000`",
+            "continue a yielded `exec` cell with `wait` at the same large yield",
+            "Never sleep between polls",
+        ):
+            with self.subTest(constitution=required):
+                self.assertIn(required, constitution)
         self.assertIn("`yield_time_ms: 300000`", make_round)
+        self.assertIn("The full waiting rule is in the product-run `AGENTS.md`", make_round)
         # ADR 0077 raised every wait to 300000 ms; no 30000 ms wait survives.
-        for text in (section, constitution, make_round):
+        for text in (make, constitution, make_round):
             self.assertNotIn("`yield_time_ms: 30000`", text)
-        self.assertIn("continue a yielded `exec` cell with", make_round)
-        self.assertIn("Omit `yield_time_ms` before writing a small one", make_round)
 
     def test_make_hands_each_component_to_a_worker_and_a_root_owned_reviewer(self):
         make = " ".join(
@@ -457,19 +473,26 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
                 encoding="utf-8"
             ).split()
         )
-        for name, text in (("make", make), ("constitution", constitution)):
-            for required in (
-                "Never end your turn while a Component Worker or a Component "
-                "Reviewer request is still running",
-                "end your turn only on a stage proposal, a recorded need",
-                "or a host stop",
-                "An ended turn is not a wait",
-                "On Claude Code",
-                "`timeout: 600000`",
-                "scripts/wait_for.py",
-            ):
-                with self.subTest(name=name, required=required):
-                    self.assertIn(required, text)
+        for required in (
+            "Never end your turn while a Component Worker or a Component "
+            "Reviewer request is still running",
+            "end your turn only on a stage proposal, a recorded need",
+            "or a host stop",
+            "An ended turn is not a wait",
+            "On Claude Code",
+            "`timeout: 600000`",
+            "scripts/wait_for.py",
+        ):
+            with self.subTest(name="constitution", required=required):
+                self.assertIn(required, constitution)
+        # The Make reference states the rule and points at its one home.
+        for required in (
+            "Never end your turn while a Component Worker or a Component "
+            "Reviewer request is still running",
+            "wait for it exactly as root `AGENTS.md` says",
+        ):
+            with self.subTest(name="make", required=required):
+                self.assertIn(required, make)
 
     def test_claude_code_waits_end_when_the_awaited_job_ends(self):
         # Issue #112: a fixed sleep keeps waiting after the job has ended.
@@ -482,18 +505,21 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         for name, body in (("make", make), ("constitution", constitution), ("make-round", make_round)):
             with self.subTest(name=name):
                 self.assertNotIn("time.sleep(300)", body)
-                self.assertIn("wait_for.py", body)
                 self.assertIn("On Claude Code", body)
-                self.assertIn("returns as soon as", body)
-        for name, body in (("make", make), ("constitution", constitution)):
-            for required in (
-                "--exit-file",
-                "--timeout 300",
-                "Never queue several waits in one turn",
-                "echo $? >",
-            ):
-                with self.subTest(name=name, required=required):
-                    self.assertIn(required, body)
+        # The waiting rule has one home, the constitution, which survives a
+        # compaction; the Make reference and the tool card point at it.
+        self.assertIn("returns as soon as", constitution)
+        self.assertIn("wait_for.py", constitution)
+        for required in (
+            "--exit-file",
+            "--timeout 300",
+            "Never queue several waits in one turn",
+            "echo $? >",
+        ):
+            with self.subTest(name="constitution", required=required):
+                self.assertIn(required, constitution)
+        self.assertIn("root `AGENTS.md`", make)
+        self.assertIn("product-run `AGENTS.md`", make_round)
         self.assertTrue(
             (REPOSITORY / ".agents/product-run/.agents/skills/autonomous-workshop"
              / "scripts/wait_for.py").is_file()
@@ -526,7 +552,7 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         self.assertIn("`summary.json` also holds them, copied from the sealed contract", worker)
         make = text(".agents/product-run/.agents/skills/autonomous-workshop/references/make.md")
         for required in (
-            "`visual-packet.json` path and its packet sha256 from the worker's report",
+            "`visual-packet.json` path and its packet sha256",
             "writes the Component's contract into the packet itself",
             "a Reference Conflict is not a difference, costs no shape round",
             "never reaches the worker",
@@ -681,16 +707,16 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
         for required in (
             "The ruling also binds the Component Reviewer (issue #97)",
             "never add it to a review request yourself",
-            '"reference_conflicts", "ruling_disputes"}`',
-            "`ruling_disputes`, when the reviewer gives it, lists `{\"report\", \"reason\"}`",
             "never by telling the worker to repair toward it",
             "ask the worker to rerun its Component unchanged and send the new packet",
         ):
             with self.subTest(make=required):
                 self.assertIn(required, make)
         skill = text("src/workshop/make/skills/make-round/SKILL.md")
+        # The review JSON has one home, the make-round tool card.
         for required in ("A decided ruling binds the Component Reviewer (issue #97)",
-                         "`ruling_disputes` (at most 12)", "`ruling-disputes.json`"):
+                         "`ruling_disputes` (at most 12)", "`ruling-disputes.json`",
+                         '"reason"}`: a ruling in the packet\'s `rulings`'):
             with self.subTest(skill=required):
                 self.assertIn(required, skill)
         context = text("CONTEXT.md")

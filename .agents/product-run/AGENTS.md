@@ -36,22 +36,12 @@ Quest: Wish -> Invent -> Make -> Playtest -> Release
 Use the selected model and reasoning effort in the host's immutable stage packet.
 Token-budget runs have no Workshop wall-clock, native-turn or lifecycle-round
 spending cap; Make's frozen internal checks and review allowance still apply.
-The historical economics profiles below govern only settings not superseded
-by those host-selected settings and token budgeting.
-
-The host may freeze a versioned economics profile for this entire session.
-Historical Spark profiles use low reasoning. Historical Forge and
-Quest profiles use an index-first bounded high-reasoning Invent turn with decisive
-medium recovery, then one 16-minute medium real-state Make proof runway followed
-by a 15-minute source-first high-reasoning final-Make handoff and normal recovery;
-Playtest and Release use medium. Make's minimal exact mechanism/form evidence
-is the first persisted deliverable. Its proof-ready marker ends only that
-native turn, while recovery stays inside the same Goal. A later explicit
-operator resume with valid proof continues normal final-Make recovery without
-replaying the source handoff. Treat every profile
-as a focus constraint, not permission to make
-a generic product or skip proof. Other Managers and frozen older runs keep
-their own bound runtime profile.
+The host may freeze a versioned economics profile for this entire session; it
+governs only settings the host-selected ones and token budgeting leave open.
+Treat every profile as a focus constraint, not permission to make a generic
+product or skip proof. Forge and Quest proof turns are described in
+`references/make-forge-quest.md` and in each proof turn's host prompt. Other
+Managers and frozen older runs keep their own bound runtime profile.
 
 The Workshop is a thin harness around you. Codex performs the research,
 reasoning, creation, inspection, evaluation, and repair. The outer host owns
@@ -217,9 +207,9 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   job has ended with its exit status and the log's last lines, and returns
   after 570 seconds at the latest; run it again only if the job is still
   running. Never wait with a fixed `sleep`, and never queue several waits in
-  one turn: run one, read what it returns, then decide. This rule is
-  repeated in `references/make.md`; it lives here because a compaction drops
-  that file from the session and this file survives.
+  one turn: run one, read what it returns, then decide. This rule lives
+  here, not in `references/make.md`, because a compaction drops that file
+  from the session and this file survives.
 - Never end your turn while a Component Worker or a Component Reviewer
   request is still running. Wait for it with the long wait, record what it
   returns, and end your turn only on a stage proposal, a recorded need, or a
@@ -232,9 +222,8 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   adding `--exit-file "$TMPDIR/<job>.exit"` for every background command of
   yours still running, so the wait returns as soon as such a command ends.
   Read every notification it returns with, and repeat until each running
-  agent has reported. Never queue several waits in one turn. This rule is
-  repeated in `references/make.md` for the same reason as the waiting rule
-  above.
+  agent has reported. Never queue several waits in one turn. This rule lives
+  here for the same reason as the waiting rule above.
 - A Component Worker that is blocked records a Blocked Report with
   `make_round --report-blocked`. Clear every one at once, only with
   `make_round <cad-project> --clear-blocked`: a decision the worker
@@ -330,16 +319,13 @@ and [eval-driven iteration](https://learn.chatgpt.com/use-cases/iterate-on-diffi
   component has a first passing round, run one `make_round --preview-assembly` of the rough whole and
   fix placement between parts in the combined entry; a preview is never a pass. If an assembly repair changes a component,
   repeat that component's isolated loop before reviewing the assembly again.
-- Inspect each Make round's visual packet for misplaced parts, proportion and
-  size mismatches, missing/extra geometry, visible intersections and form errors.
-  Record concrete native observations through `make_round --record-visual` so
-  its summary carries visual feedback alongside numeric checks. Likeness alone
-  cannot pass this inspection, including for products without reference images.
-  Open each round's `visual/sheet.png` once: it holds every view, including
-  the side and the tilted three-quarter views. Judge depth and direction on
-  the tilted view that faces the feature, open a single full-size view only
-  when a detail is too small on the sheet, and use targeted additional views
-  when occlusion leaves a concrete uncertainty.
+- Inspect each assembly round's visual packet for misplaced parts, proportion
+  and size mismatches, missing/extra geometry, visible intersections and form
+  errors, and record concrete native observations through `make_round
+  --record-visual`; a component round's packet is its Component Reviewer's
+  alone. Open each round's `visual/sheet.png` once: it holds every view.
+  Judge depth and direction on the tilted view that faces the feature, and
+  open a single full-size view only when a detail is too small on the sheet.
 - Every Wish is open-ended. The one universal toy blueprint supplies baseline
   contract expectations; it does not classify or constrain what can be
   invented. Product-specific methods and extra evidence come from the Wish,
