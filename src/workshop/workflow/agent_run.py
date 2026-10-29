@@ -258,6 +258,12 @@ def _sha256(value: bytes) -> str:
 #: all three shapes, so a run started before the policy existed keeps working
 #: unchanged and is never silently upgraded.
 MAKE_OPTIONS_NAME = "MAKE-OPTIONS.json"
+# The references the Make reference sends a run to when they apply. A review
+# tool refresh that rewrites references/make.md writes these with it.
+MAKE_COMPANION_REFERENCES = (
+    "references/make-forge-quest.md",
+    "references/make-older-runs.md",
+)
 # Host-owned camera-only amendments of a schema 3 Design Contract (ADR 0083).
 AMENDMENTS_NAME = "CONTRACT-AMENDMENTS.json"
 
@@ -1967,7 +1973,7 @@ class AgentRun:
         review_paths = {
             "scripts/stage_proposal.py", "references/make.md",
             "references/make-playtest.md", "references/motion-review-v1.md",
-            "references/token-budget-v1.md",
+            "references/token-budget-v1.md", *MAKE_COMPANION_REFERENCES,
         }
         if token_budget_skill_root is not None:
             if not _uses_token_budget(payload):
@@ -1988,6 +1994,11 @@ class AgentRun:
             carried = {path for path in by_path if path.startswith(prefix)}
             if name == "autonomous-workshop":
                 carried &= {prefix + path for path in review_paths}
+                # A refreshed make.md sends the run to its companion
+                # references, so they come with it even into a run
+                # materialized before they existed.
+                if prefix + "references/make.md" in carried:
+                    carried |= {prefix + path for path in MAKE_COMPANION_REFERENCES}
             if not carried:
                 continue
             files = _source_tree_files(source_root, label="source %s skill" % name)
@@ -2001,6 +2012,8 @@ class AgentRun:
                 _reject_private_agent_bytes(destination, content)
                 wanted[destination] = (content, mode)
             for path in sorted(carried - set(wanted)):
+                if path not in by_path:
+                    continue  # a companion neither the run nor the source has
                 previous = by_path.pop(path)
                 removals.append(_safe_relative(path, "agent input path"))
                 changes.append(
