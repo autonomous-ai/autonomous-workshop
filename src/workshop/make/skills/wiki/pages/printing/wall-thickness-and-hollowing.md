@@ -1,16 +1,15 @@
 ---
 title: Wall thickness and hollowing
-tags: [wall, thickness, nozzle, hollow, shell, infill, knife-edge, taper, flute, web, fdm, resin]
-aliases: [minimum wall, thin wall, shelling, offset shrink, sliver, feather edge, rib spacing]
+tags: [wall, thickness, nozzle, hollow, shell, infill, flute, web, fdm, resin]
+aliases: [minimum wall, thin wall, shelling, offset shrink, rib spacing]
 sources:
-  - "experience: 0.25 mm walls at every end of a base's segment grooves"
   - skills/cad/scripts/cadprint.py (min_wall, shell_wall, hollow, open_shell, savings)
   - skills/cad/scripts/check_thickness
   - "toolchain: build123d offset(solid, -wall) returns a smaller solid, not a shell (reproducible: Box 20 -> 4096 mm3)"
-  - "experience: sub-nozzle walls, knife edges and over-hollowed parts that passed validate, interfere, check_fit and check_mesh"
-  - "experience: sawtooth tips, a D-flat key and a sloped rib foot each failed the thickness gate as walls; lands, a square rib and a reversed slope cleared them"
-related: [overhangs-and-print-orientation, printed-part-count, joints, resin-printing-design, print-time-and-material-estimation, ribs-and-stiffening, lightweighting-and-lattices, push-to-turn-indexer]
-updated: 2026-10-04
+  - "experience: sub-nozzle walls and over-hollowed parts that passed validate, interfere, check_fit and check_mesh"
+  - "experience: a level-measured rind under a sloped crown came out thin"
+related: [knife-edges-and-tapers, overhangs-and-print-orientation, printed-part-count, joints, resin-printing-design, print-time-and-material-estimation, ribs-and-stiffening, lightweighting-and-lattices, mass-properties-and-measurement]
+updated: 2026-10-12
 ---
 
 # Wall thickness and hollowing
@@ -60,8 +59,9 @@ is `t` thick along that axis and only `t · cos θ` square to the surface, where
 is the angle between the surface normal and the axis. On a dome it is thinnest
 where the dome slopes most: at 46° the wall is 0.69 of the move. Size the move
 from the steepest slope under the part (`t = wall / cos θ_max`), and assert the
-wall with a measured distance (`min_gap` between the inlay and the pocket), never
-with the move you asked for. The same holds for a clearance made by moving a
+wall with a measured distance (`distance_to` between the inlay and the pocket,
+[[mass-properties-and-measurement#minimum-distance-is-boundary-to-boundary]]),
+never with the move you asked for. The same holds for a clearance made by moving a
 surface: it is thinner than asked wherever the surface slopes to the axis.
 
 ## Derive the wall from the nozzle
@@ -152,88 +152,18 @@ than the infill it replaces: [[lightweighting-and-lattices]].
 Resin hollowing — shell thickness, drain and vent holes, cupping — is in
 [[resin-printing-design]].
 
-## A groove through a rounded rim leaves a sliver
+## Knife edges and tapers
 
-A constant-depth groove (0.8 × 0.4 mm segment lines on a drum) fails the
-thickness gate where it meets a filleted rim, both ways: stopped short of the
-fillet it leaves a thin shelf between its end and the rim, and cut through it it
-leaves a sliver between the fillet's curve and the groove floor. Either drop the
-groove where it meets a round (it is texture at that size) or end it in a
-flat-walled face well clear of the fillet. A ring groove on a curved chest adds
-an overhang too: its inner wall along the lower arc is a roof.
-
-## Knife edges are walls too
-
-A boolean can leave a mathematically valid solid whose material tapers to zero:
-a round port meeting a circular chamber almost tangentially, a triangular brace
-ending at one point, or a constant-width radial slot breaking through a curved
-rim. Soundness and mesh checks pass all three; the thickness gate correctly
-finds the sub-nozzle wedge near the intersection.
-
-Repair the construction, not the mesh and not the threshold:
-
-- replace a point contact on a brace with a finite seating edge;
-- give a port a planar or otherwise non-tangent throat into the chamber;
-- flare a slot mouth continuously from the guide width, then fillet the two
-  outer breakthrough edges;
-- fillet exposed inner and outer rim edges when the print orientation turns
-  them into unsupported knife edges.
-
-A stepped mouth merely moves the defect from the outer rim to the step. Keep
-the guide region at its derived `cadfits` width, start the flare with that same
-width, and widen only toward the opening. Re-measure after every such repair.
-
-Three constructions make the same acute corner and are easy to miss because
-each looks like a sensible feature:
-
-- **A sawtooth tip.** A ramp meeting a wall is a wedge between two flat faces,
-  and that is always a wall to the gate however long the tooth. Cut the tip
-  level (a land) as wide as the mechanism allows ([[push-to-turn-indexer#lands-on-the-tips]]).
-- **A D-flat inside a bore.** The flat meets the bore at a few degrees, so the
-  key it leaves is a crescent that tapers to nothing at both ends. Key with a
-  square-sided rib standing out of the bore instead; its corners are 90 deg.
-- **A sloped underside meeting a vertical face.** A 52 deg underside (sloped so
-  it prints) that rises *away* from a vertical face meets it at 38 deg. Slope it
-  the other way -- rising *toward* the face, 142 deg -- or give it a level land
-  under 1 mm at the face first.
-
-## A fix for a knife edge must clear the minimum wall itself
-
-A land, a chamfer face or a fillet flat added to remove a knife edge but
-narrower than 2 × nozzle trades one finding for another. Seen in practice: a
-0.5 mm flat land put on each ridge crest to remove a knife edge was itself below
-the minimum wall and produced dozens of thin regions; widening it to 0.9 mm
-cleared nearly all of them. The trade is invisible while a gate reports only
-the single thinnest point — read the whole region list before editing.
-
-## A wall is thin, an edge tapers: not the same finding
-
-Thickness alone cannot tell a 0.5 mm panel from the rim where a hole breaks out
-of a round post: both read under the minimum wall. The second is not a defect
-and cannot be designed away — any hole crossing a curved surface, any
-countersink, any two faces meeting at an angle leaves material that tapers to
-nothing at the boundary.
-
-What separates them is how wide the sub-minimum band is across the surface:
-
-- **wall** — the band is wider than one minimum wall. Real material is missing;
-  fix it in the generator.
-- **taper** — the band is narrower than that, so what the slicer drops at the
-  edge is less than a single wall's width of material. Acceptable within a small
-  surface budget (the gate uses 2 %).
-
-A straight knife edge is always a wall: its band is `2 × min_wall / sin(2a)`
-for an apex angle `2a`, which is never narrower than two minimum walls however
-sharp or short the edge is. The taper class does not excuse a knife edge, an
-under-thick rib or a shrunken shell — only boundaries where a feature runs out
-into a curved face.
-
-## Record the wall
-
-A project that ships a hollowed part states the wall it was shelled at beside
-the measurement that checked it; a volume in a chat log is not a record.
+Material that tapers to nothing where two faces meet at an acute angle is a
+wall too, and the thickness gate reads it as one; which tapers are defects and
+how to repair them is in [[knife-edges-and-tapers]].
 
 How nozzle, line width and layer height set the wall: [[fdm-layer-height-and-nozzle]]; published wall limits side by side: [[fdm-design-rule-tables]].
+
+## A rind under a sloping crown is measured along the normal
+
+Under a sloping crown, give the rind along the surface normal: level wall /
+cos(tilt). A 1.4 mm wall measured level left 0.9 mm across a steep crown.
 
 ## Two cavities closer than twice the wall break the offset
 

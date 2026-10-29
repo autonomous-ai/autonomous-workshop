@@ -137,7 +137,7 @@ Ranges are allowed here; §5 fixes the values.>
 |---|---|---|---|
 | `R_LARGE` | <> | `[tag]` | <primary silhouette edges> |
 | `R_MEDIUM` | <> | `[tag]` | <secondary forms> |
-| `R_SMALL` | <> | `[tag]` | <detail; bed edges take a chamfer instead> |
+| `R_SMALL` | <> | `[tag]` | <detail; bed edges per `wiki show rounded-bodies-on-the-print-bed#breaking-the-bed-edge`> |
 
 **Proportion ledger** — asserted in `measure/check_spec.py`:
 
@@ -218,7 +218,9 @@ visible product unless round 1 finds nothing; the same finding surviving three
 rounds of detail edits means the primary form or the concept changes. Write a
 parameter's old and new values before its name — "plate 4.2 → 5.6 mm
 [assumed] (`BIT_T`)" — never "`BIT_T` 4.2 → 5.6": a backticked name followed
-by a number is a claim `check_spec_numbers` holds to the current source.>
+by a number is a claim `check_spec_numbers` holds to the current source.
+The closing round is an independent build review; its row cites the
+review's record (`measure/review-build.md` upstream).>
 
 | Round | View | Finding | Checklist item | Source change | Result |
 |---|---|---|---|---|---|

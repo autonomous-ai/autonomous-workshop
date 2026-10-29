@@ -174,7 +174,8 @@ Colour naming and matching belongs to [[colour-matching]].
 Solvent vapour (acetone, MEK, THF), epoxy and sanding dust need ventilation,
 gloves and a respirator per the product's data sheet; acetone is highly
 flammable (Polymaker, Smooth-On). This page does not give a process; read the
-SDS. Finished parts for food or children: [[food-and-toy-safety]].
+SDS. Finished parts for food: [[food-and-toy-safety]]; for children:
+[[toy-safety-constraints]].
 
 ## Checks
 

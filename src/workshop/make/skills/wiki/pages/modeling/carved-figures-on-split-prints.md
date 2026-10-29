@@ -5,8 +5,8 @@ aliases: [carousel horse, carved figure, split body halves, flat faced legs, leg
 sources:
   - "experience: a carved carousel figure printed as midplane halves with flat-faced legs"
   - "experience: the same figure's legs made to swing on shafts through the shoulders and hips"
-related: [loft-organic-bodies, fillet-chamfer-pitfalls, boolean-pitfalls, overhangs-and-print-orientation, product-aesthetics]
-updated: 2026-09-30
+related: [loft-organic-bodies, fillet-chamfer-pitfalls, boolean-pitfalls, overhangs-and-print-orientation, product-aesthetics, laid-rope-tubes]
+updated: 2026-10-10
 ---
 
 # Carved figures on split prints
@@ -14,7 +14,8 @@ updated: 2026-09-30
 A figure whose body prints as two halves on its midplane, with limbs printed
 flat on their inner faces, has its own set of shapes that read wrong and
 unions that fail. The body itself is [[loft-organic-bodies]]; this page is
-what goes on it and under it.
+what goes on it and under it. Paws that hold a rope or rod are
+[[laid-rope-tubes#hanging-a-figure-on-the-strand]].
 
 ## Limbs: an upper loft, then bones and knobs
 
@@ -170,13 +171,10 @@ The wall gate finds what the eye does not, and the same few shapes recur:
 
 ## Ornament and the assembly path
 
-Every ornament round changes what stands in the paths parts are fitted along:
-a mane lock leaning back over the withers stood in the path of the wing
-dropped onto its hinge; a full-width tail dock stood in the path of a pin
-drawn out behind the saddle. Rerun the assembly sequence after each round,
-and bound the ornament by the paths — a lock ends before the plane the fitted
-part drops past; a tail's strands start drawn together at the dock, as a real
-dock is narrow.
+Every ornament round can put material in a path a part is fitted or drawn
+along (a hinged part dropped on, a pin drawn out). Rerun the assembly sequence
+after each round, and bound each ornament by those paths: it ends before the
+plane the fitted part drops past.
 
 ## Split slivers
 

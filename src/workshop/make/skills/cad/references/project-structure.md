@@ -70,7 +70,7 @@ It fails a project four ways:
 | `missing-assembly-entry` | part entries with no combined assembly entry — both halves are required, see SKILL.md step 7 (Edit source) |
 | `oversized-library` | a project **that has part entries** whose importable modules have passed the Tier 3 threshold below |
 
-The third only fires once part entries exist, which is the point at which the
+The `oversized-library` rule only fires once part entries exist, which is the point at which the
 layout stops being a suggestion. It walks the project's own subpackages too, so
 moving 700 lines into a single `parts/everything.py` does not satisfy it — Tier 3
 is only worth the churn if the modules that come out of it are readable.
@@ -118,6 +118,19 @@ whose parts have stopped being readable side by side is still due the package.
 └── part_<x>.step.py    one review/edit entry per named part
 ```
 
+`params.py` is held to the same 400 code lines. When it passes them, move a
+self-contained block into a sibling root module, `params_<topic>.py`. The block
+must not use any name from `params.py`. Re-export it near the top of
+`params.py` with `from params_<topic> import *`:
+- `P.NAME` keeps working everywhere;
+- `check_spec_numbers` reads every root module, so the spec's claims still
+  resolve;
+- the parameter block stays one namespace.
+
+Prove the split by comparing every uppercase name's value before and after.
+Do not turn `params` into a package: the spec checks would then find no
+parameter module.
+
 There is no project manifest and no directory-level build. Every tier is built
 the same way: `scripts/gen` on an explicit entry target.
 
@@ -164,8 +177,8 @@ A reconstruction directory carries more than its generators:
 | `measure/` | probe scripts, image crops, and the measurement ledger they produced | you, during the measuring pass |
 | `__cadgen__/`, `__pycache__/` | build cache and bytecode — gitignored, regenerated on demand | the tooling |
 
-Exported artifacts (`.step`, and a `.glb` when a view export was requested) sit
-beside the generator that produced them, sharing its basename.
+The written `.step` sits beside the generator that produced it, sharing its
+basename.
 
 **There is no project manifest.** No `cad_project.json`, no metadata file, and
 nothing to keep in sync with the source. The set of entries is simply whichever
@@ -204,6 +217,10 @@ Two consequences:
   seeded path is restored once the module finishes executing, so an import
   attempted at call time fails with a bare `No module named ...`.
 - Keep the entries at the project root, alongside the modules they import.
+
+A launcher under `skills/` that loads an entry itself must put
+`scripts/packages/cadgen/src` ahead of site-packages, as `gen` does; otherwise
+the entry builds against the PyPI `cadgen` in `requirements.txt`, silently.
 
 ## Rules of the format
 

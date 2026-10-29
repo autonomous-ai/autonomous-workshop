@@ -19,8 +19,8 @@ sources:
   - https://cdn.shopify.com/s/files/1/1302/1495/files/Velcro_Brand_Hook_88Loop_1000_with_72_Adhesive_System.pdf (hook 88 / loop 1000: shear 8.3 N/cm2, tensile 5.2 N/cm2, T-peel 1.2 lb/in, 5000 cycles)
   - https://www.industrialwebbing.com/template/images/VELCRO_Brand_Sew-on.pdf (woven nylon -56 to 93 C; mushroom hook shear 80 psi)
   - https://gtse.co.uk/cable-ties/cable-ties-buyers-guides/what-are-the-strongest-cable-ties-size-chart (tie width against loop tensile; 20 % margin)
-related: [snap-fit-design, joints, dowel-pins-and-press-fits, fdm-hole-accuracy, layer-anisotropy, magnets-and-strap-slots, straps-buckles-and-textile-attachment, rod-ends-and-clevises, shaft-hub-connections, interlocking-joinery-for-prints, fdm-joining-split-prints, toy-safety-constraints, creep-and-stress-relaxation, bayonet-and-twist-locks, telescoping-tubes-and-locks]
-updated: 2026-10-01
+related: [snap-fit-design, joints, dowel-pins-and-press-fits, fdm-hole-accuracy, layer-anisotropy, magnets-and-strap-slots, straps-buckles-and-textile-attachment, rod-ends-and-clevises, shaft-hub-connections, interlocking-joinery-for-prints, fdm-joining-split-prints, toy-safety-constraints, creep-and-stress-relaxation, bayonet-and-twist-locks, telescoping-tubes-and-locks, construction-toy-interfaces]
+updated: 2026-10-10
 ---
 
 # Push pins, rivets and clip fasteners
@@ -137,6 +137,8 @@ copy the dimensions, never the names or brand marks.
   `peg_for(HOLE_D, "press")`, proved on a coupon.
 - **Calibrate holes with a taper.** A tapered axle or pin, marked along its
   length, shows where the printed hole really closes.
+- Studs, tubes, DUPLO, wooden track and magnetic tiles:
+  [[construction-toy-interfaces]].
 
 ## Cross axles in cross holes
 

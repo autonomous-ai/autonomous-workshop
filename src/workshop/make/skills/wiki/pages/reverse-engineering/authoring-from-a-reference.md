@@ -7,8 +7,10 @@ sources:
   - skills/step-to-source/references/carrying.md
   - skills/step-to-source/scripts/carrier_project
   - "experience: kits converted from meshes that could not pass validate or interfere while carried"
+  - "experience: a ten-solid multi-colour figure STEP re-authored from its face poles (domed outlines, ellipsoid caps) to 0.0006 mm"
+  - "experience: a 'mount plate' in a supplied lamp head was fully inside the shade wall; the correct file carried an external dock post"
 related: [brep-vs-source, mesh-measurement, kit-assembly-poses]
-updated: 2026-09-28
+updated: 2026-10-09
 ---
 
 # Authoring parts from a supplied reference
@@ -34,6 +36,44 @@ stay in `skills/step-to-source/references/re-authoring.md`.
   anyone authors them ([[gears]]).
 - **Mates are derived, not retyped**: the second half comes from `cadfits`
   ([[joints#two-fit-classes-per-project]]).
+
+## Read the construction law off the B-spline faces
+
+A STEP that `step_probe` refuses for its B-spline faces is often still a
+construction you can name, and naming it makes the rebuild exact.
+
+- **Read the pole grid before fitting anything.** Rows of poles that each lie
+  in one vertical plane, and the same small count of poles the other way on
+  every mass (14 here), mean a loft through a fixed list of sections. Fit each
+  section against the first with a free scale and a free centre: an exact fit
+  with scale `cos θ` at height `skirt + h sin θ` is a *domed outline* (every
+  horizontal section the outline shrunk about one centre, every vertical
+  section through it a quarter ellipse). Its whole design is then the outline,
+  the centre, the height and the station angles.
+- **Rebuild a spline the way the tool interpolated it.** A periodic curve with
+  uniform knots interpolates its own values at those knots with uniform
+  parameters. `Edge.make_spline(pts, periodic=True,
+  parameters=linspace(0, 1, n + 1), scale=False)` through the curve's values
+  at its knots reproduced every outline to 0.001 mm, and the rebuilt lofts lay
+  within 0.0006 mm of the original faces; the default chord-length
+  interpolation through the same points missed by 0.05–0.7 mm.
+- **Name small caps by a least-squares quadric.** Fitting a face's
+  tessellation points to an ellipsoid in the feature's own frame (scale of its
+  base ellipse, height, centre drop) gave residuals of 1e-4 and named every
+  cap: a half-ellipsoid on a stem shrunk to 0.98 of it, and one at 1/1.1 of
+  its stem, centred 0.3 below the stem top.
+- **A kit's fit clearances belong to the kit.** A multi-colour model supplied
+  as separately printed pieces carries its pocket clearances (0.10 mm) and
+  stems shrunk below their pockets; carried into one multi-material print the
+  colours stay floating bodies, and the print union came apart into three
+  solids. Make the clearance and the stem scale parameters: rebuild the kit
+  with its own values for the reference check, the print with zero.
+- **Compare by sampling, not by boolean.** Where the rebuilt faces coincide
+  with the reference's, a symmetric difference returns garbage (it reported
+  the whole body). Measure each reference face's distance to the rebuilt
+  surface at sampled points while the file exists, then freeze volumes, boxes
+  and planar sections for after the release
+  ([[mass-properties-and-measurement#tolerance-of-the-numbers]]).
 
 ## When the reference is an edit of your own model
 
@@ -113,6 +153,22 @@ typically cannot pass:
 
 Once parts are re-authored, the overlapping-shell class of clash disappears,
 and whatever remains is a real placement problem.
+
+## A supplied mount may sit inside its host
+
+Before designing anything that mates with a supplied part (a dock, a mount
+plate, a module), prove it is on the surface you will reach. `distance_to`
+returns 0 for a part that touches its host **and** for one buried inside it.
+Intersect the two and compare the overlap with the part's own volume: equal
+volumes mean the part is enclosed. Then cast rays along the mating face's
+normal (`solid.find_intersection_points(Axis(p + 30 * n, -n))` on each solid):
+the entry and exit heights give skin thickness over the part, any pocket the
+host carries for it, and the surface a seated accessory must follow, in
+seconds on a 70-solid head. A plate wholly inside a shell wall, under an
+unbroken skin, next to a slightly undersized inside pocket, is an internal
+module (press-fit from inside), not an attachment point. Stop and ask for the
+right file or the attachment method; do not invent a magnet. A real external
+dock touches with zero overlap.
 
 ## Decide by measuring the file, not by asking
 

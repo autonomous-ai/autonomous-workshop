@@ -5,8 +5,7 @@ they disagreed about what an occurrence is:
 
 * ``assembly.json`` -- the package descriptor. Knows the instance tree: 160 occurrences for
   ``tom_v2``, ids ``o1.1.1``/``o1.12``/``o1.11.7.1.1.1.2``, each naming a component and carrying
-  its placement. This is what ``snapshot --mode list`` enumerates and what the CAD Viewer hands
-  the user when they click a part.
+  its placement. These are the refs a user picks a part by.
 * ``topology.glb`` -- the whole-assembly selector sidecar, extracted from the COMPOSED compound.
   A compound has no instance tree, so it flattens to ONE occurrence (``o1``) holding every solid:
   162 shapes, 13866 faces, in a single namespace ``o1.s1``/``o1.f19``.
@@ -23,9 +22,8 @@ there unused. So this module ADDS the instance-tree occurrences to the flat inde
 replacing it: ``#o1.f19`` keeps resolving exactly as before, and ``#o1.12`` starts resolving.
 
 Coordinates are WORLD AT REST: occurrence transforms applied, parameter-sidecar poses not.
-That is the frame the viewer shows when the ref is picked and the frame ``snapshot --mode list``
-already reports its bounds in, so the two tools now agree. Reporting component-local coordinates
-instead would recreate the frame confusion that FEEDBACK.md P2 documents costing a wrong edit and
+That is the frame the viewer shows when the ref is picked, so the two agree. Reporting
+component-local coordinates instead would recreate the frame confusion that FEEDBACK.md P2 documents costing a wrong edit and
 a full revert.
 """
 
@@ -188,9 +186,8 @@ def _place_entity_row(matrix: list[float], row: Mapping[str, Any]) -> dict[str, 
 
 
 def _component_bundle_reader():
-    """Imported lazily: cadgen._internal.glb pulls in the GLB machinery, and a part entry
-    never reaches this module."""
-    from cadgen._internal.glb import read_step_topology_bundle_from_glb
+    """Imported lazily: a part entry never reaches this module."""
+    from cadgen._internal.glb_topology import read_step_topology_bundle_from_glb
 
     return read_step_topology_bundle_from_glb
 
@@ -568,14 +565,12 @@ def index_with_assembly_occurrences(index: SelectorIndex, artifact: object) -> S
     """The whole instance tree -- occurrences AND their entities -- keyed off a
     ``StepTopologyArtifact``, plus the label aliases for whatever rows survive.
 
-    Lives here rather than at either call site because there are TWO of them and they had already
-    drifted: ``snapshot_cli.artifact_selector_index`` serves ``--focus``/``--hide``, while
-    ``inspect refs`` builds its own index from the same bundle. Fixing one would have left the
-    other reporting the bug, which is how 0b presented as three separate tool failures.
+    Lives here rather than at its call site (``inspect refs``) so that every reader of the same
+    bundle resolves refs identically; two readers that each built their own index had already
+    drifted once.
 
     Label aliases are attached on EVERY return path, including the early ones for part entries,
-    for the same reason: this is the one function both call sites already funnel through, so
-    attaching here is what keeps them from drifting again. Aliases must be computed after the
+    for the same reason: this is the one function every caller funnels through. Aliases must be computed after the
     assembly merge, because the merge is what decides the final row set.
 
     Anything that is not an assembly package keeps its own occurrence rows, so part entries are

@@ -202,24 +202,6 @@ def _array_from_view(gltf: Mapping[str, Any], binary_payload: bytes, view: Mappi
     return values
 
 
-def _array_from_legacy_binary_view(binary_payload: bytes, view: Mapping[str, Any]) -> array:
-    dtype = str(view.get("dtype") or "")
-    typecode = "f" if dtype == "float32" else "I" if dtype == "uint32" else ""
-    if not typecode:
-        raise ValueError(f"Unsupported STEP topology buffer dtype: {dtype}")
-    byte_offset = int(view.get("byteOffset") or 0)
-    count = int(view.get("count") or 0)
-    item_size = int(view.get("itemSize") or array(typecode).itemsize)
-    byte_length = int(view.get("byteLength") or (count * item_size))
-    if byte_offset < 0 or byte_length < 0 or byte_offset + byte_length > len(binary_payload):
-        raise ValueError("STEP topology buffer view range is invalid")
-    values = array(typecode)
-    values.frombytes(binary_payload[byte_offset : byte_offset + byte_length])
-    if count >= 0 and len(values) > count:
-        del values[count:]
-    return values
-
-
 def _step_topology_extension(gltf: Mapping[str, Any]) -> Mapping[str, Any] | None:
     extensions = gltf.get("extensions")
     extension = extensions.get(STEP_TOPOLOGY_EXTENSION) if isinstance(extensions, Mapping) else None
@@ -313,63 +295,19 @@ def is_displayable_step_edge_surface_class_code(value: object) -> bool:
     return code not in {STEP_EDGE_SURFACE_CLASS_CODES["none"], STEP_EDGE_SURFACE_CLASS_CODES["degenerate"]}
 
 
-def _legacy_topology_manifest_path_for_glb(glb_path: Path) -> Path | None:
-    resolved = glb_path.expanduser().resolve()
-    if resolved.name != "model.glb":
-        return None
-    return resolved.parent / "topology.json"
-
-
-def _read_legacy_topology_manifest(glb_path: Path) -> dict[str, Any] | None:
-    manifest_path = _legacy_topology_manifest_path_for_glb(glb_path)
-    if manifest_path is None or not manifest_path.is_file():
-        return None
-    try:
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    return manifest if isinstance(manifest, dict) else None
-
-
-def _read_legacy_topology_bundle(glb_path: Path) -> SelectorBundle | None:
-    manifest = _read_legacy_topology_manifest(glb_path)
-    if manifest is None:
-        return None
-    buffers: dict[str, array] = {}
-    buffer_spec = manifest.get("buffers")
-    views = buffer_spec.get("views") if isinstance(buffer_spec, Mapping) else None
-    uri = str(buffer_spec.get("uri") or "") if isinstance(buffer_spec, Mapping) else ""
-    if isinstance(views, Mapping) and uri:
-        manifest_path = _legacy_topology_manifest_path_for_glb(glb_path)
-        bin_path = manifest_path.parent / uri if manifest_path is not None else Path(uri)
-        try:
-            binary_payload = bin_path.read_bytes()
-        except OSError:
-            binary_payload = b""
-        if binary_payload:
-            for name, view in views.items():
-                if not isinstance(view, Mapping):
-                    continue
-                try:
-                    buffers[str(name)] = _array_from_legacy_binary_view(binary_payload, view)
-                except ValueError:
-                    continue
-    return SelectorBundle(manifest=manifest, buffers=buffers)
-
-
 def read_step_topology_bundle_from_glb(glb_path: Path) -> SelectorBundle | None:
     try:
         gltf, binary_payload = _read_glb_chunks(glb_path)
     except (OSError, ValueError, json.JSONDecodeError):
-        return _read_legacy_topology_bundle(glb_path)
+        return None
     extension = _step_topology_extension(gltf)
     if extension is None:
-        return _read_legacy_topology_bundle(glb_path)
+        return None
     try:
         manifest_bytes = _buffer_view_bytes(gltf, binary_payload, extension.get("selectorView"))
         manifest = json.loads(manifest_bytes.decode("utf-8"))
     except (ValueError, UnicodeDecodeError, json.JSONDecodeError):
-        return _read_legacy_topology_bundle(glb_path)
+        return None
     if not isinstance(manifest, dict):
         return None
     buffers: dict[str, array] = {}
@@ -404,10 +342,10 @@ def read_step_topology_index_from_glb(glb_path: Path) -> dict[str, Any] | None:
     try:
         gltf, binary_offset, binary_length = _read_glb_json_and_bin_location(glb_path)
     except (OSError, ValueError, json.JSONDecodeError):
-        return _read_legacy_topology_manifest(glb_path)
+        return None
     extension = _step_topology_extension(gltf)
     if extension is None:
-        return _read_legacy_topology_manifest(glb_path)
+        return None
     try:
         manifest_offset, manifest_length = _buffer_view_range(
             gltf,

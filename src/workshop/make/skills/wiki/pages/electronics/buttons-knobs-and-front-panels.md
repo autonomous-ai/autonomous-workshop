@@ -10,8 +10,8 @@ sources:
   - https://newhavendisplay.com/blog/how-to-mount-a-tft-display/ (bezel and gasket clearances, flex tail bend radius)
   - https://goldenmorninglcd.com/oled-display-module/0.96-inch-128x64-ssd1306-gme12864-11/ (0.96 in 128 × 64 OLED panel: outline, active area, pixel pitch)
   - MIL-STD-1472F, Figures 8 and 12 (push buttons and knobs)
-related: [switches-and-reed-sensors, handheld-ergonomics, electronics-enclosure-design, snap-fit-design, flexures-and-living-hinges, lighting-design, led-sizing, fdm-minimum-feature-sizes, fit-derivation, seating-bought-parts]
-updated: 2026-09-23
+related: [switches-and-reed-sensors, handheld-ergonomics, electronics-enclosure-design, snap-fit-design, flexures-and-living-hinges, lighting-design, led-sizing, fdm-minimum-feature-sizes, fit-derivation, seating-bought-parts, play-value-and-tactile-feel]
+updated: 2026-10-10
 ---
 
 # Buttons, knobs and front panels
@@ -86,7 +86,7 @@ finger force            F = k · y + OF_max
 
 - Illustrative: `h = 1.2 mm`, `L = 15 mm`, `y = 0.7 mm` → `ε = 0.56 %`.
   Repeated flexing wants the lower, cyclic limit from
-  [[flexure-materials-and-snap-strain#snap-fit-strain]] and
+  [[snap-fit-design#permissible-strain]] and
   [[printed-fatigue]].
 - Print the arm so its length runs along the layers
   ([[layer-anisotropy]]); a wall button on a vertical wall already does.
@@ -94,7 +94,10 @@ finger force            F = k · y + OF_max
   [[fdm-minimum-feature-sizes#features-pins-and-gaps]].
 - A flexure arm relaxes under a constant preload, so it must not rest on
   the plunger ([[creep-and-stress-relaxation]]). Flexure types and life:
-  [[flexures-and-living-hinges]].
+  [[flexures-and-living-hinges]]. A crisp feel (snap ratio 40-65 %) and the
+  strain 10⁵-10⁶ presses allow:
+  [[play-value-and-tactile-feel#the-force-travel-curve-of-a-good-click]],
+  [[play-value-and-tactile-feel#cycle-life-a-fidget-is-a-fatigue-part]].
 
 ## Knobs on encoders and potentiometers
 

@@ -9,8 +9,8 @@ sources:
   - https://patents.google.com/patent/US20100288593A1/en (rake angle; engagement held by contact geometry rather than by spring and friction)
   - https://patents.google.com/patent/US4916276A/en (heart-shaped cam push-push lock: pin rocks on a holder, spring-biased into the groove)
   - https://www.kjmagnetics.com/blog/testing-magnet-strength (any gap or coating cuts pull force; steel plate should be about twice the magnet's diameter wide)
-related: [joints, snap-fit-design, cams-intermittent, clutches-and-freewheels, springs, flexures-and-living-hinges, straight-line-and-toggle-linkages, magnets-and-strap-slots, mechanism-verification, creep-and-stress-relaxation, hinges-and-pin-joints, bayonet-and-twist-locks, posable-figure-joints]
-updated: 2026-10-01
+related: [joints, snap-fit-design, cams-intermittent, clutches-and-freewheels, springs, flexures-and-living-hinges, straight-line-and-toggle-linkages, magnets-and-strap-slots, mechanism-verification, creep-and-stress-relaxation, hinges-and-pin-joints, bayonet-and-twist-locks, posable-figure-joints, launchers-and-projectile-toys, play-value-and-tactile-feel]
+updated: 2026-10-10
 ---
 
 # Latches, detents and ratchets
@@ -65,7 +65,7 @@ in the parameter block.
 A **flexing-finger detent** replaces the coil spring with a cantilever: its
 seating force is the snap beam's `P` at the bump height
 ([[snap-fit-design#cantilever]]) and its strain must stay inside the
-repeated-use limit ([[flexure-materials-and-snap-strain]]). A spring sized
+repeated-use limit ([[snap-fit-design#permissible-strain]]). A spring sized
 for a ball detent: [[springs#helical-compression-spring]].
 
 A rigid sweep reads the bump as a collision; declare the overlap allowance
@@ -83,11 +83,25 @@ A dial or knob that stops at `n` positions has `n` notches at `360°/n`.
   hard stop; a detent is not a stop.
 - If a position must be found without looking, give the home position a
   deeper or doubled notch.
+- **A step finer than a notch is wide: seat a different bump at each
+  position.** On a ring of radius `r` a notch of face width `w` needs
+  `r·Δθ >= w + land`; closer, the notches merge into a slot and nothing
+  clicks. With two or more spring bumps at different angles, cut each
+  position's notch under a different bump (a vernier): position `k` seats
+  bump `k mod n`, and its notch then sits the bumps' spacing plus the step
+  away from the next one. Three positions `-s, 0, +s` on two bumps 180° apart
+  seat one bump at 0 and the other at ±s. At every position only one bump is
+  seated: the holding torque is that bump's climb out plus the others'
+  friction on the face, about half of a full ring's; and the riding bumps
+  press into the face in the assembled CAD pose, an elastic preload the
+  interference check must count as contact and the motion manifest must
+  allow for.
+- How many detents a dial wants, why a weak detent reads as friction, and
+  the flank and crest rules for a printed click:
+  [[play-value-and-tactile-feel#rotary-detents-count-depth-and-friction]],
+  [[play-value-and-tactile-feel#a-printed-click-flanks-crest-and-sound]].
 
-## Ratchet and pawl geometry
-
-[[cams-intermittent#ratchet-and-pawl]] gives the short rules; this is the
-geometry behind them.
+## Ratchet and pawl
 
 - **Pivot on the tangent.** Put the pawl pivot on (or near) the tangent to
   the wheel's tip circle at the contact point, so the line from contact to
@@ -98,9 +112,10 @@ geometry behind them.
   contact normal passes on the engaging side of the pivot by at least 2–3°.
   Then load pulls the pawl deeper into the tooth. Hold engagement by this
   geometry, not by the spring and friction alone.
-- **Free-side flank** sloped (the short rules give ~60°) so the pawl rides up
-  and drops in; the tooth depth is the pawl lift.
-- **Spring** only has to return the pawl: it must seat within about a third
+- **Free-side flank** sloped back about 60° so the pawl rides up and drops
+  in; the tooth depth is the pawl lift.
+- **Spring** only has to return the pawl, and it is gravity, a printed
+  flexure or a band — say which: it must seat within about a third
   of a tooth period at the fastest free-running speed or the pawl skips.
 - **Resolution** is one tooth: a 24-tooth wheel holds every 15°. Two pawls
   offset by half a tooth halve the backlash without smaller teeth.
@@ -139,6 +154,9 @@ in the retention chain. A freewheel built from pawls is on
 - **Bayonet**: an L-slot turned into a short leg; a detent bump in the short
   leg stops it backing out ([[joints#latching-and-holding]]). Slot forms, lug
   sizing and ramps: [[bayonet-and-twist-locks]].
+- **Sear**: a latch that holds a cocked spring and lets go under a finger;
+  its face angle, engagement and trigger force:
+  [[launchers-and-projectile-toys#triggers-and-sears]].
 
 ## Magnetic catches
 
@@ -170,6 +188,10 @@ assert 0.25 <= NOTCH_DEPTH / BALL_D <= 0.30, "detent notch depth outside the usu
 assert PAWL_NORMAL_MARGIN_DEG >= 2.0, "contact normal does not pull the pawl into the tooth"
 assert TOGGLE_OVERTRAVEL_DEG >= 1.0 and HAS_STOP, "over-centre latch needs overtravel and a hard stop"
 ```
+
+Motion: a ratchet wheel turns `clear` in the free direction and `blocked` in
+the locking direction with the pawl engaged, and the pawl's pivot is in the
+retention chain.
 
 Open items: detent force, spring set, notch wear and magnet pull are forces
 and life; no rigid gate measures them. Record them and plan a coupon

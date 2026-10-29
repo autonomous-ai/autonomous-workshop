@@ -80,7 +80,7 @@ same circle in both states.
   `−B` in the disc's frame. Search that radius numerically; the largest one
   gives the most holding torque.
 - Holding force and strain follow [[latches-detents-and-ratchets#detent-holding-force]]
-  and [[flexure-materials-and-snap-strain]]; keep PLA under about 0.5 % strain.
+  and [[snap-fit-design#permissible-strain]]; keep PLA under about 0.5 % strain.
 - A rigid sweep reads the bump as a collision: declare the bump's overlap
   volume as the rotation check's allowance and run a second rotation check
   against the cover alone at zero allowance.

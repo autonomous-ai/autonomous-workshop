@@ -666,7 +666,11 @@ def _raster_batch(faces, xs, ys, zs, denominator, left, rightmost, top, bottom,
 def render(occurrences, azimuth: float, elevation: float, size: int, pad: float, *, framing=None,
            decals=None):
     toward_viewer, right, up = camera_basis(azimuth, elevation)
-    light = np.array([0.35, -0.45, 0.82], dtype=float)
+    # The key light is fixed in the world, above the model. A camera below the
+    # horizon gets it mirrored under the model, or every face it sees (a bed
+    # face, an underside) is lit only by the ambient term and its colour reads
+    # a shade darker than it is: gold as brown, white as grey.
+    light = np.array([0.35, -0.45, 0.82 if elevation >= 0 else -0.82], dtype=float)
     light /= np.linalg.norm(light)
     all_points = (np.concatenate([points for points, _faces, _colour in occurrences])
                   if framing is None else np.asarray(framing, dtype=float))
@@ -851,11 +855,24 @@ def self_check() -> int:
         print(f"render_review self-check failed: one flat face drew {len(shades)} shades "
               "(a reversed triangle is lit from behind)", file=sys.stderr)
         return 1
+    # The bottom view lights the bed face as the top view lights the top: the
+    # same colour, the same shade, rather than the ambient-only grey it was.
+    slab = [(square, np.asarray([[0, 1, 2], [0, 2, 3]]), (200, 150, 100))]
+    seen = [
+        {tuple(px) for px in np.asarray(render(slab, -90.0, el, 120, DEFAULT_PAD)).reshape(-1, 3)
+         if tuple(px) != tuple(BACKGROUND)}
+        for el in (90.0, -90.0)
+    ]
+    if seen[0] != seen[1]:
+        print(f"render_review self-check failed: a face seen from below shades {sorted(seen[1])}, "
+              f"from above {sorted(seen[0])}", file=sys.stderr)
+        return 1
     print(f"render_review self-check: ok foreground={foreground} colours={colour_count}")
     return 0
 
 
 def main(argv=None) -> int:
+    _runtime_paths()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", nargs="?", type=Path)
     parser.add_argument("--view", action="append", default=[])

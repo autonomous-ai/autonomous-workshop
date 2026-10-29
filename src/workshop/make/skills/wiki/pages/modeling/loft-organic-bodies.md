@@ -7,8 +7,10 @@ sources:
   - "experience: a tail resting against a body passed validate and interfere as two solids"
   - "experience: a figure designed from prose, lofted from hand-typed pairs, then from a drawn silhouette"
   - "experience: a carved carousel figure printed as midplane halves with flat-faced legs"
-related: [loft-pitfalls, frames-and-rotations, operation-families, carved-figures-on-split-prints]
-updated: 2026-09-29
+  - "experience: a 12-lobe pumpkin printed upright on a lamp-shade dock"
+  - "experience: a sector-built lobe ring validated only with flattened poles, and its under-equator creases needed a steeper lobe flank than the lobes themselves"
+related: [loft-pitfalls, frames-and-rotations, operation-families, carved-figures-on-split-prints, fuse-pitfalls]
+updated: 2026-10-12
 ---
 
 # Organic bodies from lofts
@@ -65,7 +67,7 @@ drawing:
   a 2D plot takes a second, a loft and a render a minute.
 - **Bury the joining section.** A neck whose crest ended exactly where the
   head's surface also passed fused into a valid fragment of a fraction of a
-  percent ([[boolean-pitfalls#a-fuse-can-come-back-empty-assert-every-step]]).
+  percent ([[fuse-pitfalls#a-fuse-can-come-back-empty-assert-every-step]]).
   End it a millimetre or two inside the other loft.
 - **A head is carved, not intersected.** Two outlines extruded across each
   other (side profile ∩ plan) give a box with knife edges, and filleting that
@@ -186,19 +188,66 @@ for name, tool, colour in regions:
 asm.add(fused - taken, "body", color=filament(COL_BODY))
 ```
 
-Measure the reference, then round to stock. A `--palette`/`--isolate` run in
-`$image-to-cad` reports hex values — and a glossy surface splits into a lit
-and a shaded cluster of the same paint, so merge those by eye first. Each
-merged hex then picks the nearest filament name from the part's own stock (the
-tables under **Colour** in `skills/cad/references/build123d-modeling.md`), and
-that name is what the region constant holds. One part prints in one stock, so
-round every region of it against the same table and pass that stock to
-`filament(..., material=...)`. A region in a colour outside its palette cannot
-be printed as drawn, so record the substitution in the spec instead of passing
-the sampled hex through `Color()` or `srgb()`.
+Each region constant holds a filament name, never a sampled hex: rounding a
+measured colour to stock, and recording a substitution, is under **Colour** in
+`skills/cad/references/build123d-modeling.md`. Merge gloss's lit and shaded
+clusters of one paint first
+([[measuring-reference-photos#colour-clusters-are-colour-not-parts]]), and
+round every region of one part against the same stock, since a part prints in
+one.
 
 Build every tool in the frame of the body it cuts. A tool built in the world
 and passed through the figure's placement a second time lands off the body,
 the intersection is empty, and the region silently takes the base colour.
 Assert that every colour region holds material, the same guard as every role
-holding material ([[boolean-pitfalls#a-fuse-can-come-back-empty-assert-every-step]]).
+holding material ([[fuse-pitfalls#a-fuse-can-come-back-empty-assert-every-step]]).
+
+Also validate every emitted colour-region solid with the topology gate. A
+primitive-based physical union can be valid while a pupil or other clipped
+colour leaf is self-intersecting after partition booleans. Positive region
+volumes, a matching volume sum, zero missing/extra union volume and clean
+interference do not prove leaf validity. Keep the physical-union checks and
+the per-leaf checks on both coloured entries; repair the partition in source
+and repeat the affected checks before exporting the final coloured STEP.
+
+## A lobed body (a pumpkin): loft one lobed section
+
+Loft a single N-arc lobed section, scaled about the axis along the profile.
+Fusing N offset lobe solids instead gives a dished "donut" top, because each
+lobe peaks on its own axis. A superellipse profile (p about 3.4 above the
+equator) gives the flat shoulders of a pumpkin; a plain ellipse reads as an
+onion. To print upright, put a ruled 45 deg flank under the bulge (a ruled
+loft between two scaled sections makes exact cones, so no lobe face leans
+more than the crown meridian), and start the smooth loft where the slope is
+42 deg so the spline cannot pass 45. Turn the lobe pattern so a crease, not a
+crown, faces the nearest obstacle on the host.
+
+## A ring of lobes built as sectors
+
+When each lobe must be its own surface (lobes of different heights), build one
+sector piece (a core wedge plus one lobe) and pattern it round the axis so the
+copies meet on planar faces. Fusing overlapping B-spline lobes instead can take
+twenty times as long. A scaled revolve keeps its pole at the lobe top, and
+`BRepAlgoAPI_Check` may flag some rotated copies of the same piece as
+self-intersecting there. Flatten the lobe tops by about 0.6 mm: at 0.3 mm the
+flats are so small that they tessellate open in `check_mesh`. Where a later
+landing cut already removes the poles, do not flatten at all, or the tiny flats
+come back.
+
+Below the equator, the crease between two lobes runs flatter than either lobe.
+If each lobe's underside is at the overhang limit, the crease fails the
+overhang gate. Give the lobe underside about 58 deg from horizontal (32 deg off
+vertical) so the crease clears 45 deg.
+
+## A tube cannot fold tighter than its own radius
+
+A loft along a curved spine self-folds where the spine's curvature radius is
+smaller than the section radius; it builds an open hook or an invalid solid.
+Keep `curvature_radius / tube_radius` above about 1.1 along the spine. For a
+fabric fold (a floppy hat tip), end the first body in a rounded crown and
+start a second loft inside it, so the bend is hidden in the crown.
+
+Where a tube meets a sphere (a tip and its ball), do not cut the tube with the
+sphere: the grazing intersection leaves knife edges. Part both on a plane
+through the sphere at offset `d` and start the tube at `sqrt(R^2 - d^2)`, so the
+joint is flush.

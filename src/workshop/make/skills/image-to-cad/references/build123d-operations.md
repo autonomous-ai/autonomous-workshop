@@ -43,7 +43,7 @@ each snippet there was executed against build123d 0.11 / cadgen 0.4.19:
 | the base solid's family from the image and `measure_image.py` signals — prismatic, tapered extrude, revolve, loft, sweep, sketch-driven, blended organic | `wiki show operation-families` |
 | additive and subtractive feature calls, conformal decoration, crescents and two-circle profiles solved from tips and rim | `wiki show feature-recipes` |
 | the selector cookbook and the rules that keep a selector stable | `wiki show build123d-selectors` |
-| boolean order, finishing (fillets last, one corner radius, 0.6 mm bed chamfer) and the operation order as the body of `gen_step()` | `wiki show construction-strategy` |
+| boolean order, finishing (fillets last, one corner radius, the bed edge) and the operation order as the body of `gen_step()` | `wiki show construction-strategy`, `rounded-bodies-on-the-print-bed#breaking-the-bed-edge` |
 | loft rails, PCHIP, ruled lofts; fillet and chamfer traps; boolean batching | `wiki show loft-pitfalls`, `fillet-chamfer-pitfalls`, `boolean-pitfalls` |
 
 State the order as integers in the table. That ordering **is** the body of
@@ -64,27 +64,16 @@ asm.add(lid, "lid", color=filament("white"))
 return asm.compound()
 ```
 
-Fusing separately printed parts loses clearances, fits, and per-part mesh export.
+Fusing separately printed parts loses clearances and fits.
 Name the parts in the spec in the order they should be added.
 
 Colour is worth one line in the spec per part, and so is the stock it prints in.
 Name each printed part's colour as a filament name the implementer passes to
 `filament()` — never a hex of your own, which invents a filament that cannot be
-loaded. **Bambu Lab PLA Lite** is the default stock: `beige`, `black`, `blue`,
-`cocoa brown`, `cyan`, `dark gray`, `gray`, `green`, `orange`, `red`,
-`sunflower yellow`, `white`, `yellow`. **Bambu Lab PLA Matte**
-(`material="PLA Matte"`) carries the pastels and muted tones Lite lacks:
-`apple green`, `ash gray`, `bone white`, `caramel`, `charcoal`, `dark blue`,
-`dark brown`, `dark chocolate`, `dark green`, `dark red`, `desert tan`,
-`grass green`, `ice blue`, `ivory white`, `latte brown`, `lemon yellow`,
-`lilac purple`, `mandarin orange`, `marine blue`, `nardo gray`, `plum`,
-`sakura pink`, `scarlet red`, `sky blue`, `terracotta`. **Bambu Lab PETG Basic** is the tougher,
-less brittle stock for a part that flexes, takes an impact, or sits somewhere
-warm: `black`, `dark beige`, `dark brown`, `gray`, `green`, `misty blue`,
-`navy blue`, `orange`, `pine green`, `red`, `reflex blue`, `white`, `yellow`.
-Seven names are in both stocks and five of them are a different hex in each, so
-a PETG row says so — `filament("red", material="PETG")` — or it gets the PLA
-spool. When the
+loaded. Bambu Lab PLA Lite is the default stock; PLA Matte carries the pastels
+and muted tones, and PETG Basic is for a part that flexes, takes an impact or
+sits somewhere warm. A name in two stocks needs its `material=`, or it gets
+the PLA spool. The name lists are `cad/scripts/cadfilament.py`. When the
 reference colour falls between two names, choose the nearer and record the
 substitution as a spec row. Name a colour for every leaf, never for a group:
 colour on a group compound never reaches the render even though it does reach

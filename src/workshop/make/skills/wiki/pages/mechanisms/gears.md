@@ -13,37 +13,23 @@ updated: 2026-09-23
 
 # Gears
 
-Search `$step-parts` first, on the governing numbers (module, tooth count,
-bore). A catalog gear at the right module beats a hand-authored one; a
-recorded miss (the tooth counts the catalog has at that module, and the one
-you need that it lacks) is what licenses authoring one.
+Search `$step-parts` and `stdpart` first, on the governing numbers (module,
+tooth count, bore); a recorded miss is what licenses authoring one.
 
 Why a printed gear train is loud and what quiets it: [[noise-and-vibration]].
 
 ## Authoring one is still not drawing one
 
-Two installed libraries generate the involute from the same numbers this page
-uses, and hand the reference radii back so the centre distance below is
-derived rather than typed:
-
-- `bd_warehouse.gear.SpurGear(module, tooth_count, pressure_angle, thickness)`
-  — spur only, angles in degrees, a plain build123d object.
-- `py_gearworks` — spur, helical, herringbone, **bevel**, cycloid,
-  internal-ring, rack and planetary sets, angles in **radians**, built with
-  `gear.build_part()`. `a.mesh_to(b, target_dir=...)` places the second gear at
-  the nominal centre distance *and* rotates it into phase, which is the
-  "place from the solution, never by hand" rule for a gear pair.
-
-**Backlash: `py_gearworks` will do it either way, and only one is allowed
-here.** `SpurGear(..., backlash=b)` thins the tooth — correct. `mesh_to(...,
-backlash=b)` moves the centres apart — forbidden by the rule below. Worse,
-`mesh_to(backlash=0.0)` is *not* the same as omitting the argument: on an
-m1.5 12/23 pair with thinned teeth it pulled the centres 1.08 mm **in** and
-produced 8.17 mm³ of flank interference that `inspect interfere` reports.
-Thin in the constructor; leave `mesh_to`'s `backlash` out.
-
-Worm, hypoid and face gears are in neither library — search `$step-parts`,
-then author. Library behaviour in detail: [[element-libraries]].
+`bd_warehouse` (spur only) and `py_gearworks` (spur, helical, bevel, cycloid,
+internal ring, rack, planetary) generate the involute from the numbers on this
+page and hand the reference radii back, so the centre distance is derived
+rather than typed; `py_gearworks`' `mesh_to` places the second gear at the
+centre distance *and* in phase. Thin the teeth in the constructor
+(`backlash=`) and leave `mesh_to`'s `backlash` out: `mesh_to(backlash=0.0)`
+closes the centres onto teeth that were already thinned, and the pair clashes
+([[element-libraries#the-two-backlash-arguments]]). Worm, hypoid and face gears
+are in neither library. Which library for which gear:
+[[element-libraries#two-gear-libraries-and-which-one]].
 
 ## Spur gear numbers
 

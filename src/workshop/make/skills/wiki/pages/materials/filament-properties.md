@@ -14,7 +14,7 @@ sources:
   - Prusament PLA Technical datasheet v1.1 (16-02-2022), https://prusament.com/wp-content/uploads/2022/10/PLA_Prusament_TDS_2021_10_EN.pdf
   - Prusament PETG technical data sheet, https://prusament.com/materials/prusament-petg/
 related: [layer-anisotropy, heat-resistance-of-printed-parts, moisture-and-drying, creep-and-stress-relaxation, shafts-and-bearings, thermal-expansion-and-hybrid-parts]
-updated: 2026-09-23
+updated: 2026-10-10
 ---
 
 # Filament properties for design
@@ -32,18 +32,21 @@ All rows are Polymaker technical data sheets, so the test method and specimen
 preparation are the same across rows. X-Y = specimen lying flat; Z = specimen
 printed upright, so the load crosses the layers.
 
-| material | density g/cm³ | E X-Y MPa | E Z MPa | UTS X-Y MPa | UTS Z MPa | elong. X-Y % | elong. Z % | HDT 0.45 MPa °C | HDT 1.8 MPa °C | Tg °C |
-|---|---|---|---|---|---|---|---|---|---|---|
-| PLA (PolyLite) | 1.17 | 3427 | 3065 | 52.3 | 40.5 | 6.3 | 1.8 | 60 | 58 | 61 |
-| PETG (PolyLite) | 1.25 | 2117 | 1899 | 50.8 | 42.8 | 8.4 | 3.3 | 78 | 75 | 81 |
-| ABS (PolyLite) | 1.12 | 2247 | 2081 | 33.4 ¹ | 29.7 | 17.9 | 3.1 | 100 | 98 | 101 |
-| ASA (Polymaker) | 1.13 | 2379 | 1965 | 43.8 | 32.0 | 6.7 | 1.65 | 103 | 100 | 98 |
-| PC (PolyMax) | 1.19 | 2435 | 2149 | 53.4 | 41.4 | 4.5 | 2.8 | 114 | 99 | 113 |
-| PA6/66 copolymer (CoPA), dry | 1.12 | 2703 | 2209 | 78.0 | 45.8 | 12.7 | 1.3 | 111 | 70 | 66 |
-| PA6/66 copolymer (CoPA), wet | — | 724 | 660 | 34.3 | 13.7 | 13.2 | 1.7 | — | — | — |
-| PA6-CF (PolyMide), dry, annealed | 1.17 | 7453 | 4354 | 105.0 | 67.7 | 3.0 | 2.9 | 215 | 196 | 56.6 |
-| PA6-CF, moisture conditioned | — | 5666 | 4714 | 81.7 | 64.4 | 4.6 | 1.8 | — | — | — |
-| TPU 95A (PolyFlex) | 1.20–1.24 | 33.6 | — | — | — | 551 | — | — | — | — |
+| material | density g/cm³ | E X-Y MPa | E Z MPa | UTS X-Y MPa | UTS Z MPa | elong. X-Y % | elong. Z % |
+|---|---|---|---|---|---|---|---|
+| PLA (PolyLite) | 1.17 | 3427 | 3065 | 52.3 | 40.5 | 6.3 | 1.8 |
+| PETG (PolyLite) | 1.25 | 2117 | 1899 | 50.8 | 42.8 | 8.4 | 3.3 |
+| ABS (PolyLite) | 1.12 | 2247 | 2081 | 33.4 ¹ | 29.7 | 17.9 | 3.1 |
+| ASA (Polymaker) | 1.13 | 2379 | 1965 | 43.8 | 32.0 | 6.7 | 1.65 |
+| PC (PolyMax) | 1.19 | 2435 | 2149 | 53.4 | 41.4 | 4.5 | 2.8 |
+| PA6/66 copolymer (CoPA), dry | 1.12 | 2703 | 2209 | 78.0 | 45.8 | 12.7 | 1.3 |
+| PA6/66 copolymer (CoPA), wet | — | 724 | 660 | 34.3 | 13.7 | 13.2 | 1.7 |
+| PA6-CF (PolyMide), dry, annealed | 1.17 | 7453 | 4354 | 105.0 | 67.7 | 3.0 | 2.9 |
+| PA6-CF, moisture conditioned | — | 5666 | 4714 | 81.7 | 64.4 | 4.6 | 1.8 |
+| TPU 95A (PolyFlex) | 1.20–1.24 | 33.6 | — | — | — | 551 | — |
+
+Glass transition, Vicat and HDT from the same sheets:
+[[heat-resistance-of-printed-parts#temperatures-per-material]].
 
 ¹ The PolyLite ABS page lists both 33.4 and 29.7 MPa against the X-Y tensile
 row; 29.7 MPa is also its Z value. Treat 30–33 MPa as the X-Y range.

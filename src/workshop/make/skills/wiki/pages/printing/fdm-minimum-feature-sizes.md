@@ -11,8 +11,8 @@ sources:
   - https://hlhrapid.com/knowledge/3d-printing-design-guide-adding-text-lettering-and-symbols/
   - https://blog.prusa3d.com/everything-about-nozzles-with-a-different-diameter_8344/
   - "experience: a 3 mm debossed word on a key shank failed the thickness gate on the lands between its letters"
-related: [fdm-design-rule-tables, wall-thickness-and-hollowing, fdm-surface-finish, fdm-layer-height-and-nozzle, text-patterns-and-surface-detail]
-updated: 2026-10-08
+related: [fdm-design-rule-tables, wall-thickness-and-hollowing, knife-edges-and-tapers, fdm-surface-finish, fdm-layer-height-and-nozzle, text-patterns-and-surface-detail]
+updated: 2026-10-10
 ---
 
 # Minimum feature sizes and printed text
@@ -39,6 +39,9 @@ in the horizontal plane".
 A pin's limit is a stiffness limit as much as a resolution one: a tall thin
 pin sways under the nozzle. Hubs' 5 mm threshold is for vertical pins; a pin
 lying along X/Y prints as extrusion lines and follows the 4-line-width rule.
+The published pin values split into two camps: 3 mm (Hubs, Forge Labs,
+Formlabs) prints reliably at any height, and 1.8 mm (Hydra) is the geometric
+floor of four line widths.
 
 ```python
 assert PIN_D >= 4 * LINE_W, "below four lines the slicer drops or blobs it"
@@ -89,6 +92,10 @@ jewelry, logos", at much longer print times
 
 Building the text in build123d — fonts, emboss on flat and curved faces:
 [[text-patterns-and-surface-detail]].
+
+Points and edges that thin to nothing (a lip over a sloped underside, a
+star's points) are walls to the thickness gate: [[knife-edges-and-tapers]].
+Bed chamfers: [[rounded-bodies-on-the-print-bed#breaking-the-bed-edge]].
 
 ## Checks
 

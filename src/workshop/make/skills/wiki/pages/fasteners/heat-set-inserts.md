@@ -12,8 +12,8 @@ sources:
   - https://www.ruthex.de/en/products/ruthex-hss-bohrer-set-5-tlg-fur-gewindeeinsatze-m2-m2-5-m3-m4-m5-m6-din-338-bohrer-3-2-4-0-5-6-6-4-8-0-mm-fur-kunststoff-stahl-alu-kupfer-messing-uvm (Ruthex drill sizes)
   - https://tools.creative3dp.com/blog/heat-set-insert-hole-size-chart/ (community hole and wall table)
   - https://insertguide.com/guides/heat-set-insert-hole-size/ (community hole table, depth rule)
-related: [screws-into-plastic, nut-traps-and-captive-nuts, fastener-torque-and-stripping, metric-screw-clearance-holes, wall-thickness-and-hollowing, printed-threads-and-bosses, resin-printing-design]
-updated: 2026-09-23
+related: [screws-into-plastic, nut-traps-and-captive-nuts, fastener-torque-and-stripping, metric-screw-clearance-holes, wall-thickness-and-hollowing, resin-printing-design]
+updated: 2026-10-10
 ---
 
 # Heat-set threaded inserts
@@ -46,6 +46,13 @@ M5 × 9.5 mm. CNC Kitchen's M3 inserts
 (3.0 mm short and 5.7 mm standard) both take a 4.0 mm hole; the M3 knurl is
 4.6 mm across. PEM holes are for moulded or drilled plastic; PEM's minimum
 hole depth is the insert length plus 0.76 mm.
+
+`stdpart`'s `HeatSetNut` lists per-product Ruthex and CNC Kitchen inserts, but
+it is not this table: its hole `dc` differs by size (M2.5 3.9–4.0, not 3.6),
+and `InsertHole` cuts the nearest number or letter drill from
+`nut_data["drill"]` (M3 `#20` = 4.09 mm, M4 `#1` = 5.79 mm), plus a
+per-radius `manufacturing_compensation`. Check the hole it cuts against the
+vendor's number for the insert bought.
 
 **A printed hole is not the nominal hole.** CNC Kitchen measured printed M3
 holes about 0.25 mm smaller than modelled and recommends adding 0.2–0.3 mm in

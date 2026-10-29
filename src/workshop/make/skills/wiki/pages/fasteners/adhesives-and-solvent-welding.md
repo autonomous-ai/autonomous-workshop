@@ -6,8 +6,10 @@ sources:
   - https://blog.prusa3d.com/the-great-guide-to-gluing-and-assembling-3d-prints_44908/ (adhesives per material, tensile results, activator heat, gap filling)
   - https://clevercreations.org/best-glue-for-pla-abs-petg-adhesive/ (gel CA for PLA, ABS acetone slurry; via search excerpt)
   - https://www.cnckitchen.com/blog/tips-and-tricks-for-heat-set-inserts (inserts in resin prints glued with CA or epoxy)
+  - https://www.sovol3d.com/blogs/news/3d-printing-large-models-in-multiple-pieces-keys-glue-and-assembly-tips (model cement on PLA/PETG, polyurethane for TPU, set times)
+  - https://kingroon.com/blogs/3d-print-101/best-methods-to-bond-3d-prints-together (set times, isopropyl clean, light sanding, clamping)
 related: [printed-part-count, dowel-pins-and-press-fits, heat-set-inserts, post-processing-and-finishing, thermal-expansion-and-hybrid-parts]
-updated: 2026-09-23
+updated: 2026-10-10
 ---
 
 # Adhesives and solvent welding for printed parts
@@ -20,11 +22,11 @@ peg, key or dowel. Glue fixes the parts; it does not position them.
 
 | material | works | does not / caution |
 |---|---|---|
-| PLA | CA (gel CA gives control and fills small gaps); dichloromethane; plain acetone reported to glue it; two-part epoxy works but isn't the best | acetone does not smooth PLA even where it glues it |
-| PETG | CA (13.06 MPa in Prusa's tensile test with Alteco CA); two-part epoxy; methacrylate plastic welders; THF-based PVC cement (user reports) | inert to the solvents a hobbyist has, so no practical solvent weld |
+| PLA | CA (gel CA gives control and fills small gaps); dichloromethane; plain acetone reported to glue it; two-part epoxy works but isn't the best | acetone does not smooth PLA even where it glues it; model cement does not bond it (Sovol) |
+| PETG | CA (13.06 MPa in Prusa's tensile test with Alteco CA); two-part epoxy; methacrylate plastic welders; THF-based PVC cement (user reports) | inert to the solvents a hobbyist has, so no practical solvent weld; model cement does not bond it (Sovol) |
 | ABS / ASA | acetone solvent weld, or an acetone slurry of dissolved ABS ("ABS juice"); CA (7.23–9.44 MPa on ASA) | styrene model cements vary: one tested did not react with ASA at all |
 | SLA resin | CA bonds almost instantly; UV resin fills gaps and hides seams; epoxy | — |
-| TPU / flexible | CA if the mating faces are at least a bit stiff; contact cement | — |
+| TPU / flexible | CA if the mating faces are at least a bit stiff; contact cement; polyurethane glue (Sovol, Kingroon) | polyurethane glue expands as it cures, so clamp the joint |
 | PC | adhesives marketed for polycarbonate | — |
 
 Prusa's tensile results, for scale: Peckalep Medium CA on PLA 10.20 MPa,
@@ -35,7 +37,11 @@ Vapour smoothing per material: [[post-processing-and-finishing]].
 ## Practice
 
 - **Surfaces:** clean and as level as possible; a CA bond is only as good as
-  its contact area.
+  its contact area. Wipe with isopropyl alcohol, sand lightly, and clamp while
+  it cures (Kingroon).
+- **Set time:** CA sets in 10–60 s, epoxy in 5 min to 24 h depending on the
+  grade (Sovol, Kingroon); a joint that must be positioned wants the slower
+  glue or a locating feature that holds it.
 - **Gaps:** CA does not fill gaps. Use two-part epoxy, or CA thickened with
   talcum powder or microballoons.
 - **Activator heat:** CA accelerators cure exothermically. The heat can deform

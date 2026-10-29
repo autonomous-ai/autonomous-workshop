@@ -60,6 +60,13 @@ pass (`wiki show seating-bought-parts#a-seat-is-a-prism-along-the-insertion-dire
 - `fit` — a `cadfits` class. `slip` (0.20/side) is the default. An interference
   class is refused: a bought part does not compress.
 
+A part that tapers along `insert` (a pyramid or cone cap) is the exception:
+the prism is its widest section swept straight, and touches no sloped face.
+Read its planar faces (`cadmount.load`, `face.normal_at`), offset each plane by
+`cadfits.mating_clearance(fit)` along its normal and close the polyhedron
+(`Solid(Shell(faces))`); `check_mount` then measures that clearance
+(`wiki show seating-bought-parts#a-tapered-part-seats-on-its-own-face-planes-not-on-a-prism`).
+
 `envelope_for` is the bounding box instead. It is looser and cannot miss a
 feature, so it is the answer when a seat will not converge, or when a
 rectangular pocket is what the bracket wanted anyway.

@@ -4,9 +4,9 @@ Read this file when the reference shows repeated, individually visible pieces â€
 a board and its men, a tray of parts, a rack, a tiled or populated surface.
 
 Such a scene can match its archetype while missing most of what defines it,
-and the single likeness number in Step 8 will not say so. Why, and how to
-reproduce a layout: `skills/wiki/pages/image-reading/repeated-scene-likeness.md`
-(`wiki show repeated-scene-likeness`).
+and the single likeness number in Step 8 will not say so. Why:
+`skills/wiki/pages/image-reading/silhouette-likeness.md`
+(`wiki show silhouette-likeness#repeated-piece-scenes-the-frame-dominates-the-outline`).
 
 **Multi-component scene landmark gate.** Before CAD starts:
 

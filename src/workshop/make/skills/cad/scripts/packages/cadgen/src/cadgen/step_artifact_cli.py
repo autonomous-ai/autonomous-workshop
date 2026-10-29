@@ -1,20 +1,16 @@
 from __future__ import annotations
 
-import argparse
 from dataclasses import replace
-import json
 from pathlib import Path
 
 from cadgen.cli_logging import CliLogger
 from cadgen._internal.cli_locking import (
-    add_lock_timeout_argument,
     contended_payload,
     deadline_ms,
     lock_wait_notice,
 )
 from cadgen._internal.generation import (
     EntrySpec,
-    cli_progress_line,
     _assembly_glb_package_current,
     _existing_topology_artifact_matches_spec_without_scene,
     _entry_spec_from_source,
@@ -22,6 +18,7 @@ from cadgen._internal.generation import (
     _generated_assembly_glb_closure_current,
     run_script_generator,
 )
+from cadgen.cli_progress import cli_progress_line
 from cadgen.coordination import PHASE_GENERATE, STEP_PACKAGE, artifact_build
 from cadgen.metadata import DEFAULT_MESH_ANGULAR_TOLERANCE, DEFAULT_MESH_TOLERANCE, normalize_mesh_numeric
 from cadgen.catalog import render_package_dir
@@ -245,31 +242,6 @@ def _current_artifact_for_spec(spec: EntrySpec) -> StepTopologyArtifact | None:
         return None
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="python -m cadgen.step_artifact_cli",
-        description="Build the CAD Viewer render package for one STEP/STP file or gen_step() generator.",
-    )
-    parser.add_argument("--repo-root", required=True, help="Repository/workspace root for relative STEP metadata.")
-    parser.add_argument("--step", required=True, help="STEP/STP source file to process.")
-    parser.add_argument(
-        "--source-path",
-        help=(
-            "Python gen_step() source for a generated model. Selects generator mode: the build "
-            "runs the generator in-process and writes only the render package; the logical "
-            "--step path need not exist on disk. Without it, --step must be an existing "
-            "STEP/STP file (imported model)."
-        ),
-    )
-    parser.add_argument("--kind", choices=("part", "assembly"), help="Override inferred STEP entry kind.")
-    parser.add_argument("--force", action="store_true", help="Regenerate even if a current artifact exists.")
-    parser.add_argument("--mesh-tolerance", type=float, help="Override automatic mesh linear deflection.")
-    parser.add_argument("--mesh-angular-tolerance", type=float, help="Override automatic mesh angular deflection.")
-    parser.add_argument("--verbose", action="store_true", help="Show detailed timing on stderr.")
-    add_lock_timeout_argument(parser)
-    return parser
-
-
 def build_step_artifact(
     *,
     repo_root: Path,
@@ -279,24 +251,18 @@ def build_step_artifact(
     force: bool = False,
     mesh_tolerance: float | None = None,
     mesh_angular_tolerance: float | None = None,
-    reset_runtime_closure: bool = False,
     verbose: bool = False,
     logger: CliLogger | None = None,
     lock_timeout_s: float = 0.0,
 ) -> dict[str, object]:
     """Build the GLB/topology artifact for one STEP/.step.py and RETURN the result
-    payload (the exact dict the CLI prints). This is the single source of truth,
-    callable in-process by a long-lived warm-OCCT worker AND wrapped by main();
-    it raises on error (the CLI shell owns argv parsing + JSON stdout).
+    payload (the exact dict ``scripts/artifact`` prints). It raises on error; the CLI
+    shell owns argv parsing and JSON stdout.
 
     Passing ``source_path`` selects GENERATOR mode: the gen_step() source runs
     in-process and only the render package is written — the logical ``step``
     path never needs to exist on disk (STEP is exported on demand elsewhere).
     Without ``source_path``, ``step`` must be an existing imported STEP/STP file.
-
-    ``reset_runtime_closure`` (default-off) is for warm worker processes: it makes
-    the generator's recorded source closure deterministic across repeated in-process
-    builds — see :func:`cadgen.generation.run_script_generator`.
 
     ``lock_timeout_s`` bounds the wait for a peer's generation lock. 0 waits (the CLI
     default: an agent asking for a build wants the build). A caller that must not block —
@@ -419,7 +385,6 @@ def build_step_artifact(
                 "gen_step",
                 logger=logger,
                 force=force,
-                reset_runtime_closure=reset_runtime_closure,
                 progress=progress,
             )
             if scene is None:
@@ -451,40 +416,3 @@ def build_step_artifact(
         )
     stats = result.selector_bundle.manifest.get("stats") if result.selector_bundle is not None else {}
     return _generated_result_payload(spec, scene, stats if isinstance(stats, dict) else {})
-
-
-def run_cli_payload(
-    argv: list[str] | None = None,
-    *,
-    reset_runtime_closure: bool = False,
-) -> dict[str, object]:
-    """Parse CLI ``argv`` and run :func:`build_step_artifact`, RETURNING its payload
-    (no printing, no logger.total()). The in-process primitive shared by ``main()``
-    and the CAD Viewer's warm worker — the worker passes ``reset_runtime_closure=True``
-    so repeated warm builds record the same closure a cold CLI does."""
-    args = build_parser().parse_args(argv)
-    logger = CliLogger("step-artifact", verbose=bool(args.verbose))
-    payload = build_step_artifact(
-        repo_root=Path(args.repo_root),
-        step=Path(args.step),
-        source_path=Path(args.source_path) if args.source_path else None,
-        kind=args.kind,
-        force=bool(args.force),
-        mesh_tolerance=args.mesh_tolerance,
-        mesh_angular_tolerance=args.mesh_angular_tolerance,
-        reset_runtime_closure=reset_runtime_closure,
-        logger=logger,
-        lock_timeout_s=float(args.lock_timeout or 0.0),
-    )
-    logger.total()
-    return payload
-
-
-def main(argv: list[str] | None = None) -> int:
-    payload = run_cli_payload(argv)
-    print(json.dumps(payload, separators=(",", ":")))
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

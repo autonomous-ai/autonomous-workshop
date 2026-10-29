@@ -90,19 +90,11 @@ sample for the wheel, not for the crank ([[mechanism-verification#5-sampling]]).
 
 ## Ratchet and pawl
 
-- Tooth: radial face on the locking side, sloped back (~60°) on the other.
-- Pawl pivot placed so the line of force from pawl tip to pivot passes
-  *inside* the tooth tip: load pulls the pawl into the tooth, not out.
-- Pawl held in by gravity, a printed flexure, or a band — say which.
-- Checks: the wheel turns `clear` in the free direction, `blocked` in the
-  locking direction with the pawl engaged; the pawl's own retention
-  (its pivot) is in the retention chain.
-
-Pawl pivot placement, locking-face angle and spring seating:
-[[latches-detents-and-ratchets]].
+A ratchet indexes one tooth per stroke and locks the other way. Its tooth
+form, pawl pivot, spring and checks are on
+[[latches-detents-and-ratchets#ratchet-and-pawl]].
 
 ## Escapement
 
-An anchor escapement turns a stored torque into ticks and needs a pendulum
-or balance to time it; printable, but tuning is empirical. Record the period
-and the stored-energy runtime as open items — no geometry gate reaches them.
+An escapement releases a stored torque one tooth per swing of a pendulum or
+balance; how to time, print and tune one is on [[pendulums-and-escapements]].

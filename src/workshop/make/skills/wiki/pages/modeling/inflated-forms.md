@@ -6,9 +6,11 @@ sources:
   - "physics: a membrane under uniform pressure p and tension T satisfies T * Laplace(w) = -p with w = 0 on its rim (small-deflection membrane equation; the same Poisson problem as Prandtl's torsion stress function)"
   - "experience: inward offsets of a five-point star with an elliptical edge roll left a ridge along each arm; the pressure-field form had none and lofted in 2 s"
   - "toolchain: build123d 0.11 Solid.make_loft through 28 level-set splines, OCP 7.9"
+  - "experience: a crescent, a curled cap and a lobed bit rolled by inset-ring lofts: arc-length rings crumpled the tips, sharp ring corners made the loft selfIntersecting, rounded rings and normal-projected samples validated"
   - "experience: a cloud outline (puffs on a pill) failed the polar grid's monotone check from every trial centre; spheroid puffs on a lofted pill built in 2 s"
-related: [loft-pitfalls, loft-organic-bodies, product-aesthetics, fillet-chamfer-pitfalls, printed-part-count]
-updated: 2026-10-05
+  - "experience: an animal figurine from a single cutout image, first as the inflated outline, then as anatomy masses fitted to the same outline"
+related: [loft-pitfalls, loft-organic-bodies, product-aesthetics, fillet-chamfer-pitfalls, printed-part-count, fuse-pitfalls]
+updated: 2026-10-09
 ---
 
 # Inflated (puffy) forms
@@ -90,10 +92,59 @@ outline all failed the monotone check. Build it the way 3D weather icons are:
   creases where puffs meet are where a real cloud has them.
 - **Every puff must own a stretch of the outline.** A puff wholly inside the
   footprint reads as a bubble on a plate, ringed by its crease.
+- **Any outline, not only a pill, can be rolled this way** — a crescent, a
+  cap with a curled tip, a lobed key bit: extrude the outline to
+  `T - roll`, then loft inset rings (`shapely` `buffer(-roll (1 - cos t))` at
+  `z = T - roll + roll sin t`) and fuse. Three things decide whether it holds:
+  - **Keep ring index i opposite base point i.** Rings resampled by arc
+    length slide along every lobe the inset shortens and the loft crumples at
+    the tips. Project each base point along its inward normal onto the ring,
+    unwrap next to the arc-length guess, keep the order (running max), and
+    blend 0.8 projection with 0.2 arc length so points that collapse onto one
+    tip stay distinct.
+  - **No sharp corner in any ring.** An inset grown past a tip, or a cut-out
+    corner (a notch where another body meets), leaves a corner the spline
+    overshoots, and the loft comes back `selfIntersecting` from `validate`
+    while every boolean on it still works. Round each ring with an opening
+    (`buffer(-0.8).buffer(0.8)`) and give cut-out corners a plan radius near
+    half the roll (2 mm under a 4.5 mm roll; 1 mm failed). Check the loft
+    alone with `cadgen.validity._is_self_intersecting` — it names which ring.
+  - **Make bodies overlap, then fuse once.** A band that touched only its
+    neighbour's rolled end vanished from a sequential fuse; overlap 1 mm and
+    use one multi-argument `fuse` ([[fuse-pitfalls#fusing-pieces-that-share-faces]]).
+- **A rolled cuff is a swept tube, not a roll.** A brim, collar or rim that
+  reads as a separate roll is a circle swept along its centreline with sphere
+  ends, fused onto the body. Do not clip it to the body's own outline: the
+  clip's wall coincides with the body's wall and the fuse returned a solid
+  *smaller* than the body, with no error. Let the ends overhang and cut the
+  neighbouring colour body by the tube's plan instead.
 - Build the plan face from the same circles and stadium (`Circle`,
   `SlotCenterToCenter`) so the dome's base and the flat parts under it are
   flush; the valleys between puffs stay crisp, which OCC chamfers and tapers
   refuse ([[operation-families#tapered-extrude]]).
+
+## A figure is not a pillow: fit masses to its outline
+
+Inflating a creature's outline (a cutout of a cub, a pet, a character)
+reads as a sticker: the depth follows only the local width, so a round head,
+a chest and an arm of the same width get the same section, the whole body
+rises to one plateau, and where carved masses meet it a rim runs round the
+outline. Inflation is right for a pillow, not for anatomy.
+
+- Build the figure from masses: one split ellipsoid per round mass (head,
+  ears, chest, belly, rump, paws, feet) and one split capsule per limb, each
+  with its own depth toward the viewer and toward the back, smooth-unioned.
+- Fit them to the outline instead of placing them by eye: rasterise the union
+  of their plan ellipses and run a greedy coordinate search over every
+  centre, radius and angle that maximises the IoU against the cutout's mask.
+  A dozen masses and four limbs reached about 0.98; the outline then needs
+  no clamp, which was what left the rim.
+- For a figure printed in two halves, centre every mass on the split plane,
+  so every column through the figure is one run containing the plane and both
+  halves stand on their split faces (see [[#split-and-print]]).
+- Keep the inflated outline only where a cheap stand-in is enough: its area
+  and depth give a centroid and volume for a lever or balance estimate before
+  the skin exists. Re-measure them on the built solid.
 
 ## Split and print
 

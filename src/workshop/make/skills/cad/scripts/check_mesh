@@ -35,10 +35,10 @@ checked on that mesh, and one that stays open is UNMEASURABLE MESH (exit 4).
 `verify_project` treats any nonzero exit as a failed mesh gate, so an
 unmeasurable part still never passes final verification.
 
-`scripts/repair_mesh` diagnoses all three and writes a repaired mesh into the
-project's `__cadgen__/` working area so you can see what the defect was; that
-mesh is a diagnostic, never a deliverable. The source fixes that actually stop
-them recurring are in `references/repair-loop.md`.
+`scripts/repair_mesh` diagnoses all three: it repairs in memory and writes
+nothing, to tell you which defect class you have and what the source fix is.
+The source fixes that actually stop them recurring are in
+`references/repair-loop.md`.
 
     python "$CAD_SKILL_ROOT/scripts/check_mesh" <project-dir>/part_<role>.step.py \
         --bed 256x256x256

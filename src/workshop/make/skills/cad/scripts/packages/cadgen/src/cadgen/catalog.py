@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import sys
-from collections.abc import Sequence
 from dataclasses import dataclass
 from fnmatch import fnmatch
 from pathlib import Path, PurePosixPath
@@ -37,7 +36,6 @@ IGNORED_DISCOVERY_DIR_NAMES = {
     "venv",
 }
 GENERATOR_NAME_MARKERS = (b"gen_step",)
-DXF_GENERATOR_SUFFIX = ".dxf.py"
 
 
 class CadSourceError(ValueError):
@@ -46,9 +44,9 @@ class CadSourceError(ValueError):
 
 @dataclass(frozen=True)
 class StepImportOptions:
-    # Render-package mesh settings only. Standalone STEP/STL/3MF/GLB files are not
-    # configured here — they are one-off exports owned by cadgen.step_export_target
-    # (`scripts/export`), which builds and meshes the scene itself.
+    # Render-package mesh settings only: the deflections the __cadgen__ GLB/topology
+    # package is tessellated at. The STEP that `scripts/gen --write` writes is exact
+    # B-rep and takes no mesh settings.
     mesh_tolerance: float | None = None
     mesh_angular_tolerance: float | None = None
 
@@ -73,7 +71,6 @@ class CadSource:
     script_path: Path | None = None
     generator_metadata: GeneratorMetadata | None = None
     step_path: Path | None = None
-    dxf_path: Path | None = None
     mesh_tolerance: float | None = None
     mesh_angular_tolerance: float | None = None
     color: tuple[float, float, float, float] | None = None
@@ -86,18 +83,15 @@ class CadSource:
 
     @property
     def render_package_path(self) -> Path | None:
-        if self.kind == "dxf" or self.entry_path is None:
+        if self.entry_path is None:
             return None
         return render_package_dir(self.entry_path)
 
     @property
     def generated_paths(self) -> tuple[Path, ...]:
         paths: list[Path] = []
-        if self.source == "generated":
-            if self.step_path is not None:
-                paths.append(self.step_path)
-            if self.dxf_path is not None:
-                paths.append(self.dxf_path)
+        if self.source == "generated" and self.step_path is not None:
+            paths.append(self.step_path)
         if self.render_package_path is not None:
             paths.append(self.render_package_path)
         return tuple(path.resolve() for path in paths)
@@ -166,7 +160,7 @@ def source_from_path(
 ) -> CadSource | None:
     resolved = path.resolve()
     if resolved.suffix.lower() == ".py":
-        return _read_python_source(resolved, allow_dxf_only=True)
+        return _read_python_source(resolved)
     if resolved.suffix.lower() in STEP_SUFFIXES:
         return _read_step_source(resolved, kind=step_kind, options=step_options)
     return None
@@ -179,31 +173,6 @@ def source_by_cad_ref(root: Path | None = None) -> dict[str, CadSource]:
 def find_source_by_cad_ref(cad_ref: str, root: Path | None = None) -> CadSource | None:
     normalized = normalize_cad_ref(cad_ref)
     return source_by_cad_ref(root).get(normalized or "")
-
-
-def find_source_by_source_ref(source_ref: str, root: Path | None = None) -> CadSource | None:
-    normalized = normalize_source_ref(source_ref)
-    if not normalized:
-        return None
-    for source in iter_cad_sources(root):
-        if source.source_ref == normalized:
-            return source
-    return None
-
-
-def find_source_by_path(path: Path, root: Path | None = None) -> CadSource | None:
-    resolved_path = path.resolve()
-    for source in iter_cad_sources(root):
-        paths = [
-            source.source_path,
-            source.step_path,
-            source.script_path,
-            source.dxf_path,
-            *source.generated_paths,
-        ]
-        if any(candidate is not None and candidate.resolve() == resolved_path for candidate in paths):
-            return source
-    return None
 
 
 def source_ref_from_path(path: Path) -> str:
@@ -223,24 +192,10 @@ def cad_ref_from_step_path(path: Path) -> str:
         relative = resolved.relative_to(Path.cwd().resolve())
     except ValueError:
         relative = PurePosixPath(resolved.as_posix())
-    name = relative.name
     suffix = relative.suffix.lower()
     if suffix in STEP_SUFFIXES:
         return relative.with_suffix("").as_posix()
     raise CadSourceError(f"{_display_path(path)} is not a CAD STEP source")
-
-
-def cad_ref_from_dxf_path(path: Path) -> str:
-    # DXF refs KEEP the `.dxf` suffix so a `<name>.dxf.py` drawing and a `<name>.step.py`
-    # model in the same folder never collide on cad_ref.
-    resolved = path.resolve()
-    try:
-        relative = resolved.relative_to(Path.cwd().resolve())
-    except ValueError:
-        relative = PurePosixPath(resolved.as_posix())
-    if relative.suffix.lower() != ".dxf":
-        raise CadSourceError(f"{_display_path(path)} is not a CAD DXF output path")
-    return relative.as_posix()
 
 
 def normalize_source_ref(raw_ref: str) -> str | None:
@@ -266,11 +221,10 @@ def normalize_cad_ref(raw_ref: str) -> str | None:
 def render_package_dir(entry_path: Path) -> Path:
     # The render-artifact package directory for a CAD entry file. Every package lives
     # INSIDE the per-folder __cadgen__ directory, keyed by the ENTRY filename (the on-disk
-    # file the viewer lists: `<name>.step`, `<name>.step.py`, `<name>.dxf.py`, ...), so
-    # distinct entry files always get distinct packages and model folders hold only source.
-    # A STEP entry's package is a self-contained component-GLB directory (assembly.json
-    # descriptor + components/<hash>.glb); a `.dxf.py` entry's package is a drawing
-    # directory (drawing.json descriptor + drawing.dxf).
+    # file the viewer lists: `<name>.step`, `<name>.step.py`), so distinct entry files
+    # always get distinct packages and model folders hold only source. A package is a
+    # self-contained component-GLB directory (assembly.json descriptor +
+    # components/<hash>.glb).
     base = entry_path.resolve()
     return (base.parent / CADGEN_DIRNAME / CADGEN_MODELS_DIRNAME / base.name).resolve()
 
@@ -283,8 +237,8 @@ def _iter_python_sources(root: Path) -> tuple[CadSource, ...]:
         try:
             source = _read_python_source(script_path)
         except CadSourceError as exc:
-            # Directory discovery is resilient: one invalid generator (e.g. an
-            # unmigrated gen_dxf() beside gen_step()) must not abort catalog-wide
+            # Directory discovery is resilient: one invalid generator (e.g. a
+            # gen_dxf() drawing beside gen_step()) must not abort catalog-wide
             # operations on unrelated targets. Explicitly targeting the file
             # (source_from_path) still raises the pointed error.
             print(f"[cadgen] skipping invalid CAD source: {exc}", file=sys.stderr)
@@ -298,53 +252,28 @@ def _generator_part_stem(script_path: Path) -> str:
     """The part name a generator script produces, independent of the source extension.
 
     A ``<name>.step.py`` entry generator and the legacy ``<name>.py`` both produce the logical
-    STEP ``<name>.step``; a ``<name>.dxf.py`` drawing generator produces the logical
-    ``<name>.dxf``. The derived artifact paths key off ``<name>`` either way —
+    STEP ``<name>.step``. The derived artifact paths key off ``<name>`` —
     ``.with_suffix('.step')`` would wrongly yield ``<name>.step.step`` for a ``.step.py``
-    source (and likewise for ``.dxf.py``).
+    source.
     """
     name = script_path.name
     if name.endswith(".step.py"):
         return name[: -len(".step.py")]
-    if name.endswith(DXF_GENERATOR_SUFFIX):
-        return name[: -len(DXF_GENERATOR_SUFFIX)]
     if name.endswith(".py"):
         return name[: -len(".py")]
     return script_path.stem
-
-
-def is_dxf_generator_path(script_path: Path | str) -> bool:
-    return str(script_path).lower().endswith(DXF_GENERATOR_SUFFIX)
 
 
 def _generator_sibling(script_path: Path, suffix: str) -> Path:
     return script_path.with_name(_generator_part_stem(script_path) + suffix)
 
 
-def _dxf_generator_source(resolved_script_path: Path, metadata: GeneratorMetadata) -> CadSource:
-    dxf_path = _generator_sibling(resolved_script_path, ".dxf")
-    return CadSource(
-        source_ref=source_ref_from_path(resolved_script_path),
-        cad_ref=cad_ref_from_dxf_path(dxf_path),
-        kind="dxf",
-        source_path=resolved_script_path,
-        source="generated",
-        origin_path=resolved_script_path,
-        script_path=resolved_script_path,
-        generator_metadata=metadata,
-        step_path=None,
-        dxf_path=dxf_path,
-        mesh_tolerance=None,
-        mesh_angular_tolerance=None,
-    )
-
-
-def _read_python_source(script_path: Path, *, allow_dxf_only: bool = False) -> CadSource | None:
+def _read_python_source(script_path: Path) -> CadSource | None:
     resolved_script_path = script_path.resolve()
     metadata = parse_generator_metadata(resolved_script_path)
     if metadata is None:
         return None
-    if is_dxf_generator_path(resolved_script_path) or metadata.has_gen_dxf:
+    if resolved_script_path.name.lower().endswith(".dxf.py") or "gen_dxf" in metadata.generator_names:
         raise CadSourceError(
             f"{_display_path(resolved_script_path)} is a DXF drawing generator. "
             "DXF drawings are unsupported; keep drawings in a dedicated drawing "
@@ -367,7 +296,6 @@ def _read_python_source(script_path: Path, *, allow_dxf_only: bool = False) -> C
         script_path=resolved_script_path,
         generator_metadata=metadata,
         step_path=step_path,
-        dxf_path=None,
         mesh_tolerance=None,
         mesh_angular_tolerance=None,
     )
@@ -452,49 +380,6 @@ def normalize_step_numeric(raw_value: object, *, base_path: Path, field_name: st
         return normalize_mesh_numeric(raw_value, field_name=field_name)
     except ValueError as exc:
         raise CadSourceError(f"{_display_path(base_path)} {exc}") from exc
-
-
-def normalize_step_color(
-    raw_value: object,
-    *,
-    base_path: Path,
-    field_name: str,
-) -> tuple[float, float, float, float] | None:
-    if raw_value is None:
-        return None
-    if isinstance(raw_value, str):
-        value = raw_value.strip()
-        if value.startswith("#"):
-            value = value[1:]
-        if len(value) not in {6, 8}:
-            raise CadSourceError(f"{_display_path(base_path)} {field_name} must be #RRGGBB or #RRGGBBAA")
-        try:
-            components = [int(value[index : index + 2], 16) / 255.0 for index in range(0, len(value), 2)]
-        except ValueError as exc:
-            raise CadSourceError(f"{_display_path(base_path)} {field_name} must be valid hex") from exc
-    elif (
-        isinstance(raw_value, Sequence)
-        and not isinstance(raw_value, (bytes, bytearray))
-        and len(raw_value) in {3, 4}
-    ):
-        components = []
-        for component in raw_value:
-            try:
-                number = float(component)
-            except (TypeError, ValueError) as exc:
-                raise CadSourceError(
-                    f"{_display_path(base_path)} {field_name} components must be numeric"
-                ) from exc
-            if not 0.0 <= number <= 1.0:
-                raise CadSourceError(
-                    f"{_display_path(base_path)} {field_name} components must be between 0 and 1"
-                )
-            components.append(number)
-    else:
-        raise CadSourceError(f"{_display_path(base_path)} {field_name} must be an RGB/RGBA array or hex string")
-    if len(components) == 3:
-        components.append(1.0)
-    return (float(components[0]), float(components[1]), float(components[2]), float(components[3]))
 
 
 def _source_label(source: CadSource) -> str:

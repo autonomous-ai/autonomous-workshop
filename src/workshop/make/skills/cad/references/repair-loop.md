@@ -1,6 +1,6 @@
 # Repair loop
 
-Read this file when generation, export, inspection, positioning, or documentation validation fails.
+Read this file when generation, inspection, positioning, or documentation validation fails.
 
 ## Loop
 
@@ -20,7 +20,8 @@ lives in the wiki (`wiki search <words>`):
 |---|---|
 | "Failed to create valid loft" / "Recovery failed", or a loft that succeeds with an absurd volume | `wiki show loft-pitfalls#diagnosing-failed-to-create-valid-loft` |
 | a boolean against a large lofted surface never returns | `wiki show boolean-pitfalls#booleans-against-a-large-lofted-surface` |
-| source import or syntax failure, invalid or missing geometry, wrong scale or bounding box, missing feature, selector fragility, positioning or joint mismatch | `wiki show modeling-failure-modes` |
+| source import or syntax failure | `references/build123d-modeling.md` ("Modeling objective") and `references/step-generation.md` |
+| invalid or missing geometry, wrong scale or bounding box, missing feature, selector fragility, positioning or joint mismatch | `wiki show modeling-failure-modes` |
 | fillet or chamfer failure | `wiki show fillet-chamfer-pitfalls` |
 | a valid-looking body that fails the next boolean, or an inverted solid | `wiki show kernel-validity` |
 

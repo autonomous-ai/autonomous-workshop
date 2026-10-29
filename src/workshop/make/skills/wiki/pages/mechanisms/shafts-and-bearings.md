@@ -8,8 +8,8 @@ sources:
   - Roark's Formulas for Stress and Strain, beams table (simply supported and cantilever cases)
   - skills/cad/scripts/stdpart (bearings and snap rings from bd_warehouse)
   - "experience: walker hip journals that were a thin body wall, hung from a teardrop roof, with a key flat running in the bearing"
-related: [joints, gears, mechanism-design, beam-and-plate-stiffness, exact-constraint-and-kinematic-mounts, noise-and-vibration, shaft-hub-connections, rod-ends-and-clevises, swivels-and-turntables]
-updated: 2026-10-07
+related: [joints, gears, mechanism-design, beam-and-plate-stiffness, exact-constraint-and-kinematic-mounts, noise-and-vibration, shaft-hub-connections, rod-ends-and-clevises, swivels-and-turntables, spinning-toys-and-flywheels]
+updated: 2026-10-10
 ---
 
 # Shafts and bearings
@@ -167,7 +167,9 @@ a shoulder on one side for axial location, a chamfered lead-in, and the
 housing wall at least 2 extrusion widths — a thin press seat splits along a
 layer line.
 
-Bushing squeak and bearing noise: [[noise-and-vibration]].
+Bushing squeak and bearing noise: [[noise-and-vibration]]. A 608 in a
+fidget spinner, yo-yo bearing sizes and rotor balance:
+[[spinning-toys-and-flywheels]].
 
 ## Axial location: fixed and floating
 

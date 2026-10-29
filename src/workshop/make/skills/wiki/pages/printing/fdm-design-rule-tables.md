@@ -9,8 +9,8 @@ sources:
   - https://forgelabs.com/design-guides/fdm
   - https://www.stratasys.com/siteassets/sdm/resources/design-guidelines/fdm/fdm_design_guidelines_2017-1.pdf (Stratasys Direct, FDM design guidelines)
   - https://formlabs.com/blog/fdm-3d-printing-design-guide/
-related: [wall-thickness-and-hollowing, fdm-minimum-feature-sizes, fdm-hole-accuracy, fit-derivation, overhangs-and-print-orientation, resin-printing-design, tolerance-stack-up]
-updated: 2026-09-23
+related: [wall-thickness-and-hollowing, fdm-minimum-feature-sizes, fdm-hole-accuracy, fit-derivation, overhangs-and-print-orientation, rounded-bodies-on-the-print-bed, resin-printing-design, tolerance-stack-up]
+updated: 2026-10-10
 ---
 
 # Published FDM design rule tables
@@ -34,19 +34,12 @@ nozzle rather than copying a row ([[wall-thickness-and-hollowing#derive-the-wall
 | clearance, connecting / moving parts | 0.5 mm | ~0.2 mm loose, ~0.1 mm tight | 0.5 mm min clearance, 0.1 mm min press fit, 0.6 mm min hinge gap | Z: one slice; XY: one extrusion width (printed assembled) | — |
 | min feature | 2 mm | > 1.8 mm or 4 × line width | — | columns down to 0.48 mm with custom settings | — |
 | min pin diameter | 3 mm | > Ø1.8 mm (4 × line width) | 3 mm | — | 3 mm (vertical wire) |
-| embossed / engraved detail | 0.6 mm wide, 2 mm high | emboss > 0.9 mm wide; engrave > 0.5 mm wide (depth/height limits below) | deboss 1 mm wide × 0.3 mm deep; emboss 1 mm wide × 0.5 mm | text: 16 pt bold on top/bottom, 10 pt bold on walls | 0.6 mm wide, 2 mm high |
+| embossed / engraved detail | 0.6 mm wide, 2 mm high | emboss > 0.9 mm wide; engrave > 0.5 mm wide (by face: [[fdm-minimum-feature-sizes#text-logos-and-surface-details]]) | deboss 1 mm wide × 0.3 mm deep; emboss 1 mm wide × 0.5 mm | text: 16 pt bold on top/bottom, 10 pt bold on walls | 0.6 mm wide, 2 mm high |
 | tolerance | ±0.5 % (lower limit ±0.5 mm) | — | ±0.3 % (min ±0.25 mm) | machine tolerance | — |
 | min gap | — | — | 0.5 mm | — | — |
 | fillets | — | > Ø1 mm | — | outer R = inner R + wall | — |
 | base corners | — | R > 4 mm | — | — | — |
 | base chamfer | 45° chamfer or radius on bed edges (Hubs article) | ~0.3 mm (first layer + one layer) | — | — | — |
-
-Hydra Research's emboss/engrave limits, by face:
-
-| face | emboss | engrave |
-|---|---|---|
-| horizontal | > 0.9 mm wide, < 0.9 mm out | > 0.5 mm wide, < 0.9 mm deep |
-| vertical | > 0.9 mm wide, < 2 mm high | > 0.5 mm wide, < 2 mm deep |
 
 Stratasys Direct's wall table (slice thickness → wall):
 
@@ -65,10 +58,7 @@ the feature to be brittle": the recommended column is two contours.
   2 × 0.4; 0.9 mm (Hydra) is 2 × 0.45; Stratasys's recommended column is
   2 × its contour width. That is the rule; the millimetre figure follows from
   the nozzle and line width.
-- **Pins split into two camps.** 3 mm (Hubs, Forge Labs, Formlabs) is a
-  "prints reliably at any height" figure; 1.8 mm (Hydra) is the geometric
-  floor of four line widths. The Hubs article adds that vertical pins below
-  5 mm need care: a thin tall pin wobbles as it is printed.
+- **Pins split into two camps**: [[fdm-minimum-feature-sizes#features-pins-and-gaps]].
 - **Bridges: 10 mm vs "under 5 mm".** The Hubs poster allows 10 mm; the Hubs
   article says sag or support marks are always present unless the bridge is
   under 5 mm. So 10 mm is *printable*, 5 mm is *clean*. See
@@ -77,6 +67,9 @@ the feature to be brittle": the recommended column is two contours.
   tuned desktop printer and a known pair of parts; 0.5 mm (Hubs, Forge Labs)
   is a bureau's blind value for parts from an unknown machine. In this
   repository clearance comes from `cadfits` ([[fit-derivation]]).
+- **Base chamfer: the overhang gate overrules the tables.** A 45° bed chamfer
+  or radius fails `check_overhang`; break bed edges as
+  [[rounded-bodies-on-the-print-bed#breaking-the-bed-edge]] says.
 - **Tolerance is proportional with a floor.** ±0.5 % with a ±0.5 mm floor
   (Hubs) means every dimension under 100 mm is ±0.5 mm; ±0.3 % with a
   ±0.25 mm floor (Forge Labs) is an industrial machine.

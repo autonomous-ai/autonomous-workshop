@@ -18,8 +18,8 @@ sources:
   - https://phorm.to/blog/ball-joints-3d-printing-guide/ (maker guide: ±35° exposed, ±15–25° hidden sockets; balls under about 5 mm snap unreliably)
   - https://makeronline.com/en/model/Dummy%2013%20-%20version%201.0!/237622.html?trackModuleType=13 (kit figure designer's notes: compliant swivels instead of tight tolerances)
   - skills/cad/scripts/cadfits.py (seat and slot derivation, print-in-place gaps)
-related: [joints, snap-fit-design, print-in-place-mechanisms, exact-constraint-and-kinematic-mounts, kit-assembly-clash-diagnosis, creep-and-stress-relaxation, layer-anisotropy, friction-wear-and-lubricants, shaft-couplings, magnets-and-strap-slots, posable-figure-joints, rod-ends-and-clevises, swivels-and-turntables]
-updated: 2026-10-01
+related: [joints, snap-fit-design, print-in-place-mechanisms, exact-constraint-and-kinematic-mounts, kit-assembly-clash-diagnosis, creep-and-stress-relaxation, layer-anisotropy, friction-wear-and-lubricants, shaft-couplings, magnets-and-strap-slots, posable-figure-joints, rod-ends-and-clevises, swivels-and-turntables, print-in-place-swivel-rings]
+updated: 2026-10-27
 ---
 
 # Ball-and-socket joints
@@ -31,7 +31,7 @@ it stays together. This page sizes all three and picks the form. The
 one-line row is [[joints#revolute-joints]], the split-cup snap is
 [[snap-fit-design#ball-snap-a-split-cup]], a ball printed in its socket is
 [[print-in-place-mechanisms#captive-shapes]], and figure articulation is
-[[posable-figure-joints]].
+[[posable-figure-joints]]; a ring swivelling in a plate is [[print-in-place-swivel-rings]].
 
 ## Closure, undercut and swing
 
@@ -155,9 +155,9 @@ Worked: `T_slip` = 6 N·mm, `SF` = 3, PLA across layers at 15 MPa →
 
 **Load a ball link in push, not pull.** The snap is weakest along the stud
 axis: one plastic ball socket rates its smallest (M5) size at 7 lbf pulled
-against 45 lbf pushed, long-term ratings half of those. DIN 71802 steel
-sockets give 30 N pull-off at 8 mm and 100 N at 19 mm. Turn the stud so the
-load presses the cup on, or clip it.
+against 45 lbf pushed, long-term ratings half of those; steel DIN 71802
+sockets are on [[rod-ends-and-clevises#ball-links-angle-joints-and-ball-studs]].
+Turn the stud so the load presses the cup on, or clip it.
 
 ## Printing the ball and the socket
 

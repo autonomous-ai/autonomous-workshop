@@ -1,10 +1,6 @@
 """Where an artifact's coordination files live.
 
-One derivation, imported by BOTH the producer (cadgen) and the reader (the CAD Viewer's
-server), so the two can no longer disagree about which file to look at. Before this module
-the derivation existed twice -- ``cadgen._internal.generation_status.generation_lock_path``
-and a hand-written copy in ``viewer/server_py/artifact.py`` -- kept in sync only by a test
-that compared path strings.
+One derivation, so every producer agrees about which file to lock and where to report.
 
 All three files are HIDDEN SIBLINGS of the artifact's output directory, so they live under
 the gitignored ``__cadgen__`` tree next to the package they describe. For an output dir
@@ -19,10 +15,9 @@ without being told anything but the directory.
 
 A fourth file exists on WINDOWS ONLY: ``<sentinel>.mutex``, the file the lock is actually
 taken on there, because Windows byte-range locks are mandatory and would otherwise make the
-sentinel unreadable to the Node builders that must read it. It is derived in
-``coordination.lock.mutex_path`` rather than here: nothing outside that module may open it,
-and a reader asking "is a build in flight?" calls ``probe()`` with the SENTINEL path either
-way. It carries no data at all -- one padding byte, never parsed.
+sentinel's run id unreadable. It is derived in ``coordination.lock.mutex_path`` rather than
+here: nothing outside that module may open it. It carries no data at all -- one padding
+byte, never parsed.
 """
 
 from __future__ import annotations
@@ -42,8 +37,8 @@ from pathlib import Path
 # the file it is trying to read. POSIX is unaffected: both lock the sentinel.
 WRITE_LOCK_SUFFIX = ".generation.lock"
 
-# Held by a run that occupies the model's generator but writes no package (an export, an
-# on-demand topology extraction). Separate from the writer sentinel so a reader can tell
+# Held by a run that occupies the model's generator but writes no package (inspect validate
+# or interfere, an on-demand topology extraction). Separate from the writer sentinel so a reader can tell
 # "this model is being rewritten" from "this model's generator is busy" -- the former must
 # hide the artifact, the latter must not.
 GENERATOR_LOCK_SUFFIX = ".generator.lock"
@@ -56,12 +51,9 @@ STATUS_SUFFIX = ".generation.progress.json"
 
 # The GENERATOR run's status record, and the reason there are two. Generator runs and writer
 # runs take different sentinels ON PURPOSE, so they do not exclude each other -- which meant
-# that while they shared one record file, an export's record landed on top of a live build's
-# progress. `snapshot()` attributes progress only to the WRITE sentinel's holder, so the
-# export's run id did not match and the build's bar vanished mid-run; worse, the export's
-# terminal record carries no `stageMs`, so it also erased the phase weighting the next build
-# reads. Nothing consumes this file today -- it exists so a generator run has somewhere of
-# its own to report, and cannot reach the writer's record.
+# that while they shared one record file, a generator run's record landed on top of a live
+# build's progress. Nothing consumes this file today -- it exists so a generator run has
+# somewhere of its own to report, and cannot reach the writer's record.
 GENERATOR_STATUS_SUFFIX = ".generator.progress.json"
 
 

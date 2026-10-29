@@ -10,7 +10,7 @@ sources:
   - https://www.rockler.com/hanging-slot-router-bits-router-bits (keyhole bits 3/8 in and 1/2 in, wide end admits the head, narrow slot captures it)
   - https://www.command.com/3M/en_US/command/how-to-use/product-weight-limits/ (strip ratings by size, indoor 50–105 °F; via search excerpt)
   - Meriam & Kraige, Engineering Mechanics: Statics, ch. 3 (equilibrium of a rigid body; the prying moment)
-related: [screws-into-plastic, screw-head-recesses, metric-screw-clearance-holes, layer-anisotropy, creep-and-stress-relaxation, fdm-print-orientation-for-strength, overhangs-and-print-orientation, adhesives-and-solvent-welding, magnets-and-strap-slots]
+related: [screws-into-plastic, screw-head-recesses, metric-screw-clearance-holes, layer-anisotropy, creep-and-stress-relaxation, overhangs-and-print-orientation, adhesives-and-solvent-welding, magnets-and-strap-slots]
 updated: 2026-09-23
 ---
 
@@ -146,8 +146,7 @@ cleat can run full width and catch every stud it crosses.
 ## Orienting a printed wall bracket
 
 A bracket is a cantilever: the layer weld must not carry its bending tension
-([[layer-anisotropy#orient-so-layers-do-not-carry-the-tension]],
-[[fdm-print-orientation-for-strength#orient-by-load]]).
+([[layer-anisotropy#orient-so-layers-do-not-carry-the-tension]]).
 
 - An L-bracket prints **on its side**, so both legs and the inside corner lie
   in the X-Y plane. Printed standing on its wall leg, the corner fails at a

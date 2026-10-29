@@ -3,14 +3,15 @@ title: Nut traps and captive nuts
 tags: [nut, nut-trap, captive-nut, hex-nut, iso-4032, iso-4035, pocket]
 aliases: [nut pocket, hex pocket, embedded nut, thin nut, jam nut, DIN 934, DIN 439, nut slot]
 sources:
-  - https://www.aspenfasteners.com/content/pdf/Metric_ISO_4032_spec.pdf (DIN 934 / ISO 4032 table)
+  - https://www.aspenfasteners.com/content/pdf/Metric_ISO_4032_spec.pdf (DIN 934 / ISO 4032 equivalence)
+  - skills/cad/scripts/stdpart (bd_warehouse HexNut nut_data)
   - ISO 4035:1999 Table 1 (preview, https://cdn.standards.iteh.ai/samples/26385/7721755cf7884ffc9d25e1fc4b666a06/ISO-4035-1999.pdf)
   - https://en.wikipedia.org/wiki/ISO_metric_screw_thread (spanner sizes)
   - https://meshra.ai/blog/bolt-and-screw-holes-3d-printing (printed nut pocket offsets, slide-in orientation)
   - https://hackaday.com/tag/captive-nut/ (pocket-style and slot-style detents)
   - https://www.cnckitchen.com/blog/helicoils-threaded-insets-and-embedded-nuts-in-3d-prints-strength-amp-strength-assessment (side vs bottom pocket strength)
 related: [heat-set-inserts, metric-screw-clearance-holes, screw-head-recesses, fastener-torque-and-stripping]
-updated: 2026-09-23
+updated: 2026-10-10
 ---
 
 # Nut traps and captive nuts
@@ -19,40 +20,24 @@ A steel nut held in a printed pocket is the cheapest strong thread. It beats an
 insert in pull-out when the load presses the nut against a solid wall, and it
 costs nothing but a pocket.
 
-## Nut sizes
+## Nut sizes come from the library
 
-Regular hex nuts, ISO 4032 (same across-flats as DIN 934 from M1.6 to M8):
+Regular (ISO 4032) and thin (ISO 4035) hex nuts are `stdpart` families:
+`HexNut(size, fastener_type="iso4032")` carries the maximum across-flats `s`
+and height `m` in `nut.nut_data`, which is what a pocket is sized from, so the
+tables are not copied here. ISO 4032 has the same across-flats as DIN 934 from
+M1.6 to M8; ISO 4035 keeps the across-flats and lowers the nut. The library
+spells the thin M3 nut `M3-0.45`, not `M3-0.5`.
 
-| thread | s across flats (max / min) | e across corners min | m height (max / min) |
-|---|---|---|---|
-| M1.6 | 3.2 / 3.0 | 3.4 | 1.3 / 1.1 |
-| M2 | 4.0 / 3.8 | 4.3 | 1.6 / 1.4 |
-| M2.5 | 5.0 / 4.8 | 5.5 | 2.0 / 1.8 |
-| M3 | 5.5 / 5.3 | 6.0 | 2.4 / 2.2 |
-| M4 | 7.0 / 6.8 | 7.7 | 3.2 / 2.9 |
-| M5 | 8.0 / 7.8 | 8.8 | 4.7 / 4.4 |
-| M6 | 10.0 / 9.8 | 11.1 | 5.2 / 4.9 |
-| M8 | 13.0 / 12.7 | 14.4 | 6.8 / 6.4 |
-
-Thin nuts, ISO 4035 (same across-flats, lower):
-
-| thread | M2 | M2.5 | M3 | M4 | M5 | M6 | M8 |
-|---|---|---|---|---|---|---|---|
-| m max | 1.20 | 1.60 | 1.80 | 2.20 | 2.70 | 3.2 | 4.0 |
-
-Across corners of a sharp hexagon is `s / cos 30° = 1.1547 s`; the standard's
-`e min` is slightly less because real nut corners are rounded.
+Across corners of a sharp hexagon is `s / cos 30° = 1.1547 s` (the library's
+`nut.nut_diameter`); the standard's `e min` is slightly less because real nut
+corners are rounded.
 
 ## Printed pocket dimensions
 
-Printed practice (Meshra): pocket across-flats 0.2–0.4 mm over the nut, depth
-0.2–0.5 mm over the nut height.
-
-| nut | s | pocket across-flats | nut height | pocket depth |
-|---|---|---|---|---|
-| M3 | 5.5 | 5.7–5.9 | 2.4 | 2.6–2.9 |
-| M4 | 7.0 | 7.2–7.4 | 3.2 | 3.4–3.7 |
-| M5 | 8.0 | 8.2–8.4 | 4.7 | 4.9–5.2 |
+Printed practice (Meshra): pocket across-flats 0.2–0.4 mm over the nut's `s`,
+depth 0.2–0.5 mm over its `m` — for an M3 regular nut, 5.7–5.9 across flats
+and 2.6–2.9 deep.
 
 A pocket that prints 0.4 mm oval lets the nut spin, so the pocket's across-flats
 is more critical than the clearance hole.
@@ -85,8 +70,8 @@ motion manifest ([[joints#the-two-conditions-every-joint-owes]]).
 ## Checks
 
 ```python
-S = {"M2": 4.0, "M2.5": 5.0, "M3": 5.5, "M4": 7.0, "M5": 8.0, "M6": 10.0, "M8": 13.0}
-M = {"M2": 1.6, "M2.5": 2.0, "M3": 2.4, "M4": 3.2, "M5": 4.7, "M6": 5.2, "M8": 6.8}
-assert S[size] + 0.2 <= pocket_af <= S[size] + 0.4, "pocket spins the nut or will not take it"
-assert pocket_depth >= M[size] + 0.2, "nut stands proud of its pocket"
+nut = HexNut(size, fastener_type="iso4032", simple=True)    # bd_warehouse, via stdpart
+s, m = nut.nut_data["s"], nut.nut_data["m"]
+assert s + 0.2 <= pocket_af <= s + 0.4, "pocket spins the nut or will not take it"
+assert pocket_depth >= m + 0.2, "nut stands proud of its pocket"
 ```

@@ -1,14 +1,20 @@
 ---
 title: Reference masks — making a reference the likeness gate can read
 tags: [likeness, silhouette, mask, reference-image, shadow, background, flatten]
-aliases: [reference silhouette, flatten reference, ref_silhouette, light ground, cream on cream, drop shadow mask, concept sheet silhouette]
+aliases: [reference silhouette, flatten reference, ref_silhouette, light ground, cream on cream, drop shadow mask, concept sheet silhouette, contact shadow, relative saturation, tint hue, neutral frac, contact crease]
 sources:
   - skills/image-to-cad/scripts/ref_silhouette.py (flattening rule; border chroma rule for a light ground)
   - skills/image-to-cad/scripts/measure_image.py (the gate's own mask; vertical-gradient backdrop)
   - "experience: flattened references scored 0.945 / 0.916 / 0.890 where raw masks scored 0.78-0.85, geometry unchanged"
   - "experience: silhouettes cut from a generated ten-object concept sheet, texture mask against tint mask"
+  - "experience: a hat on a lamp shade scored from a cropped, tint-tuned photo against a view-only dressed entry"
+  - "experience: a grey voxel plinth on a grey shade"
+  - "experience: a cream egg on a cream ground defeated both toolchain masks; red-minus-blue after a median filter separated it"
+  - "experience: a brown token's dark contact shadow kept by every mask until a relative-saturation rule"
+  - "experience: white, cream and two-hue pixel keys on a cream sweep that no single ground rule held; a top face swept down by the wall did"
+  - "experience: a dark cat over a dark lamp shade: an orange-only mask capped likeness near 0.88; a band-rule mask with the host painted out scored the whole hat above the floor"
 related: [silhouette-likeness, measuring-reference-photos, likeness-iteration]
-updated: 2026-10-08
+updated: 2026-10-12
 ---
 
 # Reference masks — making a reference the likeness gate can read
@@ -60,15 +66,14 @@ flat colour, which a render gives and a photo in the wild does not.
 runs blue at the top to teal at the bottom, and many viewers do the same. One
 colour for the whole border ring then lands between the two ends, and every
 plate near the top or the bottom whose luma and hue fall inside the band around
-that one colour becomes background: on a 15-leg linkage screenshot the mask
-lost 12 % of the object (every lilac and pale link near the blue top), and even
-the designer's own geometry, drawn straight from its source file, scored 0.849.
-The flattener cannot help (its ground must be unsaturated). The mask now
-recognises a vertical-gradient backdrop — the two side columns agree row by
+that one colour becomes background — pale parts near the top go, and even the
+designer's own geometry, drawn straight from its source file, scores far below
+the gate. The flattener cannot help (its ground must be unsaturated). The mask
+now recognises a vertical-gradient backdrop — the two side columns agree row by
 row, the top and bottom bands are each flat across the width, and top and
 bottom differ — and measures each pixel against its own row's backdrop colour;
 a flat ground and a radial vignette fail the test and keep the single-colour
-path. The same render then scored 0.938 against 0.788, with no model edit.
+path.
 
 Two things that look like a shape problem on such a reference and are not:
 
@@ -79,8 +84,8 @@ Two things that look like a shape problem on such a reference and are not:
 - **A clipped extremity after cleaning.** Paint out a logo or a ground line by
   its own pixels (its connected blob, the line's own rows), never by a whole
   band of columns or rows: a band clips the subject's tip, and because the gate
-  normalises by the bounding box, 3 px off the feet (0.75 % of the height)
-  rescales the whole silhouette and cost this lacy subject 1.6 points of IoU.
+  normalises by the bounding box, 3 px off the feet (under 1 % of the height)
+  rescales the whole silhouette and costs points of IoU on a lacy outline.
   Where a line is drawn *over* the subject (a ground plane edge-on across the
   feet), the pixels under it are gone; say so in the README.
 
@@ -111,6 +116,16 @@ saturation ~17, on a ground at ~254 with soft grey shadows at saturation
 contact shadow, which then joins the feet into one blob and, once holes are
 filled, closes the open span under an arch or an A-frame.
 
+**A dark subject on a near-white ground** is the case the border rule gets
+wrong: its soft contact shadow runs more than 60 darker than the border, so the
+border rule keeps the shadow as object and fattens the outline on the shadow
+side. Luminance is what separates them, so raise the band to the ground
+instead: `--ground band --lum-band 110,255` keeps a black print (luma ~40-80)
+outside the band and puts the ground and the grey shadow inside it, while a
+cream stripe or dot on the subject stays object through its saturation. The
+tell is the diff of render against reference: a band of reference-only pixels
+along one side of every edge, the side away from the light.
+
 **Texture is no separator on a generated concept sheet.** An image model
 renders a printed part with a paper-like grain and its ground smooth, which
 looks like a free rule, but its soft drop shadow carries the same grain: a
@@ -137,6 +152,96 @@ heaped over a bowl's rim — scores the product against its contents. Clear
 exactly the contents' window in a copy of the flattened silhouette, from a
 script that prints the rows and columns it cleared, and say so in the README;
 never add fake contents to the deliverable to match.
+
+A saturated accessory photographed on a **dark host** in front of a cream
+ground needs the tint band narrowed by hand: plain `--ground tint` dropped the
+lit side of green coils. Measure hue and saturation of ground, host and
+subject first (cream 0.17 at 37 deg, charcoal 0.09-0.17 at 35 deg, green
+0.33-0.41 at 65-69 deg), then set `--tint-sat` between host and subject and
+`--tint-hue` off the ground's hue. Crop the photo to the accessory and score
+it against a view-only entry holding only that accessory
+(`--likeness-entry`), posed in the host's world frame: the pose search reaches
+only about 15 deg of roll, so an upright accessory frame cannot find a leaning
+photo.
+
+A neutral subject sitting on a neutral host (a grey plinth on a grey lamp
+shade) defeats the band, border and tint rules alike. Paint out the host below
+the subject's bottom edge along a polyline read off a coarse pixel grid. Keep
+the script that does it in `measure/`, and record the polyline in the README.
+
+A black accessory over a dark host defeats every colour rule. Connectivity
+can still separate them when a light gap divides the two: drop the dark
+regions that touch the crop's bottom edge.
+
+When there is no light gap but the accessory's top stands against a light
+backdrop, score the whole accessory instead of its coloured part. Flatten with
+the band rule, raising the band to the backdrop (for a cream sweep,
+`--lum-band 140,256 --sat-max 55`), so the backdrop is ground and everything
+dark or coloured is object. Then paint out the host below a polyline read off
+the photo along the accessory's lower outline, keep the largest blob and fill
+holes. Score a dressed entry with every visible part. A mask of only the
+coloured body, notched where dark parts stand in front of it, caps the score:
+its own convex hull covers it at well under 1.0. After such a paint-out,
+`ref_silhouette`'s outline-agreement check can exit 1 on a good file. Judge the
+overlay, not the exit code.
+
+## Subject and ground colour choose the ground rule
+
+Measure relative saturation `(max − min) / max` and tint direction (R−G, B−G)
+on subject, shadow and ground before choosing a `--ground` mode; the modes
+themselves are in `skills/image-to-cad/references/likeness-gate.md`.
+
+- **A coloured subject in its own dark contact shadow** (brown, red, green
+  under a key light). The shadow is neutral at every brightness and the
+  subject is not: a tinted subject reads about 0.45 or more from lit face to
+  deepest groove, its shadow about 0.3 or less. That is the `--ground tint`
+  rule; band, border and the gate's default mask all keep the crescent.
+- **A neutral subject on a tinted ground** (grey on cream) is the tint rule
+  inside out: grey lit faces read 0.02–0.06, the cream ground about 0.10, its
+  warm contact shadow 0.13–0.30, so the stock mask sees almost none of the
+  subject and the border rule keeps the whole shadow. Colour alone still loses
+  every wall facing away from the light, whose lower edge, bounce-lit by the
+  warm ground, matches the shadow beside it at the same luminance. What
+  separates them is the thin **contact crease** where wall meets ground,
+  darker than both: a black top-hat finds it, and as a barrier it stops the
+  border flood at the true base. `--ground neutral` does exactly that. Check
+  its overlay along the shadow side, where a faint crease lets the flood leak,
+  and sweep `--neutral-frac` (default 0.8) against the overlay: too high lets
+  the warm shadow bleed in, too low eats the far edge.
+- **A pastel subject in a shadow just as unsaturated.** The shadow keeps the
+  *direction* of the ground's tint, the pastel points another way:
+  `--ground tint --tint-sat 0.25 --tint-hue 30` calls a pixel ground only when
+  it is both unsaturated and tinted near the border's direction. A part tinted
+  the ground's own way survives only by being too saturated to be ground.
+- **A pale or two-hue flat plate on a cream sweep.** Shaded white, cream or
+  pastel walls and the warm shadow beside them have the same saturation and
+  luminance, JPEG chroma subsampling blurs what difference there is, and a
+  subject with one colour near the ground's hue and one far from it fails
+  every single rule: `tint` drops the near-hue part, `neutral` and `border`
+  keep the shadow. For a constant-thickness plate lying flat, build the
+  outline geometrically: take each lit top face by its own colour rule
+  (saturation for yellow and red, blue minus green for lavender, luminance for
+  white), fill enclosed holes, then sweep the mask straight down the image by
+  the wall height, read as the distance from the top edge to the contact
+  crease (the luminance minimum). Keep the largest blob and write the
+  holes-filled mask the gate reads.
+- **A cream subject on a cream ground.** Neither luminance nor saturation
+  separates them; warmth does — red minus blue after a 7 px median filter
+  (the median removes print-line texture): a neutral ground reads near 10, a
+  cream or tan subject 15–40. The contact shadow picks up warm bounce light
+  from the subject and reads 16–26, so give the shadowed band under the
+  subject a higher threshold than the lit side, and cut below the lowest point
+  the grid overlay shows. Keep such a probe as a documented script beside the
+  reference. On a warm ground (a pink-beige sweep) red minus blue stops
+  separating, both reading 25–45; the hue ratio (G−B)/(R−B) still does — an
+  ivory or yellow subject about 0.45 at every brightness, the ground about
+  0.35 — and an Otsu split of its median-filtered map finds the threshold. The
+  median pushes that mask's edge 3–5 px outward all round, so re-classify a
+  band of about 10 px either side of the edge pixel by pixel against a smooth
+  background estimated from the pixels outside the band (normalised
+  convolution). A glossy desk still returns a contact shadow and a reflection
+  that no colour rule removes: read the top of the dark contact line as a
+  polyline and cut there.
 
 ## A subject the same colour as its ground
 

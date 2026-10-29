@@ -111,7 +111,7 @@ a pointer: the numbers, asserts and sources live on the target page.
 | variant | when | where |
 |---|---|---|
 | detent (ball, plunger, flexing finger) | click-stops either way | [[latches-detents-and-ratchets#detent-holding-force]] |
-| ratchet and pawl | one way free, the other locked | [[latches-detents-and-ratchets#ratchet-and-pawl-geometry]] |
+| ratchet and pawl | one way free, the other locked | [[latches-detents-and-ratchets#ratchet-and-pawl]] |
 | snap-hook, cam / draw, push-push latch | closed until released | [[latches-detents-and-ratchets#latches]], [[snap-fit-design#cantilever]] |
 | torsion, annular snap | snaps that twist or ring a shaft | [[snap-fit-design#torsion-snap]], [[snap-fit-design#annular-snap]] |
 | magnetic catch | self-closing, no wear part | [[latches-detents-and-ratchets#magnetic-catches]], [[magnets-and-strap-slots]] |

@@ -7,14 +7,18 @@ sources:
   - skills/step-to-source/scripts/step_verify
   - ISO 10303-242 (AP242 design-history entities)
   - "toolchain: step-to-source fixtures recover planes and cylinders at 0.000000 % symmetric difference, and include an identical-volume wrong-part pair"
-related: [mesh-measurement, authoring-from-a-reference, mesh-to-step-conversion]
-updated: 2026-09-23
+  - "toolchain: OCC booleans on near-coincident B-spline faces collapse to zero intersection (reproducible)"
+  - skills/step-to-source/scripts/steplib.py (FUZZ_LADDER, compare)
+related: [mesh-measurement, authoring-from-a-reference, mesh-to-step-conversion, occt-boolean-options, boolean-pitfalls]
+updated: 2026-10-10
 ---
 
 # What a B-rep keeps and what it destroys
 
-Read before promising that a supplied STEP can be made parametric, when a
-recovery is refused, or before re-parameterising a recovered entry.
+Read before promising that a supplied STEP can be made parametric, or when a
+recovery is refused. The order to re-parameterise a recovered entry in, and
+why each step is verified on its own, is
+`skills/step-to-source/references/what-survives.md`.
 
 ## Shape and source are two questions
 
@@ -49,21 +53,6 @@ the first time.
 
 AP242 does define a design-history entity. Substantially no CAD system exports
 it, so assume it is absent rather than checking in hope.
-
-## Why re-parameterising runs in a fixed order
-
-Naming the dimensions and restoring the relationships must not move a single
-face. Re-applying fillets and chamfers deliberately changes the surface kinds.
-So the first two steps are verified against the original STEP one at a time.
-Otherwise a typo in step 1 surfaces in step 3 as a mystery. For step 3, expect
-the face-kind lines to differ and the volume to move by the blend volume.
-Re-applying a fillet in source also fixes an approximated fillet: recover the
-sharp body, fillet it in source, and the result is both exact and editable.
-
-Naming every vertex is noise, not parametrisation. Hoist the numbers that
-carry meaning and leave incidental profile coordinates alone. Never type both
-halves of a mate independently. A recovered file arrives full of exactly that
-defect, because the relationship between the halves was lost at export.
 
 ## What a refusal is telling you
 
@@ -104,14 +93,39 @@ exits on, and why volume deltas are reported but never decisive. The
 toolchain's fixtures include exactly that pair (identical volume, wrong part),
 so the property is checked, not just asserted.
 
-Booleans between two nearly coincident solids go degenerate. That is the
-normal case here, because a good recovery matches almost everywhere. Escalate
-OpenCASCADE's fuzzy value only as far as needed, and report which value
-answered, so the precision floor under the result stays visible. When no
-tolerance can compute the comparison, report it as a failure, never as a
-number.
-
 Volume *is* the right measure for a mesh-to-STEP conversion
 ([[mesh-to-step-conversion#why-the-conversion-check-is-volume]]), because
 there both shapes are meant to bound the same material and the mesh volume is
 an independent reference.
+
+## Near-coincident solids collapse the comparison
+
+Booleans between two nearly coincident solids go degenerate, and that is the
+normal case here, because a good rebuild matches its reference almost
+everywhere: the closer it gets, the worse the boolean behaves. The collapse
+is reported **as a number**: `symmetric diff 200%` with `missing` and `extra`
+each equal to the full volume means zero intersection, not a 200 % error.
+Two overlapping solids of positive volume cannot have an empty intersection,
+so an empty one is a boolean that gave up. A 2D per-cut boolean fails the same
+way, returning 0.0 even where both sections are the same annulus with areas
+agreeing to 0.001 mm².
+
+`step_verify` walks OpenCASCADE's fuzzy value up from exact, takes the first
+value that gives a non-empty intersection, and reports which value answered,
+so the precision floor under the result stays visible
+([[occt-boolean-options#walk-the-fuzzy-value-up-from-exact]]). On analytic
+recoveries (planes and cylinders) a rung answers. Between solids within
+hundredths of a millimetre of each other across many B-spline faces none may:
+every value from 1e-7 to 1e-2 left one such intersection smaller than exact
+(1.4 mm³ → 0.0).
+
+Tell that apart from a real miss: check that both solids are valid and
+FORWARD-oriented, that each intersects itself and a box correctly, and that
+their section areas agree. If all that holds, the geometry is right and the
+boolean is not. Then measure the symmetric difference by point classification
+instead: sample the union bounding box and ask each solid whether it contains
+the point. Build **one** `BRepClass3d_SolidClassifier` per solid and reuse it
+— constructing one per point runs at ~210 points/s and is unusable. Report the
+sampling standard error alongside the figure, and record that the boolean
+comparison ran and failed rather than quietly substituting the sampled
+number: a comparison nothing could compute is a failure, never a number.

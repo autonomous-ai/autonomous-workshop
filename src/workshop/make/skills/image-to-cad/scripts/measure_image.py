@@ -610,8 +610,10 @@ def palette_regions(rgb: np.ndarray, mask: np.ndarray, k: int,
 def cross_check(records: list[dict[str, Any]]) -> dict[str, Any] | None:
     """Solve L : W : H from every canonically named view at once.
 
-    Each view constrains the RATIO of two of the three dimensions, so two
-    views spanning all three close the loop and a third over-determines it.
+    Each view constrains the RATIO of two of the three dimensions. Two
+    independent views solve the ratios but cannot check their consistency;
+    a third independent equation closes the loop. Repeated front/back views
+    never determine length, however many images there are.
     The residual is the number that tells you whether the images share one
     camera scale — without it, a foreshortened view is averaged in silently
     and every ratio in the spec is quietly wrong.
@@ -634,6 +636,19 @@ def cross_check(records: list[dict[str, Any]]) -> dict[str, Any] | None:
     if len(rows) < 2:
         return None
     a = np.array(rows)
+    rank = int(np.linalg.matrix_rank(a[:, 1:]))
+    if rank < 2:
+        visible_axes = {axis for _, axes in used for axis in axes}
+        return {
+            "solved_ratio_L_W_H": None,
+            "views_used": [v for v, _ in used],
+            "constraint_rank": rank,
+            "unconstrained_axes": [axis for axis in index if axis not in visible_axes],
+            "per_view_disagreement_pct": {},
+            "worst_disagreement_pct": None,
+            "verdict": "UNDERCONSTRAINED — repeated views of the same axis pair "
+                       "cannot solve L:W:H; add a view of the missing dimension",
+        }
     # Only ratios are observable, so fix log L = 0 to remove the free overall
     # scale; column 0 then contributes nothing and the remaining two columns
     # are least-squared against the observed log aspects.
@@ -645,12 +660,16 @@ def cross_check(records: list[dict[str, Any]]) -> dict[str, Any] | None:
         "solved_ratio_L_W_H": [1.0, round(float(np.exp(logs[1])), 4),
                                round(float(np.exp(logs[2])), 4)],
         "views_used": [v for v, _ in used],
+        "constraint_rank": rank,
         "per_view_disagreement_pct": {
             v: round(float(abs(np.expm1(resid[i]))) * 100.0, 2)
             for i, (v, _) in enumerate(used)
         },
         "worst_disagreement_pct": round(worst * 100.0, 2),
         "verdict": (
+            "SOLVED ONLY — two independent ratios determine L:W:H but leave "
+            "no redundant constraint to check perspective or consistency"
+            if len(rows) == rank else
             "consistent — treat the views as one orthographic set"
             if worst < 0.05 else
             "INCONSISTENT — at least one view is foreshortened or differently "
@@ -1092,6 +1111,32 @@ def self_check() -> int:
               f"nothing and returns no verdict")
         ok &= alone is None
 
+        repeated = cross_check([views[2], {**views[2], "view": "back"}])
+        underconstrained = (repeated["solved_ratio_L_W_H"] is None
+                            and repeated["unconstrained_axes"] == ["L"]
+                            and repeated["verdict"].startswith("UNDERCONSTRAINED"))
+        print(f"{'ok  ' if underconstrained else 'FAIL'} front and back do not "
+              "invent an unobserved length")
+        ok &= underconstrained
+
+        for labels, missing in ((["top", "bottom"], "H"),
+                                (["left", "right"], "W"),
+                                (["hero-front", "inset-front"], "L")):
+            pair = [{"view": label, "bbox_px": {"w": 120, "h": 80}}
+                    for label in labels]
+            result = cross_check(pair)
+            absent = result["solved_ratio_L_W_H"] is None and result["unconstrained_axes"] == [missing]
+            print(f"{'ok  ' if absent else 'FAIL'} {labels} leave {missing} unobserved")
+            ok &= absent
+
+        pair = cross_check(views[:2])
+        pair_only = (pair["verdict"].startswith("SOLVED ONLY")
+                     and abs(pair["solved_ratio_L_W_H"][1] - 2 / 3) < 0.01
+                     and abs(pair["solved_ratio_L_W_H"][2] - 0.5) < 0.01)
+        print(f"{'ok  ' if pair_only else 'FAIL'} two independent views solve "
+              "ratios without claiming a consistency check")
+        ok &= pair_only
+
         # ---- the mask: a cast shadow must not become part of the object ----
         rec = _sc_measure(_sc_rect(120, 240, shadow=True), "shadow", tmp)
         tight = rec["bbox_px"]["h"] == 240
@@ -1372,11 +1417,14 @@ def main(argv: list[str] | None = None) -> int:
                     )
         if check is not None:
             r = check["solved_ratio_L_W_H"]
-            sys.stderr.write(
-                f"  cross-check L:W:H = 1 : {r[1]} : {r[2]}  "
-                f"worst disagreement {check['worst_disagreement_pct']}%  "
-                f"-> {check['verdict'].split(' — ')[0]}\n"
-            )
+            if r is None:
+                sys.stderr.write(f"  cross-check: {check['verdict']}\n")
+            else:
+                sys.stderr.write(
+                    f"  cross-check L:W:H = 1 : {r[1]} : {r[2]}  "
+                    f"worst disagreement {check['worst_disagreement_pct']}%  "
+                    f"-> {check['verdict'].split(' — ')[0]}\n"
+                )
         sys.stderr.write(
             "  note: silhouette only — a hole and a notch look identical here.\n"
         )

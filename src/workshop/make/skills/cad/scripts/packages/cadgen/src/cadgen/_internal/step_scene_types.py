@@ -53,7 +53,6 @@ class LoadedStepScene:
     mesh_signature: tuple[float, float, bool] | None = None
     glb_mesh_payloads: dict[tuple[object, ...], Any] = field(default_factory=dict)
     assembly_mates: list[dict[str, Any]] = field(default_factory=list)
-    export_shape: Any | None = None
     doc: Any | None = None
 
 

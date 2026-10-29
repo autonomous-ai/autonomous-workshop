@@ -29,7 +29,7 @@ a new class of fault is found.
 | 7 | no motion manifest | nothing has tested the cycle | generate one from the kinematics ([[mechanism-verification]]) |
 | 8 | cycle swept without the frame | a lever grinds into a post through most of its swing, gate green | always name `obstacle_parts` |
 | 9 | coarse sampling of a mesh | a tooth passes clean through a tooth between samples | fine tooth-pitch sweep with `maxStepMm` ([[mechanism-verification#5-sampling]]) |
-| 10 | group compound as mover | boolean returns 0 mm³ on a real overlap | movers are leaf parts |
+| 10 | group compound as mover in a custom audit | boolean returns 0 mm³ on a real overlap | sum the overlap per leaf solid, as `check_motion` does ([[mechanism-verification#7-movers-are-leaf-parts]]) |
 | 11 | linkage posed by hand | link × staple clashes | solve the rest pose from the linkage, then repair by re-solving ([[linkages#solving-closure-numerically]]) |
 | 12 | rest pose at a travel end | `driven` pass reports a working follower as undriven | park mid-stroke |
 | 13 | removable part used as a retainer without proof | a shaft "held" by a gate that could itself fall out | `retention` chain to a fixed root |
@@ -39,14 +39,6 @@ a new class of fault is found.
 | 17 | shaft axially located at both supports | binds or preloads once printed | fixed at one support, floating at the other ([[shafts-and-bearings#axial-location-fixed-and-floating]]) |
 | 18 | long printed span under a gear | mesh separates under load; backlash vanishes or doubles | deflection assert, or a metal rod ([[shafts-and-bearings#stiffness-deflection-decides-before-strength-does]]) |
 
-## Before calling a mechanism finished
-
-- [ ] archetype named, rejected alternatives recorded
-- [ ] every shaft: supports, axial stop, torque path named ([[shafts-and-bearings]])
-- [ ] every kinematic number in one parameter block, mates from `cadfits`
-- [ ] feasibility asserts in the parameter module, passing
-- [ ] geometry placed from the kinematics at a mid-stroke rest pose
-- [ ] manifest generated: coupled cycle with `driven` outputs and named
-      obstacles, fine sweep of the fastest contact, both directions per joint,
-      assembly order, retention to a fixed root
-- [ ] open items (forces, friction, compliance, gait) written down
+The order that keeps these out of a new machine is
+[[mechanism-design#the-design-sequence]]; what its manifest must hold is
+[[mechanism-verification#4-what-the-manifest-must-contain]].

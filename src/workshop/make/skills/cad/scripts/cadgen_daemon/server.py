@@ -9,7 +9,7 @@ never recurses into it.
 
 Protocol — one JSON request per connection, JSON-lines response:
 
-  request : {"tool": "gen"|"export"|"artifact"|"inspect",
+  request : {"tool": "gen"|"artifact"|"inspect",
              "argv": [...], "cwd": "...",
              "token": <client version token>}
   response: {"stream": "stdout"|"stderr", "data": "..."} chunks, then
@@ -56,7 +56,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 PACKAGES_DIR = SCRIPTS_DIR / "packages"
 CADPY_SRC_DIR = PACKAGES_DIR / "cadgen" / "src"
 INSPECT_DIR = SCRIPTS_DIR / "inspect"
-# Mirror the launchers' lookup paths (snapshot/__main__.py inserts the first
+# Mirror the launchers' lookup paths (each <tool>/__main__.py inserts the first
 # three; the inspect tool dir hosts the inspect_refs package).
 for runtime_path in (SCRIPTS_DIR, PACKAGES_DIR, INSPECT_DIR, CADPY_SRC_DIR):
     runtime_path_text = str(runtime_path)
@@ -72,7 +72,6 @@ CLIENT_LIVENESS_INTERVAL_SECONDS = 0.5
 # top-level `cli` modules.
 _TOOL_IMPORTS = {
     "gen": "gen.cli",
-    "export": "export.cli",
     "artifact": "artifact.cli",
     "inspect": "inspect_refs.cli",
 }
@@ -89,9 +88,8 @@ class _StreamProxy(io.TextIOBase):
     """``sys.stdout``/``sys.stderr`` stand-in whose destination swaps per request.
 
     Installed BEFORE the tool modules are imported so def-time default bindings
-    (e.g. snapshot's ``run_render_cli(stdout=sys.stdout, ...)``) capture the
-    proxy and keep routing to the current request's client stream instead of
-    the daemon log."""
+    (a ``stdout=sys.stdout`` parameter default) capture the proxy and keep
+    routing to the current request's client stream instead of the daemon log."""
 
     def __init__(self, fallback) -> None:
         self._fallback = fallback
@@ -185,7 +183,7 @@ def _evict_first_party_modules() -> None:
     # Same warm-process hygiene the viewer worker relies on: generation already
     # evicts first-party modules PRE-run for deterministic closure capture; this
     # post-request pass keeps model modules from lingering in the daemon between
-    # requests (inspect/snapshot paths included).
+    # requests (inspect paths included).
     try:
         from cadgen._internal.source_hash import evict_first_party_modules
     except Exception:  # noqa: BLE001

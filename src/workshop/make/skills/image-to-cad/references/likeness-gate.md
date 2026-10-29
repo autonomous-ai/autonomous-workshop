@@ -41,9 +41,14 @@ the orthogonal set a human reviews, and for a reference that is itself an
 orthographic drawing. Read the recovered angles it prints: a pose far from the
 one the photograph shows is a finding, not a pass.
 
-**`MASK SUSPECT`.** Any two references handed cameras within 20 deg of each
-other whose own silhouettes score below IoU 0.85 stop the run — the same camera
-cannot produce two different outlines, so a reference mask has failed.
+**`MASK SUSPECT`.** References handed cameras within 20 deg of each other
+whose silhouettes score below IoU 0.85 stop the run only when the model's own
+rendered silhouettes at those exact poses remain similar. Thin geometry,
+occlusion, roll and perspective can legitimately change an outline within a
+small camera interval; their render evidence prevents that false alarm.
+When the model outlines stay similar, inspect the masks and recovered cameras
+before proceeding. The finding is evidence of a mismatch to investigate, not
+proof that a particular reference is wrong.
 
 **A reference of one part scores that part.** When the references are of the
 separate pieces of a set rather than of the assembled whole, name the piece each
@@ -98,6 +103,20 @@ flattened outline, the comparison is reported `not comparable` instead of
 failing — look at the `-sil.png` yourself before scoring against it — and an
 outline that reaches the frame edge always fails.
 
+A white subject on a pure white page whose lit faces are the page's own
+colour defeats every colour rule (a CG render of a white figure: the tool mask
+saw 10 % of it, `border` 70 %). `--ground edge` stops the border flood at the
+outline's shading step instead and gives the ground back the wall pixels
+beside it; page text stays a separate blob. Look at the `-sil.png`: a face
+drawn with no shading step at the silhouette leaks. The edge rule calls ground
+only what is within `--edge-tol` (default 5) of the page's colour, so a soft
+contact shadow under a standing figure, 5-18 levels under the page and with no
+shading step, is neither ground nor wall: it joins the two feet, the gap
+between the legs is enclosed and filled, and the front view scores the legs as
+one block. `--edge-tol 12` opens it (it took only the armour's antialiased rim
+on a white CG turnaround); read the leg gap's rows in the `-sil.png` before
+scoring a standing figure's front or back view.
+
 A coloured subject under a key light is the third: its contact shadow is darker
 than any ground the band or border rule accepts, so both keep it, and so does
 the default mask — every edge facing away from the light grows a crescent and
@@ -106,6 +125,14 @@ the model reads too thin. `auto` never picks the rule for this; pass
 `(max - min) / max` at any brightness. Lay the `-sil.png` outline over the
 photo before scoring: the shadow should sit outside it on every lower edge.
 A grey, white or black subject has no tint, and the rule drops it.
+
+A pastel subject (mint, sky, lilac) on a cream sweep is as neutral as its warm
+shadow, so no `--tint-sat` separates them and `tint` alone drops it whole. Add
+`--tint-hue 30`: a ground pixel must also be tinted within 30° of the border's
+direction, so the shadow, which is the ground's own colour darkened, goes and
+the pastel stays. Measure saturation and tint direction on subject, shadow and
+sweep before choosing; a subject tinted the ground's own way gets nothing from
+it.
 
 ### Score the pairs
 
@@ -179,7 +206,11 @@ Every pose is recorded in `snap/poses.json`, and **`--poses-from` composes with
 camera instead of a fresh search, printing `(replayed camera -- not searched)`
 on every line. **Search once, replay while you edit, search again at the end.**
 Put every `--view` and every `--match` in one call; keep `--search-fov 0,25,40`
-and `--compare-step` for the final measurement.
+and `--compare-step` for the final measurement. **The final runner searches its
+own FOV grid** (`verify_project --search-fov`, default `0,25,40`), not the one
+your rounds used: when the best round's pose sat at an FOV outside that grid
+(`snap/poses.json` records it), pass the same grid to `verify_project`, or the
+unchanged shape re-scores lower there and fails as `regressed-from-best`.
 
 ### A dimension no view measures — sweep it through the gate
 

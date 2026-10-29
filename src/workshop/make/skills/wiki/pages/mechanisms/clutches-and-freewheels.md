@@ -31,7 +31,7 @@ Three different jobs, often confused:
   two saw-tooth discs spring-pressed together. Simple and printable. It clicks
   at a rate proportional to the speed difference. Its backlash is up to one
   tooth, so more teeth or more staggered pawls give quicker engagement. The
-  tooth and pawl geometry are on [[cams-intermittent#ratchet-and-pawl]].
+  tooth and pawl geometry are on [[latches-detents-and-ratchets#ratchet-and-pawl]].
 - **Roller (ramp) clutch**: spring-loaded rollers wedge between a ramp and a
   cylinder in one direction and roll free in the other. It is silent with
   near-zero engagement angle. Buy it as a one-way bearing (`$step-parts`);

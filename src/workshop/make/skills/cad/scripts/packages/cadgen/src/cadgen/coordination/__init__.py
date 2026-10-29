@@ -1,19 +1,11 @@
 """Cross-process coordination for file-artifact generation.
 
-ONE implementation, imported by both sides. The producer (cadgen, from a CLI or the CAD
-Viewer's warm worker) holds a lock while it mutates an artifact's output directory and
-publishes its progress; the reader (the viewer's server) takes a non-blocking snapshot of
-that state. Before this package the reader half was a hand-written COPY of the producer
-half in ``viewer/server_py/artifact.py``, kept in sync only by a test that compared path
-strings -- and the two had drifted into implementing different protocols from one
-primitive: the producer took a blocking exclusive lock to DO something, the reader took a
-momentary exclusive lock to ASK something.
+The producer (cadgen, from a CLI or the warm daemon) holds a kernel lock while it mutates an
+artifact's output directory and publishes its progress to a status record beside it, so two
+builds of one model serialize instead of interleaving their writes.
 
-**stdlib only.** The viewer's long-lived server process imports this module, and it must
-never drag OCP/build123d/ezdxf into that process. ``cadgen/__init__.py`` defers all of its
-own imports, so ``import cadgen.coordination`` costs milliseconds and pulls in no CAD
-runtime. That invariant is pinned by
-``tests/python/packages/cadgen/test_coordination_is_stdlib_only.py``; do not add a
+**stdlib only.** ``cadgen/__init__.py`` defers all of its own imports, so
+``import cadgen.coordination`` costs milliseconds and pulls in no CAD runtime; do not add a
 non-stdlib import here or to any module in this package.
 
 Producer::
@@ -27,43 +19,24 @@ Producer::
         run.advance(detail=name)
         run.phase(PHASE_GENERATE)                     # a phase that cannot
         run.detail("airframe")
-
-Reader::
-
-    snap = snapshot(package_dir)
-    snap.state       # "idle" | "writing" | "busy"
-    snap.progress    # dict | None -- only when the record belongs to the live run
-    snap.degraded    # locking unavailable here; coordination is not in effect
 """
 
 from __future__ import annotations
 
 import contextlib
-import contextvars
 import os
 import time
 import warnings
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterator
 
 from cadgen.coordination import record as _record
-from cadgen.coordination.kinds import (
-    DRAWING_PACKAGE,
-    IMPLICIT_PACKAGE,
-    PHASE_BROWSER,
-    PHASE_RENDER,
-    SNAPSHOT,
-    STEP_PACKAGE,
-    ArtifactKind,
-)
+from cadgen.coordination.kinds import STEP_PACKAGE, ArtifactKind
 from cadgen.coordination.lock import (
     Contended,
     exclusive,
     locking_available,
     new_run_id,
-    probe,
-    read_run_id,
 )
 from cadgen.coordination.paths import (
     generator_lock_path,
@@ -90,11 +63,6 @@ __all__ = [
     "ArtifactKind",
     "BuildRun",
     "Contended",
-    "DRAWING_PACKAGE",
-    "IMPLICIT_PACKAGE",
-    "PHASE_BROWSER",
-    "PHASE_RENDER",
-    "SNAPSHOT",
     "NULL_PROGRESS",
     "PHASE_COMPONENTS",
     "PHASE_DONE",
@@ -106,93 +74,16 @@ __all__ = [
     "ProgressEvent",
     "ProgressReporter",
     "STEP_PACKAGE",
-    "Snapshot",
-    "STATE_BUSY",
-    "STATE_IDLE",
-    "STATE_WRITING",
     "artifact_build",
-    "current_build",
     "generator_busy",
     "generator_lock_path",
     "generator_status_path",
     "render_progress_bar",
-    "reporting_as",
     "require_write_lock",
     "resolve",
-    "snapshot",
     "status_path",
     "write_lock_path",
 ]
-
-STATE_IDLE = "idle"
-STATE_WRITING = "writing"
-STATE_BUSY = "busy"
-
-
-# --- reader ------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class Snapshot:
-    """A non-blocking observation of an artifact's coordination state.
-
-    ``state`` comes from the KERNEL (which sentinel is held), never from the record --
-    that is what makes a crashed or killed run read as idle with no stale window, and it
-    is the one property of the old heartbeat design that had to be replaced.
-    """
-
-    state: str
-    run_id: str | None = None
-    progress: dict[str, Any] | None = None
-    degraded: bool = False
-
-    @property
-    def writing(self) -> bool:
-        return self.state == STATE_WRITING
-
-    @property
-    def busy(self) -> bool:
-        return self.state == STATE_BUSY
-
-
-def snapshot(output_dir: Path | str) -> Snapshot:
-    """What is happening to ``output_dir`` right now. Never blocks, never creates files.
-
-    A writer hides the artifact (it is being rewritten); a busy generator does not (the
-    artifact on disk is still whatever it was). Progress is attached only when the record
-    on disk belongs to the run that currently holds the writer lock -- otherwise a corpse
-    left by a SIGKILLed build would be rendered as the live run's position.
-    """
-    if not str(output_dir or "").strip():
-        return Snapshot(state=STATE_IDLE)
-
-    write_probe = probe(write_lock_path(output_dir))
-    if write_probe.held:
-        run_id = read_run_id(write_lock_path(output_dir))
-        return Snapshot(
-            state=STATE_WRITING,
-            run_id=run_id,
-            progress=_record.progress_for_run(status_path(output_dir), run_id),
-            degraded=False,
-        )
-
-    generator_probe = probe(generator_lock_path(output_dir))
-    if generator_probe.held:
-        # A busy generator reports its phases too (an export runs the same gen_step a build
-        # does). Its record is a DIFFERENT file from the writer's, and attribution works the
-        # same way: only the run holding this sentinel may be rendered.
-        run_id = read_run_id(generator_lock_path(output_dir))
-        return Snapshot(
-            state=STATE_BUSY,
-            run_id=run_id,
-            progress=_record.progress_for_run(generator_status_path(output_dir), run_id),
-        )
-
-    return Snapshot(
-        state=STATE_IDLE,
-        degraded=write_probe.degraded or generator_probe.degraded,
-    )
-
 
 # --- producer ----------------------------------------------------------------------
 
@@ -220,12 +111,6 @@ class BuildRun:
         # filesystem that refuses advisory locks, an unwritable __cadgen__). The build goes
         # ahead -- a missing lock must never be the reason a user's build fails -- and
         # ``run_id`` is still minted so progress has something to attribute itself to.
-        #
-        # A producer that hands work to a Node child MUST pass this on: the child proves it
-        # was started by the lock holder by matching its run id against the sentinel, and a
-        # degraded run never stamped one. This flag is the only way the child can tell "no
-        # lock was taken here" from "you are not the holder", which are the same empty
-        # sentinel from where it stands. See implicitjs/glb/assertWriteLock.js.
         self.degraded = degraded
 
     def phase(self, name: str, *, total: int | None = None, detail: str = "") -> None:
@@ -242,44 +127,6 @@ class BuildRun:
 
     def stage_ms_snapshot(self) -> dict[str, float]:
         return self._reporter.stage_ms_snapshot()
-
-
-# The run whose lock is held on this thread, for code that is too far from `artifact_build`
-# to be handed it. `run_node_builder` solves the same problem across a PIPE -- the Node
-# child describes its work and the holder publishes it -- and this is the in-process twin:
-# a generator's `gen_step()` is called with no arguments and cannot be given the BuildRun,
-# so it looks the run up instead. A ContextVar rather than a global because the viewer's
-# warm worker is long-lived and must never leak one build's reporter into another's.
-_CURRENT_BUILD: contextvars.ContextVar[BuildRun | None] = contextvars.ContextVar(
-    "cadgen_current_build", default=None
-)
-
-
-def current_build() -> BuildRun | None:
-    """The :class:`BuildRun` reporting for the work on this thread, or None outside a build.
-
-    Callers report through it and must never assume it exists: the same generator runs under
-    the CLI, the viewer's worker, a test harness, and a plain `python model.step.py`.
-    """
-    return _CURRENT_BUILD.get()
-
-
-@contextlib.contextmanager
-def reporting_as(run: BuildRun | None) -> Iterator[None]:
-    """Make ``run`` the :func:`current_build` for the duration of the block.
-
-    Nested binds are IGNORED: a model that composes child generators would otherwise have
-    the child's loop retarget the parent's phase, and the outermost loop is the one whose
-    count means anything to a reader.
-    """
-    if run is None or _CURRENT_BUILD.get() is not None:
-        yield
-        return
-    token = _CURRENT_BUILD.set(run)
-    try:
-        yield
-    finally:
-        _CURRENT_BUILD.reset(token)
 
 
 @contextlib.contextmanager
@@ -427,8 +274,6 @@ def require_write_lock(output_dir: Path | str) -> bool:
     Raises under ``CADGEN_STRICT_LOCKS=1`` (tests and CI); otherwise warns and continues,
     because a missing lock must never be the reason a user's build fails.
     """
-    from cadgen.coordination.lock import locking_available
-
     if not locking_available():
         return True  # degraded everywhere; nothing to assert
     # We hold it iff acquiring is re-entrant for this thread+path -- the thread-local set

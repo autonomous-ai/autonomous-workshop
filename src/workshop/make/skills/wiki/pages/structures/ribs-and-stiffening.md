@@ -1,7 +1,7 @@
 ---
 title: Ribs, gussets and stiffening
 tags: [rib, gusset, stiffening, corrugation, fillet, stress-concentration, boss, plate, stiffness, weight]
-aliases: [stiffening rib, stiffener, web, cross rib, ribbed plate, grid rib, gusset plate, corner brace, knee brace, corrugated wall, root fillet, stress concentration factor, kt, notch effect]
+aliases: [stiffening rib, screw boss, boss gusset, stiffener, web, cross rib, ribbed plate, grid rib, gusset plate, corner brace, knee brace, corrugated wall, root fillet, stress concentration factor, kt, notch effect]
 sources:
   - http://academic.sun.ac.za/mad/catalogs/dfmguidelines/dupontgeneraldesignprinciples.pdf (DuPont General Design Principles, Module I, pp. 11–13 moulding rules and Fig. 3.07, pp. 27–29 ribs and bidirectional ribbing, p. 22 SCF)
   - https://www.swcpu.com/blog/ribs-and-gussets/ (rib and gusset proportions, spacing, draft, base radius)
@@ -9,8 +9,9 @@ sources:
   - https://en.wikipedia.org/wiki/Design_of_plastic_components (rib 50–60 % of wall, height ≤ 3 × wall, spacing ≥ 2 × wall; via search excerpt)
   - Roark's Formulas for Stress and Strain, ch. 6 (stress concentration factors)
   - https://www.insdag.com/assets/frontend/trmpdf/Chapter7.pdf (outstand buckling coefficient 0.425)
-related: [beam-and-plate-stiffness, printed-threads-and-bosses, wall-thickness-and-hollowing, fdm-minimum-feature-sizes, feature-recipes, overhangs-and-print-orientation, fdm-first-layer-and-warping, layer-anisotropy, lightweighting-and-lattices]
-updated: 2026-09-23
+  - https://www.stratasys.com/siteassets/sdm/resources/design-guidelines/fdm/fdm_design_guidelines_2017-1.pdf (bosses and ribs in FDM: wall thickness, no draft, gussets, constant-wall fillets)
+related: [beam-and-plate-stiffness, printed-threads, wall-thickness-and-hollowing, fdm-minimum-feature-sizes, feature-recipes, overhangs-and-print-orientation, fdm-first-layer-and-warping, layer-anisotropy, lightweighting-and-lattices]
+updated: 2026-10-10
 ---
 
 # Ribs, gussets and stiffening
@@ -32,9 +33,12 @@ some of them stop mattering and a printing limit takes their place.
 | root fillet | 0.25–0.5 × wall (DuPont r = 0.5 T; min 0.25–0.5 mm) | stress concentration and flow | keep the fillet, for strength |
 | draft | 0.25–1° | ejection | drop it |
 
-Stratasys Direct's view for industrial FDM is the same: bosses and ribs may
-be the wall thickness, and draft is unnecessary
-([[printed-threads-and-bosses#bosses-ribs-and-fillets]]).
+Stratasys Direct's view for industrial FDM is the same (the geometry rules
+carry over to desktop printers): a boss or rib may be the part's wall
+thickness, or up to 0.5 mm less, with no moulding reason to thin it, and draft
+is unnecessary. An FDM part can often stay solid around its bosses and ribs
+instead of being hollowed, which saves support
+([[wall-thickness-and-hollowing#when-not-to-hollow]]).
 
 ## Rib height and thickness
 
@@ -135,8 +139,9 @@ Separating two skins with a core: [[lightweighting-and-lattices]].
 ## Gussets on bosses, brackets and corners
 
 - **Bosses**: tie a free-standing boss to the nearest wall with ribs, or
-  stand it on gussets; DuPont notes a rib substantially raises a boss's
-  strength ([[printed-threads-and-bosses#bosses-ribs-and-fillets]]).
+  stand it on gussets; DuPont and Stratasys Direct both note a rib
+  substantially raises the load a boss takes. Bosses that hold a screw:
+  [[screws-into-plastic]], [[heat-set-inserts]].
   Gussets spaced around a boss stop it rocking under a screw's side load.
 - **L-brackets**: a gusset across the inside corner turns the corner from a
   bending joint into a triangle. The corner of an unbraced L is the highest
@@ -175,7 +180,7 @@ FDM specifics:
   ([[layer-anisotropy#orient-so-layers-do-not-carry-the-tension]]); give it
   a chamfer or fillet of several layers.
 - For constant wall thickness around a bend, outer radius = inner radius +
-  wall ([[printed-threads-and-bosses#bosses-ribs-and-fillets]]).
+  wall (Stratasys Direct).
 - A fillet smaller than about 1 mm does not print as a fillet
   ([[fdm-minimum-feature-sizes#features-pins-and-gaps]]).
 
@@ -187,6 +192,7 @@ assert RIB_T >= 2 * LINE_W, "rib thinner than two lines is dropped by the slicer
 assert RIB_H / RIB_T <= 10 or RIB_TIP_IN_TENSION, "tall thin rib buckles at its free edge"
 assert RIB_GAP >= 2 * WALL, "slot between ribs narrower than two walls"
 assert ROOT_FILLET >= 0.5 * WALL, "sharp rib root: DuPont fillet = 0.5 × wall"
+assert FILLET_OUTER == FILLET_INNER + WALL, "constant wall around a bend"
 I, yb = section_I([(PITCH, WALL, WALL / 2), (RIB_T, RIB_H, WALL + RIB_H / 2)])
 sigma_tip = M * (WALL + RIB_H - yb) / I
 assert sigma_tip * SCF <= STRENGTH / SAFETY, "rib tip overstressed: stiffness is not strength"

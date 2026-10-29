@@ -10,8 +10,13 @@ sources:
   - .venv/lib/python3*/site-packages/build123d/topology/shape_core.py (project_faces)
   - .venv/lib/python3*/site-packages/build123d/build_common.py (GridLocations, PolarLocations, HexLocations)
   - "toolchain: build123d 0.11.1 on OCP (macOS), every number below measured with small shapes"
+  - "experience: a carved low-poly pumpkin face over a slide-in translucent band"
+  - "experience: chevron and bar inlays pressed into a smooth pumpkin"
+  - "experience: a carved two-shell pumpkin over a glowing core"
+  - "experience: a face carved through a ribbed pumpkin shell failed the thickness gate at every crease and lower lip until it was carved on a smooth sphere cap"
+  - "experience: a face cap cut through a ribbed pumpkin and a glow insert with skin-following tops each failed the thickness gate until reshaped"
 related: [feature-recipes, fdm-minimum-feature-sizes, boolean-pitfalls, unmeshable-faces, sketch-and-extrude-direction, kernel-validity, lightweighting-and-lattices]
-updated: 2026-10-06
+updated: 2026-10-09
 ---
 
 # Text, patterns and surface detail
@@ -102,6 +107,83 @@ solids of them; but the fused result kept one of three letters as a
 `project_faces(text, path)` projects glyphs along a path on the surface
 (0.6 s). Either way, assert `len(part.solids()) == 1`.
 
+## Carved openings onto a curved insert: project from the axis
+
+Cut a carved face (a jack-o'-lantern's eyes and mouth) as frusta projected
+from a point on the part's axis, not as parallel prisms. Every side face is
+then planar and flares outward like a carved bevel, and every opening reaches
+a curved insert behind the wall. A parallel prism leaves a sliver of wall in
+front of the insert wherever the outline sits off to the side. Keep each
+opening's ceiling edges at 50 deg or more from horizontal (pointed rather
+than flat-topped teeth), so they pass a 45 deg overhang gate printed upright.
+Prove a one-way key cheaply: turn the part to the wrong orientation and
+require more than 1 mm^3 of intersection with its host.
+
+When a one-piece body cannot carry a cavity behind its face, press separate
+inlays into recessed pockets from outside instead. Draw each outline on the
+skin and cut along the skin normal at that feature. A cut along one shared
+direction meets a tilted skin at acute angles and fails `check_thickness` at
+the lips. Key a symmetric inlay by turning its back off the press direction
+about the vertical, which makes it a wedge. A floor square to the press
+direction does not key it. Pitching the back instead thins the pocket
+corners. Test the key by pushing each wrong placement in until it stops,
+because a plain overlap test lies.
+
+In a carved wall about 6 mm thick or more, a pointed tooth's apex runs the
+whole depth of the wall. That makes a straight knife edge, which
+`check_thickness` fails. A blunt tip turns into an unflanked overhang when the
+shell prints upside down. Full-height pillars that split the mouth into
+windows of 12 mm or less pass both gates, because each window's ceiling counts
+as a bridge. Where a straight opening meets an inclined cavity wall (a cone,
+or a cylinder struck off-axis), it leaves a knife-edge band. Give the insert a
+flat facing the cut, which also serves as the one-way key. Cut openings
+through a lower bulge along the bulge's normal; cut horizontally, their upper
+edge meets the overhang at an acute angle. Check which part bears on which: a
+shell whose cavity follows a core cone that widens upward hangs on the core
+like a funnel on a cork, so give the shell its own seat.
+
+## Carved openings and the thickness gate: carve on a gentle cap
+
+`check_thickness` reads the lip of an opening as a wedge. Where the skin falls
+away from the cut edge at angle `a`, the sub-minimum band is about
+`min_wall × (tan a + sin a)` wide, so any edge where the skin falls away by
+more than about 27 deg reports as a wall, not a taper. Carving a face straight
+through a ribbed or lobed shell therefore fails along every crease flank and
+along the lower lips where the body curves under. Stepped bevels make it worse
+and shrinking the face is not enough.
+
+- Cut the face region back to a smooth, gentle sphere cap first (a large
+  sphere a few millimetres into the shell), then carve the openings in that
+  cap. The ribs stop at the cap's edge.
+- Before running the gate, probe the skin depth along every opening edge with
+  ray casts (`shape.find_intersection_points(Axis(...))`, a few ms per ray,
+  about ten times faster than bisecting with `is_inside`) and move any edge
+  where the depth changes fast.
+- A face panel cut off a dome by a plane has a knife-edge rim. Take the panel
+  outline from the shell's section about 1 mm in front of the cut plane, so
+  the rim is a 1 mm upright band.
+- A glow plug pushed into each opening from behind is a prism of the opening's
+  outline. A 60 deg corner (a triangle eye) is a knife and fails as a wall.
+  Fillet the 2D outline about 0.9 mm, capped at 0.7 × the inradius, with
+  `fillet(face.vertices(), r)`. An inward-then-outward arc `offset` of a
+  triangle can raise "Unexpected result type" in build123d 0.12.
+
+## A face cap and a glow insert on a ribbed skin
+
+Any straight cut whose edge runs along a deep rib flank (a cap's rim, a carved
+lip) prints as a knife, and `check_thickness` reports it as a wall. Place a cap
+cut plane near the body's axis, so it meets the skin at about 65 deg or more.
+Phase the lobes so a crest, not a crease, lies under the rim. Fade the rib
+depth across the carved zone, round sliver corners, and cut sliver ends square.
+
+Bosses on an insert that fill openings in a curved skin need flat, stepped
+tops. A top that follows the skin ends in knife edges. Put each step boundary
+on a vertical boss edge or across a wide part of the boss; a step beside a
+narrow tip leaves a sliver. Triangles step well in horizontal bands, and a grin
+steps in columns broken at the tooth edges. Prove the insert is one-way by
+measuring the boss area that falls outside the openings when it is turned and
+when it is mirrored.
+
 ## Patterns: locations, then one boolean
 
 | context | arguments | notes |
@@ -146,7 +228,7 @@ Doubling the grooves until neighbouring tools touch tripled the faces
 families crossing — each crossing is new faces. Rules:
 
 - Add texture **last**, after every functional cut, so no later boolean
-  carries it ([[feature-build-order]]).
+  carries it ([[construction-strategy#boolean-order]]).
 - Keep texture tools disjoint from each other with a real gap, and small:
   clip each to the shallow region it affects.
 - Budget it: if the part is printed, a 0.4 mm nozzle cannot draw relief finer
@@ -158,6 +240,16 @@ families crossing — each crossing is new faces. Rules:
 
 Measured cost of strut lattices and TPMS in B-rep:
 [[lightweighting-and-lattices]].
+
+## Cut detail into the face the finished part shows
+
+A face that is outside the block alone can be inside the finished part,
+because a later union, or an arm of the same part, covers it. Vents cut into a
+backpack's back face, where the wing arms stood 9 mm further back over most of
+it, showed only as a strip at their inner edges. The finished part was
+fine and no gate complained; only a review render found it. Cut surface detail
+on the face the camera meets at that station, after every union. Render the
+view the detail is for before calling it done.
 
 ## Checks
 

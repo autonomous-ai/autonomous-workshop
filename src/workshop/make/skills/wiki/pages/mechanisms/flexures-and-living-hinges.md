@@ -141,16 +141,12 @@ yields at about 25 MPa with an ultimate strength of 31 MPa in one test.
   flex is normal.
 - **Polyethylene**: low-cycle only. **Acetal, nylon** (molded): a few thousand
   cycles at most. **ABS, polystyrene**: snap on the first or second fold.
-- **Printed hinges** are far weaker than molded ones. Guidance:
-  - FDM: 0.4–0.6 mm thick with at least two layers; under ~0.3 mm tears and
-    over ~0.8 mm will not flex. Nylon, PP, PETG or TPU. One reference
-    example lasted about 25 cycles.
-  - SLS PA11/PA12: 0.3–0.8 mm thick, at least 5 mm long, about 30–50 cycles.
-  - Make the hinge length about 8–12 × its thickness, meeting the rigid walls
-    at right angles.
-  - Orient the hinge so it bends *within* the layers (layers parallel to the
-    bending plane), never across a layer line.
-  - Annealing can extend life.
+- **Printed hinges** are far weaker than molded ones: tens of cycles, not
+  millions. Thickness, length, orientation and cycle counts for FDM and SLS
+  are on [[flexure-materials-and-snap-strain#living-hinges]]. Two limits it
+  does not state: under ~0.3 mm an FDM web tears and over ~0.8 mm it will not
+  flex, and the hinge length should be about 8–12 × its thickness, meeting the
+  rigid walls at right angles.
 
 ## Molded living-hinge rules
 

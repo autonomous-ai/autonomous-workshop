@@ -7,8 +7,10 @@ sources:
   - https://vtk.org/doc/nightly/html/classvtkQuadricDecimation.html
   - "toolchain: OCP 7.9 Geom_BezierSurface faces sewn with BRepBuilderAPI_Sewing at 1e-6; OCC booleans against polyhedral tools on a 5500-patch skin"
   - "experience: a seated figure built as a distance field, delivered as a smooth B-rep instead of reduced triangles"
+  - "experience: a small figurine skin split into two print halves with colour regions, read by the mesh, wall and overhang gates"
+  - "experience: a chibi figure on a perch with exact belt, fins, ears and a carried lantern, and a wind-blown cape printed as its own sheet"
 related: [low-poly-sculpt-from-a-field, mesh-to-step-conversion, nurbs-bspline-basics, kernel-validity, organic-likeness]
-updated: 2026-10-05
+updated: 2026-10-10
 ---
 
 # Smooth skin from a field
@@ -94,8 +96,81 @@ facets in every viewer and cost about 1.1 KB of STEP per triangle.
   of its planes) and end a groove where the surface round it is flat; then run
   the self-interference check on the bare skin before any boolean, where it
   names the feature, rather than on the finished part.
+- **A corner tangent projected to nothing meshes with zero-area triangles.**
+  Projecting an edge point into its corner's tangent plane shortens it; when
+  the edge point lies nearly along the normal it shrinks to almost zero, the
+  patch corner degenerates, and its tessellation carries zero-area triangles
+  that the mesh gate drops into holes. Rescale the projected vector to the
+  edge point's original distance from the corner.
+- **A degenerate net makes the same slivers.** Weld the contour before
+  decimating it (an unwelded contour decimates into a non-manifold net); after
+  decimation collapse edges much shorter than the mean, under the link
+  condition and freezing the one-ring of every collapse (two collapses side by
+  side in one pass broke manifoldness); flip needle triangles (smallest angle
+  under about 15 deg); then relax vertices only within their tangent plane
+  and project them back onto the zero set. On a compact figure with no thin
+  gaps this cleared every zero-area triangle; mind the gap warning above.
+- **Keep the net off a plane an exact cut will follow.** With a grid plane
+  on the split plane, net vertices sit on it and the exact split runs through
+  patch corners, leaving sliver faces that tessellate with holes. Offset the
+  sampling grid by half a cell from every exact cutting plane.
+- **Eyes and lines are colour, not bumps.** Small spheres for eyes and a thin
+  tube for a mouth line, blended into the field, folded the patches round
+  their rims. Leave the skin smooth there, fold in only features several
+  patches wide (a nose), and split the colour regions off with exact tools a
+  little larger than each feature: the print union stays one watertight skin.
 - **The bounding box of a trimmed patch is loose**: see
   [[kernel-validity#bounding-boxes-over-report-on-b-spline-faces]].
+
+## Crisp parts and sheets beside the skin
+
+- **Build thin and crisp features exactly, then fuse them.** A cape, a bag
+  handle, gauntlet fins, sharp ear tips or a belt with sub-millimetre steps
+  folds the patches or comes out soft when it is put in the field. Leave a
+  soft, inset copy in the field only where the exact part sits.
+- **No grazing contact at a junction.** A bar leaving a dome tangentially, a
+  stem 0.1 mm from a bar, or ball ends resting on a dome each cracks the
+  union's tessellation: open edges, or slivers that make the overhang gate
+  refuse. Overlap clearly or keep 0.4 mm apart, and run a bar through a
+  junction instead of ending it in a ball.
+- **Colour regions are exact cuts of the one skin.** Cut the regions one tool
+  after another, and drop crumbs under 0.05 mm³. A tool plane that grazes the
+  skin leaves unmeshable sliver faces, so keep every plane off tangency. A
+  dozen tools on a few thousand patches take minutes, not seconds.
+- **Pin small tips before cleaning the net.** Short-edge collapse and
+  tangential relaxation after decimation erode a tip under a millimetre: the
+  cone that carried a fist disappeared. Freeze the vertices near such tips
+  through both steps, and make support cones fat primitives.
+- **Thicken a sheet on its control net.** Offset a B-spline sheet's net by
+  plus and minus half the thickness along the net normals, build both faces
+  from the offset nets, close the border with ruled faces and sew. `thicken`
+  and `BRepOffset` give offset surfaces that took the self-interference check
+  from seconds to minutes, and slowed every later boolean. Every fold's radius
+  must exceed half the thickness, or the offset crosses itself.
+- **Lay a sheet a clearance off a body along its normal.** A sheet stored as
+  depth over a frontal plane, offset along the depth axis, gets too little
+  clearance where the body slopes. Half a thickness along the normal is that
+  half times `sqrt(1 + |grad x|^2)` along the depth axis. Cap the factor near
+  silhouettes, where the slope runs away. Then sample the body's field at the
+  inner face and push the sheet back by any shortfall.
+- **Cut openings in a leaning or folded sheet along its normal.** A
+  fixed-direction prism leaves knife wedges, which the thickness gate reads as
+  walls. Ease the folds out near the cut.
+
+### A cape in the wind
+
+A cape whose hem comes back to the base reads as a cape hanging behind the
+figure, however much it billows. For wind to read at a glance, the cape has to
+leave the body and stream out sideways past the base, with its trailing edge
+in the air. That shape cannot print attached to an upright figure, so print
+it as its own sheet, standing on its trailing edge with its folds running
+along the wind. It prints without support while its depth slope along the
+print's vertical stays under tan 45 deg. Enforce that with a one-sided limiter,
+`x[i] = min(x[i], x[i-1] + m * step)`, run forwards and backwards along each
+vertical column of the depth grid. It only moves the sheet away from the
+body, so it cannot create a clash. Join the cape to the figure with level
+pins ([[fdm-joining-split-prints]]), and give the figure's back under it a
+finished surface.
 
 ## Checks
 

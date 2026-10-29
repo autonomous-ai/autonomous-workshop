@@ -1,24 +1,27 @@
 ---
 title: Boolean pitfalls
 tags: [boolean, cut, fuse, union, intersect, occ, near-tangent, coincident, tool, performance]
-aliases: [subtract, boolean failure, multi-tool cut, coincident faces, tangent surfaces, symmetric difference, relief cut, slow boolean, polygon arc, shapely buffer]
+aliases: [subtract, boolean failure, multi-tool cut, coincident faces, tangent surfaces, near-coincident surfaces, relief cut, slow boolean, clipping tool, torus crown]
 sources:
-  - "experience: a multi-colour figure's torso vanished in a pairwise fuse; a web self-intersected after a group cut; a shared cone left open edges"
   - skills/cad/references/build123d-modeling.md (boolean sections; before the move)
   - skills/cad/references/repair-loop.md (large lofted surface section; before the move)
   - "toolchain: OCC booleans on near-coincident B-spline faces collapse to zero intersection (reproducible)"
   - "toolchain: fusing rotated copies of one loft returns a null shape (reproducible)"
-  - "experience: polygon-approximated arc prisms against lofted segments ran minutes; true cylinders seconds"
-  - "experience: a sliver cleanup returned 1349 pieces, two of them real; filtering by area took the tray from over ten minutes to 0.4 s"
-related: [kernel-validity, construction-strategy, loft-pitfalls, feature-recipes, text-patterns-and-surface-detail]
-updated: 2026-10-05
+  - "experience: a voxel hat base cut to follow a lamp shade's skin"
+  - "experience: a footprint clip ending on a torus crown left an invalid common and a failed chamfer"
+  - "experience: a multi-tool cut between dense lofts came back plausible in volume and wrong in shape"
+  - "experience: face openings cut into a ribbed periodic-spline loft were valid only as one multi-tool cut"
+  - "experience: a cutter flush with a revolve tangent and two cutters 2 deg apart each left unmeshable slivers"
+related: [kernel-validity, construction-strategy, loft-pitfalls, feature-recipes, text-patterns-and-surface-detail, fuse-pitfalls, occt-boolean-options, shapely-cutters, brep-vs-source]
+updated: 2026-10-12
 ---
 
 # Boolean pitfalls
 
 OCC booleans fail worst on inputs that nearly agree: coincident, tangent, or
 near-copies of each other. Many of the failures below exit 0 and validate
-clean.
+clean. Unions of pieces that share faces, and fuses that come back empty,
+are [[fuse-pitfalls]].
 
 ## `intersect` returns a list
 
@@ -37,6 +40,14 @@ classic kernel failure. A recess tool must break the rim plane by ≥ 1 mm.
 Overlap operands you mean to union by something the model can afford (roughly
 1 mm for a through-cut, a whole station for a loft): touching operands return
 two solids, and a 0.01 mm nudge leaves a 0.01 mm feature in the geometry.
+
+A clipping tool that only bounds a curved shell overshoots it too. A footprint
+extrusion bounding a toroidal shell in plan whose cap ends exactly at the
+torus crown makes a tangential face contact: the common returns one solid of
+positive volume and invalid topology, and a later, unrelated chamfer then
+fails. Extend the non-design cap past the crown by the named tool margin (the
+shell still defines the finished surface), and check validity after each
+boolean rather than shrinking the chamfer.
 
 ## Multi-tool booleans
 
@@ -58,42 +69,21 @@ Two caveats, both measured:
   knife-edge slivers. Every tool was individually valid; splitting the same
   tools into two staged subtracts (functional cuts, then finishing cuts)
   yielded one clean solid. Batch tool FAMILIES so each batch is internally
-  disjoint-ish — still list-based, never pairwise.
+  disjoint-ish — still list-based, never pairwise. Between dense B-spline
+  lofts even a staged batch came back plausible in volume and wrong in shape:
+  there, cut one tool at a time and check after each.
+
+On a ribbed periodic-spline loft, the opposite failure shows up. Cutting
+openings one at a time left solids that failed `BRepAlgoAPI_Check`, or wrong
+solids that passed it. Fusing the tools first silently dropped volume. One
+`Shape.cut(*tools)` call with disjoint tools gave a valid solid. Volume
+differences of such B-spline solids are too noisy to debug with. Probe with
+`is_inside` and the BOP check instead.
 
 Timed comparison of one list boolean against pairwise ones for a pattern:
 [[text-patterns-and-surface-detail]].
 
-## Fusing pieces that share faces
-
-Parts built as colour regions (an arm trimmed to the torso, an inlay cut out of
-its host) meet on faces they share exactly, and OCC handles that badly in three
-measured ways:
-
-- **Folding a fuse pairwise loses solids.** `u = u.fuse(s)` over a figure's
-  body pieces dropped the whole torso once a forearm trimmed by it was added:
-  the volume halved in one step, with no error. One multi-argument
-  `fuse(a, *rest)` returned the right volume.
-- **Cutting a fused multi-solid group self-intersects.** Two disjoint arm webs
-  fused first and then cut by the arm pieces came back `selfIntersecting`; the
-  same cut applied to each web on its own was valid. Cut each primitive, then
-  fuse the survivors of one role in a single call.
-- **A surface carried on by a second solid breaks the union.** A neck cone
-  continued upward as the clipping cone of the helmet above it (one conical
-  surface, two solids, or just their shared end disc) left open edges in the
-  fused part. Nest instead: the second surface 0.3 mm inside the first and
-  starting 0.2 mm below its end, so the solids overlap rather than touch.
-
-Seat a trimmed piece into its host by a few tenths (trim it by the host shrunk
-0.3 mm) rather than exactly to its skin: the later cut then has overlap to work
-with instead of a coincident face.
-
-A filler cut down to whatever is left between two nearly touching faces (a web
-between an arm and a waist it almost meets) ends as a sliver bounded by
-near-coincident surfaces and comes back `selfIntersecting`, while the same
-filler across a real gap is valid. Leave the filler out where the gap it fills
-is under about 1.5 mm.
-
-## Near-tangent booleans silently drop material
+## Near-tangent and near-coincident surfaces fail quietly
 
 Intersecting or subtracting nearly tangent surfaces (a huge shallow sphere
 kissing a small revolve, a flat dome tool grazing a face) can succeed with
@@ -103,39 +93,26 @@ visual review catches it. Build shallow domes as a single revolved profile
 (`RadiusArc` in the section) instead of near-tangent boolean stacks; it is
 also crisper.
 
-## A boss level with a rod's crest poisons later features
+**A cutting plane on a fillet's tangent seam.** An edge round's fillet meets
+the wall along a tangent seam at a fixed height. A layer cut whose floor
+lands exactly on that height breaks the result. In one case, a colour inlay
+FACE_D deep ran to the outline, and FACE_D equalled the teardrop edge's
+height (chamfer leg plus R·tan(half the arc), 0.6 for both). `validate` then
+failed: the body came back with invalid topology and the field
+self-intersecting, its vertices 1e-4 past the floor. Keep layer planes off
+every edge treatment's seam heights. When a stack fixes both, either trim
+the field a few hundredths inside the wall, or let its sketch overshoot the
+outline so that no tool face lies on the wall.
 
-A boss, bead or plate fused to a round rod with its top at exactly the rod's
-crest height (an eye at the end of a stick, a bit plate as thick as the stick)
-leaves the two surfaces tangent along a line. The fuse succeeds, but a hole
-cut there gets a rim split across both surfaces, and the rim fillet then fails
-with `BRep_API: command not done`. Make the joined form stand clearly proud of
-the crest (a bead 1 mm higher) or sit clearly below it (a plate 0.8 of the
-rod's diameter, whose top plane cuts the rod in two clean lines); never equal.
-
-## Near-coincident surfaces collapse the boolean
-
-When two solids lie within hundredths of a millimetre of each other across
-many B-spline faces — a rebuilt part compared with its reference — the OCC
-boolean between them collapses, and a symmetric-difference measurement reports
-the collapse **as a number**: `symmetric diff 200%` with `missing` and `extra`
-each equal to the full volume means zero intersection, not a 200 % error. The
-closer the rebuild gets, the worse the boolean behaves. Fuzzy values from 1e-7
-to 1e-2 make it worse, not better (intersection went 1.4 mm³ → 0.0). A 2D
-per-cut boolean fails the same way, returning 0.0 even where both sections are
-the same annulus with areas agreeing to 0.001 mm².
-
-Tell it apart from a real miss: check that both solids are valid and
-FORWARD-oriented, that each intersects itself and a box correctly, and that
-their section areas agree. If all that holds, the geometry is right and the
-boolean is not.
-
-Then measure the symmetric difference by point classification instead: sample
-the union bounding box and ask each solid whether it contains the point. Build
-**one** `BRepClass3d_SolidClassifier` per solid and reuse it — constructing one
-per point runs at ~210 points/s and is unusable. Report the sampling standard
-error alongside the figure, and record that the boolean comparison ran and
-failed rather than quietly substituting the sampled number.
+**Near-coincident surfaces collapse the boolean.** Two solids within
+hundredths of a millimetre of each other across many B-spline faces (a cap's
+ring lying on the loft it closes, a rebuilt part against its reference) can
+intersect to nothing with exit 0: a box cutting the solid returns nothing, a
+`split` keeps the whole. The closer the surfaces, the worse it behaves, and no
+fuzzy value reliably rescues it
+([[occt-boolean-options#walk-the-fuzzy-value-up-from-exact]]). Keep surfaces
+clearly apart or clearly crossing. Measuring a comparison the boolean cannot
+compute: [[brep-vs-source#near-coincident-solids-collapse-the-comparison]].
 
 **Near-tangent skins cost minutes before they cost correctness.** Cutting a
 wall-shrunk void loft from its outer loft took 1.4 s; fusing that hollow body
@@ -149,6 +126,23 @@ with the result, so no gate notices. Two fixes that each removed it:
 - make an internal plate by leaving it behind, not by adding it: cut the void
   only above the plate's top (`void & above(z_plate)`), rather than unioning
   `slab & void` back on to the shell along the void's own skin.
+
+**Cutters that graze a tangent or each other.** A cutter face flush with a
+revolve's vertical tangent leaves a sliver face of about 0.01 mm^2. The sliver
+does not mesh, and `check_mesh` then crashes with `'NoneType' object has no
+attribute 'NbNodes'`. Move the cutter clear of the tangent. Two cutter faces
+that meet about 2 deg apart leave an open-edge sliver. At 6 deg or more apart
+they cut clean.
+
+## A boss level with a rod's crest poisons later features
+
+A boss, bead or plate fused to a round rod with its top at exactly the rod's
+crest height (an eye at the end of a stick, a bit plate as thick as the stick)
+leaves the two surfaces tangent along a line. The fuse succeeds, but a hole
+cut there gets a rim split across both surfaces, and the rim fillet then fails
+with `BRep_API: command not done`. Make the joined form stand clearly proud of
+the crest (a bead 1 mm higher) or sit clearly below it (a plate 0.8 of the
+rod's diameter, whose top plane cuts the rod in two clean lines); never equal.
 
 ## Swept reliefs: convex prisms, not rotated lofts
 
@@ -196,36 +190,32 @@ sub-pixel and reads only because the edge overlay draws feature edges. Keep
 booleans for openings that change the silhouette, and build the rest
 additively.
 
-## Arcs drawn as polygons make cutters slow
+## An underside that follows a supplied shell
 
-Moved: cutters built from `shapely` polygons — faceted arcs, zero-area shards,
-which way the prism runs — are [[shapely-cutters]].
-
-## A fuse can come back empty: assert every step
-
-Fusing several solids that all start from one point (five leaves rooted on a
-knob's centre) returned an empty compound on the fifth fuse: no exception, a
-valid shape, zero volume, and every later cut on the part ran on nothing. The
-leaves' root caps were near-coincident. Start each one a little way out along
-its own direction (still inside the knob), and after every fuse assert one solid
-and a volume larger than before:
-
-```python
-grown = fan + leaf
-assert len(grown.solids()) == 1 and grown.volume > fan.volume, "fuse came back empty"
-```
-
-It need not come back empty. Two lofts that met at a single near-tangent
-point fused into **one valid solid of 56 mm³ from operands of 50 000 and
-5 400**: the one-solid half of the guard passed it, and only the volume half
-catches it. A union is never smaller than its larger operand — assert that.
-
-A model assembled from many roles wants the same guard once, where the roles
-are labelled: every role holds material, or the build stops.
+To give an accessory a base that follows a host's curved skin, cutting the
+block with a thin offset of the shell often fails to split it: seams at the
+shell's rim leave a path around the cut, and the block comes back whole. Cut
+the shell plus each upward-facing skin face extruded straight down, then keep
+the highest piece. Bound the front with the rim plane, choosing the front-most
+planar face with the right normal (not the largest, which can be an internal
+face at the rear). Subtract neighbouring liner solids in a separate cut:
+merging them into the same cutter broke the split. Where the curved skin rises
+through a stepped profile, the step leaves a knife edge, so drop the step on
+that side.
 
 ## Cuts that refill, sever, or miss
 
 - A hole cut before a union is silently refilled ([[construction-strategy#boolean-order]]).
+- A `Compound` of overlapping solids passed as one cutting tool can skip the
+  cut with no error. Fuse the tools first, or pass a list of disjoint tools.
+- A tube that crosses a loft's planar end-cap edge is dropped from a fuse or a
+  cut with no error. Move the tube off the cap edge, or extend the loft past it.
+- A loft section lying exactly in a cut plane returns an empty boolean, and so
+  does a keep-solid lofted from rings offset off the same skin. Shift the
+  plane off the section.
+- `Box(x, y, z, align=None)` puts its minimum corner at the origin, not its
+  centre. A cutter meant to be centred then misses and cuts nothing. Assert
+  that every cut removed material.
 - A full-width cylinder cut **severs** the body into pieces; clip the tool to
   one side ([[feature-recipes#subtractive-features]]).
 - A decoration tool that misses the skin intersects to `None`, and the failure
@@ -242,3 +232,5 @@ are labelled: every role holds material, or the build stops.
   what the fill adds: how many pieces, how big, how far from every inlay.
 
 Kernel options behind these (fuzzy value, glue, argument analyzer, history): [[occt-boolean-options]].
+Prism cutters from `shapely` polygons (faceted arcs, zero-area shards, which
+way the prism runs): [[shapely-cutters]].

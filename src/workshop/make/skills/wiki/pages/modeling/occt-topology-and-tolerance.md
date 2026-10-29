@@ -77,7 +77,7 @@ a gap as far as topology is concerned, and sewing exists to merge them.
   why a boolean between a part with large tolerances (from an imported file,
   or from a previous healing pass) and a clean part can merge features that are
   visibly apart, and why near-coincident faces either fuse or fail
-  ([[boolean-pitfalls#near-coincident-surfaces-collapse-the-boolean]]).
+  ([[boolean-pitfalls#near-tangent-and-near-coincident-surfaces-fail-quietly]]).
 - Intersections grow tolerances. A vertex on an edge gets
   `Max(Tol(V), D + Tol(E))`, where D is the projection distance, and a new
   face/face vertex gets a sphere enclosing its source tolerance spheres.

@@ -20,10 +20,10 @@ from cadgen._internal.generation import (
     _entry_spec_from_source,
     _existing_topology_artifact_matches_spec_without_scene,
     _generate_part_outputs,
-    cli_progress_line,
-    relative_to_cwd,
     run_script_generator,
 )
+from cadgen.cli_progress import cli_progress_line
+from cadgen.render import relative_to_cwd
 from cadgen.metadata import DEFAULT_MESH_ANGULAR_TOLERANCE, DEFAULT_MESH_TOLERANCE
 from cadgen.catalog import render_package_dir
 from cadgen._internal.step_scene import LoadedStepScene, load_step_scene_cached
@@ -36,12 +36,6 @@ from cadgen.step_targets import (
     StepTopologyArtifactError,
     validate_step_topology_artifact,
 )
-
-
-def cad_ref_for_step_path(repo_root: Path, step_path: Path) -> str:
-    relative = _relative_to_base(repo_root, step_path)
-    suffix = step_path.suffix
-    return relative[: -len(suffix)] if suffix else relative
 
 
 def ensure_step_topology_artifact(
@@ -63,7 +57,7 @@ def ensure_step_topology_artifact(
     surface it as opt-in diagnostics without adding overhead when `debug` is None."""
     started = time.perf_counter() if debug is not None else None
     try:
-        # Every CLI that needs a STEP package comes through here -- inspect, snapshot -- and
+        # Every inspect command that needs a STEP package comes through here, and
         # the rebuild below can be the same multi-minute generator `cad gen` runs. It used to
         # take the lock and report to the VIEWER only, so a terminal caller watched a silent
         # process while an open viewer showed the phases. The progress line is built here, at
@@ -421,8 +415,6 @@ def _write_topology_sidecar(
     """Best-effort write-through of the on-demand selector extraction to the
     package's topology.glb sidecar (atomic rename). A failed cache write must
     never fail the selector query itself."""
-    import os
-
     from cadgen._internal.component_package import assembly_topology_glb_path, is_assembly_package
 
     package_dir = render_package_dir(spec.entry_path)
@@ -460,8 +452,7 @@ def _scene_for_regeneration(
     progress: object | None = None,
 ) -> tuple[EntrySpec, LoadedStepScene]:
     if spec.source == "generated":
-        # The run holding the lock, so the generator reports its phase (and whatever the
-        # generator itself reports through cadgen.progress). Without it this call -- which
+        # The run holding the lock, so the generator reports its phase. Without it this call -- which
         # for a large assembly is the longest thing inspect does -- opened the build with no
         # `generate` phase at all: the bar jumped straight to `collecting parts`.
         scene = run_script_generator(

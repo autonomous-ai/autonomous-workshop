@@ -7,7 +7,7 @@ sources:
   - skills/image-to-cad/scripts/measure_image.py (row_shape, col_shape, fill_ratio, symmetry signals)
   - "experience: taper extrude of a 550-point spline disc outline did not finish in minutes; the normal-offset ruled loft built in 8 s"
 related: [construction-strategy, feature-recipes, loft-pitfalls, revolve-seam, fillet-chamfer-pitfalls, sweeps-and-helices]
-updated: 2026-10-06
+updated: 2026-10-07
 ---
 
 # Form class to operation family
@@ -82,6 +82,13 @@ horizontal feature reads as an ellipse; `row_shape` is `waisted` or `bulged`.
 **Risk:** the profile must **touch the axis** and be closed, or the revolve
 produces a ring instead of a solid. A 360° revolve also leaves a seam edge at
 +X ([[revolve-seam]]).
+
+Draw a soft profile with arcs, not a `Spline`. A five-point spline for a
+cushion (low wall, soft edge roll, shallow dome) with end tangents looped back
+on itself and doubled over the dome; without tangents it wobbled 0.5 mm. Two
+tangent arcs are exact: an edge round of radius `a` centred on the wall top at
+`x = R - a`, and a dome centred on the axis, meet tangentially at angle `t`
+with `tan(pi/4 - t/2) = (top - wall - a) / x`, dome radius `x / cos(t) + a`.
 
 ## Loft
 

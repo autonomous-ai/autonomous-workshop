@@ -7,7 +7,7 @@ sources:
   - https://www.protolabs.com/resources/design-tips/planning-for-parting-lines-in-injection-molding/
   - https://www.vitsoe.com/us/about/good-design
 related: [product-aesthetics, printed-part-count, fillet-chamfer-pitfalls, handheld-ergonomics, colour-matching, post-processing-and-finishing, moulds-and-casting-from-prints]
-updated: 2026-09-29
+updated: 2026-10-10
 ---
 
 # Form and finish heuristics
@@ -35,9 +35,10 @@ them — direction, hierarchy, proportion, silhouette, CMF — is
   offset by the wall. Minimum inner radius 0.5 mm.
 - Parametrise the radius once and reuse it across similar edges, so the edge
   family reads as one design.
-- On the bed face of a printed part a fillet is an overhang, so use a chamfer
-  there ([[joints#rules-that-are-easy-to-break]]). Kernel limits on fillets:
-  [[fillet-chamfer-pitfalls]].
+- On the bed face of a printed part a fillet is an overhang: break that edge
+  with an asymmetric chamfer, a teardrop round, or leave it sharp
+  ([[rounded-bodies-on-the-print-bed#breaking-the-bed-edge]]). Kernel limits
+  on fillets: [[fillet-chamfer-pitfalls]].
 
 ## Seams and parting lines
 
@@ -57,6 +58,15 @@ A parting line is where two halves meet: mould halves, or two printed shells.
 
 A seam placed for painting in separate colours:
 [[post-processing-and-finishing]].
+
+**A joint between two shells.** A moulded figure kit hides each joint under a
+cuff that overlaps the part below. A printed click joint's cuff cannot reach
+that far, because the part below sweeps up into it over the joint's range
+([[posable-figure-joints]]). So the guard round the hub (the foot's dome under
+an ankle, say) shows between the two shells in side view. In the lower part's
+colour it reads as a gap or a ball. Paint it the colour of the shell above,
+and the two read as one shell reaching down to the next colour. The colour
+costs nothing in range or in gates.
 
 Parting lines and keys of a two-part silicone mould:
 [[moulds-and-casting-from-prints]].
@@ -80,4 +90,4 @@ shows, and do not invent decoration it doesn't.
 - Every split between printed parts sits on an edge or a reveal, never
   mid-surface.
 - Hand-contact edges are rounded ([[handheld-ergonomics]]); bed edges are
-  chamfered.
+  broken as in [[rounded-bodies-on-the-print-bed#breaking-the-bed-edge]].

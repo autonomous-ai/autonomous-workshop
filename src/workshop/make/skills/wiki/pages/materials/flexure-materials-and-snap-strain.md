@@ -1,77 +1,26 @@
 ---
-title: Flexure materials, living hinges and snap-fit strain
-tags: [flexure, living-hinge, snap-fit, strain, compliant, tpu, nylon, petg, pp]
-aliases: [compliant mechanism, flexible hinge, integral hinge, snap hook, cantilever snap, spring, allowable strain]
+title: Flexure materials and living hinges
+tags: [flexure, living-hinge, strain, compliant, tpu, nylon, petg, pp]
+aliases: [compliant mechanism, flexible hinge, integral hinge, printed spring, flexure material]
 sources:
   - https://www.hubs.com/knowledge-base/how-design-living-hinges-3d-printing/
   - https://www.protolabs.com/resources/blog/how-to-design-3d-printed-living-hinges/
-  - https://jbrplas.com/posts/snap-fit-design-guide/
-  - https://wiki.polymaker.com/polymaker-products/more-about-our-products/documents/technical-data-sheets/pla/polylite-tm-pla
+  - https://wiki.polymaker.com/polymaker-products/more-about-our-products/documents/technical-data-sheets/pla/polylite-tm-pla (PLA elongation)
   - https://wiki.polymaker.com/polymaker-products/more-about-our-products/documents/technical-data-sheets/petg-pet/polylite-tm-petg
   - https://wiki.polymaker.com/polymaker-products/more-about-our-products/documents/technical-data-sheets/tpu/polyflex-tm-tpu95
   - https://wiki.polymaker.com/polymaker-products/more-about-our-products/documents/technical-data-sheets/nylon/polymide-tm-copa
-  - Ezeh and Susmel 2019, International Journal of Fatigue 126 (PLA fatigue curve)
   - Mechanical, Fatigue, and Thermal Characterization of ASA, Nylon 12, PC, and PC-ABS (FFF), https://pmc.ncbi.nlm.nih.gov/articles/PMC12845617/
-related: [joints, flexures-and-living-hinges, printed-fatigue, creep-and-stress-relaxation, layer-anisotropy, filament-properties]
-updated: 2026-09-23
+related: [joints, flexures-and-living-hinges, snap-fit-design, printed-fatigue, creep-and-stress-relaxation, layer-anisotropy, filament-properties]
+updated: 2026-10-10
 ---
 
-# Flexure materials, living hinges and snap-fit strain
+# Flexure materials and living hinges
 
 A part that works by bending is limited by strain, not stress. Every rule
 here comes down to keeping the peak strain below what the printed material
 survives, in the direction it was printed, for the number of cycles needed.
-
-## Snap-fit strain
-
-Maximum strain at the root of a straight cantilever snap beam:
-
-```text
-ε = 1.5 · y · h / L²      y = deflection, h = beam thickness, L = beam length
-```
-
-Doubling L cuts the strain to a quarter; halving h halves it. The same formula
-is in [[joints#latching-and-holding]].
-
-Allowable strain for moulded plastics (one injection-moulding guide):
-
-| material | yield strain | recommended allowable |
-|---|---|---|
-| ABS | 2.5–3.5 % | 1.0–1.5 % |
-| PC/ABS | 4.0–5.0 % | 1.5–2.0 % |
-| PA66 (dry) | 25–40 % | 3.0–4.0 % |
-| POM | 8.0–12.0 % | 2.0–3.0 % |
-| PP | 8.0–12.0 % | 3.0–4.0 % |
-
-A printed part breaks sooner than a moulded one. Its datasheet elongation at
-break is the ceiling, and it is much lower across layers:
-
-| printed (Polymaker) | elongation X-Y | elongation Z |
-|---|---|---|
-| PLA | 6.3 % | 1.8 % |
-| PETG | 8.4 % | 3.3 % |
-| ABS | 17.9 % | 3.1 % |
-| PA6/66 copolymer, dry | 12.7 % | 1.3 % |
-
-So a printed snap beam must lie in the layer plane
-([[layer-anisotropy#orient-so-layers-do-not-carry-the-tension]]). Keep its
-design strain at or below the moulded allowable for the same polymer family,
-and for PLA at or below about 2 %, which is also the PLA limit in
-[[joints#latching-and-holding]].
-
-```python
-eps = 1.5 * DEFLECTION * THICKNESS / LENGTH**2
-assert eps <= ALLOWABLE_STRAIN[MATERIAL], f"snap root strain {eps:.1%}"
-```
-
-Two time effects:
-
-- **Many cycles:** the PLA fatigue design curve puts the long-life maximum
-  stress at 10 % of UTS ([[printed-fatigue]]). With E ≈ 3.4 GPa and UTS ≈
-  52 MPa, that is a strain of about 0.15 %. A PLA clip that clicks
-  thousands of times has to be very gentle.
-- **Held deflected:** a latch that stays bent relaxes and loses its hold
-  ([[creep-and-stress-relaxation]]). Engage to zero deflection.
+The strain limits themselves — single snap, repeated use, many cycles, held
+deflected — are [[snap-fit-design#permissible-strain]].
 
 ## Living hinges
 
@@ -110,5 +59,6 @@ works at all.
 - **TPU 95A** (E ≈ 34 MPa, over 500 % elongation) is a rubber, not a spring:
   choose it for grips, bumpers and compliant sections. It stores little
   energy per millimetre.
-- Size a flexure's thickness from the strain budget above
-  (ε = t / (2R) for a strip bent to radius R), then check the force it gives.
+- Size a flexure's thickness from the strain budget
+  ([[snap-fit-design#permissible-strain]]; ε = t / (2R) for a strip bent to
+  radius R), then check the force it gives.

@@ -5,10 +5,11 @@ aliases: [3/4 view, hero shot depth, vanishing point, recovering the plan, hidde
 sources:
   - skills/image-to-cad/references/view-inference.md
   - "experience: depths read straight off a hero shot that delivered visibly shallow parts"
-  - "experience: a flat token photographed lying on a table at 45 deg, rectified to its plan and scored 0.920"
+  - "experience: a flat token photographed lying on a table at 45 deg, rectified to its plan and scored by the likeness gate"
   - "experience: a pixel-art key read on a fitted grid from one oblique shot; inlaid squares settled the row/column ratio the outline could not"
+  - "experience: eight generated pixel-art keys read from one oblique render each; the fitted map, the pose search's roll and a cell surrogate settled each plan"
 related: [image-types-and-views, measuring-reference-photos, scale-anchors, form-to-construction-family]
-updated: 2026-10-08
+updated: 2026-10-10
 ---
 
 # Perspective and the views a photo hides
@@ -90,19 +91,25 @@ in depth by `sin(el)`, with the wall hanging under every near edge.
   stroke's wall hangs over the next, the erosion fills them.
 - **Elevation from strokes of one width.** Tines, letters, spokes drawn with
   one pen show their true width across the image and `width x sin(el)` when
-  they run across it: 27 px across, 19 px deep gave 45 deg. 40 and 50 deg
-  each cost 0.06 IoU against the same reference.
+  they run across it (27 px across and 19 px deep give 45 deg). An elevation
+  5 deg off costs several points of IoU against the same reference.
 - **Rectify** rows by `1 / sin(el)`; thickness is `wall_px x mm/px / cos(el)`.
+- **A shot that looks top-down still needs it.** At el 65-77 the rows are
+  3-5 % short and no eye sees it; the likeness gate does, as an `aspect`
+  above 1 (render wider than reference) with the pose search settling on that
+  elevation. Hold the governing length on the rows, scale every column read
+  by `sin(el)`, and keep one helper per axis in the parameter block (a width
+  from columns, a length from rows) so a circle's radius is never taken from
+  the wrong ruler.
 - **Grow the plan back by the edge band.** The lit-colour rule keeps the flat
-  top and drops the rounded edge round it, which is plan: about 0.6 mm here.
-  The wall read by eye was short as well (22-25 px against 26).
+  top and drops the rounded edge round it, which is plan. A wall read by eye
+  tends to come out short as well.
 - **Settle wall and edge band by a sweep, without the kernel.** Project the
   extruded plan as the union of the plan scaled by `sin(el)` in depth and
   shifted by `z cos(el)` for z through the thickness, rasterise, and score it
   with the likeness gate's own `normalise`/`compare` against the flattened
-  reference: seconds per cell. A 5 x 4 grid moved IoU from 0.870 to 0.920 at
-  the declared camera, where the gate then recovered az, el, roll and fov
-  exactly.
+  reference: seconds per cell. A small grid of wall and band values settles
+  both; the check is that the gate then recovers the declared camera.
 
 ## A rectilinear plan is read on a grid, not traced
 
@@ -115,10 +122,9 @@ the design is made of.
   one oblique outline fits a plan stretched along either axis equally well
   with a different camera. Settle it with a feature known to be square or
   round on that plane (studs, inlaid squares, a hole), or with the wall: at
-  zero roll the wall hangs straight down the image. On one generated shot the
-  outline's steps read 17.1 x 13.4 px while inlaid squares read 0.81 x 1.05
-  of those steps: rows were 1.3 columns tall, and reading the steps as square
-  would have needed a 50 deg camera roll.
+  zero roll the wall hangs straight down the image. A generated shot can draw
+  its rows a third taller than its columns; reading such steps as square then
+  needs a large camera roll to fit.
 - **Axes** from the silhouette's gradient-direction histogram; **pitches**
   from the corners of the crisp edges (the ones facing away from the camera
   carry no wall); then fit only the phase. Never fit the pitch by
@@ -130,15 +136,50 @@ the design is made of.
   half-row step) by fitting the whole plan to the flattened silhouette: six
   affine terms plus the wall's height in pixels, maximising IoU, seconds per
   fit. Fit the affine with the wall held first: a free wall from a poor start
-  grew to 27 px to cover a misplaced outline, where the staged fit found 11.
+  grows to cover a misplaced outline, to more than twice the staged fit's
+  height.
 - **A generated image is not self-consistent.** Its grid drifts (a centreline
   half a column off over a dozen rows); design on one axis and let the fit
-  report the cost. Its pixels need not be square (rows a tenth taller than
-  columns on several tiles) nor one size (outline and detail grids differ on
-  one tile): fit column and row pitch separately by least squares through the
-  measured edges, or transcribe at half pitch, which keeps every edge within a
-  quarter cell. A rasterised plan scored with the gate's own
-  `normalise`/`compare` predicted the gate within 0.001–0.015 on ten tiles.
+  report the cost. Expect parts of one image drawn at different pitches,
+  decoration (eyes, cheeks) half a cell off the outline's grid, fine features
+  thinner than the outline's pixel, and mirrored features out of step. Read
+  the outline on its grid, give each part a sub-cell offset parameter instead
+  of forcing one shared lattice, keep decoration where it is drawn (or snap it
+  and say so), fit column and row pitch separately by least squares through
+  the measured edges (rows can run taller than columns) or transcribe at half
+  pitch, and sweep the width of bars and shafts through the likeness score
+  rather than rounding them to whole cells: the best-scoring width can sit
+  above the cell count read by eye.
+- **Elevation and thickness from the fitted 2 x 2 map.** With square plan
+  cells, the singular values `s1 >= s2` of the plan-to-image map give
+  `sin(el) = s2 / s1`, and thickness in cells is
+  `wall_px / (s1 * cos(el))`. One inlaid square's four corners are enough to
+  seed the map. Splitting the map into rotation times vertical scale instead
+  gave elevations that disagreed with each other. A render drawn in
+  perspective may have no orthographic solution at all; then read the near
+  wall in pixels and take the elevation the pose search finds.
+- **The pose search confirms the cell aspect; IoU does not.** For a thin flat
+  subject IoU trades plan aspect against elevation (nearly the same score
+  across a wide range of aspects), so fix the aspect from a square or round
+  feature first. The acceptance test is the recovered roll: with the right
+  aspect the best camera has roll near 0, since the walls are vertical; a
+  wrong aspect shows as a roll of several degrees and a lower score.
+- **Near edges read short.** Far (upper) top-face edges carry no wall and land
+  on whole cells; near edges read 0.2-0.4 cell short where the wall and a
+  bevel highlight smear the crease. Read near edges by symmetry with far ones.
+- **Take thickness from the wall pixels, never from an IoU sweep.** On a
+  near-top-down shot thickness barely moves IoU; on an oblique shot IoU rises
+  with every millimetre because a thicker wall covers more of the
+  silhouette. Measure the wall, then confirm it is not worse than its
+  neighbours. Fit one wall height shared by bodies that are visibly the same
+  thickness: a free wall per body grows to cover outline error.
+- **Settle edge cells on a kernel-free surrogate.** One box per cell (or the
+  plan polygon swept through z), projected at the fitted camera and scored
+  with the gate's own `normalise`/`compare`, tracks the gate within about
+  0.003-0.015 at about 1 s per variant. A greedy pass that grows or shrinks
+  each row end, or toggles each boundary cell, with the camera held, keeping
+  changes worth more than 0.0004 IoU, then refitting, finds the misread
+  cells; a single one can cost a couple of points by itself.
 - **Compute the likeness ceiling before fitting.** When parts of the object
   are fixed by something other than the image (a family's shared shank, a
   size cap), paste the reference's own outline onto those parts and score it.

@@ -10,7 +10,7 @@ sources:
   - https://www.pixelz.com/blog/need-accurate-color-let-grey-cards-white-balancing-come-rescue/
   - https://fastershape.com/blogs/random/understanding-filament-color-transmission-for-lamp-and-light-design
 related: [form-and-finish-heuristics, measuring-reference-photos, organic-likeness, post-processing-and-finishing]
-updated: 2026-10-02
+updated: 2026-10-10
 ---
 
 # Colour matching and colour systems
@@ -50,6 +50,10 @@ device-dependent and not perceptually uniform):
   blue region) and is the formula to use.
 - A ΔE is only meaningful under a stated illuminant (D65 for most colour work,
   D50 in printing).
+- Choose the stock filament with the smallest ΔE to the reference, never the
+  smallest RGB distance: by RGB a grey-blue spool won against the azure one,
+  and the grey-blue read as grey beside the photo's blue (ΔE 25.7 against
+  17.7).
 
 ## A photo is a poor colour reference
 
@@ -62,7 +66,13 @@ device-dependent and not perceptually uniform):
   photographed under the same light gives the reference: neutral must come out
   neutral. White-balance on it before sampling.
 - Sample a flat, evenly lit area away from highlights and shadows, and
-  average a patch rather than one pixel.
+  average a patch rather than one pixel. For a whole feature, take a
+  luminance percentile of all its pixels in the hue band, not one extreme: a
+  gold part's brightest tone rendered as pale khaki. On a metallic or glossy
+  finish the median is itself a shadow tone, and the renderer shades the
+  colour a second time: a median gold #938348 rendered olive under flat
+  review lighting, the 70th percentile of the same kind of part (#CFBA5D) read
+  as gold. Matte plastic sits near its median; metal near its 70th percentile.
 
 Record a photo-sampled colour as `[inferred]` and say whether it was
 white-balanced.
@@ -87,19 +97,20 @@ it, and assign it per region (the repository's `cadfilament` helper exists for
 this). Colour regions are a likeness decision; see [[organic-likeness]] for
 region splitting on figures.
 
-Software review renderers must keep the colour and coordinate contracts:
+A spool the catalogue has no hex for (a sold colour whose code is
+unpublished) is shown in the photo's sampled colour through
+`cadgen.color.srgb`, never `Color("#hex")`: build123d stores a hex as given,
+the renderer reads channels as linear, and the part renders washed out. Name
+the real spool where the kit's colours are listed.
 
-- `cadgen.srgb` and `cadfilament.filament` give linear-light channels. Apply
-  lighting in linear light, then encode sRGB before writing PNG pixels;
-  writing the linear values directly makes ivory brown and darkens colours.
-- Traverse coloured leaves inside nested assemblies. A module-level fallback
-  colour can otherwise replace black glass and coloured artwork.
-- A leaf's tessellation carries its own transform. Apply the accumulated
-  ancestor placement too; dropping it can draw a display at the origin while
-  the whole-assembly silhouette still passes.
-
-Colour and placement regression fixtures must include a transformed nested
-compound, not just coloured top-level primitives.
+Colour channels are linear RGB and colour lives on leaves
+(`skills/cad/references/build123d-modeling.md`, "Colour"). A review renderer
+lights in linear light and encodes sRGB before writing pixels (raw linear
+values turn ivory brown), and it walks nested assemblies to each coloured leaf
+with the accumulated ancestor placement: a module-level fallback colour or a
+dropped transform draws the wrong colour or a part at the origin while the
+whole-assembly silhouette still passes. Its regression fixtures include a
+transformed nested compound.
 
 Splitting a part so each colour can be painted separately:
 [[post-processing-and-finishing]].

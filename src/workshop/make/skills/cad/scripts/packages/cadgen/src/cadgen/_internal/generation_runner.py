@@ -13,9 +13,6 @@ from typing import Sequence
 
 from cadgen.booleans import serial_booleans
 from cadgen._internal.cli_locking import lock_wait_notice
-from cadgen._internal.file_metadata import text_to_cad_identity_metadata
-from cadgen._internal.file_metadata import write_dxf_text_to_cad_metadata
-from cadgen._internal.source_hash import PythonSourceClosure
 from cadgen._internal.source_hash import PythonSourceHash
 from cadgen._internal.source_hash import capture_runtime_closure
 from cadgen._internal.source_hash import evict_first_party_modules
@@ -25,12 +22,10 @@ from cadgen._internal.step_scene import LoadedStepScene
 from cadgen.catalog import render_package_dir
 from cadgen.cli_logging import CliLogger
 from cadgen.cli_progress import cli_progress_line
-from cadgen.coordination import DRAWING_PACKAGE
 from cadgen.coordination import PHASE_GENERATE
 from cadgen.coordination import ProgressEvent
 from cadgen.coordination import STEP_PACKAGE
 from cadgen.coordination import generator_busy
-from cadgen.coordination import reporting_as
 from cadgen.coordination import resolve as resolve_progress
 from cadgen.coordination.lock import exclusive
 from cadgen.coordination.paths import write_lock_path
@@ -155,19 +150,6 @@ def _normalize_step_payload(
     )
 
 
-def _normalize_dxf_payload(result: object, *, script_path: Path) -> dict[str, object]:
-    if isinstance(result, dict):
-        allowed_fields = {"document"}
-        extra_fields = sorted(str(key) for key in result if key not in allowed_fields)
-        if extra_fields:
-            joined = ", ".join(extra_fields)
-            raise TypeError(f"{_display_path(script_path)} gen_dxf() envelope has unsupported field(s): {joined}")
-        if "document" not in result:
-            raise TypeError(f"{_display_path(script_path)} gen_dxf() envelope must define 'document'")
-        return {"document": result["document"]}
-    return {"document": result}
-
-
 def _shape_payload_entry_kind(shape: object, *, fallback: str) -> str:
     if fallback not in {"part", "assembly"}:
         raise RuntimeError(f"Unsupported generated STEP kind: {fallback}")
@@ -263,9 +245,8 @@ def _write_shape_step_payload(
             f"got {type(shape).__name__}"
         )
     # gen_step builds the render scene in memory and does NOT write a text STEP — STEP is
-    # written on demand from scene.source_compound (`scripts/gen --write-step`, or the
-    # Viewer's Save-dialog export). The scene is built straight from the XCAF doc, never
-    # via a STEP round-trip.
+    # written on demand from scene.source_compound (`scripts/gen --write`). The scene is
+    # built straight from the XCAF doc, never via a STEP round-trip.
     source_identity = python_source_hash(script_path)
     scene = build_build123d_step_scene(
         shape,
@@ -276,7 +257,7 @@ def _write_shape_step_payload(
     _mark_scene_python_backed(scene, source_identity=source_identity, source_path=script_path)
     _mark_scene_step_payload(scene, entry_kind=entry_kind, payload_kind="shape")
     # Stash the pre-bake compound: the component-package emit job introspects its located
-    # children (occurrence transforms + dedup), and the STEP export serializes it.
+    # children (occurrence transforms + dedup), and `scripts/gen --write` serializes it.
     scene.source_compound = shape
     params_abs = envelope.get("params")
     if params_abs is not None:
@@ -301,49 +282,21 @@ def _mark_scene_python_backed(
     return scene
 
 
-def _write_dxf_payload(
-    envelope: dict[str, object],
-    *,
-    output_path: Path,
-    script_path: Path,
-    logger: CliLogger,
-) -> None:
-    document = envelope.get("document")
-    saveas = getattr(document, "saveas", None)
-    if not callable(saveas):
-        raise TypeError(
-            f"{_display_path(script_path)} gen_dxf() envelope field 'document' must be a DXF document, "
-            f"got {type(document).__name__}"
-        )
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    saveas(str(output_path))
-    source_identity = python_source_hash(script_path)
-    write_dxf_text_to_cad_metadata(
-        output_path,
-        text_to_cad_identity_metadata(
-            source_path=relative_to_file(script_path, output_path),
-            source_hash=source_identity.source_hash,
-        ),
-    )
-    logger.debug(f"wrote DXF: {_display_path(output_path)}")
-
-
 def run_script_generator(
     spec: EntrySpec,
     generator_name: str,
     *,
     logger: CliLogger | None = None,
     force: bool = False,
-    reset_runtime_closure: bool = False,
     progress: object | None = None,
     lock_intent: str = "write",
 ) -> LoadedStepScene | None:
-    """Run a generator's ``gen_step``/``gen_dxf`` and return its scene.
+    """Run a generator's ``gen_step`` and return its scene.
 
     ``lock_intent`` says whether this run will rewrite the model's render package
-    (``"write"``, the default) or merely occupy its generator (``"generate"`` -- an export,
-    a topology extraction, an interference check). See :func:`_track_spec_generation`:
-    getting this wrong makes an export look like a build to the CAD Viewer.
+    (``"write"``, the default) or merely occupy its generator (``"generate"`` -- a topology
+    extraction, an ``inspect validate``/``interfere`` run). See :func:`_track_spec_generation`:
+    getting this wrong makes a read-only run look like a build to the CAD Viewer.
 
     Closure capture is deterministic in every process shape: first-party modules
     are evicted from ``sys.modules`` BEFORE the generator loads (so its full
@@ -355,12 +308,9 @@ def run_script_generator(
     (see :func:`repo_local_loaded_modules`); the running runtime (cadgen, the CLI
     launcher) and C extensions / site-packages (numpy, OCP, build123d) are never
     touched — they cannot reload, must stay warm, and are not freshness inputs.
-
-    ``reset_runtime_closure`` is retained for API compatibility (the warm worker
-    passes it) but is now a no-op: the pre-run eviction supersedes it.
     """
     logger = logger or CliLogger("cad")
-    if generator_name not in {"gen_step", "gen_dxf"}:
+    if generator_name != "gen_step":
         raise RuntimeError(f"Unsupported generator: {generator_name}")
     if spec.script_path is None or spec.generator_metadata is None:
         raise ValueError(f"{spec.source_ref} is not a generated Python CAD source")
@@ -370,10 +320,10 @@ def run_script_generator(
         return reused
     emit("operation-start", kind="build", label=spec.script_path.name)
     # A WRITER arrives with the BuildRun that already owns this model's status record and
-    # its progress line. An EXPORT arrives with neither: it takes the generator lock instead
-    # of the write lock, and until that lock carried a reporter, `cad export` ran the same
-    # multi-minute gen_step() a build runs and said nothing on any surface. So the run the
-    # lock yields becomes the reporter when nobody above us is one.
+    # its progress line. A generator-only run (inspect validate/interfere) arrives with
+    # neither: it takes the generator lock instead of the write lock, and runs the same
+    # multi-minute gen_step() a build runs. So the run the lock yields becomes the reporter
+    # when nobody above us is one.
     owns_reporting = progress is None
     with _generator_progress_line(spec, logger=logger, active=owns_reporting) as sink:
         with _track_spec_generation(
@@ -388,8 +338,6 @@ def run_script_generator(
                 generator_name,
                 logger=logger,
                 force=force,
-                reset_runtime_closure=reset_runtime_closure,
-                progress=active,
             )
             remember_scene(spec.script_path, generator_name, scene)
             emit("operation-done", kind="build", label=spec.script_path.name)
@@ -458,11 +406,7 @@ def _run_script_generator_inner(
     *,
     logger: CliLogger,
     force: bool = False,
-    reset_runtime_closure: bool = False,
-    progress: object | None = None,
-) -> LoadedStepScene | None:
-    del reset_runtime_closure  # superseded by the pre-run eviction below; kept for API compat
-    generated_scene: LoadedStepScene | None = None
+) -> LoadedStepScene:
     # Deterministic closure capture (see run_script_generator's docstring): start from a
     # clean first-party module space, then record every first-party file executed while
     # the generator loads and runs. The recorded set is complete even if the generator
@@ -476,36 +420,28 @@ def _run_script_generator_inner(
         generator = getattr(module, generator_name, None)
         if not callable(generator):
             raise RuntimeError(f"{_display_path(spec.script_path)} does not define callable {generator_name}()")
-        # Bind the lock holder as the ambient reporter for the generator's own code. This is
-        # the in-process twin of `run_node_builder`, which lets a Node child describe its
-        # work over a pipe: gen_step() takes no arguments and so cannot be handed the run,
-        # and without this the longest phase of most builds reports nothing at all. Silent
-        # generators are unaffected -- nothing reads the binding unless they ask for it.
-        with logger.timed(f"run {generator_name} {spec.source_ref}"), reporting_as(progress):
+        with logger.timed(f"run {generator_name} {spec.source_ref}"):
             raw_payload = generator()
 
-    source_closure: PythonSourceClosure | None = None
-    if generator_name == "gen_step":
-        envelope = _normalize_step_payload(raw_payload, script_path=spec.script_path)
-        if spec.step_path is None:
-            raise RuntimeError(f"{spec.source_ref} has no configured STEP output")
-        # Record paths relative to the model folder so the descriptor stays portable.
-        source_closure = capture_runtime_closure(
-            modules_before_load,
-            spec.script_path,
-            base=spec.step_path.parent,
-            executed_files=executed_files,
-        )
-        generated_scene = _write_shape_step_payload(
-            envelope,
-            output_path=spec.step_path,
-            script_path=spec.script_path,
-            logger=logger,
-            entry_kind=_shape_payload_entry_kind(envelope.get("shape"), fallback=spec.kind),
-        )
-    if generated_scene is not None and source_closure is not None:
-        generated_scene.source_closure_hash = source_closure.closure_hash
-        generated_scene.source_closure_files = source_closure.files
+    envelope = _normalize_step_payload(raw_payload, script_path=spec.script_path)
+    if spec.step_path is None:
+        raise RuntimeError(f"{spec.source_ref} has no configured STEP output")
+    # Record paths relative to the model folder so the descriptor stays portable.
+    source_closure = capture_runtime_closure(
+        modules_before_load,
+        spec.script_path,
+        base=spec.step_path.parent,
+        executed_files=executed_files,
+    )
+    generated_scene = _write_shape_step_payload(
+        envelope,
+        output_path=spec.step_path,
+        script_path=spec.script_path,
+        logger=logger,
+        entry_kind=_shape_payload_entry_kind(envelope.get("shape"), fallback=spec.kind),
+    )
+    generated_scene.source_closure_hash = source_closure.closure_hash
+    generated_scene.source_closure_files = source_closure.files
     return generated_scene
 
 
@@ -580,8 +516,6 @@ def _spec_output_dir(spec: EntrySpec, generator_name: str) -> Path | None:
     """The coordinated output directory for this spec's generator, if it has one."""
     if generator_name == "gen_step" and spec.step_path is not None:
         return render_package_dir(spec.entry_path)
-    if generator_name == "gen_dxf" and spec.script_path is not None:
-        return render_package_dir(spec.script_path)
     return None
 
 
@@ -598,13 +532,12 @@ def _track_spec_generation(
     ``intent`` picks the SENTINEL, and the distinction is the whole point of there being
     two. A run that will rewrite the package takes the writer lock, which makes a reader
     hide the artifact and show a build. A run that merely OCCUPIES the generator and
-    writes the package nothing -- an export, an on-demand topology extraction, an
-    interference check -- takes the generator lock instead. Taking the writer lock for
-    those made a fully-current model report `generating` with an empty bar for the whole
-    length of an export.
+    writes the package nothing -- an on-demand topology extraction, an inspect validate or
+    interfere check -- takes the generator lock instead. Taking the writer lock for those
+    made a fully-current model report `generating` with an empty bar for the whole run.
 
     The two sentinels are different files, so they do NOT exclude each other: a build and
-    an export of one model each run its ``gen_step()``, concurrently, in separate
+    a check of one model each run its ``gen_step()``, concurrently, in separate
     processes. That is duplicated work rather than a hazard (no shared in-process state,
     different outputs), and it is the price of letting a reader tell "being rewritten"
     from "generator busy" -- see :func:`cadgen.coordination.generator_busy`.
@@ -614,10 +547,7 @@ def _track_spec_generation(
         return contextlib.nullcontext()
     on_wait = lock_wait_notice(logger, spec.source_ref)
     if intent == "generate":
-        # The kind decides which phase set the run reports over, so a drawing generator
-        # counts its own phases rather than a STEP package's.
-        kind = DRAWING_PACKAGE if generator_name == "gen_dxf" else STEP_PACKAGE
-        return generator_busy(kind, output_dir, on_wait=on_wait, sink=sink)
+        return generator_busy(STEP_PACKAGE, output_dir, on_wait=on_wait, sink=sink)
     # A writer already has its BuildRun from artifact_build; this only needs the lock, and
     # yields None so the caller's `progress or this` choice stays a simple one.
     return _write_lock_without_reporting(write_lock_path(output_dir), on_wait=on_wait)

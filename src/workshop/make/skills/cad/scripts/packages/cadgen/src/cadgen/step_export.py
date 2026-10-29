@@ -290,35 +290,6 @@ def _all_faces_planar(doc: Any) -> bool:
     return faces > 0
 
 
-def export_xcaf_doc_step_scene(
-    doc: Any,
-    output_path: Path,
-    *,
-    label: str | None = None,
-    originating_system: str = "build123d",
-    text_to_cad_entry_kind: str | None = None,
-    source_path: str | None = None,
-    source_hash: str | None = None,
-    logger: object | None = None,
-) -> LoadedStepScene:
-    step_hash = write_xcaf_doc_step_file(
-        doc,
-        output_path,
-        label=label,
-        originating_system=originating_system,
-        text_to_cad_entry_kind=text_to_cad_entry_kind,
-        source_path=source_path,
-        source_hash=source_hash,
-        logger=logger,
-    )
-    with (logger.timed(f"load scene from XCAF {output_path.name}") if logger is not None else nullcontext()):
-        return load_step_scene_from_xcaf_doc(
-            output_path,
-            doc,
-            step_hash=step_hash,
-        )
-
-
 def write_xcaf_doc_step_file(
     doc: Any,
     output_path: Path,
@@ -398,26 +369,6 @@ def write_xcaf_doc_step_file(
     return step_file_hash(output_path)
 
 
-def export_build123d_step_scene(
-    to_export: Any,
-    output_path: Path,
-    *,
-    text_to_cad_entry_kind: str | None = None,
-    source_path: str | None = None,
-    source_hash: str | None = None,
-) -> LoadedStepScene:
-    doc = _create_bin_xcaf_doc(to_export)
-    scene = export_xcaf_doc_step_scene(
-        doc,
-        output_path,
-        label=getattr(to_export, "label", None),
-        text_to_cad_entry_kind=text_to_cad_entry_kind,
-        source_path=source_path,
-        source_hash=source_hash,
-    )
-    return _attach_assembly_mates(scene, to_export)
-
-
 def build_build123d_step_scene(
     to_export: Any,
     output_path: Path,
@@ -446,9 +397,8 @@ def export_build123d_step_file(
 ) -> str:
     """Write a build123d shape to a text STEP file (no scene), returning its hash.
 
-    The write-only counterpart to :func:`export_build123d_step_scene`, used by the
-    on-demand ``--step`` export: the build already holds the in-memory scene/compound,
-    so STEP export only needs to serialize the shape, not rebuild a scene."""
+    Used by ``scripts/gen --write``: the build already holds the in-memory scene/compound,
+    so the STEP write only needs to serialize the shape, not rebuild a scene."""
     doc = _create_bin_xcaf_doc(to_export)
     return write_xcaf_doc_step_file(
         doc,

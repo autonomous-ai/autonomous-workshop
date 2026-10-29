@@ -8,7 +8,7 @@ sources:
   - https://help.prusa3d.com/article/fuzzy-skin_246186
   - https://www.hubs.com/knowledge-base/how-does-part-orientation-affect-3d-print/
   - https://www.protolabs.com/resources/design-tips/3d-printing-tolerances/
-related: [fdm-minimum-feature-sizes, fdm-print-orientation-for-strength, overhangs-and-print-orientation, printed-part-count, post-processing-and-finishing, moulds-and-casting-from-prints]
+related: [fdm-minimum-feature-sizes, layer-anisotropy, overhangs-and-print-orientation, printed-part-count, post-processing-and-finishing, moulds-and-casting-from-prints]
 updated: 2026-09-23
 ---
 

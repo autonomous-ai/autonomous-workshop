@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from cadgen._internal.assembly_spec import find_step_path, resolve_cad_source_path
 from cadgen.cad_ref_syntax import normalize_cad_path, parse_cad_tokens
 from cadgen.catalog import find_source_by_cad_ref
 from cadgen._internal.glb_topology import (
@@ -159,24 +158,6 @@ def _cwd_relative_target(raw_target: str) -> str:
         ) from None
 
 
-def step_path_from_target(target: str) -> Path:
-    raw_step_path = _raw_step_path(str(target or "").strip())
-    if raw_step_path is not None:
-        return raw_step_path
-
-    entry_target = entry_target_from_target(target)
-    lookup_cad_path = _lookup_cad_path(entry_target.cad_path)
-    step_path = find_step_path(lookup_cad_path)
-    if step_path is not None:
-        return step_path
-
-    direct_step_path = _direct_step_path(entry_target.cad_path)
-    if direct_step_path is not None:
-        return direct_step_path
-
-    raise CadRefError(f"STEP file not found for target '{target}'.")
-
-
 def resolve_step_target(target: str, *, prefer_explicit_step: bool = False) -> ResolvedStepTarget:
     entry_target = entry_target_from_target(target)
     cad_path = entry_target.cad_path
@@ -192,8 +173,7 @@ def resolve_step_target(target: str, *, prefer_explicit_step: bool = False) -> R
                 source_path=raw_step_path,
                 step_path=raw_step_path,
             )
-        lookup_cad_path = _lookup_cad_path(cad_path)
-        source = find_source_by_cad_ref(lookup_cad_path)
+        source = find_source_by_cad_ref(cad_path)
         resolved_step_path = source.step_path if source is not None else None
         if source is not None and resolved_step_path is not None and resolved_step_path.resolve() == raw_step_path.resolve():
             return ResolvedStepTarget(
@@ -209,8 +189,7 @@ def resolve_step_target(target: str, *, prefer_explicit_step: bool = False) -> R
             step_path=raw_step_path,
         )
 
-    lookup_cad_path = _lookup_cad_path(cad_path)
-    source = find_source_by_cad_ref(lookup_cad_path)
+    source = find_source_by_cad_ref(cad_path)
     if source is not None and source.kind in {"part", "assembly"}:
         if source.step_path is None:
             raise CadRefError(f"STEP file not found for ref '{cad_path}'.")
@@ -513,17 +492,6 @@ def _topology_artifact_error(
             f"{REGENERATE_STEP_PROMPT}"
         ),
     )
-
-
-def _cad_path_lookup_candidates(cad_path: str) -> tuple[str, ...]:
-    return (cad_path,) if cad_path else ()
-
-
-def _lookup_cad_path(cad_path: str) -> str:
-    for candidate in _cad_path_lookup_candidates(cad_path):
-        if resolve_cad_source_path(candidate) is not None:
-            return candidate
-    return cad_path
 
 
 def _display_path(path: Path) -> str:

@@ -8,8 +8,8 @@ sources:
   - "experience: band hooks that were unprintable overhangs, and captures aimed away from the drive direction"
   - "experience: a printed walker whose budget priced foot traction through a flat linkage efficiency, and whose motor stalled"
   - https://www.pololu.com/category/60/micro-metal-gearmotors
-related: [gears, mechanism-design, automata-patterns, cable-and-tendon-drives]
-updated: 2026-10-07
+related: [gears, mechanism-design, automata-patterns, cable-and-tendon-drives, launchers-and-projectile-toys, spinning-toys-and-flywheels]
+updated: 2026-10-10
 ---
 
 # Energy and drive
@@ -31,6 +31,10 @@ energy*, and *which archetype turns it into the motion*.
 | **motor / servo** | electrical | continuous | an electrical load: go to `$electromechanical-integration` for source, switch, wiring and `power.json` before the layout is fixed |
 
 Pulling a joint through a cord or tendon: [[cable-and-tendon-drives]].
+Energy released in one launch (catapult, popper, trebuchet), how much reaches
+the projectile, and the toy limits: [[launchers-and-projectile-toys]].
+Flywheel sizing, burst speed and reflected inertia:
+[[spinning-toys-and-flywheels#friction-motors-and-pull-back-motors]].
 
 ## Ratio budget
 
@@ -73,17 +77,14 @@ assert stall_nmm(DEPTH_MID) / peak >= 1.5     # dry PLA on PLA, the worst case
 assert stall_nmm(DEPTH_EMPTY) / max(worm_torque(t, MU_RUN_IN) for t in range(360)) >= 1.2
 ```
 
-Weigh the toy rather than guess it: printed mass is the skin (perimeters and
-top/bottom layers, `area × skin thickness`) at full density plus the rest at
-the infill share, so the slicer settings are part of the budget — three walls
-and 20 % infill against two and 15 % moved one walker's mass by a quarter.
+Weigh the toy rather than guess it: the slicer's walls and infill are part
+of the budget ([[print-time-and-material-estimation#mass-from-the-model-the-shell-plus-a-fraction-of-the-core]]).
 
 A budget of `traction × stride / 2π / linkage efficiency` misses all of
-this. It cleared a printed walker's motor at 2.1×; priced joint by joint the
-margin was 0.57× at μ 0.35, and the toy stalled. The joints cost four times
-the lift, and two single losses each outweighed it: journals the body hung
-from, bearing up into a teardrop roof, and a worm wheel's end thrust on a
-large face.
+this, and can pass a motor that then stalls once the joints are priced one by
+one. On a printed walker the joint friction can cost several times the lift,
+and a single loss can outweigh it: journals the body hangs from, a bearing
+riding up into a teardrop roof, a worm wheel's end thrust on a large face.
 
 **Torque is cheap; power is not.** A brushed motor's best output is
 `stall torque × free speed / 4`, whatever the gearbox ratio: a micro metal

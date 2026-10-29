@@ -282,9 +282,14 @@ python <skill-dir>/scripts/measure_image.py top.png front.png side.png \
     --views top,front,side
 ```
 
-**This is the highest-value number the tool produces.** Under ~5 % the images
-share one camera scale and every proportion may be `[observed]`. Above it, at
-least one view is foreshortened — find the bad view and drop it. **Do not
+**Read the verdict before the residual.** `UNDERCONSTRAINED` means the views
+repeat one axis pair: the third dimension is unknown and the solved ratio is
+null. `SOLVED ONLY` means two independent ratios determine L:W:H but provide
+no redundant consistency check. Neither verdict justifies observed depth from
+repeated front-like concept views. With redundant constraints and viewpoints
+already justified as orthographic, under ~5 % disagreement is consistent with
+one orthographic set. Above it, at least one view is foreshortened — find the
+bad view and drop it. **Do not
 average**: averaging a foreshortened view into a good one produces a spec that
 is confidently, uniformly wrong. Quote the solved ratio and the worst
 disagreement in the Overall read.
@@ -676,6 +681,12 @@ python "$CAD_SKILL_ROOT/scripts/check_spec_format" <project-dir>
 
 **Soft cap: 2 revision passes.** Past that the gap is user intent, not
 analysis — ask one question.
+
+**Then an independent read.** Hand the spec to an independent
+reviewer (upstream's `build-review` `spec` checkpoint, which Workshop does not
+vendor; in a Workshop run, the review the stage protocol names): a reviewer that did not write it puts the reference beside the
+landmark ledger and the request beside the spec. Fix its findings in the spec
+before any geometry.
 
 **A scene of many repeated pieces needs a landmark gate of its own**, since a
 layout can match its archetype while missing most of what defines it:

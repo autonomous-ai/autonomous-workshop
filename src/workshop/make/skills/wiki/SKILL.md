@@ -1,6 +1,6 @@
 ---
 name: wiki
-description: Searchable engineering knowledge base the agent consults before a design decision and adds to when it learns something - mechanisms (shafts, bearings, joints and fits with a variant index, gears, linkages, scissor and pantograph linkages, cams, drives, cables and tendons, hinges and hinge types, rod ends and clevises, ball-and-socket and posable-figure joints, shaft-hub connections, couplings and CV joints, rolling-contact and flexure joints, swivels and turntables, slides and telescoping tubes, latches and bayonets, kinematic mounts, arms and grippers, counterweights, fluid fittings, noise, automata, verification, failure classes), build123d/OCC kernel pitfalls, design for printing (walls, overhangs, part count, fits, print-in-place, interlocking joinery, resin, print time, finishing), reading reference images (scale, perspective, likeness), electronics (LEDs, batteries, motors, servos, drivers, boards, enclosures, power paths, lighting), materials (filament properties, anisotropy, creep, heat, fatigue, thermal expansion), fasteners (clearance holes, inserts, screws into plastic, snap-fits, push-in clips and pins, wall mounting, straps and buckles), structures (beam and plate stiffness, ribs, buckling, lightweighting), standards (ISO 286 fits, ISO 2768, GD&T, tolerance stack-up, STEP), product design (ergonomics, toy safety, DFA, sealing and IP ratings, stability, moulds and casting) and reverse engineering STEP/STL. Use whenever a part must turn, slide, swing, latch, carry load or be driven; whenever choosing a mechanism, sizing a shaft or joint, or writing a feasibility assert; and after a gate failure or research result teaches a rule worth keeping.
+description: Searchable engineering knowledge base the agent consults before a design decision and adds to when it learns something - mechanisms (shafts, bearings, joints and fits with a variant index, gears, linkages, scissor and pantograph linkages, cams, drives, cables and tendons, hinges and hinge types, rod ends and clevises, ball-and-socket and posable-figure joints, shaft-hub connections, couplings and CV joints, rolling-contact and flexure joints, swivels and turntables, slides and telescoping tubes, latches and bayonets, kinematic mounts, arms and grippers, counterweights, fluid fittings, noise, automata, verification, failure classes), build123d/OCC kernel pitfalls, design for printing (walls, overhangs, part count, fits, print-in-place, interlocking joinery, resin, print time, finishing), reading reference images (scale, perspective, likeness), electronics (LEDs, batteries, motors, servos, drivers, boards, enclosures, power paths, lighting), materials (filament properties, anisotropy, creep, heat, fatigue, thermal expansion), fasteners (clearance holes, inserts, screws into plastic, snap-fits, push-in clips and pins, wall mounting, straps and buckles), structures (beam and plate stiffness, ribs, buckling, lightweighting), standards (ISO 286 fits, ISO 2768, GD&T, tolerance stack-up, STEP), product design (ergonomics, toy safety, DFA, sealing and IP ratings, stability, moulds and casting, a toy archetype index, character proportions and appeal, play value and tactile feel), toys and their interfaces (key rings and charm hardware, construction-toy studs and wooden track, spinning tops and flywheels, marble runs, launchers, mechanical puzzles, balance toys and tensegrity), freeform surfaces in build123d and reverse engineering STEP/STL. Use whenever a part must turn, slide, swing, latch, carry load or be driven; whenever choosing a mechanism, sizing a shaft or joint, or writing a feasibility assert; and after a gate failure or research result teaches a rule worth keeping.
 ---
 
 # Design wiki
@@ -93,12 +93,21 @@ Not in the wiki either: repository policy (that is `CLAUDE.md`), gate usage
   `structures/` (beams, plates, ribs, stiffness, buckling),
   `materials/`, `fasteners/`, `electronics/`, `standards/` (ISO fits, general
   tolerances, GD&T, STEP, drawings), `image-reading/`, `product-design/`
-  (ergonomics, toy safety, DFA, colour), `reverse-engineering/`. Add a
+  (ergonomics, toy safety, DFA, colour, toy archetypes, characters),
+  `reverse-engineering/`. Add a
   directory when its first page is written. Slugs are file stems,
   unique across topics, so `[[slug]]` never depends on the directory.
 - Extend an existing page before creating a new one; `new` refuses a slug
   that exists. Split a page when it passes ~250 lines so a search hit lands on
   one idea.
+- **Link a rule another page or a skill reference already owns; never restate
+  it.** Search the rule's key term and number first. A second copy drifts: two
+  copies of one rule end up giving different design values, and the reader
+  cannot tell which is current. A skill reference keeps how to run the tool and
+  links the wiki for the why; a wiki page links the reference for usage.
+- Give a page only the aliases of its own topic. An alias naming a narrower
+  page's topic (a hinge page aliased "hinge types") makes the broad page
+  outrank the specific one in search.
 - Front matter, all checked by lint:
 
 ```yaml

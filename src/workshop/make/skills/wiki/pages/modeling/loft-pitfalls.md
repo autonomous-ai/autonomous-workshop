@@ -8,8 +8,10 @@ sources:
   - skills/image-to-cad/references/build123d-operations.md (loft API facts; before the move)
   - "toolchain: build123d 0.10-0.11 on OCP 7.9"
   - "experience: a head lofted to a vertex puckered its snout; leaves with a fused tip cap broke every later half-cut"
+  - "experience: a bent witch-hat tip lofted from a horizontal base"
+  - "experience: validate never finished on an 18-lobe loft from periodic-spline sections; per-lobe edges made it finish in 88 s"
 related: [loft-organic-bodies, operation-families, frames-and-rotations, modeling-failure-modes, boolean-pitfalls]
-updated: 2026-10-05
+updated: 2026-10-12
 ---
 
 # Loft pitfalls
@@ -33,6 +35,24 @@ index *i* means the same feature everywhere. Cluster samples toward the rails
 — that is where curvature is worst, so even spacing inside a band leaves the
 sharpest part of the curve least resolved.
 
+Full elliptical sections can change their parameter seam when their major
+and minor axes exchange. The outline remains the same ellipse, but the loft
+joins different quarter-turns, producing a twisted panel or a self-intersection.
+Define native conic half-arcs with fixed local angular endpoints to keep the
+seams aligned, including a terminal section that becomes circular. When rails
+and seams are already matched, disable ThruSections `CheckCompatibility` so
+automatic matching cannot undo them. Native conics also avoid the larger knot
+systems of sampled periodic splines when the intended section really is an
+ellipse. Validate both the raw loft and the complete fused body with BOP checks;
+ordinary `is_valid` alone does not establish that the junctions are sound.
+
+A ruled band has the same trap with no loft in sight:
+`Face.make_surface_from_curves(wire1, wire2)` pairs edges by index and checks
+neither edge count nor direction. A boundary wire and its mirror run opposite
+ways and give unorientable band faces inside a solid of exactly the right
+volume; build ruled bands edge by edge
+([[freeform-surfaces-in-build123d#ruled-surfaces-make_surface_from_curves]]).
+
 ## Sections need one parametrisation, or the knots multiply
 
 `Spline(*pts, periodic=True)` parametrises each section by its own chord
@@ -45,6 +65,15 @@ gave 0.58 MB in 2.1 s with the surface unchanged to 0.0004 mm. Sections
 sampled on one set of rails (above) can share one parameter list; a lofted
 part whose STEP runs to megabytes for a handful of faces has this defect.
 
+The merged knots cost more than file size. Every later operation pays for
+them: booleans, the self-intersection check (`BRepAlgoAPI_Check`) and each
+gate's tessellation. A periodic shell lofted from a couple of dozen rings of
+about fifty points, each ring parametrised on its own, carried a thousand
+poles round its circumference. `gen` ran four times slower, and `inspect
+validate` was still running after two hours. Given one shared parameter list,
+the same rings needed about a tenth of those poles, and validation finished
+in minutes.
+
 ## Control curves that ruin the surface
 
 - **`smoothstep` between control points makes a staircase.**
@@ -56,6 +85,15 @@ part whose STEP runs to megabytes for a handful of faces has this defect.
   carries ~a pixel of noise; a monotone interpolant reproduces it exactly and
   the loft turns it into visible waves. Smooth the control curve before
   lofting.
+
+## One periodic spline per section makes one huge face
+
+A lobed section drawn as one periodic spline lofts into a single B-spline face
+around the whole body. `inspect validate`'s self-intersection check did not
+finish on it in over 15 minutes, and it hung a `verify_project` batch for
+hours. Draw each section as one spline edge per lobe, crease to crease. The
+loft then has one face per lobe, and validate on the same body took under two
+minutes.
 
 ## Smooth lofts overshoot; ruled lofts do not
 
@@ -70,6 +108,15 @@ A smooth `loft()` can also fail with `BRep_API: command not done` even though
 every section is individually valid and they share one edge count. Try
 `loft(..., ruled=True)`; with densely spaced sections the result is visually
 equivalent.
+
+A smooth alternative worth probing is `BRepOffsetAPI_ThruSections` with maximum
+degree 3, C1 continuity and uniform (`Approx_IsoParametric`) section
+parameterisation, using already matched rails and compatibility checking
+disabled. This can bound a single continuous skin where a default higher-degree
+loft overshoots and ruled sections leave visible joints. It is a candidate,
+not a guarantee: assert the raw skin's envelope and positive adaptive volume,
+then check its trimmed and fused result for one-solid continuity and BOP
+validity before exporting.
 
 The overshoot also runs **along** the loft. Sections at uneven spacing whose
 outline turns vertical between two close stations — a sleeve's hanging edge
@@ -107,9 +154,8 @@ Silent causes worth ruling out before either:
   that raises nothing and reports a plausible area; only `Face.is_valid` is
   False. The loft then fails dozens of stations away. End the loft at the last
   connected station, or bridge the gap in the section and cut it back
-  afterwards. (`Face.is_valid` is a PROPERTY — calling `f.is_valid()` raises
-  `TypeError: 'bool' object is not callable`, which reads like a corrupt
-  object.)
+  afterwards. (`Face.is_valid` is a property, not a method:
+  [[kernel-validity#faceis_valid-is-a-property]].)
 - **Samples dropped where a component does not exist** make counts vary
   station to station. Carry a value rather than dropping the sample.
 - **A section wire that self-intersects.** `make_face` accepts a
@@ -153,12 +199,21 @@ Two ways to close a loft's end both look fine and are not:
   solid is valid, but the cap's ring lies on or within hundredths of the
   loft's surface, and later booleans on the solid fail silently: a box cutting
   it in half returned nothing, and `split` kept the whole leaf, for some sizes
-  and not others ([[boolean-pitfalls#near-coincident-surfaces-collapse-the-boolean]]).
+  and not others ([[boolean-pitfalls#near-tangent-and-near-coincident-surfaces-fail-quietly]]).
 
 End the loft on a **small flat section** instead: pack stations towards the
 end so the last is small enough to read as the tip and, for a toy, still wider
 than the sharp-point probe. A tip that must be round is a profile whose width
 falls as `(1 - s)^q` with `q < 1`, which is still round at the last station.
+
+## A first section not square to the spine
+
+A loft whose first section is not square to its spine (a horizontal start on
+a leaning spine, like a witch hat's bent tip) split invalid on its symmetry
+plane. A union with an end sphere of exactly the end radius then silently
+returned a valid 89 mm^3 fragment. Keep every section square to the spine,
+make the mating face square to the lean, and assert the volume after each
+boolean.
 
 ## Booleans against a large lofted skin
 

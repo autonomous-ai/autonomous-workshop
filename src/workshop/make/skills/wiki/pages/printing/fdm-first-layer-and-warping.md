@@ -6,12 +6,11 @@ sources:
   - https://help.prusa3d.com/article/elephant-foot-compensation_114487
   - https://help.prusa3d.com/article/layers-and-perimeters_1748
   - https://www.hydraresearch3d.com/design-rules
-  - https://www.hubs.com/knowledge-base/how-design-parts-fdm-3d-printing/
   - https://www.simplify3d.com/resources/print-quality-troubleshooting/warping/
   - https://www.xometry.com/resources/3d-printing/3d-print-warping-pla-petg-abs/
   - https://www.stratasys.com/siteassets/sdm/resources/design-guidelines/fdm/fdm_design_guidelines_2017-1.pdf
-related: [overhangs-and-print-orientation, fdm-design-rule-tables, wall-thickness-and-hollowing, print-in-place-mechanisms]
-updated: 2026-09-23
+related: [rounded-bodies-on-the-print-bed, overhangs-and-print-orientation, fdm-design-rule-tables, wall-thickness-and-hollowing, print-in-place-mechanisms]
+updated: 2026-10-10
 ---
 
 # First layer, elephant's foot and warping
@@ -28,22 +27,9 @@ shrinking the first layer; Prusa's "values around 0.2 mm usually work well
 for the default 0.4 mm nozzle", and it is on by default in their profiles.
 The first layer itself is 0.20 mm in every Original Prusa profile.
 
-Design-side fix: chamfer the bottom edge so the lip has somewhere to go.
-Hydra Research sizes the base chamfer at **~0.3 mm (first layer height + one
-layer height)**; the Hubs FDM article recommends a 45° chamfer or radius on
-edges that touch the build plate. Use a chamfer, not a fillet, on the bed
-side: a fillet's lower edge is an overhang ([[joints#rules-that-are-easy-to-break]]).
-
-A part printed **on its side** has a whole side face as its bed face, so every
-edge round of that face is a bed fillet; the overhang gate flags the slivers
-under each one. Break the edge with an asymmetric chamfer instead, the shorter
-leg on the bed face (`chamfer(side_face.edges(), 0.6, 0.9, reference=side_face)`
-is 34° from vertical), and give the opposite face the same break so the part
-still reads symmetric. A plain 45° chamfer sits on the gate's threshold.
-
-```python
-BASE_CHAMFER = FIRST_LAYER_H + LAYER_H   # ~0.3 mm at 0.2 + 0.1…0.2
-```
+Design-side fix: break the bottom edge by at least `FIRST_LAYER_H + LAYER_H`
+(~0.3 mm, Hydra Research) so the lip has somewhere to go, in the shape the
+overhang gate accepts ([[rounded-bodies-on-the-print-bed#breaking-the-bed-edge]]).
 
 A bottom edge that must mate or seal: model the chamfer, or measure the part
 with the lip and say so.
@@ -77,8 +63,8 @@ for tall parts (Simplify3D).
 
 ## Checks
 
-- Every bed-contact edge is chamfered, not filleted, by at least
-  `FIRST_LAYER_H + LAYER_H`.
+- Every bed-contact edge is broken by at least `FIRST_LAYER_H + LAYER_H`, as
+  [[rounded-bodies-on-the-print-bed#breaking-the-bed-edge]] shapes it.
 - Large flat bases in ABS/ASA get rounded corners (≥ 4 mm) and a note calling
   for a brim or ears.
 - The model's bottom face is at Z = 0 and flat: warping lifts corners, it

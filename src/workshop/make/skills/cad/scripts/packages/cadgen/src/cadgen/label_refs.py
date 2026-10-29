@@ -17,13 +17,9 @@ render the wrong wheel and look like it worked.
 
 from __future__ import annotations
 
-import re
 from typing import Any, Iterable, Mapping, Sequence
 
 from cadgen.cad_ref_syntax import LABEL_SELECTOR_RE, parse_selector
-
-
-AMBIGUOUS = "__ambiguous__"
 
 
 class LabelResolutionError(ValueError):
@@ -112,9 +108,8 @@ def build_label_aliases(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
 def attach_label_aliases(index: Any) -> Any:
     """Return ``index`` with its label aliases computed from its final occurrence rows.
 
-    Called from ``assembly_lookup.index_with_assembly_occurrences``, which is the one place both
-    index construction sites funnel through -- attaching anywhere else reopens the two-site gap
-    that PR #277 closed.
+    Called from ``assembly_lookup.index_with_assembly_occurrences``, the one place every index
+    construction funnels through -- attaching anywhere else lets two readers drift apart.
     """
     if index is None:
         return index
@@ -201,12 +196,3 @@ def resolve_label_selectors(
 
 
 _KIND_FOR_TYPE = {"shape": "s", "face": "f", "edge": "e", "vertex": "v"}
-
-
-def selectors_contain_label(selectors: Iterable[str]) -> bool:
-    """True when any selector needs an alias map to resolve."""
-    for raw in selectors or []:
-        parsed = parse_selector(str(raw or "").strip())
-        if parsed is not None and parsed.label:
-            return True
-    return False

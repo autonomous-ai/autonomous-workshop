@@ -21,7 +21,7 @@ sources:
   - https://help.prusa3d.com/article/infill-patterns_177130 (concentric top fill follows the perimeters)
   - Shigley's Mechanical Engineering Design, ch. 3 (Hertz contact of spheres) and ch. 16 (axial disk friction, uniform pressure and uniform wear)
   - K. L. Johnson, Contact Mechanics, ch. 6 (first yield under a sphere at p0 ≈ 1.6 Y)
-related: [joints, shafts-and-bearings, automata-patterns, stability-and-tipping, snap-fit-design, latches-detents-and-ratchets, friction-wear-and-lubricants, exact-constraint-and-kinematic-mounts, cams-intermittent, creep-and-stress-relaxation, bayonet-and-twist-locks, shaft-hub-connections, rolling-contact-joints]
+related: [joints, shafts-and-bearings, automata-patterns, stability-and-tipping, snap-fit-design, latches-detents-and-ratchets, friction-wear-and-lubricants, exact-constraint-and-kinematic-mounts, cams-intermittent, creep-and-stress-relaxation, bayonet-and-twist-locks, shaft-hub-connections, rolling-contact-joints, print-in-place-swivel-rings]
 updated: 2026-10-01
 ---
 
