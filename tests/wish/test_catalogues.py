@@ -114,6 +114,12 @@ class CatalogueTest(unittest.TestCase):
         self.assertFalse(any(entry.confirmed for entry in catalogues.filaments.values()))
         self.assertFalse(any(entry.confirmed for entry in catalogues.parts.values()))
 
+    def test_the_packaged_seed_holds_the_turtle_keycap_colours(self):
+        # Owner, 2026-10-29: jade and mint added for the K4 turtle keycap.
+        filaments = load_catalogues().filaments
+        self.assertEqual((filaments["jade"].hex, filaments["jade"].kind), ("#3f9a85", "opaque"))
+        self.assertEqual((filaments["mint"].hex, filaments["mint"].kind), ("#a3d9c3", "opaque"))
+
 
 if __name__ == "__main__":
     unittest.main()
