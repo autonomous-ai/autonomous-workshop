@@ -385,6 +385,29 @@ class DirectPublishTest(unittest.TestCase):
         self.assertIn("__cadgen__/models/widget.glb (derived cache)", out)
         self.assertIn("evidence:      pass", out)
 
+    def test_working_material_is_neither_published_nor_bound_by_evidence(self):
+        study = self.project / "inputs" / "study"
+        study.mkdir()
+        (study / "sweep.py").write_text("print('compare')\n")
+        (study / "other_designer.stl").write_bytes(b"solid other")
+        (study / ".notes").write_text("x")
+        write_evidence(self.project)
+        # The toy-archive wrapper stages a copy without inputs/; the evidence
+        # written on the project must still describe it.
+        staged = self.root / "staged" / "widget"
+        shutil.copytree(self.project, staged, ignore=shutil.ignore_patterns("inputs"))
+        self.store_credential()
+        for source in (self.project, staged):
+            with self.subTest(source=source.parent.name):
+                code, out, err = self.run_tool(source=["--cad-dir", str(source)])
+                self.assertEqual(code, 0, err)
+                self.assertIn("evidence:      pass", out)
+                self.assertIn("live:          ready", out)
+                self.assertNotIn("cad/inputs/", out)
+        (study / "sweep.py").write_text("print('changed')\n")
+        code, out, _ = self.run_tool()
+        self.assertIn("evidence:      pass", out)
+
     def test_live_refuses_without_evidence(self):
         self.store_credential()
         code, out, _ = self.run_tool()
