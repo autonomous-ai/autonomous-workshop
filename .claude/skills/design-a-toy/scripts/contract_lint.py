@@ -181,7 +181,7 @@ def lint(contract, facts, claims):
                     itf["id"], mover["component"],
                     mover.get("rotation") or mover.get("translation"), ms or "no move"))
 
-    wall = {g["id"]: g["wall_min_mm"] for g in contract["geometries"]}
+    wall = {g["id"]: g["wall_min_mm"] for g in contract["geometries"] if "wall_min_mm" in g}
     for c in claims:
         k, comp, q = c["kind"], c.get("component"), c.get("quote", "")[:120]
         if k == "move":

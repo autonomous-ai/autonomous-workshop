@@ -73,9 +73,8 @@ Drive to a written spec containing:
   stance by the face that lies on the bed.
 - **Blunt free edges.** Every point, chisel, keel and V underside ends in a
   flat land at least one print minimum across: 0.8 mm at Workshop's 0.4 mm
-  nozzle. The land is sized by the printer, never by a geometry's
-  `wall_min_mm`, which is a strength floor for load-bearing sections: a
-  3.0 mm land would turn a 3.5 mm claw into a stub. A wing tip, a horn, a crest feather or a vault ridge is drawn and
+  nozzle. The land is sized by the printer, never by a load-bearing
+  section's thickness: a 3.0 mm land would turn a 3.5 mm claw into a stub. A wing tip, a horn, a crest feather or a vault ridge is drawn and
   specified with that land, never as a knife edge. The print gate fails every
   straight knife edge as a thin wall, however its angle is tuned.
 - **Every joint, pinned.** For each pair of Components that join: the joint
@@ -189,8 +188,8 @@ Every contract's prose carries the blunt-edge rule, word for word, in its
 print section: "Every point, chisel, keel and V underside ends in a flat land
 at least 0.8 mm across (one print minimum at a 0.4 mm nozzle)." The 0.8 mm
 changes only with the nozzle: a contract for a larger nozzle states that
-nozzle's print minimum instead. It never takes a geometry's `wall_min_mm`,
-which sizes load-bearing sections, not lands. A requirement row that names a
+nozzle's print minimum instead. It never takes a load-bearing section's
+thickness. A requirement row that names a
 sharp form says so too: "each wing ends in a chisel tip with a 0.8 mm land",
 never "a sharp chisel tip".
 
@@ -216,9 +215,9 @@ notice. Name each
 them, even though the files do not exist yet. A toy with more than one
 component also gets one `"shows": "assembly"` reference, listed first.
 
-Write the block as `"schema_version": 8` (ADR 0093), for every toy, kit or
+Write the block as `"schema_version": 9` (ADR 0094), for every toy, kit or
 not: [CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md) gives what
-schema 8 adds to the earlier schemas, and Stage 2b adds a kit's Assembly
+schema 9 keeps of the earlier schemas (schema 8 without `wall_min_mm`), and Stage 2b adds a kit's Assembly
 Tree to the same block. Every reference gets a `camera`
 (ADR 0083), which Stage 3b fills in once the image exists, and every place
 two or more Components meet gets an `interfaces[]` entry (ADR 0082): a peg in a socket, a

@@ -331,7 +331,8 @@ whole design and one fresh one reads the finished contract; `design-a-toy`'s
 Stage 3e (claims, lint, audit) is gone and Stage 3b reads the Proof compares.
 `build-a-toy` detection scores no likeness and reads Make's gate rows. For new
 runs a geometry-scoped row binds its Component's review instead of a separate
-blind read. Spark keeps Make's own verification (ADR 0061): the host does not
+blind read. Design Contract schema 9 is schema 8 without `wall_min_mm`, which
+Make never measured; a schema 9 kit samples insertion at two print lines. Spark keeps Make's own verification (ADR 0061): the host does not
 rerun the verifier for it.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.

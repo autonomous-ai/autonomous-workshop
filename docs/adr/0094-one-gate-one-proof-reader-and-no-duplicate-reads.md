@@ -1,7 +1,8 @@
 # ADR 0094: One print gate, a kept Proof reader, and no duplicate reads
 
 - Status: Accepted by the owner on 2026-10-28 (proposals B, C, D and E of
-  `toys-spec/_workflow/SIMPLIFY.html`). All six decisions are implemented
+  `toys-spec/_workflow/SIMPLIFY.html`), and decision 7 on 2026-10-29. All
+  seven decisions are implemented
   on branch `workflow-simplify` with deterministic tests: decision 1 as
   `make_round --print-gates-only`, decision 6 in the Make finalizer,
   `verify_project` and the product-run files. Nothing is validated by a
@@ -68,9 +69,6 @@ read 0.1, output 5) found:
    - Component Acceptances and Reference Conflicts are copied into `notes`,
      never into findings.
    - Envelope, extents, count, motion and requirement rows stay.
-   - `wall_min_mm` remains in the schema for the kit insertion sweep's step
-     size. Whether a contract should state it at all is left open for the
-     owner.
 4. **A kept Proof reader and one fresh read.**
    - One Proof subagent is kept for the whole design, and every amendment
      goes to it.
@@ -103,6 +101,19 @@ read 0.1, output 5) found:
      AGENTS.md stay, because only that file survives every compaction.
    - The text no longer says the host reruns the verifier for Spark.
 
+7. **No `wall_min_mm` in new contracts** (owner, 2026-10-29).
+   - `wall_min_mm` came with ADR 0072 (2026-09-24) so that DETECT could
+     hold each geometry's thinnest wall to it. Make never measured it: it
+     gates every wall at the nozzle's print minimum. The only other use was
+     the step size of a kit's insertion sweep.
+   - Design Contract schema 9 is schema 8 with `wall_min_mm` refused on
+     every geometry. `design-a-toy` writes every new contract as schema 9.
+   - A schema 9 kit's insertion sweep samples at two print lines (0.8 mm at
+     a 0.4 mm nozzle).
+   - A section that must be thicker for strength says so in its
+     requirement rows.
+   - Schemas 1 to 8 and frozen runs keep what they sealed.
+
 ## Considered options
 
 - **Keep-alive pings or a one-hour cache (proposal A).** Re-pricing the
@@ -115,9 +126,20 @@ read 0.1, output 5) found:
   The owner declined both as not worth it.
 - **The Proof's CAD as Make's skeleton.** Still deferred (ADR 0093) until a
   pilot build gives numbers.
+- **Reusing print-gate results across scopes.** Rounds already reuse a
+  passing gate within one scope: component round to component round,
+  assembly round to assembly round, and a final sweep that did not change.
+  They do not reuse it from a component round into the first assembly round
+  or the final verification. Night Charms Hall's final verification spent
+  554 of its 1656 s re-measuring print gates. That costs wall-clock time,
+  not money, and the owner rejected the change as not worth it (2026-10-29).
 - **Component references edited from the Proof render by default
-  (proposal F).** Not decided; the owner asked for a comparison of detail
-  first.
+  (proposal F).** Pending. On the cabinet the edited images kept every
+  ornament the free drawings had, and added surface detail. They lost only
+  what the contract decided against. But the cabinet is one toy of box
+  shapes. The owner will try it on an organic shape, the K4 turtle keycap's
+  `design-a-toy` run, before it becomes the default; until then it stays
+  the trial of ADR 0093.
 
 ## Consequences
 
