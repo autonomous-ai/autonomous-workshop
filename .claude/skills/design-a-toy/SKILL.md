@@ -460,8 +460,8 @@ For a kit, also make the one **kit image** the human approves the tree
 from: an **"in the box" flat lay** of every Part laid out loose, each as
 many times as the toy holds it, in its own filament colour, printed Parts
 grouped by colour, the Print Sheets and Bought Parts beside them, with no
-arrows. Render it from the Contract Proof's Part entries (Stage 3a), each
-Part flat in one true scale, never with AI: image models never got a flat
+arrows. Render it from the Contract Proof's Parts (each kit Component's
+`print_parts()`, Stage 3a), each Part flat in one true scale, never with AI: image models never got a flat
 lay's counts, handedness and scale right (the cabinet pilot plateaued at
 4-7 major errors over eight rounds), and a render from the Proof is exact
 by construction. Name it `kit-01-<slug>.png`. It is never sealed or passed
