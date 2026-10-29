@@ -34,10 +34,11 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping, Optional, Sequence, TextIO
+from typing import Any, Callable, Mapping, Optional, Sequence, TextIO
 
 from workshop.errors import (
     AmbiguousEffectError,
@@ -84,6 +85,12 @@ REPOSITORY = Path(__file__).resolve().parents[1]
 EXIT_INPUT = 2
 EXIT_EFFECT = 3
 VERIFIER = Path("skills") / "cad" / "scripts" / "verify_project"
+# Factory makes a design public at once but creates its shop listing a little
+# later (20-90 s observed), and Workshop counts a listing as part of public
+# readback. The publish call is never repeated: each retry below only re-reads
+# a publication whose ledger intent is already "unknown".
+LISTING_WAIT_SECONDS = 120
+LISTING_POLL_SECONDS = 10
 GATES_NOT_RUN = (
     "Wish and Inventor selection",
     "Make's own CAD gate, Component and signature reviews",
@@ -328,6 +335,8 @@ def _publish_live(
     inventor: str,
     environment: Optional[Mapping[str, str]],
     transports: Mapping[str, Any],
+    sleeper: Callable[[float], None] = time.sleep,
+    clock: Callable[[], float] = time.monotonic,
 ) -> Any:
     values = factory_credential_environment(environment, inventor_id=inventor)
     credentials = factory_credentials_from_environment(
@@ -338,12 +347,42 @@ def _publish_live(
         staged.context, staged.release_root, staged.release_manifest
     )
     if receipt.is_verified_draft:
-        receipt = FactoryPublicTransition(
+        transition = FactoryPublicTransition(
             ledger, FactoryAgentSession(credentials, **transports)
-        ).publish(receipt)
+        )
+        receipt = _await_listing(
+            transition, receipt, ledger, product_id, sleeper=sleeper, clock=clock
+        )
     if not receipt.is_verified_public:
         raise ReceiptError("Factory publication lacks verified public readback")
     return receipt
+
+
+def _await_listing(
+    transition: Any,
+    draft: Any,
+    ledger: EffectLedger,
+    product_id: str,
+    *,
+    sleeper: Callable[[float], None],
+    clock: Callable[[], float],
+) -> Any:
+    """Publish once, then re-read for up to LISTING_WAIT_SECONDS.
+
+    A retry happens only while the ledger's publish intent is ``unknown``:
+    ``FactoryPublicTransition`` then reconciles by readback alone and never
+    sends the publish request again. Any other failure is raised at once.
+    """
+
+    deadline = clock() + LISTING_WAIT_SECONDS
+    while True:
+        try:
+            return transition.publish(draft)
+        except AmbiguousEffectError:
+            intent = ledger.latest(product_id, "factory-publish")
+            if intent is None or intent.state != "unknown" or clock() >= deadline:
+                raise
+        sleeper(LISTING_POLL_SECONDS)
 
 
 def publication_record(receipt: Any, staged: Any, evidence: EvidenceStatus) -> dict[str, Any]:
@@ -398,6 +437,8 @@ def main(
     transports: Optional[Mapping[str, Any]] = None,
     out: TextIO = sys.stdout,
     err: TextIO = sys.stderr,
+    sleeper: Callable[[float], None] = time.sleep,
+    clock: Callable[[], float] = time.monotonic,
 ) -> int:
     args = _parser().parse_args(argv)
     write = lambda line="": print(line, file=out)  # noqa: E731
@@ -462,6 +503,7 @@ def main(
             receipt = _publish_live(
                 staged, product_id=product_id, inventor=args.inventor,
                 environment=environment, transports=transports or {},
+                sleeper=sleeper, clock=clock,
             )
             record = publication_record(receipt, staged, evidence)
         write("slug: %s" % receipt.slug)
