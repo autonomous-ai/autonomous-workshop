@@ -13,7 +13,11 @@ of its contract entry. This gate builds the part (or reads the round's kept
 B-rep), then for every tag checks that
 
 - the piece is still in the contract with the same entry (no stale size);
-- the piece lands on this part;
+- the piece lands on this part (under a schema 7 tree, ADR 0092: on one of
+  its printed Parts or on a Sub-assembly inside its Component, or on a
+  Sub-assembly across Components that includes it, where assembly rounds
+  and final verification need exactly one part to carry it; a piece on a
+  Bought Part has no printed feature and passes as such);
 - a recess or slot is still open: at most 1 % of it is solid in the
   finished part;
 - a block or ball is still in the part: at least 98 % of it is solid;
@@ -44,8 +48,42 @@ def _library():
     return print_details
 
 
-def hosted_pieces(section: dict, role: str) -> list:
+# ADR 0092: under a schema 7 Design Contract a piece's `on` names a printed
+# Part, a Bought Part or a Sub-assembly, and the installed Assembly Tree
+# (`tree/kit.json`, make-round's kit_tree.py) says which Component carries it.
+KIT_TREE = Path(__file__).resolve().parents[2] / "make-round" / "scripts" / "kit_tree.py"
+KIT_INSTALL = Path("tree") / "kit.json"
+
+
+def kit_hosts(project: Path, role: str) -> dict | None:
+    """``{"hosted", "bought", "spanning"}`` piece ids for this Component
+    under a schema 7 tree, or None without one."""
+
+    path = project / KIT_INSTALL
+    if not path.is_file() or not KIT_TREE.is_file():
+        return None
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("check_print_pieces_kit_tree", KIT_TREE)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    plan = module.paper_plan(json.loads(path.read_text(encoding="utf-8")))
+    return {"hosted": set(plan["hosted"].get(role, ())), "bought": set(plan["bought"].get(role, ())),
+            "spanning": {piece for piece, owners in plan["spanning"].items() if role in owners}}
+
+
+def hosted_pieces(section: dict, role: str, kit: dict | None = None) -> list:
+    if kit is not None:
+        return [piece for piece in section["pieces"] if piece["id"] in kit["hosted"]]
     return [piece for piece in section["pieces"] if str(piece["on"]).split("#")[0] == role]
+
+
+def carries(spec: dict, role: str, kit: dict | None) -> bool:
+    """Whether this Component's part may carry the piece's feature."""
+
+    if kit is not None:
+        return spec["id"] in kit["hosted"] or spec["id"] in kit["spanning"]
+    return str(spec["on"]).split("#")[0] == role
 
 
 def read_tag(tag: dict) -> tuple | None:
@@ -105,12 +143,19 @@ def check(entry: Path) -> tuple[list, list]:
         return [], []
     section = library.print_pieces(project)["print"]
     pieces = {piece["id"]: piece for piece in section["pieces"]}
-    hosted = hosted_pieces(section, role)
+    kit = kit_hosts(project, role)
+    hosted = hosted_pieces(section, role, kit)
     shape = printlib.entry_shape(entry, role)
     tags = [tag for tag in printlib.feature_tags() if tag.get("kind") in library.PRINT_TAG_KINDS]
-    if not hosted and not tags:
+    bought = sorted(kit["bought"]) if kit is not None else []
+    if not hosted and not tags and not bought:
         return [], []
     passes, failures = [], []
+    for piece_id in bought:
+        # A piece on a Bought Part lands on what the maker buys: no printed
+        # feature can carry it, so none is required or allowed.
+        passes.append("%s: on Bought Part %s; no printed feature carries it"
+                      % (piece_id, pieces[piece_id]["on"]))
     seen = set()
     for tag in tags:
         read = read_tag(tag)
@@ -127,7 +172,7 @@ def check(entry: Path) -> tuple[list, list]:
             failures.append("%s: %s was made from another contract entry; rebuild it from the "
                             "installed print/pieces.json" % (piece_id, where))
             continue
-        if str(spec["on"]).split("#")[0] != role:
+        if not carries(spec, role, kit):
             failures.append("%s: %s is in part_%s, but the contract puts it on %s"
                             % (piece_id, where, role, spec["on"]))
             continue

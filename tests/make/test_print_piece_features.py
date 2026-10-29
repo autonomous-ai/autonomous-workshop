@@ -245,9 +245,10 @@ class PaperGateWiringTest(unittest.TestCase):
 
     def test_a_paper_verdict_reads_every_failing_piece_and_the_summary_shows_it(self):
         parse = self.make_round["parse_paper"]
-        self.assertEqual(parse("PASS sky: x\n", 0), {"verdict": "PASS", "failures": []})
+        self.assertEqual(parse("PASS sky: x\n", 0), {"verdict": "PASS", "failures": [], "pieces": ["sky"]})
         failed = parse("PASS sky: x\nFAIL cloud: part_panel makes no print feature\n", 1)
-        self.assertEqual(failed, {"verdict": "FAIL", "failures": ["cloud: part_panel makes no print feature"]})
+        self.assertEqual(failed, {"verdict": "FAIL", "failures": ["cloud: part_panel makes no print feature"],
+                                  "pieces": ["sky"]})
         self.assertEqual(parse("", 2)["failures"], ["check_print_pieces exit 2"])
         gate = {"verdict": "PASS", "failures": []}
         summary = {"round": 1, "project": "cad", "changed": ["panel"], "parts": ["panel"], "ok": False, "out": "rounds/r0001",

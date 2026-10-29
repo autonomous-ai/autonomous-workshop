@@ -38,6 +38,15 @@ CATEGORIES = PART_CATEGORIES + MATERIAL_CATEGORIES
 MAX_NAME_CHARS = 120
 MAX_SOURCE_CHARS = 500
 
+# The one colour every Bought Part body carries in every STEP and render, so
+# a buyer and a maker see it is bought, not printed: a clearly artificial
+# magenta no stocked spool is (ADR 0092 decision 5, owner decision Q29,
+# 2026-10-23). No filament may take it. The run-local gate
+# make-round/scripts/kit_tree.py holds the same value; a test keeps them one.
+BOUGHT_PART_HEX = "#ff00ff"
+# How far, per 0-255 channel, the colour gate counts a body as one colour.
+COLOUR_TOLERANCE = 2
+
 _ID = re.compile(r"^[a-z0-9]+(?:[.-][a-z0-9]+)*$")
 _HEX = re.compile(r"^#[0-9a-f]{6}$")
 
@@ -78,6 +87,12 @@ def _number(value: Any) -> bool:
     return not isinstance(value, bool) and isinstance(value, (int, float))
 
 
+def _near(a: str, b: str) -> bool:
+    """Within the colour gate's tolerance: the gate could not tell them apart."""
+
+    return all(abs(int(a[i:i + 2], 16) - int(b[i:i + 2], 16)) <= COLOUR_TOLERANCE for i in (1, 3, 5))
+
+
 def _name(value: Any) -> bool:
     return isinstance(value, str) and bool(value.strip()) and len(value) <= MAX_NAME_CHARS
 
@@ -112,6 +127,10 @@ def parse_filaments(document: Any, errors: List[str]) -> Dict[str, Filament]:
             valid = False
         if not isinstance(item["hex"], str) or _HEX.fullmatch(item["hex"]) is None:
             errors.append("%s.hex must be a lowercase #rrggbb colour code" % where)
+            valid = False
+        elif _near(item["hex"], BOUGHT_PART_HEX):
+            errors.append("%s.hex is %s, the reserved colour of Bought Parts; no filament may take it"
+                          % (where, item["hex"]))
             valid = False
         if item["kind"] not in FILAMENT_KINDS:
             errors.append("%s.kind must be %s" % (where, ", ".join(FILAMENT_KINDS)))
@@ -231,6 +250,7 @@ def load_catalogues(directory: Optional[Union[str, Path]] = None) -> Catalogues:
 
 
 __all__ = [
+    "BOUGHT_PART_HEX",
     "BOUGHT_PARTS_FILE",
     "CATEGORIES",
     "CATALOGUE_DIRECTORY",

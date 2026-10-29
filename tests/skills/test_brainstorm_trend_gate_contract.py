@@ -229,6 +229,30 @@ class GateContractTests(unittest.TestCase):
         passed, reasons = self.tool.gate_contract(_contract_text(prose=prose, block=block))
         self.assertTrue(passed, reasons)
 
+    def test_a_kit_palette_gives_each_printed_part_its_catalogue_filament(self):
+        """ADR 0092 decision 4: one colour per printed Part, from the filament
+        catalogue, not one per Component."""
+        from tests.wish.test_assembly_tree import _tree_block
+
+        block = _tree_block()
+        parts = [part for part in block["assembly_tree"]["parts"] if "filament" in part]
+        palette = "".join("- %s: %s\n" % (part["id"], part["filament"]) for part in parts)
+        prose = _PROSE.split("## Palette")[0] + "## Palette\n\n" + palette
+        _passed, reasons = self.tool.gate_contract(_contract_text(prose=prose, block=block))
+        self.assertEqual([r for r in reasons if "Palette" in r], [])
+        # A Part left out, or named with another colour, fails.
+        prose = prose.replace("- D01-inkwell: dark-blue\n", "- D01-inkwell: brass\n")
+        prose = prose.replace("- A01-case-shell: navy\n", "")
+        _passed, reasons = self.tool.gate_contract(_contract_text(prose=prose, block=block))
+        self.assertEqual([r for r in reasons if "Palette" in r], [
+            "the Palette names no line with printed Part A01-case-shell and its catalogue filament navy",
+            "the Palette names no line with printed Part D01-inkwell and its catalogue filament dark-blue",
+        ])
+        # Per Component colours no longer satisfy it.
+        prose = _PROSE.split("## Palette")[0] + "## Palette\n\n- case: navy\n- cabinet: dark-oak\n- desk: oak\n"
+        _passed, reasons = self.tool.gate_contract(_contract_text(prose=prose, block=block))
+        self.assertEqual(len([r for r in reasons if "Palette" in r]), len(parts))
+
     def test_main_writes_json_pass_and_reasons(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "CONTRACT.md"
