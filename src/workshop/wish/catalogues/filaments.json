@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "about": "The filaments the maker stocks (ADR 0092 decision 4). Every printed Part of a schema 7 Design Contract names one id here; a colour outside it needs the owner's approval, which is adding it here. Seeded for Night Charms Hall from its contract's colour words, with jade and mint added for the K4 turtle keycap (owner, 2026-10-29): every entry is unconfirmed until the owner confirms the real spool, its name and its colour code. The hex values are approximations of the colour word, not supplier swatches.",
+  "about": "The filaments the maker stocks (ADR 0092 decision 4). Every printed Part of a schema 7 Design Contract names one id here; a colour outside it needs the owner's approval, which is adding it here. Seeded for Night Charms Hall from its contract's colour words, with jade and mint added for the K4 turtle keycap (owner, 2026-10-29) and scarlet red for the toadstool headphone stand (owner, 2026-10-30, Bambu Lab PLA Matte Scarlet Red A01-R1): every entry is unconfirmed until the owner confirms the real spool, its name and its colour code. The hex values are approximations of the colour word, not supplier swatches.",
   "filaments": [
     {"id": "navy", "name": "Navy blue", "hex": "#1f2a44", "kind": "opaque", "confirmed": false},
     {"id": "oak", "name": "Oak (light wood brown)", "hex": "#b5834f", "kind": "opaque", "confirmed": false},
@@ -14,6 +14,7 @@
     {"id": "translucent-amber", "name": "Translucent amber", "hex": "#e89a2c", "kind": "translucent", "confirmed": false},
     {"id": "glow", "name": "Glow-in-the-dark", "hex": "#d8f0c8", "kind": "glow", "confirmed": false},
     {"id": "jade", "name": "Jade green", "hex": "#3f9a85", "kind": "opaque", "confirmed": false},
-    {"id": "mint", "name": "Mint green", "hex": "#a3d9c3", "kind": "opaque", "confirmed": false}
+    {"id": "mint", "name": "Mint green", "hex": "#a3d9c3", "kind": "opaque", "confirmed": false},
+    {"id": "scarlet-red", "name": "Scarlet red (matte)", "hex": "#de4343", "kind": "opaque", "confirmed": false}
   ]
 }
