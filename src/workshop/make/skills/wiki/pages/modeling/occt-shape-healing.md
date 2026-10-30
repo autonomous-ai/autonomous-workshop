@@ -5,8 +5,9 @@ aliases: [ShapeFix_Shape, ShapeFix_Wire, ShapeFix_Face, ShapeFix_Shell, ShapeFix
 sources:
   - https://occt3d.com/dev/doc/overview/html/occt_user_guides__shape_healing.html
   - https://occt3d.com/dev/doc/refman/html/class_shape_upgrade___unify_same_domain.html
+  - "experience: missing bore wall in a supplier open shell; a valid closed result retained independent BOP faults"
 related: [occt-topology-and-tolerance, occt-boolean-options, kernel-validity, mesh-to-step-conversion]
-updated: 2026-09-23
+updated: 2026-10-09
 ---
 
 # OpenCASCADE shape healing
@@ -86,3 +87,27 @@ area.
 6. Re-check validity, volume and the maximum tolerance. A healed shape whose
    tolerance grew to fractions of a millimetre will misbehave in the next
    boolean ([[occt-topology-and-tolerance#tolerance]]).
+
+## Two circular free edges can be a missing bore wall
+
+A supplier shell can have all exterior faces and still lack one cylindrical
+hole wall. Sewing cannot invent the missing face. Two complete, equal-radius,
+coaxial circular free edges identify a bounded reconstruction: extrude one
+rim along the vector between their centres, sew that wall with the original
+faces, then orient the closed solid. Capping both circles instead fills a
+through-hole and changes the part even though the resulting solid validates.
+
+Make this an explicit import repair, never a default for arbitrary open shells.
+Require exactly one shell and two free edges, validate coaxiality in both
+circle planes, preserve every original face, reject changed bounds, and require
+a closed valid positive-volume result. Prove a fixture against the original
+drilled solid by bidirectional volume differences, not only by `is_valid`.
+Keep the supplied STEP unchanged and record the repair in the mount evidence.
+Closing the shell does not repair unrelated self-intersections in the supplied
+faces. Run the BOP check as well as `is_valid`; overlapping vertex tolerances
+elsewhere can still make a closed solid fail validation.
+
+Use a fresh sewing operation after adding the reconstructed face. Reusing a
+completed operation can retain the previous free-edge count even when its
+result has changed; a stale count is not evidence that the repaired shell is
+still open.

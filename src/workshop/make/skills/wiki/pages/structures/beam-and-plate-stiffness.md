@@ -12,7 +12,7 @@ sources:
   - http://academic.sun.ac.za/mad/catalogs/dfmguidelines/dupontgeneraldesignprinciples.pdf (DuPont General Design Principles, Module I, ch. 4 and Tables 4.03, 4.05, 4.06; safety factors p. 22)
   - https://eng.libretexts.org/Under_Construction/Aerospace_Structures_(Johnson)/11:_Buckling_of_columns_and_plates/11.01:_Compression_buckling_of_thin_rectangular_plates (plate buckling σcr)
   - https://www.insdag.com/assets/frontend/trmpdf/Chapter7.pdf (buckling coefficient k = 4 internal, 0.425 outstand)
-related: [shafts-and-bearings, snap-fit-design, layer-anisotropy, creep-and-stress-relaxation, filament-properties, perimeters-infill-and-strength, fdm-print-orientation-for-strength, wall-thickness-and-hollowing, noise-and-vibration, lightweighting-and-lattices]
+related: [shafts-and-bearings, snap-fit-design, layer-anisotropy, creep-and-stress-relaxation, filament-properties, perimeters-infill-and-strength, wall-thickness-and-hollowing, noise-and-vibration, lightweighting-and-lattices]
 updated: 2026-09-23
 ---
 

@@ -4,38 +4,34 @@ tags: [counterbore, countersink, socket-head, button-head, flat-head, iso-4762, 
 aliases: [cap screw pocket, head recess, spotface, csk, DIN 912, DIN 7991, SHCS, BHCS, FHCS]
 sources:
   - ISO 4762:2004 Table 1 (preview, https://cdn.standards.iteh.ai/samples/34460/06335046afaf46fb8e84d91a3eda001d/ISO-4762-2004.pdf)
-  - https://engineersbible.com/counterbore-socket-iso/ (counterbore Ø and depth for ISO 4762)
-  - https://www.aspenfasteners.com/content/pdf/Metric_ISO_7380_spec.pdf (ISO 7380-1 and -2 head sizes)
+  - skills/cad/scripts/stdpart (bd_warehouse screw_data and counterbore width)
+  - https://www.aspenfasteners.com/content/pdf/Metric_ISO_7380_spec.pdf (ISO 7380-1 and -2 heads, hex key)
   - https://www.westfieldfasteners.co.uk/Standards/ScrewBolt-SHCsk-M.pdf (ISO 10642 Table 1)
   - https://meshra.ai/blog/bolt-and-screw-holes-3d-printing (printed counterbore and countersink practice)
   - https://hackaday.com/2017/10/17/sacrificial-bridge-avoids-3d-printed-supports/ (sacrificial bridge)
 related: [metric-screw-clearance-holes, overhangs-and-print-orientation, heat-set-inserts, wall-mounting-and-hanging]
-updated: 2026-10-02
+updated: 2026-10-10
 ---
 
 # Screw head recesses — counterbores and countersinks
 
 A head recess is sized from the head the standard allows at its largest, plus
-clearance. The screw itself comes from `stdpart`; these tables check the
-recess.
+clearance. The screw comes from `stdpart`, and its `bd_warehouse` object
+carries the head: `screw.head_diameter`, `screw.head_height` and
+`screw.screw_data` (`dk`, `k`, socket `s`; `dc` for a collar). Cap and button
+heads are read from it, not copied here.
 
-## Socket head cap screws, ISO 4762
+## Counterbores for socket head cap screws
 
-| thread | head Ø dk max | head height k max | hex key s | counterbore Ø | counterbore depth |
-|---|---|---|---|---|---|
-| M2 | 3.80 | 2.00 | 1.5 | 4.4 | 2.2 |
-| M2.5 | 4.50 | 2.50 | 2 | 5.5 | 3.0 |
-| M3 | 5.50 | 3.00 | 2.5 | 6.5 | 3.5 |
-| M4 | 7.00 | 4.00 | 3 | 8.0 | 4.8 |
-| M5 | 8.50 | 5.00 | 4 | 10.0 | 5.8 |
-| M6 | 10.00 | 6.00 | 5 | 11.0 | 6.8 |
-| M8 | 13.00 | 8.00 | 6 | 15.0 | 8.8 |
-
-Head height equals the thread diameter. Knurled heads may be larger (M3 up to
-5.68, M8 up to 13.27), so a tight recess measures the actual screw. Printed
-practice: make the bore about 1 mm over the head, and the depth the head height
-for flush (M3 6.5 × 3.0, M4 8.0 × 4.0, M5 9.5 × 5.0). Add depth for a washer or
-to sink the head below the surface.
+ISO 4762 head height equals the thread diameter. The library's `dk` is the
+knurled-head maximum (M3 5.68, M8 13.27), above the smooth head's 5.50 and
+13.00, so a recess derived from it takes either head. Its own counterbore
+(`ClearanceHole(..., counter_sunk=True)`) is `dk + (clearance − d)` wide —
+only 0.6 mm over the head for M3 at `Loose` — which is a machined fit, not a
+printed one. Printed practice: make the bore about 1 mm over the smooth head,
+which is about 0.8 mm over the library's knurled `dk`, and the depth the head
+height for flush (M3 6.5 × 3.0, M4 8.0 × 4.0, M5 9.5 × 5.0). Add depth for a
+washer or to sink the head below the surface.
 
 ## Recess datums on curved skins
 
@@ -53,16 +49,9 @@ end-wall or boundary landmark, independently of the through-opening.
 
 ## Button heads, ISO 7380
 
-| thread | 7380-1 head Ø | 7380-2 (collar) head Ø | head height | hex key |
-|---|---|---|---|---|
-| M3 | 5.7 | 6.9 | 1.65 | 2 |
-| M4 | 7.6 | 9.4 | 2.2 | 2.5 |
-| M5 | 9.5 | 11.8 | 2.75 | 3 |
-| M6 | 10.5 | 13.6 | 3.3 | 4 |
-| M8 | 14 | 17.8 | 4.4 | 5 |
-
-Button heads take a smaller hex key than a cap screw of the same thread. The
-collared -2 form has a larger bearing face, which spreads the clamp load on
+Button heads (`ButtonHeadScrew`) take a smaller hex key than a cap screw of
+the same thread. The collared ISO 7380-2 form (`ButtonHeadWithCollarScrew`,
+collar `dc`) has a larger bearing face, which spreads the clamp load on
 plastic.
 
 A slot a screw head passes through and then slides under:
@@ -70,7 +59,11 @@ A slot a screw head passes through and then slides under:
 
 ## Countersunk heads, ISO 10642
 
-90° head angle. Countersink to the theoretical maximum head diameter.
+90° head angle. Countersink to the theoretical maximum head diameter. This
+table stays because the library does not carry it: `CounterSunkScrew(...,
+fastener_type="iso10642")` starts at M3 and holds a nominal `dk` and `k`
+(M3 6.0 and 1.7), and its countersink profile is cut to those, below the
+theoretical maximum a head may reach.
 
 | thread | dk theoretical max | dk actual min | k max | hex key |
 |---|---|---|---|---|
@@ -100,6 +93,8 @@ poke through the skin after printing. The bridge itself follows
 ## Checks
 
 ```python
-assert cbore_d >= CBORE_D[size], "counterbore below the table value (about head + 1 mm)"
-assert cbore_depth >= K_MAX[size], "head stands proud of the surface"
+screw = SocketHeadCapScrew(size, length, simple=True)       # bd_warehouse, via stdpart
+assert cbore_d >= screw.head_diameter + 0.75, "printed counterbore under knurled head + 0.75 mm"
+assert cbore_depth >= screw.head_height + sink, "head stands proud of the surface"
+assert csk_d >= DK_THEORETICAL_MAX[size], "countersink below ISO 10642 theoretical max (table above)"
 ```

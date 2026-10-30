@@ -121,5 +121,30 @@ class CatalogueTest(unittest.TestCase):
         self.assertEqual((filaments["mint"].hex, filaments["mint"].kind), ("#a3d9c3", "opaque"))
 
 
+    def test_the_packaged_seed_holds_the_mac_fidget_circuit_unconfirmed(self):
+        # ADR 0095: cells, contacts and a switch are categories of their own,
+        # and a part with leads gives its lead diameter.
+        parts = load_catalogues().parts
+        categories = {name: parts[name].category for name in (
+            "cell-aaa", "contact-aaa-spring", "contact-aaa-plate", "contact-aaa-bridge",
+            "microswitch-mini-lever", "led-5mm-amber-diffused", "resistor-75r", "wire-28awg",
+            "screw-m2x6-pan", "solder", "soldering-iron")}
+        self.assertEqual(categories, {
+            "cell-aaa": "cell", "contact-aaa-spring": "contact", "contact-aaa-plate": "contact",
+            "contact-aaa-bridge": "contact", "microswitch-mini-lever": "switch",
+            "led-5mm-amber-diffused": "lamp", "resistor-75r": "other", "wire-28awg": "wire",
+            "screw-m2x6-pan": "fastener", "solder": "consumable", "soldering-iron": "tool"})
+        self.assertEqual(parts["microswitch-mini-lever"].lead_diameter_mm, 0.8)
+        self.assertIsNone(parts["contact-aaa-bridge"].lead_diameter_mm)
+        self.assertFalse(any(parts[name].confirmed for name in categories))
+
+    def test_the_lead_diameter_is_the_largest_one_given(self):
+        bought = _bought()
+        bought["parts"][1]["sizes"].append({"what": "lead diameter", "max_mm": [0.45, 0.5]})
+        parts = parse_catalogues(_filaments(), bought).parts
+        self.assertEqual(parts["led-3v-warm-white"].lead_diameter_mm, 0.5)
+        self.assertIsNone(parts["steel-pin-1.5x29.5"].lead_diameter_mm)
+
+
 if __name__ == "__main__":
     unittest.main()

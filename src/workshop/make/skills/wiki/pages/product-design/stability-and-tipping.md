@@ -13,8 +13,8 @@ sources:
   - https://arxiv.org/pdf/2308.15190 (finger swipes on touchscreens held at 0.5-1.5 N normal force)
   - https://www.iplab.cs.tsukuba.ac.jp/~ikeda/pdf/asian_chi_2020_ikeda.pdf (tap normal forces 0.1-0.9 N)
   - .venv/lib/python3.12/site-packages/build123d/topology/shape_core.py (Shape.compute_mass, Shape.combined_center)
-related: [filament-properties, toy-safety-constraints, fdm-first-layer-and-warping, perimeters-infill-and-strength, wheeled-vehicles, handheld-ergonomics, perspective-and-hidden-views, exact-constraint-and-kinematic-mounts, counterweights-and-gravity-balance, swivels-and-turntables]
-updated: 2026-10-04
+related: [mass-properties-and-measurement, filament-properties, toy-safety-constraints, fdm-first-layer-and-warping, perimeters-infill-and-strength, wheeled-vehicles, handheld-ergonomics, perspective-and-hidden-views, exact-constraint-and-kinematic-mounts, counterweights-and-gravity-balance, swivels-and-turntables, balance-toys-and-tensegrity, character-proportions-and-appeal]
+updated: 2026-10-10
 ---
 
 # Stability and tipping
@@ -146,6 +146,8 @@ In order of cost to the likeness:
    separate base; then the base, not the foot, is the polygon.
 
 Ballast densities and packing: [[counterweights-and-gravity-balance]].
+A 2-3 head figure carries about half its volume in the head, so the head's
+lean moves the CoM: [[character-proportions-and-appeal#print-driven-proportion-limits]].
 
 ## A base that rocks is not a polygon
 
@@ -158,32 +160,69 @@ place rubber feet at the polygon's corners, not inboard of them.
 Four feet are one constraint too many:
 [[exact-constraint-and-kinematic-mounts]].
 
+A base meant to rock or self-right (a tumbler, a rocker) is designed by its
+centre of curvature, not a polygon:
+[[balance-toys-and-tensegrity#self-righting-the-com-below-the-bases-centre-of-curvature]].
+
+## A figure that grows wings
+
+Wings, a backpack and tail parts hung behind a standing figure move its
+centre of mass back, and the backward tipping angle is the one that drops
+below the floor. Lengthen the heels first: each millimetre of heel is a
+millimetre of lever behind the ankle. Compute the masses as printed — skin at full density plus the
+infill fraction of the core (`print-time-and-material-estimation`) — rather
+than as solid: thin plates print nearly solid while chunky blocks are mostly
+infill, so the printed centre of mass sits further back than the solid one,
+and the solid-mass margins on the joints are about twice too pessimistic.
+
 ## Computing it in build123d
 
-`Solid.center(CenterOf.MASS)` (the default) returns the **volume** centroid:
-OCC's GProp is run with unit density. `Shape.compute_mass(s)` returns the
-volume, and `Shape.combined_center(shapes)` is the volume-weighted mean. None
-of them know materials, so weight by density yourself:
-
-```python
-from build123d import CenterOf, Vector
-
-def com(parts):                      # parts: [(shape, density_g_cm3, fill), ...]
-    tot, acc = 0.0, Vector(0, 0, 0)
-    for shape, rho, fill in parts:   # fill ≈ solid fraction of a printed part
-        m = shape.volume * rho * fill
-        acc += shape.center(CenterOf.MASS) * m
-        tot += m
-    return acc / tot, tot / 1000.0   # mm, grams (mm³·g/cm³ /1000)
-```
+build123d's centres and masses are volume-weighted at unit density; weight
+each part by its own density as in
+[[mass-properties-and-measurement#density-weighted-centre-of-mass-for-mixed-materials]].
+Three things a tipping check adds:
 
 - A `Compound` of solids that overlap counts the overlap twice; build a
   clean assembly or subtract before weighing.
 - For a printed part, split it into shell and core when the distinction
   matters: the shell (perimeters, top/bottom) is ~100 % dense, the core is
-  the infill fraction. A single `fill` factor is a first estimate only.
+  the infill fraction. A single fill factor is a first estimate only.
 - The support polygon comes from the contact faces: the faces at the lowest
   Z (within a tolerance), their vertices projected to X-Y, their convex hull.
+
+## Resting on inclined faces: balance forces, not a polygon
+
+A part that sits on several sloped faces (a hat on a pyramid or cone, a cover
+on a tapered post) has no flat support polygon, and "CoM over the contact
+patch" in plan is necessary but not enough. Prove it as statics:
+
+- find the contact patches by intersecting the coplanar seat and socket faces
+  in their own plane (2D polygon intersection, e.g. shapely, is cheap and
+  exact);
+- put a non-negative normal force at every patch corner and solve for a set
+  that balances weight in force and moment (a linear programme or NNLS). A
+  solution with zero friction means friction only adds margin;
+- maximise an added side push at the top, or the device tilt, until no
+  solution exists: that is the frictionless margin to report.
+
+The socket must wrap faces whose normals oppose each other horizontally. A seat
+on two adjacent faces of a pyramid has both normals pushing the same way, so
+without friction it always slides off; wrap the apex on all faces.
+
+For an outboard thin feature (a hanging tail, a handle), run the balance with a
+printed mass model too -- perimeters solid, interior at infill -- not only
+uniform density: a thin feature is nearly all perimeter, so its share of the
+mass rises and the CoM moves outboard (a hat tail cut its weight margin from
+3.2x to 2.7x). "Device tilt before it slides" is a readable margin to report.
+A relief step in a seat that must clear a lower body has to clear it by more
+than the settle drop `c / n_z`, or the seated part lands on that body.
+
+**Re-check after every leg-pose change.** A posable figure's support polygon
+moves with its clicks: an ankle or knee click that brings the shins forward
+carries both feet forward under a centre of mass that stays put (a winged or
+backpacked figure's sits behind the hips), and the back margin shrinks by the
+feet's travel. Lengthen the heel behind the ankle to restore it; in a front
+three-quarter silhouette the heel's back edge barely shows.
 
 ## Checks
 

@@ -700,7 +700,9 @@ def main():
         out = Path(args.report)
         out.parent.mkdir(parents=True, exist_ok=True)
         rows = "\n".join(f"| {n} | {s} | {d} |" for s, n, d in checks)
-        region_rows = "" if not shown else (
+        # the record lists every region; only the console is cut to REPORT_REGIONS,
+        # so a claim about all of them can be checked against the file
+        region_rows = "" if not regions else (
             "\n\n## Thin regions, worst first\n\n"
             "A `wall` is thin over its face and fails. A `taper` is the tip of a "
             "wedge where two faces meet -- its sub-minimum band is narrower than "
@@ -718,7 +720,7 @@ def main():
                 f"({r['at'][0]:.1f}, {r['at'][1]:.1f}, {r['at'][2]:.1f}) | "
                 f"{feature_cell(r['feature'])} | "
                 f"{r['samples']} | {r['area']:.1f} | {r['extent']:.1f} | {r['width']:.2f} |"
-                for i, r in enumerate(shown, 1)))
+                for i, r in enumerate(regions, 1)))
         out.write_text(
             f"# Thickness and hollow\n\n`{' '.join(sys.argv[1:])}`\n\n{head}\n\n"
             f"| check | status | detail |\n|---|---|---|\n{rows}\n{region_rows}\n\n"

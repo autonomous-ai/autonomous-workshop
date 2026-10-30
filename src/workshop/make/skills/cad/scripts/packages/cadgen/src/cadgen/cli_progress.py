@@ -1,12 +1,10 @@
 """Painting a build's phases onto a terminal.
 
-Separate from the code that RUNS builds on purpose. This is imported by the snapshot CLI,
-which is pinned by tests/python/skills/cad/snapshot/test_cli.py to import no heavy CAD
-modules at all -- and while these few hundred lines lived in ``_internal/generation``,
-reaching for a progress line dragged OCP and build123d in behind it.
+Separate from the code that RUNS builds on purpose: it imports no heavy CAD modules, so
+reaching for a progress line does not drag OCP and build123d in behind it.
 
 Nothing here knows what a build is. It renders :class:`ProgressEvent`s, which is why the
-same painter serves a STEP package, a drawing, an export and a snapshot render.
+same painter serves every phase of a STEP package build.
 """
 
 from __future__ import annotations

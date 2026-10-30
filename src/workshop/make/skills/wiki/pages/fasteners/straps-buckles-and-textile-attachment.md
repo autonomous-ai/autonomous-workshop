@@ -17,8 +17,8 @@ sources:
   - https://www.paracordplanet.com/paracord-sizes/ (550 paracord about 4 mm; via search excerpt)
   - https://www.paracord.eu/paracord-accessory/cord-end-stopper/cord-locks (cord-lock holes 4–4.9 mm; via search excerpt)
   - https://makerworld.com/en/models/1055730-side-release-buckle (do not print a buckle upright; PETG preferred; via search excerpt)
-related: [snap-fit-design, magnets-and-strap-slots, layer-anisotropy, fdm-print-orientation-for-strength, creep-and-stress-relaxation, fdm-hole-accuracy, filament-properties, beam-and-plate-stiffness, springs, adhesives-and-solvent-welding, latches-detents-and-ratchets, push-pins-and-clip-fasteners]
-updated: 2026-10-01
+related: [snap-fit-design, magnets-and-strap-slots, layer-anisotropy, creep-and-stress-relaxation, fdm-hole-accuracy, filament-properties, beam-and-plate-stiffness, springs, adhesives-and-solvent-welding, latches-detents-and-ratchets, push-pins-and-clip-fasteners, key-rings-and-charm-hardware]
+updated: 2026-10-10
 ---
 
 # Straps, buckles and textile attachment
@@ -76,8 +76,7 @@ Print buckles, slides, loops and rings with the webbing plane parallel to the
 build plate. Then every bar's bending and every ring's hoop tension run along
 the extrusion lines. CNC Kitchen's hooks show the penalty for getting it
 wrong: PLA 73 kg flat against 40 kg upright, PETG 55 kg against 25 kg, ASA
-57 kg against 17 kg ([[layer-anisotropy#orient-so-layers-do-not-carry-the-tension]],
-[[fdm-print-orientation-for-strength#orient-by-load]]).
+57 kg against 17 kg ([[layer-anisotropy#orient-so-layers-do-not-carry-the-tension]]).
 
 PETG failed by stretching, PLA and ASA snapped. A strap part that is dropped,
 yanked or worn is better ductile than strong: prefer PETG, nylon or ASA over
@@ -134,6 +133,8 @@ tie-down, child restraint or a leash for a strong dog: buy rated metal
 hardware. For a printed ring, size the straight side as the bar above, give
 the corners generous inside radii (they are curved beams), print it flat, and
 record a test load with a safety factor ([[beam-and-plate-stiffness#safety-factors-for-printed-plastic]]).
+Keychain split rings, jump rings, clasps and the hole a ring passes through:
+[[key-rings-and-charm-hardware]].
 
 ## Sewing printed parts to fabric
 

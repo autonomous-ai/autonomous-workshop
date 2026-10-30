@@ -7,8 +7,8 @@ sources:
   - skills/cad/references/organic-lofts.md
   - "experience: figurines whose decorations, tails and cues passed a side silhouette and failed in 3D or in interference"
   - "experience: a faceted concept sheet rebuilt as a smooth figure, judged not alike until the masses were measured and re-sculpted"
-related: [form-to-construction-family, silhouette-likeness, repeated-scene-likeness, low-poly-sculpt-from-a-field, smooth-skin-from-a-field]
-updated: 2026-10-05
+related: [form-to-construction-family, silhouette-likeness, low-poly-sculpt-from-a-field, smooth-skin-from-a-field]
+updated: 2026-10-09
 ---
 
 # Likeness on organic subjects
@@ -92,6 +92,21 @@ lofts produce a faceted barrel even when their side envelope is correct.
 - Conformal colour shells need measured boundary curves in side/profile space;
   intersecting a shell with repeated full-height slabs gives technically
   conformal but visually uniform bands.
+
+## Soft edges do not imply a round cross-section
+
+A padded ribbon or bandage can have rounded edges while retaining a broad,
+shallow visible face. Replacing its hard edge with a proud circular or elliptic
+sweep can turn the strip into a cord, even when the sweep follows the correct
+path and fuses cleanly into the body. Preserve the visible face width, shallow
+relief and overlap pattern separately from edge rounding. Inspect the emitted
+union: a buried broad section can leave only a narrow tubular rim exposed.
+
+Review these features under a fixed oblique view and at their visible ends;
+an outer silhouette score cannot distinguish a broad wrap from a raised rope.
+A tiny circular path near a domed pole may also leave an unintended ring.
+Treat a successful boolean or a smoother edge as a construction improvement,
+then recheck that the feature still reads as the material shown in the image.
 
 ## Safe primitives are probes, not deliverables
 

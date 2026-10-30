@@ -38,15 +38,16 @@ Do not pay the full project pipeline after every cosmetic or proportion edit.
   view. Run only the measurements or relationship checks affected by the edit.
 - **Final generation:** pass the combined entry and every affected part entry
   to one multi-target `scripts/gen ... --write` call, restore the default mesh
-  tolerance, then run the complete validation/export workflow.
+  tolerance, then run the complete validation workflow.
 
 The combined entry is sufficient for visual iteration because it builds every
 placed part. The separate part entries remain mandatory review/edit outputs.
 Legacy part entries are also print targets unless they declare
 `PRINTABLE = False`; a split one-piece model instead declares
 `PRINTABLE = True` on its combined entry. The final runner sends only those
-actual print targets through `check_fit`; no mesh is written and no mesh,
-overhang or thickness check exists.
+actual print targets through `check_fit`; no mesh is written, and the mesh,
+overhang and thickness gates (`--print-gates`) tessellate each print target in
+memory.
 
 ```bash
 # Fast visual loop
@@ -155,7 +156,8 @@ When a generated STEP file's `gen_step()` builds on another STEP file, that othe
 
 An entry defines **exactly one `gen_step()` at module scope**, takes no
 arguments, and returns the shape — a build123d object, an assembly compound, or
-the envelope dict described below. Everything else in the file is a helper it
+an envelope dict `{"shape": ..., "params": ...}` (optionally also
+`mesh_tolerance` / `mesh_angular_tolerance`). Everything else in the file is a helper it
 calls. Output paths are owned by the CLI flags and never appear in the return
 value, and the generated `.step`, `.glb` and render sidecars are outputs: edit
 the generator and rebuild, never the artifact.
@@ -270,7 +272,7 @@ correspond to the same source revision.
 
 Every `scripts/gen` run writes a hidden adjacent GLB/topology package as its
 build output, and `--write` derives the `.step` from it. Nothing else reads it:
-`inspect` and `export` build the shape from source in memory. Imported STEP/STP
+`inspect` builds the shape from source in memory. Imported STEP/STP
 files get the same package on demand, per the previous section.
 
 ## After generation

@@ -7,8 +7,8 @@ sources:
   - https://www.fabflow.app/blog/design-for-assembly-dfa-complete-engineering-guide
   - https://www.denix.osd.mil/soh/denix-files/sites/21/2016/03/02_MIL-STD-1472F-Human-Engineering.pdf
   - "experience: a shell split at a reference image's foot seam could not be lifted over the core inside it; check_motion's service path found it"
-related: [printed-part-count, joints, feature-build-order, handheld-ergonomics, mechanism-verification]
-updated: 2026-10-04
+related: [printed-part-count, joints, construction-strategy, handheld-ergonomics, mechanism-verification]
+updated: 2026-10-10
 ---
 
 # Design for assembly
@@ -99,8 +99,7 @@ it with a clear motion condition that lifts the shell off in its unlocked pose
 
 When the shell and the tray meet at a seam plane, anything fused to the tray that
 sits above that plane is attached only through the sliver that is still below it:
-a wheel axle stub whose axis rose from 24 mm to 29 mm above the desk (seam at
-24 mm) left the tray in five pieces, and a wheel arch lining above the seam would
-be cut away with the shell. Give such a feature its own boss down to the black
-part (a box from the underbody to the axis, touching the wall face rather than
-overlapping the shell) and assert one solid on the tray.
+an axle stub raised above the seam splits the tray into loose pieces, and a
+lining above the seam is cut away with the shell. Give such a feature its own
+boss down to the tray (a box from the underbody to the axis, touching the wall
+face rather than overlapping the shell) and assert one solid on the tray.

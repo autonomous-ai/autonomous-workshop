@@ -8,7 +8,7 @@ sources:
   - https://www.cnckitchen.com/blog/the-influence-of-layer-height-on-the-strength-of-fdm-3d-prints
   - https://www.stratasys.com/siteassets/sdm/resources/design-guidelines/fdm/fdm_design_guidelines_2017-1.pdf
   - https://www.protolabs.com/resources/design-tips/3d-printing-tolerances/
-related: [wall-thickness-and-hollowing, fdm-minimum-feature-sizes, fdm-print-orientation-for-strength, fdm-design-rule-tables, print-time-and-material-estimation]
+related: [wall-thickness-and-hollowing, fdm-minimum-feature-sizes, layer-anisotropy, fdm-design-rule-tables, print-time-and-material-estimation]
 updated: 2026-09-23
 ---
 

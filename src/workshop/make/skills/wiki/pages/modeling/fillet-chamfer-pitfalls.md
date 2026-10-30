@@ -1,20 +1,19 @@
 ---
 title: Fillet and chamfer pitfalls
 tags: [fillet, chamfer, bevel, radius, sigsegv, spline, offset, taper]
-aliases: [rounding, edge blend, retry ladder, BRep_API command not done, fillet failure, periodic spline, bed chamfer, elephant foot chamfer, bottom chamfer fails]
+aliases: [rounding, edge blend, retry ladder, BRep_API command not done, fillet failure, periodic spline, FindFromKey, topo_parent, functional chamfer, morphological close]
 sources:
   - "experience: front-edge fillets on ten flat key plates, failing on sub-0.1 mm plan edges"
   - skills/cad/references/build123d-modeling.md (fillet, chamfer and periodic-spline sections; before the move)
   - skills/cad/references/repair-loop.md (fillet failure class; before the move)
   - skills/image-to-cad/references/build123d-operations.md (sketch fillet order; before the move)
   - "toolchain: build123d 0.10-0.11 on OCP 7.9"
-  - "experience: chamfer and section-offset both failed on the bed edges of a lofted flexi chain"
   - "experience: a bevel round a flat-faced limb failed on the fused limb and on one mirrored side"
   - "experience: a rounded screen tray whose acute rear edge consumed the rim behind the lens"
   - "experience: a traced, freeform token outline whose top-edge fillet failed its walk at every sample count; rounded instead by ruled bands"
   - "experience: a key-plate outline of circles, ellipses and lines whose batch 2D fillet failed on one short edge, whose taper cap failed on its ellipses, and whose 3D top-edge fillet passed"
-related: [construction-strategy, operation-families, kernel-validity, modeling-failure-modes, flexi-chain-joints]
-updated: 2026-10-08
+related: [construction-strategy, operation-families, kernel-validity, modeling-failure-modes, flexi-chain-joints, rounded-bodies-on-the-print-bed]
+updated: 2026-10-10
 ---
 
 # Fillet and chamfer pitfalls
@@ -24,22 +23,12 @@ after every boolean, and prefer putting the radius into the profile.
 
 ## Common causes and fixes
 
-Likely causes of a fillet or chamfer failure:
-
-- radius/length exceeds local geometry (fillet radius larger than the local
-  edge geometry);
-- selected edges include tiny or unintended edges;
-- a boolean created complex edge topology.
-
-Fix:
-
-- reduce radius/length — but never silently reduce a radius the user
-  specified;
-- filter the selected edges more narrowly;
-- apply fillets later in the model;
-- split edge groups by feature intent;
-- move the radius into the sketch profile as a 2D fillet, or into the lofted
-  section.
+A fillet or chamfer fails when its radius or length exceeds the local edge
+geometry, when the selection caught tiny or unintended edges, or when a
+boolean left complex edge topology. Filter the edges more narrowly and split
+edge groups by feature intent. Moving the radius into the profile instead, and
+never silently reducing a radius the user specified, are in
+[[construction-strategy#finishing]].
 
 ## Retry ladders degrade silently
 
@@ -127,9 +116,16 @@ Keep a corner at least 0.3 mm inside the shape that covers it, bury the unused
 half of an ellipse in its neighbour instead of trimming it at the seam, and
 assert a minimum outline edge length (0.15 mm) in source before the build. A
 corner-by-corner 2D round that falls back to a smaller radius in a narrow V
-notch ends in the same failure one step later; closing the plan with
-`offset(+r)` then `offset(-r)` (Kind.ARC) rounds every concave corner at once,
-but fills any slit narrower than `2r`.
+notch ends in the same failure one step later.
+
+Clean the plan instead with a morphological close and open before extruding:
+`offset(+r)` then `offset(-r)` (Kind.ARC), then the reverse. The close rounds
+every concave corner at once, but fills any slit narrower than `2r`; the pair
+also removes the tiny tangent slivers and near-coincident vertices a 2D union
+of rectangles and circles leaves (an antler, a Y profile), which had refused a
+1.2 mm edge fillet with no narrower cause and took it once cleaned. On a part
+printed flat, fillet only the top edges; the bed edge is
+[[rounded-bodies-on-the-print-bed#breaking-the-bed-edge]].
 
 ## Sketch fillets go before the boolean
 
@@ -207,27 +203,22 @@ this preserves the original spline topology but is not a uniform offset or
 a mating-fit proof. Cosmetic shadow reveals are not `cadfits` clearances and
 must not widen the fit table's assembly band.
 
+## The functional op picks its own target
+
+build123d's functional `chamfer(edges, ...)` and `fillet(edges, ...)` outside a
+builder take the solid to cut from `edges[0].topo_parent`. Edges selected from
+a solid pulled out of a boolean result with `.solids()[0]` can carry a parent
+that is not the shape the edge-to-face map is built from, and the call dies
+with `Standard_NoSuchObject: NCollection_IndexedDataMap::FindFromKey` on edges
+that are plainly on the solid. Call the method on the solid instead:
+`solid.chamfer(length, None, edges)` (or `solid.fillet(radius, edges)`), which
+uses the solid you name.
+
 ## Chamfers on wavy outlines pass validity and fail BOP
 
 A chamfer or V-groove on a wavy outline can pass `volume > 0` and
 `BRepCheck_Analyzer` and still be BOP-faulty; gate it with `BRepAlgoAPI_Check`
 ([[kernel-validity#gate-tangency-prone-results-with-the-bop-check]]).
-
-## A bed chamfer on a lofted belly
-
-A 45° chamfer on the edges where a lofted or scaled-sphere body meets the bed
-fails outright (`Failed creating a chamfer, try a smaller length value(s)`,
-every segment of a lofted chain, every length), and the fallback of offsetting
-the body's bed section inward and extruding it with a taper fails too:
-`offset()` of that section returns a Null shape. Put the relief into the tools
-that made the faces instead: where two bodies meet on the bed, cut each face
-back by the relief at z = 0 and return it to its place over the first two
-layers, with the same cutter grown and tapered. A cylinder becomes a cone; a
-wedge of half-angle `a` grown by `d` keeps its angle with its apex `d / sin(a)`
-further back, and `extrude(face, amount, taper=)` draws it. Keep the taper off
-45 deg (0.3 mm over 0.4 mm is 37 deg). A plain step two layers tall is not the
-same thing: its ceiling is a flat ledge that the overhang gate reads as needing
-support.
 
 ## Bevel the pieces, then fuse
 

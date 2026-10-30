@@ -6,7 +6,7 @@ sources:
   - skills/cad/references/repair-loop.md (failure classes; before the move)
   - skills/cad/references/build123d-modeling.md (common failure modes; before the move)
 related: [loft-pitfalls, boolean-pitfalls, fillet-chamfer-pitfalls, kernel-validity, sketch-and-extrude-direction, build123d-selectors, cad-joint-types]
-updated: 2026-09-23
+updated: 2026-10-10
 ---
 
 # Modeling failure modes and fixes
@@ -18,14 +18,9 @@ pages: lofts [[loft-pitfalls]], booleans [[boolean-pitfalls]], fillets
 [[fillet-chamfer-pitfalls]], validity [[kernel-validity]], sketches
 [[sketch-and-extrude-direction]].
 
-## Source import or syntax failure
-
-Likely causes: invalid Python syntax; a missing import; a wrong build123d
-symbol; the function not named `gen_step()`; executable code outside the
-intended function with side effects.
-
-Fix: correct imports and syntax; ensure `gen_step()` returns the STEP-ready
-shape or compound; keep output paths in CLI commands, not inside `gen_step()`.
+An import or syntax failure, or an entry whose `gen_step()` is missing or
+misnamed, is tool usage: `skills/cad/references/build123d-modeling.md`
+("Modeling objective") and `step-generation.md`.
 
 ## Invalid or missing geometry
 
@@ -67,19 +62,12 @@ operations if needed.
 
 ## Positioning or joint mismatch
 
-Likely causes: a wrong part-local origin or datum (an arbitrary origin makes
-later alignment checks ambiguous); reversed `AssemblyHelper` fixed/moving
-order; `.connect_to()` moving the part intended to stay fixed; an inverted
-joint axis; sign errors in symmetric placement; an explicit `Location` not
-recomputed after a parameter change; a joint defined in world coordinates when
-a part-local datum was intended; joint labels missing, duplicated, or attached
-to the wrong local datum; source-level joints treated as if they were
-persistent STEP constraints rather than one-time source placement operations.
-
-Fix: see [[cad-joint-types]] and the correction list in
-`skills/cad/references/positioning.md`; regenerate from source and rerun the
-failed check. A hand-derived frame should carry its inverse and a round-trip
-assert ([[frames-and-rotations#write-the-inverse-and-assert-the-round-trip]]).
+A part in the wrong place is usually a wrong part-local origin, a reversed
+fixed/moving order in `connect_to()`, an inverted axis or a symmetric-placement
+sign; fix it with one of the source-level corrections in
+`skills/cad/references/positioning.md` ([[cad-joint-types]]). A hand-derived
+frame carries its inverse and a round-trip assert
+([[frames-and-rotations#write-the-inverse-and-assert-the-round-trip]]).
 
 ## Lists where a shape was expected
 

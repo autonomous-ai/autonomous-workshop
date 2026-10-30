@@ -2222,13 +2222,27 @@ def sealed_contract(project: Path) -> dict | None:
     return contract if isinstance(contract, dict) else None
 
 
-def power_options(project: Path, image_derived: bool) -> list:
-    """The final verifier's power classification, which an image-derived
-    run must name and verify_project refuses to guess: ``--powered`` when
-    Make wrote ``measure/power.json``, otherwise ``--unpowered``. A run that
-    is not image-derived passes neither; check_power still runs on any
-    power.json there is."""
+ELECTRICAL_SCHEMA_VERSION = 10
 
+
+def powered_contract(project: Path) -> bool:
+    """Whether the sealed contract states a circuit (schema 10, ADR 0095)."""
+
+    contract = sealed_contract(project)
+    return (contract_schema(project) >= ELECTRICAL_SCHEMA_VERSION
+            and isinstance((contract or {}).get("electrical"), dict))
+
+
+def power_options(project: Path, image_derived: bool) -> list:
+    """The final verifier's power classification (ADR 0095). A contract with
+    a circuit always runs the powered gate, which refuses without
+    ``measure/power.json``; check_power runs on any power.json there is.
+    An image-derived run without a circuit must still name its class, which
+    the verifier refuses to guess: ``--powered`` when Make wrote a power
+    report (a schema 7-9 kit with a lamp), otherwise ``--unpowered``."""
+
+    if powered_contract(project):
+        return ["--powered"]
     if not image_derived:
         return []
     return ["--powered"] if (project / "measure" / "power.json").is_file() else ["--unpowered"]

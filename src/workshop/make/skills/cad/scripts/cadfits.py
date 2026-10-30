@@ -27,10 +27,11 @@ Importing it
 Every CLI launcher in `skills/cad/scripts/` puts its own directory on
 `sys.path` before loading a generator, so a generator, a `*_lib.py`, or a
 `measure/*.py` run through `scripts/gen` / `export` / `inspect` / `check_*`
-can `import cadfits` with no path setup. `verify_project` also supplies its
-materialized scripts directory when launching local audits. A script run directly
-by the interpreter (`.venv/bin/python <project-dir>/measure/check_fit.py`) needs the
-one insert those scripts already do for their project directory.
+can `import cadfits` with no path setup, and `verify_project` runs the local
+audits (`measure/check_fit.py`, `check_spec.py`, `check_landmarks.py`) with this
+directory on `PYTHONPATH`. A script run directly by the interpreter
+(`.venv/bin/python <project-dir>/measure/check_fit.py`) needs the one insert
+those scripts already do for their project directory.
 
 Deliberately NOT inside the vendored `cadgen` package: `cadgen` is installed
 into `.venv` as a *copy* while the launchers prefer the vendored
@@ -169,9 +170,11 @@ def print_in_place_gap(
       thumb — the *direction* (Z > XY) is well established, but no exact
       multiplier is validated, so tune empirically if a joint still fuses or
       rattles.
-    - ``bottom_chamfer`` — 0.5 mm; apply as a 45° chamfer (or extra clearance)
-      to any gap feature touching the build plate, to clear elephant's foot (the
-      squished first layer widens ~0.2 mm and closes plate-level gaps).
+    - ``bottom_chamfer`` — 0.5 mm; the bed-face leg of a break (or extra
+      clearance) on any gap feature touching the build plate, to clear
+      elephant's foot (the squished first layer widens ~0.2 mm and closes
+      plate-level gaps). Lean the break at most 30° off vertical — a symmetric
+      45° chamfer fails the overhang gate (wiki: rounded-bodies-on-the-print-bed).
 
     A rigid-body sweep (`scripts/check_motion`) cannot answer whether a
     print-in-place joint comes out free — only a print can.

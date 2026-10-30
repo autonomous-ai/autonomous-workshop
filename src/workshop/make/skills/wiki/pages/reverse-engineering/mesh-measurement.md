@@ -1,13 +1,14 @@
 ---
 title: Measuring a mesh or tessellated reference
 tags: [measurement, mesh, stl, section, circle-fit, iou, reverse-engineering, reference]
-aliases: [measure stl, section polygon, slice mesh, circle fit bore, rotation overlap scan, mesh instruments]
+aliases: [measure stl, section polygon, slice mesh, circle fit bore, rotation overlap scan, mesh instruments, photogrammetry, structure from motion, photo scan]
 sources:
   - skills/step-to-source/references/measuring.md
   - shapely polygonize and even-odd fill semantics (shapely documentation)
+  - https://en.wikipedia.org/wiki/Photogrammetry (scale only from a known distance in the scene)
   - "experience: mesh instruments that returned wrong readings on real parts, and the fix for each"
 related: [brep-vs-source, authoring-from-a-reference, kit-assembly-poses]
-updated: 2026-09-23
+updated: 2026-10-10
 ---
 
 # Measuring a mesh or tessellated reference
@@ -23,6 +24,10 @@ list stay in `skills/step-to-source/references/measuring.md`.
 | exact radius, axis, chamfer angle of an analytic face | the STEP, read from the kernel's own surface parameters | a parameter, not a fit |
 | anything on a faceted solid: outline, level, bore, mating datum | the **STL**, if it still exists | a converter's repair can move faces: one repairing backend left a converted frame 0.3 mm proud on every face, and a datum read off it produced a 7.7 mm³ clash |
 | the same, when only a STEP exists | the tessellated STEP | same instruments, on its triangles |
+
+A mesh solved from many photos (photogrammetry) goes the same route as any STL,
+but its size is arbitrary: set its scale from a known distance photographed in
+the scene (a scale bar or object of known size), never from its bounding box.
 
 Measuring on triangles needs only numpy and shapely. It never touches the CAD
 kernel, so it can run while a CAD job holds the daemon.

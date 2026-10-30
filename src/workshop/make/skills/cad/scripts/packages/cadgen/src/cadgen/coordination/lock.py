@@ -22,23 +22,15 @@ waiter that already opened the file would hold a descriptor to an unlinked inode
 "acquire" a lock nobody else can see. They are zero-to-32-byte files under gitignored
 ``__cadgen__``.
 
-Readers probe with ``LOCK_SH``, writers take ``LOCK_EX``. That asymmetry matters: ``flock``
-conflicts per open file description, not per process, so two concurrent ``LOCK_EX`` probes
-of an UNHELD sentinel conflict with each other and one of them wrongly reports a build in
-flight. Measured at ~6% false positives with four threads before this was fixed.
-
 On Windows there is no ``fcntl``; :mod:`msvcrt` provides byte-range locks (``locking``)
 instead. Kernel-ownership on close behaves the same, but the model differs in three ways
 that matter, and the third is why the Windows lock is not taken on the sentinel at all:
 
 * ``msvcrt.locking`` locks a byte region at the CURRENT file position rather than the whole
   descriptor, and locking past EOF is an error, so the file must hold a byte to be lockable.
-* It has no shared mode -- every operation, probes included, takes an exclusive region lock,
-  so two concurrent Windows probes of one file can false-positive "held" (the very race the
-  POSIX shared-probe asymmetry above exists to avoid).
+* It has no shared mode -- every operation takes an exclusive region lock.
 * The lock is MANDATORY, not advisory. Holding byte 0 makes the file unreadable to every
-  other process, which broke every Windows DXF build (issue #269): the sentinel is the file
-  the Node builders must read to prove they were started by the lock holder.
+  other process, which broke reading the run id back out of the sentinel (issue #269).
 
 So on Windows the lock lives on a sibling ``.mutex`` that holds no data and that nothing
 reads, while the run id still goes to the unlocked sentinel -- see :func:`mutex_path`.
@@ -60,7 +52,7 @@ import time
 import uuid
 import warnings
 from pathlib import Path
-from typing import Callable, Iterator, NamedTuple
+from typing import Callable, Iterator
 
 try:  # POSIX only; on a platform without fcntl every operation uses the windows backend
     # or degrades to a no-op.
@@ -125,15 +117,6 @@ class Contended(RuntimeError):
         self.lock_path = str(lock_path)
 
 
-class ProbeResult(NamedTuple):
-    """``held`` -- a peer holds the lock right now. ``degraded`` -- we could not tell,
-    because locking is unavailable here (no ``fcntl``/``msvcrt``, or a filesystem that
-    refuses it)."""
-
-    held: bool
-    degraded: bool
-
-
 def locking_available() -> bool:
     return fcntl is not None or msvcrt is not None
 
@@ -142,15 +125,11 @@ def mutex_path(lock_path: Path | str) -> Path:
     """The file the LOCK is taken on, which is not always the file the run id lives in.
 
     On POSIX they are the same file: ``flock`` is advisory, so holding it does not stop anyone
-    reading the sentinel, and the Node builders read it to prove they were started by the holder
-    (``assertWriteLock``).
+    reading the sentinel.
 
     Windows byte-range locks are MANDATORY. Locking byte 0 of the sentinel made it unreadable to
-    every other process for the whole build: the Node child's ``readFileSync`` got EBUSY, its
-    catch turned that into an empty string, and the run-id comparison then failed against a
-    sentinel that contained exactly the right run id (issue #269). Python's own ``read_run_id``
-    was broken the same way, so status attribution could not name the run holding the lock --
-    precisely when there is one to name.
+    every other process for the whole build, so ``read_run_id`` could not name the run holding
+    the lock -- precisely when there is one to name (issue #269).
 
     So on Windows the mutex is a sibling file that holds no data and that nobody reads. Mutual
     exclusion is unchanged: every participant locks the same path, whichever path that is.
@@ -205,65 +184,11 @@ def new_run_id() -> str:
     return uuid.uuid4().hex
 
 
-def probe(lock_path: Path | str) -> ProbeResult:
-    """Is a peer holding ``lock_path``? Never blocks, never creates the file.
-
-    Opened READ-ONLY on purpose: the old probe opened ``a+b``, which materialised a
-    sentinel under ``__cadgen__`` for a model that had never been built, as a side effect
-    of a status GET. A missing sentinel means no run has ever held it, which is idle.
-    """
-    if fcntl is None and msvcrt is None:
-        return ProbeResult(held=False, degraded=True)
-    path = mutex_path(lock_path)
-    try:
-        handle = path.open("rb")
-    except FileNotFoundError:
-        return ProbeResult(held=False, degraded=False)
-    except OSError:
-        # Unreadable sentinel: we cannot tell, and must not claim a build is running.
-        return ProbeResult(held=False, degraded=True)
-    try:
-        if fcntl is not None:
-            try:
-                fcntl.flock(handle.fileno(), fcntl.LOCK_SH | fcntl.LOCK_NB)
-            except OSError as exc:
-                if exc.errno in _FCNTL_BUSY_ERRNOS:
-                    return ProbeResult(held=True, degraded=False)
-                # ENOLCK / EOPNOTSUPP -- the filesystem does not do advisory locks (NFS,
-                # SMB, some bind mounts). Report degraded rather than inventing a state.
-                return ProbeResult(held=False, degraded=True)
-            else:
-                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
-                return ProbeResult(held=False, degraded=False)
-        # Windows backend: a 1-byte EXCLUSIVE region lock (msvcrt has no shared mode) on the
-        # MUTEX sibling -- see mutex_path for why it is not the sentinel.
-        #
-        # A 0-byte mutex cannot be locked at all (lock-past-EOF is an error there) and means no
-        # holder has ever padded it, so it reads as IDLE. That is a change from the previous
-        # empty-sentinel rule, which had to report UNKNOWN because a crash between open() and
-        # stamping left a legitimately empty sentinel behind; the mutex is padded before the
-        # lock is taken, so that window does not exist here.
-        if handle.seek(0, os.SEEK_END) == 0:
-            return ProbeResult(held=False, degraded=False)
-        handle.seek(0)
-        try:
-            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
-        except OSError as exc:
-            if exc.errno in _MSVCRT_BUSY_ERRNOS:
-                return ProbeResult(held=True, degraded=False)
-            return ProbeResult(held=False, degraded=True)
-        else:
-            _unlock(handle)
-            return ProbeResult(held=False, degraded=False)
-    finally:
-        handle.close()
-
-
 def read_run_id(lock_path: Path | str) -> str | None:
     """The run id the current (or most recent) holder wrote into the sentinel.
 
     ATTRIBUTION ONLY. A run id present in a sentinel says nothing about whether that run is
-    still alive -- ``probe()`` is the only thing that answers that.
+    still alive -- only the kernel lock answers that.
     """
     try:
         raw = Path(lock_path).read_bytes()[:_RUN_ID_BYTES]

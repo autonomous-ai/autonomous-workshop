@@ -12,7 +12,7 @@ sources:
   - https://2024.help.altair.com/2024.1/hwsolvers/os/topics/solvers/os/mfg_topology_opt_intro_c.htm (OptiStruct MINDIM 3–12 × element size)
   - https://www.researchgate.net/publication/226681416_Checkerboard_and_minimum_member_size_control_in_topology_optimization (checkerboards are an FEA artefact; via search excerpt)
   - https://help.prusa3d.com/article/infill-patterns_177130 (gyroid: equal strength in all directions; lightning: supports top surfaces only)
-  - .venv/lib/python3.12/site-packages/build123d/__init__.py (build123d 0.11.1; lattice, pocket and triangle-face cost measured with it, reproducible)
+  - .venv/lib/python3*/site-packages/build123d/__init__.py (build123d 0.11.1; lattice, pocket and triangle-face cost measured with it, reproducible)
 related: [beam-and-plate-stiffness, ribs-and-stiffening, perimeters-infill-and-strength, wall-thickness-and-hollowing, print-time-and-material-estimation, text-patterns-and-surface-detail, boolean-pitfalls, unmeshable-faces, filament-properties, fdm-minimum-feature-sizes]
 updated: 2026-09-23
 ---

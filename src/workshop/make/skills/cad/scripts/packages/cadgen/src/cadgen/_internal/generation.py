@@ -1,153 +1,73 @@
 from __future__ import annotations
 
-import argparse
-import contextlib
 import importlib.metadata
-import importlib.util
 import json
 import math
 import os
 import shutil
-import subprocess
-import sys
-import time
-from concurrent.futures import ThreadPoolExecutor
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Iterator, Sequence, TextIO
+from typing import Sequence
 
 from cadgen.catalog import (
-    CadSource,
     StepImportOptions,
-    cad_ref_from_step_path,
     render_package_dir,
-    find_source_by_path,
-    iter_cad_sources,
-    normalize_cad_ref,
-    normalize_source_ref,
     source_from_path,
 )
 from cadgen.cli_logging import CliLogger
 from cadgen._internal.cli_locking import contended_payload, deadline_ms, lock_wait_notice
-from cadgen._internal.file_metadata import text_to_cad_identity_metadata, write_dxf_text_to_cad_metadata
 from cadgen._internal.package_freshness import (
     STEP_PACKAGE_VERSION,
-    bake_hash_matches,
+    descriptor_bake_hash,
     schema_version_matches,
 )
 from cadgen._internal.glb import build_step_topology_index_manifest
-from cadgen._internal.glb import read_step_topology_manifest_from_glb
 from cadgen._internal.glb_topology import (
-    STEP_EDGE_VISIBILITY_CLASSES,
     normalize_step_edge_render_visibility_classes,
+    read_step_topology_manifest_from_glb,
 )
 from cadgen.coordination import (
-    DRAWING_PACKAGE,
     PHASE_GENERATE,
     STEP_PACKAGE,
-    ProgressEvent,
     artifact_build,
-    generator_busy,
-    render_progress_bar,
-    reporting_as,
     resolve as resolve_progress,
 )
-from cadgen.cli_progress import (
-    InlineProgressLine,
-    _finished_phase_text,
-    _progress_status_text,
-    cli_progress_line,
-)
-from cadgen.coordination.lock import exclusive
-from cadgen.coordination.paths import write_lock_path
-from cadgen.metadata import (
-    DEFAULT_MESH_ANGULAR_TOLERANCE,
-    DEFAULT_MESH_TOLERANCE,
-    GeneratorMetadata,
-    resolve_mesh_settings,
-)
-from cadgen.render import (
-    relative_to_file,
-    relative_to_cwd,
-)
 from cadgen._internal.source_hash import (
-    PythonSourceClosure,
-    PythonSourceHash,
-    capture_runtime_closure,
     closure_hash_matches,
-    evict_first_party_modules,
     python_source_hash,
-    record_first_party_execution,
 )
 from cadgen._internal.step_metadata import read_text_to_cad_step_metadata
-from cadgen.step_export import build_build123d_step_scene
 from cadgen._internal.step_scene import (
     load_step_scene_cached,
     LoadedStepScene,
-    SelectorBundle,
     SelectorOptions,
     adaptive_mesh_resolution_from_hints,
-    adaptive_mesh_resolution_for_scene,
     step_file_hash,
 )
 from cadgen._internal.generation_runner import (
-    GIT_LFS_POINTER_PREFIX,
     _ArtifactJob,
     _effective_step_spec_for_scene,
     _ensure_step_ready,
-    _generator_progress_line,
-    _is_git_lfs_pointer,
-    _load_generator_module,
     _mark_scene_python_backed,
-    _mark_scene_step_payload,
-    _normalize_dxf_payload,
-    _normalize_step_payload,
-    _resolve_params_sidecar,
     _run_artifact_jobs,
-    _run_script_generator_inner,
-    _scene_entry_kind,
-    _shape_has_explicit_children,
-    _shape_is_multi_child_compound,
-    _shape_payload_entry_kind,
     _spec_output_dir,
-    _track_spec_generation,
-    _write_dxf_payload,
-    _write_lock_without_reporting,
-    _write_shape_step_payload,
     run_script_generator,
 )
 from cadgen._internal.generation_spec import (
     EntrySpec,
     GeneratedStepResult,
     _CliTargetSpec,
-    _TOLERANCE_WARN_RATIO,
-    _apply_dxf_output_override,
-    _apply_dxf_output_overrides,
     _apply_step_options_to_spec,
     _apply_step_output_overrides,
     _cli_progress_line,
-    _display_name_for_path,
     _display_path,
     _edge_visibility_classes_for_resolution,
     _entry_spec_from_source,
-    _hint_float,
-    _hint_int,
     _mesh_angular_tolerance_is_explicit,
     _mesh_tolerance_is_explicit,
     _parse_cli_target_specs,
-    _resolve_cli_output_path,
-    _resolve_discovery_root,
     _selector_options_for_part,
-    _spec_for_source_ref,
-    _spec_output_paths,
     _spec_requests_extra_outputs,
-    _validate_cli_output_override,
-    _validate_duplicate_cli_output_overrides,
-    _warn_if_tolerance_defeats_scale_floor,
-    list_entry_specs,
-    selected_entry_specs,
-    targets_include_output_pairs,
 )
 
 def _mesh_values_match(
@@ -279,7 +199,7 @@ def _package_descriptor_matches_spec(
     # The assembly package bakes no format settings into its payload (components are pure
     # geometry at recorded mesh tolerances, and those are compared below), so the expected
     # bake is None -- and a descriptor that records one did not come from this producer.
-    if not bake_hash_matches(manifest, None):
+    if descriptor_bake_hash(manifest) is not None:
         return False
     if not _artifact_source_kind_matches_spec(spec, manifest):
         return False
@@ -409,7 +329,6 @@ def _assembly_provenance_manifest(
     and the STEP hash, so the build freshness gates can read it from assembly.json
     exactly as they read the monolithic manifest.
     """
-    import os
     from datetime import datetime, timezone
 
     from cadgen._internal.glb_topology import step_topology_capabilities
@@ -479,7 +398,7 @@ def _generate_part_outputs(
                 f"Preloaded STEP scene path {preloaded_scene.step_path} does not match {_display_path(spec.step_path)}"
             )
 
-    # Any on-demand output (mesh sidecar or --step export) must be produced even when the
+    # An on-demand output (the `--write` STEP) must be produced even when the
     # render package is current, so its presence defeats the reuse fast paths.
     has_extra_outputs = _spec_requests_extra_outputs(spec)
     package_current = (
@@ -535,7 +454,7 @@ def _generate_part_outputs(
 
     if spec.step_export_path is not None:
         def step_export_job() -> Path:
-            # On-demand text STEP (--step). gen_step never writes a STEP, so serialize the
+            # On-demand text STEP (`--write`). gen_step never writes a STEP, so serialize the
             # in-memory compound the generator produced; for an imported source the .step
             # already exists, so copy it to the requested path.
             from cadgen.step_export import export_build123d_step_file
@@ -574,7 +493,6 @@ def _generate_part_outputs(
         # Lazy import: component_package imports from this module, so a top-level
         # import would cycle.
         from cadgen._internal.component_package import build_package_from_compound
-        from cadgen._internal.legacy_artifacts import prune_legacy_artifacts
 
         shape = source_compound
         if shape is None:
@@ -583,20 +501,6 @@ def _generate_part_outputs(
             from build123d import import_step
 
             shape = import_step(spec.step_path)
-        # An in-place 0.3.x -> 0.4.x upgrade leaves that release's artifacts beside the
-        # source, where nothing reads them any more. Pruned here rather than on a
-        # separate migration pass because this is already the once-per-entry moment
-        # under the generation lock, and the schema bump that invalidates 0.3.x-era
-        # packages routes every model through it on first open.
-        pruned = prune_legacy_artifacts(spec.entry_path)
-        if pruned["removed"]:
-            reclaimed_mb = pruned["bytes"] / (1024 * 1024)
-            print(
-                f"Removed {len(pruned['removed'])} legacy 0.3.x artifact(s) "
-                f"beside {spec.entry_path.name} ({reclaimed_mb:.1f} MB)"
-            )
-        for skipped in pruned["skipped"]:
-            print(f"Left {skipped.name} in place: unrecognized contents for a 0.3.x artifact")
         return build_package_from_compound(
             shape,
             package_dir=render_package_dir(spec.entry_path),
@@ -629,7 +533,7 @@ def _generate_step_outputs(
     progress: object | None = None,
 ) -> GeneratedStepResult:
     preloaded_scene: LoadedStepScene | None = None
-    # An on-demand output (mesh sidecar or --step export) must run even when the package is
+    # An on-demand output (the `--write` STEP) must run even when the package is
     # current, so its presence defeats the reuse fast path.
     has_extra_outputs = _spec_requests_extra_outputs(spec)
     # Reuse fast path: skip the build when the component-GLB package is already present and
@@ -735,7 +639,10 @@ def _selected_specs_for_targets(
         output_paths.append(target_spec.output_path)
 
     if not unresolved_targets:
-        expanded_specs = _expand_specs_with_file_dependencies(explicit_specs)
+        # Shape-only generators expose no static recipe to walk for dependency expansion:
+        # the Python source-closure capture in run_script_generator covers generator-side
+        # .py changes, and a child read as a raw .step needs --force.
+        expanded_specs = list(explicit_specs)
         if include_output_paths:
             return expanded_specs, explicit_specs, output_paths
         return expanded_specs, explicit_specs
@@ -745,13 +652,6 @@ def _selected_specs_for_targets(
         "CAD target path not found or not a supported source file: "
         f"{unresolved}. Pass a Python generator or STEP/STP file path."
     )
-
-
-def _expand_specs_with_file_dependencies(specs: Sequence[EntrySpec]) -> list[EntrySpec]:
-    # Shape-only generators don't expose a static recipe to walk for dependency
-    # expansion. The Python source-closure capture in run_script_generator picks
-    # up generator-side .py changes; child STEP changes require --force.
-    return list(specs)
 
 
 def _entries_by_step_path(specs: Sequence[EntrySpec]) -> dict[Path, EntrySpec]:
@@ -776,16 +676,6 @@ def _validate_step_target(spec: EntrySpec, *, tool_name: str) -> None:
     )
 
 
-def _validate_dxf_target(spec: EntrySpec) -> None:
-    metadata = spec.generator_metadata
-    if spec.source != "generated" or spec.script_path is None or metadata is None:
-        raise ValueError(f"dxf expected a generated Python source target: {spec.source_ref}")
-    if not metadata.has_gen_dxf:
-        raise ValueError(f"dxf target does not define gen_dxf(): {spec.source_ref}")
-    if spec.dxf_path is None:
-        raise ValueError(f"dxf target has no configured DXF output: {spec.source_ref}")
-
-
 def _generated_output_summary(spec: EntrySpec) -> str:
     if spec.step_path is not None:
         return f"generated {spec.kind} STEP: {_display_path(spec.step_path)}"
@@ -795,17 +685,6 @@ def _generated_output_summary(spec: EntrySpec) -> str:
 def _generated_python_glb_summary(spec: EntrySpec) -> str:
     if spec.step_path is not None:
         return f"generated {spec.kind} GLB/topology artifact: {_display_path(render_package_dir(spec.entry_path))}"
-    return f"processed: {spec.source_ref}"
-
-
-def _generated_dxf_summary(spec: EntrySpec) -> str:
-    if spec.dxf_export_path is not None:
-        return f"generated DXF: {_display_path(spec.dxf_export_path)}"
-    if spec.script_path is not None:
-        return (
-            "generated DXF drawing package: "
-            f"{_display_path(render_package_dir(spec.script_path))}"
-        )
     return f"processed: {spec.source_ref}"
 
 
@@ -858,12 +737,11 @@ def _run_with_spec_generation_status(
     ``cadgen.step_artifact_cli``: 0 waits, and a positive value gives up and reports the peer
     instead. Same flag, same default, same meaning -- see :mod:`cadgen._internal.cli_locking`.
     """
-    kind = DRAWING_PACKAGE if generator_name == "gen_dxf" else STEP_PACKAGE
     # No output dir means no lock, so there is nothing to wait on and no ref to name in a
     # notice -- and a spec that never reaches a lock is not required to have one.
     output_dir = _spec_output_dir(spec, generator_name)
     with artifact_build(
-        kind,
+        STEP_PACKAGE,
         output_dir,
         is_current=(lambda: bool(skip_if_current(spec))) if skip_if_current is not None else None,
         deadline_ms=deadline_ms(lock_timeout_s),
@@ -918,8 +796,8 @@ def _manifest_source_closure_unchanged(manifest: Mapping[str, object], base: Pat
     The closure is the generator's Python import reach, so a changed generator or
     shared helper invalidates it — and so does a composed child when it is composed
     the documented way, by importing its ``.step.py``. A child read as a raw ``.step``
-    file is data, not a closure input; ``_rebuild_stale_assembly_children`` keeps
-    generated children current instead. ``base`` is the model folder the recorded
+    file is data, not a closure input, so a change to it needs ``--force``. ``base`` is
+    the model folder the recorded
     closure paths are relative to. Returns False when no usable closure was recorded."""
     recorded_hash = str(manifest.get("sourceClosureHash") or "").strip()
     recorded_files = manifest.get("sourceClosureFiles")
@@ -1002,170 +880,6 @@ def _step_export_is_current(spec: EntrySpec) -> bool:
     return python_source_hash(spec.script_path).source_hash == recorded_hash
 
 
-def _generated_child_is_stale(child_spec: EntrySpec, *, force: bool) -> bool:
-    """Whether a generated child part must be rebuilt before composing a parent.
-
-    Detection order:
-    1. force, or a missing/unhydrated STEP -> stale.
-    2. Recorded import closure (sound, incl. transitive sys.path-loaded deps):
-       re-hash the recorded closure files and compare. This is the precise path.
-    3. Fallback when no closure was recorded (artifacts predating this feature,
-       or minimal fixtures): compare the script's own-file source hash to the
-       sourceHash recorded with the STEP. Catches own-file edits; transitive-dep
-       detection resumes once the child is regenerated with a closure.
-    4. If nothing was recorded, do not rebuild blindly (avoid mass rebuilds and
-       false positives on artifacts that carry no provenance).
-    """
-    if child_spec.source != "generated" or child_spec.script_path is None or child_spec.step_path is None:
-        return False
-    if force:
-        return True
-    # gen_step writes no STEP — the render GLB/package is the artifact, so freshness keys
-    # on it. A missing/unhydrated artifact (file GLB or package directory) is stale.
-    artifact_path = render_package_dir(child_spec.entry_path)
-    if not artifact_path.exists() or _is_git_lfs_pointer(artifact_path):
-        return True
-    manifest = read_step_topology_manifest_from_glb(artifact_path)
-    if isinstance(manifest, dict):
-        recorded_hash = str(manifest.get("sourceClosureHash") or "").strip()
-        recorded_files = manifest.get("sourceClosureFiles")
-        if recorded_hash and isinstance(recorded_files, list) and recorded_files:
-            return not closure_hash_matches(
-                recorded_hash, recorded_files, base=child_spec.step_path.parent
-            )
-        recorded_source_hash = str(manifest.get("sourceHash") or "").strip()
-        if recorded_source_hash:
-            return python_source_hash(child_spec.script_path).source_hash != recorded_source_hash
-    return False
-
-
-def _rebuild_child_in_subprocess(child_spec: EntrySpec) -> None:
-    """Rebuild one stale child in a clean subprocess.
-
-    A fresh interpreter is required so the child's runtime import closure is
-    captured accurately: the current process has already imported the part
-    modules (the parent generator imports them), which would make an in-process
-    sys.modules delta miss shared dependencies."""
-    bootstrap = (
-        "import sys\n"
-        "from cadgen._internal.generation import generate_step_targets\n"
-        "sys.exit(generate_step_targets([sys.argv[1]], force=True))\n"
-    )
-    result = subprocess.run(
-        [sys.executable, "-c", bootstrap, str(child_spec.script_path)],
-        cwd=str(Path.cwd()),
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        detail = (result.stderr or result.stdout or "").strip()
-        raise RuntimeError(
-            f"Failed to rebuild stale subcomponent {child_spec.source_ref}:\n{detail}"
-        )
-
-
-def _timed_rebuild(child: EntrySpec, *, logger: CliLogger | None) -> None:
-    if logger is not None:
-        with logger.timed(f"rebuild stale subcomponent {child.source_ref}"):
-            _rebuild_child_in_subprocess(child)
-    else:
-        _rebuild_child_in_subprocess(child)
-
-
-def _rebuild_children_parallel(
-    children: Sequence[EntrySpec],
-    *,
-    logger: CliLogger | None,
-) -> list[str]:
-    """Rebuild independent leaf children concurrently in bounded subprocesses.
-
-    Each rebuilds in its own clean interpreter (sound closure capture), so they
-    share no in-process state and parallelize freely. Their build123d imports
-    overlap, which is what removes the sequential per-child import overhead.
-    Errors are collected so one failure doesn't mask the others. Returns the
-    source refs in the input order (deterministic), regardless of finish order."""
-    if len(children) <= 1:
-        for child in children:
-            _timed_rebuild(child, logger=logger)
-        return [child.source_ref for child in children]
-
-    max_workers = min(len(children), max(1, (os.cpu_count() or 2) - 1))
-    if logger is not None:
-        logger.debug(f"rebuilding {len(children)} stale subcomponents (up to {max_workers} parallel)")
-
-    def run_one(child: EntrySpec) -> tuple[str, float, Exception | None]:
-        started = time.perf_counter()
-        try:
-            _rebuild_child_in_subprocess(child)
-            return child.source_ref, time.perf_counter() - started, None
-        except Exception as exc:  # aggregated and re-raised below
-            return child.source_ref, time.perf_counter() - started, exc
-
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        results = list(executor.map(run_one, children))
-
-    rebuilt: list[str] = []
-    errors: list[tuple[str, Exception]] = []
-    for source_ref, elapsed, exc in results:
-        if exc is not None:
-            errors.append((source_ref, exc))
-            continue
-        rebuilt.append(source_ref)
-        if logger is not None:
-            logger.debug(f"rebuilt subcomponent {source_ref} in {elapsed:.2f}s")
-    if errors:
-        joined = "\n".join(f"  {source_ref}: {exc}" for source_ref, exc in errors)
-        raise RuntimeError(f"Failed to rebuild {len(errors)} stale subcomponent(s):\n{joined}")
-    return rebuilt
-
-
-def _rebuild_stale_assembly_children(
-    all_specs: Sequence[EntrySpec],
-    selected_specs: Sequence[EntrySpec],
-    *,
-    force: bool,
-    logger: CliLogger | None,
-) -> list[str]:
-    """Rebuild generated child parts of selected assemblies whose source changed.
-
-    Reuses the already-expanded ``all_specs`` (no extra source discovery).
-    Independent leaf parts rebuild concurrently; sub-assembly children rebuild
-    sequentially afterward in leaf-first (deepest-first) order, since each
-    composes from its own children and its subprocess force-rebuilds that
-    subtree. Returns the source refs that were rebuilt."""
-    has_assembly_target = any(
-        spec.kind == "assembly" and spec.source == "generated" for spec in selected_specs
-    )
-    if not has_assembly_target:
-        return []
-    selected_refs = {spec.source_ref for spec in selected_specs}
-    seen: set[str] = set()
-    stale_leaves: list[EntrySpec] = []
-    stale_assemblies: list[EntrySpec] = []
-    # all_specs lists parents before dependencies; reversing yields leaf-first.
-    for child in reversed(list(all_specs)):
-        if child.source_ref in selected_refs or child.source_ref in seen:
-            continue
-        seen.add(child.source_ref)
-        if not _generated_child_is_stale(child, force=force):
-            continue
-        if child.kind == "assembly":
-            stale_assemblies.append(child)
-        else:
-            stale_leaves.append(child)
-    if not stale_leaves and not stale_assemblies:
-        return []
-
-    rebuilt = _rebuild_children_parallel(stale_leaves, logger=logger)
-    for child in stale_assemblies:
-        _timed_rebuild(child, logger=logger)
-        rebuilt.append(child.source_ref)
-
-    if rebuilt and logger is not None:
-        logger.info(f"rebuilt {len(rebuilt)} stale subcomponent(s): {', '.join(rebuilt)}")
-    return rebuilt
-
-
 def _built_shape_identity(result: object) -> str | None:
     """The B-rep hash of the shape a ``gen_step()`` target just built, if any.
 
@@ -1200,8 +914,6 @@ def _installed_toolchain_versions() -> dict[str, str]:
         "build123d": importlib.metadata.version("build123d"),
         "cadquery_ocp": importlib.metadata.version("cadquery-ocp"),
     }
-
-
 def generate_step_targets(
     targets: Sequence[str],
     *,
@@ -1261,8 +973,8 @@ def generate_step_targets(
     def _flush() -> None:
         # STDOUT IS THE RESULT, on every CLI. `gen` used to print nothing there at all --
         # its only output was the logger's prose on stderr -- so a caller reading the two
-        # streams apart got an exit code and nothing else, while export, snapshot, validate
-        # and inspect all answered on stdout. One line per target, `outcome path`, upgraded
+        # streams apart got an exit code and nothing else, while artifact and inspect
+        # answered on stdout. One line per target, `outcome path`, upgraded
         # to JSON by --json.
         for entry in reported:
             if json_output:
@@ -1286,8 +998,6 @@ def generate_step_targets(
     )
     if step_options is not None and step_options.has_metadata:
         selected_specs = [_apply_step_options_to_spec(spec, step_options) for spec in selected_specs]
-    _rebuild_stale_assembly_children(all_specs, selected_specs, force=force, logger=logger)
-
     def _spec_is_current(spec: EntrySpec) -> bool:
         # An explicit STEP export (--write) must be written even when the compose is
         # current, UNLESS the file it would write is already there and already matches
@@ -1298,8 +1008,7 @@ def generate_step_targets(
         return _assembly_is_current(spec) and _assembly_glb_package_current(spec)
 
     # No-op fast path: skip recomposing a generated assembly whose source closure
-    # (the generator's Python import reach) is unchanged. Runs after the
-    # child rebuild so a just-rebuilt child correctly invalidates the closure.
+    # (the generator's Python import reach) is unchanged.
     if not force:
         current_specs = [spec for spec in selected_specs if _spec_is_current(spec)]
         if current_specs:
@@ -1357,47 +1066,3 @@ def generate_step_targets(
     logger.total()
     _flush()
     return 0
-
-
-def run_tool_cli(
-    argv: Sequence[str] | None,
-    *,
-    prog: str,
-    description: str,
-    action: Callable[..., int],
-    target_help: str | None = None,
-    output_help: str | None = None,
-) -> int:
-    parser = argparse.ArgumentParser(prog=prog, description=description)
-    parser.add_argument(
-        "targets",
-        nargs="+",
-        help=target_help or "Explicit Python generator or STEP/STP file path to generate.",
-    )
-    if output_help is not None:
-        parser.add_argument("-o", "--output", metavar="PATH", help=output_help)
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Show detailed progress and timing information.",
-    )
-    args = parser.parse_args(list(argv) if argv is not None else None)
-    if output_help is not None:
-        if args.output is not None:
-            if targets_include_output_pairs(args.targets):
-                parser.error("--output cannot be combined with SOURCE=OUTPUT targets")
-            if len(args.targets) != 1:
-                parser.error("--output can only be used with exactly one target")
-        return action(args.targets, output=args.output, verbose=bool(args.verbose))
-    return action(args.targets, verbose=bool(args.verbose))
-
-
-def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="CAD generation support library.")
-    parser.parse_args(list(argv) if argv is not None else None)
-    parser.error("cadgen.generation is a library module.")
-    return 2
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

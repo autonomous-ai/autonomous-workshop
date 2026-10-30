@@ -81,3 +81,31 @@ from the source.
 - Averaging two disagreeing images instead of picking the better one is a
   failure: a foreshortened view averaged into a good one gives a spec that is
   confidently, uniformly wrong ([[measuring-reference-photos#cross-view-closure-and-its-blind-spots]]).
+
+## A turnaround made by an image generator is not one object
+
+Users now hand over a front, back, left, right, top and bottom view generated
+from a single photograph ("same model, move only the camera"). Each view looks
+plausible and orthographic; together they are several slightly different
+objects, and the cross-check gate says so. On one such six-view set of a
+winged SD robot it read INCONSISTENT at 8 % before any model existed:
+
+- **The plan views run deep.** Width over depth read 1.2 from both the top and
+  the bottom view and 1.55 from the front and side elevations; the top view
+  also laid the V-fin flat back and dropped the wings' splay that the front,
+  back and bottom views all showed. A generator straight-down view is the
+  least constrained of the six, even after a camera-refinement pass.
+- **The two side views are not mirror images.** One stood 12 % shallower than
+  the other (its wings reached 8 mm less far back).
+- **The back view runs wider** than the front (5 %): the wings splay further.
+- **Proportions drift toward the generator's taste.** Its SD head came out
+  about 25 % wider, relative to the chest, than in the original render it was
+  made from.
+
+Treat the set as several references, not one object: run the cross-check
+first, let the elevations own the shape (front and back for widths and
+heights, one side view for depths), use the plan views for plan shapes only,
+and decide in writing which source wins where the generated views and the
+original photograph disagree. Expect no single model to reach the likeness
+floor on every view; record each view's score and the measured contradiction
+behind it, and leave the acceptance to the user.

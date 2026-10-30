@@ -247,11 +247,12 @@ most pass `validate`. The measurements and fixes live in the wiki
 | `Plane.rotated()` composes in world axes; write the inverse of a hand frame and assert the round trip | `frames-and-rotations` |
 | lofts match sections by index; smoothstep creases; smooth lofts overshoot; diagnosing a failed loft; blend lobes that close inside the body | `loft-pitfalls` |
 | `is_valid` passes inverted solids; BOP check after tangency-prone cuts; `Part(solid.wrapped)` has zero volume; control-hull bounding boxes | `kernel-validity` |
-| a revolve or `Cylinder` seams at +X; a seam inside the material makes an invalid solid | `revolve-seam` |
+| a revolve or `Cylinder` seams at +X; a seam inside the material makes an invalid solid; sphere and ellipsoid seams | `revolve-seam` |
 | fillet retry ladders degrade silently; chamfers on tangent chains can SIGSEGV; dense periodic splines break taper, offset and fuse | `fillet-chamfer-pitfalls` |
 | pairwise tool accumulation decays O(n²); overlapping tools misbehave; near-tangent and near-coincident booleans | `boolean-pitfalls` |
 | 2D union decay, polygon winding, `Plane.XZ` extrude direction, `align=None` is the raw datum | `sketch-and-extrude-direction` |
 | fitting a B-spline through a height grid rings; use the grid as control net | `bspline-height-fields` |
+| Gordon patches built apart do not sew; `make_surface` needs a Wire; ruled bands pair edges by index; `thicken` past the radius returns an invalid solid; `draft` refuses B-spline faces | `freeform-surfaces-in-build123d` |
 | one untriangulable face kills a whole-shape tessellation | `unmeshable-faces` |
 
 ## Common failure modes

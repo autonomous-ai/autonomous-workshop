@@ -6,8 +6,9 @@ sources:
   - skills/cad/references/build123d-modeling.md (sketch algebra, align and failure-mode sections; before the move)
   - "experience: two modules independently shipped off-centre cutters from assuming align=None means centred"
   - "experience: a disc body extruded with a negative amount from a spline face landed above its bevel cap"
+  - "experience: a clockwise polygon extruded with a forced dir gave an inverted solid that later cuts mishandled"
 related: [operation-families, kernel-validity, modeling-failure-modes]
-updated: 2026-10-05
+updated: 2026-10-09
 ---
 
 # Sketch algebra, winding and extrude direction
@@ -35,10 +36,8 @@ Chained 2D unions are fragile in three stacked ways:
   Apply the `& clip` intersection exactly once, LAST, on the single fused
   profile.
 
-The same list trap applies in 3D: `solid += helper()` where the helper returns
-a *list* turns the accumulator into a `ShapeList`, and the failure surfaces
-much later as an anytree `Cannot add non-node object` from inside
-`Compound(children=...)`.
+The same list trap applies in 3D:
+[[modeling-failure-modes#lists-where-a-shape-was-expected]].
 
 ## State the extrude direction
 
@@ -59,6 +58,11 @@ A `Face(wire)` built from a periodic spline sampled off a `shapely` ring takes
 its normal from the ring's winding, so it can face −Z: `extrude(face, -t)`
 meant to run down then runs up and fuses inside the body above it, and only
 the bounding box shows it. Pass `dir=(0, 0, -1)` with a positive amount.
+
+Forcing `dir=` fixes where a prism goes, not how its faces are oriented. A
+clockwise polygon forced the other way has come back as an inverted solid that
+later booleans mishandled. Make polygon sections counter-clockwise before
+building faces, and keep `dir=` as well.
 
 ## align None is the raw OCC datum
 

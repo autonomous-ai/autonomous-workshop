@@ -30,7 +30,7 @@ sources:
   - https://pmc.ncbi.nlm.nih.gov/articles/PMC10097255/ (printed PLA/ABS pin-loaded holes: bearing failure only at e/D ≥ 3)
   - https://www.igus.com/spherical-bearings/rod-ends (self-lubricating plastic rod ends)
   - skills/cad/scripts/cadfits.py (slot_for, mating_clearance)
-related: [joints, hinges-and-pin-joints, hinge-types, ball-and-socket-joints, push-pins-and-clip-fasteners, shafts-and-bearings, dowel-pins-and-press-fits, snap-fit-design, linkages, counterweights-and-gravity-balance, layer-anisotropy, fdm-print-orientation-for-strength, fdm-bridging-and-sacrificial-layers, lead-screws, creep-and-stress-relaxation]
+related: [joints, hinges-and-pin-joints, hinge-types, ball-and-socket-joints, push-pins-and-clip-fasteners, shafts-and-bearings, dowel-pins-and-press-fits, snap-fit-design, linkages, counterweights-and-gravity-balance, layer-anisotropy, fdm-bridging-and-sacrificial-layers, lead-screws, creep-and-stress-relaxation]
 updated: 2026-10-01
 ---
 
@@ -184,7 +184,7 @@ bracket and pulls on the stud's insert.
 - **Eyes and lugs print flat, bore vertical.** The tearing ligaments then
   pull along the layers and the shear-out planes cut across them. With the
   bore horizontal, the eye shears out along a layer line
-  ([[fdm-print-orientation-for-strength#orient-by-load]]).
+  ([[layer-anisotropy#orient-so-layers-do-not-carry-the-tension]]).
 - **Edge distance.** Printed PLA and ABS pin-loaded holes broke by net
   tension or cleavage at `e/D = 1.5` and reached bearing failure only at
   `e/D ≥ 3`. The steel eye (`e/D = 1`) is too lean: `e ≥ 3 · d1`, or bush it.

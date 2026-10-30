@@ -6,7 +6,7 @@ sources:
   - skills/step-to-source/references/assembling.md
   - "toolchain: BRepAlgoAPI_Common on two rebuilt parts locates a clash in ~20 s against ~4 min for a full interfere rerun"
 related: [kit-assembly-poses, authoring-from-a-reference]
-updated: 2026-09-25
+updated: 2026-10-10
 ---
 
 # Diagnosing clashes in an assembled kit
@@ -18,13 +18,12 @@ not removed.
 
 ## What a first run looks like
 
-On one kit's first carried run (4 min 17 s at a 1 mm³ threshold), 34 clashes
-came down to: one mirrored placement, one converter growth, 27 overlapping
-shells inside single meshes, and designed tight fits. The designed fits were a
-plate in a box (76.7 mm³ on 0.3 mm snap lips), a D-journal in gear bores (2.6
-and 5.1 mm³), pin tabs in pockets (2.7 mm³ each), and a mount in a pocket
-(1.4 mm³). Once parts are re-authored, the overlapping-shell class
-disappears, and anything left is a placement to fix.
+A first run on carried references reports dozens of clashes that come down to
+a handful of causes: a mirrored placement, a converter's growth, many
+overlapping shells inside single meshes, and the kit's designed tight fits
+(snap lips round a plate, a D-journal in its bores, pin tabs in pockets), each
+a few mm³ to tens of mm³. Once parts are re-authored, the overlapping-shell
+class disappears, and anything left is a placement to fix.
 
 ## Locate a clash without rerunning the assembly
 
@@ -54,7 +53,6 @@ report the gate as failed on that fit and nothing else.
 
 ## Search the pose off CAD, build CAD once
 
-Pose solves, phase scans and clash localisation iterate. Run them in scratch
-code on algebra or triangles, and `gen` once the answer is known. On carried
-references a kit wrote about 527 MB per assembled STEP, and `gen` of two
-variants took 7 min 44 s.
+Iterate pose solves, phase scans and clash localisation in scratch code
+(`skills/step-to-source/references/assembling.md`): an assembled STEP over
+carried references runs to hundreds of MB and minutes per `gen`.

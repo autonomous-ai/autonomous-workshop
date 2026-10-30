@@ -3,10 +3,11 @@ title: Scale anchors
 tags: [scale, anchor, dimension, size, photo, reference-image, confidence]
 aliases: [scale reference, reference dimension, mm per pixel, absolute scale, sizing from a photo]
 sources:
+  - "experience: rim ellipse read from a lit ring after the silhouette conic read the face too round"
   - skills/image-to-cad/SKILL.md (confidence tags and the anchor order)
   - "experience: specs whose every dimension hung off an unstated anchor and came out uniformly wrong"
 related: [known-object-sizes, scaling-limits, image-types-and-views, perspective-and-hidden-views]
-updated: 2026-09-23
+updated: 2026-10-12
 ---
 
 # Scale anchors
@@ -98,3 +99,14 @@ is wrong, not that the phone stand is small. The other sanity gates are in
 
 With parallel edges and one known length in the scene, single-view metrology
 turns an [inferred] anchor into measured ratios: [[single-view-metrology]].
+
+## An ellipse anchor: fit the cleanest concentric feature
+
+A circular anchor seen obliquely (a lamp rim, a wheel, a lid) is an ellipse,
+and its tilt matters as much as its size. Fit the conic to the cleanest edge
+concentric with it — a lit ring, a centre plate, a printed band — not to the
+object's outer silhouette, which on a cylinder or flared body mixes the rim
+with the body's flank and reads the face far too round (0.94 against the
+ring's 0.73 on one shade). Take the ellipse's shape from that feature and its
+size by scaling it about the same centre until it reaches the anchor's own
+outer pixel on a side where the silhouette is the rim alone.

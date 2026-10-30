@@ -6,8 +6,8 @@ sources:
   - "experience: eight lofted segments trimmed by 64-sided arc prisms ran past two minutes; true circles took two seconds"
   - "experience: a sliver cleanup returned 1349 pieces, two of them real; filtering by area took the tray from over ten minutes to 0.4 s"
   - "experience: a ring clipped by a polygon extruded downward into the part and left a closed void"
-related: [boolean-pitfalls, sketch-and-extrude-direction, kernel-validity, construction-strategy]
-updated: 2026-10-05
+related: [boolean-pitfalls, sketch-and-extrude-direction, kernel-validity, construction-strategy, pixel-art-plans]
+updated: 2026-10-10
 ---
 
 # Cutters built from shapely polygons
@@ -44,3 +44,6 @@ a closed void under the surface that only the shell count shows, and an
 `intersect` with it comes back `None` (empty), not an error. Pass
 `dir=(0, 0, 1)` in the one helper every cutter goes through
 ([[sketch-and-extrude-direction#state-the-extrude-direction]]).
+
+A plate built from a grid of cells (pixel art, voxels) has two more traps,
+float-mm unions and corner-only contact: [[pixel-art-plans]].

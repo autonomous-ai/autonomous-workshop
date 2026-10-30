@@ -97,7 +97,11 @@ names it.
   shelf, wall, floor, hand), what it must fit or hold, how it is made (the
   declared bed, material and nozzle) and whether it moves or is powered.
 - Name the archetype and the construction family — prismatic holder, shell or
-  enclosure, revolved vessel, organic figure, flexi, mechanism.
+  enclosure, revolved vessel, organic figure, flexi, mechanism. For a toy,
+  keychain, charm or desk toy, `wiki show toy-archetype-index` first: its six
+  questions (age, play pattern, second play, carry, bought parts, what breaks
+  first) become §1 lines and §3 rows, and its chooser names the pages that
+  hold the deciding numbers.
 - Before creating `output/<name>/`, check whether another run already made it;
   several agents may work from one prompt.
 - Ask only when a fit-, safety- or compliance-critical fact is missing and no
@@ -151,7 +155,10 @@ colour split. Search the wiki on the product's category and function words
 (`python "$(workshop skills path)/wiki/scripts/wiki" search <words>`); the pages that most often apply are
 `product-aesthetics`, `form-and-finish-heuristics`, `fdm-surface-finish`,
 `handheld-ergonomics`, `stability-and-tipping`, `toy-safety-constraints` and
-`design-for-assembly`, plus the printing and mechanism pages.
+`design-for-assembly`, plus the printing and mechanism pages. A figure or
+character adds `character-proportions-and-appeal`; a toy handled for its
+feel (fidget, clicker, spinner) adds `play-value-and-tactile-feel`; anything
+hung on a ring, chain or strap adds `key-rings-and-charm-hardware`.
 
 ### Step 4 — Design direction (spec §4a)
 
@@ -164,7 +171,10 @@ Set the direction before any concept, from `wiki show product-aesthetics`:
   lean or taper angle, and the lines that must continue across the object.
 - **Proportion and hierarchy** — the primary, secondary and tertiary forms,
   the governing ratios with unequal divisions, the one focal feature, and where
-  the calm surfaces are.
+  the calm surfaces are. A figure states its style band (heads tall), eye line
+  and dominant shape here, sized for the print height
+  (`wiki show character-proportions-and-appeal`); they go into the proportion
+  ledger like any ratio.
 - **Silhouette and stance** — the view people see it from, what the black
   silhouette must say from that view, and whether it sits low and heavy or
   lifted on an inset base.
@@ -241,6 +251,12 @@ Before handing off, confirm:
 - the document passes its own gate:
   `.venv/bin/python "$CAD_SKILL_ROOT/scripts/check_spec_format" <project>/<name>_spec.md`.
 
+Then hand the spec to an independent reviewer (upstream's `build-review` `spec`
+checkpoint, not vendored in Workshop; in a Workshop run, the review the stage
+protocol names) — a reviewer that did
+not write it, judging it against the user's request — and fix its findings in
+the spec before `$cad` builds anything.
+
 ## Design review rounds
 
 The first build is a draft. A designer does not ship the first model, and
@@ -266,9 +282,11 @@ table.
    and review again. A change to a parameter, proportion or part count is
    reconciled into the spec.
 4. **Stop** when a round finds nothing on the checklist. A visible product gets
-   at least two rounds unless the first finds nothing. When the same finding
-   survives three rounds of detail edits, the fault is in the primary form or
-   the concept: change that, not the detail.
+   at least two rounds unless the first finds nothing. The round that closes
+   the review is not the builder's own look: it is an independent build
+   review (in a Workshop run, the blind or Component review), whose reviewer sees the renders without the builder's intent.
+   When the same finding survives three rounds of detail edits, the fault is
+   in the primary form or the concept: change that, not the detail.
 
 Two habits the rounds need:
 
@@ -278,6 +296,9 @@ Two habits the rounds need:
   base from a scratch entry outside the worktree that imports the project's
   part builders, at the front, the side and both three-quarters, and crop the
   head and each limb.
+- **Look across a lean, not along it.** A tilted or leaning form seen along its
+  tilt direction looks upright; the main view must be roughly perpendicular to
+  the tilt, or the round reviews a pose nobody sees.
 - **"Ugly" asks for craft, not a new subject.** When the user dislikes the
   figure, keep the subject they recognised and raise its craft — anatomy,
   ornament, colour (`wiki show product-aesthetics#making-a-figure-splendid`).
@@ -317,8 +338,8 @@ spec.
 - **Survey before concept, direction before concept.** No concept is selected
   before §2 has its rows or a recorded miss and §4a has its direction.
 - **Beauty is a requirement.** No handoff without a direction; no delivery
-  without a recorded review round that found nothing left on the checklist, or
-  the finding the user accepted.
+  without a recorded independent review round (in a Workshop run, the blind or Component review) that found
+  nothing left on the checklist, or the finding the user accepted.
 - **No copied geometry** from a design whose licence does not permit it.
 - **Every number carries a tag**, and every *must* carries a verification.
 - **CAD chooses nothing.** 6g is complete before handoff.

@@ -17,7 +17,7 @@ gaps, what a split owes, how much detail to model, and the feature-tree tiers
 and ordering rules — lives in the wiki:
 
 - `skills/wiki/pages/printing/printed-part-count.md` (`wiki show printed-part-count`)
-- `skills/wiki/pages/printing/feature-build-order.md` (`wiki show feature-build-order`)
+- `skills/wiki/pages/modeling/construction-strategy.md` (`wiki show construction-strategy`)
 
 This page holds only what the spec must record.
 
@@ -48,7 +48,7 @@ same rule as the `cad` skill's. What the spec records:
 ## Level 2 — the feature tree
 
 Inside each printed part, find the base solid and order the features by the
-tiers and rules in `wiki show feature-build-order`. What the spec records:
+boolean order in `wiki show construction-strategy#boolean-order`. What the spec records:
 
 - the feature tree as **numbered rows** — `cad` executes them in that order
   inside `gen_step()`, so the order *is* the implementation;
@@ -66,4 +66,4 @@ object's finish, and move on.
 ## Pitfalls
 
 The recurring ones are in `wiki show printed-part-count#pitfalls` and
-`wiki show feature-build-order#pitfalls`.
+`wiki show construction-strategy#pitfalls`.

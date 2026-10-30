@@ -7,8 +7,9 @@ sources:
   - https://vtk.org/doc/nightly/html/classvtkQuadricDecimation.html
   - https://iquilezles.org/articles/distfunctions/
   - "experience: a seated low-poly figure (crossed legs, arms across the lap, a screen in the hands) built from a posed skeleton field, decimated, cut with exact booleans and sewn into one solid"
-related: [mesh-to-step-conversion, thinning-a-carried-mesh, organic-likeness, loft-organic-bodies, silhouette-likeness, smooth-skin-from-a-field]
-updated: 2026-10-05
+  - "experience: a low-poly jack-o'-lantern built as offset vertex rings"
+related: [mesh-to-step-conversion, carried-mesh-deliverable, organic-likeness, loft-organic-bodies, silhouette-likeness, smooth-skin-from-a-field]
+updated: 2026-10-12
 ---
 
 # Low-poly sculpt from a field
@@ -45,7 +46,7 @@ for a faceted figurine.
   parts (a screen cradle wedge as a convex hull trimmed by planes) and cut
   every pocket and channel with manifold3d booleans on the reduced mesh, then
   sew the finished mesh into one solid
-  ([[mesh-to-step-conversion#carrying-a-mesh-as-the-deliverable]]). A soft
+  ([[carried-mesh-deliverable#building-each-body-from-the-mesh]]). A soft
   copy of an exact part inside the field gives the blends (palms into a
   cradle) and is covered by the exact part.
 - **Wall checks read the field.** Sample the field along a buried feature's
@@ -55,6 +56,21 @@ for a faceted figurine.
 
 The same field delivered smooth instead of faceted (real curved faces, not
 denser triangles) is [[smooth-skin-from-a-field]].
+
+## A low-poly body of revolution: write the rings
+
+When the body is a surface of revolution (a pumpkin, a pot, a bell), skip the
+field and decimation. Write rings of vertices directly, offset every other
+ring by half a step, and join neighbouring rings with triangles. Keep the bed
+ring and the cap ring each at one height, so those faces are single planes.
+Fix the winding from the sign of the volume. `Solid(Shell(faces))` on about
+300 triangles builds in 0.2 s, and booleans against it stay near 3 s. A
+lofted pyramid roof cut into such a body is a set of B-spline faces, so an
+"every face planar" audit must exempt it, or build the roof as a polyhedron
+too. For a faceted stem printed lying flat, use a pentagon section: flat
+bottom, side walls with each top vertex directly over its bottom one, and a
+ridge on top. Square its base to the mounting axis, not to the first spine
+segment.
 
 ## When it does not hold
 

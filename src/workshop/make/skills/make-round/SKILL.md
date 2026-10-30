@@ -718,7 +718,19 @@ The independent blind review and its repair allowance are the Make reference's
 (`references/make.md` of the autonomous-workshop skill). After a passing
 hash-bound blind review, the final `--record-visual` may also use `--full` to
 invoke `verify_project --strict-fit` once; normally run the integrated
-verifier directly instead, never a new round just to run it. For Forge and
+verifier directly instead, never a new round just to run it.
+
+**A powered toy** (ADR 0095). A schema 10 contract with an `electrical`
+section states its circuit. Make writes `measure/power.json` for that circuit
+with the `electromechanical-integration` skill (its `power-manifest.md`):
+each non-wire electrical part is a report component with the same `id` and
+`role`, wires are added as `wire` components, and each contract path is a
+report path with the same `id`, source and load whose `sequence`, wires left
+out, is the contract's, rated for at least its `current_ma`. Final
+verification then runs with `--powered`, which refuses without the report and
+runs `check_power` on it; `--full` passes the flag for you. The host accepts
+Make only when the sealed `measure/power.json` is that circuit and the final
+pipeline record passed `check_power`; it does not rerun the gate. For Forge and
 Quest the host then performs the authoritative `--fresh` rebuild; Spark
 accepts Make's output without one (ADR 0061).
 
@@ -749,7 +761,7 @@ Every gate `make_round` runs, exactly as it runs it. `$C` is
 | interface check | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/interface-rounds/<id>/rNNNN/motion.json --json` | the `coupled_motion_collision` condition's and each insertion path's `status` |
 | motion | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/motion.json --json` | `status` per condition: `pass`, `fail`, `inconclusive` |
 | inspection views | `"$WORKSHOP_PYTHON" $C/render_review <selected entry.step.py> --view iso --view front --view left --view top --view iso_front --view iso_back --view iso_left --view iso_right --view iso_bottom [--view=AZ,EL ...] --sheet -o <round>/visual` | `sheet.png` (every view, labelled) plus each exact shaded PNG; the reference-camera views are composed into `compare-NN.png` beside each reference |
-| final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --strict-fit --print-gates [--image-derived] --report <project>/measure/verification-pipeline.md` | exit 0 = verifier passed; host gate still required |
+| final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --strict-fit --print-gates [--image-derived] [--powered\|--unpowered] --report <project>/measure/verification-pipeline.md`: `--powered` for a schema 10 contract with an `electrical` section, or an image-derived run with `measure/power.json`; otherwise an image-derived run passes `--unpowered` | exit 0 = verifier passed; host gate still required |
 | motion sheet | `"$WORKSHOP_PYTHON" $C/motion_presentation.py` (see the cad skill) | presentation only, not a gate |
 
 ## What this is not

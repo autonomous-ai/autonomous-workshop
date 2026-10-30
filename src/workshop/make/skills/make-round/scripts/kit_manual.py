@@ -132,6 +132,11 @@ JOINT_LABELS = {
     "foam-tape": "Foam tape", "glue": "Glue", "paper": "Paper", "fold": "Fold", "cut": "Cut",
     "bend": "Bend", "roll": "Roll", "leads": "Join the leads",
 }
+# How a leads step joins its leads (ADR 0095); a step without a method keeps
+# the schema 7 label.
+LEAD_METHOD_LABELS = {"twist": "Twist the leads together", "solder": "Solder the leads",
+                      "connector": "Plug the leads together"}
+SOLDERING_TOOLS = ("Soldering iron", "Solder")
 CHECK_PARTS_FIRST = "Check all Parts against the material lists before you start."
 # Q29: Bought Parts are bought, never printed; the Manual says so.
 NOT_PRINTED = "Bought, not printed"
@@ -350,6 +355,11 @@ def plan_manual(kit: dict, company: dict) -> dict:
     snapshot = plan.catalogue.get("bought_parts") or {}
     included = [str((snapshot.get(name) or {}).get("name") or name) for name in materials]
     power = [part for part in sorted(plan.bought) if _category(plan, part) == "power"]
+    # ADR 0095: loose cells are the batteries themselves, one line with their
+    # count; a battery contact is no power source and prints no line.
+    cells = [part for part in sorted(plan.bought) if _category(plan, part) == "cell"]
+    solder = any(plan.step[step].get("joint") == "leads" and plan.step[step].get("method") == "solder"
+                 for step in plan.step)
     screws = [part for part in sorted(plan.bought) if _category(plan, part) == "fastener"
               and any(isinstance(size, dict) and size.get("what") == "thread"
                       for size in _bought_entry(plan, part).get("sizes") or ())]
@@ -358,8 +368,19 @@ def plan_manual(kit: dict, company: dict) -> dict:
     if (power or screws) and not has_driver:
         included.append("Screwdriver")
     prepared = (["Scissors"] if plan.pieces else []) + [
-        "Batteries for %s (%s)" % (part, _bought_entry(plan, part).get("name", part)) for part in power]
-    warnings = [company["warnings"]["small_parts"]] + ([company["warnings"]["batteries"]] if power else [])
+        "Batteries for %s (%s)" % (part, _bought_entry(plan, part).get("name", part)) for part in power] + [
+        "Batteries: %d x %s" % (int(plan.totals.get(part, 1)), _bought_entry(plan, part).get("name", part))
+        for part in cells]
+    if solder:
+        prepared += [tool for tool in SOLDERING_TOOLS if tool not in prepared]
+    warnings = [company["warnings"]["small_parts"]] + (
+        [company["warnings"]["batteries"]] if power or cells else [])
+    if solder:
+        soldering = company["warnings"].get("soldering")
+        if isinstance(soldering, str) and soldering.strip():
+            warnings.append(soldering)
+        else:
+            failures.append("a leads step is soldered, but the company configuration has no soldering warning")
 
     return {
         "kind": KIND,
@@ -912,7 +933,9 @@ def _step(c, pages: Pages, readers, images, plan, document, step: str, left: flo
     picture = 64.0
     text_x, text_w = left + picture + 4, width - picture - 4
     code = step.split("-", 1)[0]
-    body = ["%s%s" % (JOINT_LABELS.get(item.get("joint"), item.get("joint")),
+    joint = item.get("joint")
+    label = LEAD_METHOD_LABELS.get(item.get("method")) if joint == "leads" else None
+    body = ["%s%s" % (label or JOINT_LABELS.get(joint, joint),
                       "  -  make %d" % item["count"] if int(item.get("count", 1)) > 1 else "")]
     inputs = [_input_label(plan, entry) for entry in plan.inputs[step]]
     instruction = _lines(item["text"], "Helvetica-Bold", 10, text_w)

@@ -11,7 +11,7 @@ sources:
   - https://hackaday.com/2017/10/17/sacrificial-bridge-avoids-3d-printed-supports/
   - https://hackaday.com/2023/05/28/3d-printing-bores-without-support/
   - https://help.prusa3d.com/article/support-material_1698
-related: [overhangs-and-print-orientation, fdm-design-rule-tables, fdm-hole-accuracy, printed-threads-and-bosses, print-in-place-mechanisms]
+related: [overhangs-and-print-orientation, fdm-design-rule-tables, fdm-hole-accuracy, nut-traps-and-captive-nuts, print-in-place-mechanisms]
 updated: 2026-09-23
 ---
 

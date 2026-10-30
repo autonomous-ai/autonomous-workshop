@@ -6,8 +6,9 @@ sources:
   - skills/cad/references/build123d-modeling.md (validity and BOP-check sections; before the move)
   - "toolchain: build123d 0.10 on OCP 7.9 (Part(solid.wrapped) volume, Bnd_Box control-hull bounds)"
   - "toolchain: OCP 7.9 BRepBndLib.AddOptimal on Bezier and NURBS faces trimmed by a plane"
-related: [boolean-pitfalls, modeling-failure-modes, construction-strategy, mass-properties-and-measurement, unmeshable-faces]
-updated: 2026-10-05
+  - "experience: a revolve profile whose closing segment was collinear with its first failed the BOP check"
+related: [boolean-pitfalls, modeling-failure-modes, construction-strategy, mass-properties-and-measurement, unmeshable-faces, freeform-surfaces-in-build123d, revolve-seam]
+updated: 2026-10-12
 ---
 
 # Kernel validity checks
@@ -15,6 +16,8 @@ updated: 2026-10-05
 A shape the kernel calls valid can still be inverted, BOP-faulty, or measured
 wrong. Gate every boolean result with the checks below rather than trusting
 the last operation.
+Sphere and ellipsoid seams that make a sound fuse read as self-intersecting
+are [[revolve-seam]].
 
 ## Validity is not positive volume
 
@@ -34,6 +37,11 @@ invalid — correct bounds and volume, one bad face. It survives until the next
 boolean, which then fails with `Null TopoDS_Shape object` from a call nowhere
 near the cause. `ShapeFix_Shape` repairs many of these.
 
+A fillet on an invalid solid can do worse than raise: it can segfault the
+interpreter inside `ChFi3d_FilBuilder` and take the whole build with it.
+Check `is_valid` before every fillet on a body built from faces
+([[freeform-surfaces-in-build123d#checks]]).
+
 `scripts/inspect validate` runs both gates plus closure and self-intersection
 over every occurrence. It measures volume **per solid**: an inverted member
 inside a compound cancels against a sound one, so anything reading a
@@ -47,7 +55,22 @@ chamfer and V-groove-cut results whose skinny faces are BOP-faulty
 only in `scripts/inspect validate` (`selfIntersecting`), with no pointer to
 the causing operation. After tangency-prone cuts and chamfers on wavy
 outlines, gate with the same check validation uses — `BRepAlgoAPI_Check` — and
-step the operation down or skip it when the check fails.
+step the operation down or skip it when the check fails. It is far slower than
+`BRepCheck_Analyzer` (minutes per body of a few hundred B-spline faces), so
+run it per body during the build rather than meeting it at the gate; when it
+fires it can name the whole solid and no face pair, which localises nothing.
+
+**A fillet on a curved outline can pass every validity check and still poison
+the cuts after it.** An R0.6 round along a chamfered face edge, over a
+B-spline bulge of a plan outline, came back with two edges carrying a 10.2 mm
+kernel tolerance. `is_valid` and validate both accepted it. The next
+booleans went silently wrong: a pocket whose prism holds 175 mm³ removed
+364 mm³, and a second pocket split the part into seven solids, one of them
+of negative volume. Two checks catch it at the source. Read the largest
+edge and vertex tolerance (`BRep_Tool.Tolerance`) after the round and refuse
+anything above about 1e-3 mm. Then hold every cut to its own bookkeeping:
+the volume removed must equal the cutter's prism volume. On that outline,
+the fix was to keep the chamfer and drop the round.
 
 ## Part(solid.wrapped) has zero volume
 
@@ -98,14 +121,18 @@ common cause).
 
 What the kernel means by shape types, orientation and tolerance: [[occt-topology-and-tolerance]]; repairing imported shapes: [[occt-shape-healing]].
 
-## An ellipsoid's seam can make a sound fuse read as self-intersecting
+## A zig-zag revolve profile self-intersects silently
 
-Ellipsoids made by scaling a sphere (a leg, a paw, toes) and fused across one
-another passed every other check and still failed `BRepAlgoAPI_Check` as
-`selfIntersecting` (so `inspect validate` failed the part), and only for some
-of the four legs. Two changes cleared it: fuse the pieces one at a time rather
-than as one multi-tool union, and turn the sphere's seam meridian about its
-pole before scaling so it faces away from where the other pieces cut it. With
-the seam at +X or -X one leg or another still failed; turned to -Y all four
-checked clean. The result depends on the seam, so run the same check the gate
-runs on each built solid before writing the STEP, rather than after.
+A stacked-tier outline (a fir tree, a pagoda) drawn as one zig-zag polygon and
+revolved builds without error but `validate` reports `selfIntersecting` when a
+tier's underside is steeper than the next tier's cone: the two conical faces
+cross inside the solid. Revolve one simple polygon per tier, union them with a
+core that passes through the notch points, and stop each tier's cone at the
+next notch; a cone left running to the axis pokes a sliver through the tip.
+
+## Collinear segments in a revolve profile
+
+A profile with two consecutive collinear segments revolves into two faces on
+the same cone, and `BRepAlgoAPI_Check` fails it. This includes the closing
+segment back to the first point. Merge collinear runs cyclically before
+revolving. A 2D `offset(kind=Kind.INTERSECTION)` of such a profile also fails.

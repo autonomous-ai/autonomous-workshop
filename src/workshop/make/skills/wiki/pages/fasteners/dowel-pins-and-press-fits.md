@@ -8,9 +8,10 @@ sources:
   - https://www.sfp-tw.com/en/post/iso-2338-dowel-pins-differences-and-relationships-with-din-7-iso-8734-and-din-6325 (unhardened vs hardened; via search excerpt)
   - https://tools.creative3dp.com/blog/press-fit-tolerances-3d-printing/ (FDM fit ladder, hole undersize, 608 seat, TPU, coupon)
   - https://meshra.ai/blog/magnet-pockets-3d-printing (press-fit pocket practice)
+  - skills/cad/scripts/cadfits.py (slot_for, press class)
   - "toolchain: step.parts dowel and precision-shaft STEP files measured at double their named length"
-related: [fit-derivation, joints, shafts-and-bearings, iso-286-fits, magnets-and-strap-slots, thermal-expansion-and-hybrid-parts, exact-constraint-and-kinematic-mounts]
-updated: 2026-09-29
+related: [fit-derivation, joints, shafts-and-bearings, iso-286-fits, magnets-and-strap-slots, thermal-expansion-and-hybrid-parts, exact-constraint-and-kinematic-mounts, construction-toy-interfaces]
+updated: 2026-10-10
 ---
 
 # Dowel pins and press fits in printed parts
@@ -75,10 +76,14 @@ the real pin). If the fit is wrong, adjust the offending dimension by 0.05 mm
 and reprint. Two iterations are usually enough. A press fit in a printed part
 is a claim no geometry gate can verify; record it as an open item until a
 print confirms it.
+A stud-diameter sweep for brick-compatible parts is the same coupon:
+[[construction-toy-interfaces#a-stud-coupon]].
 
 ## Checks
 
 ```python
+from cadfits import slot_for
 assert pin_standard in ("ISO 2338", "ISO 8734"), "dowel not from a standard"
-assert fit_class_for(pin) == "press", "a locating dowel wants interference, not clearance"
+HOLE_D = slot_for(PIN_D, "press")      # hole derived from the pin: PIN_D + 2 x (-0.05)
+assert HOLE_D < PIN_D, "a locating dowel wants interference, not clearance"
 ```

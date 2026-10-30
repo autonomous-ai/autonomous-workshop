@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 from workshop.errors import ContractError
 from workshop.wish.assembly_tree import ContractAssemblyTree, parse_assembly_tree
 from workshop.wish.catalogues import Catalogues, load_catalogues
+from workshop.wish.electrical import ContractElectrical, parse_electrical
 from workshop.wish.print_sheets import ContractPrint, parse_print_section
 
 # ADR 0072's row limits (16 assembly-scoped rows, 4 per Unique Geometry) are
@@ -41,8 +42,12 @@ from workshop.wish.print_sheets import ContractPrint, parse_print_section
 # two extra views of its three-view sheet. Schema 9 is schema 8 without
 # ``wall_min_mm`` (ADR 0094): Make gates every wall at the nozzle's print
 # minimum and never measured a per-geometry floor, so a schema 9 geometry
-# states none and refuses one.
-SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7, 8, 9)
+# states none and refuses one. Schema 10 is schema 9 plus the optional
+# Electrical section of a powered toy (ADR 0095): its circuit parts, each
+# complete path, the supply, current, standby drain, runtime, switch logic
+# and who joins the leads. Make gates it with ``verify_project --powered``
+# and the host checks Make's power report against it.
+SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 INTERFACES_SCHEMA_VERSION = 2
 CAMERA_SCHEMA_VERSION = 3
 INTERFACE_TEXT_SCHEMA_VERSION = 4
@@ -51,10 +56,11 @@ PRINT_SCHEMA_VERSION = 6
 TREE_SCHEMA_VERSION = 7
 PROSE_SCHEMA_VERSION = 8
 NO_WALL_SCHEMA_VERSION = 9
+ELECTRICAL_SCHEMA_VERSION = 10
 # A run may seal these. Schema 7 became sealable once every gate it needs was
 # wired: Make's tree gates (ADR 0092 decision 8, issue #136) and its Manual
 # (decision 9, issue #137), which the host checks before Make is accepted.
-SEALABLE_SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7, 8, 9)
+SEALABLE_SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 MAX_GUIDE_SHOWS_CHARS = 500
 MAX_GUIDE_STEPS = 24
 MAX_GUIDE_STEP_CHARS = 300
@@ -236,6 +242,9 @@ class DesignContract:
     # Schema 8 (ADR 0093): every prose section some geometry names, in the
     # order the prose gives them. None before schema 8.
     prose: Optional[Tuple[ContractProseSection, ...]] = None
+    # Schema 10 (ADR 0095): a powered toy's circuit. None before schema 10
+    # and for a toy with no electrical load.
+    electrical: Optional[ContractElectrical] = None
 
     def check_sealable(self) -> None:
         """Refuse a contract no run can seal yet (schema 7: see
@@ -248,12 +257,23 @@ class DesignContract:
             )
 
     def kit_catalogue(self) -> Optional[Dict[str, Any]]:
-        """The catalogue entries a schema 7 or 8 tree uses, sealed beside the
-        contract (ADR 0092) so Make's tree gates read the colour of each
+        """The catalogue entries a schema 7 or later tree uses, sealed beside
+        the contract (ADR 0092) so Make's tree gates read the colour of each
         printed Part and the size of each Bought Part from the Wish, not from
-        whatever the owner's catalogue says later. None before schema 7."""
+        whatever the owner's catalogue says later, and from schema 10 those
+        of the Electrical section (ADR 0095), so a powered toy that is no
+        kit still seals its Bought Parts. None when the contract has neither."""
 
-        return None if self.assembly_tree is None else self.assembly_tree.catalogue_snapshot()
+        if self.assembly_tree is None and self.electrical is None:
+            return None
+        snapshot: Dict[str, Any] = {"filaments": {}, "bought_parts": {}}
+        for section in (self.assembly_tree, self.electrical):
+            if section is None:
+                continue
+            extra = section.catalogue_snapshot()
+            snapshot["filaments"].update(extra.get("filaments") or {})
+            snapshot["bought_parts"].update(extra.get("bought_parts") or {})
+        return {key: dict(sorted(value.items())) for key, value in snapshot.items()}
 
     def reference_labels(self) -> Dict[str, str]:
         """Sealed file name -> the label Contract Mode uses in Make round summaries."""
@@ -369,6 +389,11 @@ class DesignContract:
             **(
                 {"prose": [item.to_dict() for item in self.prose]}
                 if self.prose is not None
+                else {}
+            ),
+            **(
+                {"electrical": self.electrical.to_dict()}
+                if self.electrical is not None
                 else {}
             ),
         }
@@ -984,7 +1009,7 @@ def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) ->
 
     schema_version = block.get("schema_version")
     if isinstance(schema_version, bool) or schema_version not in SCHEMA_VERSIONS:
-        errors.append("schema_version must be 1, 2, 3, 4, 5, 6, 7, 8 or 9")
+        errors.append("schema_version must be 1, 2, 3, 4, 5, 6, 7, 8, 9 or 10")
     # Each feature below starts at one schema and carries into every later
     # one; an unknown schema reads as none of them.
     version = (
@@ -1068,6 +1093,24 @@ def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) ->
     prose: Optional[Tuple[ContractProseSection, ...]] = None
     if version >= PROSE_SCHEMA_VERSION:
         prose = _parse_prose(text, geometries, errors)
+    electrical: Optional[ContractElectrical] = None
+    if version >= ELECTRICAL_SCHEMA_VERSION and "electrical" in block:
+        if catalogues is None:
+            try:
+                catalogues = load_catalogues()
+            except ContractError as exc:
+                errors.append(str(exc))
+        if catalogues is not None:
+            tree_bought = None
+            if assembly_tree is not None:
+                tree_bought = {
+                    item["id"]: item["bought"]
+                    for item in assembly_tree.section.get("parts") or ()
+                    if isinstance(item, dict) and "bought" in item
+                }
+            electrical = parse_electrical(block.get("electrical"), catalogues, errors, tree_bought)
+    elif "electrical" in block:
+        errors.append("electrical needs schema_version 10 or later")
 
     if errors:
         raise ContractError("design contract: " + "; ".join(errors))
@@ -1085,4 +1128,5 @@ def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) ->
         print_sheets=print_sheets,
         assembly_tree=assembly_tree,
         prose=prose,
+        electrical=electrical,
     )

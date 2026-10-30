@@ -8,8 +8,8 @@ sources:
   - https://www.suspa.com/global/products/gas-struts/faq (rod down, ~3.5 % force per 10 °C between −30 and +80 °C, no side load, friction F_out = A p − F_R, F_in = A p + F_R, 10,000–100,000 double strokes)
   - https://www.engineeringtoolbox.com/metal-alloys-densities-d_50.html (steel 7850, bismuth 9750, lead 11340, tungsten 19600 kg/m³)
   - https://en.wikipedia.org/wiki/Random_close_pack (loose random sphere packing 0.59–0.60, random close packing ~0.64)
-related: [springs, hinges-and-pin-joints, stability-and-tipping, linkages, mass-properties-and-measurement, toy-safety-constraints, creep-and-stress-relaxation, magnets-and-strap-slots, rod-ends-and-clevises]
-updated: 2026-10-01
+related: [springs, hinges-and-pin-joints, stability-and-tipping, linkages, mass-properties-and-measurement, toy-safety-constraints, creep-and-stress-relaxation, magnets-and-strap-slots, rod-ends-and-clevises, balance-toys-and-tensegrity]
+updated: 2026-10-10
 ---
 
 # Counterweights and gravity balance
@@ -173,6 +173,9 @@ printed friction relaxes ([[creep-and-stress-relaxation]]).
 - Put the fill where the moment needs it — as far from the pivot as the
   envelope allows — and model it as its own body so the CoM check uses its
   real density.
+- Ballast that hangs a figure below a point pivot or rights a tumbler,
+  and the loose-fill level that gives the lowest CoM:
+  [[balance-toys-and-tensegrity]].
 
 ## Stability: balance moves the problem to the base
 

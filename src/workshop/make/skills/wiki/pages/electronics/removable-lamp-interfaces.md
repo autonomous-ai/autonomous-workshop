@@ -5,9 +5,10 @@ aliases: [lamp socket, twist lock, bayonet mount, printed receiver, replaceable 
 sources:
   - skills/electromechanical-integration/references/lighting-discovery.md
   - skills/cad/references/motion-manifests.md
+  - skills/electromechanical-integration/references/power-manifest.md
   - "experience: CAD booleans that could not predict shrinkage, elephant foot or contact spring force at a printed receiver"
 related: [lighting-design, electrical-component-selection, joints, mechanism-verification, bayonet-and-twist-locks]
-updated: 2026-10-01
+updated: 2026-10-10
 ---
 
 # Removable lamp and socket interfaces
@@ -42,11 +43,10 @@ bought, rated components:
 - derive the female path from the male lamp lugs or threads, from one source
   dimension, with clearance applied once through `cadfits`
   ([[joints#two-fit-classes-per-project]]);
-- record why a purchased socket was not used;
-- declare lamp and receiver/contact MPNs with source URL and revision; the
-  interface type and datum, lug count, insertion depth, lock angle and
-  direction; the CAD clearance and how it was derived; the retention stop;
-  connector, tool/finger access and service direction.
+- record why a purchased socket was not used, and declare the interface
+  (the field list is in
+  `skills/electromechanical-integration/references/lighting-discovery.md`,
+  "Removable lamp mating hardware").
 
 ## Motion is a five-phase contract
 
@@ -81,10 +81,10 @@ tolerance. Before claiming that a printed receiver physically fits:
   and receiver/contact samples (for example 0.15 / 0.25 / 0.35 mm), and keep the
   current CAD clearance among the candidates even while the coupon is only
   planned;
-- record status, material, process, orientation, hardware sample identifiers,
-  candidate clearances, method and result.
+- record the coupon (fields and statuses:
+  `skills/electromechanical-integration/references/power-manifest.md`,
+  `fit_coupon`).
 
-`planned` means physical fit is still unverified. `failed` blocks the
-interface. `passed` must name a selected clearance that was actually among the
-tested candidates, and the CAD and spec are updated to that value before final
-manufacture.
+A coupon proves only the clearances it tested: until it passes, physical fit
+is unverified, and the clearance the CAD and spec carry afterwards must be one
+of the tested candidates.

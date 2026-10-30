@@ -9,8 +9,8 @@ sources:
   - https://occt3d.com/dev/doc/refman/html/class_b_rep_offset_a_p_i___make_pipe_shell.html
   - "toolchain: build123d 0.11.1 on OCP, every number below measured with small shapes"
   - "experience: helicoidal crown teeth built as ruled faces between helix edges, extruded and cut, meshed exactly by subtraction"
-related: [build123d-operations-and-export, operation-families, frames-and-rotations, kernel-validity, printed-threads, element-libraries, springs, boolean-pitfalls, push-to-turn-indexer]
-updated: 2026-09-29
+related: [laid-rope-tubes, build123d-operations-and-export, operation-families, frames-and-rotations, kernel-validity, printed-threads, element-libraries, springs, boolean-pitfalls, push-to-turn-indexer, marble-runs-and-ball-tracks]
+updated: 2026-10-10
 ---
 
 # Sweeps and helices
@@ -74,6 +74,23 @@ the first. Do not pass `normal=` for a curved path.
 Frenet is undefined where curvature is zero; on a path with straight segments
 or inflections it flips the section. Use Frenet for helices and
 `is_frenet=False` or a `binormal` guide elsewhere.
+
+### A seated surface band needs a surface rail audit
+
+For a padded strip around a curved body, derive the rail from the actual
+surface and use its normals to define an auxiliary guide for section
+orientation. A valid sweep can still bury half the strip and leave the other
+half floating if the rail itself is misplaced. Check both seating and
+orientation in shaded views; volume identity and BOP validity do not prove
+surface contact.
+
+For the ellipsoid `x²/a² + y²/b² + (z−zc)²/c² = 1` intersected by
+`z = zb − m*x`, completing the square gives the section centre
+`xc = a²*m*(zb−zc)/(c² + a²*m²)` and `zcentre = zb − m*xc`.
+The sign of that shift follows the declared plane equation. Assert the plane
+equation and ellipsoid equation independently at sampled rail points before
+sweeping; a sign error can preserve every volume/topology check while moving
+the band off the body.
 
 ## Corners: the default transition silently drops material
 
@@ -157,6 +174,9 @@ mating crown by subtraction. A loft through radial sections only approximates
 the cylinders between sections, and a Frenet sweep of a radial rectangle tilts
 its end faces off the radial planes.
 
+A helical ball track must also print and roll smoothly; its ramp and layer
+rules are in [[marble-runs-and-ball-tracks#printing-a-track-layer-lines-are-bumps]].
+
 ## Swept springs and coils
 
 A swept circle on `Helix` with `is_frenet=True` is the modelled spring: a
@@ -183,6 +203,11 @@ placed along the path (each on a plane built from `position_at` /
 7 faces. Sections must be ordered along the path and the path must be C1
 (transition is ignored). For more than two very different sections a
 [[loft-pitfalls]]-style loft is usually easier to control.
+
+## A laid rope
+
+A twisted cord is not a swept profile: build it as a B-spline tube from a
+sampled control net, see [[laid-rope-tubes]].
 
 ## Checks
 

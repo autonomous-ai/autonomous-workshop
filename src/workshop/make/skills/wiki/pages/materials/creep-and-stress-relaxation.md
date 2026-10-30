@@ -63,7 +63,7 @@ strength) ([[uv-and-outdoor-exposure]]).
   ([[joints#keyed-joints]]); treat friction retention as a limitation.
 - **Snap fits that stay deflected creep open.** Design latches so the beam
   returns to zero deflection once engaged. A latch held permanently bent
-  loses its hold ([[flexure-materials-and-snap-strain#snap-fit-strain]]).
+  loses its hold ([[snap-fit-design#permissible-strain]]).
 - **Bolted printed parts lose preload.** Clamp through a metal sleeve or put
   a washer or spring washer under the head so the plastic is not the spring.
 - **Heat is the multiplier.** A part near a motor, in a car

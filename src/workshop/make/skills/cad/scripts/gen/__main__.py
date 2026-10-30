@@ -18,7 +18,7 @@ if os.environ.get("CADGEN_WARM") == "1" and not os.environ.get("CADGEN_DAEMON_CH
         raise SystemExit(warm_exit)
 
 # Prefer the skill's bundled cadgen over any pip-installed copy, exactly like
-# snapshot's entry: the vendored scripts/packages/cadgen is the version this
+# the other CLI entries: the vendored scripts/packages/cadgen is the version this
 # skill runtime was built against, while the interpreter's site-packages may
 # hold a different checkout/release. Falls back to the installed package when
 # the vendored path is absent (e.g. PyPI-pinned plugin installs).

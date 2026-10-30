@@ -7,8 +7,8 @@ occurrences -> component + world transform. Components are keyed by their source
 STEP content hash, so editing one part rebuilds only that component; the rest are
 reused from the package's content-addressed cache.
 
-This is the build side only; consumers (viewer/snapshot/inspect) compose the
-assembly manifest from the package at read time (see the design doc, sec. 6/8).
+This is the build side only; consumers (inspect, the viewer) compose the
+assembly manifest from the package at read time.
 """
 
 from __future__ import annotations
@@ -22,10 +22,7 @@ from typing import Any, Mapping
 
 from cadgen._internal.atomic_replace import replace_atomic, temp_suffix
 from cadgen.catalog import render_package_dir
-from cadgen._internal.generation import (
-    DEFAULT_MESH_ANGULAR_TOLERANCE,
-    DEFAULT_MESH_TOLERANCE,
-)
+from cadgen.metadata import DEFAULT_MESH_ANGULAR_TOLERANCE, DEFAULT_MESH_TOLERANCE
 from cadgen._internal.glb import export_assembly_glb_from_scene
 from cadgen._internal.package_freshness import STEP_PACKAGE_VERSION
 from cadgen.coordination import (
@@ -161,12 +158,6 @@ def _content_hash_and_bytes(shape: Any) -> tuple[str, bytes]:
     return digest.hexdigest(), brep
 
 
-def _content_hash_shape(shape: Any) -> str:
-    """sha256 of a shape's location-stripped BREP bytes (see
-    :func:`_content_hash_and_bytes`)."""
-    return _content_hash_and_bytes(shape)[0]
-
-
 def _transform_from_location(location: Any) -> list[float]:
     """Flatten a build123d ``Location`` to a 16-float row-major 4x4 matrix."""
     trsf = location.wrapped.Transformation()
@@ -241,7 +232,7 @@ def _occurrence_material(child: Any) -> dict[str, float] | None:
 
 def _unlocated_shape(shape: Any) -> Any:
     """A copy of ``shape`` moved to the identity location (its LOCAL frame), preserving the
-    ``label``/``color`` a clean component still carries. Mirrors ``_content_hash_shape``'s
+    ``label``/``color`` a clean component still carries. Mirrors ``_content_hash_and_bytes``'s
     location stripping so the emitted GLB is the exact local geometry the cid addresses.
 
     Uses OCCT's ``TopoDS_Shape.Located`` (shares the underlying ``TShape``, O(1)) rather than
@@ -273,7 +264,7 @@ def _unlocated_shape(shape: Any) -> Any:
 def _shape_brep_bytes(shape: Any) -> bytes:
     """Location-stripped binary BREP of a shape (no triangulation/normals) — the
     process-boundary payload for parallel component builds. Mirrors
-    ``_content_hash_shape``'s serialization so the worker rebuilds exactly the
+    ``_content_hash_and_bytes``'s serialization so the worker rebuilds exactly the
     geometry the cid addresses."""
     import io
 
@@ -500,7 +491,7 @@ def build_package_from_compound(
     ``force`` rebuilds every component even if its ``<cid>.glb`` is present (the cid hashes
     geometry, not the mesh/selector code version). Returns build stats.
 
-    ``progress`` (a :class:`cadgen._internal.progress.ProgressReporter`) is driven through
+    ``progress`` (a :class:`cadgen.coordination.ProgressReporter`) is driven through
     the walk and the component build; the latter is the one stage of a model build with a
     denominator known before the work starts."""
     package_dir = Path(package_dir)
@@ -593,55 +584,13 @@ def build_package_from_compound(
     # (parent_world * node.location). A subassembly is a tree node grouping its descendant leaves,
     # NOT a single merged component, so the tree can drill into / select / isolate its parts.
     assembly_root: dict[str, Any] | None = None
-    occurrence_tree = getattr(compound, "_occurrence_tree", None)
     progress.phase(PHASE_PACKAGE)
     if single_component:
         _add_leaf(compound, getattr(compound, "location", None) or Location(), "o1.1")
-    elif occurrence_tree is not None:
-        # Fast path: a raw-OCCT-composed assembly carries an explicit occurrence-metadata tree
-        # (see link_assembly.compound_from_instances) because the compound has no build123d child
-        # structure to walk. Each leaf node already holds its local shape + world location + name.
-        def _consume(node: dict[str, Any]) -> dict[str, Any]:
-            if node.get("leaf"):
-                return _add_leaf(node["shape"], node["world_loc"], node["id"], name=node["name"])
-            child_nodes = [_consume(child) for child in node["children"]]
-            return {
-                "id": node["id"],
-                "name": node["name"],
-                "nodeType": "subassembly",
-                "leafPartIds": [leaf_id for cn in child_nodes for leaf_id in cn["leafPartIds"]],
-                "children": child_nodes,
-            }
-
-        assembly_root = _consume(occurrence_tree)
-        assembly_root["nodeType"] = "assembly"
     else:
-        def _consume_spliced(node: dict[str, Any], parent_world_loc: Any, path: str) -> dict[str, Any]:
-            # A nested compound_from_instances subtree: remap its self-relative
-            # occurrence ids under the enclosing walk path and accumulate the
-            # enclosing world location into its placements.
-            if node.get("leaf"):
-                return _add_leaf(node["shape"], parent_world_loc * node["world_loc"], path, name=node["name"])
-            child_nodes = [
-                _consume_spliced(child, parent_world_loc, f"{path}.{index}")
-                for index, child in enumerate(node["children"], start=1)
-            ]
-            return {
-                "id": path,
-                "name": node["name"],
-                "nodeType": "subassembly",
-                "leafPartIds": [leaf_id for cn in child_nodes for leaf_id in cn["leafPartIds"]],
-                "children": child_nodes,
-            }
-
         def _walk(node: Any, parent_world_loc: Any, path: str) -> dict[str, Any]:
             node_loc = getattr(node, "location", None)
             world_loc = (parent_world_loc * node_loc) if node_loc is not None else parent_world_loc
-            nested_tree = getattr(node, "_occurrence_tree", None)
-            if nested_tree is not None:
-                spliced = _consume_spliced(dict(nested_tree, leaf=False), world_loc, path)
-                spliced["name"] = str(getattr(node, "label", "") or nested_tree.get("name") or path)
-                return spliced
             child_shapes = list(getattr(node, "children", []) or [])
             if not child_shapes:
                 return _add_leaf(node, world_loc, path)

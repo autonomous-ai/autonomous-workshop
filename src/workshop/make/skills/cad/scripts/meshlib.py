@@ -27,8 +27,14 @@ import sys
 import numpy as np
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
+from scipy.spatial import cKDTree
 
-WELD_TOL = 1e-6          # mm; vertices closer than this are the same vertex
+# mm; vertices closer than this are the same vertex. Not tighter: the two faces
+# of a boolean-made edge each place its nodes from their own pcurve on their
+# own surface, so a shared node can arrive up to that edge's tolerance apart
+# (1e-6 to 1e-5 measured on a snap bore's narrow step); at 1e-6 those split
+# into open edges. Four decades under any printable feature.
+WELD_TOL = 1e-5
 SLIVER_HEIGHT = 1e-6     # mm; a triangle thinner than this is numerically a line
 
 
@@ -37,11 +43,19 @@ SLIVER_HEIGHT = 1e-6     # mm; a triangle thinner than this is numerically a lin
 # --------------------------------------------------------------------------
 
 def weld(tris, tol=WELD_TOL):
-    """Snap vertices to a tolerance grid and return (verts, faces)."""
+    """Merge vertices closer than `tol` and return (verts, faces).
+
+    By distance, not by rounding to a grid: two nodes 1e-9 apart that straddle
+    a grid cell's boundary round to different cells, so a grid weld opens
+    edges, and which ones depends on where the part sits (the same solid moved
+    by 0.013 mm went from 20 open edges to none, by 0.1 mm to 84)."""
     flat = tris.reshape(-1, 3)
-    keys = np.round(flat / tol).astype(np.int64)
-    _, first, inverse = np.unique(keys, axis=0, return_index=True, return_inverse=True)
-    return flat[first], inverse.reshape(-1, 3)
+    uniq, inverse = np.unique(flat, axis=0, return_inverse=True)
+    inverse = np.asarray(inverse).reshape(-1)
+    pairs = cKDTree(uniq).query_pairs(tol, output_type="ndarray")
+    label = components(len(uniq), pairs)
+    _, first, index = np.unique(label, return_index=True, return_inverse=True)
+    return uniq[first], np.asarray(index).reshape(-1)[inverse].reshape(-1, 3)
 
 
 def components(size, pairs):
@@ -405,6 +419,19 @@ def _self_check():
     grid, _origin = voxelize(sv, sf, 0.5)
     want = 20.0 ** 3 - 12.0 ** 3
     assert abs(grid.sum() * 0.125 - want) / want < 0.01, grid.sum() * 0.125
+    # Two triangles sharing an edge whose nodes arrive 3e-6 apart (a boolean
+    # edge meshed from both faces), slid across grid-cell boundaries: the weld
+    # must close the edge wherever the pair sits.
+    for shift in (0.0, 0.4e-5, 0.5e-5, 0.13, 0.37, 1.0, 12.345678):
+        jitter = np.array([3e-6, -2e-6, 1e-6])
+        pair = np.array([
+            [[0, 0, 0], [1, 0, 0], [0, 1, 0]],
+            [[1, 0, 0] + jitter, [1, 1, 0], [0, 1, 0] - jitter],
+        ], dtype=np.float64) + shift
+        pv, pf = weld(pair)
+        shared = summarize(pv, pf)
+        assert len(pv) == 4, (shift, len(pv))
+        assert shared["boundary"] == 4, (shift, shared["boundary"])   # the square's rim only
     print("meshlib self-check: ok")
 
 

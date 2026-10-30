@@ -155,8 +155,8 @@ def scene_label_rows(scene: Any) -> list[dict[str, str]]:
 
     ``occurrences_from_scene`` returns only leaves, because only leaves carry a solid to test.
     Label resolution needs more than that: a subassembly label like ``damper_body`` resolves
-    fine through the selector index (``snapshot --focus``, ``inspect refs``), so it has to
-    resolve here too or the same ref works on four CLIs and fails on two.
+    fine through the selector index (``inspect refs``), so it has to resolve here too or the
+    same ref works on one command and fails on another.
     """
     rows: list[dict[str, str]] = []
 

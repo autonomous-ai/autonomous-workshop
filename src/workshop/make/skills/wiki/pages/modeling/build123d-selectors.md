@@ -5,8 +5,9 @@ aliases: [face selection, edge selection, selector cookbook, topology selection,
 sources:
   - skills/image-to-cad/references/build123d-operations.md (selector cookbook; before the move)
   - skills/cad/references/build123d-modeling.md (selection practices; before the move)
+  - "experience: a landmark audit missed the tapered walls of a voxel plinth"
 related: [frames-and-rotations, construction-strategy, modeling-failure-modes]
-updated: 2026-09-23
+updated: 2026-10-09
 ---
 
 # build123d selectors
@@ -28,6 +29,13 @@ selects with `ShapeList` methods, not with CadQuery's string mini-language.
 | `.faces().filter_by(GeomType.PLANE)` | Planar faces only | Keeping a fillet off a lofted skin |
 | `Plane.XY.offset(h)` | A plane at a height | A feature with no face to land on |
 | `Plane(origin=..., x_dir=..., z_dir=...)` | An explicit frame | Angled features, leaning faces |
+
+## Flat faces that are not typed PLANE
+
+`extrude(..., taper=...)` and a ruled `loft` return faces typed `BSPLINE` even
+when they are flat. An audit or selector that filters on `GeomType.PLANE`
+misses them silently. Select by face normal, constant across the face, or by
+`is_planar`, instead of by geometry type.
 
 ## Rules for stable selection
 

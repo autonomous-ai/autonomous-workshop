@@ -7,15 +7,15 @@ sources:
   - skills/image-to-cad/references/decomposition.md
   - skills/cad/scripts/cadfits.py (print_in_place_gap)
   - "experience: image-derived specs that copied a photographed split into parts that never fitted, or fused a moving joint into one body"
-related: [feature-build-order, fit-derivation, joints, wall-thickness-and-hollowing, print-in-place-mechanisms]
-updated: 2026-09-23
+related: [construction-strategy, fit-derivation, joints, wall-thickness-and-hollowing, print-in-place-mechanisms]
+updated: 2026-10-10
 ---
 
 # How many printed parts
 
-Decide this before the file layout, because it decides the layout. **Default to
-one part.** Most objects are a single sculpted body; a unified body looks
-better, prints better, and has nothing to misfit.
+**Default to one part.** Most objects are a single sculpted body; a unified
+body looks better, prints better, and has nothing to misfit. Decide it before
+the file layout, which it decides (`skills/cad/references/project-structure.md`).
 
 The photographed object shows a *manufacturing* decomposition chosen for
 injection moulding, assembly lines and material cost. None of those constraints
@@ -43,10 +43,8 @@ Split into a separate printed part **only** if at least one is true:
 
 If none is true: **one part**. When genuinely unsure: **one part**.
 
-A part count is not a file count. "Default to one part" answers *what gets
-printed*; it does not answer *how many source files*. A one-piece display model
-with 50 named solids is still a multi-file project. Decide the two questions
-separately, in that order.
+A part count is not a file count: how many source files a model gets is
+`skills/cad/references/project-structure.md`'s question, answered after this one.
 
 ## The cosmetic-seam trap
 
@@ -74,12 +72,10 @@ can, at the cost of a designed gap. Print-in-place keeps the object one part
 *and* moving, which is usually what the image shows.
 
 Take the gap from `cadfits.print_in_place_gap(fit, layer_height=, material=)`,
-never a typed number: XY per mating face is 0.20 (`tight`), 0.30 (`sliding`,
-the default) or 0.40 (`loose`), plus 0.05 for ooze-prone PETG/ABS/ASA; Z is
-XY + layer height, because the top of a gap is a bridge that droops; and the
-bottom chamfer is 0.5 mm ([[joints#revolute-joints]]). State the gap once so
-both mating faces derive from it, and
-record that only a print proves the joint frees.
+never a typed number; what its `xy`, `z` and `bottom_chamfer` mean is in
+[[print-in-place-mechanisms#the-gap-is-per-face-and-per-direction]]. State the
+gap once so both mating faces derive from it, and record that only a print
+proves the joint frees.
 
 The rest of the design — gaps near the bed, gap ceilings, pin orientation,
 captive joints and the clearance check — is in [[print-in-place-mechanisms]].

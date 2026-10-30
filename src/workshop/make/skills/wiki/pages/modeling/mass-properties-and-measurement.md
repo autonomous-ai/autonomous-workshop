@@ -1,7 +1,7 @@
 ---
 title: Mass properties and measurement
 tags: [volume, area, mass, center-of-mass, inertia, bounding-box, distance, clearance, measurement]
-aliases: [center of mass, centre of gravity, CoM, CenterOf.MASS, CenterOf.BOUNDING_BOX, matrix_of_inertia, principal_properties, radius_of_gyration, moment of inertia, distance_to, distance_to_with_closest_points, BRepExtrema_DistShapeShape, GProp_GProps, minimum distance, weight estimate, bounding box optimal]
+aliases: [center of mass, centre of gravity, CoM, CenterOf.MASS, CenterOf.BOUNDING_BOX, matrix_of_inertia, principal_properties, radius_of_gyration, moment of inertia, distance_to, distance_to_with_closest_points, BRepExtrema_DistShapeShape, GProp_GProps, minimum distance, weight estimate, bounding box optimal, is_inside cost, probing a solid, landmark audit cost, check_landmarks, geom_type filter, count through-holes, inner_wires, BRepAlgoAPI_Section empty, shell count, child bounding box, parent frame]
 sources:
   - "experience: ten wordmark-inlaid plates whose region-sum audit failed under one integration call or the other"
   - .venv/lib/python3*/site-packages/build123d/topology/shape_core.py (area, matrix_of_inertia, principal_properties, radius_of_gyration, compute_mass, combined_center, bounding_box, distance_to_with_closest_points)
@@ -9,8 +9,14 @@ sources:
   - .venv/lib/python3*/site-packages/build123d/geometry.py (BoundBox.from_topo_ds, BoundBox.is_inside)
   - "toolchain: build123d 0.11.1 on OCP, every number below measured with small shapes"
   - "toolchain: a traced 650-sample spline plate whose default volume read 14-80 % high while precise integration and its mesh agreed"
-related: [kernel-validity, occt-topology-and-tolerance, boolean-pitfalls, parametric-design-intent, mechanism-verification, filament-properties]
-updated: 2026-10-08
+  - "toolchain: ruled lofts through dense measured sections read up to 10 % low at the default precision; BRepAlgoAPI_Section on them came back empty at about one height in four"
+  - "toolchain: Shape.is_inside cost grows with face count — 0.38 ms on a 34-face solid, 2.9–15 ms on a 108-face one (reproducible)"
+  - "experience: a landmark row that probed with 4 400 is_inside calls took 61 s; reading the same crests off the edges took 0.004 s"
+  - "experience: a multi-solid colour body answered is_inside False for points its solids covered"
+  - "toolchain: build123d 0.11.1 — Solid & Solid with no overlap returns None, Part & Part an empty Compound"
+  - skills/cad/references/image-derived-verification.md
+related: [kernel-validity, occt-topology-and-tolerance, boolean-pitfalls, parametric-design-intent, mechanism-verification, filament-properties, brep-vs-source]
+updated: 2026-10-10
 ---
 
 # Mass properties and measurement
@@ -31,7 +37,12 @@ on small parts) and belongs in the generator as an `assert`.
   -140 at a tight tolerance; `check_fit`'s volume column printed the wrong
   figure too. The geometry was sound: `BRepGProp.VolumeProperties_s(shape.wrapped,
   props, 1e-6, True)` and the volume of the tessellation agreed to 0.1 %.
-  For mass or volume asserts on such a body use that call, or the mesh.
+  For mass or volume asserts on such a body use that call (a precision of
+  1e-5 to 1e-6), or the mesh. The error runs either way: multi-span ruled
+  lofts through dense measured sections read up to 10 % **low** at the
+  default precision. The default figure also moves by up to half a percent
+  after each boolean on a lofted skin. A fuse can then seem to add more than
+  its tool, so check that a fuse conserves volume on a fine tessellation.
 - **And not that call on text.** On solids bounded by text-glyph faces (an
   inlaid wordmark) the same `1e-6, True` call read one letter 5 % high, and
   the colour regions of a plate summed 0.2–0.3 mm³ away from the plate they
@@ -45,8 +56,14 @@ on small parts) and belongs in the generator as an `assert`.
   overlapping by half: compound 2000, fused 1500. An assembly compound's
   volume is not the material volume; an overlap is invisible in it. Fuse
   first, or compare the sum against the fused volume to *measure* overlap.
-- An empty result is not `None`: the intersection of two face-touching boxes
-  is an empty `Compound` with volume 0. Assert on volume, not truthiness.
+- An empty intersection comes back as `None` or as an empty shape depending
+  on the operands (build123d 0.11.1): two `Solid`s that only touch or miss
+  give `None` from `&` and from `.intersect()`, while two algebra `Part`s
+  (`Box(...) & Box(...)`) give an empty `Compound` of volume 0. Guard both:
+  `r is not None and r.volume > tol`, never truthiness alone.
+- Count shells per solid. A hole that failed to break through leaves a sealed
+  cavity, and volume, bounding box and every section still agree with the
+  reference (the section cuts the void either way).
 
 ## Center: MASS, BOUNDING_BOX, GEOMETRY
 
@@ -99,6 +116,24 @@ settings (perimeters are solid, infill is not), not the filament's ([[filament-p
   a loft measured 30.08 wide optimal and **42.24** non-optimal; a planar
   spline 11.69 vs 12.97. Exact on analytic shapes either way. (Raw OCC
   `Bnd_Box.Add` is the non-optimal one: [[kernel-validity#bounding-boxes-over-report-on-b-spline-faces]].)
+- Cache each unchanged shape's box before a pairwise collision or path loop.
+  Recomputing an optimal box for every pair can dominate an audit on curved
+  B-spline bodies. For broad-phase rejection, `optimal=False` is conservative:
+  disjoint control-hull boxes prove separation, while overlapping boxes still
+  require the exact B-rep intersection. Keep optimal boxes for dimension and
+  bed-fit claims; a broad-phase box is not a measured envelope.
+- A child's `bounding_box()` is in its **parent's** frame. The parent's
+  `location` is not applied to it. This holds for any `Compound`, not only an
+  imported one: after `Pos(10, 0, 0) * compound`, the compound's box moves and
+  `compound.children[0]` does not. Two consequences follow.
+  - An assembly exported as an exploded view, or with sub-assembly
+    transforms, diffs cleanly part against part inside one group while whole
+    groups sit apart in the world. Compose the ancestor locations before you
+    compare positions across groups, and never read a whole group's offset as
+    a moved part.
+  - To carry a marker edge through a transform written for a whole part,
+    transform the edge on its own. Wrapping it in a `Compound` with the part
+    and reading it back from `.children` returns it unmoved.
 - **Do not use `BoundBox.is_inside`.** Its body returns `not (other strictly
   inside self)`: `big.is_inside(small)` is False, and two disjoint boxes
   return True. Compare `min`/`max` directly:
@@ -128,14 +163,51 @@ buried inside another. Pair it with a containment or overlap test:
 ```python
 d, pa, pb = rotor.distance_to_with_closest_points(housing)
 assert d >= p.run_clearance, (d, pa, pb)          # pa/pb say where it is tight
-assert (rotor & housing).volume < 1e-6             # and they do not overlap at all
+ov = rotor & housing                               # None for two Solids that miss
+assert ov is None or ov.volume < 1e-6              # and they do not overlap at all
 assert not housing.solids()[0].is_inside(rotor.center())
 ```
+
+The opposite failure exists too: `BRepExtrema_DistShapeShape` between a
+**compound** of several solids and a small solid reported 0.0 with
+`InnerSolution()` true for a 0.4 mm³ bean 35 mm from the nearest body, while
+`BRepClass3d_SolidClassifier` put every vertex of each shape outside the
+other. Against the same bodies one at a time it measured 4.48 mm. Measure a
+many-bodied shape body by body, skipping the bodies whose boxes are farther
+than the clearance that matters.
 
 `Solid.is_inside(point, tolerance=1e-6)` is the point-in-solid test.
 `Solid.touch(other)` returns the contact faces/edges without interior
 overlap (two stacked boxes: one face, area 100). Motion sweeps and
 assembly clearance proofs are [[mechanism-verification]].
+
+## Read topology before probing: what `is_inside` costs
+
+Point probes are the expensive way to measure a solid, and the cost grows
+with the model. `Shape.is_inside` scales with face count: 0.38 ms on a
+34-face solid, 2.9–15 ms on a 108-face one, so fillets that triple a part's
+faces slow every probe of it, including probes that have nothing to do with
+the fillets. Counting the ridge crests on a set of hose barbs by walking a
+radial probe and bisecting for the outer radius took 4 400 `is_inside` calls
+and 61 s; reading the crest circles off the solid's own edges
+(`geom_type == GeomType.CIRCLE`, radius, centre on the port axis) took
+0.004 s. A 9-step bisection in place of a 130-step walk was only 5× faster:
+changing *what* is measured beat changing *how* by three more orders of
+magnitude. The topology read is also the better measurement: it *identifies*
+each crest instead of sampling near one, and it stays falsifiable (cut a
+ridge and it reports one fewer). The order to reach for in a landmark audit
+is in `skills/cad/references/image-derived-verification.md`
+(`measure/check_landmarks.py`).
+
+Reads that look right and are not:
+
+- **`is_inside` on a multi-solid `Compound`** has returned False for points
+  one of its solids covers (a multi-solid colour body); a plain two-box
+  compound answers correctly, so do not rely on either. Test
+  `any(s.is_inside(p) for s in shape.solids())`.
+- **Counting through-holes.** Fuse every solid, `clean()`, and count
+  `inner_wires()` on the one top face. Sampling `Wire.positions` into shapely
+  polygons cuts corners and reports holes that are not there.
 
 ## Tolerance of the numbers
 
@@ -145,6 +217,20 @@ with a relative bound (1e-6 for analytic solids, 1e-3 when the shape went
 through a B-spline, sweep or boolean), distances with an absolute bound of
 ~1e-5 mm. Frozen values in a validation module need the same bounds, never
 `==`.
+
+How loose "through a B-spline" is, measured on an exact rebuild of a domed
+relief (faces within 0.0006 mm of the original): volumes agreed to 1e-4,
+planar section areas (the solid intersected with a planar face) to about
+2e-3 (0.42 mm² of 195, where the two outlines discretised at 0.02 mm differed
+by 0.004 mm²), and a section taken as the volume of a 1e-3 mm slab scattered by
+up to 7 mm² on 2000 near a face edge. Freeze a reference at those bounds, and
+take sections as planar faces, never as thin slabs.
+
+A planar section can fail outright: `BRepAlgoAPI_Section` against ruled lofts
+through dense measured sections came back empty at about one height in four.
+Section the kernel's own triangulation instead: mesh once, cut each triangle
+by the plane, chain the segments by shared end points (a shared edge is
+meshed once), fill even-odd, and integrate the areas over heights.
 
 ## Checks
 
@@ -156,5 +242,6 @@ bb = part.bounding_box()                       # optimal by default
 assert bb.size.Z <= p.bed_h and bb.min.Z >= -1e-6
 com = part.center()                            # CenterOf.MASS
 assert abs(com.X - p.foot_center_x) <= p.foot_half_w, "tips over"
-assert moving.distance_to(fixed) >= p.clearance and (moving & fixed).volume < 1e-6
+ov = moving & fixed
+assert moving.distance_to(fixed) >= p.clearance and (ov is None or ov.volume < 1e-6)
 ```

@@ -7,7 +7,7 @@ sources:
   - https://www.ejot.de/medias/sys_master/Industry_Flyer/Industry_Flyer/h11/hc7/9331662782494/EJOT-DELTA-PT-Flyer-08.23-en.pdf (search excerpt: dh = 0.8 × d1, up to 0.88 × d1; boss di = 2 × d1)
   - https://www.cnckitchen.com/blog/threaded-inserts-for-3d-prints-cheap-vs-expensive (M3 into 2.7 mm printed hole, 142 kg, 1 Nm)
   - https://hackaday.com/2025/09/02/no-need-for-inserts-if-youre-prepared-to-use-self-tappers/ (practitioner hole sizes)
-related: [heat-set-inserts, fastener-torque-and-stripping, metric-screw-clearance-holes, wall-thickness-and-hollowing, printed-threads-and-bosses]
+related: [heat-set-inserts, fastener-torque-and-stripping, metric-screw-clearance-holes, wall-thickness-and-hollowing]
 updated: 2026-09-23
 ---
 

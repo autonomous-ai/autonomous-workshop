@@ -155,6 +155,11 @@ than drilled, so prefer `Loose` when the hole comes off a nozzle, and keep
 overlap: `cadfits` owns tab/slot, peg/socket and print-in-place gaps;
 `bd_warehouse` owns standard-element-to-part.
 
+`stdpart sizes` lists size names only. The dimensions are on the element
+object: `clearance_hole_diameters` / `tap_hole_diameters` on a screw,
+`screw_data` (head `dk`, `k`, socket `s`) and `nut_data` (`m`, `s`). Read them
+there rather than retyping a standard's table.
+
 ## Gears: two libraries, and which one
 
 `bd_warehouse` builds a lone spur gear as a plain build123d object;

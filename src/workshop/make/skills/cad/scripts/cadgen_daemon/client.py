@@ -116,8 +116,8 @@ def run_via_daemon(tool: str, argv: list[str], cwd: str | None = None) -> int | 
     argv = [str(arg) for arg in argv]
     stdin_command = tool == "inspect" and bool(argv) and argv[0] in {"worker", "batch"}
     if "-" in argv or stdin_command:
-        # "-" conventionally reads a payload from stdin (e.g. snapshot --job -),
-        # while inspect worker/batch always read JSONL from stdin.  The daemon has
+        # "-" conventionally reads a payload from stdin, while inspect
+        # worker/batch always read JSONL from stdin.  The daemon has
         # no stdin channel, so run those inline.  Routing `inspect batch` through
         # the daemon previously returned success after processing zero requests.
         return None

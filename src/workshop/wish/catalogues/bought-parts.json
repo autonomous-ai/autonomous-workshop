@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "about": "The Bought Parts, tools and consumables the maker buys (ADR 0092 decision 5). Every Bought Part of a schema 7 Design Contract names one id here; anything outside it needs the owner's approval, which is adding it here. Seeded for Night Charms Hall from its contract's purchased parts: every entry is unconfirmed, and its pack size and source are left empty until the owner supplies them. Sizes are the limits that contract states, not supplier data; each lamp's lead diameter is a seed guess, the diameter Make's lead-route gate sweeps (ADR 0092 decision 8), until the owner measures the real leads.",
+  "about": "The Bought Parts, tools and consumables the maker buys (ADR 0092 decision 5). Every Bought Part of a schema 7 Design Contract names one id here; anything outside it needs the owner's approval, which is adding it here. Seeded for Night Charms Hall from its contract's purchased parts: every entry is unconfirmed, and its pack size and source are left empty until the owner supplies them. Sizes are the limits that contract states, not supplier data; each lamp's lead diameter is a seed guess, the diameter Make's lead-route gate sweeps (ADR 0092 decision 8), until the owner measures the real leads. The Macintosh fidget seeds (ADR 0095: cells, battery contacts, a lever microswitch, an amber LED, a resistor, hookup wire, an M2 x 6 door screw, solder and an iron) come from its locked spec (toys-spec/macintosh-fidget/NOTES.md, 2026-10-29): equally unconfirmed, their sizes the spec's nominal values and every lead diameter a seed guess.",
   "parts": [
     {"id": "battery-box-2aa-switch", "name": "In-line 2 x AA battery box with a slide switch on its lid", "category": "power",
      "sizes": [{"what": "outer box", "max_mm": [108, 21.5, 16.5]}], "pack": null, "source": null, "confirmed": false},
@@ -23,6 +23,18 @@
     {"id": "tweezers", "name": "Tweezers", "category": "tool",
      "sizes": [], "pack": null, "source": null, "confirmed": false},
     {"id": "screwdriver", "name": "Small screwdriver for the M2 screws and the battery box", "category": "tool",
-     "sizes": [], "pack": null, "source": null, "confirmed": false}
+     "sizes": [], "pack": null, "source": null, "confirmed": false},
+    {"id": "cell-aaa", "name": "AAA cell, 1.5 V (alkaline or zinc-carbon)", "category": "cell", "sizes": [{"what": "diameter", "max_mm": [10.5]}, {"what": "length", "max_mm": [44.5]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "contact-aaa-spring", "name": "AAA battery contact, conical spring (-), solder tab", "category": "contact", "sizes": [{"what": "plate", "max_mm": [10, 10, 0.5]}, {"what": "spring height", "max_mm": [8]}, {"what": "lead diameter", "max_mm": [0.6]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "contact-aaa-plate", "name": "AAA battery contact, flat plate (+), solder tab", "category": "contact", "sizes": [{"what": "plate", "max_mm": [10, 10, 0.5]}, {"what": "lead diameter", "max_mm": [0.6]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "contact-aaa-bridge", "name": "AAA battery series bridge plate, two cells side by side", "category": "contact", "sizes": [{"what": "plate", "max_mm": [22, 10, 0.5]}, {"what": "spring height", "max_mm": [8]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "microswitch-mini-lever", "name": "Mini lever microswitch, SPDT, NO used (Omron D2F-L class, KW12/MSW-12)", "category": "switch", "sizes": [{"what": "body", "max_mm": [12.8, 5.8, 6.5]}, {"what": "lead diameter", "max_mm": [0.8]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "led-5mm-amber-diffused", "name": "5 mm diffused amber LED, Vf about 2.0 V", "category": "lamp", "sizes": [{"what": "bead diameter", "max_mm": [5.9]}, {"what": "bead height", "max_mm": [8.7]}, {"what": "lead diameter", "max_mm": [0.5]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "resistor-75r", "name": "Resistor 75 ohm, 1/4 W, axial", "category": "other", "sizes": [{"what": "body", "max_mm": [6.5, 2.5]}, {"what": "lead diameter", "max_mm": [0.6]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "wire-28awg", "name": "Stranded hookup wire, 28 AWG, insulated", "category": "wire", "sizes": [{"what": "lead diameter", "max_mm": [0.9]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "screw-m2x6-pan", "name": "M2 x 6 pan-head screw, captive in the battery door", "category": "fastener", "sizes": [{"what": "thread", "mm": [2]}, {"what": "length", "mm": [6]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "heat-shrink", "name": "Heat-shrink tubing for the solder joints", "category": "consumable", "sizes": [], "pack": null, "source": null, "confirmed": false},
+    {"id": "solder", "name": "Rosin-core solder", "category": "consumable", "sizes": [], "pack": null, "source": null, "confirmed": false},
+    {"id": "soldering-iron", "name": "Soldering iron", "category": "tool", "sizes": [], "pack": null, "source": null, "confirmed": false}
   ]
 }

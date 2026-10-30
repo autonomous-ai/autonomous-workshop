@@ -9,8 +9,8 @@ sources:
   - https://www.hubs.com/knowledge-base/how-does-part-orientation-affect-3d-print/
   - https://www.stratasys.com/siteassets/sdm/resources/design-guidelines/fdm/fdm_design_guidelines_2017-1.pdf
   - https://www.hydraresearch3d.com/design-rules
-related: [fit-derivation, joints, shafts-and-bearings, fdm-design-rule-tables, overhangs-and-print-orientation, fluid-fittings-and-pneumatics]
-updated: 2026-09-23
+related: [fit-derivation, joints, shafts-and-bearings, fdm-design-rule-tables, overhangs-and-print-orientation, fluid-fittings-and-pneumatics, layer-anisotropy, printed-threads]
+updated: 2026-10-10
 ---
 
 # Printed hole accuracy
@@ -93,10 +93,9 @@ Teardrop sections for internal fluid channels:
   Research "> Ø2 mm"). Smaller holes are drilled.
 - A hole axis in the bed plane prints worse than one along Z. Orient
   precision bores vertically where the load path allows
-  ([[fdm-print-orientation-for-strength]]).
-- Built-in threads: none below Ø1.6 mm (Stratasys Direct). Hydra Research
-  models threads only above M5 / UNC #10. Otherwise tap, or use inserts
-  ([[printed-threads-and-bosses]]).
+  ([[layer-anisotropy]]).
+- Modelled threads only at M6 and up; below that tap or use an insert
+  ([[printed-threads#size-limits]]).
 - The fit between a hole and its partner still comes from `cadfits`
   ([[fit-derivation]]). Hole compensation corrects the *printer's* error, not
   the design clearance, and the two are applied separately.

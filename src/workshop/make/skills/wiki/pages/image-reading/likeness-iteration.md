@@ -7,7 +7,7 @@ sources:
   - skills/image-to-cad/scripts/render_views.py (pose replay)
   - "toolchain: search 59.2 s vs replay 7.8 s with identical IoU on a six-part model, three references (reproducible)"
 related: [silhouette-likeness, image-types-and-views]
-updated: 2026-10-04
+updated: 2026-10-11
 ---
 
 # Converging a likeness loop
@@ -41,9 +41,8 @@ floor of 0.00 is a missing one. An acceptance on the first run is not even
 that: nothing had tried to fix the mismatch yet. Rounds count per view,
 because rounds spent on one viewpoint say nothing about a viewpoint scored for
 the first time. Keep the measurement and the decision separate: the likeness
-report records the failure as a failure; the acceptance lives in the pipeline
-record, and below 0.90 only an explicit human acceptance of a measured failing
-result can ship.
+report records the failure as a failure, and an acceptance is recorded apart
+from it.
 
 ## Stop after three rounds that move nothing
 
@@ -103,32 +102,127 @@ Read the *shape* of the curve, not only its maximum:
 
 ## When the sweeps go flat, read the residual blobs
 
-Eleven knob sweeps (wing height, tail, track, tyre width, bumper) moved a
-three-quarter score by under 0.003 each; what moved it by 0.03 in total was found
-by labelling the silhouette difference. Overlay the normalised render on the
-normalised reference (the gate's own `normalise`, centred), colour render-only and
-reference-only pixels, label connected components and sort by area: the top
-blobs name the feature (a tyre sitting 40 px off, a wing tip drooping, an
-underbody that hangs too low) where a band ratio only names a height. Then
-sweep the knob the blob points at. On a low, wide car the levers that mattered
-were ride height, depth of the skirts, tyre diameter and the shape of the rear
-fender; the ones that did not were global length and width.
-
-Three other things the same run taught:
+When one-knob sweeps each move a score by almost nothing, label the silhouette
+difference instead. Overlay the normalised render on the normalised reference
+(the gate's own `normalise`, centred), colour render-only and reference-only
+pixels, label connected components and sort them by area: the top blobs name
+the feature (a wheel off its station, a drooping tip, an underside that hangs
+too low) where a band ratio names only a height. Then sweep the knob the blob
+points at; the global length and width are rarely it.
 
 - **Search the lens per view.** A close, low photograph needs a wide lens in
-  the search list (an 85 degree cone fitted the front view; the rear view of the
-  same truck kept preferring 25 degrees). Passing only the default lenses left
-  0.015 on the table. Both views can be given different lenses by one
-  `--search-fov 25,85`; the search keeps the best per view.
-- **Declare the camera that took the photo, including a negative elevation.**
-  A camera at bumper height looks up at the car: `@-132,-10` puts the coarse
-  grid on the true optimum, while `@-145,10` missed it by a grid step.
-- **Pose replay hides what a coarse search misses.** A local refinement around a
-  stored pose scored 0.906 where the full coarse search returned 0.886 for the
-  same shape; always finish with the full search the gate itself runs.
+  the search list, and another view of the same subject may prefer a long
+  one. One `--search-fov` list serves both; the search keeps the best per
+  view.
+- **Declare the camera that took the photo, including a negative
+  elevation.** A camera below the subject looks up at it; declared with the
+  wrong sign, the coarse grid can miss the optimum by a grid step.
+- **Pose replay hides what a coarse search misses.** A local refinement
+  around a stored pose can score above the full coarse search for the same
+  shape; always finish with the full search the gate itself runs.
+
+## Read the reference's pose before reshaping
+
+When the score stalls in the high 0.8s, measure where the model's features
+land on the reference before changing any shape. Project model landmarks
+(fin tips, antenna tips, chin, fists, knees, toes) through the matched camera
+and the gate's own alignment (height-normalised, centred on the bounding box)
+onto the reference's pixels, and read the offset of each:
+
+- **Offsets that differ by side are an alignment or extent problem.** When
+  every head feature sits 6-12 mm left of the photo's, something at the far
+  right of the model (a wing tip) is pushing the box centre; fix that part,
+  not the head.
+- **Paired features with opposite vertical errors suggest a pose; test it
+  before building a joint for it.** Left antenna high and right antenna low
+  reads as a tilted head, but roll the head on a surrogate (below) first: a
+  flat, symmetric fin plate's blades can lean the other way in the same photo,
+  and then every roll angle at every pivot scores lower. Thin features also
+  mislead here, because the gate erodes their tips (below).
+- **A whole-detent pose can move more than any shape.** Legs one hip detent
+  forward and the knees two clicks back (shins upright, soles flat, the figure
+  dropped onto them) moved the score more than a dozen stalled shape rounds
+  had; a waist twist the photo did not show lowered it.
+
+**Back-project the outline of a flat part.** For a plate (a wing, a fin), take
+the reference silhouette's runs row by row, map each edge pixel back through
+the alignment to the model's image coordinates, and solve the 2 x 2 system
+`O + d D + v V` for the part's in-plane coordinates. The outline then comes
+from the photograph, not from guesses: one round of it beat three rounds of
+guessed outlines.
+
+**Declare a camera window the photo allows.** A free window let the search
+settle at el -8 deg on a figure whose foot tops show: the search buys IoU by
+lying about proportions. Read the elevation and roll off the photo (tops of
+feet visible, shoulders' tops visible) and keep the window within a few
+degrees of it.
+
+**Print repairs cost likeness.** Filling a turned foot down to its print bed,
+thickening a snap boss and flattening a knife-edged roof each move the
+outline; score again after the print gates pass, not before.
 
 A sweep harness is cheap to write in process: patch the parameter module's text
 (a regex per `NAME = value`), purge the project's modules from `sys.modules`,
 exec the patched text as `params`, rebuild, tessellate, refine the stored pose
-by +-6 degrees and score. One point cost 33 s on a 55-part truck.
+by ±6 degrees and score. Each point costs a full rebuild, tens of seconds on a
+large assembly.
+
+## Score candidate edits on a mesh surrogate
+
+When single-knob sweeps around a stalled score all read zero, the model sits
+at a local optimum of each knob alone; a joint move of many knobs can still
+climb. A full render per candidate (a rebuild and a camera search, about a
+minute and a half on a large kit) makes that search impossible; a surrogate
+makes it cheap:
+
+- Tessellate every part once, **unposed**, and keep its point and triangle
+  arrays under a hash of the source files that part reads (its own module,
+  the parameter block, the shared features). Apply the pose in numpy from the
+  assembly's own pose rules: a pose sweep then rebuilds nothing, and a source
+  edit rebuilds only the parts whose hash moved (about 30 s for a 28-part kit
+  from cold, seconds after a one-module edit). Score every view at once.
+  A candidate edit is arithmetic on the points: a turn about a joint's axle
+  in the pose, a translation, a scale about a datum, an in-plane warp of a
+  flat plate (antenna and blade angle, length and width about their centre
+  lines), a part dropped out.
+- Rasterise with the gate's own rasteriser at the gate's camera and score
+  with its own `normalise` and `compare`: about 0.04 s per score.
+- **Calibrate first.** At the gate's camera the unedited surrogate must print
+  the gate's number; rebuild the cache after every source edit (a stale drop
+  or pose in the cache silently shifts every score).
+- **Rank regions by an upper bound.** Copy one band of the reference's mask
+  into the model's and re-score: the gain is the most any edit in that region
+  can buy, and it names where to spend the next round.
+- **Coordinate-descend the knobs together,** then ablate: revert one group at
+  a time to see what each carried.
+- **Distrust a gain that lives at one camera.** Score a candidate at the
+  gate's camera and at its neighbours; a knob that wins at one azimuth and
+  loses at the next is pixel noise.
+- **Warps over-predict.** A CAD edit changes more than the warp that stood
+  for it (a narrower helmet also moves its eyes, cheeks and camera box); the
+  built model lands below the surrogate's figure, so rebuild and score with
+  the real gate after each accepted edit.
+
+## Thin tips vanish in the gate's opening
+
+Both masks pass through a morphological opening before they are compared, so
+a tapered tip narrower than about three pixels at the normalised scale
+disappears from the silhouette. A thin antenna then reads shorter than it is,
+and lengthening it appears to help while the real difference is its width.
+Measure a thin feature on the reference's mask column by column (the run of
+each column across it) against the model's, set the width from that, and
+back-project its tip onto the part's plane for the length.
+
+## The silhouette passes and the figure still does not look like the photo
+
+The gate scores the outline only. A figure reached its floor and was still
+called nothing like the reference: the interior read wrong. The eye band was
+visor-wide, the chest a flat black slab with a small mark, the fists bricks in
+the wrong colour, and the legs striped. None of that moves an outline. After
+the gate passes, render the model shaded at the reference camera, crop both to
+their silhouettes at one height, set them side by side, and compare region by
+region: face, chest, hands, waist, legs, feet, and colour. Fix what reads
+wrong, then re-score, because interior edits can still move the outline. Leaning
+a hanging part out, or narrowing a part that sets the frame's extent, each cost
+about 0.01.
+

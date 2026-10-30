@@ -9,8 +9,8 @@ sources:
   - https://www.sovol3d.com/blogs/news/3d-printing-large-models-in-multiple-pieces-keys-glue-and-assembly-tips
   - https://www.baysingersadditivemanufacturing.com/splitting-and-assembling-large-files/
   - https://kingroon.com/blogs/3d-print-101/best-methods-to-bond-3d-prints-together
-related: [printed-part-count, fit-derivation, fdm-print-orientation-for-strength, joints, exact-constraint-and-kinematic-mounts, interlocking-joinery-for-prints, push-pins-and-clip-fasteners]
-updated: 2026-10-01
+related: [printed-part-count, fit-derivation, layer-anisotropy, joints, exact-constraint-and-kinematic-mounts, interlocking-joinery-for-prints, push-pins-and-clip-fasteners, adhesives-and-solvent-welding]
+updated: 2026-10-10
 ---
 
 # Splitting large prints and joining the pieces
@@ -24,7 +24,7 @@ Stratasys Direct lists five: the part is bigger than the build chamber; to
 eliminate excessive support; to cut an overhanging feature off the top and
 build it separately; to protect fragile features in post-processing; and to
 build a fragile feature separately "in an orientation that produces a
-stronger part" ([[fdm-print-orientation-for-strength]]). A bed-size split
+stronger part" ([[layer-anisotropy]]). A bed-size split
 is the first reason; the other four are reasons to split a part that fits.
 An axle or shaft too long for the bed is a bed-size split with bending in it:
 split it at the pivots it carries ([[shafts-and-bearings#an-axle-longer-than-the-bed]]).
@@ -61,6 +61,17 @@ because neither carries a peg. Dovetails interlock before the glue cures.
 
 Two round pins over-constrain a joint; use one round and one diamond or slot:
 [[exact-constraint-and-kinematic-mounts]].
+
+**A level pin between two prints in different poses.** A thin piece printed on
+its edge (a cape stood on its trailing edge) and pinned into an upright body
+has its pins lying level in both prints. Give each pin a two-pointed section:
+the convex hull of the circle and two points, one toward each print's bed, at
+`r / sin(flank)` from the centre. Then neither the pin nor its hole roof needs
+a bridge. Slot the second hole along the line between the pins, so the pair
+does not bind. To keep the slotted hole's flanks at their angle, raise its
+roof point by the slot's width over `tan(flank)`. Vertical pegs into the top
+of a body (the shoulders) do not work for such a piece, because its edge print
+has no level band for a peg to stand on.
 
 **For a glued multi-part print, default to plugs.** A feature grown from one
 part leaves nothing to cut, buy or lose, and no part can go on without its
@@ -106,8 +117,14 @@ provided a part glued over it hides the exit.
 **Put a printed peg on the part where it prints pointing up.** The same peg on
 the other half of the joint can be a 5 mm cantilever sticking out sideways.
 When a peg has to lie horizontal in both parts' print poses, turn its square
-45° into a diamond. Then both the peg and its socket have 45° flanks and print
-without support.
+into a diamond (a rhombus). Then both the peg and its socket have sloped flanks
+and print without support. Proportion the rhombus by where the pocket prints,
+so its roof sits inside the overhang rule rather than on the 45° limit
+([[overhangs-and-print-orientation#do-not-design-at-the-limit]]): a pocket in
+a half lying on its split face needs the across-the-split diagonal to be the
+longer one; a near-horizontal pocket in an upright part needs the opposite.
+Cut the in-plane peg tips flat (about 0.8 mm): a half-peg lying on the bed
+otherwise ends in a sub-nozzle knife edge ([[knife-edges-and-tapers]]).
 
 **A decal or thin cover can be the connector.** Run it back as a tenon of its
 own outline, through a window in the layer it covers, and into the host. It
@@ -141,6 +158,25 @@ cannot see the sliver.
 pair of sockets for a wall between them, and clip one feature when there is
 none.
 
+**A thin flat part split through its thickness.** A token or key that must
+look the same on both faces splits on a plane through its thickness, and each
+half prints face down, so both faces come off the bed. Anything sealed in at a
+pause before (an NFC tag, a magnet) goes in a pocket in the glue face instead,
+shared between the halves. A peg can be no taller than the socket half's
+thickness less its floor and the glue gap: in a 3.2 mm part round a 1 mm
+insert, with 1.0 mm floors (a 0.8 mm floor fails `check_thickness`), that leaves
+about 0.6 mm, enough to locate and too short to carry load, so the glue face does
+the holding. Split off-centre so the socket half is the thicker one. When half the thickness is off the layer grid, put
+the split inside the insert's pocket and let the halves differ by a layer.
+Three pegs on a line still follow the one-round-one-slot rule: a snug datum,
+a slot along the line to it, and a free third that only shares the glue.
+
+**A flush glue line is a choice, not a defect.** A reveal groove hides the
+step between two halves ([[form-and-finish-heuristics#seams-and-parting-lines]]);
+on a small flat part the owner may prefer the walls to run straight across the
+seam so the glued part reads as one. Keep the glue edges square then, and let
+the datum and slot hold the step to the snug fit.
+
 ## Clearance and glue
 
 - Alignment pin to hole: **0.1–0.2 mm** gap (JLC3DP); **0.15–0.30 mm**, per
@@ -158,17 +194,12 @@ none.
   clearance left there no longer positions anything. It only thickens the
   glue line, and CA does not fill a gap.
 
-| material | adhesive | note |
-|---|---|---|
-| PLA, PETG | cyanoacrylate (10–60 s) or two-part epoxy (5 min–24 h) | model cement does not bond PLA or PETG (Sovol) |
-| ABS, ASA | acetone solvent weld, or epoxy | (Sovol) |
-| TPU and flexibles | polyurethane glue; it expands as it cures | (Kingroon) |
-| most filaments | epoxy fills gaps between uneven faces | (Kingroon) |
+Which adhesive bonds which filament, with tensile results and gap filling:
+[[adhesives-and-solvent-welding]].
 
-Clean with isopropyl alcohol and lightly sand the faces first; clamp while it
-cures, 30–60 s for CA (Kingroon). In Baysinger's test, glued parts broke in
-the printed material rather than at the glue line. A good glued seam is not
-the weak point: the layer lines next to it are.
+In Baysinger's test, glued parts broke in the printed material rather than at
+the glue line. A good glued seam is not the weak point: the layer lines next
+to it are.
 
 ## Checks
 

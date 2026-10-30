@@ -88,6 +88,7 @@ from workshop.make.role_agents import make_role_agent_files
 from workshop.make.print_sheets import verify_made_print_sheets
 from workshop.make.kit_tree import verify_made_tree
 from workshop.make.kit_manual import verify_made_manual
+from workshop.make.power import verify_made_power
 from workshop.make.blocked_reports import (
     run_blocked_reports,
     verify_no_open_blocked_reports,
@@ -3286,6 +3287,12 @@ def _kit_manual_history(host_state_root: Path) -> list[dict[str, Any]]:
     """The kit Manual the current Make's acceptance checked (ADR 0092)."""
 
     return _latest_make_check(host_state_root, "kit_manual")
+
+
+def _power_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """The circuit the current Make's acceptance checked (ADR 0095)."""
+
+    return _latest_make_check(host_state_root, "power")
 
 
 def _print_sheet_history(host_state_root: Path) -> list[dict[str, Any]]:
@@ -8200,6 +8207,11 @@ def _evaluate_make_stage(
         )
         if kit_manual is not None:
             product_checks["kit_manual"] = [kit_manual]
+        # ADR 0095: a powered contract's circuit is the one Make's power
+        # report describes, and final verification passed check_power on it.
+        power = verify_made_power(run.run_root, made, sealed_contract)
+        if power is not None:
+            product_checks["power"] = [power]
         if blocked_reports:
             product_checks["blocked_reports"] = blocked_reports
         if contract_amendments:
@@ -10995,6 +11007,7 @@ def _native_receipt(
     print_sheets = _print_sheet_history(paths.host_state) if paths is not None else []
     kit_tree = _kit_tree_history(paths.host_state) if paths is not None else []
     kit_manual = _kit_manual_history(paths.host_state) if paths is not None else []
+    power = _power_history(paths.host_state) if paths is not None else []
     contract_amendments = (
         _contract_amendment_history(paths.host_state) if paths is not None else []
     )
@@ -11278,6 +11291,9 @@ def _native_receipt(
     if kit_manual:
         # ADR 0092 decision 9: the kit's Manual, only for a schema 7 toy.
         receipt["kit_manual"] = kit_manual[0]
+    if power:
+        # ADR 0095: the powered toy's circuit and its power report.
+        receipt["power"] = power[0]
     if checkpoint.effort is not None:
         receipt["workflow"] = checkpoint.effort
     receipt["agent"] = checkpoint.manager_id

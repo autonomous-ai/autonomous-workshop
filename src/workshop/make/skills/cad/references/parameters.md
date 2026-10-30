@@ -35,17 +35,15 @@ Use snake_case semantic names that describe intent, matching the build123d Pytho
 - Prefer `wall_thickness`, `bearing_clearance`, `hinge_angle_deg`, `lid_open`, `gear_ratio`, `link_travel`.
 - Avoid names like `offset2`, `magic_scale`, `fix_angle`, `slider_a`, unless the source model itself uses a meaningful matching term.
 - Encode units in names only when the value could otherwise be ambiguous, such as `_deg`, `_sec`, or `_mm` suffixes.
-- Keep sidecar parameter ids aligned with the Python source parameters they mirror, and keep source constants, manifest feature ids, UI labels, and comments aligned enough that an LLM can trace a control to geometry.
-- Module schema field names such as `schemaVersion`, `manifest.step.path`, and `durationSeconds` are fixed by the step-module schema; the snake_case convention applies to the parameter and feature ids you define.
+- Keep `params` ids, source constants and comments aligned enough that an LLM can trace a parameter to geometry.
 
 ## Defaults And Bounds
 
 Defaults should produce a useful, valid model or pose. Bounds should protect the model from impossible, self-intersecting, or misleading states.
 
 - Use physically valid ranges where possible: joint limits, positive dimensions, manufacturable wall thickness, realistic clearances.
-- Clamp in code even when the UI already declares `min` and `max`.
-- Make `step` match the useful precision of the underlying model, not just the UI.
-- Use booleans for true binary state, selects for discrete modes, colors for style-only values, and numbers only for ordered quantities.
+- Clamp or assert in code; nothing downstream enforces a declared range.
+- Use booleans for true binary state and numbers only for ordered quantities.
 - Keep debug parameters available when useful, but label them as inspection controls if they do not represent real design degrees of freedom.
 
 ## Derive, Do Not Drift
@@ -62,23 +60,8 @@ If a parameter changes a source-level CAD generator, regenerate STEP and validat
 
 ## Colour A Printed Part From Stock — `cadfilament`
 
-```python
-from cadfilament import filament
-body.color = filament("sunflower yellow")                    # a spool, not a hex
-shell.color = filament("misty blue", material="PETG Basic")  # the other stock
-```
-
-`scripts/cadfilament.py` holds the three palettes this repository prints — Bambu
-Lab PLA Lite (13 names, the `material` default), Bambu Lab PLA Matte (25 names,
-the pastels and muted tones Lite lacks) and Bambu Lab PETG Basic (13 names, for
-a part that flexes, takes an impact, or sits somewhere warm) — and
-converts each to the linear channels the renderer wants. It imports with no
-setup wherever `cadfits` does, and an unknown name raises with the whole list
-instead of resolving to something close. Seven names are in both stocks, five
-of them a different hex in each, so `material` is what says which spool. A
-colour that is not printed filament (a purchased part, a reference surface)
-stays on `cadgen.srgb()`. Run `python "$CAD_SKILL_ROOT/scripts/cadfilament.py"`
-for its self-check. The full rules, and all three tables, are **Colour** in
+Give a printed body a spool name, `body.color = filament("sunflower yellow")`,
+never a hex. The palettes and rules are **Colour** in
 `references/build123d-modeling.md`.
 
 ## Derive The Second Half Of A Mate — `cadfits`
@@ -130,7 +113,6 @@ error. Worked example and the float trade-off:
 Named features are the bridge between parameters and geometry.
 
 - Label source parts and assembly children explicitly.
-- Expose sidecar `manifest.features` with stable local refs such as `#o1.2`; keep file identity in `manifest.step.path`.
 - Prefer feature ids like `lid`, `hinge_pin`, `input_gear`, `lower_rocker`, not occurrence ids as public names.
 - In code, group constants and transforms by feature role so the logic reads like the mechanism.
 - Resolve and inspect refs when a parameter targets a specific face, edge, part, pivot, or assembly child.
@@ -152,9 +134,8 @@ Use deterministic checks first:
 - Source-level assertions for derived dimensions or joint limits when practical.
 
 The image-derived workflow has a silhouette renderer, but a parameter sweep
-still cannot establish a geometric claim by looking at it. The sidecar is
-worth declaring — it travels with the STEP for whoever opens it downstream —
-but every claim about a pose has to come from geometry:
+still cannot establish a geometric claim by looking at it. Declaring `params`
+is still worth it, but every claim about a pose has to come from geometry:
 
 - Assert derived dimensions and joint limits in the source, at the poses that
   matter (both end stops, not just the rest pose).

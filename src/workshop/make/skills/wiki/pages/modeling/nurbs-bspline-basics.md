@@ -67,3 +67,17 @@ C0/C1 and G0/G1 are, for practical purposes, the same thing. G is the looser
   over-report ([[kernel-validity#bounding-boxes-over-report-on-b-spline-faces]]).
 - A spline face whose control net folds over itself is a self-intersecting
   face. It is valid to `BRepCheck_Analyzer` and invalid to the BOP check.
+
+## Symmetric interpolation points do not prove a symmetric profile
+
+A closed periodic interpolant can pass through a bilaterally symmetric point
+list without making the curve between those points an exact mirror, especially
+at its closure seam. A small smile cutter can then expose unequal coloured
+teeth even when the two raw tooth solids are exact mirrors. Positive colour
+volumes and a good whole-object silhouette will miss that local defect.
+
+When symmetry is intentional, construct one half-curve and mirror it, or use
+exact conic arcs with endpoints mirrored and intermediate points on the symmetry
+axis. Check the finished profile or its extrusion against its mirror, then
+check the clipped visible regions and the actual exported front/oblique views.
+Do not infer exact profile symmetry solely from the list of input coordinates.

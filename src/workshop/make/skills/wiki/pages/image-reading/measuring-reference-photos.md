@@ -6,10 +6,8 @@ sources:
   - skills/image-to-cad/scripts/measure_image.py (mask, shadow rejection, cross_check)
   - "toolchain: a contact shadow inflates every view by the same proportion, so a cross-view check still agrees (reproducible)"
   - "experience: dimensions read on the wrong view's ruler, which no downstream gate caught"
-  - "experience: a cream egg on a cream ground defeated both toolchain masks; red-minus-blue after a median filter separated it"
-  - "experience: a brown token's dark contact shadow kept by every mask until a relative-saturation rule"
-related: [image-types-and-views, perspective-and-hidden-views, silhouette-likeness]
-updated: 2026-10-07
+related: [image-types-and-views, perspective-and-hidden-views, silhouette-likeness, reference-silhouette-masks]
+updated: 2026-10-10
 ---
 
 # Measuring reference photos
@@ -37,39 +35,14 @@ the image, trust your eyes and say the tool disagreed.
   than the object visibly is, mirror symmetry well below what the object looks
   like, and the widest point dragged toward the base. Crop above the shadow;
   turning shadow rejection off out of habit lets a contact shadow back in.
-- **A coloured subject in its own dark contact shadow.** Under a key light a
-  brown, red or green part throws a shadow far darker than the ground, so the
-  mask and `ref_silhouette.py`'s band and border rules all keep it: a crescent
-  along every edge facing away from the light, 10-15 % of the area on one
-  oblique shot, scored as "the model is too thin" (IoU 0.807 for a model that
-  later scored 0.920). The shadow is neutral at every brightness and the
-  subject is not: relative saturation `(max - min) / max` read 0.46-0.77 on
-  the subject (lit face to deepest groove) and 0.31 or under on every shadow
-  pixel. `ref_silhouette.py --ground tint` flattens by that rule; a grey,
-  white or black subject has no tint to keep and needs another rule.
+- **The subject's colour matches its ground or its shadow** — a tinted
+  subject in its own dark contact shadow, a neutral subject on a tinted
+  ground, a pastel, a cream subject on cream, a two-hue flat plate. Each needs
+  its own mask rule, measured on subject, shadow and ground first:
+  [[reference-silhouette-masks#subject-and-ground-colour-choose-the-ground-rule]].
 - **Dark object on a dark ground, or light on light.** Symptom: an error or a
   nonsense bbox. Invert, or move the threshold (roughly 12–45 on 8-bit
   luminance).
-- **A cream subject on a cream ground.** Neither luminance nor saturation
-  separates them: the ground is brighter than a "mid-luminance" band and the
-  subject's lit flank is as neutral as the ground. Warmth does -- red minus blue
-  after a 7 px median filter (the median removes print-line texture): a neutral
-  ground reads near 10, a cream or tan subject 15-40. The contact shadow picks
-  up warm bounce light from the subject and reads 16-26, so give the shadowed
-  band under the subject a higher threshold than the lit side, and cut below
-  the lowest point the grid overlay shows. Keep such a probe as a documented
-  script beside the reference.
-  When the ground is itself warm (a pink-beige studio sweep), red minus blue
-  stops separating: both read 25-45. The hue ratio (G-B)/(R-B) still does --
-  an ivory or yellow subject reads about 0.45 at every brightness, a pink-beige
-  ground about 0.35 -- and an Otsu split of its median-filtered map finds the
-  threshold. The median pushes that mask's edge 3-5 px outward all round,
-  which on a figure costs about 3 points of IoU, so re-classify a band of
-  about 10 px either side of the edge pixel by pixel against a smooth
-  background estimated from the pixels outside the band (normalised
-  convolution). A glossy desk still returns a contact shadow and a reflection
-  that no colour rule removes: read the top of the dark contact line as a
-  polyline and cut there.
 - **Line art defeats the mask, and not obviously.** A denoise pass deletes
   1–2 px strokes, so a white-interior sheet reports no object on some panels
   and a plausible bbox on the ones it half-holds. Flood-fill the white
@@ -79,11 +52,10 @@ the image, trust your eyes and say the tool disagreed.
 
 ## Colour clusters are colour, not parts
 
-Clustering the pixels inside the outline is how to measure a stripe, a cockpit
-opening, a tyre against its fender, a lens or a panel line. But gloss splits
-one paint into a lit and a shaded cluster — raise the cluster count until the
-feature appears — and two unrelated black components land in the same
-cluster. Never read a cluster as a part.
+Clustering the pixels inside the outline (`measure_image.py --palette K`,
+`skills/image-to-cad/SKILL.md`) measures a stripe, an opening or a panel line,
+but gloss splits one paint into lit and shaded clusters and two unrelated
+black components land in the same cluster. Never read a cluster as a part.
 
 ## Every view carries its own ruler
 
@@ -106,8 +78,21 @@ that cannot see widths.
 ## Cross-view closure and its blind spots
 
 Solving L : W : H over every named view at once and reporting each view's
-disagreement is the highest-value number a measurement produces. Under ~5 %
-the images share one camera scale and every proportion may be `[observed]`.
+disagreement is useful only after the ratios have enough independent
+constraints. Repeated front/back views measure W:H and leave L unknown;
+repeated top/bottom views leave H unknown, and repeated left/right views
+leave W unknown. Least squares still returns numbers for such a deficient
+system, but its unconstrained values are arbitrary. The measurement tool
+reports `UNDERCONSTRAINED` and no solved ratio in this case.
+
+Two views spanning all three axes solve the ratios exactly and leave no
+redundant equation with which to detect perspective distortion. Their verdict
+is `SOLVED ONLY`. A consistency claim needs redundant constraints and views
+already justified as orthographic; assigning two oblique photographs the same
+canonical label does not make them orthographic.
+
+With sufficient constraints, under ~5 % disagreement is consistent with one
+orthographic set; it does not prove that the camera model is correct.
 Above it, at least one view is foreshortened — find the bad view and drop it.
 **Do not average**: averaging a foreshortened view into a good one produces a
 spec that is confidently, uniformly wrong.
@@ -133,9 +118,6 @@ suggests a revolve about a horizontal axis, or a cropped symmetric detail.
 
 ## A probe script changes the instrument
 
-A hand-written probe re-derives the silhouette with an ad-hoc threshold and may
-omit shadow rejection, making ratios across views incomparable. Interrogate
-the same mask (row and column runs, a region window, a named colour) first;
-if a probe is unavoidable, say in the spec what was measured by hand and why.
-Two runs on one row is the fact that the object is two parts there, and the
-gap between them is the clearance.
+A hand-written probe re-derives the silhouette with its own threshold, so its
+ratios are not comparable across views. Interrogate the measurement tool's own
+mask first (`skills/image-to-cad/SKILL.md`, "Interrogate the mask").

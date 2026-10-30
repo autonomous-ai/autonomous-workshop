@@ -7,8 +7,9 @@ sources:
   - skills/image-to-cad/scripts/render_views.py (_mesh_face_by_face, the reference implementation)
   - "experience: a cone fused 0.01 mm into a loft left a 0.013 mm2 face no gate could mesh"
   - "experience: a window-outline fillet on a revolved spline shell left two planar faces unmeshed in the whole shape; another radius segfaulted"
-related: [kernel-validity, modeling-failure-modes]
-updated: 2026-10-04
+  - skills/image-to-cad/scripts/render_views.py (tessellate_comparison)
+related: [kernel-validity, modeling-failure-modes, revolve-seam, fuse-pitfalls]
+updated: 2026-10-10
 ---
 
 # Faces the mesher declines
@@ -40,6 +41,17 @@ and leave a ledge the print can carry; do not overlap by a hair. After any
 change, tessellate each built solid once at the gate's tolerance and find the
 face that raises before the gate does.
 
+## An opened colour region inside another inlay
+
+Opening a 2D colour region (`offset(offset(face, -w/2), +w/2)`, to drop horns
+under a line wide) moves its outline off the arcs it was cut from by a hair.
+When that region lies inside another inlay (a moon's grey shadow on its cream
+disc), resolving the two leaves the neighbour with near-coincident arcs, and
+its flush prism had two planar faces the mesher refused while `validate`
+passed. Open only regions that border the body colour; inside another inlay,
+cut the shadow without the opening and shape it so its horns meet the rim at a
+wide angle (about 50°) rather than a hairline.
+
 ## A fillet along a cut's outline on a revolved surface
 
 Filleting the outer edges of a window cut through a revolved spline shell (the
@@ -60,24 +72,17 @@ and the count says how much is missing.
 `skills/image-to-cad/scripts/render_views.py` (`_mesh_face_by_face`) is the
 reference implementation.
 
-## Absolute deflection for source-to-export comparisons
+## A model-unit tolerance needs absolute deflection
 
-A tessellation tolerance derived from pixel size is a distance in model units.
-It must be passed to OCCT with relative deflection disabled. build123d's normal
-mesh call uses relative deflection, which scales the error by edge size; a
-quarter-pixel distance passed through that API can produce visibly different
-outlines for identical source and STEP B-reps.
-
-Clear cached triangulations before an absolute comparison mesh. Require every
-face to mesh, since a partial silhouette cannot prove an export unchanged.
-Keep the existing numeric comparison floor and fix the meshing units instead
-of accepting numerical drift. A curved-shape regression should premesh with
-relative deflection and confirm that the comparison replaces it with a mesh
-whose measured triangle error meets the stated model-unit bound. OCCT's
-interior triangulation may deviate by twice its boundary deflection setting;
-do not equate the API argument with an exact interior error limit. Export
-comparison fixtures must have closed sections and valid geometry, so a missing
-face does not make a round-trip test pass on two equally incomplete meshes.
+build123d's mesh call uses relative deflection, which scales the error by edge
+size, so a distance in model units (a quarter pixel, a gate's chord error)
+passed through it is not that distance. Mesh with relative deflection off,
+clear cached triangulations first (`BRepTools.Clean_s`), and bound the angular
+deflection too: chordal error alone leaves the angular subdivision free, and a
+STEP round trip that reparameterises an unchanged face then picks different
+silhouette triangles. Interior triangle error can reach twice the boundary
+deflection setting. `render_views.tessellate_comparison` is the reference
+implementation, and it requires every face to mesh.
 
 ## An end disc tangent to a neighbour
 
@@ -88,6 +93,25 @@ face the mesher would not triangulate; so did the flat end disc of an angled
 runner whose edge poked out through the wall of the tube it was meant to end
 inside. Run every end of a tube either clearly past the surface it meets (more
 than a radius) or entirely inside it (the whole disc, not its centre), and
-keep the seam of a cylinder away from the branches (`Plane(origin, x_dir=seam,
-z_dir=axis)` puts it where you say). Tessellate each face of each built part
-once (`face.tessellate(0.1)` in a try block) before the first render.
+keep the seam of a cylinder away from the branches
+([[revolve-seam#where-the-seam-lands]]). Tessellate each face of each built
+part once (`face.tessellate(0.1)` in a try block) before the first render.
+
+## Two solids that share only a circle mesh non-manifold
+
+Two solids that meet only along one shared circle (a lofted cone ending
+exactly on the rim of the part below) pass `validate` but tessellate
+non-manifold: `check_mesh` reports edges shared by more than two faces and
+pinched vertices. End one body 1-1.5 mm inside the other so the surfaces
+cross instead of sharing the edge
+([[fuse-pitfalls#fusing-pieces-that-share-faces]]).
+
+## A boolean edge's nodes arrive apart from its two faces
+
+Each face of a boolean-made edge meshes that edge from its own pcurve on its
+own surface, so the two faces place the shared nodes up to the edge's
+tolerance apart, often 1e-6 to 1e-5 mm on a narrow planar ring (a bore's
+step). A weld that merges vertices by rounding to a 1e-6 grid splits those
+pairs into open edges, and which pairs split depends on where the part sits:
+the same valid solid moved by a fraction of a millimetre read 0, 4, 20 or 84
+open edges. Weld by distance (a k-d tree, 1e-5), never by grid cell.

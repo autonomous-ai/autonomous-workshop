@@ -4,9 +4,9 @@ tags: [lighting, led, lamp, lens, diffuser, light-pipe, driver, optics, electric
 aliases: [led design, status light, beacon, strobe, headlight, light strip, backlight, illuminated control, navigation light]
 sources:
   - skills/electromechanical-integration/references/lighting-discovery.md
-  - https://gitlab.com/kicad/libraries/kicad-packages3D (current KiCad 3D package library)
+  - https://gitlab.com/kicad/libraries/kicad-packages3D (KiCad 3D package library: generic package shapes)
 related: [electrical-component-selection, power-path-design, removable-lamp-interfaces, led-sizing, buttons-knobs-and-front-panels, thermal-design-for-enclosures]
-updated: 2026-09-23
+updated: 2026-10-10
 ---
 
 # Designing functional lights
@@ -70,10 +70,6 @@ found by function or package back to an exact MPN, and compare the
 package/drawing revision before using it. Never substitute a visually similar
 LED or module.
 
-The old GitHub `KiCad/kicad-packages3D` is an archived snapshot that points to
-the GitLab repository. Pin new provenance to the current library, not to the
-archived default branch.
-
 ## Selection order
 
 Select against the whole product, in this order:
@@ -87,12 +83,11 @@ Select against the whole product, in this order:
 
 ## In the model
 
-Visible lenses, bezels and diffusers belong in the combined assembly and in
-likeness renders. Hidden emitters, drivers and looms may be validation-only,
-but each still gets a mount and an obstacle list for clash checking. Model the
-full route from controller to emitter, including insulation diameter, bend
-room, connector insertion/removal and strain relief
-([[power-path-design#wires-are-solids]]). A removable lamp is a separate design
+Which light objects go in the combined assembly and which may be
+validation-only, and what each carried item owes (mount id, obstacle list,
+the full wire route): `skills/electromechanical-integration/references/lighting-discovery.md`
+("Selection and CAD handoff"). Wires as solids:
+[[power-path-design#wires-are-solids]]. A removable lamp is a separate design
 problem: [[removable-lamp-interfaces]].
 
 Light pipes from an LED to the panel: [[buttons-knobs-and-front-panels]]; heat

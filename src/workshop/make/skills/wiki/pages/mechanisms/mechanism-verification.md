@@ -6,8 +6,9 @@ sources:
   - skills/cad/references/motion-manifests.md
   - skills/cad/scripts/check_motion
   - "toolchain: a labelled group compound read back as a mover returns an empty boolean where its leaf overlaps (reproducible)"
-related: [mechanism-design, joints, mechanism-failures, mass-properties-and-measurement]
-updated: 2026-09-23
+  - "experience: matching connector coupons and local witnesses do not establish clearance of the complete accessory against its actual host"
+related: [mechanism-design, joints, mechanism-failures, mass-properties-and-measurement, mechanical-puzzles]
+updated: 2026-10-10
 ---
 
 # Verifying a mechanism
@@ -49,6 +50,9 @@ drifting past each other sweeps perfectly clear.
 | per joint: assembly direction **`clear`**, capture direction **`blocked`** | a joint only checked for coming apart passes as a plain pocket |
 | **assembly order** (`assembly_sequence`), each part on its real insertion axis | final-pose clearance does not prove a shaft can enter its frame |
 | **`retention`** proofs down to a genuine fixed root | a blocked sweep freezes its obstacles; a loose gate is not a root |
+
+A puzzle generalises the per-joint row: every state has one clear or blocked
+condition per possible move ([[mechanical-puzzles#verify-a-sequence-as-a-state-graph]]).
 
 ## 5. Sampling
 
@@ -92,9 +96,37 @@ suggests.
 
 ## 7. Movers are leaf parts
 
-Name the leaf solids that move, not a labelled group compound: a group
-compound read back from the assembly returns an empty boolean (0 mm³) where
-its leaf shows the real overlap. A dotted path to a leaf is fine.
+A group compound can return an empty boolean (0 mm³) where one of its leaves
+overlaps. `check_motion` sums intersections per leaf solid pair; a custom audit
+must do the same, or use a verified fused physical body, never a raw compound
+common. Cosmetic regions should partition the body without overlaps that
+double-count volume.
+
+## Connector coupons do not verify the complete host
+
+A coupon proves the local connector dimensions it contains. It says nothing
+about an accessory's skirt, feet, wings or other geometry outside the coupon,
+or about the housing around the mating post. A witness with a flat shoulder
+cannot replace a wider curved saddle merely because both carry the same peg.
+
+A conservative clearance proxy must contain the actual obstacle throughout
+the tested path. If neither shape contains the other, a clear proxy sweep is
+inconclusive. A blocked proxy sweep also needs confirmation against the real
+support: extra proxy material can invent a stop or a retention condition.
+
+Verify the complete final accessory against the actual mount and surrounding
+host at the seated pose and along the insertion/removal path. Record their
+coordinate transforms and dependency fingerprints. An unchanged connector
+width does not preserve a clearance result when the surrounding mount shape
+changes. Keep the coupon test as local fit evidence and keep physical friction
+and adhesive strength separate from geometric clearance.
+
+Check import selection as part of that evidence. A helper that loads the
+largest solid of a multi-solid product supplies one component, even if its
+name says "host". Load all relevant host solids for collision checks, report
+the selected solid count, and retain per-leaf checks. A simplified display
+assembly and a complete collision assembly can intentionally differ; their
+labels and reported scope must say which was used.
 
 ## 8. Allowances are declared, not hidden
 

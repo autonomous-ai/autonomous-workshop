@@ -107,7 +107,7 @@ component moves.
   between vendors under one name. The STEP is a claim with a checksum, not a
   measurement.
 
-Inserts, nut traps and printed threads: [[printed-threads-and-bosses]].
+Inserts, nut traps and printed threads: [[heat-set-inserts]], [[nut-traps-and-captive-nuts]], [[printed-threads]].
 
 ## A pocket square to a leaning face dives
 
@@ -118,3 +118,23 @@ a 0.4 mm floor over a tie whose nominal wall was 1.5 mm; the thickness gate
 found it, nothing else did ([[wall-thickness-and-hollowing]]). Cut a socket along the axis its part is inserted
 (usually level), and check the wall at the far end of the cut, not at the
 mouth.
+
+## A tapered part seats on its own face planes, not on a prism
+
+A part that tapers along the insertion direction (a pyramid or cone cap, a
+wedge) is the one case the prism rule gets wrong: the prism swept along the
+axis is the widest section carried straight up, a square tube that touches
+none of the sloped faces. Build the socket from the reference instead:
+
+- read each planar (or conical) face off the imported STEP, push it out along
+  its own normal by the `cadfits` mating clearance `c`, and close the
+  polyhedron of those offset planes; cut that from the blank;
+- close the socket at the planes' own apex. Copying a small top flat lets the
+  flat carry the load and the faces float; the apex closure puts the load on
+  the faces;
+- a taper closes its clearance by sinking: under gravity the part drops
+  `c / n_z` (`n_z` the vertical component of a face normal) until every face
+  touches at once, 0.44 mm for 0.2 mm on a 63 deg pyramid. Clearance on a
+  taper sets seated height, not play. Model the assembly at the
+  uniform-clearance pose so mount and clash checks read `c`, and prove contact
+  separately by translating the part down by `c / n_z`.

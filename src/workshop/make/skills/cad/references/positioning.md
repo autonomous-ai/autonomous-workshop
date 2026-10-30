@@ -116,6 +116,11 @@ standoff = asm.feature(Cylinder(radius=3.0, height=12.0), "m3_standoff", "front_
 hinge_axis = asm.rigid_frame(lid, "hinge_axis", Location((0, -25, 0)))
 ```
 
+Extra positional arguments after the name become part of the label:
+`asm.add(shape, "hat", "printed_tree_hat")` exports `hat:printed_tree_hat`,
+and `check_mount`'s `parts` field and `motion.json` no longer find `hat`. Pass
+only the name for any part those manifests address.
+
 Assembly labels name the root occurrence. `asm.add()` labels child component occurrences and their exported shape context. For repeated hardware or library parts, use role/location labels such as `front_left` and `rear_right` so STEP topology and viewer selections remain traceable after export.
 
 Feature labels survive best when the labeled geometry remains a child shape in a `Compound`. Labels on boolean-subtracted or fused feature history are not reliable STEP feature history.
@@ -148,8 +153,8 @@ Imported geometry was not authored here, so do not assume its origin or orientat
 
 When a joint beats a parameterised `Location`, and which of `RigidJoint`,
 `RevoluteJoint`, `LinearJoint`, `CylindricalJoint` or `BallJoint` (and the
-matching `asm.*_frame()` helper) expresses a relationship:
-`skills/wiki/pages/modeling/cad-joint-types.md` (`wiki show cad-joint-types`).
+matching `asm.*_frame()` helper) expresses a relationship, and the Joints API
+contract: `skills/wiki/pages/modeling/cad-joint-types.md` (`wiki show cad-joint-types`).
 
 Whatever the joint, keep the fixed-first direction: call `connect_to()` on the
 fixed/root joint and pass the moving part's joint as `other`. `connect_to()` is

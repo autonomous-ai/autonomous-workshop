@@ -50,6 +50,26 @@ gate. Part count alone is deliberately not the trigger, because a print plate
 or set of independent variants may carry several printable entries and no
 assembly claim.
 
+The trigger is lexical: a heading containing "assembly", or a line saying
+"assembly order/procedure/steps/sequence", that also holds a mating verb.
+Never reword the assembly prose to slip under the trigger: that hides the path
+from the reader as well as from the gate. Workshop has no motion waiver; the
+frozen Make motion option alone turns the gate off, and without the motion
+gate nothing may be claimed about whether the parts assemble.
+
+## What the trigger does not see
+
+The trigger is lexical, so a print-in-place mechanism whose README says
+"fold" or "hinge" but no mating verb is reported as "no moving joint is
+declared" and skipped, eight hinges or not. A fold also moves a part through
+two pivots of a double link, which one fixed-axis `rotation` (or a rotation
+plus a translation table about one axis direction) cannot follow once the
+group's axis direction changes between moves. Prove such a cycle with a local
+sweep in `measure/check_fit.py` (pose every body at samples of each move,
+booleans pairwise, wrong-way bends and pulled links as expected collisions),
+so the runner records it, and say in the report that `check_motion` did not
+run.
+
 ## Part names are placed instances
 
 Parts come from the combined `<name>.step.py`, in **assembly pose**. This is
@@ -329,6 +349,11 @@ turn declared at one tooth is honest about being a bulk-clearance sweep with the
 mesh checked separately, and reads as such to whoever comes next.
 
 ### A path in stages is one coupled condition
+
+To prove a part is held in a pose other than the assembly pose (a ball joint
+retained when tilted), use one mover whose `rotation.angles_deg` holds the
+pose angle at every sample while `translation.offsets_mm` ramps the escape
+path, with `expect: blocked`.
 
 Every step of an `assembly_sequence` starts from the assembly pose: nothing a
 step moved stays moved for the next. "Turn to unlock, then lift" written as two

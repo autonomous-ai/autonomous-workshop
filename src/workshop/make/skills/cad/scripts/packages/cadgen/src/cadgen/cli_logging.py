@@ -31,9 +31,6 @@ class CliLogger:
     def info(self, message: str) -> None:
         print(self._line(message), file=self.stream)
 
-    def warning(self, message: str) -> None:
-        print(self._line(f"warning: {message}"), file=self.stream)
-
     def debug(self, message: str) -> None:
         if self.verbose:
             self.info(message)

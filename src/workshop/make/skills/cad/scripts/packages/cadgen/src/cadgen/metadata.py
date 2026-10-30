@@ -23,7 +23,6 @@ class GeneratorMetadata:
     display_name: str | None
     generator_names: tuple[str, ...]
     has_gen_step: bool
-    has_gen_dxf: bool
     mesh_tolerance: float | None
     mesh_angular_tolerance: float | None
 
@@ -36,7 +35,6 @@ STEP_ENVELOPE_FIELDS = {
     "mesh_tolerance",
     "mesh_angular_tolerance",
 }
-DXF_ENVELOPE_FIELDS = {"document"}
 
 
 DEFAULT_MESH_SETTINGS = MeshSettings(
@@ -94,7 +92,6 @@ def parse_generator_metadata(script_path: Path) -> GeneratorMetadata | None:
     display_name: str | None = None
     kind: str | None = None
     has_gen_step = False
-    has_gen_dxf = False
     generator_names: list[str] = []
     for node in tree.body:
         target: ast.expr | None = None
@@ -112,6 +109,9 @@ def parse_generator_metadata(script_path: Path) -> GeneratorMetadata | None:
         if not isinstance(node, ast.FunctionDef) or node.name not in {"gen_step", "gen_dxf"}:
             continue
         generator_names.append(node.name)
+        if node.name == "gen_dxf":
+            # Recorded only so the catalog can refuse the file: DXF drawings are unsupported.
+            continue
 
         if node.args.args or node.args.posonlyargs or node.args.kwonlyargs:
             raise ValueError(
@@ -128,20 +128,13 @@ def parse_generator_metadata(script_path: Path) -> GeneratorMetadata | None:
                 "return the generated content directly instead"
             )
 
-        if node.name == "gen_step":
-            kind = _parse_step_return_metadata(
-                script_path=script_path,
-                function=node,
-            )
-            has_gen_step = True
-        else:
-            _parse_dxf_envelope_metadata(
-                script_path=script_path,
-                function=node,
-            )
-            has_gen_dxf = True
+        kind = _parse_step_return_metadata(
+            script_path=script_path,
+            function=node,
+        )
+        has_gen_step = True
 
-    if not has_gen_step and not has_gen_dxf:
+    if not generator_names:
         return None
 
     return GeneratorMetadata(
@@ -150,7 +143,6 @@ def parse_generator_metadata(script_path: Path) -> GeneratorMetadata | None:
         display_name=display_name,
         generator_names=tuple(generator_names),
         has_gen_step=has_gen_step,
-        has_gen_dxf=has_gen_dxf,
         mesh_tolerance=None,
         mesh_angular_tolerance=None,
     )
@@ -307,27 +299,6 @@ def _is_multi_item_sequence_expression(
     return False
 
 
-def _parse_dxf_envelope_metadata(
-    *,
-    script_path: Path,
-    function: ast.FunctionDef,
-) -> str | None:
-    return_node = _single_return_value(script_path=script_path, function=function)
-    if not isinstance(return_node, ast.Dict):
-        return None
-    envelope = _parse_literal_return_envelope(script_path=script_path, function=function)
-    _reject_unsupported_fields(
-        script_path=script_path,
-        function_name=function.name,
-        envelope=envelope,
-        allowed_fields=DXF_ENVELOPE_FIELDS,
-    )
-    if "document" not in envelope:
-        raise ValueError(f"{_display_path(script_path)} gen_dxf() envelope must define 'document'")
-    return None
-
-
-
 def _parse_literal_return_envelope(
     *,
     script_path: Path,
@@ -379,48 +350,3 @@ def _reject_unsupported_fields(
         raise ValueError(
             f"{_display_path(script_path)} {function_name}() envelope has unsupported field(s): {joined}"
         )
-
-
-def _literal_field(
-    *,
-    script_path: Path,
-    function_name: str,
-    envelope: dict[str, ast.expr],
-    field_name: str,
-) -> object | None:
-    if field_name not in envelope:
-        return None
-    try:
-        return ast.literal_eval(envelope[field_name])
-    except (ValueError, SyntaxError) as exc:
-        raise ValueError(
-            f"{_display_path(script_path)} {function_name}() envelope {field_name} must be a literal"
-        ) from exc
-
-
-def _parse_path_field(
-    *,
-    script_path: Path,
-    function_name: str,
-    envelope: dict[str, ast.expr],
-    field_name: str,
-) -> str | None:
-    value = _literal_field(
-        script_path=script_path,
-        function_name=function_name,
-        envelope=envelope,
-        field_name=field_name,
-    )
-    if value is None:
-        return None
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(
-            f"{_display_path(script_path)} {function_name}() envelope {field_name} "
-            "must be a non-empty string"
-        )
-    if "\\" in value:
-        raise ValueError(
-            f"{_display_path(script_path)} {function_name}() envelope {field_name} "
-            "must use POSIX '/' separators"
-        )
-    return value.strip()

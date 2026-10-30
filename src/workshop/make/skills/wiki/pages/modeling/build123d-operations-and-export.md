@@ -1,23 +1,25 @@
 ---
-title: build123d operations, joints and STEP export
-tags: [build123d, operations, extrude, revolve, loft, sweep, offset, export, step, joints, color, label]
-aliases: [export_step, import_step, operation parameters, RigidJoint, RevoluteJoint, connect_to, step colours, step labels]
+title: build123d operations and STEP export
+tags: [build123d, operations, extrude, revolve, loft, sweep, offset, export, step, color, label]
+aliases: [export_step, import_step, operation parameters, step colours, step labels]
 sources:
   - "experience: an extruded offset-curve band vanished from its STEP on re-import; a sampled periodic spline survived"
   - https://build123d.readthedocs.io/en/latest/operations.html
   - https://build123d.readthedocs.io/en/latest/import_export.html
-  - https://build123d.readthedocs.io/en/latest/joints.html
   - "experience: an assembly measured through a new Compound of its parts exported with its part names gone"
   - "experience: a revolved offset() envelope lost its offset-curve face in the STEP; the drum cut by it read back as an open shell"
+  - "experience: a revolved pumpkin core whose STEP read back with negative face areas"
+  - "toolchain: offset of a B-spline section face failed; offsetting a 360-point polygon of the same wire worked"
 related: [build123d-builder-and-algebra, operation-families, cad-joint-types, step-file-format, sweeps-and-helices, mass-properties-and-measurement]
-updated: 2026-10-04
+updated: 2026-10-12
 ---
 
-# build123d operations, joints and STEP export
+# build123d operations and STEP export
 
 A lookup page: which operation exists for which dimension, the parameters that
-matter, the joints API contract, and what `export_step` writes. For choosing an
-operation family from the object's form, see [[operation-families]].
+matter, and what `export_step` writes. For choosing an operation family from
+the object's form, see [[operation-families]]; for the joints API,
+[[cad-joint-types#joints-api-contract]].
 
 ## Operations by dimension
 
@@ -62,36 +64,6 @@ Sweep frame modes, corner transitions and helices, with measured failures:
 [[sweeps-and-helices]]. Volume, centre of mass, bounding boxes and distances:
 [[mass-properties-and-measurement]].
 
-## Joints API contract
-
-The five joint classes are `RigidJoint`, `RevoluteJoint`, `LinearJoint`,
-`CylindricalJoint` and `BallJoint`. They take `label` (unique within a part),
-`to_part`, and then `joint_location` (Rigid, Ball) or `axis` (Revolute,
-Linear, Cylindrical) plus `angular_range` / `linear_range`.
-
-- `a.joints["x"].connect_to(b.joints["y"])` keeps **a's** part fixed and
-  **moves b's** part.
-- Valid pairs: Rigid↔Rigid; Ball↔Rigid (`angles`); Revolute↔Rigid (`angle`);
-  Linear↔Rigid or Revolute (`position`); Cylindrical↔Rigid (`position`,
-  `angle`).
-- A value outside the declared range raises an exception, which is a free
-  limit check.
-- `connect_to()` repositions once and is not a live constraint. Inside a
-  `BuildPart` the `to_part` is optional, because the builder attaches the
-  joints on exit.
-
-When to use a joint at all, and which type: [[cad-joint-types]].
-
-## Imports inside a generator
-
-Import sibling modules at the top of a generator's module, never inside a
-function that `gen_step()` calls. The generation runner puts the project
-directory on the path while it imports the entry, and not while it runs
-`gen_step()`. A late `import sibling` therefore works in a plain script and in
-the audit, then fails under `gen` with `ModuleNotFoundError`. When two modules
-would import each other, move the shared constant into the module both
-already import.
-
 ## export_step and import_step
 
 ```python
@@ -131,7 +103,43 @@ the offset face before using it -- `Face(BRepBuilderAPI_NurbsConvert(face.wrappe
 True).Shape())` -- which turns every offset curve into a plain B-spline; the
 round trip then returns the solid with every face.
 
-## Three small traps
+### A revolved half-ellipse sketch breaks on the STEP round trip
+
+A spheroid revolved from a half `Ellipse` sketch (ellipse intersected with a
+rectangle) passes every source check. After a STEP write and read, its faces
+come back with negative area, and the volume of a lone spheroid went from
+26 229 to 39 344 mm^3. `render_views --compare-step` then fails with
+"comparison mesh omitted N face(s)". Revolve a wire of one elliptic arc
+(`Edge.make_ellipse`) plus its chord instead; that round-trips cleanly.
+
+### Nested recess order can produce a valid source that loses its shell in STEP
+
+A trimmed ellipsoid can pass source BOP validation yet return from STEP as
+several small cavity solids, with its exterior missing. Those imported pieces
+can also pass BOP validation. Validity therefore does not establish round-trip
+completeness: compare per-region solid counts, adaptive volumes and bounds,
+then inspect actual exported views.
+
+When raw primitives and individual cuts roundtrip, isolate the combination of
+overlapping recess tools. Cutting a small nested detail before its larger
+enclosing recess can leave export-unstable trims. Subtract the largest envelopes
+first, then apply the smaller details and interface cuts sequentially. Prove
+empty source differences in both directions, exact partition coverage and
+disjointness, and a successful new STEP roundtrip. Dropping an apparently
+redundant small cutter is not equivalent unless its residual difference is
+empty. Seam rotation, generic healing, NURBS conversion or disabling pcurves
+are possible diagnostics, not substitutes for that proof.
+
+Check the fused physical entry separately from its coloured assembly. Independent
+colour solids can retain a small exterior relief that disappears from the
+physical STEP, even when both physical bodies report valid topology. Derive an
+interior probe near each required relief's exposed tip and test it in the source,
+the imported physical body and the corresponding imported colour region. A
+failed physical probe cannot be cleared by a correct coloured preview. Localise
+source-minus-STEP residuals to those feature envelopes before trying further mass
+integration methods; an invalid reverse residual does not establish equivalence.
+
+## Small traps
 
 - `Vector.get_angle(other)` returns **degrees**. Wrapping it in
   `math.degrees()` turns a 90° rod into one rotated 5157°, and every rod built
@@ -141,6 +149,22 @@ round trip then returns the solid with every face.
   "Cannot intersect shape with empty compound". `make_face()` it first.
 - `Location * Vector` raises (`Multiplied(): incompatible function
   arguments`). Carry a point with `(loc * Location(tuple(p))).position`.
+- `Face.center()` is the point at the middle of the face's parameter range,
+  which lies **on** a curved surface: a full cylindrical wall of radius 2
+  reports X = -2, not its axis. A landmark that locates a bore, peg or
+  socket by its wall face needs `bounding_box().center()` or
+  `center(CenterOf.MASS)`.
+- `Face.make_surface(exterior, surface_points)` needs a `Wire`; a list of
+  edges fails `non planar face is invalid`. `Solid.thicken` past the concave
+  radius returns an invalid solid without raising, and the functional
+  `thicken()` thickens each face separately and fuses
+  ([[freeform-surfaces-in-build123d]]).
+
+## Offsetting a B-spline section
+
+A planar face whose boundary is a B-spline (a section cut through a lofted
+body) does not `offset` reliably in OCC. Sample the wire to a polygon (about
+360 points), rebuild the face from it, and offset that.
 
 ## A Compound takes the children it is given
 
@@ -152,20 +176,5 @@ silent: the exported STEP keeps every solid, because the parent's OCCT shape
 was built before, but the moved parts lose their product names.
 Measure without building a tree: combine each part's own `bounding_box()`, or
 wrap copies.
-- A child's `bounding_box()` is in its **parent's** frame. The parent's
-  `location` is not applied to it. This holds for any `Compound`, not only an
-  imported one: after `Pos(10, 0, 0) * compound`, the compound's box moves and
-  `compound.children[0]` does not. Two consequences follow.
-  - An assembly exported as an exploded view, or with sub-assembly
-    transforms, diffs cleanly part against part inside one group while whole
-    groups sit apart in the world. Compose the ancestor locations before you
-    compare positions across groups, and never read a whole group's offset as
-    a moved part.
-  - To carry a marker edge through a transform written for a whole part,
-    transform the edge on its own. Wrapping it in a `Compound` with the part
-    and reading it back from `.children` returns it unmoved.
-
-Other writers: `export_stl`, `export_obj` (mesh with UVs), `export_gltf`,
-`export_brep` (the OCCT native B-rep), 3MF via `Mesher.write()`, and
-`ExportDXF`/`ExportSVG` for 2D drawings. Only the STEP and BREP writers keep
-exact geometry. All the others tessellate.
+A child's own box is in its parent's frame
+([[mass-properties-and-measurement#bounding-boxes]]).

@@ -6,6 +6,10 @@
 # ("split pin" never calls the "split" of parting lines), so a single common
 # word is safe beside a phrase; alone it still expands every query it is in
 # ("lamp socket", not "socket").
+# Every word of every member joins the expanded query, so a multi-word member
+# drags in pages that match any one of its words: "replay value" put a page about
+# replaying a camera search above the play-value page. Re-run the searches the
+# group is for, and one that must not change, after adding it.
 
 shaft | axle | spindle | arbor
 joint | pivot | kinematic pair
@@ -28,6 +32,9 @@ bevel | miter gear | mitre gear
 module | diametral pitch
 ratio | reduction | gear train | gearbox
 backlash | play | lash
+play value | play pattern
+keychain | keyring
+chibi | super deformed | kawaii
 mesh | meshing | engagement
 linkage | link | bar linkage
 four-bar | four bar | grashof

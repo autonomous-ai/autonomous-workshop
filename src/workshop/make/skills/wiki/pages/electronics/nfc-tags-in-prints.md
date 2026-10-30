@@ -5,12 +5,12 @@ aliases: [nfc sticker, nfc tag, ntag, rfid tag, nfc inlay, tap to unlock, tap to
 sources:
   - "https://rfid.it/en/avery-dennison/404-hf-midas-wet-inlay-nxp-ntag213-12x19.html (Midas NTAG213 12 x 19 mm, ref 3002647, 10 x 17 antenna, 157 um)"
   - https://rfid.it/en/avery-dennison/403-nfc-stickers-ntag213-round-o18mm.html (Circus NTAG213 mini: 18 +/-0.2 mm label, 16 mm antenna, 136 um overall excluding the IC, clear PET and aluminium, not for metal surfaces)
-  - https://github.com/autonomous-ai/autonomous-key (an app that pairs by the tag's factory UID accepts any NTAG213/215/216)
+  - NXP NTAG213/215/216 product data sheet (one IC family: 144 / 504 / 888 bytes of user memory, the same 7-byte factory UID)
   - https://makerworld.com/models/1058791 (keychain with a print pause built in for an NTAG chip)
   - https://www.digitaltransactions.net/cash-app-tags-debut-starting-with-a-wand/ (a commercial NFC wand, 4.29 x 1.71 in)
   - "experience: a tag on the mid-plane of a 13 mm thick two-half token sat 5.3 mm under one face and 13.7 mm under the other face's ornament; sealed under the tap face it sits 1.75 mm deep"
-related: [magnets-and-strap-slots, wall-thickness-and-hollowing, overhangs-and-print-orientation, electrical-component-selection, printed-part-count]
-updated: 2026-10-08
+related: [magnets-and-strap-slots, wall-thickness-and-hollowing, overhangs-and-print-orientation, electrical-component-selection, printed-part-count, key-rings-and-charm-hardware]
+updated: 2026-10-10
 ---
 
 # NFC tags sealed in a print
@@ -33,7 +33,8 @@ of them.
   (nominal plus tolerance). No catalog carries a STEP for one.
 - **Metal detunes it.** Keep screws, magnets, inserts and the key ring away
   from the antenna; a steel split ring several centimetres away is fine.
-  On-metal tags exist with a ferrite backing and are thicker.
+  On-metal tags exist with a ferrite backing and are thicker. Ring hole
+  size, ligament and loop orientation: [[key-rings-and-charm-hardware]].
 
 ## Read distance decides where it goes
 
@@ -45,6 +46,12 @@ of them.
   ornament on one face (a gem, a boss) adds its height to that side.
 - Put it under one face and **mark that face** — a logo or glyph directly
   over the antenna — because nobody knows where the antenna is.
+- **A thin two-faced token is the exception to "never centre it".** When the
+  part is thin enough that the tag in the middle sits within the read distance
+  of both faces, centre it: either face taps, so neither needs a mark, and a
+  design meant to look the same on both sides also works the same. A 1 mm tag
+  under 0.6 mm colour inlays and five black layers each side makes a 4.4 mm
+  slab with the tag 1.6 and 1.8 mm from the faces.
 - Plastic does not shield it; the distance does. Thick infill over the tag is
   harmless, a thick part is not.
 - **A through-opening and the tag compete for the same middle.** A concept
@@ -55,6 +62,13 @@ of them.
   Dennison Midas NTAG213, 10 × 17 antenna, about the area of an 18 mm round
   tag's 16 mm antenna) fits the band above such an opening; otherwise the
   opening becomes a recess.
+- **A 20 × 10 tag needs a solid 23.8 × 13.8 rectangle**: the slip pocket
+  (20.6 × 10.6) plus 1.6 of wall each side, and about 4 mm from its edge to
+  any metal ring hole. A narrower member holds no tag. Where a ring hole and
+  an opening crowd the same region, the window left between them can be a few
+  tenths over the pocket: size that window first, because it decides whether
+  the pocket lies across or along, whether a locating peg can stay on the
+  axis, and whether an opening has to move.
 
 ## Sealing it: pause and embed
 
@@ -63,6 +77,12 @@ Seal it inside one printed part by pausing the print
 
 - Cavity diameter `slot_for(label max diameter, "slip")`; height two layers
   (0.4 mm at 0.2 mm layers) for a 0.35 mm sticker envelope.
+  A rigid tag (PVC, epoxy, PCB, 1 mm and up) gets a cavity one layer taller
+  than its thickness.
+- A rectangular tag with square corners in a pocket with rounded corners:
+  the corner clears only while the pocket radius is at most
+  `c √2 / (√2 − 1) ≈ 3.4 c`, `c` the clearance a side. At the slip fit's
+  0.2 that is 0.68; a 1.0 corner radius catches the tag's corners.
 - Roof at least 1.0 mm (five layers) over the whole footprint, not just the
   centre. On a domed face, find the lowest point of the face over the tag's
   footprint, subtract the roof, and round **down** to a layer boundary: that
@@ -78,6 +98,12 @@ Seal it inside one printed part by pausing the print
   retention resting on the part that seals it.
 - Any later deboss over the tag (the face mark) must leave the full roof:
   `face height - mark depth - cavity top >= roof`.
+- A part printed as two glued halves needs no pause: pocket the tag in the glue
+  face, half its depth in each half, and drop it in before gluing. Each half
+  prints its pocket open upward, so the floors are solid layers rather than a
+  bridge. Keep each floor 1.0 mm all the same: `check_thickness` measures a
+  0.8 mm (two-line) floor as 0.73 at its voxel and fails it. A 1 mm tag in a
+  1.2 mm pocket with a 1.0 mm floor each side makes the part 3.2 mm at least.
 
 ## Failure classes
 

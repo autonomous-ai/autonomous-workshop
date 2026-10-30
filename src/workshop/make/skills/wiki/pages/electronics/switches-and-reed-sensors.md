@@ -10,7 +10,7 @@ sources:
   - https://www.sparkfun.com/products/97
   - https://www.adafruit.com/product/375
 related: [power-path-design, stepper-motors, electronics-enclosure-design, joints, buttons-knobs-and-front-panels]
-updated: 2026-10-07
+updated: 2026-10-10
 ---
 
 # Switches, limit switches and reed sensors
@@ -40,10 +40,8 @@ current.
   clearance, so the slot must not be the stop. Let the switch's own detents
   end the travel, or the user forces the switch past them. A printed
   extension cap over a 3 mm knob needs a snug fit from `cadfits`.
-- **Tactile switch behind a printed button**: the printed plunger must press
-  the switch before the plunger bottoms out, and must not preload it at rest.
-  Design a positive gap at rest, a travel larger than the gap, and a hard stop
-  in the printed guide that protects the switch from being crushed.
+- **Tactile switch behind a printed button**: rest gap, travel and hard stop
+  are [[buttons-knobs-and-front-panels#a-cap-over-a-tactile-switch]].
 - **Micro switch as a limit or home switch**: the cam or finger reaches the
   operating position, then continues a little into the overtravel without
   hitting the body. A mechanism that can overshoot the overtravel breaks the

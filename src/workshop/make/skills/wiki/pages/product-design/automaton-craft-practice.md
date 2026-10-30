@@ -38,7 +38,7 @@ movements per turn, how long each dwell.
 
 Because a snail cam only runs one way, a snail-cam automaton needs a
 ratchet on its crank or a clear direction arrow
-([[cams-intermittent#ratchet-and-pawl]]).
+([[latches-detents-and-ratchets#ratchet-and-pawl]]).
 
 ## Followers and guides
 

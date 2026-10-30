@@ -157,8 +157,9 @@ Why a short guide binds, drawers, and bought linear guides:
   collision, so give the condition an explicit `maxOverlapMm3` allowance equal
   to the bump band and say so in the description.
 - **Snap hook / cantilever**: deflection `y`, beam length `L`, thickness `t`:
-  strain ≈ 1.5 t y / L²; keep ≤ 2 % for PLA, ≤ 4 % for PETG. Print the beam
-  in the XY plane, never along Z.
+  strain ≈ 1.5 t y / L², kept within the material's permissible strain
+  ([[snap-fit-design#permissible-strain]]). Print the beam in the XY plane,
+  never along Z.
 - **Bayonet / quarter turn**: an L-slot; the blocked direction is axial with
   the pin in the short leg ([[bayonet-and-twist-locks]]).
 - **Push-in fasteners**: fir-tree clips, push rivets, press studs,
@@ -198,5 +199,5 @@ described: [[joint-variant-index]].
 - Keep designed running gaps ≥ 0.2 mm everywhere; less fuses or grinds.
 - A thin part in a slot or a fork: fork gap = part thickness + 2 × RUN
   clearance, not the part thickness.
-- Edges touching the bed get a chamfer, not a fillet — a bed-side fillet is an
-  overhang.
+- Edges touching the bed get a steep asymmetric chamfer, not a fillet — a
+  bed-side fillet is an overhang ([[rounded-bodies-on-the-print-bed#breaking-the-bed-edge]]).

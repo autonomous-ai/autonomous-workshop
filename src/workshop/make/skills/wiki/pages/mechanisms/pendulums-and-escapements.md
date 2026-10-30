@@ -6,17 +6,15 @@ sources:
   - https://en.wikipedia.org/wiki/Pendulum (T = 2 pi sqrt(L/g), amplitude series, 1 % at 23 deg, seconds pendulum 0.994 m, compound pendulum)
   - https://en.wikipedia.org/wiki/Anchor_escapement (4-6 deg swing vs about 100 deg for the verge, recoil, comparison with deadbeat)
   - https://en.wikipedia.org/wiki/Deadbeat_escapement (locking faces concentric with the pivot, impulse faces, no recoil, less tolerant of wear)
-related: [cams-intermittent, energy-drive, gears]
-updated: 2026-09-23
+related: [cams-intermittent, energy-drive, gears, balance-toys-and-tensegrity]
+updated: 2026-10-10
 ---
 
 # Pendulums and escapements
 
 An escapement lets a stored torque (a weight or spring) out one tooth at a
 time and gives the pendulum a small push each swing. The pendulum sets the
-rate; the escapement only keeps it swinging. See
-[[cams-intermittent#escapement]] for where this sits among intermittent
-mechanisms.
+rate; the escapement only keeps it swinging.
 
 ## Pendulum period
 
@@ -35,6 +33,8 @@ compound (rigid) pendulum      T = 2π √(I_O / (m g r_cm))
   long.
 - A real pendulum is compound. Its effective length is set by where its mass
   sits, so put a sliding or threaded bob on it to adjust the rate.
+- A balancing bird and a rocking curved base are compound pendulums too:
+  [[balance-toys-and-tensegrity#rocking-period-of-a-curved-base]].
 
 ```python
 import math

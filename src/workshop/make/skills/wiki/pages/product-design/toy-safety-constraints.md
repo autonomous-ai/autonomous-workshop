@@ -1,20 +1,21 @@
 ---
 title: Toy safety as design constraints
 tags: [toy, safety, small-parts, choking, magnet, sharp-edge, finger-entrapment, age-grading]
-aliases: [small parts cylinder, choke tube, astm f963, en 71-1, 16 cfr 1501, cpsc, choking hazard, flux index]
+aliases: [small parts cylinder, choke tube, astm f963, en 71, en 71-1, iso 8124, 16 cfr 1501, cpsc, choking hazard, child safety, flux index]
 sources:
   - https://www.cpsc.gov/s3fs-public/Small-Parts-16-C-F-R-Part-1501-English.pdf
   - https://www.tradeaiders.com/toys-for-under-3-years-using-the-small-parts-cylinder-to-prevent-choking-hazards.html
   - https://www.law.cornell.edu/cfr/text/16/1501.2
-  - https://www.law.cornell.edu/cfr/text/16/1501.4
+  - https://www.law.cornell.edu/cfr/text/16/1501.4 (cylinder test after the 1500.51–1500.52 use-and-abuse tests, bite tests excluded; detached pieces retested)
   - https://www.law.cornell.edu/cfr/text/16/1500.19
   - https://www.law.cornell.edu/cfr/text/16/1500.48
   - https://www.law.cornell.edu/cfr/text/16/1500.52
   - https://www.law.cornell.edu/cfr/text/16/1500.53
   - https://law.resource.org/pub/eu/toys/en.71.1.2014.html
   - https://www.cpsc.gov/Business--Manufacturing/Business-Education/Business-Guidance/Magnets
-related: [handheld-ergonomics, printed-part-count, automata-patterns, joints, stability-and-tipping, scissor-and-pantograph-linkages, posable-figure-joints]
-updated: 2026-10-01
+  - https://www.avenotester.com/toy-safety-small-part-cylinder-atb01_p94.html (cylinder clauses: EN 71-1 8.2, ASTM F963 4.6, 16 CFR 1501, ISO 8124-1 5.2)
+related: [handheld-ergonomics, printed-part-count, creep-and-stress-relaxation, filament-properties, food-and-toy-safety, automata-patterns, joints, stability-and-tipping, scissor-and-pantograph-linkages, posable-figure-joints, launchers-and-projectile-toys, spinning-toys-and-flywheels, marble-runs-and-ball-tracks]
+updated: 2026-10-10
 ---
 
 # Toy safety as design constraints
@@ -41,21 +42,37 @@ children too young to sit unaided.
   orientation, entirely into the small parts cylinder: **31.7 mm (1.25 in)
   inside diameter**, **57.1 mm (2.25 in)** deep, with a slanted bottom whose
   depth runs from 25.4 mm (1 in) to 57.1 mm. The cylinder approximates the
-  fully expanded throat of a child under three. EN 71-1 uses the same
-  cylinder.
+  fully expanded throat of a child under three. EN 71-1 §8.2, ASTM F963 §4.6
+  and ISO 8124-1 §5.2 use the same cylinder.
 - **Under 3**: toys that are or release small parts are banned — including
-  pieces that break off during the use-and-abuse tests. Exemptions include
-  balloons, books, crayons, chalk, modelling clay and paint sets.
+  pieces that break off during the use-and-abuse tests (16 CFR
+  1500.51–1500.52, bite tests excluded). Every piece that comes off, other
+  than paper, fabric, yarn, fuzz, elastic and string, is tested again.
+  Exemptions include balloons, books, crayons, chalk, modelling clay and
+  paint sets.
 - **3 to 6 years**: toys with small parts must carry a choking-hazard warning.
 - **Small ball**: a ball that passes under its own weight through a
   **44.4 mm (1.75 in)** hole. Marbles and small balls carry warnings (toys
-  containing them, for ages 3 to 8); latex balloons always carry one.
+  containing them, for ages 3 to 8); latex balloons always carry one. Ball
+  and track sizing for marble toys: [[marble-runs-and-ball-tracks]].
 
 Design consequences: for a toy that might reach under-3s, every part —
-including any part a child can pry off (a wheel, a pin, a printed eye) — must
-not fit the cylinder: make it larger than 31.7 mm across in some direction
-it cannot be turned out of, or make it captive. Assert it in the parameter
-block.
+including any part a child can pry off (a wheel, a pin, a snap cap, a
+printed eye) — must not fit the cylinder: make it larger than 31.7 mm across
+in some direction it cannot be turned out of, or make it captive. A part that
+cannot come off under abuse is not tested alone, so print-in-place and
+captured parts help ([[printed-part-count#print-in-place-before-splitting]]).
+Retention is a safety property, not only a mechanism property: a friction fit
+that loosens over time ([[creep-and-stress-relaxation]]) releases its small
+part later. A part that breaks under the abuse tests is tested in pieces, and
+PLA's notched impact is among the lowest of common filaments
+([[filament-properties]]), so its brittle thin features become small parts.
+Assert it in the parameter block:
+
+```python
+SMALL_PARTS_D, SMALL_PARTS_DEPTH_SHALLOW = 31.7, 25.4   # mm, 16 CFR 1501 / ISO 8124-1 cylinder
+# a separable part is a choking hazard for under-3s if it fits in the cylinder in any orientation
+```
 
 ## Use and abuse tests (what "breaks off" means)
 
@@ -116,8 +133,13 @@ use magnets below the threshold.
 
 ## Other numeric limits in EN 71-1
 
-- Projectile kinetic energy: rigid ≤ 0.08 J, resilient ≤ 0.5 J.
-- Yo-yo ball cord initial length ≤ 370 mm.
+- Projectile kinetic energy: EN 71-1:2011 capped rigid projectiles at 0.08 J
+  and resilient ones at 0.5 J. EN 71-1:2014+A1:2018 and ASTM F963-17 instead
+  require, above 0.08 J, a resilient leading part, a warning and at most
+  2500 J/m² of kinetic energy per contact area, and bring catapults and
+  bands under the clause: [[launchers-and-projectile-toys#projectile-limits-in-the-toy-standards]].
+- Yo-yo ball cord initial length ≤ 370 mm (the elastic yo-yo ball, not a
+  string yo-yo: [[spinning-toys-and-flywheels#yo-yo-bearing-gap-and-response]]).
 - Enclosures a child can enter need ventilation: ≥ 1300 mm² total, or 650 mm²
   per opening with openings 150 mm apart.
 - Sound: close-to-ear toys 60–70 dB(A), hand-held or table-top 80–90 dB(A),

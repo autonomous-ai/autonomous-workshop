@@ -25,8 +25,7 @@ class PythonSourceHash:
     a cwd-dependent-or-absolute path sitting one attribute away from a value that IS written
     into descriptors is a trap: the next writer to want "the source path" would have reached
     for it and quietly made the cache depend on the directory the build ran from. Descriptor
-    paths come from :func:`cadgen.render.relative_to_file`, anchored on the model folder --
-    see ``tests/python/packages/cadgen/test_package_portability.py``.
+    paths come from :func:`cadgen.render.relative_to_file`, anchored on the model folder.
     """
 
     source_hash: str
@@ -47,11 +46,10 @@ def _sha256_file(path: Path) -> str:
 
 # (path string) -> (st_mtime_ns, st_size, hash). The AST pass is ~200x the byte
 # pass (ast.parse + ast.dump dominate), and a warm freshness check recomputes it
-# for EVERY closure file — the parent gate plus one _generated_child_is_stale
-# per generated child, which re-hashes the shared helper modules each time. The
+# for EVERY closure file, re-hashing the shared helper modules each time. The
 # stat key makes each file parse once per actual content change instead of once
-# per check (the warm daemon and multi-child builds are the big winners, same as
-# A4). Two safety rules make a stale hit impossible rather than merely unlikely:
+# per check (the warm daemon and multi-target builds are the big winners). Two
+# safety rules make a stale hit impossible rather than merely unlikely:
 # stat is taken BEFORE the read (a write racing the read leaves an entry keyed
 # by a stat the changed file no longer matches — a spurious recompute, never a
 # stale hash), and a file is only cached once its mtime has SETTLED (see
@@ -127,22 +125,6 @@ def _is_within(path: Path, root: Path) -> bool:
         return True
     except ValueError:
         return False
-
-
-def _resolve_manifest_path(relative: str) -> Path | None:
-    """Inverse of ``_manifest_path``: resolve a stored relative path back to an
-    existing file under one of the manifest roots."""
-    rel = str(relative or "").strip()
-    if not rel:
-        return None
-    candidate = Path(rel)
-    if candidate.is_absolute():
-        return candidate if candidate.is_file() else None
-    for root in _manifest_roots():
-        resolved = (root / candidate).resolve()
-        if resolved.is_file():
-            return resolved
-    return None
 
 
 def _closure_hash_for_pairs(pairs: list[tuple[str, str]]) -> str:
@@ -457,10 +439,8 @@ def capture_runtime_closure(
 
     The closure is therefore the generator's PYTHON import reach and nothing
     else. A composed child is captured when it is composed the documented way —
-    by importing its ``.step.py`` generator — but a raw ``.step``/``.dxf`` file
-    read as data is NOT a freshness input, for STEP assemblies and DXF drawings
-    alike. Generated children are kept current by
-    ``generation._rebuild_stale_assembly_children``, not by this closure.
+    by importing its ``.step.py`` generator — but a raw ``.step`` file read as
+    data is NOT a freshness input; a change to one needs ``scripts/gen --force``.
     """
     import sys
 

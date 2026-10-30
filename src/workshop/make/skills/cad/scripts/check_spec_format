@@ -43,7 +43,8 @@ from pathlib import Path
 TAG = re.compile(r"\[(?:observed|inferred|assumed)\]", re.I)
 # A hard millimetre dimension. Not preceded by a range dash, not part of a word.
 DIM = re.compile(r"(?<![\w.–—-])\d+(?:\.\d+)?\s*mm\b")
-ANGLE = re.compile(r"<[^<>\n]{1,80}>")
+# A placeholder hugs its brackets; "x < 0 ... y > 2" is a comparison, not one.
+ANGLE = re.compile(r"<(?=\S)[^<>\n]{0,79}(?<=\S)>")
 SCAFFOLD = re.compile(r"\b(?:project_name|object_name|my_project)\b")
 DRIVEN = re.compile(
     r"\b(?:motor|servo|solenoid|actuator|gearmotor|stepper|"
@@ -54,6 +55,12 @@ DRIVEN = re.compile(
 FUNCTIONAL = re.compile(
     r"\b(?:functional|driven|powered|rotates?|spins?|emits?|"
     r"drives?|turns?|moves?|lighting|light)\b",
+    re.I,
+)
+# Section 8 that declares the object inert; a host's lamp or motor it names
+# while saying so is not a driven part of this object.
+INERT = re.compile(
+    r"\b(?:nothing|no part)\s+(?:here\s+)?is\s+(?:powered|driven)\b|\bunpowered\b",
     re.I,
 )
 NOT_PRINTED = re.compile(r"\bnot\s+(?:3d[- ]?)?printed\b", re.I)
@@ -134,6 +141,8 @@ def find(text: str, name: str) -> list[tuple[int, str]]:
             if not (title.startswith("8.") or title.startswith("8 ")):
                 continue
             chunk = "\n".join(text.splitlines()[a:b])
+            if INERT.search(chunk):
+                continue                       # inert object; driven words name a host
             if DRIVEN.search(chunk) and "assert" not in chunk.lower():
                 out.append((a, "section 8 describes a driven part but carries no "
                                "feasibility `assert`"))
@@ -265,6 +274,9 @@ def self_check() -> int:
          "# Build spec - <object name>\n", "template-placeholder", 1),
         ("a filled heading passes",
          "# Build spec - brass lamp\n", "template-placeholder", 0),
+        ("comparisons in prose are not a placeholder",
+         "Teeth sit at X < 0 for the mirror and X > 0 here.\n",
+         "template-placeholder", 0),
         ("an undeleted template comment fails",
          "<!--\n  fill every bracket\n-->\n# Build spec - lamp\n",
          "template-placeholder", 1),
@@ -286,6 +298,10 @@ def self_check() -> int:
         ("section 8 with no assert fails",
          "## 8. Powered system\n\na crank drives the four-bar\n",
          "no-feasibility-assert", 1),
+        ("an inert section 8 naming the host's lamp passes",
+         "## 8. Powered system\n\nNothing is powered or driven; the host's lamp "
+         "glows under the charm and is kept clear.\n",
+         "no-feasibility-assert", 0),
         ("section 8 with an assert passes",
          "## 8. Powered system\n\na crank drives the four-bar\n\nassert L1 + L4 < L2\n",
          "no-feasibility-assert", 0),

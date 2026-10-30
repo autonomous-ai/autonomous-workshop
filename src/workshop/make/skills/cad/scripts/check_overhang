@@ -156,8 +156,13 @@ def gap_below(inside, origin, pitch, points, limit):
     return gaps
 
 
-def cluster(points, weights, gaps, link, slopes=None):
+def cluster(points, weights, gaps, link, slopes=None, z_link=None):
     """Group samples into connected regions, largest first.
+
+    Samples link across `link` in plan but only `z_link` in height: two
+    ceilings a couple of millimetres apart (a pocket's roof over the slots
+    beside it) are separate surfaces the slicer meets at separate layers, and
+    joined they read as one region as wide as both, too wide to bridge.
 
     With `slopes`, each region also records its steepest slope and the sample
     nearest its centre: `at` is a mean, which lies in the air under a ring.
@@ -166,7 +171,8 @@ def cluster(points, weights, gaps, link, slopes=None):
 
     if len(points) == 0:
         return []
-    cell = np.floor((points - points.min(axis=0)) / link).astype(int)
+    step = np.array([link, link, z_link if z_link is not None else link])
+    cell = np.floor((points - points.min(axis=0)) / step).astype(int)
     grid = np.zeros(cell.max(axis=0) + 1, dtype=bool)
     grid[cell[:, 0], cell[:, 1], cell[:, 2]] = True
     tags, found = label(grid, structure=np.ones((3, 3, 3), dtype=int))
@@ -181,7 +187,9 @@ def cluster(points, weights, gaps, link, slopes=None):
             # The span that matters is the one the slicer has to cross, which is
             # the SHORTER plan dimension -- a 10 x 40 mm roof is bridged across
             # the 10, not along the diagonal.
-            "span": float((here[:, :2].max(axis=0) - here[:, :2].min(axis=0)).min()),
+            "span": min(float((here[:, :2].max(axis=0) - here[:, :2].min(axis=0)).min()),
+                        _principal(here)[2]),
+            "axes": _principal(here)[:2],
             "extent": tuple(float(v) for v in (here[:, :2].max(axis=0) - here[:, :2].min(axis=0))),
             "at": tuple(float(v) for v in here.mean(axis=0)),
             "gap": float(gaps[sel].max()),
@@ -200,6 +208,33 @@ def cluster(points, weights, gaps, link, slopes=None):
                                   here[int(np.argmin(np.linalg.norm(here - centre, axis=1)))])
     out.sort(key=lambda r: -r["area"])
     return out
+
+
+def _principal(points):
+    """(minor axis, major axis, width across the minor axis) of a region's
+    plan footprint. A slot roof turned off the sample grid is still bridged
+    across its own short side, which the grid's X and Y do not measure."""
+    xy = points[:, :2]
+    if len(xy) < 3:
+        return np.array([1.0, 0.0]), np.array([0.0, 1.0]), float("inf")
+    _vals, vecs = np.linalg.eigh(np.cov((xy - xy.mean(axis=0)).T))
+    minor, major = vecs[:, 0], vecs[:, 1]
+    proj = (xy - xy.mean(axis=0)) @ minor
+    return minor, major, float(proj.max() - proj.min())
+
+
+def _walk(inside, origin, pitch, start, direction, steps):
+    """Is there material within `steps` cells from `start` along a plan
+    direction, at `start`'s own level?"""
+    shape = np.array(inside.shape)
+    for step in range(1, steps):
+        probe = np.floor((start + np.append(direction, 0.0) * step * pitch - origin)
+                         / pitch).astype(int)
+        if np.any(probe < 0) or np.any(probe >= shape):
+            return False
+        if inside[probe[0], probe[1], probe[2]]:
+            return True
+    return False
 
 
 def flanked(inside, origin, pitch, region, span):
@@ -248,7 +283,23 @@ def flanked(inside, origin, pitch, region, span):
                 found = True
                 break
         reached.append(found)
-    return (reached[0] and reached[1]) or (reached[2] and reached[3])
+    if (reached[0] and reached[1]) or (reached[2] and reached[3]):
+        return True
+    # a roof turned off the grid: probe along its own short and long sides,
+    # from its edge on the line through its middle
+    xy = region["points"][:, :2]
+    centre = xy.mean(axis=0)
+    for direction in region.get("axes", ()):
+        both = True
+        for sign in (1.0, -1.0):
+            d = sign * np.asarray(direction, dtype=float)
+            edge = centre + d * float(((xy - centre) @ d).max())
+            if not _walk(inside, origin, pitch, np.append(edge, z), d, steps + 1):
+                both = False
+                break
+        if both:
+            return True
+    return False
 
 
 def reach(inside, origin, pitch, region, levels):
@@ -382,7 +433,7 @@ def main() -> int:
         # above material below it is a step, not a drop.
         loose = ~on_the_bed(points, bed_z, args.layer) & (gaps > max(2.0 * args.layer, pitch))
         points, weights, gaps, slopes = points[loose], weights[loose], gaps[loose], slopes[loose]
-        regions = cluster(points, weights, gaps, link=4 * pitch, slopes=slopes)
+        regions = cluster(points, weights, gaps, link=4 * pitch, slopes=slopes, z_link=2 * pitch)
 
     classify(inside, origin, pitch, regions, args.bridge, args.ledge)
     # A failing region is always shown, ahead of the rest, so its feature is named.
@@ -440,7 +491,7 @@ def main() -> int:
         out.parent.mkdir(parents=True, exist_ok=True)
         rows = "\n".join(f"| {n} | {s} | {d} |" for s, n, d in checks)
         region_rows = "" if not shown else (
-            "\n\n## Unsupported regions, largest first\n\n"
+            "\n\n## Unsupported regions, failing first, then largest\n\n"
             "A `bridge` is a steep region short enough to span with material on both sides of "
             "it -- a bore ceiling or a slot roof. A `ledge` stands out too little from the "
             "material beside it to need help. An `overhang` is neither, and needs support "
@@ -498,7 +549,7 @@ def _measure(tris, angle=45.0, bridge=12.0, layer=0.2, voxel=0.4, ledge=LEDGE_RE
         # above material below it is a step, not a drop.
         loose = ~on_the_bed(points, bed_z, layer) & (gaps > max(2.0 * layer, pitch))
         points, weights, gaps = points[loose], weights[loose], gaps[loose]
-        regions = cluster(points, weights, gaps, link=4 * pitch)
+        regions = cluster(points, weights, gaps, link=4 * pitch, z_link=2 * pitch)
     return classify(inside, origin, pitch, regions, bridge, ledge)
 
 
@@ -531,6 +582,14 @@ def _self_check() -> int:
               + _box(16, 0, 0, 22, 20, 20))
     fixture("the same roof, anchored both ends, bridges", _measure(bridge), "bridge")
 
+    # The same roof turned off the sample grid is the same bridge: probed only
+    # along the grid's X and Y, a slot roof at 35 deg found air beside its
+    # bounding box and read as an overhang.
+    a = np.radians(35.0)
+    turn = np.array([[np.cos(a), -np.sin(a), 0.0], [np.sin(a), np.cos(a), 0.0], [0.0, 0.0, 1.0]])
+    turned = (np.array(bridge, dtype=float) @ turn.T).tolist()
+    fixture("the same roof turned 35 deg off the grid still bridges", _measure(turned), "bridge")
+
     # And a span too long to bridge fails even though it is anchored twice.
     long_span = (_box(0, 0, 0, 6, 20, 20) + _box(6, 0, 14, 46, 20, 20)
                  + _box(46, 0, 0, 52, 20, 20))
@@ -548,6 +607,17 @@ def _self_check() -> int:
     # corner reaches 0.85 mm where its sides reach 0.6.
     rim = _box(0.6, 0.6, 0, 9.4, 9.4, 6) + _box(0, 0, 6, 10, 10, 8)
     fixture("a rim standing 0.6 mm out is a ledge", _measure(rim), "ledge")
+
+    # Two roofs two millimetres apart in height, side by side: a 10 mm bore
+    # ceiling and a 4 mm slot beside it, lower. Each is a bridge; linked into
+    # one region they would read as one 15 mm span and fail.
+    stacked = (_box(0, 0, 0, 6, 20, 20) + _box(6, 0, 14, 16, 20, 20) + _box(16, 0, 0, 17, 20, 20)
+               + _box(17, 0, 12, 21, 20, 20) + _box(21, 0, 0, 27, 20, 20))
+    got = {r["kind"] for r in _measure(stacked, bridge=12.0) if r["kind"] != "trace"}
+    hit = got == {"bridge"}
+    ok &= hit
+    print(f"{'ok  ' if hit else 'FAIL'} two roofs at different heights are two bridges: "
+          f"{', '.join(sorted(got))}")
 
     # A verdict may not depend on where the sample grid happens to fall. The
     # same roof, nudged a fraction of a cell and mirrored, is the same roof.

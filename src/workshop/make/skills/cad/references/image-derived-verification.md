@@ -86,9 +86,8 @@ so nothing bounds its cost. Reach for `edges()`/`faces()` filtered by
 `geom_type`, radius, axis or position first; a `Location`/bbox read second;
 `is_inside` and boolean intersections last, with a call budget in mind. The
 measured numbers — one ledger row at 61.1 s probing versus 0.004 s reading
-edges, 62 % of a whole gate suite, and why `is_inside` cost grows with face
-count — are in `skills/wiki/pages/image-reading/landmark-audit-topology.md`
-(`wiki show landmark-audit-topology`).
+edges, and why `is_inside` cost grows with face count — are in `skills/wiki/pages/modeling/mass-properties-and-measurement.md`
+(`wiki show mass-properties-and-measurement#read-topology-before-probing-what-is-inside-costs`).
 
 Both scripts run with the project directory prepended to `PYTHONPATH` and the
 workspace as the current directory. They take no mandatory arguments, print a

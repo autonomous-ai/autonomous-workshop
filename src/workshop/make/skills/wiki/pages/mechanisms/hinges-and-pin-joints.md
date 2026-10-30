@@ -1,7 +1,7 @@
 ---
 title: Hinges and pin joints
 tags: [hinge, knuckle, pin, lid, friction-hinge, detent, stop, retention, print-in-place, revolute]
-aliases: [barrel hinge, knuckle hinge, piano hinge, butt hinge, lid hinge, box hinge, door hinge, pin-and-barrel hinge, friction hinge, torque hinge, hold-open hinge, free-stop hinge, detented hinge, hinge pin, filament pin, hinge types, kinds of hinge]
+aliases: [barrel hinge, knuckle hinge, lid hinge, box hinge, door hinge, pin-and-barrel hinge, friction hinge, torque hinge, hold-open hinge, free-stop hinge, detented hinge, hinge pin, filament pin]
 sources:
   - skills/cad/scripts/cadfits.py (print_in_place_gap, slot_for, peg_for)
   - https://3dprintcalcs.uk/mechanical/hinge-calculator/ (hole = pin + 2 c; wall = 3 × nozzle; pin ≥ 6 × nozzle; ≥ 3 knuckles, odd; axial gap ≥ 2 layers when the axis is vertical)
@@ -60,24 +60,16 @@ knuckles        ≥ 3, an odd count (2 on one leaf, 1 on the other at minimum)
 ## Print-in-place hinges
 
 Parts printed together in one job take their gaps from
-`cadfits.print_in_place_gap(fit, layer_height=..., material=...)`, which
-returns `xy`, `z` (= xy + one layer, because a gap's ceiling is a sagging
-bridge) and a 0.5 mm `bottom_chamfer`. Use `"tight"` (0.20) for a
-pin-in-barrel hinge on a tuned printer, `"sliding"` (0.30) as the default.
-Published per-side values agree with that band: 0.15–0.40 mm for PLA by
-tightness, with 0.05–0.10 mm more for PETG. Which gap goes where depends on
-the axis:
+`cadfits.print_in_place_gap(fit, layer_height=..., material=...)`; what each
+returned gap is for, the bed chamfer, and which gap goes on which face for a
+horizontal or a vertical hinge axis are on
+[[print-in-place-mechanisms#the-gap-is-per-face-and-per-direction]] and
+[[print-in-place-mechanisms#pin-orientation]]. For a pin-in-barrel hinge use
+`"tight"` (0.20) on a tuned printer and `"sliding"` (0.30) as the default; if a
+tuned hinge still fuses, lower flow 2–5 % before widening the gap.
 
-| axis on the bed | radial gap (pin ↔ bore) | axial gap (knuckle ↔ knuckle) | pin form |
-|---|---|---|---|
-| **horizontal** (hinge lies flat, the common case) | top of the bore is a bridge: use `z`, or make the bore a teardrop/diamond so its ceiling is self-supporting | knuckle faces are vertical walls: `xy` | round or diamond pin; the pin's underside needs the same care as the bore's top |
-| **vertical** (hinge stands up) | walls: `xy` | faces are horizontal ledges: `z`, at least two layers | cone-ended pin (45° or steeper) so each knuckle's bore ceiling is a supported cone |
-
-- Every gap that touches the bed gets `bottom_chamfer`: elephant's foot closes
-  a plate-level gap first.
-- If a tuned hinge still fuses, lower flow 2–5 % before widening the gap.
-- A rigid sweep cannot prove a print-in-place hinge breaks free. Declare it an
-  open item until a print does ([[mechanism-verification#9-what-nothing-here-proves]]).
+A rigid sweep cannot prove a print-in-place hinge breaks free. Declare it an
+open item until a print does ([[mechanism-verification#9-what-nothing-here-proves]]).
 
 ## Pin retention
 

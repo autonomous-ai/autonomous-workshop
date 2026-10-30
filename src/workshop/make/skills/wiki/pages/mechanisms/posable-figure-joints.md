@@ -21,7 +21,7 @@ sources:
   - https://www.flashforge.com/blogs/news/how-to-3d-print-action-figures (joint axes in the X-Y plane against delamination; metal pins in high-wear joints)
   - https://reality.tf.fau.de/projects/jointfit/jointfit-lowres.pdf (Calì et al. 2012: friction bands in print-in-place ball joints; twist feels stiffer than bend)
 related: [ball-and-socket-joints, joints, hinges-and-pin-joints, latches-detents-and-ratchets, print-in-place-mechanisms, flexi-chain-joints, snap-fit-design, creep-and-stress-relaxation, arm-and-gripper-sizing, stability-and-tipping, toy-safety-constraints, carved-figures-on-split-prints, flexure-materials-and-snap-strain]
-updated: 2026-10-01
+updated: 2026-10-10
 ---
 
 # Posable figure joints
@@ -41,7 +41,7 @@ judged against.
 
 | location | usual build | anatomical range | note |
 |---|---|---|---|
-| neck | ball; ball-hinge to tilt the head; double ball to look up | flex 45°, ext 45°, side 45°, turn 60° | a ball or hinged peg also makes the head removable |
+| neck | ball; ball-hinge to tilt the head; double ball to look up | flex 45°, ext 45°, side 45°, turn 60° | a ball or hinged peg also makes the head removable; a head tilted θ about an axle `h` above its underside sinks a jaw corner at half-width `x` by `x·sinθ - h(1 - cosθ)`: raise the underside or tuck the jaw until it clears the torso at the full sweep, and size the tilt block and its pocket from the current helmet width; a pocket open at the back lets the block slide onto the peg |
 | shoulder | ball, or swivel-hinge; butterfly (pectoral) hinge inboard | flex 180°, abduct 180°, ext 60° | butterflies let arms cross the chest and hold a weapon |
 | upper arm, thigh | swivel cut | shoulder turn 90° out / 70° in; hip turn 45° each way | a cut square to the limb only turns it; a 45° cut also bends it |
 | elbow | hinge; double hinge for a deep bend | flex 150° | one pin gives about 90°, a double hinge past 160° |
@@ -125,7 +125,7 @@ pawl    F_p = E b t³ h_t / (4 L³),   ε = 1.5 t h_t / L²     cantilever defle
   posing. A steeper flank on the side gravity loads holds a heavy limb while
   raising stays light. Keep `β + φ` well below 90° on both flanks, or the
   joint locks. A one-way locking ratchet is for a part that must not come
-  back without a release ([[latches-detents-and-ratchets#ratchet-and-pawl-geometry]]).
+  back without a release ([[latches-detents-and-ratchets#ratchet-and-pawl]]).
 - **Print the disc lying flat** (axis along Z), so the nozzle draws the tooth
   profile in X-Y. Teeth on an axial face come out as stairs of layers: give
   them at least three layers of height, or avoid them.
@@ -134,12 +134,22 @@ pawl    F_p = E b t³ h_t / (4 L³),   ε = 1.5 t h_t / L²     cantilever defle
   90° teeth → pitch 1.0, 31 teeth, 11.6° steps.
 - **The pawl's strain is its life.** A PLA flexure that clicks thousands of
   times must stay near 0.15 % strain
-  ([[flexure-materials-and-snap-strain#snap-fit-strain]]), so
+  ([[snap-fit-design#permissible-strain]]), so
   `L ≥ sqrt(1.5 t h_t / ε)`. With `t` = 0.8 and `h_t` = 0.5 that is 20 mm at
   0.15 %, or 7.7 mm at 1 % for occasional use in PETG. Moulded toys often use a
   metal spring instead. Toy ratchets still wear: metal springs
   fatigue and corrode, and plastic teeth erode.
 - **One axis per ratchet.** Add a swivel for a second freedom.
+- **Keep the pawl beams' tops in air.** The beams spring inside the plate,
+  and the pocket the stub's lobes turn in sits above it. A beam thickened past
+  the pocket's radius is left with its outer edge under solid hub, fused
+  there, and no longer springs. Widen only a thin relief (two layers) over the
+  beams rather than the whole pocket, so the pocket's ceiling stays a span the
+  printer bridges.
+- **Size the stance joints for the lunge.** Half the figure above a knee or
+  ankle, standing at the toe edge before it tips, sets the largest moment those
+  hubs see; it was about four times the moment of any hanging limb. Thicker
+  pawls buy it back (force grows as t³, strain only as t).
 
 ## Friction joints that hold in printed PLA and PETG
 
@@ -187,6 +197,26 @@ off-centre gets longer when the joint bends. Its tension then makes a
 restoring moment, and the limb kicks back. A cord through the centre keeps
 its length in every pose and only presses the faces together. Cord paths are
 designed in [[cable-and-tendon-drives#tendon-driven-joints-and-fingers]].
+
+## Held weapons and the aim pose
+
+A wrist that turns about the forearm keeps a held weapon at one angle to the
+forearm. Gripped square to it, a rifle aims forward only while the arm hangs:
+raised forward, it points at the sky, and no wrist turn brings it level.
+
+- **Grip it a whole number of elbow clicks below level.** With the barrel
+  two 18° clicks (36°) down from square, bending the elbow two clicks levels
+  it, and the shoulder's first 30° detent with a straight elbow nearly does.
+  Stand the figure in that bent pose: the default pose is the aim, and its
+  pawls still sit in valleys.
+- **Keep what hangs off the fist out of the joints' paths.** A stock that rises
+  behind the fist must stop under the forearm's bottom face, or the wrist
+  cannot turn; a magazine or receiver under the fist sweeps the shin as the
+  elbow straightens. Check the elbow's whole range against the leg, not only
+  the pose.
+- **Hands in proportion.** On an SD figure a fist about a third of the head's
+  width reads as a hand; a smaller one reads as a stub under big shoulder
+  armour.
 
 ## Failure classes
 

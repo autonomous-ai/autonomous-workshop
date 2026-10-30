@@ -7,8 +7,8 @@ sources:
   - https://www.ondsel.com/blog/toponaming-problem-is-history/
   - https://build123d.readthedocs.io/en/latest/tips.html
   - https://occt3d.com/dev/doc/overview/html/specification__boolean_operations.html
-related: [build123d-selectors, construction-strategy, feature-build-order, occt-boolean-options]
-updated: 2026-09-23
+related: [build123d-selectors, construction-strategy, occt-boolean-options]
+updated: 2026-10-10
 ---
 
 # Parametric design intent and stable references
@@ -56,10 +56,8 @@ In order of robustness:
 
 ## Feature order protects intent
 
-- Primary shape, then additive features, then subtractive features, then
-  finishing (fillets and chamfers last), as the build123d tips also advise.
-  The ordering rules are in [[feature-build-order]] and
-  [[construction-strategy#boolean-order]].
+- Build in the order of [[construction-strategy#boolean-order]] (base,
+  additions, cuts, finishing last), as the build123d tips also advise.
 - Build sketches in 2D and extrude, rather than editing 3D topology. The 2D
   profile is a stable, parameter-driven reference.
 - A feature that depends on a finishing operation (a hole placed on a filleted

@@ -4,16 +4,16 @@ tags: [overhang, orientation, bridge, ledge, support, teardrop, chamfer, build-d
 aliases: [print pose, which way up, unsupported, droop, sag, 45 degree rule, support material]
 sources:
   - "experience: a battery door's flange rebate in a bed face, a drop-in slot over a round hole, a 0.9 mm ledge that read as 1.2"
-  - "experience: support-free figurines: a horse chin, raised chest emblems and stacked arm segments all failed check_overhang"
   - skills/cad/scripts/check_overhang
   - "experience: parts that were sound, watertight and thick enough but could not print unsupported"
   - "toolchain: tessellated 45 degree cones land facets at 44.7 degrees (reproducible)"
-  - "experience: a flat-topped egg crown, bayonet grooves in a rim band and a chamfered rim all failed the overhang gate until reshaped as described"
+  - "experience: bayonet grooves in a rim band failed the overhang gate until their roofs were sloped"
   - "experience: a wedge base with a stop rail and sunk pads on 60 and 30 deg faces failed overhang until the walls leaned and the underside pad moved outside the body"
   - "experience: lever pockets beside a pushrod in a carved figure's split halves joined the socket's and channel's ceilings into one over-long bridge"
-  - "experience: a token's rounded back and hole rims: filleted bed rims and thin bed-round bands failed the gate until reshaped as teardrops"
-related: [wall-thickness-and-hollowing, joints, printed-part-count]
-updated: 2026-10-07
+  - "experience: curved slot roofs, shallow tunnel roofs and ear bases on a dome failed check_overhang until gabled, sloped and sunk"
+  - "experience: a lofted 45 deg flank failed check_overhang between stations; 40 deg passed"
+related: [overhang-shape-recipes, rounded-bodies-on-the-print-bed, fdm-bridging-and-sacrificial-layers, wall-thickness-and-hollowing, joints, printed-part-count, layer-anisotropy]
+updated: 2026-10-12
 ---
 
 # Overhangs and print orientation
@@ -22,7 +22,9 @@ Soundness, bed fit, mesh closure and wall thickness are all blind to the build
 direction: a part whose every feature hangs in mid-air passes them. This page
 is the design side — what an overhang is, which shapes cause one, and the fixes
 in the order worth trying. The gate is `check_overhang` (usage in
-`skills/cad/references/print-optimisation.md`).
+`skills/cad/references/print-optimisation.md`). Recipes for particular shapes
+(fans, chins, domes, dimples, carved openings, balls on cones) are in
+[[overhang-shape-recipes]]; bed edges in [[rounded-bodies-on-the-print-bed]].
 
 ## Bridge, ledge, overhang
 
@@ -61,71 +63,16 @@ mating face and its key points at the bed, that is this shape; flip it.
 - **Put material under the feature.** A pin whose base overhangs the disc it
   stands on has nothing to print onto; widen the disc, or add a boss under the
   pin. Invisible to every other gate and common in cranks and webs.
-- **Taper it.** A cone under a collar, a 45° buttress under a shelf.
-- **Chamfer, don't fillet, at the bed.** A bed-side fillet is itself an
-  overhang; a chamfer is not — unless it is exactly 45°: tessellated, some of
-  its facets measure just under the limit and the gate fails them. Make a bed
-  chamfer steeper than it is wide (0.6 across by 0.9 up is 56°).
+- **Taper it.** A cone under a collar, a buttress under a shelf, at 52° or
+  steeper, not 45° ([[overhangs-and-print-orientation#do-not-design-at-the-limit]]).
+- **Break the bed edge steeply.** A bed-side fillet and a symmetric 45°
+  chamfer both fail; the steep chamfer and the teardrop round are in
+  [[rounded-bodies-on-the-print-bed#breaking-the-bed-edge]].
 - **Roof a slot that crosses the bed face.** A plate or pin seated in a groove
   across a split print's bed face leaves each half a recess whose ceiling is
   parallel to the bed, and where the plate leaves the part that ceiling hangs
   from one side only. Roof it: a draft of the groove's outline rising at 50°
   from its edges ([[carved-figures-on-split-prints#a-plate-across-the-split]]).
-
-## A fan standing on its edge
-
-A leaf, fin or feather printed standing in its own plane has an underside that
-faces down at 90° less the direction it points: a leaf pointing 30° off the
-bed prints its whole lower edge over air. Squeeze a fan's leaves into the band
-45° + margin to 135° − margin before anything else.
-
-That is not enough on its own. A leaf widens fastest at its base, so near the
-root its lower edge falls away from its axis: a leaf pointing 55° whose widest
-point is a third of its length out still has an edge at 30-35° there. Either
-bury the base in the host, or run a straight web under the outer leaf from its
-widest point down into the host at 52° or steeper (the hull of the leaf up to
-its widest and a ball as thick as the leaf, placed so the tangent between them
-has that slope). A ball sitting on the host is the same problem at its lower
-hemisphere; make it a cone below its equator (the hull of the ball and a point
-r / cos β under its centre gives a cone β steep).
-
-Check it on the faces, not on an outline. Subtract the host from the feature
-with both marked as originals (manifold3d `as_original`, then the mesh's
-`run_original_id`): the faces the host's cut contributes are the feature's
-footing, the rest is its surface. Group the downward faces into connected
-patches and let a patch under about 1 mm across pass as a ledge — the round
-end of a groove is one.
-
-## Low points, leaning reliefs and stacked rounds
-
-Three shapes fail the overhang gate however their slopes are drawn:
-
-- **A low point in mid-air.** A horse's chin over its throat notch is the
-  lowest point of the head with air below it: whatever the jaw's angle, the
-  first layer of the chin prints on nothing. Printed upright, the underside has
-  to run downhill all the way to the body — the jaw at 40° down and back to a
-  notch below the chin, the neck leaning forward under it. The notch survives as
-  a V; the undercut does not.
-- **A raised relief on a surface that leans back as it goes down.** A 0.5 mm
-  emblem on a chest narrowing toward the waist read as 1-2 mm of reach:
-  the relief's lower edge stands out from a surface that is itself receding
-  below it. A flush colour inlay shows the same emblem and hangs nothing.
-- **A rounded top under a narrower piece.** A forearm whose top is filleted
-  into a dome, with a thinner upper arm standing on it, leaves the upper arm's
-  rim over the dome's shoulder: a 1.2 mm ring with air under it. Cap the
-  rounding at the difference of the two radii.
-
-## A flat-topped dome: fill the crown, funnel underneath
-
-Printed upright, a dome's inside is its ceiling, and near a flat crown it is
-far past 45 deg. A ceiling cone rising inward from the wall cannot fix it: from
-any wall point low enough to leave the window or cavity below it clear, a
-52 deg cone reaches the outside of a flat crown before it reaches the axis.
-Fill the crown instead, and give the fill an underside that rises **outward**:
-a funnel from the foot of the central boss (the socket, bore or well that
-passes through the crown) up to where the dome's own inside is still steeper
-than about 45 deg. Each layer then grows outward by less than its height, and
-the boss's mouth needs only a ledge under 1 mm.
 
 ## A slot's roof reaches to its far wall
 
@@ -136,14 +83,6 @@ whole depth, not its own width, and the gate's voxel grid can put identical
 grooves either side of 1 mm. Keep such a roof under 1 mm deep, or slope all of
 it: falling toward the far wall at 52 deg (rising toward the mouth), which
 leaves nothing level and meets the bore at an obtuse corner.
-
-## A break on an edge that already leans out hangs flatter
-
-A part printed on an edge whose surface leans outward -- an egg's rim, a bowl's
-lip -- already overhangs by that lean. Any chamfer or round across that edge is
-flatter than the surface it replaces, so it turns a passing 39 deg surface into
-a failing 20-30 deg one. Leave such an edge sharp and put the visible break on
-the mating part's edge, which faces up.
 
 ## Pockets inside a split print: one ceiling, one bridge
 
@@ -214,6 +153,17 @@ slot's straight sides at the hole's centre, where they are tangent to it — or,
 when the part can go in along the hole's axis, drop the slot and keep the hole
 round: its top is a short bridge.
 
+## How the gate spans a region, and features on a dome
+
+`check_overhang` spans a downward region by the shorter side of its bounding
+box. A curved strip of slot roof reads as its bbox width. A level tunnel roof
+that is shallower radially than it is wide is spanned slot-to-lip with nothing
+at either end, and fails. Gable slot roofs, slope sills 50 deg from the slot
+wall, keep roofs at least 3.4 mm apart where they reach the slot, and make
+corner lips climb at 50 deg or more. A pyramid (an ear) on a sphere-like head
+must keep its whole base inside the head, or the base's downward faces fail.
+Keep its outward lean plus its side half-angle at 45 deg or less.
+
 ## Do not design at the limit
 
 A cone that flares one millimetre out per millimetre up is a 45° overhang —
@@ -222,23 +172,15 @@ exactly the threshold — and the flat facets a tessellator lays on it land at
 to the limit. Give the angle somewhere to go: 1.3 mm of rise per mm of flare is
 52° and passes at any tessellation tolerance.
 
+A smooth loft adds its own overshoot between stations: a lower flank whose
+stations were all at exactly 45 deg failed the gate. Build such flanks at about
+40 deg from vertical.
+
 The margin has to cover the gate's mesh as well as the drawing. At 0.02 mm
 chords, a ruled band only 0.06-0.08 mm wide in plan, meshed with triangles 10-15 mm
 long along a gently curved outline, came out up to 25° flatter than drawn: a
 40° band read as 55-60° from vertical. Keep any band near the limit wide in plan
 (0.2 mm and more), and keep the drawing 15° under the limit.
-
-## Rounding the edge on the bed face
-
-A round on the bed edge is a fillet whose last few degrees face the bed. Round
-it as a teardrop instead: the arc runs from the wall to 30° from vertical, and
-its tangent line carries on to the bed. On a 0.8 mm round the back's outline
-sits 0.34 mm in and the line rises 0.4 mm; the 0.2 mm layers step those
-0.8 mm anyway, so one band for the arc and one for the line read as round.
-A hole's rim on the bed face is the same edge turned inward: a 0.5 mm fillet
-there faced the bed over 4 mm². Cut the hole with one revolve of the hole and
-its 30° flare, so the round meets the bore inside the cutter, and fillet only
-the rim on the top face.
 
 ## What geometry cannot tell you
 
@@ -246,4 +188,4 @@ Your slicer's support settings, whether the material bridges well, or whether a
 46° face will actually droop on your machine. The overhang rule answers the
 geometric question only; a test print answers the rest.
 
-Bridge spans, sacrificial layers and support settings: [[fdm-bridging-and-sacrificial-layers]]. Orientation for strength: [[fdm-print-orientation-for-strength]].
+Bridge spans, sacrificial layers and support settings: [[fdm-bridging-and-sacrificial-layers]]. Orientation for strength: [[layer-anisotropy]].

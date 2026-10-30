@@ -8,10 +8,8 @@ sources:
   - https://github.com/yaneony/2STEP-Converter
   - https://github.com/slugdev/stltostp
   - "toolchain: sew on a 109k-facet organic mesh ran 2h36m-2h53m with no file; 2step converted it in 39 s"
-  - "toolchain: manifold3d boolean output sewn per triangle with BRepBuilderAPI_Sewing (OCP 7.9): coincident pairs at 2e-12 mm and 1e-6 mm edges each made the solid invalid until welded / sewn at 1e-7"
-  - "toolchain: manifold3d 3.x, a surface-following inlay cut from a carried head: host minus (host & prism - moved host) left one edge on four triangles and an invalid sewn solid; prism minus moved host did not"
-related: [brep-vs-source, mesh-measurement, authoring-from-a-reference, thinning-a-carried-mesh]
-updated: 2026-09-28
+related: [brep-vs-source, mesh-measurement, authoring-from-a-reference, carried-mesh-deliverable]
+updated: 2026-10-10
 ---
 
 # Converting a mesh to STEP
@@ -20,9 +18,10 @@ An STL carries no analytic geometry: every curve was replaced by facets before
 the file was written. So no conversion restores a radius, and none recovers
 design intent. A converted STEP is a reference to measure and re-author, not a
 deliverable, with one exception: a user who asks for a result guaranteed
-identical to the file gets the file's own triangles (see
-[[#carrying-a-mesh-as-the-deliverable]]); say so plainly rather than promise a
-re-authoring will be exact. Backend install, flags and cache policy stay in
+identical to the file gets the file's own triangles
+([[carried-mesh-deliverable]]); say so plainly rather than promise a
+re-authoring will be exact. Backend install, flags, timeouts, cache policy and
+what to do when every backend refuses stay in
 `skills/stl-to-step/references/backends.md`.
 
 ## What each kind of converter can and cannot do
@@ -42,14 +41,12 @@ re-authoring will be exact. Backend install, flags and cache policy stay in
   freeform, not a failure. Restoration happens only where the mesh holds whole
   spheres, cylinders, cones or straight through-holes. On an organic body, the
   reason to use the repairing converter is the repair and the merge.
-- **stltostp's raw output is not directly readable.** It writes the shape
-  representation with **no product structure** (no `PRODUCT`, no
-  `SHAPE_DEFINITION_REPRESENTATION`). The file is textually complete, and
-  OpenCASCADE reads it as empty: zero roots to transfer, and transferring the
-  representation entity directly fails too. A minimal AP214 wrapper fixes it
-  without touching a coordinate. It also writes an **`OPEN_SHELL`** inside a
-  surface model rather than a solid, so nothing has an inside until the faces
-  are sewn and promoted.
+- **stltostp's raw output is not directly readable.** With **no product
+  structure** (no `PRODUCT`, no `SHAPE_DEFINITION_REPRESENTATION`) a textually
+  complete file reads in OpenCASCADE as empty: zero roots to transfer, and
+  transferring the representation entity directly fails too. Its
+  **`OPEN_SHELL`** has no inside until the faces are sewn and promoted. The
+  toolchain's wrapper and promotion are in `backends.md`.
 - **A mesh with holes or non-manifold edges** converts, on a non-repairing
   backend, to a shell with no inside. It cannot be cut, mounted against,
   measured for volume or printed. Either repair it or get a closed export.
@@ -80,100 +77,8 @@ no safe facet threshold to quote.
 
 The predictor is defects and coplanar area, not facet count. For a mesh above
 ~50k facets with large flat regions, go straight to the repairing converter,
-or reduce the mesh first. Sewing is one C++ call that never returns to the
-interpreter while it works, so a Python signal handler cannot interrupt it.
-Only a child process that can be killed makes a timeout real.
-
-A scan or organic shape converts to a solid with tens of thousands of faces
-that every later gate crawls through. Convert a reduced copy for measurement,
-then re-author the part.
-
-## Carrying a mesh as the deliverable
-
-Only carried triangles are identical to the mesh; every re-authored surface is
-an approximation of it. When that is what the user chose, build each body from
-the mesh in source (split the shells, cut inlays out of their hosts on the
-meshes with a mesh boolean, sew each result) and assert, per body, a valid
-solid whose volume equals the mesh's. A mesh boolean's output is closed and
-shares its vertices exactly, but it is not clean enough for the kernel as it
-comes:
-
-- **Weld coincident vertices first**, at about 1e-9 mm, and drop the triangles
-  that then have two corners on one point. A cut leaves vertex pairs a few
-  1e-12 mm apart; the needle triangle between them makes a face
-  `BRepCheck_Analyzer` rejects, and the whole solid with it.
-- **Keep the sewing tolerance below the shortest real edge.** A cut also leaves
-  real edges near 1e-6 mm; sewn at 1e-6 they merge, and the face beside them
-  comes out with a doubled edge. Where neighbours share vertices exactly, sew
-  at 1e-7.
-- **Do not simply drop a zero-area triangle.** Its middle vertex lies on the
-  neighbour's long edge, so dropping it leaves a T-junction and an invalid
-  solid. Welding handles the needle case. Do not flip edges on an area
-  threshold either: a micro-triangle (all edges ~1e-5 mm) is tiny, not flat,
-  and a flip loop keyed on area cycles on it.
-
-Sewing costs about 0.4 ms a triangle on such output (13 s for 34k triangles,
-3.5 min for 127k), so cache the sewn solids keyed on the mesh and the code.
-The STEP then carries one face per triangle: 70k-face bodies write
-files of 240 MB and more, and an assembly `interfere` over them takes ten
-minutes.
-
-To make that file lighter, thin each shell before it is cut, under a measured
-distance budget: [[thinning-a-carried-mesh]].
-
-## Adding features to a carried mesh
-
-A feature added to a carried body (a colour inlay, a pocket for a glued part)
-is cut on the meshes before sewing, like the designer's own inlays, so every
-body stays carried triangles and neighbours still share their vertices.
-
-- **An inlay that follows the surface is a layer of moved copies.** Let
-  `behind(t)` be the body moved `t` back along the view direction: a point is
-  inside it exactly when stepping `t` forward lands inside the body. The layer
-  from depth `r` to `r + d` inside an outline is
-  `prism & (behind(r) - behind(r + d))`, and the host loses
-  `prism - behind(r + d)`. Stop the prism's column short of every internal
-  cavity along the view direction (nostrils, a socket): the same formula
-  lines each cavity's back wall with a second skin.
-- **Never subtract a solid whose face is the host's own surface.**
-  `host ^ prism - behind(t)` has the host's surface as its front face;
-  subtracting it from the host leaves a zero-thickness fin where the two
-  coincide. After welding, one edge is shared by four triangles; sewing then
-  reports no free edges and no multiple edges, and only `BRepCheck` on the
-  solid fails. Subtract `prism - behind(t)`, which reaches out past the
-  surface and shares no face with it.
-- **Check that every edge is shared by exactly two triangles before sewing.**
-  It is milliseconds against minutes of sewing, and it names the place.
-- **Clear a pocket against the buried inlays, not the visible ones.** A
-  designer sinks an inlay (an eye white, a gill) as a bulb well under the
-  surface around it, so a crown that looks solid can hold a few millimetres
-  of host over an inlay. Measure `min_gap` from the pocket to every other
-  body, and tilt a pocket's axis towards the local surface normal: its rim
-  then sits level, and the key needs less depth.
-- **To replace a designer's inlay, start from the host's raw shell.** The host
-  as carried has the old inlay's slot cut in it; its own shell is whole
-  underneath (the slicer unions the two), so take the new inlay out of that
-  shell, and the old slot is simply gone.
-- **An inlay can be what holds its host up in print.** A frill sunk behind a
-  head that prints back-down carries the head's flared back and the stalks
-  above it; replace it wholesale and they print over air. Keep the old inlay
-  where the host hides it from the viewing side (the host's outline seen along
-  that axis — manifold3d `project()`, offset in by a ledge's width, extruded —
-  intersected with the old inlay) and add the new shape outside that.
-- **Drop zero-volume films after each boolean** (pieces under ~1e-3 mm3): a
-  cut through a shared plane leaves degenerate four-triangle pieces.
-- **One curved part makes every facet write its pcurves.** The STEP writer
-  leaves out the 2D edge curves only when every face in the file is planar. A
-  single revolved part beside carried bodies turns them on for all the
-  triangles, and the file grows about 2.4 times (a faceted sphere: 4.8 MB
-  alone, 11.6 MB with one cylinder beside it). Expect the combined assembly
-  to be that much larger than the plates it is made of. When the combined
-  file has to be small (a Factory upload carries it twice, as itself and as
-  the primary model), give the view-only assembly entry the curved part
-  faceted: mesh it within the carried bodies' tolerance, sew the triangles
-  into a solid, and assert that tolerance sits inside the fit clearance round
-  it, so the view clashes where the print does. The file then drops back to
-  the sum of its plates. The printed part keeps its analytic surface.
+or reduce the mesh first. Why the timeout lives in a child process, and what
+to do with a scan or an organic shape: `backends.md`.
 
 ## What no conversion gives back
 

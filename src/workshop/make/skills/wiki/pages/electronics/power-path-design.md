@@ -7,7 +7,7 @@ sources:
   - skills/electromechanical-integration/references/power-manifest.md
   - skills/electromechanical-integration/scripts/check_power
 related: [electrical-component-selection, lighting-design, energy-drive, battery-cells-and-packs, wire-gauge-and-connectors, motor-drivers-and-flyback]
-updated: 2026-09-23
+updated: 2026-10-10
 ---
 
 # Designing power paths and wiring
@@ -66,8 +66,3 @@ Seated clash is a geometry question, insertion and retention are motion
 questions, and physical fit is answered only by a coupon with the exact
 hardware ([[removable-lamp-interfaces#physical-fit-needs-a-real-hardware-coupon]]).
 Never report "physically fits" from CAD alone.
-
-Powered work is incomplete while any of these is open: a missing rating, an
-unresolved protection decision, an absent carried mount, an unmodelled wire
-route, an unidentified visible optic, an unresolved removable mate, or an
-unrecorded catalog search.

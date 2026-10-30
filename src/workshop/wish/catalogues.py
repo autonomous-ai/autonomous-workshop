@@ -32,10 +32,17 @@ FILAMENT_KINDS = ("opaque", "translucent", "glow")
 # What a catalogued thing is. Tools and consumables appear only in the
 # Manual's material lists (ADR 0092 decision 2); the rest are Bought Parts,
 # leaves of the Assembly Tree. A lamp's leads are what lead steps join.
-PART_CATEGORIES = ("lamp", "power", "fastener", "container", "bead", "wire", "other")
+# ``cell`` (a loose battery cell), ``contact`` (a battery contact: spring,
+# plate or bridge) and ``switch`` are the powered-toy parts of ADR 0095; a
+# ``power`` part is a whole battery box. A part with a ``lead diameter`` size
+# is a Wired Part: lead steps join it and its lead routes are swept.
+PART_CATEGORIES = ("lamp", "power", "cell", "contact", "switch", "fastener", "container",
+                   "bead", "wire", "other")
 MATERIAL_CATEGORIES = ("tool", "consumable")
 CATEGORIES = PART_CATEGORIES + MATERIAL_CATEGORIES
 MAX_NAME_CHARS = 120
+# The size whose presence makes a Bought Part a Wired Part (ADR 0095).
+LEAD_DIAMETER = "lead diameter"
 MAX_SOURCE_CHARS = 500
 
 # The one colour every Bought Part body carries in every STEP and render, so
@@ -75,6 +82,18 @@ class CataloguedPart:
         """A tool or consumable: in material lists only, never a tree leaf."""
 
         return self.category in MATERIAL_CATEGORIES
+
+    @property
+    def lead_diameter_mm(self) -> Optional[float]:
+        """The largest ``lead diameter`` size, or None: a part with one is a
+        Wired Part (ADR 0095), whose lead routes Make sweeps at that size."""
+
+        found = [
+            max(size.get("max_mm") or size.get("mm") or [0])
+            for size in self.sizes
+            if isinstance(size, dict) and size.get("what") == LEAD_DIAMETER
+        ]
+        return float(max(found)) if found else None
 
 
 @dataclass(frozen=True)
@@ -259,6 +278,7 @@ __all__ = [
     "FILAMENTS_FILE",
     "FILAMENT_KINDS",
     "Filament",
+    "LEAD_DIAMETER",
     "MATERIAL_CATEGORIES",
     "PART_CATEGORIES",
     "load_catalogues",

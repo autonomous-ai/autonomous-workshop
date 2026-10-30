@@ -249,7 +249,7 @@ def build_shape(source: Path):
     raise ValueError(f"{source} is neither a {ENTRY_SUFFIX} entry nor a .step")
 
 
-def _mesh_face_by_face(shape, tolerance: float):
+def _mesh_face_by_face(shape, tolerance: float, angular_deflection: float = 0.3):
     """Vertices, triangles, and how many faces OCCT would and would not mesh.
 
     The last resort, and the one that keeps a render possible at all. OCCT
@@ -271,7 +271,7 @@ def _mesh_face_by_face(shape, tolerance: float):
     from OCP.TopLoc import TopLoc_Location
     from OCP.TopoDS import TopoDS
 
-    BRepMesh_IncrementalMesh(shape.wrapped, tolerance, False, 0.3, True)
+    BRepMesh_IncrementalMesh(shape.wrapped, tolerance, False, angular_deflection, True)
     points: list[tuple[float, float, float]] = []
     faces: list[tuple[int, int, int]] = []
     skipped = meshed = 0
@@ -284,7 +284,7 @@ def _mesh_face_by_face(shape, tolerance: float):
         if mesh is None:
             # Whole-shape meshing can decline a thin face that the standalone
             # face mesher handles. Retain the same absolute error contract.
-            BRepMesh_IncrementalMesh(face, tolerance, False, 0.3, True)
+            BRepMesh_IncrementalMesh(face, tolerance, False, angular_deflection, True)
             mesh = BRep_Tool.Triangulation_s(face, location)
         if mesh is None:
             skipped += 1
@@ -633,7 +633,11 @@ def tessellate_comparison(shape, tolerance: float):
     from OCP.BRepTools import BRepTools
 
     BRepTools.Clean_s(shape.wrapped)
-    points, faces, skipped, _meshed = _mesh_face_by_face(shape, tolerance)
+    # Chordal error alone does not constrain the mesher's angular subdivision.
+    # A STEP round trip can reparameterise an unchanged curved surface and
+    # select different silhouette triangles at the ordinary 0.3-radian bound.
+    # Tighten that bound too; comparison thresholds remain unchanged.
+    points, faces, skipped, _meshed = _mesh_face_by_face(shape, tolerance, 0.03)
     if skipped:
         # Some source-built faces need their B-rep representation rebuilt,
         # just as in tessellate(). Still remesh with absolute deflection and
@@ -647,7 +651,7 @@ def tessellate_comparison(shape, tolerance: float):
                 raise RuntimeError("comparison representation rebuild failed")
             restored = import_step(path)
             BRepTools.Clean_s(restored.wrapped)
-            points, faces, skipped, _meshed = _mesh_face_by_face(restored, tolerance)
+            points, faces, skipped, _meshed = _mesh_face_by_face(restored, tolerance, 0.03)
         print("render_views: comparison rebuilt a face representation through "
               "a temporary STEP round-trip", file=sys.stderr)
     if skipped or not faces:
@@ -770,6 +774,10 @@ def shade_view(mesh, az: float, el: float, roll: float = 0.0, fov: float = 0.0,
     drawn = np.isfinite(zbuf)
     if drawn.any():
         jump = 0.015 * float(np.ptp(zbuf[drawn])) if drawn.sum() > 1 else 0.0
+        # A flat-topped part seen straight down has a depth range near 0, and
+        # 1.5 % of it is float noise: speckle edges then cover the whole face.
+        # Floor the threshold at a share of the model's own size.
+        jump = max(jump, 1e-3 * span)
         edge = np.zeros((size, size), dtype=bool)
         for axis in (0, 1):
             other_part = np.roll(partbuf, 1, axis=axis)
@@ -1188,7 +1196,8 @@ def main(argv: list[str] | None = None) -> int:
             save_image(shade_view(review_mesh, best["az"], best["el"], best["roll"],
                                   best["fov"], args.size),
                        out_dir / f"{label}-shaded.png")
-        final = compare(normalise(fill_holes(mask) if fill else mask), reference)
+        scored_mask = normalise(fill_holes(mask) if fill else mask)
+        final = compare(scored_mask, reference)
         pose = {"az": round(best["az"], 3), "el": round(best["el"], 3),
                 "roll": round(best["roll"], 3), "fov": best["fov"]}
         poses[label] = dict(pose, camera=camera) if camera else pose
@@ -1224,12 +1233,12 @@ def main(argv: list[str] | None = None) -> int:
         failed = failed or not ok
         results.append(record)
         pairs.append((label, ref_path))
-        matched.append({"label": label, "az": pose["az"], "el": pose["el"],
-                        "mask": reference})
+        matched.append({"label": label, **pose, "mask": reference,
+                        "model_mask": scored_mask})
 
-    # Two references handed the same camera must look alike. When they do not,
-    # the reference mask is what the search fitted, and every IoU above is
-    # about the mask rather than the shape.
+    # Nearby viewpoints need not have similar outlines: thin plates and
+    # occluded appendages can change rapidly. Check the model's actual rendered
+    # change before blaming unlike references on their masks.
     suspect = mask_contradictions(matched)
     failed = failed or bool(suspect)
 
@@ -1325,8 +1334,8 @@ def main(argv: list[str] | None = None) -> int:
         camera_findings()
     if suspect:
         print()
-        print("MASK SUSPECT -- these references were handed the same camera but "
-              "do not look alike:", file=sys.stderr)
+        print("MASK SUSPECT -- nearby cameras render similar model outlines but "
+              "the reference outlines disagree:", file=sys.stderr)
         for c in suspect:
             print(f"  {c['a']} and {c['b']}: cameras agree to "
                   f"{c['camera_delta_deg']} deg, yet their own silhouettes score "
@@ -1373,24 +1382,33 @@ def mask_contradictions(matched: list[dict]) -> list[dict]:
     az -71, -75 and -77 degrees, and after the masks were fixed the same search
     returned -86, -73 and -118.
 
-    A pair is a contradiction when the cameras agree to `SAME_CAMERA_DEG` but
-    the two reference silhouettes are further apart than
-    `DIFFERENT_SILHOUETTE_IOU`. Genuinely similar viewpoints share a camera AND
-    a silhouette, so they do not fire.
+    A nearby camera pair with unlike references is suspicious only when the
+    model's rendered outlines stay similar at those exact poses (including
+    roll and field of view). Occlusion or a thin plate near edge-on can change
+    the outline sharply within `SAME_CAMERA_DEG`; the renderer itself provides
+    the counterexample. This guard changes no per-view likeness threshold.
+    Callers without model masks retain the conservative mask-only diagnostic.
     """
     out = []
     for i, a in enumerate(matched):
         for b in matched[i + 1:]:
-            if (abs(a["az"] - b["az"]) > SAME_CAMERA_DEG
+            az_delta = angle_delta(a["az"], b["az"])
+            if (az_delta > SAME_CAMERA_DEG
                     or abs(a["el"] - b["el"]) > SAME_CAMERA_DEG):
                 continue
             iou = compare(a["mask"], b["mask"])["iou"]
             if iou < DIFFERENT_SILHOUETTE_IOU:
+                model_iou = None
+                if "model_mask" in a and "model_mask" in b:
+                    model_iou = compare(a["model_mask"], b["model_mask"])["iou"]
+                    if model_iou < DIFFERENT_SILHOUETTE_IOU:
+                        continue
                 out.append({"a": a["label"], "b": b["label"],
                             "camera_delta_deg": round(
-                                max(abs(a["az"] - b["az"]),
+                                max(az_delta,
                                     abs(a["el"] - b["el"])), 2),
-                            "reference_iou": round(iou, 4)})
+                            "reference_iou": round(iou, 4),
+                            "model_iou": round(model_iou, 4) if model_iou is not None else None})
     return out
 
 
@@ -1621,6 +1639,14 @@ def self_check() -> int:
     check("comparison replaces a cached relative mesh with absolute deflection",
           fine_error < 0.05 and fine_error < coarse_error / 2,
           f"centroid error {coarse_error:.4f} -> {fine_error:.4f} model units")
+    # A generous chordal setting isolates the angular contract: tightening
+    # only chordal distance previously left differently parameterised curved
+    # source/STEP faces with visibly different silhouette triangulations.
+    angular_points, angular_faces = tessellate_comparison(sphere, 1.0)
+    angular_error = float((60 - np.linalg.norm(
+        angular_points[angular_faces].mean(axis=1), axis=1)).max())
+    check("comparison also bounds angular subdivision on a curved surface",
+          angular_error < 0.02, f"centroid error {angular_error:.4f} at chordal 1.0")
 
     # Drift must see every body. A source of two separate bodies against a
     # STEP that lost the smaller one reads as drift only when both masks keep
@@ -1737,6 +1763,29 @@ def self_check() -> int:
           f"{fires}")
     check("same camera + same silhouette is not", quiet == [], f"{quiet}")
     check("different cameras are never flagged", apart == [], f"{apart}")
+
+    # A thin plate changes aspect dramatically within a small camera arc.
+    # Exact self-renders are valid references, so rejecting them as bad masks
+    # would be a false finding independent of any project's chosen geometry.
+    plate_points, plate_faces = tessellate(Box(1, 60, 40), 0.05)
+    plate_a = normalise(rasterise(plate_points, plate_faces, -89, 0, 0, 0, size=400))
+    plate_b = normalise(rasterise(plate_points, plate_faces, -74, 0, 0, 0, size=400))
+    plate_iou = compare(plate_a, plate_b)["iou"]
+    explained = mask_contradictions([
+        {"label": "edge", "az": -89, "el": 0, "mask": plate_a, "model_mask": plate_a},
+        {"label": "turned", "az": -74, "el": 0, "mask": plate_b, "model_mask": plate_b}])
+    check("nearby cameras may legitimately change a thin plate's silhouette",
+          plate_iou < DIFFERENT_SILHOUETTE_IOU and explained == [], f"IoU {plate_iou:.4f}")
+    still_bad = mask_contradictions([
+        {"label": "a", "az": -89, "el": 0, "mask": normalise(tall), "model_mask": plate_a},
+        {"label": "b", "az": -89, "el": 0, "mask": normalise(wide), "model_mask": plate_a}])
+    check("identical model renders do not excuse contradictory reference masks",
+          len(still_bad) == 1, f"{still_bad}")
+    wrapped = mask_contradictions([
+        {"label": "a", "az": -175, "el": 0, "mask": normalise(tall)},
+        {"label": "b", "az": 175, "el": 0, "mask": normalise(wide)}])
+    check("mask-camera proximity wraps across the azimuth seam",
+          len(wrapped) == 1 and wrapped[0]["camera_delta_deg"] == 10)
 
     # Handedness. The L above has a mirror plane (XZ), so a reflection of it is
     # a rotation of it and no handedness test can fail on it -- that is what

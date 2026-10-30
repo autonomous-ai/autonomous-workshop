@@ -22,8 +22,10 @@ sources:
   - https://en.wikipedia.org/wiki/Burr_puzzle (sticks at least 3 × their width, notches in half-width cubes, key piece, level)
   - https://formlabs.com/blog/how-to-3d-print-interlocking-joints/ (joint types for printing; comb joints' thin edges break; puzzle joints suit FDM)
   - https://index.ieomsociety.org/index.cfm/item/54883 (CA raised the flexural strength of printed PLA screw joints and lowered it for flat dovetails)
-related: [fdm-joining-split-prints, joints, adhesives-and-solvent-welding, layer-anisotropy, fdm-print-orientation-for-strength, fit-derivation, snap-fit-design, dowel-pins-and-press-fits, linear-guides-and-slides, creep-and-stress-relaxation, wall-thickness-and-hollowing, bayonet-and-twist-locks, rod-ends-and-clevises, push-pins-and-clip-fasteners]
-updated: 2026-10-01
+  - "experience: roof halves keyed to a ridge fin on a pixel cabin"
+  - "experience: a figure keyed onto a dome by a peg or a fin slid off; two radial tabs into slits held it"
+related: [fdm-joining-split-prints, joints, adhesives-and-solvent-welding, layer-anisotropy, fit-derivation, snap-fit-design, dowel-pins-and-press-fits, linear-guides-and-slides, creep-and-stress-relaxation, wall-thickness-and-hollowing, bayonet-and-twist-locks, rod-ends-and-clevises, push-pins-and-clip-fasteners, mechanical-puzzles]
+updated: 2026-10-12
 ---
 
 # Interlocking joinery for prints
@@ -52,6 +54,11 @@ rules come from the grain; a print's come from the layers.
    and a top skin is flat. A bed face is flat but has elephant's foot
    ([[fdm-first-layer-and-warping#elephants-foot]]), and a shallow slope is a
    staircase of layers. Put glue faces on walls and flat skins.
+
+A part located by sliding along a rib needs a stop for **both** directions.
+A stop beyond the rib's end blocks only inward motion. A tab that drops into a
+gap cut in the rib blocks both, and `check_motion` can prove each direction
+blocked.
 
 ## Fit, clearance and the joint's own forces
 
@@ -168,7 +175,7 @@ rules come from the grain; a print's come from the layers.
   each 0.2 mm layer step at 1:8 is 1.6 mm long and the feather edge is a
   single layer.
 - **Nib the feather edge** at `cadprint.min_wall(NOZZLE)`; a knife edge does
-  not print ([[wall-thickness-and-hollowing#knife-edges-are-walls-too]]). A
+  not print ([[knife-edges-and-tapers#knife-edges-are-walls-too]]). A
   plain scarf slides along its slope until glued; hooks, nibs or keys lock it.
 - **Kanawa tsugi**: an oblique, housed, rabbeted scarf of two identical
   halves, a T-shaped stub tenon on each end entering a housing on the other.
@@ -215,23 +222,21 @@ rules come from the grain; a print's come from the layers.
 - **Burr.** Sticks at least three times their width, notched in half-width
   cubes; a traditional burr's unnotched key slides out first, and its level is
   the moves to free the first piece. Print sticks on a face, notches up:
-  `slip` per face for a puzzle, `snug` for a node that must stay.
+  `slip` per face for a puzzle, `snug` for a node that must stay. Puzzle
+  boxes, mazes, sliding tiles and twisty cubes: [[mechanical-puzzles]].
 - **Twist-lock tenon.** Lugs on a round tenon pass a keyhole mortise; a
   quarter turn puts them under an undercut, and a detent bump stops the
   reverse turn. It is a bayonet ([[bayonet-and-twist-locks]]); lugs in XY.
 
-## Failure classes
+## Keying a part dropped onto a dome
 
-| symptom | rule that prevents it |
-|---|---|
-| tenon or tail snaps flush at its root | the neck's part prints flat; strands cross the neck |
-| socket wall splits along a layer under pull | `F / (2 tan α)` inside the wall's in-plane strength |
-| halves will not meet with glue in | `cadfits` clearance plus a relief path |
-| an "interlocked" part slides out one way | name the free direction and its closer; 26-direction sweep |
-| scarf glue line fails | cut the scarf in plan, nib the edge |
-| a puzzle or node cannot be assembled | written order; a clear insertion sweep per member |
-| drawbore peg breaks | PETG or steel peg; offset under 0.1 D |
-| joint loosens over months | glue, pin or wedge; never rely on press alone |
+A part lowered onto a domed body (a figure hugging a pumpkin) needs a key that
+blocks it sliding outward. A vertical hole in a 50–60 deg slope always leaves
+a knife edge on its uphill side. A short radial fin lets the part ride up and
+off; `check_motion` shows the slide as clear. Two radial tabs at least 30 deg
+apart, standing on a level face and reaching past the widest rib into vertical
+slits, hold it. Model glued faces flush: a 0.1 mm glue gap seen edge-on shows
+up as drift in the source-vs-STEP render comparison.
 
 ## Checks
 

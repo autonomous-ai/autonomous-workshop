@@ -1,5 +1,90 @@
 # Shared skill provenance
 
+## Resync to upstream `23089af`: dead cadgen code out, off-grid bridges, toy-archetype wiki (2026-10-29)
+
+- Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
+  `23089af87fc77fee8378e839a95e75da303a66f8` (2026-10-28), resynced from
+  `8488b44`. That is 68 upstream commits touching 241 vendored files. The
+  merge is the same three-way merge as before: the locked `8488b44` bytes are
+  the base, the Workshop tree is one side and upstream `HEAD` the other.
+  `cad`, `electromechanical-integration`, `image-to-cad`, `product-design`
+  and `wiki` move. `design-reference` and `step-parts` came out
+  byte-identical, so their locks move to the new commit only. `make-round`
+  and `print-details` are unchanged. Upstream's new `build-review` skill,
+  `toy-archive` and the reverse-engineering pair stay out. Done on branch
+  `powered-toys` before the powered-toy work (ADR 0095), which reads the
+  refreshed `electromechanical-integration` and electronics wiki pages.
+- **What upstream brought.** `cad`:
+  - Dead cadgen code is deleted (DXF family, legacy-artifact pruning, viewer
+    and mesh-export CLI shells, a no-op stale-child rebuild, duplicate GLB
+    readers, ~60 unused imports).
+  - `check_overhang` links samples only `2 x pitch` in height (two roofs a
+    couple of millimetres apart are two bridges) and probes a region's own
+    principal axes, so a slot roof turned off the sample grid still bridges.
+    Two new self-check fixtures pin both.
+  - `cadfits`, `check_mount`, `check_spec_*`, `render_review`, `inspect`,
+    `meshlib` (weld by distance at 1e-5) and the references carry small
+    fixes and shorter text.
+- `electromechanical-integration`: `lighting-discovery.md` only.
+- `image-to-cad`: `ref_silhouette --edge-tol`, a trace-concept-art-onto-an-
+  outline reference, likeness and repeated-scene edits.
+- `product-design`: toy archetypes, play value and an independent review step.
+- `wiki` adds 25 pages and deletes 9 (merged into others upstream), edits
+  121, and now has 218 pages. New: toy archetype index, play value and
+  tactile feel, character proportions, mechanical puzzles, marble runs,
+  launchers, infinity cubes, print-in-place swivel rings, height-field
+  solids, knife edges, overhang shape recipes, rounded bodies on the bed.
+  The electronics pages (`switches-and-reed-sensors`, `power-path-design`,
+  `lighting-design`, `electronics-enclosure-design` and four more) are edited.
+
+Merge decisions:
+
+- Twelve files conflicted; each keeps the Workshop adaptation and takes the
+  upstream change around it.
+  - `check_overhang`: `cluster` takes both Workshop's `slopes` and upstream's
+    `z_link`; Workshop's failing-first report with named features stays.
+  - `generation.py`: upstream's dead-code removal and the no-op child rebuild
+    are taken; Workshop's B-rep identity (`_built_shape_identity`,
+    `_installed_toolchain_versions`, ADR 0073) and the current-`--write`
+    fast path (#62) stay. `step_targets.py` drops the unused
+    `step_path_from_target`; Workshop's `prefer_explicit_step` stays.
+  - `verify_project`: Workshop's opt-in motion policy, the refusal of the
+    removed likeness flags and Workshop's `PYTHONPATH` order stay.
+    `_step_for_entry`, which upstream deleted as unused, is kept: Workshop's
+    redundant-sweep reuse key calls it.
+  - `cadgen/pyproject.toml` keeps Workshop's `uv_build` backend, exact
+    `build123d`/`cadquery-ocp` pins and `cadgen-step-artifact` script;
+    `cad/requirements.txt` keeps Workshop's exact pins (shapely already comes
+    through Workshop's cadgen dependencies).
+  - `client.py`, `check_mesh`, `step-generation.md` and `run-cost.md` keep
+    Workshop text and take upstream's wording where it is still true.
+- **No motion waiver.** Upstream added `verify_project --waive-motion`.
+  Workshop's motion gate is turned off only by the frozen Make motion
+  option, never by the agent, so the flag, its fixtures and the
+  `SKILL.md`/`motion-manifests.md` sentences that advertise it are left out.
+- **No likeness gate.** Upstream's new "a likeness failure stops the runner
+  before its print gates" bullet is dropped (ADR 0076).
+- **`build-review` is not vendored.** `image-to-cad` and `product-design`
+  now hand a spec or a build to `$build-review`; those sentences say "an
+  independent reviewer" and name the Workshop review that plays the part.
+
+Workshop review of the new behaviour:
+
+- **`check_overhang` can only pass more off-grid bridges and split stacked
+  roofs.** A region still fails on span, reach and angle; the 45 degree
+  limit (ADR 0094) is unchanged. A part that passed before still passes
+  unless two roofs it merged were each too wide alone, which fails more.
+- **Removed cadgen code had no Workshop caller** (`src/`, `tests/`, the
+  product-run template); `gen --write` keeps its current-export skip.
+
+Verified here:
+
+- `verify_skill_locks` matches nine trees.
+- Self-checks pass: `check_overhang` (with upstream's two new fixtures),
+  `check_thickness`, `verify_project`, `cadfits`, `ref_silhouette`,
+  `render_views`, `measure_image`, `wiki --self-check`.
+- `wiki lint` reports 218 pages, 0 errors.
+
 ## Workshop-local: the wiki preamble names the run's Lesson Proposals file (2026-10-14)
 
 - Only `wiki/SKILL.md`'s Workshop preamble changed: a run appends a rule the
@@ -2534,3 +2619,13 @@ image-derived final run that is neither `--powered` nor `--unpowered`, and
 every Contract Mode `--full` was refused. It now passes `--powered` when
 `measure/power.json` exists and `--unpowered` otherwise. The `make-round`
 lock moves; a resync must keep these lines.
+
+## Local change: powered toys (2026-10-29)
+
+A Workshop-local change (ADR 0095). `make-round/scripts/make_round`'s
+`--full`, beyond the power class above, passes `--powered` for a schema 10
+contract with an `electrical` section, image-derived or not. `kit_manual.py` titles a
+leads step by its `method`, adds the soldering tools and
+`company.json`'s new `warnings.soldering` for a soldered one, and prints one
+batteries line for loose cells. `SKILL.md` and `references/kit-tree.md` say
+so. The `make-round` lock moves; a resync must keep these lines.

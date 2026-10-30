@@ -129,88 +129,16 @@ real-hardware coupon is required) are in
 
 ## Manifest shape
 
-Use schema 3 for new work. Schema 1 and 2 remain accepted for old projects. A
+Use schema 3 for new work; schema 1 and 2 remain accepted for old projects. A
 non-actuating electrical load uses `role: "load"`; lighting also uses
 `load_type: "lighting"`, its visible-function ledger and an installation
-declaration:
-
-```json
-{
-  "id": "left_position_light",
-  "role": "load",
-  "load_type": "lighting",
-  "continuous_current_a": 0.02,
-  "peak_current_a": 0.08,
-  "lighting": {
-    "function": "left position",
-    "color": "red",
-    "behavior": "steady with pulsed white strobe override",
-    "installation": {
-      "mode": "removable_socket",
-      "interface_id": "left-position-twist-lock",
-      "receiver": "left_position_socket"
-    }
-  }
-}
-```
+declaration. The lighting-load and `mating_interfaces` JSON are in
+`power-manifest.md` (schema 3) — copy them from there.
 
 The enclosing component still needs `carried`, `mount_id`, `cad`, `evidence`
-and `voltage_v`. Its path names it with `"load": "left_position_light"`.
-Write one path per independently rated parallel branch; a manufacturer-rated
-strip or module may remain one load. A removable socket installation also needs
-the corresponding `mating_interfaces` record:
-
-```json
-{
-  "id": "left-position-twist-lock",
-  "type": "twist_lock",
-  "load_component": "left_position_light",
-  "receiver_strategy": "purchased_socket",
-  "receiver": "left_position_socket",
-  "contact_component": "left_position_socket",
-  "lamp_mpn": "EXAMPLE-LAMP",
-  "receiver_mpn": "EXAMPLE-SOCKET",
-  "contact_mpn": "EXAMPLE-SOCKET",
-  "evidence": {
-    "lamp_source": "https://manufacturer.example/lamp.pdf",
-    "lamp_revision": "A",
-    "receiver_source": "https://manufacturer.example/socket.pdf",
-    "receiver_revision": "B"
-  },
-  "geometry": {
-    "source_datum": "lamp flange underside to socket mounting face",
-    "lug_count": 2,
-    "insertion_depth_mm": 6.0,
-    "lock_rotation_deg": 30.0,
-    "lock_direction": "clockwise",
-    "clearance_mm": 0.25,
-    "clearance_method": "socket seat derived with cadfits slip clearance",
-    "retention_stop": "socket end stops and lug shoulders",
-    "connector_access": "rear terminals reachable through service hatch",
-    "tool_access": "lamp can be gripped and rotated by hand"
-  },
-  "motion_conditions": {
-    "insert": "left-light-insert",
-    "lock": "left-light-lock",
-    "retained": "left-light-retained",
-    "unlock": "left-light-unlock",
-    "remove": "left-light-remove"
-  },
-  "fit_coupon": {
-    "status": "planned",
-    "material": "PETG",
-    "process": "FDM, 0.4 mm nozzle, 0.2 mm layer",
-    "orientation": "socket axis vertical",
-    "hardware_sample": "exact production lamp and socket samples",
-    "candidate_clearances_mm": [0.15, 0.25, 0.35],
-    "method": "print complete receiver coupons and dry-fit exact hardware",
-    "result": "pending physical samples"
-  }
-}
-```
-
-The purchased socket and any separate contact also appear in `components`, in
-`component_search`, and in the electrical path. A `printed_receiver` uses the
-same record, omits `receiver_mpn`, adds
-`printed_receiver_justification`, and still names a bought connector as
-`contact_component`.
+and `voltage_v`, and its path names it with `"load": "<load id>"`. Write one
+path per independently rated parallel branch; a manufacturer-rated strip or
+module may remain one load. A removable socket installation also needs its
+`mating_interfaces` record, and the purchased socket and any separate contact
+also appear in `components`, in `component_search`, and in the electrical
+path.

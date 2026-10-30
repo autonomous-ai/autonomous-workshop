@@ -47,11 +47,21 @@ CLAIM = re.compile(
 )
 
 
-def load_constants(project: Path) -> tuple[dict[str, float], list[str]]:
+def is_parameter_module(path: Path) -> bool:
+    """The project's own parameter block: `<name>_lib.py` (Tier 2) or `params.py` (Tier 3)."""
+    return path.name.endswith("_lib.py") or path.name == "params.py"
+
+
+def load_constants(project: Path) -> tuple[dict[str, float], list[str], dict[str, dict[str, float]]]:
     """Module-level numbers from the project's parameter modules.
 
-    Tier 2 keeps them in `<name>_lib.py`, Tier 3 in `params.py`. Both are read,
-    and a name defined in more than one module is dropped rather than guessed at.
+    Tier 2 keeps them in `<name>_lib.py`, Tier 3 in `params.py`; shared modules
+    copied beside them (a family frame, a joint module) are read too. A name
+    defined with different values in more than one module takes the value of
+    the project's own parameter module when that module defines it -- it is the
+    value the builders import -- and is otherwise dropped rather than guessed
+    at. The dropped names come back with each module's value, so a claim about
+    one can be reported as unchecked instead of passing in silence.
     """
     modules = sorted(
         path for path in project.glob("*.py")
@@ -60,8 +70,8 @@ def load_constants(project: Path) -> tuple[dict[str, float], list[str]]:
     modules += sorted(project.glob("*/params.py"))
     modules = list(dict.fromkeys(modules))      # a root params.py is already in the first glob
 
-    values: dict[str, float] = {}
-    clashing: set[str] = set()
+    defined: dict[str, dict[str, float]] = {}
+    primary: set[str] = set()
     read: list[str] = []
     for path in modules:
         spec = importlib.util.spec_from_file_location(f"_specnum_{path.stem}", path)
@@ -75,18 +85,31 @@ def load_constants(project: Path) -> tuple[dict[str, float], list[str]]:
                   f"{type(error).__name__}: {error}")
             continue
         read.append(path.name)
+        if is_parameter_module(path):
+            primary.add(path.name)
         for name in dir(module):
             if not re.fullmatch(r"[A-Z][A-Z0-9_]*", name):
                 continue
             value = getattr(module, name)
             if isinstance(value, bool) or not isinstance(value, (int, float)):
                 continue
-            if name in values and abs(values[name] - float(value)) > 1e-9:
-                clashing.add(name)
-            values[name] = float(value)
-    for name in clashing:
-        values.pop(name, None)
-    return values, read
+            defined.setdefault(name, {})[path.name] = float(value)
+
+    def agree(vals) -> bool:
+        vals = list(vals)
+        return max(vals) - min(vals) <= 1e-9
+
+    values: dict[str, float] = {}
+    dropped: dict[str, dict[str, float]] = {}
+    for name, by_module in defined.items():
+        own = [v for m, v in by_module.items() if m in primary]
+        if agree(by_module.values()):
+            values[name] = next(iter(by_module.values()))
+        elif own and agree(own):
+            values[name] = own[0]
+        else:
+            dropped[name] = by_module
+    return values, read, dropped
 
 
 def tolerance(written: str) -> float:
@@ -138,7 +161,7 @@ def scan(text: str, values: dict[str, float]):
 
 
 def check(project: Path, documents: list[Path], strict: bool) -> int:
-    values, read = load_constants(project)
+    values, read, dropped = load_constants(project)
     if not values:
         print(f"check_spec_numbers: {project} has no importable parameter module")
         return 1
@@ -158,6 +181,15 @@ def check(project: Path, documents: list[Path], strict: bool) -> int:
                             f"the source says {actual:g}")
     for item in failures:
         print(f"        {item}")
+    claimed = set()
+    for document in documents:
+        if document.exists():
+            text = document.read_text(encoding="utf-8")
+            claimed |= {name for name in dropped if CLAIM.search(text) and re.search(rf"`{name}`", text)}
+    for name in sorted(claimed):
+        where = ", ".join(f"{m} {v:g}" for m, v in sorted(dropped[name].items()))
+        print(f"  note  `{name}` differs between modules ({where}) and no parameter module "
+              f"settles it: its claims are not checked")
 
     if not checked:
         note = ("no numbered parameter claims found -- either the spec quotes no "
@@ -205,6 +237,23 @@ def self_check() -> int:
             hit = got == want
             ok &= hit
             print(f"{'ok  ' if hit else 'FAIL'} {label}: exit {got}, wanted {want}")
+
+        # A shared module copied beside the lib that defines the same name differently:
+        # the lib's value is the one the builders use, so the claim is held to it.
+        (project / "shared_frame.py").write_text("POST_D = 4.0\nHOLE_D = 3.0\n")
+        (project / "other_frame.py").write_text("HOLE_D = 3.6\n")
+        for label, body, want in (
+            ("a name the lib redefines is held to the lib's value", "`POST_D` 10.0", 0),
+            ("... and the shared module's value fails", "`POST_D` 4.0", 1),
+            ("a clash between two shared modules is not guessed at", "`HOLE_D` 3.6", 0),
+        ):
+            (project / "demo_spec.md").write_text(f"# demo\n\n{body}\n")
+            got = check(project, [project / "demo_spec.md"], strict=False)
+            hit = got == want
+            ok &= hit
+            print(f"{'ok  ' if hit else 'FAIL'} {label}: exit {got}, wanted {want}")
+        (project / "shared_frame.py").unlink()
+        (project / "other_frame.py").unlink()
 
         # A number the spec never claims cannot make it fail.
         (project / "demo_spec.md").write_text("# demo\n\nnothing quoted here\n")

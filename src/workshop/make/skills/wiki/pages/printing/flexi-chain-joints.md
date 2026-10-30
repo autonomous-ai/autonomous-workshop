@@ -6,8 +6,8 @@ sources:
   - "experience: sections of a published print-in-place flexi toy's segment joints, measured along each axis and normal to the faces"
   - "experience: a flexi chain's legs met their neighbours at full yaw though every joint was clear at rest; separate beads read as stacked discs"
   - https://3dcentral.ca/articulated-3d-prints-how-flexi-toys-work/
-related: [print-in-place-mechanisms, fdm-minimum-feature-sizes, fillet-chamfer-pitfalls, loft-organic-bodies, mechanism-verification, posable-figure-joints]
-updated: 2026-10-01
+related: [print-in-place-mechanisms, fdm-minimum-feature-sizes, rounded-bodies-on-the-print-bed, loft-organic-bodies, mechanism-verification, posable-figure-joints]
+updated: 2026-10-10
 ---
 
 # Flexi chain joints: two crossed loops
@@ -37,10 +37,10 @@ without breaking a loop, and there is no pin head to print or snap off.
   those faces a gap as well; they are the largest mating area in the joint.
 - **Gaps.** `xy` between post and ring hole; `z` above and below the ring's
   front bar; the tongue in its bed-level notch opened wider than either
-  (elephant's foot: [[print-in-place-mechanisms#the-bed-closes-gaps-elephants-foot]]). Where a 45° bed chamfer cannot be cut (a lofted
-  belly: [[fillet-chamfer-pitfalls#a-bed-chamfer-on-a-lofted-belly]]), cut every
-  face that meets another body on the bed back at the bed and taper it to its
-  place over two layers, with the joint's own tools grown and tapered. Slanted teardrop faces are overhangs, not
+  (elephant's foot: [[print-in-place-mechanisms#the-bed-closes-gaps-elephants-foot]]). A lofted
+  belly takes no bed chamfer; relieve the faces that meet another body on the
+  bed through the joint's own tools, grown and tapered
+  ([[rounded-bodies-on-the-print-bed#a-lofted-belly-relieve-the-bed-edge-in-the-tools]]). Slanted teardrop faces are overhangs, not
   bridges. One published flexi toy, sectioned along each axis and normal to
   its faces, leaves about 0.36–0.45 mm round the loops in every direction
   and about 0.25 mm between segment end faces high above the bed. That is

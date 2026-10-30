@@ -270,20 +270,29 @@ def nearest_gap(component, obstacles: list, reach: float) -> float | None:
     grown component that quietly lost its output shaft would report a clearance
     the shaft does not have.
     """
+    # Body by body, for the reason `clash_volume` measures the component's
+    # solids: a distance taken against the whole compound runs BRepExtrema's
+    # inside test against every body of it, and that test has answered 0.000
+    # ("one shape inside the other") for a 0.4 mm3 toe bean 35 mm below a lamp
+    # cap that the classifier itself puts outside it. A body whose box is
+    # farther than `reach` cannot set a gap under `reach`; it is measured only
+    # when no body of the component comes that close to this obstacle.
     best = None
-    box = component.bounding_box()
+    bodies = list(component.solids()) or [component]
     for obstacle in obstacles:
         if boxes_apart(component, obstacle, margin=reach):
             continue
-        try:
-            near = near_part(obstacle, box, reach)
-            gaps = [float(component.distance_to(part)) for part in near]
-            gap = min(gaps) if gaps else None
-            if gap is None or gap >= reach:            # nothing within reach: the exact, slow answer
-                gap = float(component.distance_to(obstacle))
-        except Exception:                              # noqa: BLE001
-            continue
-        best = gap if best is None else min(best, gap)
+        near_bodies = [b for b in bodies if not boxes_apart(b, obstacle, margin=reach)] or bodies
+        for body in near_bodies:
+            try:
+                near = near_part(obstacle, body.bounding_box(), reach)
+                gaps = [float(body.distance_to(part)) for part in near]
+                gap = min(gaps) if gaps else None
+                if gap is None or gap >= reach:        # nothing within reach: the exact, slow answer
+                    gap = float(body.distance_to(obstacle))
+            except Exception:                          # noqa: BLE001
+                continue
+            best = gap if best is None else min(best, gap)
     return best
 
 

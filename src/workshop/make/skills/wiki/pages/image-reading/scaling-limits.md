@@ -110,4 +110,4 @@ prints free more easily and plays more.
 A snap's interference δ over a cantilever of thickness `t` and length `L`
 strains the arm by about `1.5·δ·t / L²`; scaled by `k` together it is
 unchanged, so scale the interference with the snap rather than holding it
-([[flexure-materials-and-snap-strain#snap-fit-strain]]). Hold it only when the arm is held too.
+([[snap-fit-design#permissible-strain]]). Hold it only when the arm is held too.

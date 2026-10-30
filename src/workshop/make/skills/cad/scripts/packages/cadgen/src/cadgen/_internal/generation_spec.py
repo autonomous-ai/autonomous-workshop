@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
+import contextlib
 from dataclasses import dataclass
 from dataclasses import replace
 import math
@@ -17,21 +18,15 @@ from cadgen._internal.step_scene import SelectorOptions
 from cadgen._internal.step_scene import adaptive_mesh_resolution_for_scene
 from cadgen.catalog import CadSource
 from cadgen.catalog import StepImportOptions
-from cadgen.catalog import cad_ref_from_dxf_path
 from cadgen.catalog import cad_ref_from_step_path
-from cadgen.catalog import find_source_by_path
-from cadgen.catalog import iter_cad_sources
-from cadgen.catalog import normalize_cad_ref
-from cadgen.catalog import normalize_source_ref
 from cadgen.catalog import render_package_dir
 from cadgen.cli_logging import CliLogger
 from cadgen.cli_progress import cli_progress_line
+from cadgen.coordination import ProgressEvent
 from cadgen.metadata import DEFAULT_MESH_ANGULAR_TOLERANCE
 from cadgen.metadata import DEFAULT_MESH_TOLERANCE
 from cadgen.metadata import GeneratorMetadata
 from cadgen.metadata import resolve_mesh_settings
-from cadgen.render import relative_to_cwd
-
 
 
 @dataclass(frozen=True)
@@ -45,9 +40,7 @@ class EntrySpec:
     step_path: Path | None = None
     script_path: Path | None = None
     generator_metadata: GeneratorMetadata | None = None
-    dxf_path: Path | None = None
     step_export_path: Path | None = None
-    dxf_export_path: Path | None = None
     mesh_tolerance: float = DEFAULT_MESH_TOLERANCE
     mesh_angular_tolerance: float = DEFAULT_MESH_ANGULAR_TOLERANCE
     mesh_tolerance_explicit: bool = False
@@ -80,7 +73,7 @@ def _cli_progress_line(
     *,
     logger: CliLogger,
     fallback: str,
-) -> "contextlib.AbstractContextManager[Callable[[ProgressEvent], None] | None]":
+) -> contextlib.AbstractContextManager[Callable[[ProgressEvent], None] | None]:
     """:func:`cli_progress_line` keyed to a spec's source ref."""
     return cli_progress_line(spec.source_ref, logger=logger, fallback=fallback)
 
@@ -131,10 +124,6 @@ def _resolve_cli_output_path(
     return resolved
 
 
-def targets_include_output_pairs(targets: Sequence[str]) -> bool:
-    return any("=" in str(target or "") for target in targets)
-
-
 def _parse_cli_target_specs(
     targets: Sequence[str],
     *,
@@ -183,7 +172,7 @@ def _apply_step_options_to_spec(spec: EntrySpec, step_options: StepImportOptions
 
 def _spec_requests_extra_outputs(spec: EntrySpec) -> bool:
     """True when the target asks for an on-demand output beyond the render package
-    (`scripts/gen --write-step`). An explicitly requested output must be produced
+    (`scripts/gen --write`). An explicitly requested output must be produced
     even when the compose is current, so it defeats every no-op and reuse fast
     path."""
     return spec.step_export_path is not None
@@ -194,9 +183,6 @@ def _spec_output_paths(spec: EntrySpec) -> tuple[Path, ...]:
     if spec.step_path is not None:
         paths.append(spec.step_path)
         paths.append(render_package_dir(spec.entry_path))
-    for path in (spec.dxf_path,):
-        if path is not None:
-            paths.append(path)
     return tuple(path.resolve() for path in paths)
 
 
@@ -268,78 +254,6 @@ def _apply_step_output_overrides(
     return updated_specs
 
 
-def _apply_dxf_output_overrides(
-    selected_specs: Sequence[EntrySpec],
-    *,
-    output_paths: Sequence[Path | None],
-    all_specs: Sequence[EntrySpec],
-    tool_name: str,
-) -> list[EntrySpec]:
-    if not any(output_path is not None for output_path in output_paths):
-        return list(selected_specs)
-    if len(output_paths) != len(selected_specs):
-        raise ValueError(f"{tool_name} output override count must match target count")
-    _validate_duplicate_cli_output_overrides(output_paths, tool_name=tool_name)
-    updated_specs: list[EntrySpec] = []
-    for spec, output_path in zip(selected_specs, output_paths, strict=True):
-        if output_path is None:
-            updated_specs.append(spec)
-            continue
-        if spec.source != "generated":
-            raise ValueError(f"{tool_name} output pairs can only be used with generated Python targets")
-        _validate_cli_output_override(spec, output_path=output_path, all_specs=all_specs, tool_name=tool_name)
-        updated_specs.append(
-            replace(
-                spec,
-                cad_ref=cad_ref_from_dxf_path(output_path),
-                display_name=_display_name_for_path(output_path),
-                # A DXF output path is a DXF *export* request (gen_dxf builds the drawing
-                # package by default): write it on demand to the requested path.
-                dxf_path=output_path,
-                dxf_export_path=output_path,
-            )
-        )
-    return updated_specs
-
-
-def _apply_dxf_output_override(
-    selected_specs: Sequence[EntrySpec],
-    *,
-    output_path: Path | None,
-    all_specs: Sequence[EntrySpec],
-    tool_name: str,
-) -> list[EntrySpec]:
-    if output_path is None:
-        return list(selected_specs)
-    if len(selected_specs) != 1:
-        raise ValueError(f"{tool_name} --output can only be used with exactly one target")
-    spec = selected_specs[0]
-    if spec.source != "generated":
-        raise ValueError(f"{tool_name} --output can only be used with generated Python targets")
-    return _apply_dxf_output_overrides(
-        selected_specs,
-        output_paths=[output_path],
-        all_specs=all_specs,
-        tool_name=tool_name,
-    )
-
-
-def _resolve_discovery_root(root: Path | str) -> Path:
-    candidate = Path(root)
-    resolved = candidate.resolve() if candidate.is_absolute() else (Path.cwd() / candidate).resolve()
-    if not resolved.exists():
-        raise FileNotFoundError(f"CAD discovery directory does not exist: {relative_to_cwd(resolved)}")
-    if not resolved.is_dir():
-        raise NotADirectoryError(f"CAD discovery path is not a directory: {relative_to_cwd(resolved)}")
-    return resolved
-
-
-def list_entry_specs(root: Path | None = None) -> list[EntrySpec]:
-    root = Path.cwd().resolve() if root is None else root
-    specs = [_entry_spec_from_source(source) for source in iter_cad_sources(_resolve_discovery_root(root))]
-    return sorted(specs, key=lambda spec: spec.source_ref)
-
-
 def _entry_spec_from_source(source: CadSource) -> EntrySpec:
     generator_metadata = source.generator_metadata
     script_path = source.script_path
@@ -367,59 +281,12 @@ def _entry_spec_from_source(source: CadSource) -> EntrySpec:
         step_path=step_path,
         script_path=script_path,
         generator_metadata=generator_metadata,
-        dxf_path=source.dxf_path,
         mesh_tolerance=mesh_settings.tolerance,
         mesh_angular_tolerance=mesh_settings.angular_tolerance,
         mesh_tolerance_explicit=source.mesh_tolerance is not None,
         mesh_angular_tolerance_explicit=source.mesh_angular_tolerance is not None,
         color=source.color,
     )
-
-
-def selected_entry_specs(all_specs: Sequence[EntrySpec], source_refs: Sequence[str]) -> list[EntrySpec]:
-    if not source_refs:
-        raise ValueError("At least one CAD target is required")
-    by_source = {spec.source_ref: spec for spec in all_specs}
-    by_cad_ref = {spec.cad_ref: spec for spec in all_specs}
-    by_step_path = {
-        spec.step_path.resolve(): spec
-        for spec in all_specs
-        if spec.step_path is not None
-    }
-    selected: list[EntrySpec] = []
-    for source_ref in source_refs:
-        spec = _spec_for_source_ref(source_ref, by_source=by_source, by_cad_ref=by_cad_ref, by_step_path=by_step_path)
-        if spec is None:
-            raise FileNotFoundError(f"CAD source not found: {source_ref}")
-        selected.append(spec)
-    return selected
-
-
-def _spec_for_source_ref(
-    raw_ref: str,
-    *,
-    by_source: dict[str, EntrySpec],
-    by_cad_ref: dict[str, EntrySpec],
-    by_step_path: dict[Path, EntrySpec],
-) -> EntrySpec | None:
-    source_ref = normalize_source_ref(raw_ref)
-    if source_ref and source_ref in by_source:
-        return by_source[source_ref]
-    cad_ref = normalize_cad_ref(raw_ref)
-    if cad_ref and cad_ref in by_cad_ref:
-        return by_cad_ref[cad_ref]
-    candidate = Path(str(raw_ref or "").strip())
-    if candidate:
-        resolved = candidate.resolve() if candidate.is_absolute() else (
-            Path.cwd() / candidate
-        )
-        resolved = resolved.resolve()
-        if resolved in by_step_path:
-            return by_step_path[resolved]
-        source = find_source_by_path(resolved)
-        if source is not None:
-            return by_source.get(source.source_ref)
-    return None
 
 
 def _mesh_tolerance_is_explicit(spec: EntrySpec) -> bool:

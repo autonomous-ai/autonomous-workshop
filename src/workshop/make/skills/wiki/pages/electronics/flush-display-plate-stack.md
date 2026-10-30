@@ -1,11 +1,11 @@
 ---
 title: Flush display plate stack
-tags: [display, lcd, glass plate, ledge, recess, tape, flush, windshield, tilted board, connector]
+tags: [display, lcd, glass plate, ledge, recess, tape, flush, tilted board, connector]
 aliases: [flush display, display in a plate, lens recess, ledge ring, board under glass, touchscreen in a shell]
 sources:
   - "experience: a 3.95 inch LCM+CTP module (84.37 x 84.37 x 3.23 mm, 0.175 mm tape) sat flush in a printed glass plate over a tilted board"
 related: [buttons-knobs-and-front-panels, electronics-enclosure-design, sealing-and-ingress-protection]
-updated: 2026-10-02
+updated: 2026-10-10
 ---
 
 # Flush display plate stack
@@ -33,7 +33,7 @@ shell, the stack has more layers than the drawing's "thickness":
   wherever the board slides along the slope. A plug path from such a connector
   passes the glass boundary at constant depth and can cut a thin glass piece
   into an island; start the glass behind the path, or keep the opening in
-  silver.
+  the body around the glass.
 - **Stack the depths in one assert**: display bottom, tallest board part,
   ledge ring bottom and post top, each below the plate top, with at least
   0.5 mm between display and tallest part.

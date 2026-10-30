@@ -2,7 +2,7 @@
 
 What a part costs to print is a question no other check asks. `validate` says
 the solid is sound, `interfere` that nothing clashes, `check_fit` that it sits
-on the bed, `check_mesh` that the artifact is sound. A wall the nozzle cannot
+on the bed, `check_mesh` that the tessellated part is sound. A wall the nozzle cannot
 lay down and a solid core no one will ever see both pass all four.
 
 ```bash
@@ -25,7 +25,7 @@ passes the undersized result. Hollow with `cadprint.hollow(part, wall)` (sealed)
 or `cadprint.open_shell(part, wall, face)` (opened), and take walls from
 `cadprint.min_wall(NOZZLE)` / `cadprint.shell_wall(NOZZLE)`, never a typed
 number. `cadprint.savings()` reports both the volume removed and the filament
-actually saved. A sealed void exports as two mesh shells, which `check_mesh`
+actually saved. A sealed void tessellates as two mesh shells, which `check_mesh`
 reports correctly.
 
 The design rules — why the offset shrinks, deriving walls from the nozzle, a
@@ -67,8 +67,8 @@ median is the number to use; `max` is not a defect.
 
 A knife edge left by a boolean is a real wall finding, not noise; repair the
 construction, not the mesh or the threshold
-(`wiki show wall-thickness-and-hollowing#knife-edges-are-walls-too`), then rerun
-`check_mesh` and `check_thickness` on the freshly exported part.
+(`wiki show knife-edges-and-tapers#knife-edges-are-walls-too`), then rerun
+`check_mesh` and `check_thickness` on the rebuilt part.
 
 ## Record it
 
@@ -116,25 +116,24 @@ python "$CAD_SKILL_ROOT/scripts/check_overhang" <project>/part_x.step.py --angle
 
 It measures the down-facing surface in the pose the entry builds in, drops what rests
 on the bed and what sits within a layer of material below it, clusters the rest,
-and splits each region three ways:
-
-- **bridge** — short enough to span, with material on both sides of it at its
-  own level. A bore ceiling, a slot roof. Reported, not a failure.
-- **ledge** — standing less than `--ledge` (1 mm) out from the material beside
-  it. A rim, a step, the flat under a small boss. Reported, not a failure.
-- **overhang** — neither. It **fails**: the slicer droops it or asks for
-  support material.
-
-Area cannot tell those apart, which is why the split matters: a horizontal bore
-and a shelf of the same area and the same slope have completely different
-answers. Two numbers decide it. **Span** is the **shorter** plan dimension,
-because that is the one the slicer has to cross — a 10 x 40 mm roof is bridged
-across the 10. **Reach** is how far the region stands out from anything at its
-own level: half the span for a bore ceiling, the whole protrusion for a shelf.
+and splits each region three ways by its span and reach
+(`wiki show overhangs-and-print-orientation#bridge-ledge-overhang`): a
+**bridge** and a **ledge** (standing less than `--ledge`, 1 mm, out from the
+material beside it) are reported, not failures; an **overhang** **fails**.
 
 The flank probe starts at the region's edge rather than the centre, so a
 **cap on a stem** (a disc on a peg, a part printed key-down) is reported as the
 overhang it is instead of as a bridge over its own stem.
+
+**Span, reach and the flank probes run along the world X and Y axes.** A
+narrow ceiling lying diagonally in plan, or following a curved wall, has an
+axis box nearly as wide as it is long. The gate then reads it as a wide,
+unflanked overhang, although the slicer would bridge it across its narrow
+width. Yaw the print pose so lintels and window tops run along X or Y. Keep
+neighbouring ceilings a few millimetres apart, because regions that close
+cluster into one wider region. The same applies to a part removed from a
+figure: a gap that part used to close (a cape behind the legs, say) can turn
+into an unflanked ceiling. Re-run the gate after any such removal.
 
 What an overhang is, the cap-on-a-stem shape, the fixes in the order worth
 trying, and why not to design at exactly 45°:
@@ -164,7 +163,18 @@ the sub-minimum band, which it reports per region as `band`:
   budget, and not a failure. `--strict-thin` promotes tapers to failures.
 
 Why a straight knife edge is always a wall, never a taper:
-`wiki show wall-thickness-and-hollowing#a-wall-is-thin-an-edge-tapers-not-the-same-finding`.
+`wiki show knife-edges-and-tapers#a-wall-is-thin-an-edge-tapers-not-the-same-finding`.
+
+## A sacrificial tie is thin on purpose
+
+A print-in-place design may carry breakaway ties or support threads one
+layer thick (0.2 mm) that hold a floating part up while it prints and snap on
+first use. `check_thickness` fails them, correctly: they are below two lines.
+When they come from a proven base you are porting, keep them and report the
+failure by its regions (all of them at the ties, a fraction of a percent of the
+surface). Thickening them changes how the part frees, and leaving them out of
+`gen_print_union()` hides printed material from the gate. Either way the claim
+is "print gates fail only at the designed ties", never "print-ready".
 
 ## Every thin region, not just the thinnest point
 
@@ -177,4 +187,4 @@ Read the region list before editing. Samples within `4 x pitch` are one
 region, so a wedge running along an edge stays one finding; a count in the
 dozens means many separate places, not one bad face — often a repair feature
 that is itself below the minimum wall
-(`wiki show wall-thickness-and-hollowing#a-fix-for-a-knife-edge-must-clear-the-minimum-wall-itself`).
+(`wiki show knife-edges-and-tapers#a-fix-for-a-knife-edge-must-clear-the-minimum-wall-itself`).

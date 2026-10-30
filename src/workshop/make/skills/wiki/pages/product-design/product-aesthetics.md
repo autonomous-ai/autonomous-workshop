@@ -13,8 +13,8 @@ sources:
   - https://www.kidsamusementrides.com/the-carousel-horse-a-complete-guide-to-history-design-amusement-ride-magic/ (carousel figures: jumpers, the carved romance side, jewels, armour and drapery)
   - https://carouselworkshop.com/illion-s-jumper-carousel-horse-roached-mane-inner-row.html (a carved jumper: harness, rosettes, deeply carved mane)
   - "experience: a sliced-sphere case framing a square 84 mm display in a round 125 mm face was rejected as ugly; a barchan-dune case whose 34 deg face held the same display needed a 21 cm deep body and read as a blob"
-related: [form-and-finish-heuristics, fdm-surface-finish, colour-matching, fdm-multi-material-design, stability-and-tipping, handheld-ergonomics, printed-part-count, fillet-chamfer-pitfalls]
-updated: 2026-10-04
+related: [form-and-finish-heuristics, fdm-surface-finish, colour-matching, fdm-multi-material-design, stability-and-tipping, handheld-ergonomics, printed-part-count, fillet-chamfer-pitfalls, character-proportions-and-appeal, play-value-and-tactile-feel]
+updated: 2026-10-10
 ---
 
 # Designing a product to look good
@@ -138,6 +138,9 @@ CMF decides whether an object reads cheap or premium as much as its shape does.
 - **Colour boundaries on edges or grooves**, never mid-surface — the same rule
   as seams ([[form-and-finish-heuristics#seams-and-parting-lines]]), and how
   to build them for a multi-material print is [[fdm-multi-material-design]].
+- **A dark colour reads as a void.** Black on a feature meant to read as a
+  surface (a mouth, a door, a window) reads as an opening into the body; give
+  it a mid tone, or cut a real recess. No geometry gate sees it.
 - **Finish is part of the design**: matte hides layer lines, silk and gloss show
   every one; the face printed on the bed takes the plate's texture. Which faces
   look best on a print is [[fdm-surface-finish#which-faces-look-best]]. Put the
@@ -193,6 +196,9 @@ colours and jewelled where the straps cross:
   a third of the head's length. A bare, correct body in a harness looks
   finished; a tube body in the same harness looks dressed up.
 
+The proportions under the ornament (head count, eye line, eye size, limb
+thickness, the dominant shape) are [[character-proportions-and-appeal]].
+
 ## Failure classes
 
 | Failure | What it looks like | Rule that prevents it |
@@ -226,7 +232,19 @@ silhouettes, in this order:
 4. Every radius belongs to the family; edge character matches the direction.
 5. Lines continue and align; angles repeat.
 6. Stance matches the direction and the stability check.
-7. Colour regions follow the dominant/accent split and end on edges.
+7. Colour regions follow the dominant/accent split and end on edges; no dark
+   colour sits on a feature meant to read as a surface.
 8. A-surfaces avoid supports and seams.
 9. Each feature traces to the three direction words; anything that does not is
    removed.
+
+A front orthographic render shows relief in one colour as one flat shade:
+a raised plate, a step or a groove square to the camera vanishes there, and a
+form drawn that way ("a V chest plate", "a skirt") reads as a blank rectangle
+from the front. Only faces angled to the light (facets, chamfers) or a colour
+boundary separate forms in that view, so draw the forms that must read from
+the front as facets or as their own coloured parts.
+
+A toy or anything handled then gets the hand test: weight matching the look,
+stroked faces warm and edge-free, every action ending in a click or a stop
+([[play-value-and-tactile-feel#review-hand-it-over-for-30-seconds]]).

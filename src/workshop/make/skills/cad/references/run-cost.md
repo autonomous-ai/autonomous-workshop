@@ -33,12 +33,9 @@ revolves, polar-patterned cuts, ~110 faces on its largest part, no lofts.
 | `render_views` (4 views) | 7 s | 42.1 s with matches + `--compare-step` (before the full-size refine replay; see below) |
 | **whole suite once** | **~23 m 25 s** | **1 m 53 s** |
 
-The suite totals were measured while the print gates ran off an exported STL.
-The gates are still here and `--print-gates` still runs them, but they now
-tessellate each entry's B-rep instead, so the export step in those totals is
-gone and the tessellation is inside the gate. Treat both numbers as the right
-order of magnitude rather than current figures; the per-command rows above were
-measured independently and still hold.
+Treat the suite totals as the right order of magnitude rather than current
+figures; the per-command rows above were measured independently and still
+hold.
 
 The print gates are opt-in (`verify_project --print-gates`) and cost roughly
 7-12 s per printable part per gate, of which ~5 s is the interpreter and
@@ -114,12 +111,12 @@ and adding `--poses-from` turns 59.2 s of searching into 7.8 s of replay with
 identical numbers. **Search once, replay while editing, search again at the end.**
 
 **Do not let a local audit go unmeasured.** A `measure/check_landmarks.py` that
-samples solids where it could read edges has been seen to cost 62 % of an
-entire suite; the same ledger reading edges cost 0.004 s.
+samples solids where it could read edges can cost more than the rest of the
+suite together; the same ledger reading edges costs milliseconds.
 `image-derived-verification.md` has the numbers.
 
 **"One machine, one run" is not advice.** Concurrent audit processes and
-parameter sweeps on one host inflated the since-removed thickness gate 5x — a tax on every
+parameter sweeps on one host inflated the thickness gate 5x — a tax on every
 measurement taken while they were alive, and one that looks like a slow tool
 rather than a busy machine. Check `ps` before believing a timing.
 
@@ -139,10 +136,14 @@ do not tell you when a round was wasted.
   validate/interfere before the render tail and print gates and stops on a clash. The
   deliberate price is that `interfere` runs twice on the final shape;
   `verify_project` is not a per-edit probe.
+- Killing a timed-out warm client does not stop its daemon, which keeps
+  computing. Find the daemon by `CADGEN_DAEMON_SOCKET` in its environment and
+  kill it with `-9`. Do not `pkill -f` a pattern that also appears in your own
+  command line: it matches and kills the shell running it.
 - Read the whole failed pipeline record before editing. The runner collects all
   independent fit/local/spec failures in its cheap preflight group, then, once
   geometry is sound, collects mesh/overhang/thickness failures across every
-  printable target. A failed export or mesh blocks only its dependent checks;
+  printable target. A failed build or mesh blocks only its dependent checks;
   it does not hide failures in later parts. Repair the collected batch in one
   source round instead of rerunning once per failing part.
 - Keep catalog search compact. The step-parts script prints items and totals as
@@ -152,6 +153,12 @@ do not tell you when a round was wasted.
   every later round. `download_step_part.py --self-check` reproduces the shrink.
 - Read a reference once. These documents are re-sent with every subsequent
   round, so loading one whose trigger has not fired is not a one-time cost.
+- Finish an active tool command before ending a delegated worker. Do not assume
+  its session identifier can be polled by the coordinator or that its process
+  survives the worker's final reply. Hand off stable source, completed logs and
+  exact **unlaunched** remaining commands; let the receiving agent start those
+  commands in its own session. A vanished PID and an incomplete log are not a
+  completed gate.
 
 ## Spend that time deliberately
 

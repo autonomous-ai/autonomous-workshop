@@ -6,7 +6,7 @@ sources:
   - https://www.rivcut.com/resources/iso-2768-tolerance-chart
   - https://qualityforum.zeiss.com/migration/images/137_8bb2b6eeb6a9e6554d254c216a890c89.pdf
   - https://www.3erp.com/blog/iso-2768-standard/
-related: [iso-286-fits, gdt-basics, reading-technical-drawings, drawing-projection-conventions, tolerance-stack-up]
+related: [iso-286-fits, gdt-basics, reading-technical-drawings, tolerance-stack-up]
 updated: 2026-09-23
 ---
 

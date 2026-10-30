@@ -5,7 +5,7 @@ aliases: [geometric dimensioning and tolerancing, ASME Y14.5, ISO 1101, feature 
 sources:
   - https://en.wikipedia.org/wiki/Geometric_dimensioning_and_tolerancing
   - https://www.rivcut.com/resources/iso-2768-tolerance-chart
-related: [reading-technical-drawings, iso-2768-general-tolerances, iso-286-fits, drawing-projection-conventions, tolerance-stack-up, exact-constraint-and-kinematic-mounts]
+related: [reading-technical-drawings, iso-2768-general-tolerances, iso-286-fits, tolerance-stack-up, exact-constraint-and-kinematic-mounts]
 updated: 2026-09-23
 ---
 

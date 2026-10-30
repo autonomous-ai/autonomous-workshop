@@ -8,7 +8,6 @@ from cadgen import cad_ref_syntax as syntax
 from cadgen.reporting import (
     EntryReportOptions,
     entry_facts_payload,
-    entry_positioning_payload,
     entry_report_payload,
     entry_summary_payload,
     major_planes_payload,
@@ -21,7 +20,6 @@ from cadgen.step_targets import (
     cad_ref_error_payload,
     entry_target_from_target,
     resolve_step_target,
-    step_path_from_target,
 )
 from cadgen import analysis
 from cadgen import lookup
@@ -634,10 +632,6 @@ def _inspect_selector(
 
 def _entry_facts(context: EntryContext) -> dict[str, object]:
     return entry_facts_payload(context.manifest, kind=context.kind, selector_index=context.selector_index)
-
-
-def _entry_positioning(context: EntryContext) -> dict[str, object]:
-    return entry_positioning_payload(context.manifest, kind=context.kind, selector_index=context.selector_index)
 
 
 def load_entry_context_for_target(

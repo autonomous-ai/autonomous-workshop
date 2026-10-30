@@ -6,8 +6,8 @@ sources:
   - Norton, Design of Machinery, ch. 1-2 (type synthesis, degrees of freedom)
   - skills/cad/references/motion-manifests.md
   - "experience: kinetic machines built in this repository whose gates passed a mechanism that could not run"
-related: [joints, shafts-and-bearings, gears, linkages, cams-intermittent, energy-drive, automata-patterns, mechanism-verification, mechanism-failures]
-updated: 2026-09-23
+related: [joints, shafts-and-bearings, gears, linkages, cams-intermittent, energy-drive, automata-patterns, mechanism-verification, mechanism-failures, marble-runs-and-ball-tracks]
+updated: 2026-10-10
 ---
 
 # Designing a mechanism
@@ -50,6 +50,7 @@ numbers* make a linkage turn — that is what these pages are for.
 | turn the axis 90° | bevel / face gear | worm (big reduction, may self-lock), crossed helical | [[gears]] |
 | rotation → straight travel | rack + pinion | lead screw (slow, self-locking) | [[gears]] |
 | one-way / hold against return | ratchet + pawl | self-locking worm | [[cams-intermittent]] |
+| rotation → lift loose balls (marble lift) | screw in fixed rails | stair-step plates on alternate cams, pocket wheel, chain with hooks | [[marble-runs-and-ball-tracks]] |
 | store and release energy | rubber band on a wound axle, spring | falling weight, clockwork | [[energy-drive]] |
 | electric drive | motor / servo + reduction | — | [[energy-drive]] |
 | carry a turning part | shaft on two supports | stub axle, shoulder pin | [[shafts-and-bearings]] |

@@ -9,8 +9,8 @@ sources:
   - https://3dcentral.ca/articulated-3d-prints-how-flexi-toys-work/
   - https://help.prusa3d.com/article/elephant-foot-compensation_114487
   - "experience: sections of a published print-in-place flexi toy's segment joints, measured along each axis and normal to the faces"
-related: [flexi-chain-joints, printed-part-count, joints, fit-derivation, fdm-first-layer-and-warping, fdm-bridging-and-sacrificial-layers, fdm-hole-accuracy, overhangs-and-print-orientation, gears, mechanism-verification, flexures-and-living-hinges, mass-properties-and-measurement, ball-and-socket-joints, posable-figure-joints]
-updated: 2026-10-01
+related: [flexi-chain-joints, printed-part-count, rounded-bodies-on-the-print-bed, joints, fit-derivation, fdm-first-layer-and-warping, fdm-bridging-and-sacrificial-layers, fdm-hole-accuracy, overhangs-and-print-orientation, gears, mechanism-verification, flexures-and-living-hinges, mass-properties-and-measurement, ball-and-socket-joints, posable-figure-joints, mechanical-puzzles]
+updated: 2026-10-10
 ---
 
 # Print-in-place mechanisms
@@ -32,7 +32,7 @@ from `cadfits.print_in_place_gap()` and are not repeated as literals here.
 |---|---|---|
 | `xy` | gap on each side face, 0.20 / 0.30 / 0.40 mm (`tight` / `sliding` / `loose`), +0.05 for PETG/ABS/ASA | two perimeters squeezed side by side weld below it |
 | `z` | gap above/below a horizontal face, `xy + layer_height` | the ceiling of a gap is a bridge and droops by about a layer |
-| `bottom_chamfer` | 0.5 mm, 45° | elephant's foot closes gaps that start on the bed |
+| `bottom_chamfer` | 0.5 mm | elephant's foot closes gaps that start on the bed |
 
 Published guides agree on the range: 0.20–0.30 mm per side for PLA on a
 0.4 mm nozzle, 0.15 mm only on a well-calibrated machine, and 0.05–0.10 mm
@@ -49,8 +49,10 @@ The first layer is squashed wider than the model (≈0.2 mm on a 0.4 mm
 nozzle, Prusa), which is the same size as the whole XY gap. Any gap whose
 bottom sits on the bed is therefore closed at layer one.
 
-- Chamfer 45° every edge of a moving part and its housing that touches the
-  bed, by `bottom_chamfer` (guides give 0.5–1.0 mm).
+- Break every edge of a moving part and its housing that touches the bed by
+  `bottom_chamfer` (guides give 0.5–1.0 mm), as a steep asymmetric chamfer:
+  the 45° one guides and the `cadfits` docstring name fails the overhang gate
+  ([[rounded-bodies-on-the-print-bed#breaking-the-bed-edge]]).
 - Better: lift the gap off the bed. Start the moving part one or two layers
   above the plate by a `z` gap under it, so the only bed contact is the fixed
   part. A hinge knuckle that does not need to touch the bed should not.
@@ -114,14 +116,9 @@ if it is on the bed.
   stood at 45°; a link crossing over another needs its crossing ceiling to be
   an overhang, not a flat bridge. Two links touching nowhere at rest is the
   condition to check (below), not "they look separate".
-
-## Flexi chain joint: two crossed loops
-
-A segmented flexi toy joins each pair of segments with two closed loops
-threaded through each other at right angles, printed in place lying on its
-belly. The loops, their gaps and sizes, the end faces that set the yaw range,
-and what that range does to legs and to the body's look are on their own
-page: [[flexi-chain-joints]].
+- **Captive sliding tiles** stay captured at every cell, with the tongue
+  reaching past the whole row's slack:
+  [[mechanical-puzzles#sliding-block-puzzles-captive-tiles-and-solvable-starts]].
 
 ## Supports are trapped by definition
 

@@ -67,10 +67,14 @@ When the user attaches several images, **reconcile before you spec**:
    `top`/`bottom`/`plan` measure L×W, `side`/`left`/`right`/`profile` measure
    L×H, `front`/`back`/`rear` measure W×H. Any other label is skipped by the
    cross-check.
-2. **Read `cross_check` first.** It solves L : W : H over every named view at
-   once and gives `per_view_disagreement_pct`. Under ~5 % the images share one
-   camera scale. Above it, the offending view is named for you — drop it rather
-   than normalising around it.
+2. **Read `cross_check` first.** `UNDERCONSTRAINED` has no solved L : W : H;
+   repeated views of one axis pair leave a dimension unknown. `SOLVED ONLY`
+   determines the ratios from two independent views but cannot check their
+   consistency. With redundant constraints, it gives `per_view_disagreement_pct`.
+   Under ~5 % disagreement is consistent with one orthographic set, provided
+   those camera labels are justified. Above it, investigate the views rather
+   than normalising around the disagreement; exactly three views cannot
+   uniquely identify the offending one.
 3. Where two images disagree on a feature, the more orthographic one wins. Say
    which you used; use detail shots for their feature only.
 
