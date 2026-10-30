@@ -611,6 +611,8 @@ def crop_to_sweep(obstacle, boxes, margin: float = 1.0):
         return obstacle
     lo = [min(getattr(b.min, a) for b in boxes) - margin for a in "XYZ"]
     hi = [max(getattr(b.max, a) for b in boxes) + margin for a in "XYZ"]
+    # A triangulated shape's box can sit inside its geometry by up to the mesh
+    # deflection; `margin` absorbs that, so never shrink it below the deflection.
     own = obstacle.bounding_box()
     own_lo = [getattr(own.min, a) for a in "XYZ"]
     own_hi = [getattr(own.max, a) for a in "XYZ"]
