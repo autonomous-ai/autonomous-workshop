@@ -726,7 +726,11 @@ with the `electromechanical-integration` skill (its `power-manifest.md`):
 each non-wire electrical part is a report component with the same `id` and
 `role`, wires are added as `wire` components, and each contract path is a
 report path with the same `id`, source and load whose `sequence`, wires left
-out, is the contract's, rated for at least its `current_ma`. Final
+out, is the contract's, rated for at least its `current_ma`. A contract
+source marked `external` (the buyer's own charger) is a `carried: false`
+source component in a report with `boundary: external`, and the contract's
+`inlet` is carried. A load with two contract paths, such as dim and bright,
+has two report paths. Final
 verification then runs with `--powered`, which refuses without the report and
 runs `check_power` on it; `--full` passes the flag for you. The host accepts
 Make only when the sealed `measure/power.json` is that circuit and the final

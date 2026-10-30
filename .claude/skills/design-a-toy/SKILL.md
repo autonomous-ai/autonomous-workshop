@@ -120,7 +120,9 @@ When the toy has anything electrical — a light, a switch, a battery, a motor
   switch, resistor, LED, wire, each a catalogue Bought Part); the switch
   logic in one sentence (what the buyer does and what lights); the standby
   drain with the switch off (a mechanical switch in series is 0 mA); each
-  load's current and the runtime on the stated cells; and who assembles it
+  load's current and the runtime on the stated cells (none when the toy
+  runs from the buyer's own charger, an external source behind a carried
+  inlet such as a USB-C receptacle); and who assembles it
   (the maker or the buyer) and whether its joins are soldered or
   solderless. A buyer kit prefers solderless parts. These become the
   contract's `electrical` section (schema 10, CONTRACT-FORMAT.md); the
