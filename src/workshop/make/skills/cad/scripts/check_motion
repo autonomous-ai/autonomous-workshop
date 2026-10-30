@@ -601,13 +601,27 @@ def crop_to_sweep(obstacle, boxes, margin: float = 1.0):
     complement, whose volumes must add up). Small obstacles, and any crop that
     throws or loses volume, keep the whole obstacle; None means no material
     within the sweep's box at all.
+
+    The obstacle's own box decides first: one wholly outside the window has
+    nothing near the path, one wholly inside crops to itself. Only obstacles
+    straddling the window pay the booleans -- a 15k-face sculpted head named in
+    every condition paid them for sweeps nowhere near it.
     """
     if len(obstacle.faces()) <= LOCAL_FACES:
         return obstacle
-    from build123d import Box, Location
-
     lo = [min(getattr(b.min, a) for b in boxes) - margin for a in "XYZ"]
     hi = [max(getattr(b.max, a) for b in boxes) + margin for a in "XYZ"]
+    # A triangulated shape's box can sit inside its geometry by up to the mesh
+    # deflection; `margin` absorbs that, so never shrink it below the deflection.
+    own = obstacle.bounding_box()
+    own_lo = [getattr(own.min, a) for a in "XYZ"]
+    own_hi = [getattr(own.max, a) for a in "XYZ"]
+    if any(h < l or o > w for l, w, o, h in zip(lo, hi, own_lo, own_hi)):
+        return None                                    # nothing near the path
+    if all(l <= o and h <= w for l, w, o, h in zip(lo, hi, own_lo, own_hi)):
+        return obstacle                                # the crop would be the whole
+    from build123d import Box, Location
+
     window = Location(tuple((x + y) / 2 for x, y in zip(lo, hi))) * Box(*(y - x for x, y in zip(lo, hi)))
     try:
         local = obstacle & window
