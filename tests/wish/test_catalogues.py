@@ -145,6 +145,22 @@ class CatalogueTest(unittest.TestCase):
         self.assertIsNone(parts["contact-aaa-bridge"].lead_diameter_mm)
         self.assertFalse(any(parts[name].confirmed for name in categories))
 
+    def test_the_packaged_seed_holds_the_mac_night_light_unconfirmed(self):
+        # Owner, 2026-10-30: the Macintosh fidget's USB-C night light. Its
+        # PCBA parts are surface-mount, so none gives a lead diameter.
+        catalogues = load_catalogues()
+        parts = catalogues.parts
+        categories = {name: parts[name].category for name in (
+            "usb-c-receptacle-power", "led-2835-warm-2200k",
+            "resistor-150r", "resistor-470r", "resistor-110r")}
+        self.assertEqual(categories, {
+            "usb-c-receptacle-power": "other", "led-2835-warm-2200k": "lamp",
+            "resistor-150r": "other", "resistor-470r": "other", "resistor-110r": "other"})
+        self.assertFalse(any(parts[name].confirmed for name in categories))
+        self.assertTrue(all(parts[name].lead_diameter_mm is None for name in categories))
+        natural = catalogues.filaments["translucent-natural"]
+        self.assertEqual((natural.hex, natural.kind, natural.confirmed), ("#efe9dc", "translucent", False))
+
     def test_the_lead_diameter_is_the_largest_one_given(self):
         bought = _bought()
         bought["parts"][1]["sizes"].append({"what": "lead diameter", "max_mm": [0.45, 0.5]})
