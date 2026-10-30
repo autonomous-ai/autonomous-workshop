@@ -1,5 +1,13 @@
 # Shared skill provenance
 
+## Workshop-local: make-round documents an external power source (2026-10-30)
+
+- `make-round/SKILL.md` gains ADR 0095's external-source amendment: a
+  contract source marked `external` is a `carried: false` source component
+  in a report with `boundary: external`, and a load with two contract paths
+  has two report paths. Only `make-round`'s lock moves. `source_commit`
+  values are unchanged, and no vendored upstream skill changes.
+
 ## Workshop-local: cadgen accepts an optional `instance`; check_thickness reports every region (2026-10-30)
 
 - **Local patch to upstream cadgen (upstream needs the same change).**

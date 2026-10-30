@@ -14,7 +14,11 @@ rebuilding any geometry or rerunning the gate (ADR 0061), that
   wire component, and every contract path is a report path with the same id,
   source and load whose sequence, wires left out, is the contract's;
 - each report path is rated for the contract's current, and the source's
-  declared voltage covers the contract's supply range.
+  declared voltage covers the contract's supply range;
+- a contract whose source is the buyer's own supply (``external``, ADR 0095
+  amendment) has a report with ``check_power``'s ``external`` boundary, that
+  source not carried; a contract that carries its source has no external
+  boundary.
 
 The report's evidence, mounts, wire envelopes and current capacity stay
 ``check_power``'s and ``check_mount``'s to judge; this check adds only that
@@ -51,6 +55,13 @@ def has_electrical(contract: Any) -> bool:
     )
 
 
+def external_sources(electrical: Mapping[str, Any]) -> list[str]:
+    """The ids of the circuit's external sources: the buyer's own supply,
+    which the toy does not carry and no one buys with it."""
+
+    return [item["id"] for item in electrical.get("parts") or () if item.get("external") is True]
+
+
 def _number(value: Any) -> bool:
     return not isinstance(value, bool) and isinstance(value, (int, float))
 
@@ -67,6 +78,18 @@ def check_power_report(electrical: Mapping[str, Any], report: Any) -> list[str]:
         if isinstance(item, Mapping) and isinstance(item.get("id"), str)
     }
     parts = {item["id"]: item for item in electrical.get("parts") or ()}
+    external = external_sources(electrical)
+    boundary = report.get("boundary")
+    if external and boundary != "external":
+        problems.append("the contract's source %s is external, but the report's boundary is %s, not "
+                        "external" % (", ".join(external), boundary))
+    elif not external and boundary == "external":
+        problems.append("the contract carries its source, but the report's boundary is external")
+    for key in external:
+        component = components.get(key)
+        if isinstance(component, Mapping) and component.get("carried") is not False:
+            problems.append("report source %s is the buyer's external supply, so carried is false, not %s"
+                            % (key, component.get("carried")))
     wires = {key for key, item in components.items() if item.get("role") == "wire"}
     for key, item in sorted(parts.items()):
         if item["role"] == "wire":
@@ -163,15 +186,17 @@ def verify_made_power(run_root: Path, made: Any, contract: Mapping[str, Any] | N
     return {
         "report": (prefix / POWER_PATH).as_posix(),
         "report_sha256": hashlib.sha256(raw).hexdigest(),
-        "parts": len(electrical["parts"]),
+        # The buyer's own supply is no part of the toy.
+        "parts": len([item for item in electrical["parts"] if item.get("external") is not True]),
+        "boundary": "external" if external_sources(electrical) else "onboard",
         "paths": [{"id": item["id"], "load": item["load"], "current_ma": item["current_ma"]}
                   for item in electrical["paths"]],
         "supply_v": dict(electrical["supply_v"]),
         "standby_ma": electrical["standby_ma"],
-        "runtime_h": electrical["runtime_h"],
+        "runtime_h": electrical.get("runtime_h"),
         "assembled_by": electrical["assembled_by"],
         "joins": electrical["joins"],
     }
 
 
-__all__ = ["check_power_report", "has_electrical", "verify_made_power"]
+__all__ = ["check_power_report", "external_sources", "has_electrical", "verify_made_power"]

@@ -215,6 +215,147 @@ class KitElectricalTest(unittest.TestCase):
 
 
 
+def _mac_usb_catalogues():
+    """The packaged catalogue plus the USB Mac fidget's seeds, test-only:
+    the owner confirms the real seeds (WORKSHOP-READINESS.md)."""
+
+    packaged = load_catalogues()
+    filaments = {"schema_version": 1, "filaments": [
+        {"id": "navy", "name": "Navy", "hex": "#112233", "kind": "opaque", "confirmed": True}]}
+    parts = [{"id": entry.id, "name": entry.name, "category": entry.category,
+              "sizes": copy.deepcopy(list(entry.sizes)), "pack": None, "source": None, "confirmed": False}
+             for entry in packaged.parts.values()]
+    lead = [{"what": "lead diameter", "max_mm": [0.6]}]
+    for identifier, category in (("usb-c-receptacle-power", "other"), ("led-2835-warm-2200k", "lamp"),
+                                 ("resistor-150r", "other"), ("resistor-470r", "other"),
+                                 ("resistor-110r", "other")):
+        parts.append({"id": identifier, "name": identifier, "category": category, "sizes": lead,
+                      "pack": None, "source": None, "confirmed": False})
+    return parse_catalogues(filaments, {"schema_version": 1, "parts": parts})
+
+
+def _mac_usb():
+    """toys-spec/macintosh-fidget/concepts/electrical-usb-draft.json with the
+    buyer's charger as an external source and no runtime: USB-C only, a
+    half-in (dim) and a full-in (bright) microswitch, two paths to each warm
+    LED (ADR 0095 amendment, E1-E3)."""
+
+    def path(identifier, load, current, *middle):
+        return {"id": identifier, "load": load, "current_ma": current,
+                "sequence": ["usb-supply", "usb-c", "s-half", *middle, load, "usb-supply"]}
+
+    parts = [
+        {"id": "usb-supply", "role": "source", "external": True},
+        {"id": "usb-c", "bought": "usb-c-receptacle-power", "role": "inlet"},
+        {"id": "s-half", "bought": "microswitch-mini-lever", "role": "switch"},
+        {"id": "s-full", "bought": "microswitch-mini-lever", "role": "switch"},
+        {"id": "r-screen", "bought": "resistor-150r", "role": "controller"},
+        {"id": "screen-led", "bought": "led-5mm-amber-diffused", "role": "load"},
+    ]
+    paths = [path("screen-light", "screen-led", 20, "r-screen")]
+    for n in (1, 2, 3):
+        parts += [{"id": "r-dim-%d" % n, "bought": "resistor-470r", "role": "controller"},
+                  {"id": "r-bright-%d" % n, "bought": "resistor-110r", "role": "controller"},
+                  {"id": "warm-%d" % n, "bought": "led-2835-warm-2200k", "role": "load"}]
+    for n in (1, 2, 3):
+        paths.append(path("warm-%d-dim" % n, "warm-%d" % n, 5, "r-dim-%d" % n))
+    for n in (1, 2, 3):
+        paths.append(path("warm-%d-bright" % n, "warm-%d" % n, 25, "s-full", "r-bright-%d" % n))
+    parts.append({"id": "wire", "bought": "wire-28awg", "role": "wire"})
+    return {
+        "parts": parts, "paths": paths,
+        "supply_v": {"min": 4.4, "nominal": 5.0, "max": 5.25},
+        "standby_ma": 0,
+        "runtime_h": None,
+        "switch_logic": "USB-C only. Floppy out: off. Half-in click closes s-half: screen glow and dim "
+                        "warm up-glow. Full-in click also closes s-full: bright.",
+        "assembled_by": "maker", "joins": "solder", "batteries_included": False,
+    }
+
+
+class ExternalSourceTest(unittest.TestCase):
+    """ADR 0095 amendment: the buyer's own USB charger is an external source,
+    no Bought Part, entered through a carried inlet; runtime_h is null."""
+
+    def _parse(self, electrical):
+        return parse_design_contract(_contract_text(_schema10(electrical), prose=_PROSE),
+                                     catalogues=_mac_usb_catalogues())
+
+    def _refused(self, electrical):
+        with self.assertRaises(ContractError) as caught:
+            self._parse(electrical)
+        return str(caught.exception)
+
+    def test_the_usb_mac_fidget_seals_without_buying_its_charger(self):
+        electrical = _mac_usb()
+        contract = self._parse(electrical)
+        contract.check_sealable()
+        self.assertEqual(contract.to_dict()["electrical"], electrical)
+        bought = contract.kit_catalogue()["bought_parts"]
+        self.assertNotIn("usb-5v-supply", bought)
+        self.assertEqual(sorted(bought), sorted({item["bought"] for item in electrical["parts"]
+                                                 if "bought" in item}))
+        self.assertNotIn("bought-parts.json:usb-5v-supply", contract.electrical.unconfirmed)
+
+    def test_runtime_may_be_absent_when_every_source_is_external(self):
+        electrical = _mac_usb()
+        del electrical["runtime_h"]
+        self.assertIsNotNone(self._parse(electrical).electrical)
+
+    def test_an_external_source_still_needs_complete_paths_through_an_inlet(self):
+        electrical = _mac_usb()
+        electrical["paths"][0]["sequence"].remove("usb-c")
+        self.assertIn("paths[0].sequence leaves the external source usb-supply through no inlet",
+                      self._refused(electrical))
+        electrical = _mac_usb()
+        electrical["paths"][0]["sequence"].pop()
+        self.assertIn("paths[0].sequence begins and ends at its source", self._refused(electrical))
+        electrical = _mac_usb()
+        electrical["parts"] = [item for item in electrical["parts"] if item["id"] != "usb-c"]
+        for item in electrical["paths"]:
+            item["sequence"].remove("usb-c")
+        self.assertIn("has an external source but no inlet", self._refused(electrical))
+
+    def test_an_external_source_is_only_a_source_and_no_bought_part(self):
+        electrical = _mac_usb()
+        electrical["parts"][0]["bought"] = "battery-box-2aa-switch"
+        self.assertIn("an external source, must be exactly {id, role: source, external: true}",
+                      self._refused(electrical))
+        electrical = _mac_usb()
+        electrical["parts"][0]["external"] = False
+        self.assertIn("must be exactly {id, role: source, external: true}", self._refused(electrical))
+        electrical = _mac_usb()
+        electrical["parts"][0]["role"] = "inlet"
+        self.assertIn("only a source is external", self._refused(electrical))
+
+    def test_external_and_carried_sources_do_not_mix(self):
+        electrical = _mac_usb()
+        electrical["parts"].append({"id": "cells", "bought": "cell-aaa", "count": 2, "role": "source"})
+        electrical["paths"].append({"id": "backup", "load": "screen-led", "current_ma": 5,
+                                    "sequence": ["cells", "s-half", "r-screen", "screen-led", "cells"]})
+        self.assertIn("mixes external and carried sources (cells)", self._refused(electrical))
+
+    def test_a_usb_toy_states_no_runtime_and_includes_no_batteries(self):
+        electrical = _mac_usb()
+        electrical["runtime_h"] = 1
+        self.assertIn("runtime_h is null or absent: every source is external", self._refused(electrical))
+        electrical = _mac_usb()
+        electrical["batteries_included"] = True
+        self.assertIn("batteries_included is false: every source is external", self._refused(electrical))
+
+    def test_runtime_stays_required_for_cells(self):
+        block = _schema10()
+        block["electrical"]["runtime_h"] = None
+        with self.assertRaises(ContractError) as caught:
+            parse_design_contract(_contract_text(block, prose=_PROSE))
+        self.assertIn("runtime_h must be the hours one set of cells lights the load", str(caught.exception))
+        block = _schema10()
+        del block["electrical"]["runtime_h"]
+        with self.assertRaises(ContractError) as caught:
+            parse_design_contract(_contract_text(block, prose=_PROSE))
+        self.assertIn("electrical is missing: runtime_h", str(caught.exception))
+
+
 def _wired_tree():
     """The kit test's book nook lit by two AAA cells through a soldered lever
     switch: a switch is a Wired Part as its catalogue entry has a lead diameter."""

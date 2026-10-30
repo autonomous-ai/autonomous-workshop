@@ -10,6 +10,8 @@
 - Date: 2026-10-29
 - Amends: ADR 0092 (Check Steps, leads steps and the Manual's front page),
   ADR 0094 (schema 10 is schema 9 plus an optional section)
+- Amended on 2026-10-30 by "Amendment: an external source" below (the
+  buyer's own USB charger; Macintosh fidget gaps E1-E3)
 - Relates to: ADR 0061 (Spark keeps Make's own verification), ADR 0062/0063
   (STEP only, print gates on source), the vendored
   `electromechanical-integration` skill and `verify_project --powered`
@@ -168,3 +170,78 @@ Workshop unchanged.
   judges. Nothing gates them.
 - The receipt's power entry reports the circuit Make proved. It does not
   claim that a physical toy lights.
+
+## Amendment: an external source (2026-10-30, readiness gaps E1-E3)
+
+Status: Accepted; implemented and deterministically tested; not yet
+validated by a live run.
+
+### Context
+
+The Macintosh fidget became a USB-C night light: the buyer's own USB
+charger powers it, with no cells and no battery door. A floppy half in
+closes one microswitch (screen glow and dim warm light) and fully in closes
+a second (bright). Its readiness notes
+(`toys-spec/macintosh-fidget/WORKSHOP-READINESS.md`, E1-E5) found three
+gaps in decision 1:
+
+- **E1.** A path had to start at a `source`, and a source had to be a
+  `power` or `cell` Bought Part. The draft therefore sealed the buyer's
+  charger as a Bought Part the toy never ships. `check_power` already
+  models this case as its `external` boundary: a non-carried source and a
+  carried `inlet`.
+- **E2.** `runtime_h` had to be above 0, so the draft stated a placeholder
+  `1`.
+- **E3.** Decision 1 said "one path per load", while the draft has a dim and
+  a bright path to each warm LED. Whether `check_power` accepted that was
+  untested.
+
+### Decision
+
+1. **An external source.** A source part may be exactly
+   `{"id", "role": "source", "external": true}`. It names no Bought Part, so
+   it has no `bought` and no `count`; only a source may be external. It is
+   not in the sealed catalogue snapshot, the Manual or the receipt's part
+   count. A circuit with an external source carries an `inlet` part (the
+   receptacle, an `other` Bought Part), and every path from the external
+   source passes an inlet before it returns. A path is otherwise checked as
+   before: it begins and ends at its source, holds its load once, and
+   carries no other source or load. A circuit's sources are all external or
+   all carried, because `check_power` has one boundary per report.
+2. **No runtime without cells.** When every source is external, `runtime_h`
+   is null or absent, and `batteries_included` is false. A circuit with a
+   carried source still needs `runtime_h` above 0.
+3. **Make's report and the host check.** For an external source, Make's
+   `measure/power.json` declares `boundary: external` and the source as a
+   component with the same id, `role: source` and `carried: false`.
+   `check_power` already requires the carried inlet. Before Make is
+   accepted, the host additionally refuses a report whose boundary or the
+   source's `carried` disagrees with the contract. It also refuses an
+   external boundary for a contract that carries its source. The source's
+   declared voltage must still cover `supply_v`. The receipt's `power`
+   entry gains `boundary` (`external` or `onboard`), counts only the parts
+   the toy carries, and reports a null `runtime_h`.
+4. **Several paths to one load.** Decision 1's "one path per load" means at
+   least one. A load may have several paths, such as a dim and a bright
+   branch through different resistors and switches. `check_power` rates
+   each path independently and refuses only an inline second load, and a
+   test runs the vendored gate on the USB fidget's seven paths to four
+   loads. No folding rule is needed.
+5. **No new schema.** This is an additive amendment to schema 10, the way
+   ADR 0082's #80 amendment widened schema 2 Interfaces. Every schema 10
+   section that sealed before stays valid with the same meaning, because
+   no earlier section could carry `external` or a null `runtime_h`. Schema 1
+   to 9 contracts and frozen runs are unchanged.
+
+### Not decided here
+
+- **E4.** The PCBA (USB-C, LEDs and resistors on one board) has no catalogue
+  form. The contract lists the parts individually, and Make models the board
+  as a mount or validation envelope. Buying it as one line is the owner's
+  decision.
+- **E5.** Filaments carry a colour, not a material, and there is no
+  translucent natural filament. The owner adds catalogue entries. Contract
+  rows state PETG where it matters, and no gate reads material.
+- The draft's new catalogue seeds (`usb-c-receptacle-power`,
+  `led-2835-warm-2200k` and the 150, 470 and 110 ohm resistors) wait for
+  the owner. The tests use them only in a test catalogue.

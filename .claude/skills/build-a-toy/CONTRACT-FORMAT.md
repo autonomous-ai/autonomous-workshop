@@ -473,12 +473,23 @@ instances.)
     and `other` (a resistor, a regulator, a motor) `protection`,
     `controller`, `connector`, `load`, `actuator` or `inlet`. There is at
     least one source.
-  - `paths[]`: exactly `{"id", "load", "current_ma", "sequence"}`, one per
-    load. The sequence begins and ends at its source, holds its `load`
+  - An **external source** (ADR 0095 amendment) is the buyer's own supply,
+    such as a USB charger. It is written exactly
+    `{"id": "usb-supply", "role": "source", "external": true}`, with no
+    `bought` and no `count`, and is never bought, sealed or listed. The
+    circuit then carries an `inlet` part (the receptacle), and every path
+    passes it: `["usb-supply", "usb-c", "s-half", "r-screen", "screen-led",
+    "usb-supply"]`. Sources are all external or all carried. With only
+    external sources, `runtime_h` is `null` or absent and
+    `batteries_included` is `false`.
+  - `paths[]`: exactly `{"id", "load", "current_ma", "sequence"}`, at
+    least one per load. A load lit two ways, such as dim and bright through
+    different resistors, has one path for each. The sequence begins and ends at its source, holds its `load`
     exactly once and no other source or load, and leaves wires out (Make's
     report adds them). Every part but a wire is on some path.
   - `supply_v` (`min` <= `nominal` <= `max`), `standby_ma` (>= 0, the drain
-    with the switch off), `runtime_h` (> 0), `switch_logic` (one sentence),
+    with the switch off), `runtime_h` (> 0 with cells; `null` or absent
+    with only external sources), `switch_logic` (one sentence),
     `assembled_by` (`maker` or `buyer`), `joins` (`solder` or
     `solderless`) and `batteries_included` (true or false).
   - The section's parts are sealed with their catalogue snapshot, so a toy
@@ -489,8 +500,9 @@ instances.)
     `electromechanical-integration` skill and runs final verification with
     `--powered`. The host accepts Make only when that report is this circuit
     (same ids, roles, sources, loads and sequences, wires aside, each path
-    rated for its `current_ma`, the source's voltage covering `supply_v`)
-    and the final record passed `check_power`.
+    rated for its `current_ma`, the source's voltage covering `supply_v`,
+    and for an external source the report's `external` boundary with that
+    source `carried: false`) and the final record passed `check_power`.
 
 ## Validation before any run
 

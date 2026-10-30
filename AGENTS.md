@@ -350,6 +350,12 @@ Before Make is accepted the host checks, without rerunning the gate, that
 the sealed `measure/power.json` is that circuit and the final record passed
 `check_power`. No Workshop electrical gate is added; schema 1 to 9 and
 frozen runs keep what they sealed.
+Its 2026-10-30 amendment, which adds no new schema, lets a schema 10 source
+be `external`, such as the buyer's own USB charger. That source names no
+Bought Part, and every path from it passes a carried `inlet`, matching
+`check_power`'s `external` boundary. It is not sealed, listed or counted,
+`runtime_h` is null or absent, and the host refuses a report whose boundary
+or the source's `carried` disagrees. Several paths may share one load.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

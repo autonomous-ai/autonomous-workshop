@@ -563,6 +563,14 @@ logic, and who assembles and solders it. Make's power report must be this
 circuit before Make is accepted. A Design Contract without it is unpowered.
 _Avoid_: Wiring diagram, BOM, power plan
 
+**External source**:
+The supply a powered toy plugs into but does not carry, such as the buyer's
+own USB charger. The Electrical section names it as a source with no Bought
+Part, and every path from it enters the toy through a carried `inlet`. It is
+not bought, sealed, listed in a Manual or counted in the receipt, and the toy
+states no runtime.
+_Avoid_: Bought charger, power Bought Part
+
 **Tree defect**:
 A sealed Assembly Tree that does not hold together: a Part missing, extra or
 duplicated against its Print Sheet or catalogue side, or a step in the wrong
