@@ -155,7 +155,9 @@ When a generated STEP file's `gen_step()` builds on another STEP file, that othe
 ## Entry generators are named `<name>.step.py`
 
 An entry defines **exactly one `gen_step()` at module scope**, takes no
-arguments, and returns the shape — a build123d object, an assembly compound, or
+arguments (Workshop: except one optional `instance`, as in
+`gen_step(instance=1)`, for a part that builds each instance of a repeated
+geometry differently; `gen` calls it with none), and returns the shape — a build123d object, an assembly compound, or
 an envelope dict `{"shape": ..., "params": ...}` (optionally also
 `mesh_tolerance` / `mesh_angular_tolerance`). Everything else in the file is a helper it
 calls. Output paths are owned by the CLI flags and never appear in the return
