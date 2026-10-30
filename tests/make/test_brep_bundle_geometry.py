@@ -46,18 +46,10 @@ def _build(instance):
     return Compound(children=[plate, post], label="toy")
 
 
-def gen_step():
-    """cadgen takes a generator without arguments; the module rebinds it to
-    the instance-taking builder, as a two-instance Component does."""
-    return _build(1)
-
-
-def _gen_step(instance=1):
+def gen_step(instance=1):
+    """`gen` builds it with no argument, the bundle with `instance=N`, as a
+    two-instance Component does (issue #80)."""
     return _build(instance)
-
-
-_gen_step.__name__ = "gen_step"
-gen_step = _gen_step  # noqa: F811
 
 
 def assembly_pose(shape, pose=None, instance=1):

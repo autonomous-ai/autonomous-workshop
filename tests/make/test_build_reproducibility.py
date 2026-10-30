@@ -23,7 +23,7 @@ from unittest import mock
 
 from workshop.runtime.package_data import product_run_domain_skill_roots
 
-from tests.make.test_make_round import _gate_output, fake_render_review, load_module
+from tests.make.test_make_round import _gate_output, _gate_report, fake_render_review, load_module
 
 ROOTS = product_run_domain_skill_roots()
 CAD_SCRIPTS = ROOTS["cad"] / "scripts"
@@ -206,6 +206,7 @@ def _fake_tools(identities: dict, calls: list):
         if tool == "render_review":
             return fake_render_review(command)
         if tool in ("check_thickness", "check_overhang"):
+            _gate_report(command)
             stdout, code = _gate_output(tool, fails=False)
             return subprocess.CompletedProcess(command, code, stdout, "")
         return subprocess.CompletedProcess(command, 0, '{"ok":true}\n', "")

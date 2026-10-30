@@ -209,6 +209,42 @@ class MeshGateAgreementTest(unittest.TestCase):
         self.assertIn("face 4 (bspline, 1.50 mm2) centred at (1.0, 2.0, 3.0)", stdout)
 
 
+
+class ThicknessReportTest(unittest.TestCase):
+    """The report lists every thin region, past the console's first six."""
+
+    def test_more_passing_regions_than_the_console_shows_are_all_reported(self):
+        from build123d import Box, Pos
+        module = runpy.run_path(str(SCRIPTS / "check_thickness"))
+        main = module["main"]
+        taper = {"kind": "taper", "thinnest": 0.4, "samples": 3, "area": 0.01,
+                 "extent": 0.5, "width": 0.3}
+        regions = [{**taper, "at": (float(i), 0.0, 0.25)} for i in range(module["REPORT_REGIONS"] + 3)]
+        with tempfile.TemporaryDirectory() as tmp:
+            report = Path(tmp) / "thickness.md"
+            entry = Path(tmp) / "part_plate.step.py"
+            patches = {
+                "resolve_single_entry": lambda _: entry,
+                "entry_role": lambda _: "fixture",
+                # A thin plate, so samples fall under the wall and the
+                # (patched) regions are reported.
+                "entry_shape": lambda *_: Pos(0, 0, 0.25) * Box(20, 20, 0.5),
+                "thin_regions": lambda *_args, **_kw: ([dict(r) for r in regions], len(regions)),
+            }
+            out = io.StringIO()
+            with mock.patch.dict(main.__globals__, patches), \
+                    mock.patch.object(sys, "argv", ["check_thickness", str(entry), "--report", str(report)]), \
+                    contextlib.redirect_stdout(out):
+                code = main()
+            self.assertEqual(code, 0, out.getvalue())
+            self.assertIn("RESULT: printable at this wall", out.getvalue())
+            self.assertIn("... and 3 smaller region(s)", out.getvalue())
+            text = report.read_text(encoding="utf-8")
+        rows = [line for line in text.splitlines() if line.startswith("| ") and "| taper |" in line]
+        self.assertEqual(len(rows), len(regions))
+        self.assertTrue(all("| 0.40 mm |" in row for row in rows), rows)
+        self.assertIn("RESULT: printable at this wall", text)
+
 ENTRY_HEAD = "from build123d import *\nfrom features import print_details\nPRINTABLE = True\n"
 
 

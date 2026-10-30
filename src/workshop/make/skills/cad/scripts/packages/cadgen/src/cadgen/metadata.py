@@ -83,6 +83,24 @@ def resolve_mesh_settings(
     )
 
 
+def _optional_instance_only(arguments: ast.arguments) -> bool:
+    """No argument, or one optional `instance`.
+
+    Workshop-local (issue #80): a part file that builds each instance of a
+    repeated geometry differently takes `gen_step(instance=1)` (or
+    `gen_step(*, instance=None)`); `gen` still calls it with no argument, and
+    make_round's B-rep bundle builds `gen_step(instance=N)`.
+    """
+    if arguments.posonlyargs:
+        return False
+    named = arguments.args + arguments.kwonlyargs
+    if not named:
+        return True
+    defaulted = (arguments.defaults[-1:] if arguments.args
+                 else [default for default in arguments.kw_defaults if default is not None])
+    return len(named) == 1 and named[0].arg == "instance" and len(defaulted) == 1
+
+
 def parse_generator_metadata(script_path: Path) -> GeneratorMetadata | None:
     try:
         tree = ast.parse(script_path.read_text(), filename=str(script_path))
@@ -113,9 +131,10 @@ def parse_generator_metadata(script_path: Path) -> GeneratorMetadata | None:
             # Recorded only so the catalog can refuse the file: DXF drawings are unsupported.
             continue
 
-        if node.args.args or node.args.posonlyargs or node.args.kwonlyargs:
+        if not _optional_instance_only(node.args):
             raise ValueError(
-                f"{_display_path(script_path)} {node.name}() must not require arguments"
+                f"{_display_path(script_path)} {node.name}() must not require arguments "
+                "(only an optional `instance` is allowed)"
             )
         if node.args.vararg or node.args.kwarg:
             raise ValueError(

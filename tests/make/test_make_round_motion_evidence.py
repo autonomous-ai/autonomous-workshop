@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from tests.make.test_make_round import _gate_output, fake_visual_render, load_module, record_fixture_visual_pass
+from tests.make.test_make_round import _gate_output, _gate_report, fake_visual_render, load_module, record_fixture_visual_pass
 
 
 class MakeRoundMotionEvidenceTest(unittest.TestCase):
@@ -46,6 +46,7 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
                 if tool in ("check_thickness", "check_overhang", "check_mesh"):
                     # These fixtures are about motion evidence; keep the print
                     # gates green so a motion verdict is the only variable.
+                    _gate_report(command)
                     gate_out, code = (_gate_output(tool, fails=False) if tool != "check_mesh"
                                       else ("RESULT: printable\n", 0))
                     log.write_text(gate_out)

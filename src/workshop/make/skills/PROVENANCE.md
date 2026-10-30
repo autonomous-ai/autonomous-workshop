@@ -1,5 +1,30 @@
 # Shared skill provenance
 
+## Workshop-local: cadgen accepts an optional `instance`; check_thickness reports every region (2026-10-30)
+
+- **Local patch to upstream cadgen (upstream needs the same change).**
+  `cadgen/metadata.py` refused every `gen_step` with an argument, so a part
+  file following make-round's issue #80 convention, `gen_step(instance=1)`
+  (or `gen_step(*, instance=None)`), could not be built by `gen`, though
+  `brepbundle.py` builds `gen_step(instance=N)` for each instance. `gen` now
+  accepts one optional `instance` and still refuses a required, positional-
+  only, variadic or any other argument. `step-generation.md` says so. Upstream
+  `autonomous-product-to-cad` still refuses it; until it takes the same change,
+  a resync must keep `_optional_instance_only` and its tests
+  (`tests/make/test_cadgen_instance_argument.py`).
+- **Workshop-only fix in `check_thickness`.** The Workshop's feature naming
+  (#82) set each region's `short` and `feature` only on the regions the
+  console shows (6, or every failing one), but the `--report` table lists
+  every region. A part with more thin regions than that, all passing, printed
+  its PASS and then crashed with `KeyError: 'short'`, exiting 1 with no
+  report. Every region now carries `short`; regions past the console's list
+  report `-` as their feature. Upstream's `check_thickness` has no `short`
+  field and is unaffected.
+- `cad`'s lock also takes `check_motion`'s crop change (#153), which was
+  merged without refreshing `LOCK.json`. `make-round` moves for its
+  fail-closed gate parse (a printed PASS needs exit 0 and the requested
+  report). `source_commit` values are unchanged.
+
 ## Resync to upstream `23089af`: dead cadgen code out, off-grid bridges, toy-archetype wiki (2026-10-29)
 
 - Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at

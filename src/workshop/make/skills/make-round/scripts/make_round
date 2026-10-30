@@ -1207,8 +1207,21 @@ def unmeasurable(parsed: dict, stdout: str) -> dict:
     return parsed
 
 
+def requested_report(done) -> Path | None:
+    """The `--report` file a gate run was asked to write, if any."""
+    command = [str(arg) for arg in (done.args if isinstance(done.args, (list, tuple)) else [])]
+    if "--report" not in command[:-1]:
+        return None
+    return Path(command[command.index("--report") + 1])
+
+
 def parse_gate(gate: str, done) -> dict:
-    """One print (or paper) gate run's verdict, as a round records it."""
+    """One print (or paper) gate run's verdict, as a round records it.
+
+    Fail closed: a printed PASS counts only when the gate also exited 0 and
+    wrote the report it was asked for. A gate that crashed after printing its
+    verdict (check_thickness once did, while writing its report) is no pass.
+    """
     parsed = (parse_mesh(done.stdout, done.returncode) if gate == "mesh" else
               parse_paper(done.stdout, done.returncode) if gate == "paper" else
               (parse_thickness if gate == "thickness" else parse_overhang)(done.stdout))
@@ -1225,6 +1238,15 @@ def parse_gate(gate: str, done) -> dict:
             ["check_%s exit %d: %s" % (gate, done.returncode, tail(done.stderr)[:60])]
             + parsed["failures"]
         )[:4]
+    if parsed["verdict"] == "PASS":
+        report = requested_report(done)
+        failure = ("check_%s exit %d after a passing result: %s"
+                   % (gate, done.returncode, tail(done.stderr)[:60]) if done.returncode != 0 else
+                   "check_%s wrote no report %s" % (gate, report.name)
+                   if report is not None and not report.is_file() else None)
+        if failure:
+            parsed["verdict"] = "FAIL"
+            parsed["failures"] = [failure]
     return parsed
 
 
@@ -4407,14 +4429,9 @@ def shared_helper_check(project: Path, args, cad: Path) -> int:
             done = run([python, str(cad / ("check_" + gate)), str(sample), *extra,
                         "--report", str(out / ("%s-%s.md" % (gate, name)))],
                        cwd=project, log=out / ("%s-%s.log" % (gate, name)), extra_env=path_env)
-            parsed = (parse_thickness if gate == "thickness" else parse_overhang)(done.stdout)
-            if done.returncode == GATE_UNMEASURABLE:
-                unmeasurable(parsed, done.stdout)
-            elif done.returncode not in (0, 1):
-                # A gate that could not measure never passes a sample.
-                parsed["verdict"] = "FAIL"
-                parsed["failures"] = (["check_%s exit %d" % (gate, done.returncode)] + parsed["failures"])[:4]
-            gates[gate] = parsed
+            # A gate that could not measure, crashed or wrote no report never
+            # passes a sample.
+            gates[gate] = parse_gate(gate, done)
         item.update(gates)
         failures = [f for gate in gates.values() if gate["verdict"] != "PASS" for f in gate["failures"]]
         item.update(verdict="PASS" if all(g["verdict"] == "PASS" for g in gates.values()) else "FAIL",
