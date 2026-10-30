@@ -18,7 +18,7 @@ from workshop.runtime.package_data import product_run_domain_skill_roots
 from workshop.wish.design_contract import parse_design_contract
 from tests.make.test_kit_tree import kit_tree as TOOL, sealed_block, sealed_kit
 from tests.make.test_make_round import (
-    _gate_output, _install_gate_identity, fake_render_review, load_module,
+    _gate_output, _gate_report, _install_gate_identity, fake_render_review, load_module,
 )
 from tests.wish.test_assembly_tree import _catalogues
 from tests.wish.test_design_contract import _contract_text
@@ -158,6 +158,7 @@ class RoundTreeGateTest(unittest.TestCase):
             if tool == "kit_tree.py":
                 return subprocess.CompletedProcess(command, code, stdout, "")
             if tool in ("check_thickness", "check_overhang"):
+                _gate_report(command)
                 out, rc = _gate_output(tool, fails=False)
                 return subprocess.CompletedProcess(command, rc, out, "")
             return subprocess.CompletedProcess(command, 0, '{"ok":true}\n', "")

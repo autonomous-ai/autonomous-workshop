@@ -21,7 +21,7 @@ from unittest import mock
 
 from tests.make.test_kit_print_parts import CABINET, described
 from tests.make.test_kit_tree import sealed_block, sealed_kit
-from tests.make.test_make_round import _gate_output, load_module
+from tests.make.test_make_round import _gate_output, _gate_report, load_module
 from tests.wish.test_design_contract import _contract_text
 
 GATES = ("check_thickness", "check_overhang", "check_mesh")
@@ -59,6 +59,7 @@ class FakeTools:
             if tool == "check_mesh":
                 stdout, code = ("  FAIL  closed mesh\nRESULT: OPEN MESH\n", 1) if fails else ("RESULT: printable\n", 0)
             else:
+                _gate_report(command)
                 stdout, code = _gate_output(tool, fails=fails)
         log.write_text(stdout, encoding="utf-8")
         return subprocess.CompletedProcess(command, code, stdout, "gen failed\n" if code and tool == "gen" else "")

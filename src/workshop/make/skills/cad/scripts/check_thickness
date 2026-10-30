@@ -678,9 +678,13 @@ def main():
         failed |= status == "FAIL"
     shown = regions[:max(REPORT_REGIONS, len(failing))]
     tags = feature_tags() if shown and shape is not None else []
+    # The report lists every region, so each carries its shortfall; only the
+    # shown ones are named, the rest report `-` as their feature.
+    for r in regions:
+        r["short"] = min_wall - r["thinnest"]
+        r["feature"] = None
     for r in shown:
         r["feature"] = nearest_feature(shape, r["at"], tags)
-        r["short"] = min_wall - r["thinnest"]
     if shown:
         print(f"        every thin region, failing first -- repair them in one round, "
               f"not one per run:")
@@ -711,7 +715,8 @@ def main():
             "at all, and is usually the surface normal misbehaving at a sharp "
             "convex corner.\n\n"
             "`feature` is the print-details feature the region lies on, else the "
-            "nearest B-rep face; `under limit` is how far its thinnest point is "
+            f"nearest B-rep face, for the {len(shown)} region(s) the console shows "
+            "(`-` past them); `under limit` is how far its thinnest point is "
             f"below the {min_wall:.2f} mm wall.\n\n"
             "| # | kind | thinnest | under limit | at | feature | samples | area mm2 | runs mm | band mm |\n"
             "|---|---|---|---|---|---|---|---|---|---|\n"

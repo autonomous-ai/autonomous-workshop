@@ -125,6 +125,15 @@ def _install_gate_identity(project):
         (scripts / name).write_text("# fixture %s\n" % name, encoding="utf-8")
 
 
+def _gate_report(command):
+    """Write the `--report` a print gate was asked for, as the real gate does;
+    make_round counts no PASS without it."""
+    if "--report" in command:
+        report = Path(command[command.index("--report") + 1])
+        report.parent.mkdir(parents=True, exist_ok=True)
+        report.write_text("# fixture report\n", encoding="utf-8")
+
+
 def _gate_output(tool, *, fails, feature=None):
     """Stand in for one print gate, in the exact shape make_round parses."""
     named = ("           at feature %s -- band-1 (part_wheel.step.py:7), 0.00 mm away; "
@@ -154,6 +163,50 @@ def _gate_output(tool, *, fails, feature=None):
         "part_wheel.step.py: 13.8 cm2 of surface\n"
         "RESULT: prints unsupported\n"
     ), 0
+
+
+class GateFailsClosedTest(unittest.TestCase):
+    """A printed PASS counts only from a gate that exited 0 and wrote the
+    report it was asked for (a check_thickness crash once passed a wall)."""
+
+    def parse(self, gate, returncode, *, report=True, stderr=""):
+        module = load_module()
+        tool = "check_thickness" if gate == "thickness" else "check_overhang"
+        stdout, _ = _gate_output(tool, fails=False)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / ("%s.md" % gate)
+            if report:
+                path.write_text("# report\n", encoding="utf-8")
+            done = subprocess.CompletedProcess(
+                ["python", tool, "part_wheel.step.py", "--report", str(path)], returncode, stdout, stderr)
+            return module.parse_gate(gate, done)
+
+    def test_a_passing_gate_with_its_report_passes(self):
+        for gate in ("thickness", "overhang"):
+            with self.subTest(gate=gate):
+                self.assertEqual(self.parse(gate, 0)["verdict"], "PASS")
+
+    def test_a_pass_printed_before_a_crash_fails(self):
+        for gate in ("thickness", "overhang"):
+            with self.subTest(gate=gate):
+                parsed = self.parse(gate, 1, report=False, stderr="KeyError: 'short'")
+                self.assertEqual(parsed["verdict"], "FAIL")
+                self.assertIn("check_%s exit 1 after a passing result" % gate, parsed["failures"][0])
+                self.assertIn("KeyError: 'short'", parsed["failures"][0])
+
+    def test_a_pass_with_a_nonzero_exit_fails_even_with_a_report(self):
+        self.assertEqual(self.parse("thickness", 1)["verdict"], "FAIL")
+
+    def test_a_pass_without_its_requested_report_fails(self):
+        parsed = self.parse("thickness", 0, report=False)
+        self.assertEqual(parsed["verdict"], "FAIL")
+        self.assertEqual(parsed["failures"], ["check_thickness wrote no report thickness.md"])
+
+    def test_a_gate_asked_for_no_report_passes_on_its_exit(self):
+        module = load_module()
+        stdout, _ = _gate_output("check_thickness", fails=False)
+        done = subprocess.CompletedProcess(["python", "check_thickness", "part_wheel.step.py"], 0, stdout, "")
+        self.assertEqual(module.parse_gate("thickness", done)["verdict"], "PASS")
 
 
 class MakeRoundTest(unittest.TestCase):
@@ -192,6 +245,7 @@ class MakeRoundTest(unittest.TestCase):
                 Path(kwargs["log"]).write_text(stdout, encoding="utf-8")
                 return subprocess.CompletedProcess(command, code, stdout, "")
             if tool in ("check_thickness", "check_overhang"):
+                _gate_report(command)
                 stdout, code = _gate_output(
                     tool,
                     fails=wall_fails if tool == "check_thickness" else overhang_fails,
@@ -647,6 +701,7 @@ class MakeRoundTest(unittest.TestCase):
                     for view in rendered_views(command):
                         (out / (view + ".png")).write_bytes(view.encode())
                 if tool in ("check_thickness", "check_overhang"):
+                    _gate_report(command)
                     stdout, code = _gate_output(tool, fails=False)
                     log = kwargs.get("log")
                     if log is not None:
@@ -801,6 +856,7 @@ class MakeRoundTest(unittest.TestCase):
                 for view in rendered_views(command):
                     (out / (view + ".png")).write_bytes(view.encode())
             if tool in ("check_thickness", "check_overhang"):
+                _gate_report(command)
                 stdout, code = _gate_output(tool, fails=False)
                 log = kwargs.get("log")
                 if log is not None:
@@ -850,6 +906,7 @@ class MakeRoundTest(unittest.TestCase):
                     for view in rendered_views(command):
                         (out / (view + ".png")).write_bytes(view.encode())
                 if tool in ("check_thickness", "check_overhang"):
+                    _gate_report(command)
                     stdout, code = _gate_output(tool, fails=False)
                     log = kwargs.get("log")
                     if log is not None:
@@ -927,6 +984,7 @@ class MakeRoundTest(unittest.TestCase):
                     for view in rendered_views(command):
                         (out / (view + ".png")).write_bytes(view.encode())
                 if tool in ("check_thickness", "check_overhang"):
+                    _gate_report(command)
                     stdout, code = _gate_output(tool, fails=False)
                     log = kwargs.get("log")
                     if log is not None:
@@ -1176,6 +1234,7 @@ class SealedReferenceTest(unittest.TestCase):
             if tool == "render_review":
                 return fake_render_review(command)
             if tool in ("check_thickness", "check_overhang"):
+                _gate_report(command)
                 stdout, code = _gate_output(tool, fails=bool(faults.get("wall")) and tool == "check_thickness")
                 log = kwargs.get("log")
                 if log is not None:
@@ -2507,6 +2566,7 @@ class InterfaceTest(unittest.TestCase):
             return fake_render_review(command)
         if tool in ("check_thickness", "check_overhang"):
             fails = tool == "check_thickness" and Path(command[2]).name in faults.get("wall", ())
+            _gate_report(command)
             stdout, code = _gate_output(tool, fails=fails)
             log = kwargs.get("log")
             if log is not None:

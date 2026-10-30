@@ -23,7 +23,7 @@ from unittest import mock
 
 from workshop.runtime.package_data import product_run_domain_skill_roots
 from tests.make.test_kit_tree import sealed_kit
-from tests.make.test_make_round import _gate_output, _install_gate_identity, fake_render_review, load_module
+from tests.make.test_make_round import _gate_output, _gate_report, _install_gate_identity, fake_render_review, load_module
 from tests.make.test_make_round_kit_tree import report_line
 
 ROOTS = product_run_domain_skill_roots()
@@ -133,6 +133,7 @@ class GatedRound:
             if tool == "check_mesh":
                 stdout, code = ("  FAIL  closed mesh\nRESULT: OPEN MESH\n", 1) if fails else ("RESULT: printable\n", 0)
             else:
+                _gate_report(command)
                 stdout, code = _gate_output(tool, fails=fails)
             Path(kwargs["log"]).parent.mkdir(parents=True, exist_ok=True)
             Path(kwargs["log"]).write_text(stdout, encoding="utf-8")
