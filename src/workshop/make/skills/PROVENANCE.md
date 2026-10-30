@@ -1,5 +1,23 @@
 # Shared skill provenance
 
+## Workshop-local: check_overhang measures a bridge across itself (2026-10-30)
+
+- **Local patch to upstream `cad` (upstream needs the same change).**
+  `check_overhang` took a region's span as its plan box's short side or its
+  principal width, so the ceiling over a 5 mm ring groove under a 103 mm
+  coaster read as a 103 mm span and needed support. `classify` now measures a
+  region wider than `--bridge` again with `across`: for every sample the
+  shortest chord, in 16 plan directions, that ends in material on both sides
+  at the region's level (not under its own footprint), and the span is the
+  longest of those. It only ever shortens a span, still needs `flanked`, and
+  the 45 degree and `--bridge` limits are unchanged; a disc or wide ceiling,
+  or a ring lip held from outside only, still fails. Two self-check fixtures
+  (a square ring groove bridges; the same ring as a lip does not) and
+  `tests/make/test_check_overhang_bridge_span.py` pin it. Upstream
+  `autonomous-product-to-cad` `main` still measures the box; until it takes
+  the same change, a resync must keep `across` and its fixtures.
+- Only `cad`'s lock moves; `source_commit` values are unchanged.
+
 ## Workshop-local: make-round documents an external power source (2026-10-30)
 
 - `make-round/SKILL.md` gains ADR 0095's external-source amendment: a

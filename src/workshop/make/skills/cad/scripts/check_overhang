@@ -333,11 +333,66 @@ def reach(inside, origin, pitch, region, levels):
     return float(field[cell[:, 0], cell[:, 1]].max())
 
 
+ACROSS_DIRECTIONS = 16  # plan directions a chord is tried in, over half a turn
+
+
+def across(inside, origin, pitch, region, limit):
+    """The widest chord the print head crosses under this region: its true span.
+
+    A box measures a ceiling over a ring groove as the whole circle, though the
+    head crosses it from the groove's inner wall to its outer one. So for every
+    sample the shortest chord through it, in any plan direction, that ends in
+    material on both sides at the region's own level; the span is the longest
+    of those, since every sample has to be crossed. Material under the region's
+    own footprint does not count: under a sloped ceiling the slice cuts through
+    the solid the ceiling roofs, which holds nothing up. A chord longer than
+    `limit` is not measured; `inf` says some sample has none that short.
+    """
+    from scipy.ndimage import binary_dilation
+
+    shape = inside.shape
+    k = int(np.floor((region["z"] - pitch - origin[2]) / pitch))
+    if not (0 <= k < shape[2]):
+        return float("inf")
+    xy = region["points"][:, :2]
+    cells = np.floor((xy - origin[:2]) / pitch).astype(int)
+    held = np.all((cells >= 0) & (cells < shape[:2]), axis=1)
+    foot = np.zeros(shape[:2], dtype=bool)
+    foot[cells[held, 0], cells[held, 1]] = True
+    level = inside[:, :, k] & ~binary_dilation(foot, structure=np.ones((3, 3), dtype=bool))
+    steps = int(np.ceil(limit / pitch)) + 1
+    widest = np.full(len(xy), np.inf)
+    for angle in np.arange(ACROSS_DIRECTIONS) * np.pi / ACROSS_DIRECTIONS:
+        d = np.array([np.cos(angle), np.sin(angle)])
+        width = np.zeros(len(xy))
+        for sign in (1.0, -1.0):
+            gone = np.full(len(xy), np.inf)
+            live = np.arange(len(xy))
+            for step in range(1, steps + 1):
+                if live.size == 0:
+                    break
+                probe = np.floor((xy[live] + sign * d * step * pitch - origin[:2])
+                                 / pitch).astype(int)
+                within = np.all((probe >= 0) & (probe < shape[:2]), axis=1)
+                hit = np.zeros(live.size, dtype=bool)
+                hit[within] = level[probe[within, 0], probe[within, 1]]
+                gone[live[hit]] = step * pitch
+                live = live[~hit & within]
+            width += gone
+        widest = np.minimum(widest, width)
+    span = float(widest.max())
+    return span if span <= limit else float("inf")
+
+
 def classify(inside, origin, pitch, regions, bridge, ledge):
     """Name every region, and record the reach that decided the close ones."""
     levels = {}
     for region in regions:
         region["reach"] = reach(inside, origin, pitch, region, levels)
+        if region["span"] > bridge and region["area"] >= MIN_REGION_AREA:
+            # A ring or a curve is wider in its box than across itself.
+            region["span"] = min(region["span"],
+                                 across(inside, origin, pitch, region, bridge))
         if region["area"] < MIN_REGION_AREA:
             region["kind"] = "trace"
         elif region["span"] <= bridge and flanked(inside, origin, pitch, region, bridge):
@@ -594,6 +649,19 @@ def _self_check() -> int:
     long_span = (_box(0, 0, 0, 6, 20, 20) + _box(6, 0, 14, 46, 20, 20)
                  + _box(46, 0, 0, 52, 20, 20))
     fixture("too long a span still needs support", _measure(long_span, bridge=12.0), "overhang")
+
+    # A ring groove under a 110 mm plate, 5 mm wide: its ceiling's box is the
+    # whole plate, but the head crosses only the 5 mm between its walls.
+    frame = (_box(0, 0, 0, 110, 3, 5) + _box(0, 107, 0, 110, 110, 5)
+             + _box(0, 3, 0, 3, 107, 5) + _box(107, 3, 0, 110, 107, 5))
+    roof = (_box(3, 3, 2, 107, 8, 5) + _box(3, 102, 2, 107, 107, 5)
+            + _box(3, 8, 2, 8, 102, 5) + _box(102, 8, 2, 107, 102, 5))
+    fixture("a ring groove's ceiling bridges across the groove, not the plate",
+            _measure(frame + roof + _box(8, 8, 0, 102, 102, 5)), "bridge")
+
+    # The same ring with nothing inside it is a lip held from outside only.
+    fixture("the same ring as a lip with nothing inside still needs support",
+            _measure(frame + roof), "overhang")
 
     # A cap on a stem: short enough to bridge, and nothing at its rim to bridge
     # FROM. The material a centre-out flank probe finds is the stem holding the
