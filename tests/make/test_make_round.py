@@ -584,6 +584,36 @@ class MakeRoundTest(unittest.TestCase):
             command = run.call_args.args[0]
             self.assertEqual(command[command.index("--check-motion") + 1], "false")
 
+    def test_full_names_the_power_class_an_image_derived_run_needs(self):
+        # verify_project refuses an image-derived final run that is neither
+        # --powered nor --unpowered.
+        for powered in (False, True):
+            with tempfile.TemporaryDirectory() as tmp:
+                project = Path(tmp)
+                module, summary = self._round(project)
+                summary["refs"] = summary.get("refs") or ["ref/front.png"]
+                (project / "measure/rounds/r0001/summary.json").write_text(json.dumps(summary))
+                if powered:
+                    (project / "measure/power.json").write_text("{}")
+                feedback = self._feedback(project, summary)
+                with mock.patch.object(module, "skills_root", return_value=project), \
+                        mock.patch.object(module, "run", return_value=subprocess.CompletedProcess([], 0, "", "")) as run, \
+                        contextlib.redirect_stdout(io.StringIO()):
+                    module.main([str(project), "--record-visual", str(feedback), "--full"])
+                command = run.call_args.args[0]
+                self.assertIn("--image-derived", command)
+                self.assertIn("--powered" if powered else "--unpowered", command)
+                self.assertNotIn("--unpowered" if powered else "--powered", command)
+
+    def test_a_run_that_is_not_image_derived_names_no_power_class(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            (project / "measure").mkdir()
+            (project / "measure/power.json").write_text("{}")
+            self.assertEqual(module.power_options(project, False), [])
+            self.assertEqual(module.power_options(project, True), ["--powered"])
+
     def test_full_runs_only_after_clean_visual_feedback_and_retains_verifier_failure(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)
