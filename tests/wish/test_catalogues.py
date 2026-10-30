@@ -120,6 +120,13 @@ class CatalogueTest(unittest.TestCase):
         self.assertEqual((filaments["jade"].hex, filaments["jade"].kind), ("#3f9a85", "opaque"))
         self.assertEqual((filaments["mint"].hex, filaments["mint"].kind), ("#a3d9c3", "opaque"))
 
+    def test_the_packaged_seed_holds_the_toadstool_red(self):
+        # Owner, 2026-10-30: scarlet red added for the toadstool headphone stand.
+        filaments = load_catalogues().filaments
+        self.assertEqual(
+            (filaments["scarlet-red"].hex, filaments["scarlet-red"].kind), ("#de4343", "opaque")
+        )
+
 
     def test_the_packaged_seed_holds_the_mac_fidget_circuit_unconfirmed(self):
         # ADR 0095: cells, contacts and a switch are categories of their own,
