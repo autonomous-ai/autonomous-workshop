@@ -230,12 +230,14 @@ file.
 ## Stage 4 - Visual review
 
 ### Offer two variants for a taste question
-- **Why:** the owner decides by picture; questions like "fern or the
-  earlier plant?" or "is this a style clash?" settled in one round when
-  both options were drawn side by side, and dragged when asked in words.
+- **Why:** the owner decides by picture; "fern or the earlier plant?"
+  settled in one round drawn side by side, and dragged when asked in words.
 - **How to apply:** for any choice of style, species, prop or layout, draw
   both options from the same base image (one change each) and publish them
-  side by side with one line each.
+  side by side with one line each. For a lit or translucent detail, show
+  the variants as one backlit sheet at true scale and gate each: lines
+  under 2 mm pitch blur in a 2 mm plate, and the library's 1.6 web is a
+  margin, not the gate's 0.8; write a chosen exception into the contract.
 
 ### Name the two objects that touch before fixing a region the owner flags
 - **Why:** "the lower part of this image is wrong" was fixed three times as
