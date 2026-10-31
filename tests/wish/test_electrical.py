@@ -216,22 +216,10 @@ class KitElectricalTest(unittest.TestCase):
 
 
 def _mac_usb_catalogues():
-    """The packaged catalogue plus the USB Mac fidget's seeds, test-only:
-    the owner confirms the real seeds (WORKSHOP-READINESS.md)."""
+    """The packaged catalogue, which holds the USB Mac fidget's seeds since
+    the owner approved them (2026-10-30); every one is still unconfirmed."""
 
-    packaged = load_catalogues()
-    filaments = {"schema_version": 1, "filaments": [
-        {"id": "navy", "name": "Navy", "hex": "#112233", "kind": "opaque", "confirmed": True}]}
-    parts = [{"id": entry.id, "name": entry.name, "category": entry.category,
-              "sizes": copy.deepcopy(list(entry.sizes)), "pack": None, "source": None, "confirmed": False}
-             for entry in packaged.parts.values()]
-    lead = [{"what": "lead diameter", "max_mm": [0.6]}]
-    for identifier, category in (("usb-c-receptacle-power", "other"), ("led-2835-warm-2200k", "lamp"),
-                                 ("resistor-150r", "other"), ("resistor-470r", "other"),
-                                 ("resistor-110r", "other")):
-        parts.append({"id": identifier, "name": identifier, "category": category, "sizes": lead,
-                      "pack": None, "source": None, "confirmed": False})
-    return parse_catalogues(filaments, {"schema_version": 1, "parts": parts})
+    return load_catalogues()
 
 
 def _mac_usb():
