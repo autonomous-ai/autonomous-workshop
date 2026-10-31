@@ -8,8 +8,10 @@ spool is said out loud: ``arm_black``,
 ``leg_dark_brown``, ``canopy_misty_blue``.
 
 The names here are exactly the ones the CAD skill's filament palette stocks
-(``make/skills/cad/scripts/cadfilament.py``): 43 distinct colours across the 51
-spools of Bambu Lab PLA Lite, PLA Matte and PETG Basic.  Eight names are in
+(``make/skills/cad/scripts/cadfilament.py``): every id of the owner's filament
+catalogue (``wish/catalogues/filaments.json``, read here, so a colour the owner
+adds there is a name at once; issue #160), and the 43 distinct colours across
+the 51 spools of Bambu Lab PLA Lite, PLA Matte and PETG Basic.  Eight names are in
 more than one stock, so a name alone does not say which spool -- the *colour*
 does not have to be decidable from the name for the name to be useful, and this
 module deliberately does not try to decide it.  It answers one question: does this
@@ -31,20 +33,24 @@ still open.
 
 from __future__ import annotations
 
+import json
 from typing import Optional, Tuple
+
+from workshop.wish.catalogues import CATALOGUE_DIRECTORY, FILAMENTS_FILE
 
 
 __all__ = [
+    "BAMBU_COLOUR_NAMES",
+    "CATALOGUE_COLOUR_NAMES",
     "FILAMENT_COLOUR_NAMES",
     "normalise_colour_name",
     "occurrence_colour_name",
 ]
 
 
-#: Every colour name the filament palette stocks, in the ``_``-joined form an
-#: occurrence name carries.  The union of every stock: a part is named for the
-#: colour it prints in, not for the stock it prints from.
-FILAMENT_COLOUR_NAMES: Tuple[str, ...] = (
+#: Every Bambu colour name the filament palette stocks, in the ``_``-joined
+#: form an occurrence name carries.  The union of the three Bambu stocks.
+BAMBU_COLOUR_NAMES: Tuple[str, ...] = (
     "apple_green",
     "ash_gray",
     "beige",
@@ -90,12 +96,6 @@ FILAMENT_COLOUR_NAMES: Tuple[str, ...] = (
     "yellow",
 )
 
-# Longest first, so `arm_navy_blue` reports `navy_blue` rather than the `blue`
-# that also ends it, and `leg_dark_gray` reports the spool it means.
-_BY_LENGTH: Tuple[str, ...] = tuple(
-    sorted(FILAMENT_COLOUR_NAMES, key=lambda name: (-len(name), name))
-)
-
 
 def normalise_colour_name(text: str) -> str:
     """Return a colour name in the ``_``-joined form this module compares.
@@ -108,6 +108,27 @@ def normalise_colour_name(text: str) -> str:
     if not isinstance(text, str):
         raise TypeError("a colour name must be text")
     return "_".join(text.replace("-", " ").replace("_", " ").lower().split())
+
+
+def _catalogue_colour_names() -> Tuple[str, ...]:
+    document = json.loads((CATALOGUE_DIRECTORY / FILAMENTS_FILE).read_text(encoding="utf-8"))
+    return tuple(sorted({normalise_colour_name(item["id"]) for item in document["filaments"]}))
+
+
+#: Every id of the owner's filament catalogue, ``_``-joined: ``dark-oak`` is
+#: ``dark_oak``.  The catalogue is the source of truth for a contract's colours.
+CATALOGUE_COLOUR_NAMES: Tuple[str, ...] = _catalogue_colour_names()
+
+#: Every colour an occurrence name may end in: the catalogue's and the Bambu
+#: stocks'.  A part is named for the colour it prints in, not for the stock it
+#: prints from.
+FILAMENT_COLOUR_NAMES: Tuple[str, ...] = tuple(sorted(set(BAMBU_COLOUR_NAMES) | set(CATALOGUE_COLOUR_NAMES)))
+
+# Longest first, so `arm_navy_blue` reports `navy_blue` rather than the `blue`
+# that also ends it, and `leg_dark_gray` reports the spool it means.
+_BY_LENGTH: Tuple[str, ...] = tuple(
+    sorted(FILAMENT_COLOUR_NAMES, key=lambda name: (-len(name), name))
+)
 
 
 def occurrence_colour_name(name: str) -> Optional[str]:

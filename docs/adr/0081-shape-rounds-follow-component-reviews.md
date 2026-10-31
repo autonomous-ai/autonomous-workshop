@@ -14,6 +14,8 @@
   Reviewer" below) and spec C (Interfaces, which add an Interface failure as
   a third unlock reason; ADR 0082); amended by issue #97 (2026-10-04, see
   "Amendment: a Blocked Report ruling binds the Component Reviewer" below)
+  and by issue #160 (2026-10-31, see "Amendment: colour is not geometry"
+  below)
 
 ## Context
 
@@ -331,6 +333,85 @@ with no ruling in the packet refused, and an invalid ledger refusing the
 round before a build. `make_round --self-check` holds the ruling selection
 and the carry key rule. The agent asset tests hold the reviewer and worker
 definitions.
+
+## Amendment: colour is not geometry (2026-10-31, issue #160)
+
+Status: Accepted; implemented and deterministically tested; not yet
+validated by a live run.
+
+### Context
+
+The K4 Turtle Moods keycap run (`wish-20261030-072553-fb4cc33d`) kept its
+filament choices in `params.py`, the Shared Helper all nine Components
+import. Its colours had to be substituted (the host name gate and the run
+palette did not know the owner's catalogue), and putting the contract's
+colours back means editing that file. Under decision 7 every Component then
+records a `shared-helper` unlock, every Coupled Interface check goes stale
+and the helper freeze reports a change (ADR 0082), although no B-rep moves:
+the B-rep identity samples geometry only, and a recolour never changes it.
+The owner's rule: a colour-only change must not force a rebuild or a Shape
+Round of an unchanged Component, and costs at most a re-review of the
+recoloured images.
+
+### Decision
+
+For new runs, and for any run whose tools are refreshed:
+
+1. **The Colour Module.** `colours.py` at the CAD project root, holding only
+   a docstring and assignments of literal values to plain names
+   (`HEAD = ("mint", "catalogue")`), is the one module a Component may import
+   that is neither a Geometry Source nor a Shared Helper
+   (`geometry_sources.colour_module`). A component packet, a lock's and the
+   carry's `imported_helpers`, an Interface check's sources, the helper
+   freeze and the motion evidence do not bind it, so a recolour there stales
+   none of them, unlocks no Component and counts no Shape Round.
+2. **What still sees colour.** `gen` tracks the module through its Python
+   import closure, so each STEP is rebuilt in its new colour. The assembly
+   packet and `verify_project`'s sweep reuse key bind it, so the assembly
+   round, the blind review and `--full` judge the new colours.
+3. **What still guards geometry.** Locks, carry keys and
+   `--require-component-passes` compare B-rep identity, which the Colour
+   Module cannot change without being seen: a geometry change made through
+   it is refused on a locked Component like any other change without an
+   unlock reason. A `colours.py` holding anything else (an import, a
+   function, a computed value) is an ordinary Shared Helper and binds as
+   one.
+4. **No component re-review.** A recolour needs no component round; a
+   Component rerun after one carries its review (decision 6). The
+   recoloured images are judged once, in the assembly round.
+5. **Guidance.** The Make reference, the make-round skill and the CAD
+   skill's colour section say: keep every colour choice in `colours.py`,
+   never in `params.py` or another Shared Helper.
+
+### Consequences
+
+- A recolour costs one assembly round, the blind review and the final
+  verifier, and nothing per Component.
+- A run that keeps its colours in a Shared Helper still unlocks its
+  importers on a recolour, as before; an unchanged rerun of each then
+  carries its review without a render or a reviewer call, since a recolour
+  leaves the carry key unchanged. Moving the colours into `colours.py` is a
+  Shared Helper change of the same kind, paid once.
+- A component review never re-judges colour. That is deliberate: the
+  reviewer compares form against the reference (ADR 0076).
+
+### Compatibility
+
+Runs created before this change keep their materialized tools on resume; a
+`colours.py` in them is an ordinary Shared Helper. `workshop resume
+--refresh-tools` or a `workshop fix` run gets the new rule. No contract
+schema, state or summary field changes.
+
+### Verification
+
+Geometry-source tests cover the Colour Module excluded from a Component's
+and the project's sources, a recolour leaving them unchanged, a module with
+code or not at the project root treated as a Shared Helper, and the sweep
+reuse key moving on a recolour. `make_round` tests cover a locked Component
+whose recolour carries its review with no unlock or Shape Round and still
+refuses a geometry change, a `colours.py` with code unlocking as a Shared
+Helper, the assembly packet binding the module, and an Interface check and
+the helper freeze left current by a recolour.
 
 ## Rejected alternatives
 

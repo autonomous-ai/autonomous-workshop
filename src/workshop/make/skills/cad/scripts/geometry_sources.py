@@ -14,6 +14,15 @@ Imports are read from the source with `ast`, never executed: a Component
 binds the project modules its `import` statements reach, directly or through
 another such module, and nothing else.
 
+The Colour Module, `colours.py` at the project root, is the one module a
+Component may import that is not a Geometry Source (issue #160): colour is
+not geometry, so recolouring the toy stales no shape check and unlocks no
+Component. It holds only literal assignments (`HEAD = ("mint", "catalogue")`);
+a module named so that holds anything else, a function, an import or a
+computed value, is an ordinary Shared Helper and binds as one. A geometry
+change smuggled through it would still move the B-rep identity, which every
+lock and carry compares.
+
     python geometry_sources.py <project-dir>      # prints the map as JSON
 """
 
@@ -28,6 +37,7 @@ from typing import Callable, Iterable
 
 ENTRY_SUFFIX = ".step.py"
 PART_PREFIX = "part_"
+COLOUR_MODULE = "colours.py"
 # Directories that hold no geometry entry: evidence, audits, notes, renders,
 # references, the Shared Helper samples, caches. A module under one of them
 # is still a Geometry Source when an entry imports it.
@@ -39,6 +49,41 @@ NON_GEOMETRY_DIRS = frozenset({
 
 def file_hash(path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def is_colour_data(path: Path) -> bool:
+    """Whether ``path`` holds only a docstring and assignments of literal
+    values to plain names: data a recolour may change, never code."""
+
+    try:
+        tree = ast.parse(Path(path).read_text(encoding="utf-8"))
+    except (OSError, SyntaxError, UnicodeError, ValueError):
+        return False
+    for index, node in enumerate(tree.body):
+        if index == 0 and isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant) \
+                and isinstance(node.value.value, str):
+            continue
+        if isinstance(node, ast.Assign):
+            targets, value = node.targets, node.value
+        elif isinstance(node, ast.AnnAssign) and node.value is not None and node.simple:
+            targets, value = [node.target], node.value
+        else:
+            return False
+        if not all(isinstance(target, ast.Name) for target in targets):
+            return False
+        try:
+            ast.literal_eval(value)
+        except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
+            return False
+    return True
+
+
+def colour_module(project: Path) -> Path | None:
+    """The project's Colour Module, resolved, when it exists and holds only
+    colour data; else None (a ``colours.py`` with code is a Shared Helper)."""
+
+    path = (Path(project).resolve() / COLOUR_MODULE)
+    return path.resolve() if path.is_file() and is_colour_data(path) else None
 
 
 def _module_files(project: Path, base: Path, dotted: str, level: int) -> list[Path]:
@@ -64,10 +109,12 @@ def _module_files(project: Path, base: Path, dotted: str, level: int) -> list[Pa
 
 def imported_modules(project: Path, source: Path) -> list[Path]:
     """Every project-local module ``source`` imports, directly or through
-    another such module, resolved, without ``source`` itself."""
+    another such module, resolved, without ``source`` itself or the Colour
+    Module."""
 
     project = Path(project).resolve()
     source = Path(source).resolve()
+    colours = colour_module(project)
     found: dict[Path, None] = {}
     pending = [source]
     seen = set()
@@ -93,7 +140,7 @@ def imported_modules(project: Path, source: Path) -> list[Path]:
             for dotted, level in targets:
                 for path in _module_files(project, module.parent, dotted, level):
                     resolved = path.resolve()
-                    if resolved != source and resolved not in found:
+                    if resolved != source and resolved != colours and resolved not in found:
                         found[resolved] = None
                         pending.append(resolved)
     return sorted(found)

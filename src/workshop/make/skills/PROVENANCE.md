@@ -1,5 +1,23 @@
 # Shared skill provenance
 
+## Workshop-local: the owner's filament catalogue and the Colour Module (2026-10-31, issue #160)
+
+- **Local change to upstream `cad` (upstream does not need it: the catalogue
+  is Workshop's).** `cad/scripts/cadfilament.py` gains a fourth stock,
+  `material="catalogue"`, the Workshop's
+  `src/workshop/wish/catalogues/filaments.json` at its own hex;
+  `tests/make/test_filament_palette.py` holds the table to the catalogue
+  entry for entry. PLA Lite stays the default, so every Bambu name keeps its
+  meaning. `cad/scripts/geometry_sources.py` excludes the Colour Module,
+  `colours.py` at the project root holding only literal assignments, from
+  every Geometry Source, and `verify_project`'s sweep reuse key binds it
+  explicitly. `cad/references/build123d-modeling.md` documents both. A
+  resync must keep the catalogue stock, `colour_module` and their tests.
+- `make-round` excludes the Colour Module from the Shared Helpers and binds
+  it in the assembly packet; its `SKILL.md` says so (ADR 0081's issue #160
+  amendment). Only `cad`'s and `make-round`'s locks move; `source_commit`
+  values are unchanged.
+
 ## Workshop-local: check_overhang measures a bridge across itself (2026-10-30)
 
 - **Local patch to upstream `cad` (upstream needs the same change).**

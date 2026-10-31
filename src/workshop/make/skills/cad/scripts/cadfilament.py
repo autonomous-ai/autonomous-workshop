@@ -37,6 +37,21 @@ from Bambu's own *Filament Hex Code Table — PETG Basic*, read 2026-09-15.
 
 Hex values are as published; the trailing number is Bambu's colour code.
 
+The owner's catalogue
+---------------------
+**The owner's filament catalogue** (`material="catalogue"`) is the Workshop's
+`filaments.json`: the colours a Design Contract names (`cream`, `oak`,
+`dark-oak`, `mint`, `jade`, `translucent-amber`, ...), at the catalogue's own
+hex. When the contract names a catalogue colour, print that one; never
+substitute the nearest Bambu spool for it:
+
+    head.color = filament("mint", material="catalogue")
+    shell.color = filament("translucent-amber", 0.6, material="catalogue")
+
+A catalogue id is also a colour an occurrence name may end in
+(`head_happy_mint`, `shell_2_dark_oak`). Its hex values approximate the
+colour word until the owner confirms each spool; the catalogue says which.
+
 Seven names — black, white, gray, red, orange, yellow, green — are in both
 PLA Lite and PETG Basic, and five of them are a **different** hex in each (black
 and orange happen to be the same colour in both stocks); PLA Matte shares
@@ -146,6 +161,28 @@ MATERIALS: dict[str, dict[str, str]] = {
         "white": "#FFFFFF",             # 30106
         "yellow": "#FCE300",            # 30402
     },
+    # The owner's filament catalogue, `src/workshop/wish/catalogues/filaments.json`
+    # in the Workshop repository: the colours a Design Contract names. Each
+    # key is the catalogue id with its hyphens read as spaces; the comment is
+    # the id as the contract spells it. tests/make/test_filament_palette.py
+    # holds this table to the catalogue, entry for entry.
+    "catalogue": {
+        "navy": "#1F2A44",              # navy
+        "oak": "#B5834F",               # oak
+        "dark oak": "#5A3A22",          # dark-oak
+        "black": "#1A1A1A",             # black
+        "brass": "#B08D3C",             # brass
+        "white": "#F2F2EE",             # white
+        "cream": "#E9DCB8",             # cream
+        "green": "#2F5D3A",             # green
+        "dark blue": "#1B2F6B",         # dark-blue
+        "translucent amber": "#E89A2C", # translucent-amber
+        "glow": "#D8F0C8",              # glow
+        "jade": "#3F9A85",              # jade
+        "mint": "#A3D9C3",              # mint
+        "scarlet red": "#DE4343",       # scarlet-red
+        "translucent natural": "#EFE9DC",# translucent-natural
+    },
 }
 
 #: The stock a colour comes from when the caller does not say.
@@ -155,12 +192,13 @@ DEFAULT_MATERIAL = "pla lite"
 # so "PETG" is unambiguous. PLA has two (Lite and Matte), so the bare "PLA"
 # shorthand is retired rather than picking a winner behind the caller's back:
 # name the stock.
-_MATERIAL_ALIASES: dict[str, str] = {"petg": "petg basic"}
+_MATERIAL_ALIASES: dict[str, str] = {"petg": "petg basic", "filaments": "catalogue"}
 
 _MATERIAL_LABELS: dict[str, str] = {
     "pla lite": "Bambu Lab PLA Lite",
     "pla matte": "Bambu Lab PLA Matte",
     "petg basic": "Bambu Lab PETG Basic",
+    "catalogue": "Workshop catalogue",
 }
 
 #: The default stock's table, under the name it carried when it was the only one.
@@ -332,6 +370,17 @@ def _self_check() -> int:
         check("a matte colour asked for as PLA Lite names PLA Matte", "pla matte" in str(exc), str(exc))
     else:
         check("a matte colour asked for as PLA Lite names PLA Matte", False, "no error raised")
+
+    try:
+        filament("mint")
+    except ValueError as exc:
+        check("a catalogue colour asked for as PLA Lite names the catalogue", "'catalogue'" in str(exc), str(exc))
+    else:
+        check("a catalogue colour asked for as PLA Lite names the catalogue", False, "no error raised")
+    check(
+        "a catalogue id resolves with its hyphens",
+        filament_hex("dark-oak", material="catalogue") == filament_hex("Dark Oak", material="filaments"),
+    )
 
     try:
         filament("black", material="nylon")

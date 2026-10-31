@@ -163,6 +163,80 @@ class FilamentPaletteTests(unittest.TestCase):
                         self.palette.filament_hex(name, material=stock).startswith("#")
                     )
 
+    def test_the_catalogue_stock_is_the_owners_filament_catalogue(self):
+        # Issue #160: a contract's colours come from filaments.json, at its hex.
+        import json
+
+        catalogue = json.loads(
+            (
+                Path(__file__).resolve().parents[2]
+                / "src/workshop/wish/catalogues/filaments.json"
+            ).read_text(encoding="utf-8")
+        )["filaments"]
+        self.assertEqual(
+            self.palette.MATERIALS["catalogue"],
+            {
+                " ".join(item["id"].replace("-", " ").split()): item["hex"].upper()
+                for item in catalogue
+            },
+        )
+        for item in catalogue:
+            with self.subTest(colour=item["id"]):
+                self.assertEqual(
+                    self.palette.filament_hex(item["id"], material="catalogue"),
+                    item["hex"].upper(),
+                )
+        # Bambu names keep their meaning: the default stock is still PLA Lite.
+        self.assertEqual(self.palette.filament_hex("green"), "#00BB31")
+        self.assertNotEqual(
+            self.palette.filament_hex("green", material="catalogue"), "#00BB31"
+        )
+
+    def test_a_catalogue_colour_asked_for_as_bambu_names_the_catalogue(self):
+        with self.assertRaises(ValueError) as raised:
+            self.palette.filament("mint")
+        self.assertIn("material='catalogue'", str(raised.exception))
+        with self.assertRaises(ValueError) as raised:
+            self.palette.filament("lavender", material="catalogue")
+        self.assertIn("not a Workshop catalogue colour", str(raised.exception))
+
+    def test_the_host_accepts_every_catalogue_id_as_an_occurrence_colour(self):
+        import json
+
+        from workshop.make.cad.filament_names import (
+            BAMBU_COLOUR_NAMES,
+            CATALOGUE_COLOUR_NAMES,
+            FILAMENT_COLOUR_NAMES,
+            occurrence_colour_name,
+        )
+
+        ids = [
+            item["id"]
+            for item in json.loads(
+                (
+                    Path(__file__).resolve().parents[2]
+                    / "src/workshop/wish/catalogues/filaments.json"
+                ).read_text(encoding="utf-8")
+            )["filaments"]
+        ]
+        self.assertEqual(
+            set(CATALOGUE_COLOUR_NAMES), {item.replace("-", "_") for item in ids}
+        )
+        self.assertEqual(
+            set(FILAMENT_COLOUR_NAMES),
+            set(BAMBU_COLOUR_NAMES) | set(CATALOGUE_COLOUR_NAMES),
+        )
+        for item in ids:
+            with self.subTest(colour=item):
+                self.assertEqual(
+                    occurrence_colour_name("shell_2_%s" % item), item.replace("-", "_")
+                )
+        # The longest colour wins, and an unlisted colour is still refused.
+        self.assertEqual(occurrence_colour_name("shell_dark_oak"), "dark_oak")
+        self.assertEqual(occurrence_colour_name("head_misty_blue"), "misty_blue")
+        self.assertIsNone(occurrence_colour_name("head_lavender"))
+        self.assertIsNone(occurrence_colour_name("mint"))
+
     def test_palette_self_check_passes(self):
         result = subprocess.run(
             [sys.executable, str(PALETTE)],

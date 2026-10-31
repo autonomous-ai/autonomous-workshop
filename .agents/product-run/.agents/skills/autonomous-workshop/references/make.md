@@ -556,12 +556,23 @@ Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
   the CAD source (`asm.add(..., label=...)`) so the regenerated
   `assembled.step`, its package, and each `parts/<occurrence-name>.step` all
   carry the name. The part half before the colour must not be empty — `black`
-  alone names no part. The colour has to be one the shop stocks: `beige`,
-  `black`, `blue`, `cocoa_brown`, `cyan`, `dark_beige`, `dark_brown`,
-  `dark_gray`, `gray`, `green`, `misty_blue`, `navy_blue`, `orange`,
-  `pine_green`, `red`, `reflex_blue`, `sunflower_yellow`, `white`, `yellow`
-  (the CAD skill's `cad/scripts/cadfilament.py` palette); the host rejects any
-  other. Pick the colour first, then name the part;
+  alone names no part. The colour has to be one the shop stocks
+  (`STAGE.json.production_parts_rule` lists them): a colour of the owner's
+  filament catalogue, which is what a Design Contract names (`cream`, `oak`,
+  `dark_oak`, `mint`, `jade`, `translucent_amber`, ...), or a Bambu stock
+  colour of the CAD skill's `cad/scripts/cadfilament.py` palette. The host
+  rejects any other. When the contract names a catalogue colour, print and
+  name that one (`filament("mint", material="catalogue")`, `head_mint`);
+  never substitute the nearest Bambu spool for it. Pick the colour first,
+  then name the part;
+- every colour choice of the CAD project in its Colour Module, `colours.py`
+  at the project root, holding only literal assignments
+  (`HEAD = ("mint", "catalogue")`), which Component sources import
+  (`import colours`) and pass to `filament`. It is not a Geometry Source or a
+  Shared Helper, so a recolour leaves every Component's packet, lock and
+  Interface check current and needs no component round; the assembly packet
+  binds it. Never put colours in `params.py` or another Shared Helper: a
+  change there unlocks every Component that imports it;
 - a surface colour on every leaf part of a multi-part model, authored as
   `Color(r, g, b)` with channels 0..1 taken directly from the sRGB hex you want
   the shop to show (`Color(0.82, 0.51, 0.18)` shows as `#d1822e`). Do not

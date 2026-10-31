@@ -179,6 +179,20 @@ class ReadAssemblyPackageTest(unittest.TestCase):
             ("owl_follower_dark_brown", "reversible_nest_misty_blue"),
         )
 
+    def test_an_occurrence_may_name_a_catalogue_colour(self):
+        # Issue #160: the owner's catalogue ids are stocked colours too.
+        document = quarterhoot_package()
+        document["occurrences"][0]["name"] = "owl_follower_dark-oak"
+        document["occurrences"][1]["name"] = "reversible_nest_translucent_amber"
+
+        package = read_assembly_package(encode(document))
+
+        self.assertEqual(
+            [item.colour_name for item in package.occurrences],
+            ["dark_oak", "translucent_amber"],
+        )
+        self.assertEqual(occurrences_missing_colour_names(package), ())
+
     def test_an_occurrence_outside_the_palette_is_named_back(self):
         document = quarterhoot_package()
         document["occurrences"][0]["name"] = "owl_follower_teal"

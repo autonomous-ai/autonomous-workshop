@@ -74,7 +74,7 @@ from workshop.make.assembly_package import (
     occurrences_missing_colour_names,
     read_assembly_package,
 )
-from workshop.make.cad.filament_names import FILAMENT_COLOUR_NAMES
+from workshop.make.cad.filament_names import BAMBU_COLOUR_NAMES, CATALOGUE_COLOUR_NAMES
 from workshop.make.cad.step_color import read_step_part_colors
 from workshop.release.renders import (
     host_renders_stage_input,
@@ -460,13 +460,14 @@ _MAKE_PROPOSAL_REJECTION_FEEDBACK = {
         "The sealed assembled.step.json lists two or more occurrences, so every "
         "occurrence name must end in the filament colour that part prints in: "
         "<part>_<colour>, as in arm_black, leg_dark_brown, canopy_misty_blue. "
-        "The colour has to be one the shop stocks (%s); the part half before it "
-        "must not be empty. Rename the assembly labels in the CAD source so the "
+        "The colour has to be one the shop stocks: the owner's catalogue colour "
+        "the Design Contract names (%s), or a Bambu stock colour (%s); the part "
+        "half before it must not be empty. Rename the assembly labels in the CAD source so the "
         "regenerated assembled.step and assembly-package carry the new names, "
         "rename each parts/<occurrence-name>.step to match, then rerun the Make "
         "finalizer."
     )
-    % ", ".join(FILAMENT_COLOUR_NAMES),
+    % (", ".join(CATALOGUE_COLOUR_NAMES), ", ".join(BAMBU_COLOUR_NAMES)),
 }
 _PLAYTEST_PROPOSAL_REJECTION_FEEDBACK = {
     "playtest-artifact-invalid": (
@@ -7942,7 +7943,9 @@ _MAKE_PRODUCTION_PARTS_RULE = (
     "When assembled.step.json (the cadgen assembly-package) lists two or more "
     "occurrences, name every occurrence <part>_<colour> for the filament it "
     "prints in (arm_black, leg_dark_brown, canopy_misty_blue), using a colour "
-    "the shop stocks: %s. Write one production solid per occurrence as "
+    "the shop stocks: the owner's catalogue colour the Design Contract names "
+    "(%s; never a nearest Bambu substitute for one), or a Bambu stock colour "
+    "(%s). Write one production solid per occurrence as "
     "parts/<occurrence-name>.step inside the product root, one solid each, and "
     "seal a surface colour on every leaf part (part.color = Color(r, g, b) with "
     "channels 0..1 taken directly from the sRGB hex the shop should show). The "
@@ -7951,7 +7954,7 @@ _MAKE_PRODUCTION_PARTS_RULE = (
     "printer reads the spool off the filename. STEP is the only geometry format "
     "the toolchain writes; a part is print-ready only behind a passing "
     "verify_project --print-gates run at the nozzle the print will use."
-) % ", ".join(FILAMENT_COLOUR_NAMES)
+) % (", ".join(CATALOGUE_COLOUR_NAMES), ", ".join(BAMBU_COLOUR_NAMES))
 
 
 def _validate_made_production_parts(made: NativeMade, run_root: Path) -> int:
