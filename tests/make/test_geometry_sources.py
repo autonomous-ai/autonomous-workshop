@@ -92,6 +92,54 @@ class GeometrySourcesTest(unittest.TestCase):
         self.assertEqual(SOURCES["geometry_sources"](self.project), before)
 
 
+class ColourModuleTest(unittest.TestCase):
+    """Issue #160: colour is not geometry. The Colour Module, ``colours.py``
+    at the project root holding only literal assignments, is imported by
+    Components but is no Geometry Source, so a recolour stales no shape check."""
+
+    COLOURS = 'HEAD = ("mint", "catalogue")\nSHELL: tuple = (("oak", "catalogue"), ("jade", "catalogue"))\n'
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.project = project_fixture(Path(temporary.name))
+        (self.project / "colours.py").write_text('"""Colours."""\n' + self.COLOURS)
+        (self.project / "part_body.step.py").write_text(
+            "import colours\nfrom features.joints import PEG_D\ndef gen_step(): return None\n")
+
+    def test_the_colour_module_is_no_geometry_source_of_a_component_or_the_project(self):
+        self.assertEqual(SOURCES["colour_module"](self.project), (self.project / "colours.py").resolve())
+        self.assertNotIn("colours.py", SOURCES["component_geometry_sources"](self.project, "body"))
+        self.assertNotIn("colours.py", SOURCES["geometry_sources"](self.project))
+        self.assertIn("params.py", SOURCES["component_geometry_sources"](self.project, "body"))
+
+    def test_a_recolour_leaves_every_geometry_source_unchanged(self):
+        before = SOURCES["geometry_sources"](self.project)
+        body = SOURCES["component_geometry_sources"](self.project, "body")
+        (self.project / "colours.py").write_text('HEAD = ("jade", "catalogue")\nSHELL = ()\n')
+        self.assertEqual(SOURCES["geometry_sources"](self.project), before)
+        self.assertEqual(SOURCES["component_geometry_sources"](self.project, "body"), body)
+
+    def test_a_colours_module_with_code_is_an_ordinary_shared_helper(self):
+        for text in ("import params\nHEAD = 'mint'\n",
+                     "def head():\n    return 'mint'\n",
+                     "HEAD = 'mint'\nWIDTH = 2 * 3.0\n",
+                     "HEAD = 'mint'\nif HEAD:\n    pass\n",
+                     "HEAD = (\n"):
+            with self.subTest(text=text):
+                (self.project / "colours.py").write_text(text)
+                self.assertIsNone(SOURCES["colour_module"](self.project))
+                self.assertIn("colours.py", SOURCES["component_geometry_sources"](self.project, "body"))
+
+    def test_only_the_project_root_module_is_the_colour_module(self):
+        (self.project / "colours.py").unlink()
+        (self.project / "features/colours.py").write_text(self.COLOURS)
+        (self.project / "part_body.step.py").write_text(
+            "from features import colours\ndef gen_step(): return None\n")
+        self.assertIsNone(SOURCES["colour_module"](self.project))
+        self.assertIn("features/colours.py", SOURCES["component_geometry_sources"](self.project, "body"))
+
+
 class SweepReuseFollowsGeometrySourcesTest(unittest.TestCase):
     """verify_project's reuse key (ADR 0070) reads the same definition."""
 
@@ -121,6 +169,12 @@ class SweepReuseFollowsGeometrySourcesTest(unittest.TestCase):
     def test_an_edited_imported_helper_changes_the_reuse_key(self):
         before = self._closure()
         (self.project / "features/joints.py").write_text("import params\nPEG_D = 4.2 * params.SCALE\n")
+        self.assertNotEqual(self._closure(), before)
+
+    def test_a_recolour_changes_the_reuse_key_because_the_sweep_renders_colour(self):
+        (self.project / "colours.py").write_text('HEAD = "mint"\n')
+        before = self._closure()
+        (self.project / "colours.py").write_text('HEAD = "jade"\n')
         self.assertNotEqual(self._closure(), before)
 
     def test_the_definition_is_part_of_the_sweeps_tool_closure(self):

@@ -418,6 +418,17 @@ the values a Component Worker reports.
   packet, an interface check, the motion evidence and `verify_project`'s
   sweep reuse go stale when a Geometry Source changes, never for a
   measurement, audit, note, sample or render.
+- **Colour is not geometry** (issue #160). The Colour Module, `colours.py`
+  at the CAD project root holding only literal assignments
+  (`HEAD = ("mint", "catalogue")`), is the one module a Component may import
+  that is neither a Geometry Source nor a Shared Helper. A recolour there
+  stales no component packet, Interface check or helper freeze, unlocks no
+  Component and counts no shape round; `gen` still rebuilds each STEP in its
+  new colour, `--require-component-passes` still compares B-rep identity,
+  and the assembly packet binds the module, so the assembly round, the
+  blind review and `--full` see the new colours. A `colours.py` with
+  anything else in it (a function, an import, a computed value) is an
+  ordinary Shared Helper. Keep every colour there, never in `params.py`.
 
 ### Interfaces between Components (ADR 0082)
 

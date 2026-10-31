@@ -2023,6 +2023,56 @@ class ContractComponentReviewTest(unittest.TestCase):
             code, _ = self._built(module, project, calls, identity)
             self.assertEqual(code, 2)
 
+    def _locked_with_colours(self, module, project, calls, identity, colours):
+        """A Component importing features/forms.py and the Colour Module, agreed and locked."""
+        (project / "features").mkdir()
+        (project / "features/forms.py").write_text("WIDTH = 1\n")
+        (project / "colours.py").write_text(colours)
+        (project / "part_body.step.py").write_text(
+            "import colours\nfrom features.forms import WIDTH\ndef gen_step(): return 'body'\n")
+        _, summary = self._built(module, project, calls, identity)
+        self._review(module, project, summary)
+        return summary
+
+    def test_a_recolour_in_the_colour_module_keeps_the_lock_and_counts_nothing(self):
+        # Issue #160: colour is not geometry. A recolour that leaves the
+        # B-rep identical unlocks nothing and carries the review.
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls, identity = load_module(), [], {"value": "a" * 64}
+            first = self._locked_with_colours(module, project, calls, identity, 'BODY = ("green", "pla lite")\n')
+            self.assertEqual(sorted(first["imported_helpers"]), ["features/forms.py"])
+            self.assertNotIn("colours.py", module.shared_helpers(project))
+            self.assertIn("colours.py", module.source_hashes(project))
+            assembly = module.source_hashes(project)
+            (project / "colours.py").write_text('BODY = ("mint", "catalogue")\n')
+            # the reviewed packet is still current, the assembly packet is not
+            self.assertIsNone(module.packet_error(first["visual"], project, "body"))
+            self.assertNotEqual(module.source_hashes(project), assembly)
+            code, summary = self._built(module, project, calls, identity)
+            self.assertEqual(code, 0)
+            self.assertEqual(summary["unlock"], [])
+            self.assertEqual(summary["review"]["carried_from"], 1)
+            self.assertEqual(summary["locked"], {"round": 1, "source": "agreeing-review"})
+            self.assertEqual((summary["shape_round"], summary["shape_rounds_used"]), (False, 0))
+            self.assertEqual(summary["imported_helpers"], first["imported_helpers"])
+            # still locked: a geometry change is refused, a recolour opened nothing
+            identity["value"] = "b" * 64
+            code, _ = self._built(module, project, calls, identity)
+            self.assertEqual(code, 2)
+
+    def test_a_colours_module_with_code_is_a_shared_helper_and_unlocks(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls, identity = load_module(), [], {"value": "a" * 64}
+            colours = 'def body():\n    return ("green", "pla lite")\n'
+            first = self._locked_with_colours(module, project, calls, identity, colours)
+            self.assertIn("colours.py", first["imported_helpers"])
+            (project / "colours.py").write_text('def body():\n    return ("mint", "catalogue")\n')
+            code, summary = self._built(module, project, calls, identity)
+            self.assertEqual(code, 0)
+            self.assertEqual(summary["unlock"], [{"kind": "shared-helper", "paths": ["colours.py"]}])
+
     def test_an_imported_helper_change_that_moves_the_brep_awaits_review_and_keeps_the_count(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = self._contract_root(tmp)
@@ -3124,6 +3174,24 @@ class InterfaceTest(unittest.TestCase):
                 # The same B-rep identities: only the Geometry Sources moved.
                 self.assertEqual(self.module.interface_failures(project, interfaces, dict(state["identities"])),
                                  ["interface gear-mesh is stale: a Component it joins changed after its check"])
+
+    def test_a_recolour_in_the_colour_module_leaves_an_interface_check_and_the_freeze_current(self):
+        # Issue #160: colour is not geometry.
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._project(tmp, freeze=False)
+            (project / "colours.py").write_text('BODY = ("mint", "catalogue")\n')
+            (project / "part_body.step.py").write_text(
+                "import colours\nimport params\nfrom features.joints import PEG_D\ndef gen_step(): return 'body'\n")
+            self.assertEqual(self._main(project, ["--shared-helpers"]), 0, self.stderr)
+            self.assertNotIn("colours.py", self._freeze(project)["helpers"])
+            self._locked_pair(project)
+            self.assertEqual(self._main(project, ["--interface", "gear-mesh"]), 0, self.stderr)
+            state = json.loads((project / "measure/interface-rounds/gear-mesh/make-round-state.json").read_text())
+            interfaces, _ = self.module.contract_interfaces(project)
+            (project / "colours.py").write_text('BODY = ("jade", "catalogue")\n')
+            self.assertEqual(self.module.interface_failures(project, interfaces, dict(state["identities"])), [])
+            freeze = self.module.read_freeze(project)
+            self.assertEqual(self.module.freeze_report(project, freeze, self.module.shared_helpers(project))["changed"], [])
 
     def test_files_beside_the_geometry_leave_a_component_packet_current(self):
         with tempfile.TemporaryDirectory() as tmp:

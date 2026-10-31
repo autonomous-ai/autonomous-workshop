@@ -142,8 +142,9 @@ way to the screen, so `Color(0.5, 0.5, 0.5)` displays as roughly `#BCBCBC`, not
 `#808080`. Picking channel values off a hex palette by eye gives a washed-out,
 desaturated model. Never author a channel triple by hand.
 
-**Every printable part takes its colour by name from the filament palette.** Three
-stocks are loaded — Bambu Lab PLA Lite, PLA Matte and PETG Basic — so a model
+**Every printable part takes its colour by name from the filament palette.** Four
+stocks are loaded — the owner's filament catalogue and Bambu Lab PLA Lite, PLA
+Matte and PETG Basic — so a model
 coloured from them shows spools that can actually be loaded; a free hex invents
 a filament nobody can buy. `scripts/cadfilament.py` owns the tables and does
 the sRGB conversion, and imports with no path setup wherever `cadfits` does:
@@ -156,6 +157,35 @@ fin.color = filament("mandarin orange", material="PLA Matte") # PLA Matte
 shell.color = filament("misty blue", material="PETG Basic")  # PETG Basic
 lens.color = filament("cyan", 0.42)                          # with alpha
 ```
+
+**The owner's catalogue** — `filament("<id>", material="catalogue")` — is the
+Workshop's `filaments.json`, the colours a Design Contract names (`navy`, `oak`,
+`dark-oak`, `black`, `brass`, `white`, `cream`, `green`, `dark-blue`,
+`translucent-amber`, `glow`, `jade`, `mint`, `scarlet-red`,
+`translucent-natural`), at the catalogue's hex. When a contract names one,
+print that colour; never substitute the nearest Bambu spool for it. A
+translucent catalogue colour takes its alpha from the caller
+(`filament("translucent-amber", 0.6, material="catalogue")`).
+
+In a Workshop CAD project, keep every colour choice in the Colour Module,
+`colours.py` at the project root, holding only literal assignments, and
+import it from each part source:
+
+```python
+# colours.py
+HEAD = ("mint", "catalogue")
+SHELL = (("dark-blue", "catalogue"), ("oak", "catalogue"))
+```
+
+```python
+import colours
+body.color = filament(colours.HEAD[0], material=colours.HEAD[1])
+```
+
+Colour is not geometry: a recolour in `colours.py` leaves every Component's
+review, lock and Interface check current, and `gen` still rebuilds each STEP
+in its new colour. A colour in `params.py` or another shared helper unlocks
+every part that imports it.
 
 `material` defaults to PLA Lite. PLA Matte carries the pastels and muted tones
 PLA Lite lacks (a mint, a coral-peach, a pale pink, warm off-whites): reach for

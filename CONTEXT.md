@@ -255,6 +255,13 @@ shape goes stale only when these change; measurements, audits, notes and
 renders in the same project never make it stale.
 _Avoid_: Source closure, project files
 
+**Colour Module**:
+`colours.py` at a CAD Project's root, holding only literal colour
+assignments the Components import. Colour is not geometry: it is no Geometry
+Source and no Shared Helper, so a recolour stales no shape check and unlocks
+no Component; the assembly is still reviewed in its colours (issue #160).
+_Avoid_: Palette file, colour params
+
 **Evidence Scene**:
 An assembly built only to answer a question about a toy, never part of the toy
 and never printed: two pieces set side by side so a mirrored cue reads as one

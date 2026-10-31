@@ -299,6 +299,11 @@ def source_hashes(project):
     reviewer reads. A measurement, audit, note or render never changes it."""
     project = Path(project).resolve()
     bound = dict(geometry_sources_tool()["geometry_sources"](project))
+    # Issue #160: the Colour Module is no Geometry Source, but the assembly
+    # is reviewed in its colours, so its packet binds it.
+    colours = geometry_sources_tool()["colour_module"](project)
+    if colours is not None:
+        bound[colours.relative_to(project).as_posix()] = file_hash(colours)
     for p in sorted(project.rglob("*")):
         parts = p.relative_to(project).parts
         if not p.is_file() or any(v in NOT_BOUND for v in parts):
@@ -4205,13 +4210,17 @@ def contract_interfaces(project: Path) -> tuple[list | None, str | None]:
 
 def shared_helpers(project: Path) -> dict[str, str]:
     """Project-relative path -> sha256 of every Shared Helper: each importable
-    project-local ``.py`` module that is not an entry, a sample or evidence."""
+    project-local ``.py`` module that is not an entry, a sample, evidence or
+    the Colour Module (issue #160)."""
 
     project = project.resolve()
+    colours = geometry_sources_tool()["colour_module"](project)
     found = {}
     for path in sorted(project.rglob("*.py")):
         relative = path.relative_to(project)
         if path.name.endswith(".step.py") or any(part in NOT_HELPERS for part in relative.parts[:-1]):
+            continue
+        if colours is not None and path.resolve() == colours:
             continue
         if path.is_file():
             found[relative.as_posix()] = file_hash(path)

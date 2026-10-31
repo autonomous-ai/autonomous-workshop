@@ -1761,7 +1761,13 @@ def _sweep_closure_sha256(
         }
         # The project's Geometry Sources (issue #110): a measurement, audit,
         # note or render beside them never forces a new sweep.
-        sources = runpy.run_path(str(SCRIPTS_DIR / "geometry_sources.py"))["geometry_sources"](project)
+        geometry = runpy.run_path(str(SCRIPTS_DIR / "geometry_sources.py"))
+        sources = geometry["geometry_sources"](project)
+        # Issue #160: the Colour Module is no Geometry Source, but the sweep's
+        # renders show its colours, so a recolour forces a new sweep.
+        colours = geometry["colour_module"](project)
+        if colours is not None:
+            sources[colours.relative_to(project.resolve()).as_posix()] = _sha256_file(colours)
     except OSError:
         return None
     tool_hash = _tool_closure_sha256(tool_paths)
