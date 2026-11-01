@@ -399,3 +399,46 @@ class WiredPartTreeTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FactoryBoardTest(unittest.TestCase):
+    """ADR 0095 amendment (2026-11-01): the parts that arrive on one
+    factory-assembled board, so the toy's wording follows the contract."""
+
+    def _parse(self, electrical):
+        return parse_design_contract(_contract_text(_schema10(electrical), prose=_PROSE),
+                                     catalogues=_mac_usb_catalogues())
+
+    def _refused(self, electrical):
+        with self.assertRaises(ContractError) as caught:
+            self._parse(electrical)
+        return str(caught.exception)
+
+    def _board(self):
+        return ["usb-c", "r-screen", "screen-led"] + ["%s-%d" % (kind, n) for kind in ("r-dim", "r-bright", "warm")
+                                                      for n in (1, 2, 3)]
+
+    def test_the_usb_mac_fidget_puts_its_receptacle_resistors_and_leds_on_a_pcba(self):
+        from workshop.wish.electrical import pcba_parts
+
+        electrical = _mac_usb()
+        electrical["pcba"] = {"parts": self._board()}
+        contract = self._parse(electrical)
+        self.assertEqual(contract.to_dict()["electrical"]["pcba"], electrical["pcba"])
+        self.assertEqual(pcba_parts(contract.electrical.to_dict()), tuple(self._board()))
+        self.assertEqual(pcba_parts(_mac_usb()), ())
+
+    def test_a_board_holds_carried_circuit_parts_once_and_no_wire(self):
+        for members, message in (
+            (["usb-supply"], "pcba names usb-supply, the buyer's own supply"),
+            (["wire"], "pcba names wire, a wire"),
+            (["usb-c", "usb-c"], "pcba names usb-c twice"),
+            (["board-chip"], "pcba names 'board-chip', which is no electrical part"),
+            ([], "pcba must be {parts}"),
+        ):
+            electrical = _mac_usb()
+            electrical["pcba"] = {"parts": members}
+            self.assertIn(message, self._refused(electrical))
+        electrical = _mac_usb()
+        electrical["pcba"] = {"parts": ["usb-c"], "size_mm": [24, 1.6, 32]}
+        self.assertIn("pcba must be {parts}", self._refused(electrical))

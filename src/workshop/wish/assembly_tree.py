@@ -153,8 +153,7 @@ def _snapshot(
     parts = {}
     for name in names:
         entry = catalogues.parts[name]
-        parts[entry.id] = {"name": entry.name, "category": entry.category,
-                           "sizes": copy.deepcopy(list(entry.sizes)), "confirmed": entry.confirmed}
+        parts[entry.id] = entry.snapshot()
     return {"filaments": dict(sorted(filaments.items())), "bought_parts": dict(sorted(parts.items()))}
 
 
