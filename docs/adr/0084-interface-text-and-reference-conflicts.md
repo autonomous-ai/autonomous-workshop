@@ -125,3 +125,56 @@ never records a Reference Conflict. A receipt with none reports an empty
 - Scoring or measuring Interface text.
 - Correcting the Broken God package here; its owner does that before
   attempt 14.
+
+## Amendment: a sealed number wins over the drawing (2026-11-01, issue #177)
+
+Status: Accepted; implemented and deterministically tested; not yet
+validated by a live run.
+
+**Context.** In the Turtle Moods keycap runs (`wish-20261031-144615-e5100773`,
+Blocked Reports 1 and 2, and again in `wish-20261101-111603-d3c27476`) the
+Component Reviewer asked for a wink groove about 1.8 mm across and grooves
+0.8 wide where the contract seals a 0.6 groove on an arc of radius 0.65
+from 30 to 150 degrees, and for a frown about 3.5 mm wide where it seals an
+arc of radius 1.4 from 60 to 120 degrees. Each was a reference drawn
+otherwise than a sealed number, a Reference Conflict, yet it was listed as
+a difference, with `matches_plan` true and `matches_reference` false. Two
+causes: the reviewer was told the rows "only settle what the reference
+cannot show", and the face numbers live in prose sections (`Wink face`,
+`Grumpy face`), which ADR 0093 keeps out of the review packet.
+
+**Decision.** For new runs and refreshed tools:
+
+1. **Numbers in the packet.** Under a schema 8 or later contract the
+   packet's `contract` (and the summary's) holds `numbers`: every sentence
+   that states a number, `{"section", "text"}`, from each prose section the
+   Component's geometry names that not every geometry names; with one
+   geometry, all of its sections. A section every geometry names is the
+   assembly's. The rest of the prose still never reaches the reviewer; the
+   rows hash and carry key are unchanged.
+2. **The reviewer.** Where a row or one of those numbers sizes, places,
+   angles or curves a feature and the reference draws it otherwise, it is a
+   Reference Conflict quoting the number, never a difference; the feature
+   is judged against the number; a feature the contract sizes is never
+   asked to be wider, longer, deeper, bolder or moved to read better; and a
+   feature built to its number does not make `matches_reference` false.
+   `matches_reference` judges form apart from every listed Reference
+   Conflict.
+
+No deterministic check judges whether a difference repeats a sealed
+number: that is a judgement of text, as for a ruled-out request (ADR 0081,
+issue #97). The packet makes the number visible; the definition makes it
+bind.
+
+**Consequences.** A reference drawn larger than the contract costs a
+report line, not Shape Rounds. Packets grow by the Component's numeric
+sentences, about 3 KB for a Turtle Moods head. A reviewer that ignores its
+instructions still spends a Shape Round; the cap and the Blocked Report
+still bound it.
+
+**Verification.** `tests/make/test_make_round_fix_carry.py` covers the
+packet and summary carrying only the Component's own numeric sentences, a
+geometry naming only shared sections carrying none, one geometry carrying
+all and schema 7 none, the packet detail and summary line, and the
+reviewer definition's rules.
+

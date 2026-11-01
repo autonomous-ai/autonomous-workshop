@@ -477,6 +477,9 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
         if contract is not None:
             detail += ("; the packet's contract holds the Component's rows and the text of every Interface "
                        "naming it")
+            if contract.get("numbers"):
+                detail += (", and under numbers its sealed sizes, positions and angles: a reference drawn "
+                           "otherwise is a Reference Conflict, never a difference")
         if rulings:
             detail += ("; the packet's rulings are the Workshop Manager's decisions on this Component's Blocked "
                        "Reports, which bind the reviewer")
@@ -1845,6 +1848,9 @@ def render_summary(summary: dict) -> str:
             lines.append("    differs %s: reference %s | model %s" % (item["feature"], item["reference"], item["model"]))
         if summary.get("accepted"):
             lines.append("    ACCEPTED at the shape-repair limit (%d shape rounds); reported when the run ends" % summary["accepted"]["shape_rounds"])
+    if summary.get("rows_colour_only"):
+        lines.append("  rows changed only in colour words since the review: colour is judged in the assembly "
+                     "round, so the review's rows still hold")
     conflicts = summary.get("reference_conflicts") or []
     if conflicts:
         lines.append("  conflict %d Reference Conflict(s) recorded: the Design Contract wins; nothing to repair; "
@@ -1862,6 +1868,9 @@ def render_summary(summary: dict) -> str:
     if contract is not None:
         lines.append("  contract %d requirement row(s), %d Interface(s) in summary.json and the packet" % (
             len(contract.get("requirements") or ()), len(contract.get("interfaces") or ())))
+        if contract.get("numbers"):
+            # Issue #177: what a reference drawn otherwise is a Reference Conflict against.
+            lines.append("  numbers %d sealed number sentence(s) from its own prose in the packet" % len(contract["numbers"]))
         if contract.get("prose") is not None:
             # ADR 0093: the worker's prose, never in the packet.
             lines.append("  prose %d section(s) for the worker in summary.json: %s" % (
@@ -2357,8 +2366,40 @@ def component_contract(project: Path, role: str) -> dict | None:
                   for item in contract.get("interfaces") or ()
                   if isinstance(item, dict) and isinstance(item.get("components"), list)
                   and role in reference_roles(item["components"])]
-    return {"schema_version": contract_schema(project), "component": role, "geometry": geometry,
-            "requirements": requirements, "interfaces": interfaces}
+    delivered = {"schema_version": contract_schema(project), "component": role, "geometry": geometry,
+                 "requirements": requirements, "interfaces": interfaces}
+    numbers = sealed_numbers(contract, role)
+    if numbers:
+        delivered["numbers"] = numbers
+    return delivered
+
+
+def sealed_numbers(contract: dict, role: str) -> list:
+    """The sentences of a schema 8 Component's own prose sections that state
+    a number, ``[{"section", "text"}]`` in section order (issue #177). The
+    review packet carries no prose (ADR 0093), yet the sizes, positions and
+    angles of a face or a detail are often sealed there; the reviewer needs
+    them to tell a Reference Conflict from a difference. A section every
+    geometry names is the assembly's, and stays out unless the contract has
+    one geometry."""
+
+    if type(contract.get("schema_version")) is not int or contract["schema_version"] < PROSE_SCHEMA_VERSION:
+        return []
+    geometries = [item for item in contract.get("geometries") or () if isinstance(item, dict)]
+    named = [set(item.get("prose_sections") or ()) for item in geometries]
+    own = next((item for item in geometries if item.get("id") == role), None)
+    shared = set.intersection(*named) if len(named) > 1 else set()
+    texts = {item.get("heading"): item.get("text") for item in contract.get("prose") or ()
+             if isinstance(item, dict)}
+    numbers = []
+    for heading in (own or {}).get("prose_sections") or ():
+        text = texts.get(heading)
+        if heading in shared or not isinstance(text, str):
+            continue
+        for sentence in re.split(r"(?<=\.)\s+(?=[A-Z(])", " ".join(text.split())):
+            if re.search(r"\d", sentence):
+                numbers.append({"section": heading, "text": sentence})
+    return numbers
 
 
 # ADR 0093: the row an owner amendment of a schema 8 prose section names.
@@ -2710,6 +2751,10 @@ def current_passing_component_round(project: Path, role: str, digest: str | None
     # without a fresh build (the final verifier on a part `gen` found current)
     # can only hash the file (ADR 0074).
     recorded = ((state.get("parts") or {}).get(role), (state.get("steps") or {}).get(role))
+    if digest is not None and digest not in recorded and recorded[0] is not None:
+        # Issue #175: a round that recorded its STEP's bytes before gen
+        # reported a current export's B-rep is read as the B-rep it judged.
+        recorded += (step_byte_brep(summary_path.parent, role),)
     if digest is None or digest not in recorded:
         return None, "%s changed after its component pass" % entry
     return summary, ""
@@ -3072,22 +3117,114 @@ def legacy_policy(state: dict, summary: dict | None) -> dict:
     return {**base, "phase": phase, "reviewed": reviewed}
 
 
+def _logged_stdout(log: Path) -> tuple[int | None, str] | None:
+    """``(exit code, stdout)`` of one command log ``run`` wrote, or None."""
+
+    try:
+        text = log.read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        return None
+    match = re.search(r"^\(\d+(?:\.\d+)?s, exit (-?\d+)\)\n--- stdout\n(.*?)\n--- stderr\n", text, re.S | re.M)
+    return (int(match.group(1)), match.group(2)) if match else None
+
+
+def step_byte_brep(round_dir: Path, role: str) -> str | None:
+    """The B-rep a round's checks read when the round recorded its STEP's
+    bytes as its identity (issue #175), or None.
+
+    Before ADR 0073's issue #165 amendment `gen --write` reported no
+    identity when it found the export current, and the round fell back to
+    the STEP's sha256. The same round still built the source twice in their
+    own processes, its reproduction build and its B-rep bundle, and every
+    check and render built from source. When gen's log reports no identity
+    and every one of those builds logged the same identity, that is the
+    shape the round judged. Anything else (a log missing, a build that
+    failed or two identities) migrates nothing: a miss, never a false match."""
+
+    gen = _logged_stdout(round_dir / ("gen-%s.log" % role))
+    if gen is None or gen[0] != 0 or parse_identity(gen[1]) is not None:
+        return None
+    seen = set()
+    reproduced = _logged_stdout(round_dir / ("reproduce-%s.log" % role))
+    if reproduced is not None:
+        if reproduced[0] != 0 or parse_identity(reproduced[1]) is None:
+            return None
+        seen.add(parse_identity(reproduced[1]))
+    bundled = _logged_stdout(round_dir / ("brep-%s.log" % role))
+    if bundled is not None:
+        built = None
+        for line in bundled[1].splitlines():
+            try:
+                payload = json.loads(line) if line.strip().startswith("{") else None
+            except ValueError:
+                payload = None
+            kept = payload.get("brepBundle") if isinstance(payload, dict) else None
+            if isinstance(kept, dict) and isinstance(kept.get("builtIdentity"), str):
+                built = kept["builtIdentity"]
+        if bundled[0] != 0 or built is None:
+            return None
+        seen.add(built)
+    if len(seen) != 1:
+        return None
+    identity = seen.pop()
+    return identity if re.fullmatch(r"[0-9a-f]{64}", identity) else None
+
+
+def migrate_step_identities(policy: dict, round_root: Path) -> dict:
+    """``policy`` with every identity a round recorded from STEP bytes read
+    as the B-rep that round judged (issue #175). The reviewed record keeps
+    the STEP hash as ``step_identity``, since its carry key was made with
+    it; a record already migrated, or one a round built, is left alone."""
+
+    role = round_root.name
+    reviewed = policy.get("reviewed")
+    recovered = {}
+
+    def brep(round_number, recorded):
+        if type(round_number) is not int or round_number < 1 or not isinstance(recorded, str):
+            return None
+        if round_number not in recovered:
+            recovered[round_number] = step_byte_brep(round_root / ("r%04d" % round_number), role)
+        found = recovered[round_number]
+        return found if found is not None and found != recorded else None
+
+    migrated = dict(policy)
+    if isinstance(reviewed, dict) and "step_identity" not in reviewed:
+        found = brep(reviewed.get("round"), reviewed.get("identity"))
+        if found is not None:
+            migrated["reviewed"] = {**reviewed, "identity": found, "step_identity": reviewed["identity"]}
+    found = brep(policy.get("round"), policy.get("identity"))
+    if found is not None:
+        migrated["identity"] = found
+    return migrated
+
+
 def component_policy(state: dict, round_root: Path) -> dict:
     if isinstance(state.get("policy"), dict):
-        return state["policy"]
+        return migrate_step_identities(state["policy"], round_root)
     summary = None
     if state.get("round"):
         try:
             summary = json.loads((round_root / ("r%04d" % state["round"]) / "summary.json").read_text(encoding="utf-8"))
         except (OSError, ValueError):
             summary = None
-    return legacy_policy(state, summary)
+    return migrate_step_identities(legacy_policy(state, summary), round_root)
 
 
 def contract_rows(project: Path, role: str) -> str:
     """sha256 of the Component's own Design Contract rows: its Unique
     Geometry, the requirements and references scoped to it, and under schema
     4 the Interfaces that name it. Outside Contract Mode, of nothing."""
+
+    return rows_hash(contract_rows_document(project, role))
+
+
+def rows_hash(rows) -> str:
+    return hashlib.sha256(json.dumps(rows, sort_keys=True).encode()).hexdigest()
+
+
+def contract_rows_document(project: Path, role: str) -> dict | None:
+    """What ``contract_rows`` hashes, or None outside Contract Mode."""
 
     rows = None
     root = run_root(project)
@@ -3118,7 +3255,7 @@ def contract_rows(project: Path, role: str) -> str:
             amended = amended_assembly_rows(project)
             if amended:
                 rows["amended_assembly_rows"] = amended
-    return hashlib.sha256(json.dumps(rows, sort_keys=True).encode()).hexdigest()
+    return rows
 
 
 def amended_assembly_rows(project: Path) -> list:
@@ -3132,6 +3269,102 @@ def amended_assembly_rows(project: Path) -> list:
     return [[number, change["row"], change["to"]] for number, item in sorted(amendments.items())
             if item["status"] == "applied" for change in item["changes"]
             if not str(change.get("scope")).startswith((GEOMETRY_LABEL, "interface:"))]
+
+
+# Issue #176: what a colour word in a contract row reads as when rows are
+# compared colour-blind.
+COLOUR_MASK = "<colour>"
+_COLOUR_WORDS = None
+
+
+def colour_words() -> re.Pattern | None:
+    """Every filament colour the run's palette stocks (cad/scripts/
+    cadfilament.py: the owner's catalogue and the Bambu stocks), as one
+    pattern matching a name in any case with spaces, hyphens or underscores
+    between its words, longest name first, and a ``#rrggbb`` hex. None when
+    the palette cannot be read: then nothing is colour."""
+
+    global _COLOUR_WORDS
+    if _COLOUR_WORDS is None:
+        try:
+            palette = runpy.run_path(str(Path(__file__).resolve().parents[2] / "cad/scripts/cadfilament.py"))
+            names = {name for table in palette["MATERIALS"].values() for name in table}
+        except Exception:  # noqa: BLE001 - an unreadable palette masks nothing
+            names = set()
+        words = sorted((name.split() for name in names if name.strip()),
+                       key=lambda split: (-len(" ".join(split)), split))
+        alternatives = [r"[\s_-]+".join(re.escape(word) for word in split) for split in words]
+        _COLOUR_WORDS = re.compile(r"(?<![A-Za-z0-9])(?:%s)(?![A-Za-z0-9])" % "|".join(
+            alternatives + [r"#[0-9A-Fa-f]{6}"]), re.I) if alternatives else False
+    return _COLOUR_WORDS or None
+
+
+def colour_blind(value):
+    """``value`` with every colour word of every string in it masked."""
+
+    pattern = colour_words()
+    if pattern is None:
+        return value
+    if isinstance(value, str):
+        return pattern.sub(COLOUR_MASK, value)
+    if isinstance(value, list):
+        return [colour_blind(item) for item in value]
+    if isinstance(value, dict):
+        return {key: colour_blind(item) for key, item in value.items()}
+    return value
+
+
+def reviewed_rows_document(rows: dict, reviewed_contract: dict) -> dict | None:
+    """The Component's rows as the reviewed round delivered them: ``rows``
+    (the current document) with the texts of the round's ``summary.json``
+    ``contract`` put back, or None when the two do not name the same rows.
+    The caller trusts the result only when it hashes to the digest the
+    round recorded."""
+
+    old = json.loads(json.dumps(rows))
+    geometry = reviewed_contract.get("geometry")
+    if isinstance(geometry, dict):
+        old["geometries"] = [geometry]
+    for key in ("requirements", "interfaces"):
+        if key not in old:
+            continue
+        texts = reviewed_contract.get(key)
+        if not isinstance(texts, list):
+            return None
+        by_id = {item.get("id"): item.get("text") for item in texts if isinstance(item, dict)}
+        if sorted(map(str, by_id)) != sorted(str(item.get("id")) for item in old[key]):
+            return None
+        for item in old[key]:
+            item["text"] = by_id[item.get("id")]
+    if "prose" in old:
+        if not isinstance(reviewed_contract.get("prose"), list):
+            return None
+        old["prose"] = reviewed_contract["prose"]
+    return old
+
+
+def colour_only_rows(project: Path, role: str, reviewed: dict | None, round_root: Path) -> bool:
+    """Whether the Component's current rows differ from the rows its review
+    judged only in colour words (issue #176). The old rows are the reviewed
+    round's own delivered texts, trusted only when they reproduce the
+    digest the review recorded; a colour is judged in the assembly round,
+    never by a component review (ADR 0081's colour amendment)."""
+
+    if not isinstance(reviewed, dict) or type(reviewed.get("round")) is not int:
+        return False
+    recorded = reviewed.get("contract_rows")
+    rows = contract_rows_document(project, role)
+    if not isinstance(recorded, str) or not isinstance(rows, dict) or rows_hash(rows) == recorded:
+        return False
+    try:
+        summary = json.loads((round_root / ("r%04d" % reviewed["round"]) / "summary.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    delivered = summary.get("contract") if isinstance(summary, dict) else None
+    old = reviewed_rows_document(rows, delivered) if isinstance(delivered, dict) else None
+    if old is None or rows_hash(old) != recorded:
+        return False
+    return colour_blind(old) == colour_blind(rows)
 
 
 def carry_key(identity: str | None, refs: list, project: Path, rows: str, rulings: list | None = None) -> str | None:
@@ -5728,8 +5961,13 @@ def make_round(args) -> int:
         current_helpers = {**helpers, **{path: file_hash(project / path) if (project / path).is_file() else None
                                          for path in locked_helpers if path not in helpers}}
         rows_digest = contract_rows(project, component)
+        # Issue #176: rows that differ from the reviewed ones only in colour
+        # words are the rows the review judged.
+        reviewed_before = policy.get("reviewed")
+        colour_only = colour_only_rows(project, component, reviewed_before, round_root)
+        judged_rows = reviewed_before["contract_rows"] if colour_only else rows_digest
         admission = round_policy(policy, {"identity": round_identity, "helpers": current_helpers,
-                                          "contract_rows": rows_digest})
+                                          "contract_rows": judged_rows})
         if not admission["admit"]:
             shutil.rmtree(out)
             if earlier_step is not None:
@@ -5937,9 +6175,17 @@ def make_round(args) -> int:
     outcome = None
     if component is not None:
         key = carry_key(round_identity, refs, project, rows_digest, rulings)
+        # The key the review's own key is compared with: made with the STEP
+        # hash it recorded for this B-rep (issue #175) and the rows it judged.
+        key_identity = round_identity
+        if (isinstance(reviewed_before, dict) and reviewed_before.get("step_identity")
+                and round_identity == reviewed_before.get("identity")):
+            key_identity = reviewed_before["step_identity"]
+        judged_key = (key if key_identity == round_identity and judged_rows == rows_digest
+                      else carry_key(key_identity, refs, project, judged_rows, rulings))
         outcome = round_policy(policy, {"identity": round_identity, "helpers": current_helpers,
-                                        "checks_ok": ok, "carry_key": key, "round": round_index,
-                                        "contract_rows": rows_digest})
+                                        "checks_ok": ok, "carry_key": judged_key, "round": round_index,
+                                        "contract_rows": judged_rows})
 
     # 5. Visual inspection is a separate evidence submission, not a model call.
     # A component round that failed its checks is not rendered: nobody reviews
@@ -6030,6 +6276,9 @@ def make_round(args) -> int:
             # Issue #98: the B-rep identity the Component Worker reports.
             identity=round_identity,
         )
+        if colour_only:
+            # Issue #176: only colour words moved in its rows since the review.
+            summary["rows_colour_only"] = True
         if envelopes:
             summary["envelopes"] = envelopes
         if display_pose:
@@ -6342,6 +6591,18 @@ def self_check() -> int:
                                                    for e in events), encoding="utf-8")
         check(component_rulings(project, "legs") == [],
               "a ruling decided under another Wish, as a fix run's carried ledger holds, binds nothing here")
+    # Issue #176: colour names are masked in any spelling, nothing else is.
+    check(colour_blind("shell#4 Translucent-Amber, dark_oak") == colour_blind("shell#4 brass, mint")
+          != colour_blind("shell#4 brass, mint, glossy"), "a recolour reads as the same rows; another word does not")
+    # Issue #175: a round that recorded STEP bytes is read as the one B-rep its own builds logged.
+    with tempfile.TemporaryDirectory() as tmp:
+        round_dir, brep = Path(tmp), "e" * 64
+        for name, stdout in (("gen-legs.log", '{"ok":true}'), ("reproduce-legs.log", '{"identitySha256":"%s"}' % brep)):
+            (round_dir / name).write_text("$ x\n(0.1s, exit 0)\n--- stdout\n%s\n--- stderr\n" % stdout, encoding="utf-8")
+        check(step_byte_brep(round_dir, "legs") == brep, "a STEP-byte round reads as the B-rep it reproduced")
+        (round_dir / "gen-legs.log").write_text('$ x\n(0.1s, exit 0)\n--- stdout\n{"identitySha256":"%s"}\n'
+                                                '--- stderr\n' % ("f" * 64), encoding="utf-8")
+        check(step_byte_brep(round_dir, "legs") is None, "a round gen built is never migrated")
     summary = {
         "round": 3, "scope": "assembly", "project": "/p/cad", "parts": ["frame", "knob", "lens"], "changed": ["frame"], "checked": ["frame"],
         "build": {"frame": {"verdict": "PASS", "failures": []}},

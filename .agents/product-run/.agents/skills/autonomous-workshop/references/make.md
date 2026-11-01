@@ -244,8 +244,10 @@ specialist form and character judgment. The host retains stage authority.
    what the contract forbids; the contract wins) and `ruling_disputes` (it
    thinks one of your rulings wrong) are not differences: a Reference
    Conflict is not a difference, costs no shape round, and never reaches the
-   worker; it is reported when the run ends. Never repair toward the image
-   and never stop the run for it. If a Ruling Dispute shows the ruling was
+   worker; it is reported when the run ends. A reference that draws a
+   feature larger, longer or elsewhere than a sealed number (the packet's
+   `contract` rows and `numbers`) is one too (issue #177). Never repair
+   toward the image and never stop the run for it. If a Ruling Dispute shows the ruling was
    wrong, answer through a Contract Amendment or a need, never by telling the
    worker to repair toward it. If `--record-review` refuses an answer as
    malformed, send the refusal line unchanged to the same reviewer thread
@@ -572,7 +574,9 @@ Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
   Shared Helper, so a recolour leaves every Component's packet, lock and
   Interface check current and needs no component round; the assembly packet
   binds it. Never put colours in `params.py` or another Shared Helper: a
-  change there unlocks every Component that imports it;
+  change there unlocks every Component that imports it. A contract change
+  that only swaps colour names in a Component's rows or prose keeps its
+  lock and carries its review too (issue #176);
 - a surface colour on every leaf part of a multi-part model, authored as
   `Color(r, g, b)` with channels 0..1 taken directly from the sRGB hex you want
   the shop to show (`Color(0.82, 0.51, 0.18)` shows as `#d1822e`). Do not

@@ -275,7 +275,12 @@ copied from the sealed contract as an owner amendment left it. Only the
 worker reads prose: the packet never carries it. It joins the
 Component's contract-rows hash, and so its carry key: a changed section
 unlocks every Component whose geometry names it, and their reviews stop
-carrying, exactly as a changed row does. Before schema 4 the packet has no `contract`, and the request also
+carrying, exactly as a changed row does, unless only colour words changed
+(below). The packet's `contract` also holds `numbers` (issue #177): each
+sentence of a prose section that names this geometry and not every
+geometry, when it states a number, as `{"section", "text"}`. A reference
+that draws a sized, placed or angled feature otherwise is a Reference
+Conflict against that number, never a difference. Before schema 4 the packet has no `contract`, and the request also
 carries that geometry's contract lines. Write its answer unchanged with the
 exact packet hash from the summary:
 
@@ -429,6 +434,24 @@ the values a Component Worker reports.
   blind review and `--full` see the new colours. A `colours.py` with
   anything else in it (a function, an import, a computed value) is an
   ordinary Shared Helper. Keep every colour there, never in `params.py`.
+- **A colour word in a row is not geometry either** (issue #176). When a
+  Component's rows differ from the rows its review judged only in the
+  palette's colour names (`cadfilament.py`: the owner's catalogue and the
+  Bambu stocks, in any case and spacing, or a `#rrggbb` hex), the round
+  compares the review's rows: a locked Component records no
+  contract-amendment unlock and an unchanged rerun carries its review
+  (`rows_colour_only` in the summary). The judged rows are the reviewed
+  round's own `summary.json` `contract` texts, trusted only when they hash
+  to the `contract_rows` that review recorded. Any other word changed
+  (a sentence added or removed) still unlocks and re-reviews.
+- **A lock recorded on STEP bytes** (issue #175). A round run before `gen`
+  reported a current export's B-rep recorded the STEP's sha256 as its
+  identity. When that round's `gen` log reports no identity and its
+  reproduction build and B-rep bundle logged one same identity, the round
+  is read as that B-rep: by the round policy, the carry key (made with the
+  STEP hash the review recorded), `--require-component-passes` and
+  `--interface`. Any other log leaves the STEP hash, and the Component is
+  reviewed again.
 
 ### Interfaces between Components (ADR 0082)
 
