@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Any, Collection, Mapping, Optional, Sequence, Tuple
 
 from workshop.errors import ContractError
+from workshop.wish.catalogues import BOUGHT_PART_HEX
 from workshop.make.cad.filament_names import (
     FILAMENT_COLOUR_NAMES,
     occurrence_colour_name,
@@ -44,6 +45,11 @@ ASSEMBLY_PACKAGE_PATH = "assembled.step.json"
 PRODUCTION_PARTS_DIRECTORY = "parts"
 MAX_ASSEMBLY_PACKAGE_BYTES = 16 * 1024 * 1024
 MAX_ASSEMBLY_OCCURRENCES = 512
+# A Bought Part body the assembly carries (ADR 0095 amendment, 2026-11-01):
+# named bought_<part> and in the reserved not-printed magenta (ADR 0092 Q29),
+# it is no print part, so it needs no stocked colour name and no parts/ STEP.
+BOUGHT_OCCURRENCE_PREFIX = "bought_"
+BOUGHT_OCCURRENCE_HEX = BOUGHT_PART_HEX
 OCCURRENCE_NAME = re.compile(r"^[a-z0-9][a-z0-9_-]{0,127}$")
 IDENTITY_TRANSFORM: Tuple[float, ...] = (
     1.0, 0.0, 0.0, 0.0,
@@ -135,6 +141,13 @@ class AssemblyOccurrence:
 
         return occurrence_colour_name(self.name)
 
+    @property
+    def is_bought(self) -> bool:
+        """A Bought Part body: ``bought_`` named and not-printed magenta. A
+        printed part can be neither, since no stocked spool is magenta."""
+
+        return self.name.startswith(BOUGHT_OCCURRENCE_PREFIX) and self.color_hex == BOUGHT_OCCURRENCE_HEX
+
 
 @dataclass(frozen=True)
 class AssemblyPackage:
@@ -160,8 +173,12 @@ class AssemblyPackage:
         return len(self.occurrences) >= 2
 
     @property
+    def printed_occurrences(self) -> Tuple[AssemblyOccurrence, ...]:
+        return tuple(item for item in self.occurrences if not item.is_bought)
+
+    @property
     def production_step_paths(self) -> Tuple[str, ...]:
-        return tuple(item.production_step_path for item in self.occurrences)
+        return tuple(item.production_step_path for item in self.printed_occurrences)
 
     def part_colors(self) -> dict[str, str]:
         return {
@@ -272,9 +289,10 @@ def read_assembly_package_file(path: Path) -> AssemblyPackage:
 def missing_production_parts(
     package: AssemblyPackage, sealed_paths: Collection[str]
 ) -> Tuple[str, ...]:
-    """Return the production STEP paths a multi-part package lacks."""
+    """Return the production STEP paths a multi-part package lacks. A Bought
+    Part body is no print part and has none."""
 
-    if not package.is_multipart:
+    if len(package.printed_occurrences) < 2:
         return ()
     sealed = set(sealed_paths)
     return tuple(
@@ -286,14 +304,14 @@ def occurrences_missing_colour_names(package: AssemblyPackage) -> Tuple[str, ...
     """Return the multi-part occurrences not named for a stocked colour.
 
     A single-occurrence package binds nothing: there is one solid, one spool,
-    and no name to tell them apart by.
+    and no name to tell them apart by. A Bought Part body prints in no
+    colour, so it is neither named for one nor counted.
     """
 
-    if not package.is_multipart:
+    printed = package.printed_occurrences
+    if len(printed) < 2:
         return ()
-    return tuple(
-        item.name for item in package.occurrences if item.colour_name is None
-    )
+    return tuple(item.name for item in printed if item.colour_name is None)
 
 
 def validate_occurrence_colour_names(package: AssemblyPackage) -> Tuple[str, ...]:
@@ -306,7 +324,8 @@ def validate_occurrence_colour_names(package: AssemblyPackage) -> Tuple[str, ...
             "colour (%s); these do not: %s"
             % (", ".join(FILAMENT_COLOUR_NAMES), ", ".join(unnamed))
         )
-    return tuple(item.name for item in package.occurrences) if package.is_multipart else ()
+    printed = package.printed_occurrences
+    return tuple(item.name for item in printed) if len(printed) >= 2 else ()
 
 
 def validate_production_parts(
@@ -320,13 +339,15 @@ def validate_production_parts(
             "Made assembly-package lists %d occurrences but lacks production STEPs: %s"
             % (package.occurrence_count, ", ".join(missing))
         )
-    return package.production_step_paths if package.is_multipart else ()
+    return package.production_step_paths if len(package.printed_occurrences) >= 2 else ()
 
 
 __all__ = [
     "ASSEMBLY_PACKAGE_KIND",
     "ASSEMBLY_PACKAGE_PATH",
     "ASSEMBLY_PACKAGE_SCHEMA_VERSION",
+    "BOUGHT_OCCURRENCE_HEX",
+    "BOUGHT_OCCURRENCE_PREFIX",
     "AssemblyOccurrence",
     "AssemblyPackage",
     "IDENTITY_TRANSFORM",

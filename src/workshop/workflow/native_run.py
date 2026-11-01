@@ -89,6 +89,7 @@ from workshop.make.print_sheets import verify_made_print_sheets
 from workshop.make.kit_tree import verify_made_tree
 from workshop.make.kit_manual import verify_made_manual
 from workshop.make.power import verify_made_power
+from workshop.make.bought_model import verify_made_bought
 from workshop.make.blocked_reports import (
     run_blocked_reports,
     verify_no_open_blocked_reports,
@@ -3294,6 +3295,13 @@ def _power_history(host_state_root: Path) -> list[dict[str, Any]]:
     """The circuit the current Make's acceptance checked (ADR 0095)."""
 
     return _latest_make_check(host_state_root, "power")
+
+
+def _bought_model_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """The Bought Part model the current Make's acceptance checked (ADR 0095,
+    2026-11-01)."""
+
+    return _latest_make_check(host_state_root, "bought_model")
 
 
 def _print_sheet_history(host_state_root: Path) -> list[dict[str, Any]]:
@@ -8215,6 +8223,15 @@ def _evaluate_make_stage(
         power = verify_made_power(run.run_root, made, sealed_contract)
         if power is not None:
             product_checks["power"] = [power]
+        # ADR 0095 (2026-11-01): the sealed circuit's Bought Parts are in the
+        # model, its pictures are the ones drawn, and the README carries the
+        # contract's assembly text; the host rebuilds no geometry for it.
+        bought = verify_made_bought(
+            run.run_root, made, sealed_contract,
+            _sealed_kit_catalogue(run.run_root, checkpoint.wish_sha256),
+        )
+        if bought is not None:
+            product_checks["bought_model"] = [bought]
         if blocked_reports:
             product_checks["blocked_reports"] = blocked_reports
         if contract_amendments:
@@ -11011,6 +11028,7 @@ def _native_receipt(
     kit_tree = _kit_tree_history(paths.host_state) if paths is not None else []
     kit_manual = _kit_manual_history(paths.host_state) if paths is not None else []
     power = _power_history(paths.host_state) if paths is not None else []
+    bought_model = _bought_model_history(paths.host_state) if paths is not None else []
     contract_amendments = (
         _contract_amendment_history(paths.host_state) if paths is not None else []
     )
@@ -11297,6 +11315,10 @@ def _native_receipt(
     if power:
         # ADR 0095: the powered toy's circuit and its power report.
         receipt["power"] = power[0]
+    if bought_model:
+        # ADR 0095 (2026-11-01): the Bought Parts drawn into the model and
+        # the electrical pictures, only for a run whose catalogue models them.
+        receipt["bought_model"] = bought_model[0]
     if checkpoint.effort is not None:
         receipt["workflow"] = checkpoint.effort
     receipt["agent"] = checkpoint.manager_id

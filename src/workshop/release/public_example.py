@@ -1231,6 +1231,33 @@ def _public_hero_path(staging: Path) -> Optional[str]:
     return None
 
 
+ELECTRICAL_REPORTS = "make/verification/reports/electrical"
+ELECTRICAL_PICTURES = (
+    ("cutaway.png", "Every Bought Part in place, printed parts cut away"),
+    ("exploded.png", "The Bought Parts backed out of their mounts"),
+    ("wiring.png", "Wiring diagram"),
+)
+
+
+def _electrical_markdown(staging: Path) -> str:
+    """A powered toy's Electrical Assembly section (ADR 0095, 2026-11-01):
+    Make's deterministic pictures and the contract's assembly text, exactly
+    as sealed, or nothing for a toy without them."""
+
+    directory = staging / ELECTRICAL_REPORTS
+    text_path = directory / "assembly.md"
+    if not (directory / "electrical.json").is_file() or not text_path.is_file():
+        return ""
+    text = text_path.read_text(encoding="utf-8").strip()
+    pictures = "".join(
+        "![%s](%s/%s)\n\n" % (alt, ELECTRICAL_REPORTS, name)
+        for name, alt in ELECTRICAL_PICTURES
+        if (directory / name).is_file()
+    )
+    heading, _, body = text.partition("\n")
+    return "%s\n\n%s%s\n\n" % (heading, pictures, body.strip())
+
+
 def _reproduce_markdown(
     staging: Path,
     *,
@@ -1852,6 +1879,7 @@ def materialize_public_example(
             "%s"
             "| Inventor | [%s](../../inventors/%s/) |\n"
             "| Factory | %s |\n\n"
+            "%s"
             "%s\n"
             "%s\n"
             "%s\n"
@@ -1885,6 +1913,7 @@ def materialize_public_example(
             _display_inventor_id(inventor_id) or inventor_id,
             inventor_id,
             factory_cell,
+            _electrical_markdown(staging),
             _workflow_overview_markdown(staging),
             _creation_story_markdown(staging),
             _run_cost_markdown(public_token_summary, public_timing_summary),
