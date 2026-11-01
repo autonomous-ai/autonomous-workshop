@@ -552,6 +552,12 @@ Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
   as the package names the occurrence (`STAGE.json.production_parts_rule`).
   The host rejects a multi-part Make without them. The shop receives these
   files as its addressable parts and renders each in the colour sealed on it;
+- for a powered toy whose sealed catalogue snapshot models its Bought Parts
+  (ADR 0095, 2026-11-01; make-round's `references/bought-parts.md`), every
+  Bought Part as a magenta `bought_<part>` occurrence from `bought_group()`.
+  These are not printed: they need no colour name and no `parts/` STEP. A
+  root `README.md` carries `measure/electrical/assembly.md` verbatim and
+  says nothing else about who assembles or solders the circuit;
 - an occurrence name ending in the filament colour that part prints in, for
   every occurrence of a multi-part model: `<part>_<colour>`, as in `arm_black`,
   `leg_dark_brown`, `canopy_misty_blue`. Name the assembly labels that way in

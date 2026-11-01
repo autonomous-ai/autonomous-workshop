@@ -492,6 +492,20 @@ instances.)
     with only external sources), `switch_logic` (one sentence),
     `assembled_by` (`maker` or `buyer`), `joins` (`solder` or
     `solderless`) and `batteries_included` (true or false).
+  - `pcba` (optional, ADR 0095 amendment of 2026-11-01): the parts that
+    arrive factory-assembled on one board, exactly `{"parts": [ids]}`, each
+    an electrical part listed once, never an external source or a wire:
+    `"pcba": {"parts": ["usb-c", "r-screen", "screen-led", "warm-1"]}`.
+    `assembled_by` and `joins` then describe only the parts off the board,
+    which the maker or buyer fits and joins to it. Without `pcba`, every
+    join is the `assembled_by`'s by `joins`. Make draws the board as
+    `bought_pcba`, and the README's Electrical assembly text says which parts
+    are on it.
+  - When a part's catalogue entry records a `model` (its form, or a
+    redistributable vendor STEP), Make draws every Bought Part into the
+    sealed model, magenta and never printed, and final verification writes
+    the exploded, cut-away and wiring pictures and the Electrical assembly
+    text the product README carries verbatim.
   - The section's parts are sealed with their catalogue snapshot, so a toy
     that is no kit still carries its Bought Parts. A kit that has the
     section names in it every tree Bought Part of an electrical category,

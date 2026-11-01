@@ -124,7 +124,9 @@ When the toy has anything electrical — a light, a switch, a battery, a motor
   runs from the buyer's own charger, an external source behind a carried
   inlet such as a USB-C receptacle); and who assembles it
   (the maker or the buyer) and whether its joins are soldered or
-  solderless. A buyer kit prefers solderless parts. These become the
+  solderless, and which parts, if any, arrive factory-assembled on one
+  board (a PCBA, the contract's `pcba`). A buyer kit prefers solderless
+  parts. These become the
   contract's `electrical` section (schema 10, CONTRACT-FORMAT.md); the
   owner approves the circuit with the images.
 
