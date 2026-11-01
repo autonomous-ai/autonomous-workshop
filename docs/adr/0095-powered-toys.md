@@ -284,9 +284,12 @@ prose.
    is recorded yet. The Wish's sealed catalogue snapshot carries `model`, so
    a run reads the model it sealed.
 2. **Factory-assembled board.** A schema 10 section may name `pcba:
-   {"parts": [ids]}`, the parts that arrive on one factory-assembled board.
-   Each is an electrical part listed once, never an external source or a
-   wire. `assembled_by` and `joins` then describe only the parts off the
+   {"parts": [ids], "bounds_mm": [[x, y, z], [x, y, z]]}`: the parts that
+   arrive on one factory-assembled board, and the box the board fills in the
+   Display Pose frame. Each part is an electrical part listed once, never an
+   external source or a wire. The board is no catalogue part, so the
+   contract is the only source of its outline; Make never estimates one,
+   and a `pcba` without `bounds_mm` is refused. `assembled_by` and `joins` then describe only the parts off the
    board. This settles E4's wording; buying the board as one catalogue line
    is still the owner's.
 3. **Bought bodies in the model.** For a schema 10 circuit with no Assembly
@@ -294,10 +297,11 @@ prose.
    runs the run-local `make-round/scripts/bought_model.py --build`. From the
    power report's mount envelopes and a Make-authored
    `measure/bought-placements.json` (each directional part's `facing`, a
-   lever's `hinge`, the board's envelope, optional wire routes), it draws:
+   lever's `hinge`, optional wire routes), it draws:
    - one body per carried part instance, seated against its envelope's back
      face and centred across it, refusing a body larger than its envelope;
-   - `bought_pcba` exactly when the contract names a `pcba`;
+   - `bought_pcba` exactly when the contract names a `pcba`, exactly at its
+     `bounds_mm` (a placements file may not place the board);
    - wire routes swept at the wire's lead diameter.
    It writes them as `bought/<name>.step` and a `bought_group()`. The
    assembly entry adds the group, so the sealed `assembled.step` and the
@@ -329,7 +333,7 @@ prose.
    and without rebuilding geometry (ADR 0061), that:
    - the record passed `bought_model.py`;
    - one body exists per carried part instance, and the board exactly when
-     there is a `pcba`;
+     there is a `pcba`, drawn from the contract at its `bounds_mm`;
    - every body STEP is the one listed;
    - the assembly-package's `bought_` occurrences are exactly those bodies,
      in magenta;
@@ -347,15 +351,27 @@ add bodies to it. A host re-projection would also author Make bytes after
 acceptance, which ADR 0061 forbids. It gets them through one small fix
 round:
 
-1. The owner adds `pcba` to `toys-spec/macintosh-fidget/contract/CONTRACT.md`,
-   naming the receptacle, the resistors and the LEDs.
-2. Run `workshop fix <toy> --contract CONTRACT.md --agent claude
-   --no-publish`. The revision Wish reseals the current catalogue, now with
-   models.
-3. Every printed Component carries forward unchanged. The round writes the
-   placements and the board envelope, runs `--build`, adds `bought_group()`
-   to the assembly entry, then runs an assembly round, `--full`, and the
-   README text.
+1. The owner adds to the contract's `electrical` section
+   (`toys-spec/macintosh-fidget/contract/CONTRACT.md`) a `pcba` naming the
+   receptacle, the seven resistors and the four LEDs. Its `bounds_mm` is the
+   outline the contract's "Circuit and board" prose already states:
+   `[[-12.0, 29.4, 2.4], [12.0, 31.0, 34.4]]`.
+2. build-a-toy runs one correction round from the r00 run workspace, with
+   this PR merged into the checkout it runs from:
+   `workshop fix <r00 run workspace> --prompt-file <brief> --contract
+   CONTRACT.md --ref ...(8) --guide ...(7) --agent claude --no-publish
+   --turn-minutes 360 --max-tokens 100000000 --check-motion true`. The brief
+   asks for the Bought Parts in the model and the README text. The revision
+   Wish reseals the current catalogue, now with models.
+3. Every printed Component should carry forward: a Component's carry key
+   binds its rows, its named prose sections and its references, and the
+   `electrical` block is none of them. The owner therefore edits only the
+   JSON block, not the "Circuit and board" prose, which the chamber, base
+   and floppy name.
+   An earlier Mac fix did not carry unchanged Components when a shared
+   helper's hash moved, so the round's carry is checked, not assumed. The round writes the placements, runs `--build`, adds
+   `bought_group()` to the assembly entry, then runs an assembly round,
+   `--full`, and the README text.
 
 build-a-toy then publishes the conforming build as usual.
 

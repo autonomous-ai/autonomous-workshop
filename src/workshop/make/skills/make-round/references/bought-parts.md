@@ -23,7 +23,6 @@ they get no `parts/` production STEP.
    {"kind": "bought-placements", "schema_version": 1,
     "parts": {"usb-c": {"facing": "-y"},
               "s-half": {"facing": "+z", "hinge": "+x"}},
-    "pcba": {"envelope": "ref/validation/pcba-envelope.step"},
     "routes": [{"wire": "wire", "from": "s-half", "to": "pcba",
                 "points": [[2.4, 16.6, 13.6], [2.4, 29.0, 13.6]]}]}
    ```
@@ -31,11 +30,12 @@ they get no `parts/` production STEP.
    - `facing` is the side the part works through: a receptacle's mouth, an
      LED's light, a lever switch's lever. It is required for those forms.
    - `hinge` is the end of a lever switch's lever that is hinged.
-   - `pcba` names the board's envelope, a validation STEP in the assembly
-     frame like the power report's. It is required when the contract lists a
-     `pcba`, and refused otherwise.
    - `routes` are optional wire polylines in the assembly frame; each end
      lies within 1 mm of the body it joins.
+   - The board (`bought_pcba`) is never placed here. It is drawn exactly at
+     the contract's `pcba.bounds_mm`, because the board is no catalogue part
+     and only the contract may state its outline. A placements file with a
+     `pcba` key is refused.
 3. Run `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/bought_model.py
    <project> --build`. It writes `bought/<name>.step`, `bought/__init__.py`
    and `measure/bought-bodies.json`. Fix every refusal it prints; never edit
@@ -70,7 +70,7 @@ that:
 
 - final verification passed `bought_model.py`;
 - there is one body per carried part instance, and the board exactly when
-  the contract lists a `pcba`;
+  the contract lists a `pcba`, at its `bounds_mm`;
 - every body STEP is the one the list records;
 - the assembly-package's `bought_` occurrences are exactly those bodies, in
   magenta;
@@ -80,7 +80,8 @@ that:
 ## On a fix run
 
 A toy sealed before catalogue models existed gets its Bought Parts through a
-`workshop fix` round whose contract the owner amended, if the circuit needs
-it, and whose Wish seals the current catalogue. Every printed Component
+`workshop fix` round whose contract the owner amended (a `pcba` with its
+`bounds_mm`, if the toy has a factory-assembled board), and whose Wish
+reseals the current catalogue. Every printed Component
 carries forward unchanged. The round's work is steps 2 to 6, followed by an
 assembly round and `--full`.

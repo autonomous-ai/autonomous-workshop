@@ -20,7 +20,6 @@ envelope, oriented by the Make-authored placements file
 
     {"kind": "bought-placements", "schema_version": 1,
      "parts": {"usb-c": {"facing": "+y"}, "s-half": {"facing": "+z", "hinge": "+x"}},
-     "pcba": {"envelope": "ref/validation/pcba-envelope.step"},
      "routes": [{"wire": "wire", "from": "s-half", "to": "pcba",
                  "points": [[2.4, 16.6, 13.6], [2.4, 29.0, 13.6], [2.4, 29.0, 9.0]]}]}
 
@@ -28,9 +27,10 @@ envelope, oriented by the Make-authored placements file
 light, a lever switch's lever. ``hinge`` is the end a lever is hinged at.
 A body seats against its envelope's face opposite ``facing``, centred across
 it; a body larger than its envelope on any axis fails, because the catalogue
-part would not fit the mount Make sealed. ``pcba`` names the envelope of the
-contract's factory-assembled board, which every contract with a ``pcba``
-needs. A route is a wire's polyline, swept at the wire's lead diameter; each
+part would not fit the mount Make sealed. The factory-assembled board, when
+the contract names a ``pcba``, is drawn exactly at the contract's
+``pcba.bounds_mm``: the board is no catalogue part, so only the contract may
+state its outline, and nothing here estimates it. A route is a wire's polyline, swept at the wire's lead diameter; each
 end lies within ``ROUTE_REACH_MM`` of the body it joins. Routes are optional:
 a circuit drawn with none still has its wiring diagram.
 
@@ -237,8 +237,9 @@ def check_placements(document) -> list[str]:
     problems = []
     if (not isinstance(document, dict) or document.get("kind") != PLACEMENTS_KIND
             or document.get("schema_version") != SCHEMA_VERSION
-            or not set(document) <= {"kind", "schema_version", "parts", "pcba", "routes"}):
-        return ["%s must be {kind: %s, schema_version: 1, parts, pcba?, routes?}" % (PLACEMENTS_PATH, PLACEMENTS_KIND)]
+            or not set(document) <= {"kind", "schema_version", "parts", "routes"}):
+        return ["%s must be {kind: %s, schema_version: 1, parts, routes?}; the board's outline is the "
+                "contract's pcba.bounds_mm, never placed here" % (PLACEMENTS_PATH, PLACEMENTS_KIND)]
     parts = document.get("parts", {})
     if not isinstance(parts, dict):
         return ["%s.parts must map part ids to {facing, hinge?}" % PLACEMENTS_PATH]
@@ -249,10 +250,6 @@ def check_placements(document) -> list[str]:
         for field in ("facing", "hinge"):
             if field in item and item[field] not in AXES:
                 problems.append("%s.parts.%s.%s must be one of %s" % (PLACEMENTS_PATH, key, field, ", ".join(AXES)))
-    board = document.get("pcba")
-    if board is not None and (not isinstance(board, dict) or set(board) != {"envelope"}
-                              or not isinstance(board["envelope"], str)):
-        problems.append("%s.pcba must be {envelope}: the board's mount envelope STEP" % PLACEMENTS_PATH)
     routes = document.get("routes", [])
     if not isinstance(routes, list) or len(routes) > MAX_ROUTES:
         problems.append("%s.routes must list at most %d wire routes" % (PLACEMENTS_PATH, MAX_ROUTES))
@@ -418,7 +415,7 @@ def _reach(point, bounds) -> float:
 def plan(electrical: dict, catalogue: dict, envelopes: dict, bounds: dict, placements: dict) -> dict:
     """Every bought body of the circuit, seated in its envelope.
 
-    ``envelopes`` maps a part id (and ``pcba``) to its envelope path, and
+    ``envelopes`` maps a part id to its envelope path, and
     ``bounds`` maps each envelope path to ``(lo, hi)``. Raises Refused naming
     every problem; the plan is deterministic in its inputs."""
 
@@ -464,21 +461,14 @@ def plan(electrical: dict, catalogue: dict, envelopes: dict, bounds: dict, place
             bodies.append(body)
     for part in sorted(set(places) - {item["id"] for item in electrical.get("parts") or ()}):
         problems.append("%s places %s, which is no electrical part" % (PLACEMENTS_PATH, part))
-    board = placements.get("pcba") if isinstance(placements, dict) else None
-    if board_members and board is None:
-        problems.append("the contract puts %d parts on a factory-assembled board (pcba), but %s gives the "
-                        "board no envelope" % (len(board_members), PLACEMENTS_PATH))
-    elif board is not None and not board_members:
-        problems.append("%s gives a board envelope, but the contract puts no part on a pcba" % PLACEMENTS_PATH)
-    elif board is not None:
-        if board["envelope"] not in bounds:
-            problems.append("the board envelope %s is not a STEP of the CAD project" % board["envelope"])
-        else:
-            lo, hi = bounds[board["envelope"]]
-            body, _ = plan_body("board", {}, lo, hi, {})
-            body.update(name=OCCURRENCE_PREFIX + BOARD_ID, part=BOARD_ID, bought=None, instance=1,
-                        envelope=board["envelope"], on_board=False, source="envelope", licence=None, url=None)
-            bodies.append(body)
+    board = (electrical.get("pcba") or {}).get("bounds_mm")
+    if board_members:
+        # The board is no catalogue part: its outline is the contract's, drawn
+        # as stated and never estimated from Make's mounts.
+        body, _ = plan_body("board", {}, tuple(board[0]), tuple(board[1]), {})
+        body.update(name=OCCURRENCE_PREFIX + BOARD_ID, part=BOARD_ID, bought=None, instance=1,
+                    envelope=None, on_board=False, source="contract", licence=None, url=None)
+        bodies.append(body)
     where = {}
     for body in bodies:
         where.setdefault(body["part"], []).append(body["bounds"])
@@ -931,8 +921,6 @@ def prepare(project: Path, bounds_reader=envelope_bounds) -> tuple[dict, dict, d
         raise Refused(problems)
     envelopes, power_raw = power_envelopes(project)
     paths = list(envelopes.values())
-    if isinstance(placements.get("pcba"), dict):
-        paths.append(placements["pcba"]["envelope"])
     bounds = bounds_reader(project, paths)
     planned = plan(electrical, catalogue, envelopes, bounds, placements)
     for body in planned["bodies"]:

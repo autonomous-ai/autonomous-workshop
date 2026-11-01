@@ -493,13 +493,18 @@ instances.)
     `assembled_by` (`maker` or `buyer`), `joins` (`solder` or
     `solderless`) and `batteries_included` (true or false).
   - `pcba` (optional, ADR 0095 amendment of 2026-11-01): the parts that
-    arrive factory-assembled on one board, exactly `{"parts": [ids]}`, each
-    an electrical part listed once, never an external source or a wire:
-    `"pcba": {"parts": ["usb-c", "r-screen", "screen-led", "warm-1"]}`.
+    arrive factory-assembled on one board and the board's outline, exactly
+    `{"parts": [ids], "bounds_mm": [[x, y, z], [x, y, z]]}`. Each part is an
+    electrical part listed once, never an external source or a wire.
+    `bounds_mm` is the box the board fills in the Display Pose frame, lowest
+    corner first; the board is no catalogue part, so the contract is its only
+    source and Make never estimates it:
+    `"pcba": {"parts": ["usb-c", "r-screen", "screen-led", "warm-1"],
+    "bounds_mm": [[-12.0, 29.4, 2.4], [12.0, 31.0, 34.4]]}`.
     `assembled_by` and `joins` then describe only the parts off the board,
     which the maker or buyer fits and joins to it. Without `pcba`, every
     join is the `assembled_by`'s by `joins`. Make draws the board as
-    `bought_pcba`, and the README's Electrical assembly text says which parts
+    `bought_pcba` exactly at `bounds_mm`, and the README's Electrical assembly text says which parts
     are on it.
   - When a part's catalogue entry records a `model` (its form, or a
     redistributable vendor STEP), Make draws every Bought Part into the

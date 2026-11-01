@@ -10,8 +10,9 @@ any geometry (ADR 0061), that
 - final verification passed ``bought_model.py``;
 - the body list ``measure/bought-bodies.json`` draws one body per carried
   part instance of the sealed circuit (none for the buyer's own supply), the
-  board exactly when the contract names a ``pcba``, and every body's STEP is
-  sealed with the hash the list records;
+  board exactly when the contract names a ``pcba`` and exactly at its
+  ``bounds_mm``, and every body's STEP is sealed with the hash the list
+  records;
 - the assembly-package carries exactly those bodies as its ``bought_``
   occurrences, each in the reserved not-printed magenta (ADR 0092 Q29);
 - the three electrical pictures and the Electrical Assembly text are the
@@ -39,7 +40,7 @@ from workshop.make.assembly_package import (
 )
 from workshop.make.power import PIPELINE_PATH, has_electrical
 from workshop.wish.catalogues import BOUGHT_PART_HEX
-from workshop.wish.electrical import pcba_parts
+from workshop.wish.electrical import pcba_bounds, pcba_parts
 
 BODIES_PATH = "measure/bought-bodies.json"
 ELECTRICAL_PATH = "measure/electrical/electrical.json"
@@ -157,6 +158,20 @@ def verify_made_bought(
             "%s does not draw the sealed circuit's Bought Parts: missing %s; extra %s"
             % (BODIES_PATH, ", ".join(missing[:6]) or "none", ", ".join(extra[:6]) or "none")
         )
+    outline = pcba_bounds(electrical)
+    if outline is not None:
+        board = next(item for item in listed if item.get("name") == "bought_%s" % BOARD_ID)
+        stated = [[float(v) for v in corner] for corner in outline]
+        drawn_at = board.get("bounds")
+        if (
+            board.get("source") != "contract" or not isinstance(drawn_at, list) or len(drawn_at) != 2
+            or any(not isinstance(corner, list) or len(corner) != 3 for corner in drawn_at)
+            or any(abs(float(drawn_at[k][i]) - stated[k][i]) > 1e-6 for k in range(2) for i in range(3))
+        ):
+            raise ContractError(
+                "the board body is not the contract's pcba.bounds_mm %s: the board is no catalogue part, "
+                "so its outline is the contract's, never estimated" % outline
+            )
     drawn = []
     for item in listed + routes:
         name, step = item.get("name"), item.get("step")
@@ -213,6 +228,7 @@ def verify_made_bought(
         "bought_bodies": len(listed),
         "routes": len(routes),
         "pcba": BOARD_ID if pcba_parts(electrical) else None,
+        "pcba_bounds_mm": outline,
         "pictures": {name: (prefix / ELECTRICAL_DIRECTORY / name).as_posix() for name in PICTURES},
         "files_sha256": shas,
     }

@@ -40,8 +40,11 @@ or absent, and ``batteries_included`` is false.
 
 A circuit whose parts partly arrive on one factory-assembled board (ADR 0095
 amendment of 2026-11-01) lists them in an optional ``pcba``: ``{"parts":
-["usb-c", "r-screen", "screen-led"]}``. Those parts stay individual
-catalogue Bought Parts in ``parts``; the board itself is no catalogue part.
+["usb-c", "r-screen", "screen-led"], "bounds_mm": [[-12, 29.4, 2.4], [12, 31.0,
+34.4]]}``. Those parts stay individual catalogue Bought Parts in ``parts``;
+the board itself is no catalogue part, so the contract states its outline,
+the box it fills in the Display Pose frame, which Make draws as the board's
+body and never estimates.
 ``assembled_by`` and ``joins`` then say who joins, and how, every part that
 is not on the board, and the toy's Electrical Assembly text and wiring
 diagram are written from both, so the README follows the contract.
@@ -57,6 +60,7 @@ Assembly Tree and its Electrical section name the same catalogue entries.
 from __future__ import annotations
 
 import copy
+import math
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional, Tuple
@@ -116,6 +120,15 @@ class ContractElectrical:
 
 def _number(value: Any) -> bool:
     return not isinstance(value, bool) and isinstance(value, (int, float))
+
+
+def _bounds(value: Any) -> bool:
+    return (
+        isinstance(value, list) and len(value) == 2
+        and all(isinstance(corner, list) and len(corner) == 3 and all(_number(v) and math.isfinite(v) for v in corner)
+                for corner in value)
+        and all(value[0][i] < value[1][i] for i in range(3))
+    )
 
 
 def _text(value: Any) -> bool:
@@ -296,11 +309,15 @@ def parse_electrical(
 
     if "pcba" in value:
         board = value["pcba"]
-        members = board.get("parts") if isinstance(board, dict) and set(board) == {"parts"} else None
+        members = board.get("parts") if isinstance(board, dict) and set(board) == {"parts", "bounds_mm"} else None
         if not isinstance(members, list) or not members or len(members) > MAX_PARTS:
-            errors.append("%s.pcba must be {parts}: the 1 to %d circuit parts that arrive on one "
-                          "factory-assembled board" % (label, MAX_PARTS))
+            errors.append("%s.pcba must be {parts, bounds_mm}: the 1 to %d circuit parts that arrive on one "
+                          "factory-assembled board, and the board's outline" % (label, MAX_PARTS))
         else:
+            if not _bounds(board["bounds_mm"]):
+                errors.append("%s.pcba.bounds_mm must be [[x, y, z], [x, y, z]], the board's lowest and "
+                              "highest corners in the Display Pose frame, each above the other on every "
+                              "axis" % label)
             seen_members = set()
             for key in members:
                 if not isinstance(key, str) or key not in parts:
@@ -344,4 +361,11 @@ def pcba_parts(section: Mapping[str, Any]) -> Tuple[str, ...]:
     return tuple(board["parts"]) if isinstance(board, dict) else ()
 
 
-__all__ = ["CATEGORY_ROLES", "ContractElectrical", "ROLES", "parse_electrical", "pcba_parts"]
+def pcba_bounds(section: Mapping[str, Any]) -> Optional[List[List[float]]]:
+    """The contract's outline of its factory-assembled board, if it has one."""
+
+    board = section.get("pcba")
+    return copy.deepcopy(board["bounds_mm"]) if isinstance(board, dict) else None
+
+
+__all__ = ["CATEGORY_ROLES", "ContractElectrical", "ROLES", "parse_electrical", "pcba_bounds", "pcba_parts"]

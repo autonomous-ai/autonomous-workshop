@@ -49,6 +49,9 @@ PRODUCT = "products/toy"
 MAGENTA = [1.0, 0.0, 1.0, 1.0]
 
 
+BOARD = [[-12.0, 0.0, 0.0], [12.0, 1.6, 30.0]]
+
+
 def small_circuit(pcba=True):
     """A USB night light: the buyer's charger, a receptacle, one lever
     switch, one chip resistor and one 5 mm LED, joined by hookup wire."""
@@ -70,7 +73,7 @@ def small_circuit(pcba=True):
         "assembled_by": "maker", "joins": "solder", "batteries_included": False,
     }
     if pcba:
-        electrical["pcba"] = {"parts": ["usb-c", "r-screen", "screen-led"]}
+        electrical["pcba"] = {"parts": ["usb-c", "r-screen", "screen-led"], "bounds_mm": BOARD}
     return electrical
 
 
@@ -87,13 +90,11 @@ ENVELOPES = {
     "s-half": ((10.0, 0.0, 0.0), (24.0, 7.0, 8.0)),
     "r-screen": ((-3.0, 2.0, 5.0), (3.0, 3.0, 8.0)),
     "screen-led": ((-4.0, 3.0, 10.0), (4.0, 13.0, 18.0)),
-    "pcba": ((-12.0, 0.0, 0.0), (12.0, 1.6, 30.0)),
 }
 PLACEMENTS = {
     "kind": "bought-placements", "schema_version": 1,
     "parts": {"usb-c": {"facing": "-y"}, "s-half": {"facing": "+z", "hinge": "+x"},
               "r-screen": {"facing": "+y"}, "screen-led": {"facing": "+y"}},
-    "pcba": {"envelope": "ref/validation/pcba-envelope.step"},
 }
 
 
@@ -106,7 +107,7 @@ def bounds():
 
 
 def envelopes():
-    return {part: envelope_path(part) for part in ENVELOPES if part != "pcba"}
+    return {part: envelope_path(part) for part in ENVELOPES}
 
 
 class PlanTest(unittest.TestCase):
@@ -158,12 +159,14 @@ class PlanTest(unittest.TestCase):
         del boxes[envelope_path("r-screen")]
         self.assertIn("r-screen: the power report seats it in no mount envelope", self.refused(boxes=boxes))
 
-    def test_the_board_envelope_is_required_exactly_when_the_contract_names_a_pcba(self):
-        placements = copy.deepcopy(PLACEMENTS)
-        del placements["pcba"]
-        self.assertIn("gives the board no envelope", self.refused(placements=placements))
+    def test_the_board_is_drawn_at_the_contract_s_outline_and_never_placed_by_make(self):
+        board = self.plan()["bodies"][-1]
+        self.assertEqual((board["name"], board["source"], board["envelope"]), ("bought_pcba", "contract", None))
+        self.assertEqual(board["bounds"], BOARD)
         self.electrical = sealed(small_circuit(pcba=False))[0]["electrical"]
-        self.assertIn("the contract puts no part on a pcba", self.refused())
+        self.assertNotIn("bought_pcba", [body["name"] for body in self.plan()["bodies"]])
+        placements = dict(copy.deepcopy(PLACEMENTS), pcba={"envelope": "ref/validation/pcba-envelope.step"})
+        self.assertIn("the board's outline is the contract's pcba.bounds_mm", tool.check_placements(placements)[0])
 
     def test_a_route_must_reach_the_bodies_it_joins(self):
         placements = copy.deepcopy(PLACEMENTS)
@@ -180,7 +183,7 @@ class PlanTest(unittest.TestCase):
         self.assertTrue(tool.check_placements({"kind": "bought-placements", "schema_version": 1,
                                                "parts": {"usb-c": {"facing": "up"}}}))
         self.assertTrue(tool.check_placements({"kind": "bought-placements", "schema_version": 1,
-                                               "parts": {}, "pcba": {"size_mm": [1, 2, 3]}}))
+                                               "parts": {"s-half": {"hinge": "sideways"}}}))
         self.assertEqual(tool.check_placements(PLACEMENTS), [])
 
 
@@ -275,6 +278,7 @@ class MadeFixture:
             self.write("cad/bought/%s.step" % name, data)
             bodies.append({"name": name, "step": "bought/%s.step" % name,
                            "step_sha256": hashlib.sha256(data).hexdigest()})
+        bodies[-1].update(source="contract", bounds=BOARD)
         self.bodies = {"kind": "bought-bodies", "schema_version": 1, "bodies": bodies, "routes": []}
         self.text = tool.assembly_text(self.contract["electrical"], self.catalogue["bought_parts"])
         self.write("cad/measure/verification-pipeline.md", self.pipeline("rc=0"))
@@ -354,6 +358,15 @@ class MadeBoughtTest(MadeFixture, unittest.TestCase):
     def test_a_board_body_without_a_pcba_in_the_contract_is_refused(self):
         self.contract, self.catalogue = sealed(small_circuit(pcba=False))
         self.assertIn("extra bought_pcba", self.refused())
+
+    def test_a_board_not_at_the_contract_s_outline_is_refused(self):
+        board = self.bodies["bodies"][-1]
+        board.update(source="make-estimate", bounds=BOARD)
+        self.seal()
+        self.assertIn("the board body is not the contract's pcba.bounds_mm", self.refused())
+        board.update(source="contract", bounds=[[-12.0, 0.0, 0.0], [12.0, 1.6, 31.0]])
+        self.seal()
+        self.assertIn("the board body is not the contract's pcba.bounds_mm", self.refused())
 
     def test_a_body_step_that_is_not_the_listed_one_is_refused(self):
         self.write("cad/bought/bought_usb_c.step", b"another body")
@@ -445,8 +458,7 @@ class BuildAndFinalTest(unittest.TestCase):
             path = project / envelope_path(part)
             path.parent.mkdir(parents=True, exist_ok=True)
             export_step(Pos(*centre) * Box(*size), str(path))
-            if part != "pcba":
-                components.append({"id": part, "cad": {"mode": "validation_envelope",
+            components.append({"id": part, "cad": {"mode": "validation_envelope",
                                                        "source": envelope_path(part)}})
         (project / "measure").mkdir()
         (project / "measure/power.json").write_text(json.dumps({"components": components}))
