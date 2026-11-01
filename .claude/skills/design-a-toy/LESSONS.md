@@ -96,6 +96,16 @@ file.
   beside, square and parallel from the stated ranges. For a pin hinge, say
   where the leaf's edge stops beside the knuckles.
 
+### Say beside every engraved cut that its size is not a print minimum
+- **Why:** a run read the blunt-edge rule's "a flat land at least 0.8 mm
+  across" as a minimum width for every groove. It briefed five workers to
+  widen sealed 0.6 grooves to 0.8 and deepen 0.6 cuts to 1.0. Every gate
+  passed the result, which broke four sealed numbers per face, until two
+  workers filed Blocked Reports and the Manager withdrew the brief.
+- **How to apply:** in the section that seals an engraving's width and depth,
+  add that these sizes are not bound by the blunt-edge land rule, which sizes
+  only the flat end of a point, chisel, keel or V underside.
+
 ## Stage 3 - Reference images
 
 ### Draw a part's extra views in one turnaround image, never one view per call
