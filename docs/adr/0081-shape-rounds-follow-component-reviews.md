@@ -453,6 +453,65 @@ no ruling of the packet, a ruling decided again in the fix run binding its
 reviewer, and a review not refused as older than a source run's ruling;
 `make_round --self-check` holds the Wish filter.
 
+## Amendment: a colour word in a row is not a change of rows (2026-11-01, issue #176)
+
+Status: Accepted; implemented and deterministically tested; not yet
+validated by a live run.
+
+**Context.** The colour amendment (issue #160) keeps a recolour in
+`colours.py` off every lock, but a contract's own colour words still bound
+every Component. Turtle Moods v03 (`wish-20261101-111603-d3c27476`) folds
+owner amendment amend-a into its contract: shell#4 "translucent amber"
+becomes "brass" in R04, R09 and the prose sections `Shell`, `Assembly
+order` and `Print stances and details`. Every geometry names the last two,
+and since ADR 0093 prose joins the contract-rows hash, so all nine
+Components recorded a `contract-amendment` unlock and no review carried.
+The fresh reviews then disagreed on two heads and the run stopped.
+
+**Decision.** For new runs and refreshed tools, a component round compares
+its rows with the reviewed rows colour-blind:
+
+1. **Colour words.** Every colour name the run's palette stocks
+   (`cad/scripts/cadfilament.py`: the owner's catalogue and the Bambu
+   stocks), in any case, with spaces, hyphens or underscores between its
+   words, longest first, and any `#rrggbb` hex, read as one mask. A word
+   inside another word (`oaken`) is not one.
+2. **The reviewed rows.** The round rebuilds the rows its review judged
+   from the reviewed round's own `summary.json` `contract` (geometry row,
+   requirement and Interface texts by id, prose sections) over the current
+   rows document, and trusts them only when they hash to the
+   `contract_rows` the review recorded. No new field is recorded, so a
+   source sealed before this change is read the same way.
+3. **Colour only.** When the two differ and are equal with colours masked,
+   the round compares the review's own rows digest: a locked Component
+   records no contract-amendment unlock, and the review carries when the
+   rest of the carry key holds. The summary records the rows it delivered
+   (`contract_rows`, `carry_key`) and `rows_colour_only`, so a later review
+   binds the current rows.
+4. **Anything else** (a word added, a sentence removed, a number moved, a
+   reviewed summary that does not reproduce the recorded hash) unlocks and
+   re-reviews as before.
+
+This is the colour amendment's decision 4 applied to the contract's words:
+a component review judges form, never colour, and the recoloured images
+are judged once, in the assembly round, the blind review and `--full`.
+
+**Consequences.** A colour-only owner amendment costs no component review.
+On the Turtle Moods data, a fix run from v02 carries six of nine reviews;
+the shell's amendment also deleted "The amber shell lets light through, so
+the mint tray shows faintly inside it", so the shell is re-reviewed, and
+the two heads whose v02 reviews rested on rulings are re-reviewed under
+issue #164. A false colour word (a name used as an ordinary word, such as
+"glow") changing to another colour name reads as colour-only; the
+assembly round still sees every rendered colour.
+
+**Verification.** `tests/make/test_make_round_fix_carry.py` covers a
+colour-only change of a requirement row and two prose sections keeping the
+lock and carrying twice, an owner amendment of a shared section doing the
+same, a removed sentence, an added word and a moved number each unlocking,
+a tampered reviewed summary carrying nothing, and the mask's spellings.
+`make_round --self-check` holds the mask.
+
 ## Rejected alternatives
 
 - **Keep counting any change after a passing round and raise the cap.** It

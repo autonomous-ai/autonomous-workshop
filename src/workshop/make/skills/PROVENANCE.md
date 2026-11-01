@@ -1,5 +1,17 @@
 # Shared skill provenance
 
+## Workshop-local: fix runs keep STEP-byte locks and colour-only rows; sealed numbers reach the reviewer (2026-11-01, issues #175-#177)
+
+- `make-round` reads a lock a round recorded on STEP bytes as the B-rep its
+  own reproduction build logged (`step_byte_brep`, ADR 0073's issue #175
+  amendment), compares a Component's rows with its review's colour-blind,
+  masking the `cad` palette's colour names (`colour_only_rows`, ADR 0081's
+  issue #176 amendment), and writes the Component's numeric prose sentences
+  into its packet's `contract` as `numbers` (ADR 0084's issue #177
+  amendment); `SKILL.md` says so. It reads `cad/scripts/cadfilament.py`'s
+  `MATERIALS`, so a resync of `cad` must keep that table's name. Only
+  `make-round`'s lock moves; `source_commit` values are unchanged.
+
 ## Workshop-local: a current STEP export reports its shape; fix runs inherit no ruling (2026-11-01, issues #164-#166)
 
 - **Local patch to upstream cadgen (upstream needs the same change).**

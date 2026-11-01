@@ -217,3 +217,48 @@ build123d test, `tests/make/test_gen_step_export_identity.py`, recolours a
 part after a package-only recompose, forces a re-export, puts back foreign
 bytes and reads make_round's `component_identity()`, with one identity
 throughout.
+
+## Amendment (2026-11-01, issue #175): a lock sealed on STEP bytes is read as its B-rep
+
+Status: Accepted; implemented and deterministically tested; not yet
+validated by a live run.
+
+**Context.** The issue #165 amendment fixed what a round records from now
+on, not what earlier rounds recorded. The Turtle Moods fix run
+`wish-20261031-144615-e5100773` sealed its `head-grumpy` and `head-wink`
+locks at r0001 on the fallback: `gen --write` found the export current,
+reported no identity, and the round recorded the STEP's sha256 as
+`parts`, `steps` and the reviewed identity. Its fix run
+`wish-20261101-111603-d3c27476`, with the new cadgen, got the B-rep from
+`gen` (`331654…`, `270d7fb3…`), which matched neither hash: `make_round
+--interface` refused both Coupled Interface checks as "changed after its
+component pass", and an unchanged rerun would have been refused as a change
+to a locked Component. Yet the same r0001 had built the source twice in
+their own processes, its reproduction build (issue #102) and its B-rep
+bundle (issue #101), and both logged exactly those identities; every check
+and render of that round built from source.
+
+**Decision.** For new runs and refreshed tools, make_round migrates on
+read. A recorded identity is a STEP-byte fallback when its round's `gen`
+log reports no `identitySha256`; it is read as the B-rep that round judged
+when its reproduction log and, if present, its bundle log report one same
+identity with exit 0 (`step_byte_brep`). The round policy reads the
+reviewed identity as that B-rep and keeps the STEP hash as
+`step_identity`, with which the carry key is compared, since the review's
+key was made with it; `current_passing_component_round`, and so
+`--require-component-passes`, `--interface` and the final verifier's
+coverage, accept it beside the recorded hashes. Anything else (a missing or
+failed log, two identities, a `gen` that reported one) migrates nothing.
+
+**Consequences.** An unchanged Component of such a source keeps its lock;
+its rerun carries its review when the rest of the carry key holds, and
+its Interface checks run. A genuinely different B-rep still misses. The
+evidence is the run's own round logs, trusted as its state files are; the
+host's Make acceptance is unchanged. Frozen runs keep their tools.
+
+**Verification.** `tests/make/test_make_round_fix_carry.py` covers a lock
+recorded on STEP bytes carrying to the same B-rep built now and qualifying
+for an Interface check before any new round, another B-rep refused, no
+migration after a failed or silent reproduction, and `step_byte_brep`'s
+refusals (no gen log, a gen that built, two identities). `make_round
+--self-check` holds the rule.

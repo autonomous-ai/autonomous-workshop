@@ -318,7 +318,9 @@ sections (`prose_sections`) and every geometry be named by a Guide Image,
 the two extra views of its three-view sheet. The sealed contract carries
 the named sections as `prose`; a component round writes its Component's
 sections into the worker's `summary.json` `contract` and never into the
-review packet; they join its contract-rows hash and so its carry key. The
+review packet (since issue #177 the packet states only their numeric
+sentences, ADR 0084's amendment); they join its contract-rows hash and so
+its carry key (since issue #176 compared colour-blind). The
 worker reads its rows, Interface text and prose, and rows win; the
 Component Reviewer still judges by rows and the reference. Only an owner
 amendment changes prose, and it unlocks every Component whose geometry
