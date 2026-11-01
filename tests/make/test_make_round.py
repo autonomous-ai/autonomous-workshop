@@ -3806,11 +3806,14 @@ class BlockedReportRulingTest(unittest.TestCase):
     RULING = "Keep the arch struts: the part prints upright without support. If a review asks again, give this reason."
 
     def _ledger(self, project, *events):
+        """Append ``events``, each bound to this run's Wish as make_round binds
+        them unless the event names another."""
         ledger = project / "measure" / "blocked-reports.jsonl"
         ledger.parent.mkdir(exist_ok=True)
+        wish = load_module()._wish_binding(project)
         with ledger.open("a", encoding="utf-8") as handle:
             for event in events:
-                handle.write(json.dumps(event) + "\n")
+                handle.write(json.dumps({"wish_sha256": wish, **event}) + "\n")
 
     def _report(self, number, component="body", reason=REQUEST):
         return {"event": "report", "report": number, "at": "2026-10-04T06:28:38Z", "component": component,
@@ -3845,6 +3848,48 @@ class BlockedReportRulingTest(unittest.TestCase):
             self.assertIn("rulings", summary["visual"]["detail"])
             self.assertIn("1 Blocked Report ruling(s) in the packet bind the reviewer: 1",
                           module.render_summary(summary))
+
+    SOURCE_WISH = "3165f277ebca75c44f7d7f1ccab45ccec72d537c7972ca67b242010fd372341a"
+
+    def _carried(self, project, number=1, ruling=RULING):
+        """A decided report as a workshop fix run's cloned ledger holds it:
+        bound to the source run's Wish (issue #164)."""
+        self._ledger(project, {**self._report(number), "wish_sha256": self.SOURCE_WISH},
+                     {**self._decision(number, ruling=ruling), "wish_sha256": self.SOURCE_WISH})
+
+    def test_a_fix_run_starts_with_no_ruling_of_its_source_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            self._carried(project, ruling="The stocked green is final; the reviewer may no longer ask for mint.")
+            self.assertEqual(module.component_rulings(project, "body"), [])
+            _, summary = self._component(module, project, calls)
+            self.assertNotIn("rulings", self._packet(summary))
+            self.assertNotIn("rulings", summary)
+            identity = self._state(project)["identity"]
+            self.assertEqual(summary["carry_key"],
+                             module.carry_key(identity, summary["refs"], project, summary["contract_rows"]))
+            # A dispute of the source run's ruling names no ruling of the packet.
+            with self.assertRaisesRegex(ValueError, "the packet has none"):
+                self._review(module, project, summary, ruling_disputes=[{"report": 1, "reason": "wrong"}])
+
+    def test_a_ruling_decided_again_in_the_fix_run_binds_its_reviewer(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            self._carried(project)
+            self._ledger(project, self._report(2), self._decision(2))
+            _, summary = self._component(module, project, calls)
+            self.assertEqual([item["report"] for item in self._packet(summary)["rulings"]], [2])
+            self.assertEqual([item["report"] for item in summary["rulings"]], [2])
+
+    def test_a_source_run_ruling_does_not_refuse_a_review_as_older_than_a_ruling(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            self._carried(project)
+            self.assertTrue(self._review(module, project, summary)["ok"])
 
     def test_without_a_ruling_the_packet_and_carry_key_are_unchanged(self):
         with tempfile.TemporaryDirectory() as tmp:
