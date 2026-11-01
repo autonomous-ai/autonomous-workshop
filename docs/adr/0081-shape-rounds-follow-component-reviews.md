@@ -15,7 +15,8 @@
   a third unlock reason; ADR 0082); amended by issue #97 (2026-10-04, see
   "Amendment: a Blocked Report ruling binds the Component Reviewer" below)
   and by issue #160 (2026-10-31, see "Amendment: colour is not geometry"
-  below)
+  below) and issue #164 (2026-11-01, see "Amendment: a fix run inherits no
+  ruling" below)
 
 ## Context
 
@@ -402,6 +403,11 @@ Runs created before this change keep their materialized tools on resume; a
 --refresh-tools` or a `workshop fix` run gets the new rule. No contract
 schema, state or summary field changes.
 
+A recolour re-exports each STEP only since ADR 0073's issue #165 amendment
+(2026-11-01): before it, `gen --write` could judge an old-colour export
+current and report no B-rep identity, so the round recorded the export's
+bytes as the reviewed shape and stranded the lock.
+
 ### Verification
 
 Geometry-source tests cover the Colour Module excluded from a Component's
@@ -412,6 +418,40 @@ whose recolour carries its review with no unlock or Shape Round and still
 refuses a geometry change, a `colours.py` with code unlocking as a Shared
 Helper, the assembly packet binding the module, and an Interface check and
 the helper freeze left current by a recolour.
+
+## Amendment: a fix run inherits no ruling (2026-11-01, issue #164)
+
+Status: Accepted; implemented and deterministically tested; not yet
+validated by a live run.
+
+**Context.** `workshop fix` carries the source run's product tree, and with
+it `measure/blocked-reports.jsonl`. Every event of that ledger names its run
+by `wish_sha256`, and an answer from another run is already refused, but the
+rulings the #97 amendment puts in a packet were selected by Component and
+status alone. The Turtle Moods fix run (`wish-20261031-144615-e5100773`)
+would have bound its reviewers with attempt 1's rulings, two of them what the
+fix existed to undo ("the stocked green ... is final"; a withdrawn
+legibility finding the reviewer "may no longer ask for"); its Manager
+deleted the cloned ledger by hand.
+
+**Decision.** For new runs and refreshed tools, a ruling binds a Component
+Reviewer only in the run that decided it: a decided report whose
+`wish_sha256` is not this run's is no ruling of the packet, the carry key or
+`--record-review`'s "packet older than a ruling" check. A fix run therefore
+starts with no inherited ruling, as it starts with no inherited reviewer
+binding (issue #119). A ruling that should still hold is decided again in
+the fix run, on a new Blocked Report. The cloned ledger stays as the source's
+record.
+
+**Consequences.** A carried Component's carry key loses the source's
+rulings, so a review the source recorded under one does not carry to the
+fix run's unchanged rerun: it is reviewed afresh, without a Shape Round.
+
+**Verification.** `make_round` tests cover a fix run's packet, summary and
+carry key without the source's rulings, a dispute of one refused as naming
+no ruling of the packet, a ruling decided again in the fix run binding its
+reviewer, and a review not refused as older than a source run's ruling;
+`make_round --self-check` holds the Wish filter.
 
 ## Rejected alternatives
 

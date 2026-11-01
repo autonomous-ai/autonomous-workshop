@@ -55,6 +55,10 @@ What the policy never touches:
 
 A Component's reviewer binding cloned from the source run binds nothing here
 (issue #119): its next review in this run binds this run's reviewer.
+Neither does a Blocked Report ruling the source run decided (issue #164): the
+cloned `measure/blocked-reports.jsonl` stays as the source's record, but its
+rulings never reach this run's packets. If one should still hold, the worker
+files a new Blocked Report and you decide it again.
 
 Write a `measure/quick-fix-carry.md` naming every part carried forward, the
 B-rep hash it was carried on, and what was regenerated instead. A reader must

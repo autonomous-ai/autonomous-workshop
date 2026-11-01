@@ -1,5 +1,25 @@
 # Shared skill provenance
 
+## Workshop-local: a current STEP export reports its shape; fix runs inherit no ruling (2026-11-01, issues #164-#166)
+
+- **Local patch to upstream cadgen (upstream needs the same change).**
+  `cadgen/_internal/generation.py`: `gen --write` records each export it
+  writes from a fresh `gen_step()` build in
+  `__cadgen__/step-exports/<entry>.json` (the export's sha256, the entry's
+  hash and source closure, the toolchain and the B-rep identity). An export
+  is current only when that record still matches, and a `current` or
+  `skipped-peer` result reports the recorded `identitySha256`. Upstream
+  judges an export current from the entry file's embedded hash alone and
+  reports no identity on that path, so a Colour Module edit left an
+  old-colour export current and every reader hashed export bytes (ADR 0073's
+  2026-11-01 amendment). `cadgen/tests/test_gen_write_current.py` pins it;
+  until upstream takes it, a resync must keep the record, its readers and
+  those tests.
+- `make-round`: `component_rulings()` selects only rulings decided under this
+  run's Wish (ADR 0081's issue #164 amendment); `SKILL.md` and
+  `references/fix-runs.md` say so. Only `cad`'s and `make-round`'s locks
+  move; `source_commit` values are unchanged.
+
 ## Workshop-local: the owner's filament catalogue and the Colour Module (2026-10-31, issue #160)
 
 - **Local change to upstream `cad` (upstream does not need it: the catalogue

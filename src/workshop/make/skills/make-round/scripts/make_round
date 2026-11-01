@@ -105,10 +105,11 @@ open an assembly round and --full refuse to run, and the host refuses the
 Make proposal and Make acceptance.
 A decided ruling binds the Component Reviewer (issue #97): every later
 packet of that Component carries its rulings (report, rows, request,
-ruling), and a carried review needs the same rulings. A reviewer who thinks
-a ruling wrong lists it under ruling_disputes, not differences: a dispute
-costs no Shape Round, never reaches the worker, and a review whose only
-findings are disputes agrees. A review of a packet older than a ruling is
+ruling), and a carried review needs the same rulings. Only this run's
+rulings bind: a workshop fix run's carried ledger binds nothing (#164).
+A reviewer who thinks a ruling wrong lists it under ruling_disputes, not
+differences: a dispute costs no Shape Round, never reaches the worker, and
+a review whose only findings are disputes agrees. A review of a packet older than a ruling is
 refused; an unchanged rerun gets a fresh packet without a Shape Round.
 Where a Contract Contradiction's smallest fix changes nothing a sealed
 reference shows, the Manager may propose a Contract Amendment instead of a
@@ -3372,12 +3373,17 @@ def component_rulings(project: Path, role: str) -> list:
     the rows the worker quoted, its report (``request``: what it was asked
     and why it cannot be built) and the final decision. Only a report whose
     last answer is a decision that waits on nothing is a ruling; an open,
-    waiting, need or amended report is not. Copied from the ledger, never
-    judged. Raises ``ValueError`` for an invalid ledger."""
+    waiting, need or amended report is not. A ruling binds only the run that
+    decided it (issue #164): ``workshop fix`` carries the source run's
+    ledger, whose reports name the source's Wish, and a fix run starts with
+    none of its rulings; one that should still hold is decided again, on a
+    new Blocked Report. Copied from the ledger, never judged. Raises
+    ``ValueError`` for an invalid ledger."""
 
     rulings = []
+    wish = _wish_binding(project)
     for number, report in sorted(read_blocked_reports(project).items()):
-        if report["component"] != role or report["status"] != "decided":
+        if report["component"] != role or report["status"] != "decided" or report["wish_sha256"] != wish:
             continue
         decision = report["answers"][-1]
         rulings.append({"report": number, "round": report["round"], "rows": list(report["rows"]),
@@ -6331,6 +6337,11 @@ def self_check() -> int:
         check(carry_key("a", [], project, "rows", []) == carry_key("a", [], project, "rows")
               != carry_key("a", [], project, "rows", component_rulings(project, "legs")),
               "a ruling is part of what a review judged; without one the key is unchanged")
+        source = "f" * 64
+        blocked_ledger(project).write_text("".join(json.dumps({**e, "wish_sha256": source}) + "\n"
+                                                   for e in events), encoding="utf-8")
+        check(component_rulings(project, "legs") == [],
+              "a ruling decided under another Wish, as a fix run's carried ledger holds, binds nothing here")
     summary = {
         "round": 3, "scope": "assembly", "project": "/p/cad", "parts": ["frame", "knob", "lens"], "changed": ["frame"], "checked": ["frame"],
         "build": {"frame": {"verdict": "PASS", "failures": []}},
