@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.metadata
 import json
 import math
@@ -518,6 +519,8 @@ def _generate_part_outputs(
     jobs.append(_ArtifactJob("GLB package", component_package_job))
 
     artifact_results.update(_run_artifact_jobs(jobs, logger=logger))
+    if spec.step_export_path is not None:
+        _write_step_export_record(spec, scene)
     # The render artifact is the component-GLB package; whole-model selector topology is
     # extracted on demand by ensure_step_topology_artifact (inspect/selection renders), so
     # generation no longer returns a selector bundle.
@@ -857,27 +860,113 @@ def _assembly_glb_package_current(spec: EntrySpec) -> bool:
     return assembly_package_current(spec.entry_path)
 
 
+STEP_EXPORT_RECORDS_DIRNAME = "step-exports"
+STEP_EXPORT_RECORD_VERSION = 1
+
+
+def _step_export_record_path(spec: EntrySpec) -> Path | None:
+    """Where ``gen --write`` records what the STEP export it wrote was built from:
+    ``__cadgen__/step-exports/<entry>.json`` beside the entry's render package."""
+    if spec.step_export_path is None or spec.script_path is None:
+        return None
+    package = render_package_dir(spec.entry_path)
+    return package.parent.parent / STEP_EXPORT_RECORDS_DIRNAME / f"{package.name}.json"
+
+
+def _file_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _write_step_export_record(spec: EntrySpec, scene: object) -> None:
+    """Record the STEP export a ``gen_step()`` build just wrote (Workshop issues
+    #165, #166): the export's own sha256, the entry's source closure, the toolchain and
+    the B-rep identity of the shape it serialized.
+
+    The export's bytes are not reproducible (the exporter writes a timestamp and
+    renumbers entities), so the record is what lets a later ``gen --write`` take
+    the current fast path and still report the identity of the shape it built,
+    instead of leaving the caller only those bytes to hash. Any previous record
+    is removed first, so a failed write leaves no record and the next run
+    rebuilds. A source with no fresh shape or no recorded closure gets none."""
+    record_path = _step_export_record_path(spec)
+    if record_path is None:
+        return
+    record_path.unlink(missing_ok=True)
+    target = spec.step_export_path
+    closure_hash = str(getattr(scene, "source_closure_hash", "") or "").strip()
+    closure_files = list(getattr(scene, "source_closure_files", ()) or ())
+    identity = _built_shape_identity(GeneratedStepResult(spec=spec, scene=scene))
+    if identity is None or not closure_hash or not closure_files or not target.is_file():
+        return
+    record = {
+        "schemaVersion": STEP_EXPORT_RECORD_VERSION,
+        "stepPath": str(target.resolve()),
+        "stepSha256": _file_sha256(target),
+        "sourceHash": python_source_hash(spec.script_path).source_hash,
+        "sourceClosureHash": closure_hash,
+        "sourceClosureFiles": closure_files,
+        "identitySha256": identity,
+        "toolchainVersions": _installed_toolchain_versions(),
+    }
+    record_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = record_path.with_suffix(".json.tmp")
+    temporary.write_text(json.dumps(record, sort_keys=True, indent=1) + "\n", encoding="utf-8")
+    temporary.replace(record_path)
+
+
+def _current_step_export_record(spec: EntrySpec) -> dict[str, object] | None:
+    """The record of the STEP export at ``spec.step_export_path`` when that export
+    still reflects everything the entry builds from, else None.
+
+    Current means all of: the file is the exact bytes the recorded build wrote, the
+    entry's whole source closure (its Python import reach, the Colour Module
+    included) re-hashes unchanged, the toolchain is the one that built it, and the
+    ``cadgen:sourceHash`` embedded in the STEP still names the entry script. An
+    export with no record, one replaced by other bytes, or one a closure change
+    (a recolour) left behind is not current, so ``--write`` rebuilds it."""
+    record_path = _step_export_record_path(spec)
+    target = spec.step_export_path
+    if record_path is None or target is None or not target.is_file() or not record_path.is_file():
+        return None
+    try:
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(record, dict) or record.get("schemaVersion") != STEP_EXPORT_RECORD_VERSION:
+        return None
+    identity = record.get("identitySha256")
+    if not isinstance(identity, str) or not identity:
+        return None
+    if record.get("stepPath") != str(target.resolve()) or record.get("stepSha256") != _file_sha256(target):
+        return None
+    source_hash = python_source_hash(spec.script_path).source_hash
+    embedded = str(read_text_to_cad_step_metadata(target).get("sourceHash") or "").strip()
+    if record.get("sourceHash") != source_hash or embedded != source_hash:
+        return None
+    base = (spec.step_path or target).parent
+    if not closure_hash_matches(record.get("sourceClosureHash"), record.get("sourceClosureFiles"), base=base):
+        return None
+    try:
+        toolchain = _installed_toolchain_versions()
+    except importlib.metadata.PackageNotFoundError:
+        return None
+    if record.get("toolchainVersions") != toolchain:
+        return None
+    return record
+
+
 def _step_export_is_current(spec: EntrySpec) -> bool:
     """Whether an on-demand STEP export (``scripts/gen --write``) already on disk
-    at ``spec.step_export_path`` still reflects the entry's current script, so
+    at ``spec.step_export_path`` still reflects the entry's current sources, so
     writing it can be skipped once the render package's own closure check (see
     :func:`_assembly_is_current`) says the source is unchanged.
 
-    gen_step never writes a STEP as part of ordinary generation -- the only
-    record of which script version last produced this file is the
-    ``cadgen:sourceHash`` property ``step_export_job`` embeds in it at write
-    time, which is the exported entry script's own-file hash. Paired with an
-    unchanged source closure (checked separately by the caller), an unchanged
-    own-file hash means nothing this export depends on could have changed.
+    gen_step never writes a STEP as part of ordinary generation, and the render
+    package can be recomposed without one, so the package's closure says nothing
+    about the export. The export's own record decides
+    (:func:`_current_step_export_record`).
     """
-    if spec.step_export_path is None or spec.script_path is None:
-        return False
-    if not spec.step_export_path.is_file():
-        return False
-    recorded_hash = str(read_text_to_cad_step_metadata(spec.step_export_path).get("sourceHash") or "").strip()
-    if not recorded_hash:
-        return False
-    return python_source_hash(spec.script_path).source_hash == recorded_hash
+    return _current_step_export_record(spec) is not None
 
 
 def _built_shape_identity(result: object) -> str | None:
@@ -895,9 +984,18 @@ def _built_shape_identity(result: object) -> str | None:
     wrapped = getattr(compound, "wrapped", None)
     if wrapped is None:
         return None
+    cached = getattr(scene, "_cadgen_built_identity", None)
+    if isinstance(cached, tuple) and cached[0] is wrapped:
+        return cached[1]
     from cadgen.inspection_runtime import shape_identity
 
-    return shape_identity(wrapped)
+    identity = shape_identity(wrapped)
+    try:
+        # The export record and the --json line hash the same build once.
+        scene._cadgen_built_identity = (wrapped, identity)
+    except AttributeError:
+        pass
+    return identity
 
 
 def _installed_toolchain_versions() -> dict[str, str]:
@@ -948,6 +1046,12 @@ def generate_step_targets(
             "packagePath": _display_path(render_package_dir(spec.entry_path)),
         }
         identity = _built_shape_identity(result)
+        if identity is None and outcome in ("current", "skipped-peer"):
+            # Nothing was built here: report the shape the current export was
+            # built from, which its record names (Workshop issues #165, #166),
+            # never a hash of the export's bytes.
+            record = _current_step_export_record(spec)
+            identity = None if record is None else str(record["identitySha256"])
         if identity is not None:
             entry["identitySha256"] = identity
             entry["toolchainVersions"] = _installed_toolchain_versions()

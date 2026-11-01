@@ -163,3 +163,57 @@ Where a parallel build happened to settle differently from the serial one,
 a Correction Run's comparison misses and the Component is rebuilt and
 re-reviewed -- a miss, never a false match. Frozen runs keep their
 materialized tool bytes and their parallel Booleans.
+
+## Amendment (2026-11-01, issues #165 and #166): a current export reports its shape
+
+`gen --json` reported `identitySha256` only for a shape it had just built.
+On its `current` path, where `--write` finds the export already on disk and
+builds nothing, it reported none, and every reader fell back to the sha256
+of the export's bytes: make_round's component and assembly rounds,
+`component_identity()` behind `--interface`, and `verify_project`. Two runs
+of the Turtle Moods keycap toy (`wish-20261030-072553-fb4cc33d` and its fix
+run `wish-20261031-144615-e5100773`) showed both ways this goes wrong:
+
+- **A re-export of the same shape** (`gen --write --force`, or
+  `verify_project --fresh`) writes new bytes: the header timestamp and the
+  `NEXT_ASSEMBLY_USAGE_OCCURRENCE` ordinal move. The next current round
+  hashed those bytes, matched neither the recorded B-rep nor the recorded
+  STEP, refused a locked Component or charged a Shape Round, and staled
+  every Coupled Interface it joined.
+- **A recolour** (ADR 0081's Colour Module) left the export behind.
+  Currency compared only the entry file's own hash, embedded in the STEP;
+  once a `gen` without `--write` had recomposed the render package in the
+  new colour, `--write` judged the old-colour export current, and the round
+  recorded its bytes' hash as the reviewed shape. Two head Components were
+  stranded and rebuilt from r0001.
+
+**Decision**: `gen --write` keeps a record of every export it writes from a
+fresh `gen_step()` build, `__cadgen__/step-exports/<entry>.json`: the
+export's path and sha256, the entry's own hash, its whole source closure
+(the Python import reach, the Colour Module included), the toolchain and
+the B-rep identity of the shape it serialized. An export is current only
+when that record matches all of them now, and a current (or peer-built)
+result reports the recorded identity. An export with no record, other bytes
+at its path (a STEP put back after a refused round, or restored by hand), a
+changed closure or another toolchain is rebuilt. The identity a round
+records is therefore always the B-rep of a build, never a hash of export
+bytes, for every `gen_step()` source; only an imported STEP, which has no
+build, is still identified by its bytes.
+
+**Consequences**: a recolour re-exports each STEP in its new colour at the
+B-rep identity the lock holds, so the round is an unchanged rerun and
+carries its review. A forced or fresh re-export changes nothing a round,
+`--require-component-passes` or an Interface check compares. The first
+`gen --write` after this change rebuilds each export once, since no record
+exists yet. The record is derived cache; deleting `__cadgen__` costs one
+rebuild per part. `cad` carries this as a Workshop-local cadgen patch
+(`PROVENANCE.md`). Frozen runs keep their materialized cadgen.
+
+**Verification**: `cadgen/tests/test_gen_write_current.py` covers the
+record's current and not-current cases (embedded hash only, recolour, other
+bytes, another toolchain, an unreadable or foreign record, a build with no
+fresh shape) and the current path reporting the recorded identity; a real
+build123d test, `tests/make/test_gen_step_export_identity.py`, recolours a
+part after a package-only recompose, forces a re-export, puts back foreign
+bytes and reads make_round's `component_identity()`, with one identity
+throughout.
