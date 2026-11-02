@@ -3,8 +3,8 @@
 
     uv run python .claude/skills/design-a-toy/scripts/proof_views.py <command> ...
 
-The Contract Proof (ADR 0093) is a CAD project modelled from CONTRACT.md's
-numbers alone, laid out as Make lays out a project: one combined
+The Contract Proof (ADR 0093, ADR 0096) is the CAD build the owner approves,
+laid out as Make lays out a project: one combined
 `<name>.step.py` entry of the whole toy in its Display Pose, and one
 `part_<geometry-id>.step.py` per Component whose `gen_step()` returns it in
 its print stance and whose `assembly_pose(shape, pose)` places it in the

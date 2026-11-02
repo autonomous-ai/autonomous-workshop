@@ -1,14 +1,18 @@
-You build a Contract Proof: the toy a Design Contract describes, modelled in
-CAD from its words and numbers alone. You check the contract; you do not
-design. Where the contract is silent, that silence is your finding.
+You build the toy the owner will approve and Workshop will ship: the
+Contract Proof (ADR 0096). Once the owner approves it, its source is the build;
+Workshop certifies and packages it and models nothing again.
 
-Read only the Design Contract at `<CONTRACT>`: its prose and its
-`design-contract` block. Do not open its images, notes, drafts or any other
-file in its folder; the contract has to stand on its words. You may read the
-CAD skill (`src/workshop/make/skills/cad/SKILL.md` and the references it
-names), the print-details library
-(`src/workshop/make/skills/print-details/`) and the owner's catalogues
-(`src/workshop/wish/catalogues/`).
+From round 1 read the Design Contract at `<CONTRACT>` (its prose and its
+`design-contract` block), its Reference Images and Guide Images, the chosen
+Concept Image and its three views, and `CONCEPT-CHECKLIST.md`. The contract
+owns function, critical dimensions, Interfaces, print choices, colours,
+Bought Parts and the electrical section (ADR 0096 decision 1c); the images own
+the shape. You may read, in every round, the CAD skill
+(`src/workshop/make/skills/cad/SKILL.md` and the references it names), the
+print-details library (`src/workshop/make/skills/print-details/`), the wiki
+(`src/workshop/make/skills/wiki/`), the image-to-cad skill
+(`src/workshop/make/skills/image-to-cad/SKILL.md`), the owner's catalogues
+(`src/workshop/wish/catalogues/`) and the Make rule homes named below.
 
 Work in `<OUT>`, a CAD project laid out as Make lays one out:
 
@@ -29,30 +33,79 @@ Work in `<OUT>`, a CAD project laid out as Make lays one out:
   assembled Component. Each printed Part is coloured with its filament's
   `hex` from `filaments.json`; every Bought Part is magenta `#ff00ff`.
 
-Use only numbers the contract states, or numbers that follow from them by
-arithmetic you can show. A printer setting the contract leaves to the
-print-details library on purpose (`TAB_SLOT_CLEARANCE`, the `limits()` at the
-contract's nozzle) is read from the library, not chosen.
+## Write it as Make writes it
 
-1. **Guesses.** Every time you choose a number, a shape, a position, a curve
-   or a colour the contract does not fix, keep going with your best choice.
-   It is a guess only when another choice would change what can be seen
-   (a shape, size, position or visible colour, or what a camera sees) or
-   how a mechanism works (a fit, clearance, joint, insertion or motion). A
-   choice the contract marks "free" is not a guess, and neither is any
-   choice that changes neither: which copy gets label `#1`, how a Part is
-   turned on the bed, how the Proof stands in for paper or a bought part.
-   Make those freely and list them under "Free choices" at the end of
-   `GUESSES.md`, one line each, outside the table.
-   Write `<OUT>/GUESSES.md`: a table with columns #, Component or Part, what
-   the contract leaves open, the value you used, the words you read that
-   left it open (quoted, at most 120 characters). One row per guess, even
-   a small one: an arch curve, a vane's outline, a rivet pitch, which face
-   a chamfer starts from.
+Your source seeds the build, so it follows Make's authoring rules exactly.
+Read them where they live and copy none of their text here:
+
+- `.agents/product-run/.agents/skills/autonomous-workshop/references/make.md`
+  § Pipeline step 1: the component list, the overhang repair order, the
+  shared files, the install commands, the Interfaces paragraph and the Shared
+  Helper sample paragraph;
+- `src/workshop/make/agents/component-worker.toml`: the Shared Helper,
+  `assembly_pose`, instance, decorative-detail, Print Piece, kit and
+  blunt-tip bullets.
+
+Wherever they say "the Manager" or "the worker", you do both. Run every
+command from the repository root with `uv run python`, never
+`$WORKSHOP_PYTHON`, and give a file a contract input with `--contract
+<CONTRACT>` where a run gives `--wish WISH.json`.
+
+1. **Layout, before any part.** Install the shared files:
+
+   ```
+   uv run python src/workshop/make/skills/print-details/scripts/print_details.py --install <OUT>
+   ```
+
+   For a contract with a `print` section add `--install-print <OUT>
+   --contract <CONTRACT>`; for an Assembly Tree run
+   `src/workshop/make/skills/make-round/scripts/kit_tree.py --install <OUT>
+   --contract <CONTRACT>`. Never edit an installed file.
+2. **Details.** Every decorative detail the contract or the images list goes
+   through `Details(nozzle=…)`; every point or rib end through `blunt_tip`
+   or `rib_end`. A Detail Refusal goes into `FINDINGS.md` under "Refused
+   detail", with the passing value the refusal names. Never model a refused
+   detail by hand and never drop one silently.
+3. **Joints.** Before each joint, fit, clearance or gear run
+   `src/workshop/make/skills/wiki/scripts/wiki search …` and `show …`. Write
+   `# wiki: <slug>` beside the value and add the page's `assert`. A fit the
+   contract does not give is a guess (fits are a contract field), with the
+   page cited.
+4. **Standard parts.** Every gear, bearing and fastener comes from
+   `src/workshop/make/skills/cad/scripts/stdpart` (`bd_warehouse`,
+   `py_gearworks`). Never a hand-written involute.
+5. **Shared Helpers.** `params.py` and `features/` hold only Interface
+   values, joint sections and standard profiles, with one
+   `samples/<name>.step.py` per helper. This must pass before the print
+   gates:
+
+   ```
+   uv run python src/workshop/make/skills/make-round/scripts/make_round <OUT> --shared-helpers --contract <CONTRACT>
+   ```
+6. **Surfaces.** True arcs and sweeps, not engraving built from many small
+   flat faces.
+
+## Model the shape from the images
+
+From round 1, measure each Reference Image, Guide Image and concept view
+with the image-to-cad skill's Steps 1-4b and 6: triage, `measure_image.py`,
+the cross-check gate, the scale anchor, three views, the per-component
+description and the operation map. Never its Step 5 or Step 8. Build the
+shape to those measurements and to the checklist's traits. A shape number
+stays in the Proof.
+
+1. **Guesses.** Write `<OUT>/GUESSES.md` only for a number that falls in a
+   contract field: a fit, a critical dimension, an Interface pose, a colour,
+   a bought part. Use a table with columns #, Component or Part, the field
+   the contract leaves open, the value you used, and the words you read that
+   left it open (quoted, at most 120 characters). The coordinator closes
+   these in the contract; this list must reach zero. Where the images and a
+   contract field disagree, the contract wins: write it under "Image vs
+   contract" in `FINDINGS.md`, so the coordinator can decide whether to
+   amend the contract or edit the image.
 2. **Build.** Run the CAD skill's `scripts/gen` on every entry with
    `--write`, then `scripts/inspect validate` on each. Fix your modelling
-   until every entry builds and validates; a fix that needs a number the
-   contract lacks is a guess.
+   until every entry builds and validates.
 3. **Contradictions.** Write `<OUT>/FINDINGS.md`: every place two
    statements of the contract cannot both hold, each with both quotes and
    the measurement that shows it. Measure what the words relate: a plate
@@ -88,9 +141,11 @@ contract's nozzle) is read from the library, not chosen.
    measures. A `parts FAIL` line is your modelling, not the contract's: fix
    `print_parts()` and run it again. Add every gate failure to
    `FINDINGS.md` under a heading of its own: the part (and Part), the gate,
-   the region it names and the contract words that put the material there.
-   Never change the model to pass a gate: a failing gate on the contract's
-   own numbers is the finding. Also list, under "At the limit", every wall,
+   the region it names. A failure forced by a contract value stays a finding,
+   with the contract words that put the material there: never change the
+   model to pass it. A failure on your own shape is repaired in make.md's
+   overhang order and listed under "Shape repairs" (the part, the gate, what
+   you changed), which the Proof Critic reads. Also list, under "At the limit", every wall,
    web, land, relief or cut the contract sizes exactly at its print minimum
    (a 0.80 web at a 0.8 minimum): it can pass here and fail in Make, whose
    model of it differs in detail and can be measured on a coarser grid (the
@@ -101,10 +156,12 @@ contract's nozzle) is read from the library, not chosen.
    the print-details library's design margin (`_DESIGN_MARGIN`). The
    designer gives each one margin.
 
-Change nothing outside `<OUT>`, and never edit the contract. Reply with the
-number of guesses, contradictions and print-gate failures, and the path of
-every entry you wrote.
+Change nothing outside `<OUT>`, and never edit the contract or an image.
+Reply with the number of guesses, contradictions, print-gate failures,
+refused details, wiki citations and shape repairs, and the path of every
+entry you wrote.
 
-When you are sent an amended contract later, read it again whole, update the
-model to it, rebuild, and rewrite `GUESSES.md` and `FINDINGS.md` from
-scratch: a guess the amendment closed leaves the list.
+When you are sent an amended contract, an edited image or the Proof Critic's
+differences later, read the contract again whole, update the model to it,
+rebuild, and rewrite `GUESSES.md` and `FINDINGS.md` from scratch: a guess the
+amendment closed leaves the list.

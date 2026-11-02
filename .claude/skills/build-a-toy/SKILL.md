@@ -371,8 +371,8 @@ one of these: fold it as above.) Fix the contract:
    `design-a-toy` check that covers this class, and the Component), and the
    amendment.
 2. **Re-audit the whole contract** with `design-a-toy` Stages 3a (the
-   Contract Proof on the amended contract, with a fresh read when a shape,
-   size or position changed), 3b (for every image the amendment touches), 3c
+   Contract Proof on the amended contract, with the Proof Critic asked
+   again when a shape, size or position changed), 3b (for every image the amendment touches), 3c
    and 3d: every Component and every check, not only the changed row. Record the notes' path in `reaudit`. A new
    contradiction the re-audit finds goes into the same amendment.
 3. **Give `design-a-toy` a check that would have caught it**, when it has

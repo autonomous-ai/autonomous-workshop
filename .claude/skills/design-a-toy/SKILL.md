@@ -1,6 +1,6 @@
 ---
 name: design-a-toy
-description: Design any physical Workshop toy - a vehicle, a jointed robot, a bone dragon, a puzzle, a game - with an Inventor before any run starts - grill the idea into a frozen spec, draft the Design Contract, generate one reference image per unique geometry plus the assembly, reconcile them with the contract feature by feature and with a Contract Proof modelled from the contract alone, check that everything they show can be printed and that any mechanism can move, then get the human's one visual review before handing off to `build-a-toy`. Use when starting a new toy, or when a previous run drifted from what you wanted.
+description: Design any physical Workshop toy - a vehicle, a jointed robot, a bone dragon, a puzzle, a game - with an Inventor before any run starts - grill the idea into a frozen spec, draft the Design Contract, generate one reference image per unique geometry plus the assembly, reconcile them with the contract feature by feature and with the Contract Proof, the CAD build the owner approves and Workshop ships, check that everything they show can be printed and that any mechanism can move, then get the human's one visual review before handing off to `build-a-toy`. Use when starting a new toy, or when a previous run drifted from what you wanted.
 ---
 
 # Design a toy before the run
@@ -190,9 +190,17 @@ until they say it is right.
 4. **The human picks** by eye. Write each answer into the spec, and edit the
    chosen Concept Image to show it. Stage 3c later checks every detail
    against what the human picked; it decides no fine detail on its own.
+5. **Concept Checklist** (ADR 0096). Spawn a fresh subagent with
+   [checklist-prompt.md](checklist-prompt.md), given only the chosen Concept
+   Image and its three views. It writes `CONCEPT-CHECKLIST.md` beside the
+   contract: 8 to 12 traits that make this concept itself, with measured
+   ratios where it can. Show the human the list beside the concept and have
+   them mark each trait required or changeable (about two minutes). The
+   Proof builds to it and the Proof Critic judges by it.
 
 Done when: the human has said the chosen Concept Image is right, its three
-views agree, and every detail at risk has the human's answer in the spec.
+views agree, every detail at risk has the human's answer in the spec, and
+every trait of `CONCEPT-CHECKLIST.md` is marked required or changeable.
 
 ## Stage 2 - Draft the contract
 
@@ -439,8 +447,9 @@ procedural renderer, no parametric CAD script, no matplotlib, no SVG
 assembled from coordinates draws one of them. CAD in this skill only checks:
 the Contract Proof (Stage 3a) and Stage 1's true-size renders of a detail's
 ways. The one exception is a trial: a Component reference AI-edited from
-the Proof render (Stage 3a, last subsection), which the owner chooses. A Proof is never a Reference Image, and nothing compares it with the
-model Make builds.
+the Proof render (Stage 3a, last subsection), which the owner chooses. The
+approved Proof is what Workshop ships (ADR 0096): Make and `build-a-toy`
+compare the build with it by `proof_diff`, never by a render.
 
 The reason is division of labour. A reference image is **concept art that
 Make builds from**: it carries the read, the style and the design the words
@@ -509,87 +518,94 @@ expression.
 
 ## Stage 3a - Contract Proof
 
-The human approves images and never reads the contract, so its words are
-never reviewed against what they describe. The **Contract Proof** (ADR 0093)
-reviews them: a fresh subagent that has seen no image and no note models
-every Component, and every Part of a kit, in CAD at its true size from
-`CONTRACT.md` alone. Every number it had to choose is a gap in the contract,
-and laid over an image it shows where the image and the numbers disagree.
+The **Contract Proof** (ADR 0093, ADR 0096) is the toy in CAD at its true
+size, every Component and every Part of a kit, written exactly as Make writes
+a project. Once the owner approves it in Stage 4 it is the build: Workshop
+certifies and packages it and models nothing again. The contract owns
+function, critical dimensions, Interfaces, print choices, colours, Bought
+Parts and the electrical section; the images own the shape (ADR 0096
+decision 1c).
 
-1. **Build.** Start the Proof as soon as Stage 2 (and 2b) has a draft; it
-   needs no image and runs while Stage 3 draws. Spawn a fresh subagent with
+1. **Build.** Start the Proof once Stage 2 (and 2b) has a draft and the
+   first images exist. Spawn one subagent with
    [proof-prompt.md](proof-prompt.md), its paths filled in: the contract,
-   `<contract-dir>/proof/` and the contract's nozzle. Give it nothing else.
-   It writes the CAD project, `GUESSES.md` and `FINDINGS.md`. Keep this one
-   subagent for the whole design: every amendment goes to it, and it updates
-   the model it already has. A fresh reader per round rebuilt the cabinet
-   pilot from nothing six times, about 1.1 cost units and 20 minutes each,
-   and its rounds 4 to 6 found no real defect.
-2. **Guesses to zero.** Close every row of `GUESSES.md` in the contract,
-   prose and row together: a number, an outline or a position, decided as
-   the Inventor from the chosen Concept Image and the images. Where the
-   choice truly does not matter, write "free" in the contract at that spot
-   (a hidden face's preview colour). Send the amended contract to the kept
-   Proof subagent, which still has seen no image, and repeat until its list
-   is empty. The cabinet pilot listed 17 guesses, among them the door's arch
-   curve, the inkwells' bulb and almost the whole feather fan.
-
-   Only a choice that changes what can be seen or how a mechanism or motion
-   works is a guess (owner decision, 2026-10-27). Any other choice is free
-   and never starts another round: which copy is `#1`, a Part's turn on the
-   bed, how the Proof models paper. The Proof lists those under "Free
-   choices"; leave them out of the contract. The ADR 0093 cabinet pilot ran
-   three more Proof rounds, about an hour, on such choices alone.
+   its Reference Images and Guide Images, the chosen Concept Image and its
+   three views, `CONCEPT-CHECKLIST.md`, `<contract-dir>/proof/` and the
+   contract's nozzle. It models the shape from the images with the
+   image-to-cad skill and follows Make's authoring rules (installed
+   print-details, `Details`, wiki-cited joints, `stdpart`, frozen Shared
+   Helpers). It writes the CAD project, `GUESSES.md` and `FINDINGS.md`.
+   Keep this one subagent for the whole design: every amendment, image edit
+   and critic list goes to it, and it updates the model it already has. A
+   fresh one per round rebuilt the cabinet pilot from nothing six times,
+   about 1.1 cost units and 20 minutes each.
+2. **Guesses to zero, for contract fields only.** `GUESSES.md` lists only
+   numbers that fall in a contract field: a fit, a critical dimension, an
+   Interface pose, a colour, a bought part. Close each in the contract,
+   prose and row together, decided as the Inventor. Send the amended
+   contract to the kept Proof subagent and repeat until its list is empty.
+   A shape number stays in the Proof; it never becomes a contract row.
 3. **Contradictions.** Fix each one in `FINDINGS.md` as Stage 3b resolves a
    disagreement. Some live in the numbers alone: Night Charms Hall's cabinet
    door plate (19.5 x 25.3) could not cover its face (21.6 x 30.8), and no
-   image showed it, because the stair hid the door.
+   image showed it, because the stair hid the door. Each "Image vs contract"
+   item is decided the same way: amend the contract or edit the image.
 4. **Compare.** Estimate each reference's camera (Stage 3b check 6) and the
    cameras of each Component's two other views, then lay the Proof over
-   every image:
+   every image and over the concept's three views:
 
    ```sh
    uv run python .claude/skills/design-a-toy/scripts/proof_views.py refs CONTRACT.md \
      --proof <contract-dir>/proof --images <contract-dir> -o <contract-dir>/proof/compare
    uv run python .claude/skills/design-a-toy/scripts/proof_views.py compare <view.png> \
-     <contract-dir>/proof/part_<id>.step.py --camera=AZ,EL -o <out.png>
+     <contract-dir>/proof/<entry>.step.py --camera=AZ,EL -o <out.png>
    ```
 
    [`scripts/proof_views.py`](scripts/proof_views.py)'s docstring gives
    every command. Each compare is three panels: the AI image, the Proof at
-   that camera and a 50% overlay, both at contract scale with a 10 mm bar. Every difference
-   over Stage 3b's tolerance is a disagreement. Resolve it as Stage 3b does:
-   an image that looks better amends the contract (and the Proof is
-   rebuilt); otherwise edit the image by AI. When the image still disagrees
-   after Stage 3's round cap and the contract is right, keep the image and
-   name the difference in that Component's requirement row ("the reference
-   draws the door taller; 24.5 holds"). The Component Reviewer then lists it
-   as a Reference Conflict from the first round, not as a difference.
-5. **Print gates.** `FINDINGS.md` lists every failure of Make's own print
+   that camera and a 50% overlay, both at contract scale with a 10 mm bar.
+5. **Proof Critic.** Spawn one subagent with
+   [critic-prompt.md](critic-prompt.md) and keep it for the whole design.
+   Send it the compares, the requirement rows, the Interface text, the
+   prose sections, the human's Stage 1 printability answers,
+   `CONCEPT-CHECKLIST.md` and the Proof's "Shape repairs". It is the only
+   reader that judges the shape before the owner, never reads the Proof's
+   code, and writes `proof/CRITIC.json`. Send its differences to the kept
+   Proof subagent, rebuild, redo the compares and ask the critic again,
+   until it agrees. A round that changes the geometry counts; stop after 5
+   and carry what is still open to Stage 4 as the critic's open lines. A
+   Reference Conflict is resolved as Stage 3b resolves a disagreement; a
+   camera mismatch re-estimates that camera. When it cannot settle one
+   Component from the whole toy it asks for a close look at that Component
+   alone, which the same thread judges.
+6. **Print gates.** `FINDINGS.md` lists every failure of Make's own print
    gates, run by Make's own code on every printable Part in its print
-   stance at the contract's nozzle, and every placement and At the limit
-   item. Stage 3c resolves them.
-6. **Fresh read.** When `GUESSES.md` is empty and `FINDINGS.md` has no
-   contradiction, spawn one **fresh** Proof subagent with the same prompt
-   on the contract as it stands, before Stage 4. The kept subagent reads
-   the contract as it already modelled it; a fresh one finds the silences
-   the kept one filled from memory and a fact an amendment changed in one
-   place only. Close what it finds with the kept subagent. Run another
-   fresh read only after a change to a shape, size or position (a Stage 4
-   change, a `build-a-toy` root amendment), never after a change of words
-   alone.
+   stance at the contract's nozzle, and every placement, At the limit and
+   Refused detail item. A failure the contract forces is Stage 3c's to
+   resolve; the Proof repairs its own shape and lists it under "Shape
+   repairs".
 
 The Proof runs again after **every** amendment, from here to Stage 5 and in
 every `build-a-toy` root amendment: send the amended contract to the kept
-Proof subagent (a new one only once its context is gone, never one that has
-seen an image), then redo the compares and print gates the change touches.
+Proof subagent (a new one only once its context is gone), then redo the
+compares and print gates the change touches. Once the owner has approved a
+Proof, keep its built `part_*.step` files in `<contract-dir>/proof/approved/`
+and compare each rebuilt Proof with them, Part by Part:
 
-Record the guesses, findings and compares in the working notes.
+```sh
+PYTHONPATH=src uv run python -m workshop.make.proof_diff <contract-dir>/proof/approved <contract-dir>/proof \
+  --json <contract-dir>/proof/measure/proof-diff.json
+```
+
+A Part over tolerance is a visible change: it goes to the Proof Critic and
+then to the owner as a Stage 4 change.
+
+Record the guesses, findings, compares and critic rounds in the working
+notes.
 
 Done when: `GUESSES.md` is empty, `FINDINGS.md` has no contradiction, the
-fresh read found nothing open, every compare shows no difference over the
-tolerance that its Component's rows do not name, and all of it ran on the
-contract as it now stands.
+Proof Critic agrees (or 5 geometry-changing rounds left open lines for the
+owner), and all of it ran on the contract as it now stands.
 
 ### Trial: a Component reference edited from the Proof
 
@@ -1208,9 +1224,14 @@ with the checklist's line under them ("14 of 14 details kept; the arch's
 rim is named as left out"). The owner chooses which of the two becomes the
 Reference Image; until they do, neither is sealed.
 
-Show each reference as its Stage 3a compare: the AI image, the Contract
-Proof at the same camera and their 50% overlay, side by side. The human
-approves what will print, not only the concept. Name every difference a
+Open the page with the chosen Concept Image beside the Contract Proof at
+the concept's cameras and their 50% overlay, and the checklist count in one
+line ("11 of 12 traits kept; the tail is shorter, as you chose for
+printing"). Then show each reference as its Stage 3a compare: the AI image,
+the Contract Proof at the same camera and their 50% overlay, side by side,
+then the Proof Critic's open lines, one plain line each. Approving now means
+"this is what ships" (ADR 0096): Workshop certifies this Proof and models
+nothing again. Name every difference a
 requirement row keeps in one line under its compare ("the picture draws the
 door a little taller; the door prints 24.5 mm").
 
@@ -1252,8 +1273,8 @@ cut redraws the flat lay.
 Wait for explicit approval of the images. If the human wants a change - a
 different shape, proportion, count, pose or feature - fix the images by AI
 editing or regeneration, amend the contract so it says what the new images
-show, and redo Stages 3a to 3d for **every** image (with a fresh read,
-Stage 3a step 6, when a shape changed). Then update the same
+show, and redo Stages 3a to 3d for **every** image (the Proof rebuilt and
+the Proof Critic asked again when a shape changed). Then update the same
 Artifact page and show only the images that changed, each with its compare,
 always with the assembly image, which the blind review judges the build by. Repeat until the human approves.
 
