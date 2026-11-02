@@ -142,6 +142,8 @@ assembles along, and the one it must not.
 Set it on any part that starts installed. An insert legitimately touches what it
 is installed in, so step 0 measures the design intent rather than the path —
 that is `interfere`'s job. With the flag set, the sweep starts at step 1.
+A clear-expecting rotation that starts away from 0 degrees has no installed
+pose, so its first pose is swept anyway.
 
 ## Retention must close at a fixed root
 
