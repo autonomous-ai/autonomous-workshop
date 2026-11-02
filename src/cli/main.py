@@ -498,6 +498,15 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
             % (seed.get("approved_by", "?"), seed.get("date", "?"),
                str(seed.get("approval_sha256", "?"))[:12])
         )
+        for item in receipt.get("seed_deviations") or ():
+            if not isinstance(item, Mapping):
+                continue
+            print(
+                "Seed deviation: %s %s the Approved Proof; locked by %s"
+                % (item.get("component", "?"),
+                   "within tolerance of" if item.get("within_tolerance") else "over tolerance against",
+                   "the approval" if item.get("locked_by") == "seed-approval" else "its Component Review")
+            )
     guides = receipt.get("guides")
     if isinstance(guides, (list, tuple)):
         # ADR 0089: how each Guide Image's steps were checked, and where a

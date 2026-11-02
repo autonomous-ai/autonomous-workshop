@@ -90,6 +90,7 @@ from workshop.make.kit_tree import verify_made_tree
 from workshop.make.kit_manual import verify_made_manual
 from workshop.make.power import verify_made_power
 from workshop.make.bought_model import verify_made_bought
+from workshop.make.seed_check import verify_made_seed
 from workshop.make.blocked_reports import (
     run_blocked_reports,
     verify_no_open_blocked_reports,
@@ -3339,6 +3340,12 @@ def _power_history(host_state_root: Path) -> list[dict[str, Any]]:
     """The circuit the current Make's acceptance checked (ADR 0095)."""
 
     return _latest_make_check(host_state_root, "power")
+
+
+def _seed_deviation_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """The seed deviations the current Make's acceptance found (ADR 0096)."""
+
+    return _latest_make_check(host_state_root, "seed_deviations")
 
 
 def _bought_model_history(host_state_root: Path) -> list[dict[str, Any]]:
@@ -8293,6 +8300,13 @@ def _evaluate_make_stage(
         )
         if bought is not None:
             product_checks["bought_model"] = [bought]
+        # ADR 0096: a seeded Make against its Approved Proof, by the host's
+        # own proof_diff of the sealed and delivered STEP bytes.
+        seed_components = _sealed_seed_components(run.run_root)
+        if seed_components is not None:
+            product_checks["seed_deviations"] = verify_made_seed(
+                cad_project, run.run_root, seed_components
+            )
         if blocked_reports:
             product_checks["blocked_reports"] = blocked_reports
         if contract_amendments:
@@ -11382,8 +11396,10 @@ def _native_receipt(
         receipt["bought_model"] = bought_model[0]
     seed = _sealed_seed(paths.workspace, checkpoint.wish_sha256) if paths is not None else None
     if seed is not None:
-        # ADR 0096: the Approved Proof this run was seeded from.
+        # ADR 0096: the Approved Proof this run was seeded from, and every
+        # Component the accepted Make delivered other than the approved one.
         receipt["seed"] = seed
+        receipt["seed_deviations"] = _seed_deviation_history(paths.host_state)
     if checkpoint.effort is not None:
         receipt["workflow"] = checkpoint.effort
     receipt["agent"] = checkpoint.manager_id

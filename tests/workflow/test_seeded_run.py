@@ -58,6 +58,8 @@ class SeededRunTest(unittest.TestCase):
         options = json.loads((workspace / "MAKE-OPTIONS.json").read_bytes())
         self.assertEqual((options["schema_version"], options["seed"]), (3, frozen))
         self.assertEqual(receipt["seed"], self.recorded)
+        # No Make has been accepted yet, so no deviation is recorded.
+        self.assertEqual(receipt["seed_deviations"], [])
         host.resume_native_run(self.product_id, check_motion=True)
         options = json.loads((workspace / "MAKE-OPTIONS.json").read_bytes())
         self.assertEqual((options["check_motion"], options["seed"]), (True, frozen))

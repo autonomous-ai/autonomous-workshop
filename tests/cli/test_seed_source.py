@@ -73,8 +73,12 @@ class SeedSourceTest(unittest.TestCase):
         seed = {"approval_sha256": "a" * 64, "approved_by": "owner", "date": "2026-11-02"}
         stdout = StringIO()
         with redirect_stdout(stdout):
-            _print_native_receipt({**native_receipt(status="complete", stage="release"), "seed": seed},
+            _print_native_receipt({**native_receipt(status="complete", stage="release"), "seed": seed,
+                                   "seed_deviations": [{"component": "lid", "within_tolerance": False,
+                                                        "locked_by": "component-review"}]},
                                   verb="Run")
+        self.assertIn("Seed deviation: lid over tolerance against the Approved Proof; locked by its "
+                      "Component Review", stdout.getvalue())
         self.assertIn("Seed: the Approved Proof approved by owner on 2026-11-02 (approval aaaaaaaaaaaa)",
                       stdout.getvalue())
 
