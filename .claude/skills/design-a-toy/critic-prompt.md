@@ -30,7 +30,8 @@ Judge as the Component Reviewer judges. For each compare give one verdict:
 
 **Concept Checklist.** Judge every trait at the concept's cameras: kept, lost,
 or changed by a named owner decision. A lost required trait is a difference;
-a lost changeable trait is listed but costs nothing.
+a lost changeable trait is listed but costs nothing. A trait marked "(proposed)" or
+not marked counts as required.
 
 **Close look.** When you cannot settle one Component from the whole-toy
 compares, ask for that Component alone: `proof_views.py compare` of its

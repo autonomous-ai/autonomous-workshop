@@ -73,7 +73,12 @@ command from the repository root with `uv run python`, never
    page cited.
 4. **Standard parts.** Every gear, bearing and fastener comes from
    `src/workshop/make/skills/cad/scripts/stdpart` (`bd_warehouse`,
-   `py_gearworks`). Never a hand-written involute.
+   `py_gearworks`). Never a hand-written involute. A pin, spring, magnet, cork
+   disc or other bought item has no `stdpart`: it is a Bought Part from
+   `bought-parts.json`, drawn at the catalogue entry's own sizes in magenta,
+   and the printed parts take their fits around it from the wiki. A bought
+   item the catalogue lacks is a finding for the owner, never a printed
+   copy.
 5. **Shared Helpers.** `params.py` and `features/` hold only Interface
    values, joint sections and standard profiles, with one
    `samples/<name>.step.py` per helper. This must pass before the print

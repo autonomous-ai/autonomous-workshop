@@ -174,6 +174,24 @@ until they say it is right.
    disagreement: fix it by editing, as Stage 3b resolves one, before the
    human sees the sheet. Every later edit of the concept keeps all three
    views.
+
+   **Counts drift.** An image model often redraws a count it was given
+   (the beaver pilot asked for four coasters and got four in one view and
+   five in the other two). Write each count as a word and a number naming
+   every item ("exactly four coasters, 4: top, second, third, bottom"),
+   generate three or four sheets and keep the first whose every view holds
+   every count. Count each view before you keep it. When none holds, edit
+   only the failing view with the faithful-edit model, giving the count
+   again.
+
+   **An amended concept.** When the human changes the concept after
+   choosing it (a pose, a removed part, an answer from step 4), the old
+   views no longer show it. Edit the chosen Concept Image first, then draw
+   the three views again from the amended concept, with the amended
+   concept as the first input image and any view the human approved (a
+   side profile) as the second. Never edit the old views one by one: a
+   view the edit missed keeps the old toy. Split and check the new sheet as
+   above, and run step 5 again on the amended concept.
 2. **Fine details.** List every detail the concept shows that comes near the
    print minimums (Stage 3c's table) at the toy's size: feathers, quills,
    rivets, spokes, lettering, lace, thin legs and rails, a texture. For each,
@@ -194,13 +212,20 @@ until they say it is right.
    [checklist-prompt.md](checklist-prompt.md), given only the chosen Concept
    Image and its three views. It writes `CONCEPT-CHECKLIST.md` beside the
    contract: 8 to 12 traits that make this concept itself, with measured
-   ratios where it can. Show the human the list beside the concept and have
-   them mark each trait required or changeable (about two minutes). The
-   Proof builds to it and the Proof Critic judges by it.
+   ratios where it can. The owner marks it here, not at Stage 4: the Proof
+   builds to the marks and the Proof Critic judges by them long before the
+   owner's first look at the Proof. Ask one short question beside the
+   concept, proposing a mark for each trait from what the human already
+   decided: "Required: T1-T6, T8. Changeable: T7, T9-T12. OK, or which to
+   move?" Write the answer into the "owner" column. When the human does not
+   answer before the Proof starts, write your proposed marks with
+   "(proposed)", treat every trait as required, and show the proposed marks
+   again at Stage 4 for the human to confirm.
 
 Done when: the human has said the chosen Concept Image is right, its three
 views agree, every detail at risk has the human's answer in the spec, and
-every trait of `CONCEPT-CHECKLIST.md` is marked required or changeable.
+every trait of `CONCEPT-CHECKLIST.md` is marked required or changeable (by the
+human, or "(proposed)" until Stage 4).
 
 ## Stage 2 - Draft the contract
 
@@ -242,10 +267,12 @@ notice. Name each
 them, even though the files do not exist yet. A toy with more than one
 component also gets one `"shows": "assembly"` reference, listed first.
 
-Write the block as `"schema_version": 9` (ADR 0094), for every toy, kit or
-not: [CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md) gives what
-schema 9 keeps of the earlier schemas (schema 8 without `wall_min_mm`), and Stage 2b adds a kit's Assembly
-Tree to the same block. Every reference gets a `camera`
+Write the block as `"schema_version": 11` with `"shape": "approved-proof"`
+(ADR 0096), for every toy, kit or not, powered or not:
+[CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md) gives what schema 11
+keeps of the earlier schemas (schema 10, no `wall_min_mm`) and what it makes
+optional (`prose_sections` and geometry-scoped form rows: the Approved Proof
+holds the shape). Stage 2b adds a kit's Assembly Tree to the same block. Every reference gets a `camera`
 (ADR 0083), which Stage 3b fills in once the image exists, and every place
 two or more Components meet gets an `interfaces[]` entry (ADR 0082): a peg in a socket, a
 pinion on a sector, a wing swinging past a housing. Give each its Interface
@@ -539,6 +566,18 @@ decision 1c).
    and critic list goes to it, and it updates the model it already has. A
    fresh one per round rebuilt the cabinet pilot from nothing six times,
    about 1.1 cost units and 20 minutes each.
+   **A Proof from before ADR 0096.** `seal_proof.py` refuses a Proof that
+   was not written as Make writes: no installed `features/print_details.py`,
+   joint values inside Component files, no `samples/` and no Shared Helper
+   freeze. Migrate it into Make's layout through the kept Proof subagent,
+   in proof-prompt.md's order: install the shared files; move every
+   Interface value, joint section and standard profile into `params.py` or
+   `features/`, each with its `# wiki:` citation and `assert`, and import
+   them in the Component files; write one `samples/<name>.step.py` per
+   helper and run `--shared-helpers --contract` until it freezes; then run
+   the print gates and the compares (step 4). A migration that changes
+   nothing visible needs no new owner look. A visible change goes to the
+   Proof Critic and to the owner at Stage 4 like any other.
 2. **Guesses to zero, for contract fields only.** `GUESSES.md` lists only
    numbers that fall in a contract field: a fit, a critical dimension, an
    Interface pose, a colour, a bought part. Close each in the contract,
@@ -1227,7 +1266,8 @@ Reference Image; until they do, neither is sealed.
 Open the page with the chosen Concept Image beside the Contract Proof at
 the concept's cameras and their 50% overlay, and the checklist count in one
 line ("11 of 12 traits kept; the tail is shorter, as you chose for
-printing"). Then show each reference as its Stage 3a compare: the AI image,
+printing"). If any checklist mark is still "(proposed)", list those marks
+in one line for the human to confirm. Then show each reference as its Stage 3a compare: the AI image,
 the Contract Proof at the same camera and their 50% overlay, side by side,
 then the Proof Critic's open lines, one plain line each. Approving now means
 "this is what ships" (ADR 0096): Workshop certifies this Proof and models
@@ -1312,10 +1352,13 @@ and unbuilt) with the path to this
 `CONTRACT.md` and the sealed proof directory. That skill owns every run this design
 starts, round 0 through every correction, always under `--contract`. Do not print a bare `workshop wish` command here.
 
-Then state plainly what happens next: Make builds against these images, each
-Component Reviewer judges its Component against its reference every round,
-the blind review judges the assembly, and every correction runs through
-`build-a-toy`, not back through this skill.
+Then state plainly what happens next: the run is seeded from the sealed
+Proof, so Make reruns each approved Component and certifies it rather than
+modelling the toy again. Only a Component that deviates goes to a worker and
+its Component Reviewer, the assembly review carries from the Proof Critic
+unless something deviated, the host reports every deviation from the
+approved STEP files, and every correction runs through `build-a-toy`, not
+back through this skill.
 
 ## Write back what the design taught
 

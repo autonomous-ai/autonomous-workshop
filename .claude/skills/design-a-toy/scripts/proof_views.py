@@ -34,7 +34,7 @@ Commands:
       reference against the combined entry, `geometry:<id>` against
       `part_<id>.step.py`. A reference without a camera is listed and skipped.
 
-  split SHEET.png -o OUTDIR [--max 800]
+  split SHEET.png -o OUTDIR [--max 800] [--views 3]
       Cut an AI three-view sheet into its views at the empty columns between
       them (view-1.png, view-2.png, ...), each cropped to its object with a
       margin and scaled down to at most --max pixels a side.
@@ -322,14 +322,10 @@ def refs(contract: Path, proof: Path, images: Path, out: Path):
     return results
 
 
-def split(sheet_path: Path, out: Path, max_side=800, threshold=40):
-    sheet = Image.open(sheet_path).convert("RGB")
-    background = corner_background(sheet)
-    a = np.asarray(sheet).astype(int)
-    mask = np.abs(a - np.array(background)).max(axis=2) > threshold
-    filled = mask.sum(axis=0) > max(2, int(0.005 * mask.shape[0]))
-    min_gap = max(4, int(0.01 * mask.shape[1]))
-    runs, start, gap = [], None, 0
+def _runs(filled, min_gap):
+    """Column runs of a sheet's filled mask, split at gaps of ``min_gap``."""
+
+    runs, start, gap, end = [], None, 0, 0
     for x, on in enumerate(filled):
         if on:
             if start is None:
@@ -342,7 +338,48 @@ def split(sheet_path: Path, out: Path, max_side=800, threshold=40):
                 start, gap = None, 0
     if start is not None:
         runs.append((start, end))
-    runs = [r for r in runs if r[1] - r[0] >= min_gap]
+    return [r for r in runs if r[1] - r[0] >= min_gap]
+
+
+def view_columns(mask, views=3):
+    """The column span of each of ``views`` views on a sheet mask.
+
+    Views a clear background gap separates are cut there. When an image
+    model lets two views nearly touch (a tail over the next view's plate),
+    their run is cut at its emptiest column, away from the run's ends; when
+    a detached piece makes an extra run, the runs nearest each other merge.
+    ValueError when the sheet cannot give that many views."""
+
+    height, width = mask.shape
+    column = mask.sum(axis=0)
+    filled = column > max(2, int(0.005 * height))
+    min_gap = max(4, int(0.01 * width))
+    runs = _runs(filled, min_gap)
+    if not runs:
+        raise ValueError("the sheet shows no view")
+    while len(runs) > views:
+        gaps = [runs[i + 1][0] - runs[i][1] for i in range(len(runs) - 1)]
+        i = gaps.index(min(gaps))
+        runs[i:i + 2] = [(runs[i][0], runs[i + 1][1])]
+    while len(runs) < views:
+        widest = max(range(len(runs)), key=lambda i: runs[i][1] - runs[i][0])
+        x0, x1 = runs[widest]
+        # Cut only in the run's middle half: never shave a view's own edge.
+        lo, hi = x0 + (x1 - x0) // 4, x1 - (x1 - x0) // 4
+        if hi - lo < 2 * min_gap:
+            raise ValueError("the sheet shows %d views, not %d" % (len(runs), views))
+        smooth = np.convolve(column[lo:hi + 1], np.ones(min_gap) / min_gap, mode="same")
+        cut = lo + int(np.argmin(smooth))
+        runs[widest:widest + 1] = [(x0, cut - 1), (cut + 1, x1)]
+    return runs
+
+
+def split(sheet_path: Path, out: Path, max_side=800, threshold=40, views=3):
+    sheet = Image.open(sheet_path).convert("RGB")
+    background = corner_background(sheet)
+    a = np.asarray(sheet).astype(int)
+    mask = np.abs(a - np.array(background)).max(axis=2) > threshold
+    runs = view_columns(mask, views)
     out.mkdir(parents=True, exist_ok=True)
     paths = []
     for n, (x0, x1) in enumerate(runs, 1):
@@ -434,6 +471,9 @@ def main(argv=None) -> int:
     p.add_argument("sheet", type=Path)
     p.add_argument("-o", "--out", type=Path, required=True)
     p.add_argument("--max", type=int, default=800)
+    p.add_argument("--views", type=int, default=3,
+                   help="how many views the sheet holds (default 3); views that nearly touch are cut at "
+                        "their emptiest column")
     p = sub.add_parser("guide")
     p.add_argument("entry", type=Path)
     p.add_argument("--view", action="append", required=True,
@@ -461,7 +501,7 @@ def main(argv=None) -> int:
             for result in refs(a.contract, a.proof, a.images, a.out):
                 print(json.dumps(result))
         elif a.command == "split":
-            for path in split(a.sheet, a.out, a.max):
+            for path in split(a.sheet, a.out, a.max, views=a.views):
                 print(path)
         elif a.command == "guide":
             views = []

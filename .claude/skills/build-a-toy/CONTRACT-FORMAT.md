@@ -47,6 +47,18 @@ prose, even under schema 8, where the Component Worker reads its prose
 sections too. Never write that a detail is "never left out", and never state a
 smaller minimum, such as "every rivet at least 1.0 mm across".
 
+Two more numbers belong to the libraries, not the prose:
+
+- **A fit comes from the wiki,** derived from the Bought Part's size and
+  cited by its page: a press fit for the 1.5 mm steel pin is a 1.4 bore
+  (`dowel-pins-and-press-fits`, `slot_for(1.5, "press")`). A bore at the
+  pin's own size is no press fit; the beaver pilot's contract gave 1.5 and
+  its Proof, rightly, built 1.4.
+- **A blind groove or slit ends as the print-details library makes it.**
+  On a wall its upper end is roofed at 52 degrees (`slit`, `panel`), less
+  than a groove's depth and below what a render shows. State the section
+  ("1.2 wide and 0.6 deep, square in section"), never "a flat end".
+
 ## The block
 
 ````markdown
@@ -380,15 +392,34 @@ instances.)
   `prose_sections`, and `guides[]` is required with every geometry named in
   some guide's `geometries`. `9` (ADR 0094) is schema 8 with
   `wall_min_mm` refused on every geometry. `10` (ADR 0095) is schema 9 plus
-  the optional `electrical` section below. Use `10` for a toy with anything
-  electrical and `9` or `10` for any other new contract; 1 to 9 refuse
-  `electrical` and stay valid, with exactly their earlier rules, for
-  contracts and runs sealed before it. Schema 3 is schema 2 plus a `camera` on every
+  the optional `electrical` section below; 1 to 9 refuse `electrical` and
+  stay valid, with exactly their earlier rules, for contracts and runs
+  sealed before it. `11` (ADR 0096) is schema 10 plus `shape:
+  "approved-proof"`: the owner's Approved Proof, not the words, is the
+  shape. `design-a-toy` writes every new contract as schema 11, a powered
+  toy's too. `wish` and `fix` refuse a schema 11 contract without
+  `--seed-source <contract-dir>/proof`, and a seeded run builds and
+  certifies that Proof (see `shape` below). Schemas 9 and 10 stay valid
+  for a contract designed before ADR 0096, built unseeded. Schema 3 is schema 2 plus a `camera` on every
   reference; from schema 3 every Component file defines
   `assembly_pose(shape, pose)`, even one in no Interface. A schema 3
   contract has no Interface text, a schema 2 contract no cameras and a
   schema 1 contract no `interfaces`; they stay valid only for runs sealed
   before them.
+- `shape` (schema 11, ADR 0096, required there and refused before it): the
+  string `"approved-proof"`. It moves the shape out of the words:
+  - `geometries[].prose_sections` and geometry-scoped form rows become
+    optional. Write a geometry's prose and rows only for what the contract
+    owns: function, critical dimensions, Interfaces, print, colour, Bought
+    Parts and `electrical`. The Approved Proof holds every other shape
+    choice, and the Proof Critic judged it against the images.
+  - Everything else keeps schema 10's rules: references and cameras,
+    `guides[]`, Interfaces and their `text`, `print`, `assembly_tree`,
+    `electrical`.
+  - The build is seeded: Make reruns each approved Component, and
+    `proof_diff` (1% volume, 0.1 mm) reports every deviation from
+    `proof/approved/`. DETECT raises `shape:<geometry>` from it instead of
+    `extents:` and form findings (DETECT.md).
 - `interfaces[]` (ADR 0082): one entry per place two or more Components meet;
   `[]` when none do. `id` is lowercase kebab case and unique. `kind` is
   `static`, `separable` or `coupled`. `components` lists two or more
@@ -549,11 +580,15 @@ A contract is ready only when all of these hold. Report every failure at once.
   `python3 .claude/skills/design-a-toy/scripts/contract_lint.py CONTRACT.md`
   reports no error. It runs the host's own parser and warns for each
   catalogue entry the owner has not confirmed.
-- For schema 8 and 9, every geometry names its `prose_sections`, each one
+- For schema 8 to 10, every geometry names its `prose_sections`, each one
   exactly one `###` heading with text, and every geometry is named in some
   guide's `geometries`.
-- For schema 9, no geometry states `wall_min_mm`. Schema 9 is schema 8
-  without it, and `design-a-toy` writes every new contract as schema 9.
+- From schema 9, no geometry states `wall_min_mm`. Schema 9 is schema 8
+  without it.
+- For schema 11, the block has `"shape": "approved-proof"`, and the sealed
+  Proof beside the contract passes `seal_proof.py verify <contract-dir>/proof
+  --contract CONTRACT.md`. A geometry may leave out `prose_sections`.
+  `design-a-toy` writes every new contract as schema 11.
 - No row count is limited: ADR 0093 removed ADR 0072's guards of 16
   assembly-scoped rows and 4 per Unique Geometry.
 - The whole file is at most 40,000 characters. Nothing in the host checks
