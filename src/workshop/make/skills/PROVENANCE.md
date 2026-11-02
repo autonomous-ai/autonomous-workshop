@@ -1,5 +1,17 @@
 # Shared skill provenance
 
+## Workshop-local: a seeded run carries its assembly review (2026-11-02, ADR 0096)
+
+- **Local patch to upstream `cad` (seeding is Workshop's).**
+  `verify_project`'s signature review preflight accepts schema 10, the
+  review `make_round --carry-assembly-review` carries from a seeded run's
+  Approved Proof, by shape only; the finalizer binds it to the seed.
+  `motion_presentation.py` lets a carried review's motion review keep its
+  own independent critic. Schemas 8 and 9 read as before.
+- **`make-round`** gains `--carry-assembly-review --concept-sha256 HEX`.
+  Only the `cad` and `make-round` locks move; `source_commit` values are
+  unchanged.
+
 ## Workshop-local: MAKE-OPTIONS schema 3 records a seed (2026-11-02, ADR 0096)
 
 - **Local change to upstream `cad` (upstream does not need it: seeding is

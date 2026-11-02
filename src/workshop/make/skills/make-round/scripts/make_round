@@ -15,6 +15,7 @@
                [--nozzle 0.4] [--overhang-angle 45] [--contract CONTRACT.md] [--json]
     make_round <cad-dir> --shared-helpers --contract CONTRACT.md [--nozzle 0.4] [--json]
     make_round <cad-dir> --identities-only --contract CONTRACT.md [--out IDENTITIES.json]
+    make_round <project>/cad --carry-assembly-review --concept-sha256 HEX
 
 Every verdict comes from the original cad tools, run unchanged; this script
 only sequences them, remembers what changed between rounds, and prints a
@@ -158,6 +159,13 @@ key, and the assembly identity: what a component round of a run sealing that
 contract and its images would compute, with no ruling or amendment. It
 reviews nothing and gates nothing. design-a-toy's seal_proof records the
 Approved Proof with it (ADR 0096).
+--carry-assembly-review --concept-sha256 HEX, in a run seeded from an
+Approved Proof whose every Component's latest round is the approved B-rep
+locked by the approval as exact, writes snap/SIGNATURE-REVIEW.json schema 10
+carried from the sealed seed/CRITIC.json: the critic's verdict and
+requirement verdicts the owner approved, bound to the approval, the assembly
+identity, the snap images and the print gate reports. Any deviation exits 1:
+the run spends the blind review as before (ADR 0096).
 This tool makes no model calls.
 
 Exit 0: all checks and the recorded (or carried) review passed. Exit 1:
@@ -3200,6 +3208,140 @@ def seed_diff(approved: Path, built: Path, out: Path) -> dict:
                                                        "two_way", "surface_deviation_mm")}
                       for part in report.get("parts") or ()],
             "missing": list(report.get("missing") or ()), "extra": list(report.get("extra") or ())}
+
+
+# --carry-assembly-review (ADR 0096): in a seeded run whose every Component is
+# the approved one, the Proof Critic's verdict that the owner approved is the
+# assembly review, and no blind critic is spent on the same shape.
+SIGNATURE_REVIEW_RELATIVE = Path("snap/SIGNATURE-REVIEW.json")
+SIGNATURE_REVIEW_KIND = "autonomous-workshop.signature-experience-review"
+CARRIED_REVIEW_SCHEMA = 10
+SEED_REVIEWER = "the owner (Approved Proof)"
+CRITIC_NAME = "CRITIC.json"
+PRINT_GATE_REPORTS = ("thickness-*.md", "overhang-*.md")
+
+
+def canonical_bytes(value) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+                      allow_nan=False).encode("utf-8")
+
+
+def assembly_carry_review(project: Path, approval: dict, approval_sha256: str, critic_content: bytes,
+                          concept_sha256: str) -> dict:
+    """The carried assembly review of a seeded run, or ValueError naming why
+    the blind review must run instead.
+
+    It carries only when every ``part_<id>.step.py`` is a Component of the
+    approval, each one's latest round is that Component's approved B-rep,
+    locked by the approval as exact, the assembly identity is the approved
+    one, and the sealed ``CRITIC.json`` agreed or the owner approved its
+    open lines. It binds the current snap images and print gate reports as
+    the blind review does."""
+
+    if not re.fullmatch(r"[0-9a-f]{64}", concept_sha256 or ""):
+        raise ValueError("--concept-sha256 must be the canonical Invented concept hash")
+    critic_record = approval.get("critic") if isinstance(approval.get("critic"), dict) else {}
+    critic_sha256 = hashlib.sha256(critic_content).hexdigest()
+    if critic_sha256 != critic_record.get("sha256"):
+        raise ValueError("seed/CRITIC.json is not the critic the approval sealed")
+    try:
+        critic = json.loads(critic_content)
+    except ValueError as exc:
+        raise ValueError("seed/CRITIC.json is not JSON: %s" % exc) from exc
+    if not isinstance(critic, dict):
+        raise ValueError("seed/CRITIC.json is not an object")
+    verdict = critic.get("verdict")
+    open_lines = critic_record.get("open_lines_approved") is True
+    if verdict != "agree" and not open_lines:
+        raise ValueError("the Proof Critic did not agree and the owner approved no open lines")
+    requirements = critic.get("requirements")
+    if not isinstance(requirements, list) or any(
+            not isinstance(row, dict) or not isinstance(row.get("id"), str)
+            or row.get("verdict") not in ("agree", "differences") for row in requirements):
+        raise ValueError("seed/CRITIC.json has no requirement verdicts")
+    if not open_lines and any(row["verdict"] != "agree" for row in requirements):
+        raise ValueError("the Proof Critic left a requirement with differences")
+    approved = approval.get("components")
+    if not isinstance(approved, dict) or not approved:
+        raise ValueError("seed/APPROVAL.json has no components")
+    built = sorted(path.name.removeprefix("part_").removesuffix(".step.py")
+                   for path in project.glob("part_*.step.py"))
+    if built != sorted(approved):
+        raise ValueError("the project's Components are not the approved ones")
+    identities = {}
+    for role in built:
+        number = latest_component_round(project, role)
+        try:
+            summary = json.loads((project / "measure" / COMPONENT_ROUNDS_DIR / role / ("r%04d" % number)
+                                  / "summary.json").read_text(encoding="utf-8")) if number else None
+        except (OSError, ValueError):
+            summary = None
+        if not isinstance(summary, dict):
+            raise ValueError("%s has no component round" % role)
+        review = summary.get("review") if isinstance(summary.get("review"), dict) else {}
+        if (summary.get("identity") != approved[role].get("identity")
+                or review.get("carried_from") != SEED_APPROVAL or review.get("seed") != "exact"):
+            raise ValueError("%s's latest round is not the approved Component, locked by the approval as "
+                             "exact" % role)
+        identities[role] = summary["identity"]
+    assembly = hashlib.sha256(json.dumps(identities, sort_keys=True).encode()).hexdigest()
+    if assembly != approval.get("assembly_identity"):
+        raise ValueError("the assembly identity is not the approved one")
+    images = {}
+    for name in ("iso", "signature"):
+        path = project / "snap" / ("%s.png" % name)
+        if path.is_symlink() or not path.is_file():
+            raise ValueError("render snap/%s.png first, as for the blind review" % name)
+        images[name] = file_hash(path)
+    gates = {"measure/%s" % path.name: file_hash(path)
+             for pattern in PRINT_GATE_REPORTS for path in sorted((project / "measure").glob(pattern))
+             if path.is_file() and not path.is_symlink()}
+    return {
+        "schema_version": CARRIED_REVIEW_SCHEMA, "kind": SIGNATURE_REVIEW_KIND,
+        "carried_from": SEED_APPROVAL, "reviewer": SEED_REVIEWER,
+        "concept_sha256": concept_sha256, "iso_sha256": images["iso"],
+        "signature_sha256": images["signature"], "approval_sha256": approval_sha256,
+        "critic_sha256": critic_sha256, "assembly_identity": assembly,
+        "critic_round": critic.get("round") if type(critic.get("round")) is int else None,
+        "critic_verdict": verdict, "open_lines_approved": open_lines,
+        "requirements": [{"id": row["id"], "verdict": row["verdict"], "note": str(row.get("note") or "")}
+                         for row in requirements],
+        "print_gate_sha256s": gates,
+    }
+
+
+def carry_assembly_review(args) -> int:
+    """Write the carried ``snap/SIGNATURE-REVIEW.json``. Exit 0 when written,
+    1 when the run must spend the blind review, 2 when it cannot apply."""
+
+    project = Path(args.project).resolve()
+    try:
+        approval = seed_approval(project)
+    except ValueError as exc:
+        print("make_round: %s" % exc, file=sys.stderr)
+        return 2
+    if approval is None:
+        print("make_round: --carry-assembly-review applies only in a run seeded from an Approved Proof "
+              "(--seed-source); run the blind review", file=sys.stderr)
+        return 2
+    seed = run_root(project) / "seed"
+    approval_sha256 = file_hash(seed / "APPROVAL.json")
+    try:
+        critic = (seed / CRITIC_NAME).read_bytes()
+        review = assembly_carry_review(project, approval, approval_sha256, critic, args.concept_sha256)
+    except (OSError, ValueError) as exc:
+        print("make_round: the assembly review cannot be carried: %s. Run the blind review." % exc,
+              file=sys.stderr)
+        return 1
+    target = project / SIGNATURE_REVIEW_RELATIVE
+    if target.is_symlink():
+        print("make_round: %s is a symlink" % target, file=sys.stderr)
+        return 2
+    target.write_bytes(canonical_bytes(review))
+    print("carried the assembly review from the Approved Proof (critic %s%s) to %s"
+          % (review["critic_verdict"], ", open lines approved by the owner" if review["open_lines_approved"]
+             else "", SIGNATURE_REVIEW_RELATIVE))
+    return 0
 
 
 def review_policy(previous: dict, review: dict) -> dict:
@@ -6955,6 +7097,8 @@ def main(argv=None) -> int:
     parser.add_argument("--print-gates-only", action="store_true", help="build every part (or --component) and run Make's print gates on it exactly as a round does, with no run, nonce, freeze or round history; writes only under the directory (measure/print-gates/, __cadgen__/); exit 1 on any failure. The Contract Proof runs this")
     parser.add_argument("--contract", metavar="CONTRACT.md", help="with --print-gates-only: the Design Contract whose Assembly Tree says which Parts each kit Component prints (default: the project's installed tree/kit.json); with --shared-helpers outside a run: the Design Contract whose Interfaces the samples must cover (the Contract Proof, ADR 0096)")
     parser.add_argument("--identities-only", action="store_true", help="outside a run, with --contract: print each Component's B-rep identity, STEP sha256, Shared Helpers, contract rows hash and carry key, and the assembly identity, as a component round would compute them; --out also writes the JSON there. seal_proof records an Approved Proof with this (ADR 0096)")
+    parser.add_argument("--carry-assembly-review", action="store_true", help="Workshop Manager, seeded run: when every Component is the approved one, write snap/SIGNATURE-REVIEW.json carried from the Approved Proof's CRITIC.json instead of the blind review; exit 1 means run the blind review (ADR 0096)")
+    parser.add_argument("--concept-sha256", metavar="HEX", help="with --carry-assembly-review: the canonical Invented concept hash")
     parser.add_argument("--worker-nonce", help=argparse.SUPPRESS)  # issued by the Workshop guard hook only
     parser.add_argument("--seed-nonce", help=argparse.SUPPRESS)  # issued to the root of a seeded run only
     parser.add_argument("--self-check", action="store_true")
@@ -6975,6 +7119,21 @@ def main(argv=None) -> int:
             parser.error("--identities-only takes only the project, --contract and --out (not --%s)"
                          % given[0].replace("_", "-"))
         return identities_only(args)
+    if args.carry_assembly_review:
+        given = [flag for flag in ("component", "entry", "refs", "shared_helpers", "print_gates_only",
+                                   "record_visual", "record_review", "record_unlock", "interface",
+                                   "report_blocked", "clear_blocked", "blocked_reports", "propose_amendment",
+                                   "record_amendment_review", "contract_amendments", "full", "out", "contract",
+                                   "require_component_passes", "worker_nonce", "seed_nonce")
+                 if getattr(args, flag, None)]
+        if given:
+            parser.error("--carry-assembly-review takes only the project and --concept-sha256 (not --%s)"
+                         % given[0].replace("_", "-"))
+        if not args.concept_sha256:
+            parser.error("--carry-assembly-review needs --concept-sha256")
+        return carry_assembly_review(args)
+    if args.concept_sha256:
+        parser.error("--concept-sha256 belongs to --carry-assembly-review")
     if args.contract and not (args.print_gates_only or args.shared_helpers):
         parser.error("--contract belongs to --print-gates-only, --shared-helpers or --identities-only")
     if args.contract and args.shared_helpers and run_root(Path(args.project).resolve()) is not None:

@@ -132,9 +132,17 @@ def _check_review(project, signature, evidence_raw):
     expected = {"schema_version", "evidence_sha256", "concept_sha256", "reviewer", "review_rounds", "blind_motion_read", "motion_matches_wish", "simulation_not_physical_test"}
     if raw != canonical(review) or set(review) != expected or review["schema_version"] != 1:
         raise ValueError("invalid independent motion review")
-    for key in ("concept_sha256", "reviewer", "review_rounds"):
+    # An assembly review carried from a seeded run's Approved Proof (Workshop
+    # ADR 0096) judged the still shape, never the motion: the motion review
+    # keeps its own independent critic and rounds and binds only the concept.
+    carried = signature.get("carried_from") == "seed-approval"
+    for key in ("concept_sha256",) if carried else ("concept_sha256", "reviewer", "review_rounds"):
         if review[key] != signature[key]:
             raise ValueError("motion review differs from the signature review")
+    if carried and (not isinstance(review["reviewer"], str) or not review["reviewer"].strip()
+                    or review["reviewer"] == signature["reviewer"]
+                    or type(review["review_rounds"]) is not int or review["review_rounds"] not in (1, 2, 3, 4)):
+        raise ValueError("a carried signature review needs the motion reviewed by an independent critic")
     if review["evidence_sha256"] != hashlib.sha256(evidence_raw).hexdigest():
         raise ValueError("motion review has stale evidence")
     if review["motion_matches_wish"] is not True or review["simulation_not_physical_test"] is not True:

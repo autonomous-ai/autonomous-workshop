@@ -27,7 +27,16 @@ Make certifies that build. It does not model the toy again.
    Worker for that Component only, under the usual worker and review rules.
    A worker's round within `proof_diff` tolerance (`seed-diff.json`) locks
    by the approval. One over tolerance waits for its Component Review.
-5. Run the Interfaces, the assembly round and `--full` as in any Spark Make.
+5. Run the Interfaces and the assembly round, and render `snap/iso.png` and
+   `snap/signature.png` as in any Spark Make.
+6. When every Component locked as exact, carry the assembly review instead
+   of the blind review: `make_round <cad-project>
+   --carry-assembly-review --concept-sha256 <Invented concept hash>`. It
+   writes `snap/SIGNATURE-REVIEW.json` from the sealed `CRITIC.json`; never
+   edit it. It exits 1 when anything deviated: then run the blind review as
+   in make.md. A moving toy still needs its motion review, from a critic of
+   its own.
+7. Run `--full` as in any Spark Make.
 
 ## Rules
 
@@ -36,4 +45,5 @@ Make certifies that build. It does not model the toy again.
 - A Contract Contradiction is a need, as in any run.
 - Never write under `seed/`.
 - Before it accepts Make, the host diffs every delivered STEP against
-  `seed/approved/` and reports every deviation.
+  `seed/approved/` and reports every deviation. It refuses a carried
+  assembly review when any Component deviated.

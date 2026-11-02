@@ -2398,6 +2398,148 @@ def _validate_blind_rereads(
         _bounded_text(reread["answer"], "Make blind reread %d answer" % index, 1_000)
 
 
+# ADR 0096: the assembly review a seeded run carries from its Approved Proof
+# (`make_round --carry-assembly-review`) instead of spending a blind critic.
+CARRIED_REVIEW_SCHEMA = 10
+CARRIED_REVIEWER = "the owner (Approved Proof)"
+SEED_APPROVAL = "seed-approval"
+CARRIED_REVIEW_FIELDS = frozenset({
+    "schema_version", "kind", "carried_from", "reviewer", "concept_sha256", "iso_sha256",
+    "signature_sha256", "approval_sha256", "critic_sha256", "assembly_identity", "critic_round",
+    "critic_verdict", "open_lines_approved", "requirements", "print_gate_sha256s",
+})
+
+
+def _frozen_seed(run_root: Path) -> Optional[Mapping[str, Any]]:
+    """The seed MAKE-OPTIONS.json froze, or None in an unseeded run."""
+
+    policy = run_root / ".agents/skills/cad/scripts/motion_policy.py"
+    try:
+        seed = runpy.run_path(str(policy)).get("seed")
+        return seed() if seed is not None else None
+    except (OSError, ValueError) as exc:
+        raise ProposalError("Make seed options are invalid: %s" % exc) from exc
+
+
+def _validate_carried_signature_review(
+    run_root: Path,
+    *,
+    review: Mapping[str, Any],
+    content: bytes,
+    review_relative: PurePosixPath,
+    concept_sha256: str,
+) -> None:
+    """Bind a carried assembly review to the run's sealed seed: the frozen
+    approval, its critic, every Component's approved round and the assembly
+    identity. Only a seeded run whose every Component is the approved B-rep,
+    locked by the approval as exact, carries; any deviation spends the blind
+    review."""
+
+    if set(review) != CARRIED_REVIEW_FIELDS:
+        raise ProposalError("Make carried signature review fields do not match schema 10")
+    if content != canonical_json(dict(review)):
+        raise ProposalError("Make signature review must use canonical JSON encoding")
+    if (
+        review["kind"] != SIGNATURE_REVIEW_KIND
+        or review["carried_from"] != SEED_APPROVAL
+        or review["reviewer"] != CARRIED_REVIEWER
+        or review["concept_sha256"] != concept_sha256
+    ):
+        raise ProposalError("Make signature review identity is invalid")
+    seed = _frozen_seed(run_root)
+    if seed is None:
+        raise ProposalError(
+            "Make signature review is carried from an Approved Proof, but this run "
+            "was not seeded; run the blind review"
+        )
+    approval_sha256, _, _ = _hash_regular(run_root, "seed/APPROVAL.json", "Make seed approval")
+    if not approval_sha256 == seed.get("approval_sha256") == review["approval_sha256"]:
+        raise ProposalError(
+            "Make carried signature review is not bound to the approval MAKE-OPTIONS.json froze"
+        )
+    approval, _, _ = _read_json(run_root, "seed/APPROVAL.json", "Make seed approval")
+    critic_record = approval.get("critic") if isinstance(approval.get("critic"), dict) else {}
+    critic_sha256, _, _ = _hash_regular(run_root, "seed/CRITIC.json", "Make seed critic")
+    if not critic_sha256 == critic_record.get("sha256") == review["critic_sha256"]:
+        raise ProposalError(
+            "Make carried signature review is not bound to the critic the approval sealed"
+        )
+    critic, _, _ = _read_json(run_root, "seed/CRITIC.json", "Make seed critic")
+    open_lines = critic_record.get("open_lines_approved") is True
+    rows = critic.get("requirements")
+    if not isinstance(rows, list) or any(
+        not isinstance(row, dict) or not isinstance(row.get("id"), str) for row in rows
+    ):
+        raise ProposalError("Make seed critic has no requirement verdicts")
+    expected_rows = [
+        {"id": row["id"], "verdict": row.get("verdict"), "note": str(row.get("note") or "")}
+        for row in rows
+    ]
+    if (
+        review["critic_verdict"] != critic.get("verdict")
+        or review["open_lines_approved"] is not open_lines
+        or review["requirements"] != expected_rows
+        or review["critic_round"]
+        != (critic.get("round") if type(critic.get("round")) is int else None)
+    ):
+        raise ProposalError("Make carried signature review is not the sealed critic's verdict")
+    if not open_lines and (
+        critic.get("verdict") != "agree"
+        or any(row["verdict"] != "agree" for row in expected_rows)
+    ):
+        raise ProposalError(
+            "Make carried signature review needs a critic that agreed or open lines "
+            "the owner approved"
+        )
+    approved = approval.get("components")
+    if not isinstance(approved, dict) or not approved:
+        raise ProposalError("Make seed approval has no components")
+    project_relative = review_relative.parent.parent
+    project = run_root.joinpath(*project_relative.parts)
+    built = sorted(
+        path.name[len("part_"):-len(".step.py")] for path in project.glob("part_*.step.py")
+    )
+    if built != sorted(approved):
+        raise ProposalError(
+            "Make carried signature review: the project's Components are not the approved ones"
+        )
+    identities = {}
+    for role in built:
+        rounds = project_relative / "measure/component-rounds" / role
+        state, _, _ = _read_json(
+            run_root, (rounds / "make-round-state.json").as_posix(), "Make component round state"
+        )
+        number = state.get("round")
+        if type(number) is not int or number < 1:
+            raise ProposalError("Make component %s has no latest round" % role)
+        summary, _, _ = _read_json(
+            run_root,
+            (rounds / ("r%04d" % number) / "summary.json").as_posix(),
+            "Make component round summary",
+        )
+        recorded = summary.get("review") if isinstance(summary.get("review"), dict) else {}
+        approved_role = approved[role] if isinstance(approved[role], dict) else {}
+        if (
+            summary.get("identity") != approved_role.get("identity")
+            or recorded.get("carried_from") != SEED_APPROVAL
+            or recorded.get("seed") != "exact"
+        ):
+            raise ProposalError(
+                "Make carried signature review: %s deviates from the Approved Proof, so "
+                "the assembly needs the blind review" % role
+            )
+        identities[role] = summary["identity"]
+    assembly = hashlib.sha256(json.dumps(identities, sort_keys=True).encode()).hexdigest()
+    if not assembly == approval.get("assembly_identity") == review["assembly_identity"]:
+        raise ProposalError(
+            "Make carried signature review: the assembly identity is not the approved one"
+        )
+    _validate_review_print_gates(
+        run_root, review=review, project_relative=project_relative
+    )
+    _validate_review_images(run_root, review=review, review_relative=review_relative)
+
+
 def _validate_signature_review(
     run_root: Path,
     *,
@@ -2424,6 +2566,16 @@ def _validate_signature_review(
         "Make signature review",
         maximum=MAX_SIGNATURE_REVIEW_BYTES,
     )
+    if review.get("schema_version") == CARRIED_REVIEW_SCHEMA:
+        _validate_carried_signature_review(
+            run_root,
+            review=review,
+            content=content,
+            review_relative=review_relative,
+            concept_sha256=concept_sha256,
+        )
+        _validate_review_motion(run_root, review=review, review_relative=review_relative)
+        return
     design_contract = _current_design_contract(
         run_root,
         wish_sha256,
@@ -2591,6 +2743,13 @@ def _validate_signature_review(
         4,
     ):
         raise ProposalError("Make signature review must record one to four review rounds")
+    _validate_review_images(run_root, review=review, review_relative=review_relative)
+    _validate_review_motion(run_root, review=review, review_relative=review_relative)
+
+
+def _validate_review_images(
+    run_root: Path, *, review: Mapping[str, Any], review_relative: PurePosixPath
+) -> None:
     for filename, field in (
         ("iso.png", "iso_sha256"),
         ("signature.png", "signature_sha256"),
@@ -2605,8 +2764,12 @@ def _validate_signature_review(
             raise ProposalError(
                 "Make signature review is not bound to the final %s" % filename
             )
-    project_relative = PurePosixPath(product_root_value) / cad_project_path
-    project_path = run_root.joinpath(*project_relative.parts)
+
+
+def _validate_review_motion(
+    run_root: Path, *, review: Mapping[str, Any], review_relative: PurePosixPath
+) -> None:
+    project_path = run_root.joinpath(*review_relative.parent.parent.parts)
     motion_path = project_path / "measure/motion.json"
     if motion_path.exists() or motion_path.is_symlink():
         policy = run_root / ".agents/skills/cad/scripts/motion_policy.py"
