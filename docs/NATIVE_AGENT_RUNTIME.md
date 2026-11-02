@@ -1093,6 +1093,16 @@ no Shape Round, never reaches the worker, and a dispute-only review agrees.
 `--record-review` refuses a review of a packet rendered before the latest
 ruling. Frozen runs keep their materialized `make_round` and definitions.
 
+make_round only appends to a Blocked Report ledger, and the host holds it
+to that (issue #181, amending ADR 0081). In a guarded run the make_round
+guard, before every make_round call and on the root's turn end, and the
+host, at each Make gate, log the size and sha256 of each of this run's
+ledgers in host state. Make acceptance refuses a ledger that no longer
+begins with every logged read. `workshop fix` clones no source ledger into
+`revision-work/`; the read-only `revision-source.zip` keeps it as the
+source's record, and none of its reports, open or answered, holds or binds
+the fix run.
+
 A new run may also amend its own Design Contract inside Make (ADR 0085), but
 only for a Contract Contradiction whose smallest fix no sealed reference
 image shows. The root proposes it with `make_round --propose-amendment`, a

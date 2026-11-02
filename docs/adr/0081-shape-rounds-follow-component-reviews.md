@@ -16,7 +16,8 @@
   "Amendment: a Blocked Report ruling binds the Component Reviewer" below)
   and by issue #160 (2026-10-31, see "Amendment: colour is not geometry"
   below) and issue #164 (2026-11-01, see "Amendment: a fix run inherits no
-  ruling" below)
+  ruling" below) and issue #181 (2026-11-02, see "Amendment: a fix run
+  starts with no ledger, and the host keeps what it read" below)
 
 ## Context
 
@@ -441,7 +442,7 @@ Reviewer only in the run that decided it: a decided report whose
 starts with no inherited ruling, as it starts with no inherited reviewer
 binding (issue #119). A ruling that should still hold is decided again in
 the fix run, on a new Blocked Report. The cloned ledger stays as the source's
-record.
+record (since issue #181, only in `revision-source.zip`; see below).
 
 **Consequences.** A carried Component's carry key loses the source's
 rulings, so a review the source recorded under one does not carry to the
@@ -452,6 +453,85 @@ carry key without the source's rulings, a dispute of one refused as naming
 no ruling of the packet, a ruling decided again in the fix run binding its
 reviewer, and a review not refused as older than a source run's ruling;
 `make_round --self-check` holds the Wish filter.
+
+## Amendment: a fix run starts with no ledger, and the host keeps what it read (2026-11-02, issue #181)
+
+Status: Accepted; implemented and deterministically tested; not yet
+validated by a live run.
+
+**Context.** The #164 amendment kept the cloned ledger "as the source's
+record", but the host's Make gate refuses any report bound to another run.
+Turtle Moods v03 (`wish-20261101-141237-8f99cbd0`, from v02
+`wish-20261031-144615-e5100773`) copied v02's closed ledger, four events
+covering two face Blocked Reports and their rulings, from `revision-work/`
+into its product tree. The host refused the first Make proposal ("Blocked
+Report 1 is not bound to this run's Wish"). The Manager deleted the ledger
+and resubmitted, and the host accepted. That deletion lost nothing, but the
+host had no way to tell it apart from an agent deleting or rewriting its
+own run's ledger to clear an open report (issue #88). make_round only
+appends to the ledger, and the host kept no record of what it held.
+
+**Decision.** For new runs and resumed guarded runs:
+
+1. **A fix run starts with no ledger.** `workshop fix` leaves every
+   `blocked-reports.jsonl` out of `revision-work/`. The read-only
+   `revision-source.zip` keeps its exact bytes as the source's record, and
+   the revision guidance says no source ledger is ever copied into the
+   product tree. Reviewer bindings (issue #119) and rulings (issue #164)
+   already work this way; the #164 amendment's "the cloned ledger stays as
+   the source's record" now means the baseline copy, not one in the
+   product tree.
+2. **The host keeps what it read.** In a run with the make_round guard
+   (ADR 0080), the guard logs each of the current attempt's ledgers that
+   is this run's record. That means a valid ledger with every report bound
+   to this run's `WISH.json`. The guard logs the ledger before every
+   make_round call and on the root's `Stop`, recording its resolved path,
+   size and sha256 in `blocked-ledger-reads.jsonl` beside the nonce table.
+   The host logs the same at each Make gate, before refusing an open
+   report. Make acceptance refuses any ledger under the Made product root
+   that no longer begins with the exact bytes of every read logged of it,
+   whether it was deleted, truncated or edited. An answer appended to the
+   ledger still passes. The log is host state and the agent cannot write
+   it.
+3. **Another run's ledger is not logged.** A ledger with any report bound
+   to another run is refused by the gate as before, and the refusal now
+   says that a fix run never carries its source's ledger. Removing it
+   loses nothing of this run's, so the host accepts the removal. That is
+   the one case where removing a ledger is allowed, and with decision 1 it
+   only arises if an agent copies one in by hand.
+4. **An open source report holds nothing.** A fix source must have a
+   sealed Release, and Make acceptance refused an open report in the Made
+   CAD project. So a source report can still be open only in a ledger that
+   check never read (another directory of the product tree) or in a run
+   sealed before issue #88. Its answers would be bound to another Wish, so
+   the fix run could never answer it. It is therefore treated like a
+   closed one: it stays in `revision-source.zip`, holds no gate in the fix
+   run, and binds no reviewer. If its concern still applies, the worker
+   files it again in the fix run and the Manager answers it there. A fix
+   is not refused because of it, since the fix run is the way to address
+   it.
+
+**Consequences.** A guarded run that deletes or rewrites its own ledger
+can no longer pass Make. The agent's only remedy is to restore the exact
+bytes, and the refusal says so. A guard log the host cannot read is a
+state conflict, not a pass. Runs created without the guard keep the
+earlier check. A resumed guarded run created before this
+change keeps its frozen guard bytes, so only the host's own reads at its
+Make gates are logged for it.
+
+**Verification.** `tests/make/test_blocked_reports.py` `LedgerReadTest`
+covers: an open report refused and then deleted being refused as deleted;
+a truncated, edited or emptied ledger being refused while an appended
+answer passes; the guard logging before a make_round call and on the
+root's `Stop` but not on another command or a subagent's stop, and catching
+a deletion the host never saw; the installed hook script writing the log
+beside itself; another run's ledger refused, never logged, and accepted
+once removed; a read in another attempt's product binding nothing; an
+unguarded run unchanged; and an invalid log raising a state conflict.
+`tests/workflow/test_revision.py` covers the clone leaving the ledger out
+while the baseline keeps its bytes. `tests/workflow/test_native_host.py`
+covers the host gate refusing a deleted ledger in a guarded run but not in
+an unguarded one.
 
 ## Amendment: a colour word in a row is not a change of rows (2026-11-01, issue #176)
 

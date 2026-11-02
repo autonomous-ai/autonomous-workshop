@@ -63,6 +63,7 @@ from workshop.workflow.native_run import (
     _sealed_contract_inputs,
     _sealed_guide_inputs,
     _reference_conflict_history,
+    _verify_made_blocked_reports,
     _verify_make_round_workers,
     _playtest_score_history,
     _record_playtest_evidence,
@@ -3495,6 +3496,37 @@ class NativeHostTest(unittest.TestCase):
             (component / "r0002/summary.json").rename(root / "moved-summary.json")
             with self.assertRaisesRegex(ContractError, "wing r0002 is recorded"):
                 _verify_make_round_workers(run_root, host, digest, made)
+
+    def test_a_guarded_make_refuses_a_blocked_report_ledger_deleted_after_a_read(self):
+        """Issue #181: the host logs each read of this run's ledger and refuses
+        Make acceptance once the ledger no longer begins with it."""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            host = root / "host"
+            host.mkdir()
+            wish_sha256 = "a" * 64
+            measure = root / "run/artifacts/make/r0001/product/cad/measure"
+            measure.mkdir(parents=True)
+            ledger = measure / "blocked-reports.jsonl"
+            ledger.write_text(json.dumps({
+                "event": "report", "report": 1, "at": "2026-11-01T14:20:00Z",
+                "component": "head-wink", "round": 2, "rows": ["The wink reads."],
+                "reason": "The lid has no seat.", "wish_sha256": wish_sha256,
+            }) + "\n")
+            run = mock.Mock(run_root=root / "run", host_state_root=host)
+            made = mock.Mock(product_root="artifacts/make/r0001/product", cad_project_path="cad")
+            unguarded = mock.Mock(wish_sha256=wish_sha256, make_round_guard_sha256=None)
+            guarded = mock.Mock(wish_sha256=wish_sha256,
+                                make_round_guard_sha256=install_make_round_guard(host))
+            for checkpoint in (unguarded, guarded):
+                with self.assertRaisesRegex(ContractError, "Blocked Report 1 .* is open"):
+                    _verify_made_blocked_reports(run, checkpoint, made)
+            self.assertTrue((host / "make-round-guard/blocked-ledger-reads.jsonl").is_file())
+            ledger.unlink()
+            # A run created without the guard keeps its earlier check.
+            self.assertEqual(_verify_made_blocked_reports(run, unguarded, made), [])
+            with self.assertRaisesRegex(ContractError, "deleted or rewritten"):
+                _verify_made_blocked_reports(run, guarded, made)
 
     def test_made_component_acceptances_are_validated_before_the_host_seals_them(self):
         accepted = dict(self.COMPONENT_ACCEPTANCE)

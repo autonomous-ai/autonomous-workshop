@@ -1,5 +1,13 @@
 # Shared skill provenance
 
+## Workshop-local: a fix run starts with no Blocked Report ledger (2026-11-02, issue #181)
+
+- `make-round`: `SKILL.md` and `references/fix-runs.md` say a `workshop fix`
+  run starts with no ledger (the source's stays in `revision-source.zip`),
+  and that a ledger make_round appended to is never deleted or edited by
+  hand. Documentation only; only `make-round`'s lock moves; `source_commit`
+  values are unchanged.
+
 ## Workshop-local: a powered toy's Bought Parts in its model (2026-11-01, ADR 0095 amendment)
 
 - `make-round` gains `scripts/bought_model.py` and `references/bought-parts.md`:

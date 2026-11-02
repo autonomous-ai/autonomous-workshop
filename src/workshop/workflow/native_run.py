@@ -94,6 +94,8 @@ from workshop.make.blocked_reports import (
     run_blocked_reports,
     verify_no_open_blocked_reports,
 )
+from workshop.make.make_round_guard import LEDGER_READ_LOG_NAME
+from workshop.runtime.make_round_hook import MAKE_ROUND_GUARD_DIRECTORY
 from workshop.make.contract_amendments import (
     AMENDMENT_LEDGER_NAME,
     OWNER_AMENDMENT_KIND,
@@ -8046,6 +8048,26 @@ def _uncoloured_occurrences(made: NativeMade, run_root: Path, package: Any) -> t
     )
 
 
+def _verify_made_blocked_reports(
+    run: AgentRun, checkpoint: AgentRunCheckpoint, made: NativeMade
+) -> list[dict[str, Any]]:
+    """Every Blocked Report of the Made CAD project, refusing an open one
+    (issue #88) and, in a guarded run, a ledger deleted or rewritten after
+    Workshop or its make_round guard read it (issue #181)."""
+
+    product = run.run_root.joinpath(*PurePosixPath(made.product_root).parts)
+    return verify_no_open_blocked_reports(
+        product.joinpath(*PurePosixPath(made.cad_project_path).parts),
+        wish_sha256=checkpoint.wish_sha256,
+        product=product,
+        read_log=(
+            run.host_state_root / MAKE_ROUND_GUARD_DIRECTORY / LEDGER_READ_LOG_NAME
+            if checkpoint.make_round_guard_sha256 is not None
+            else None
+        ),
+    )
+
+
 def _evaluate_make_stage(
     proposal: AgentOutcomeProposal,
     *,
@@ -8139,10 +8161,7 @@ def _evaluate_make_stage(
             .joinpath(*PurePosixPath(made.product_root).parts)
             .joinpath(*PurePosixPath(made.cad_project_path).parts)
         )
-        # Issue #88: no Make acceptance while a Blocked Report is open.
-        blocked_reports = verify_no_open_blocked_reports(
-            cad_project, wish_sha256=checkpoint.wish_sha256,
-        )
+        blocked_reports = _verify_made_blocked_reports(run, checkpoint, made)
         # ADR 0085: every in-run Contract Amendment replays against the
         # sealed contract and carries its independent review.
         sealed_contract, sealed_references = _sealed_contract_inputs(
