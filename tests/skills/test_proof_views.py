@@ -45,11 +45,47 @@ class SplitTests(unittest.TestCase):
                 view = Image.open(path)
                 self.assertEqual(view.width, view.height)
 
+    def test_views_that_nearly_touch_are_still_three(self):
+        # The beaver pilot: view 3's tail reaches over view 2's plate, so no
+        # background column separates them (2 views before the fix).
+        with tempfile.TemporaryDirectory() as tmp:
+            sheet = Path(tmp) / "sheet.png"
+            _sheet(sheet, [(50, 60, 250, 240), (350, 60, 560, 240), (562, 200, 600, 206),
+                           (600, 60, 820, 240)])
+            paths = proof_views.split(sheet, Path(tmp) / "views")
+            self.assertEqual(len(paths), 3)
+            columns = proof_views.view_columns(self._mask(sheet))
+            self.assertTrue(555 <= columns[1][1] <= 605 and 555 <= columns[2][0] <= 610, columns)
+
+    def test_a_detached_piece_does_not_make_a_fourth_view(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sheet = Path(tmp) / "sheet.png"
+            _sheet(sheet, [(50, 60, 200, 240), (350, 100, 480, 200), (500, 120, 520, 140),
+                           (650, 40, 820, 260)])
+            columns = proof_views.view_columns(self._mask(sheet))
+            self.assertEqual([c[0] for c in columns], [50, 350, 650])
+
+    def test_a_sheet_that_cannot_hold_the_views_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sheet = Path(tmp) / "sheet.png"
+            _sheet(sheet, [(50, 60, 60, 240)])
+            with self.assertRaisesRegex(ValueError, "shows 1 views, not 3"):
+                proof_views.split(sheet, Path(tmp) / "views")
+            self.assertEqual(len(proof_views.split(sheet, Path(tmp) / "one", views=1)), 1)
+
+    @staticmethod
+    def _mask(sheet):
+        import numpy as np
+
+        image = Image.open(sheet).convert("RGB")
+        a = np.asarray(image).astype(int)
+        return np.abs(a - np.array(proof_views.corner_background(image))).max(axis=2) > 40
+
     def test_scales_a_large_view_down_to_the_limit(self):
         with tempfile.TemporaryDirectory() as tmp:
             sheet = Path(tmp) / "sheet.png"
             _sheet(sheet, [(20, 20, 1900, 980)], size=(2000, 1000))
-            (path,) = proof_views.split(sheet, Path(tmp) / "views", max_side=400)
+            (path,) = proof_views.split(sheet, Path(tmp) / "views", max_side=400, views=1)
             self.assertEqual(Image.open(path).size, (400, 400))
 
 
