@@ -13,6 +13,7 @@
                [--worker-nonce HEX] [--self-check]
     make_round <cad-dir> --print-gates-only [--component part_<id>.step.py]
                [--nozzle 0.4] [--overhang-angle 45] [--contract CONTRACT.md] [--json]
+    make_round <cad-dir> --shared-helpers --contract CONTRACT.md [--nozzle 0.4] [--json]
 
 Every verdict comes from the original cad tools, run unchanged; this script
 only sequences them, remembers what changed between rounds, and prints a
@@ -133,6 +134,10 @@ Helper freeze or round history, measures every part afresh, and writes only
 inside the directory: each part's STEP, measure/print-gates/ and
 __cadgen__/print-parts/print-gates/. Inside a Workshop run it refuses: there
 every gate verdict is a round's. design-a-toy's Contract Proof runs it.
+--shared-helpers --contract CONTRACT.md runs the same Shared Helper check
+and freeze on a CAD directory outside a Workshop run, reading the Interfaces
+from that contract file instead of a sealed Wish; inside a run it refuses.
+The Contract Proof runs it, as Make's Manager would (ADR 0096 decision 1b).
 This tool makes no model calls.
 
 Exit 0: all checks and the recorded (or carried) review passed. Exit 1:
@@ -4421,23 +4426,45 @@ def render_amendments(views: list) -> str:
 # every verdict comes from the print gates, check_envelope and check_motion.
 
 
-def contract_interfaces(project: Path) -> tuple[list | None, str | None]:
-    """``(interfaces, error)`` from the sealed Design Contract.
+def contract_block(path: Path) -> dict:
+    """The fenced ``design-contract`` JSON block of a Design Contract file (or
+    a JSON contract). Raises ValueError on a file that holds no contract."""
+
+    text = Path(path).read_text(encoding="utf-8")
+    match = CONTRACT_FENCE.search(text)
+    try:
+        block = json.loads(match.group(1) if match else text)
+    except ValueError as exc:
+        raise ValueError("%s holds no design-contract JSON block: %s" % (path, exc)) from None
+    if not isinstance(block, dict):
+        raise ValueError("%s: the design-contract block is not a JSON object" % path)
+    return block
+
+
+def contract_interfaces(project: Path, contract_path: Path | None = None) -> tuple[list | None, str | None]:
+    """``(interfaces, error)`` from the sealed Design Contract, or, outside a
+    run, from ``contract_path`` (the Contract Proof, ADR 0096 decision 1b).
 
     ``interfaces`` is None when the run has no contract or its contract has no
     Interfaces section (schema 1, or a run sealed before ADR 0082): such runs
     keep the protocol without a freeze. An unreadable Wish is an error.
     """
 
-    root = run_root(project)
-    if root is None:
-        return None, None
-    try:
-        wish = json.loads((root / "WISH.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
-        return None, "WISH.json unreadable: %s" % exc
-    context = wish.get("context") if isinstance(wish, dict) else None
-    contract = context.get("design_contract") if isinstance(context, dict) else None
+    if contract_path is not None:
+        try:
+            contract = contract_block(Path(contract_path))
+        except (OSError, ValueError) as exc:
+            return None, str(exc)
+    else:
+        root = run_root(project)
+        if root is None:
+            return None, None
+        try:
+            wish = json.loads((root / "WISH.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            return None, "WISH.json unreadable: %s" % exc
+        context = wish.get("context") if isinstance(wish, dict) else None
+        contract = context.get("design_contract") if isinstance(context, dict) else None
     if not isinstance(contract, dict) or "interfaces" not in contract:
         return None, None
     interfaces = contract["interfaces"]
@@ -4639,7 +4666,8 @@ def shared_helper_check(project: Path, args, cad: Path) -> int:
     samples/, run both print gates on each, and freeze the Shared Helpers
     when the rules hold and every sample passes."""
 
-    interfaces, error = contract_interfaces(project)
+    contract_path = getattr(args, "contract", None)
+    interfaces, error = contract_interfaces(project, Path(contract_path) if contract_path else None)
     if error is not None:
         print("make_round: %s" % error, file=sys.stderr)
         return 2
@@ -5494,14 +5522,7 @@ def contract_kit(path: Path) -> dict | None:
     kit. Only which Parts each Component prints is read from it, so no
     catalogue is needed. Raises ValueError on a file that holds no contract."""
 
-    text = Path(path).read_text(encoding="utf-8")
-    match = CONTRACT_FENCE.search(text)
-    try:
-        block = json.loads(match.group(1) if match else text)
-    except ValueError as exc:
-        raise ValueError("%s holds no design-contract JSON block: %s" % (path, exc)) from None
-    if not isinstance(block, dict):
-        raise ValueError("%s: the design-contract block is not a JSON object" % path)
+    block = contract_block(path)
     if not has_assembly_tree(block):
         return None
     return kit_tree().install_document(block, {})
@@ -6671,7 +6692,7 @@ def main(argv=None) -> int:
     parser.add_argument("--out", help="round directory (default measure/rounds/rNNNN)")
     parser.add_argument("--json", action="store_true", help="print the summary as one JSON line")
     parser.add_argument("--print-gates-only", action="store_true", help="build every part (or --component) and run Make's print gates on it exactly as a round does, with no run, nonce, freeze or round history; writes only under the directory (measure/print-gates/, __cadgen__/); exit 1 on any failure. The Contract Proof runs this")
-    parser.add_argument("--contract", metavar="CONTRACT.md", help="with --print-gates-only: the Design Contract whose Assembly Tree says which Parts each kit Component prints (default: the project's installed tree/kit.json)")
+    parser.add_argument("--contract", metavar="CONTRACT.md", help="with --print-gates-only: the Design Contract whose Assembly Tree says which Parts each kit Component prints (default: the project's installed tree/kit.json); with --shared-helpers outside a run: the Design Contract whose Interfaces the samples must cover (the Contract Proof, ADR 0096)")
     parser.add_argument("--worker-nonce", help=argparse.SUPPRESS)  # issued by the Workshop guard hook only
     parser.add_argument("--self-check", action="store_true")
     args = parser.parse_args(argv)
@@ -6679,8 +6700,14 @@ def main(argv=None) -> int:
         return self_check()
     if not args.project:
         parser.error("project is required")
-    if args.contract and not args.print_gates_only:
-        parser.error("--contract belongs to --print-gates-only")
+    if args.contract and not (args.print_gates_only or args.shared_helpers):
+        parser.error("--contract belongs to --print-gates-only or --shared-helpers")
+    if args.contract and args.shared_helpers and run_root(Path(args.project).resolve()) is not None:
+        # In a run the Interfaces are the sealed contract's, never a file's.
+        print("make_round: --shared-helpers --contract is for a CAD directory outside a Workshop run; "
+              "inside the run at %s the sealed contract gives the Interfaces"
+              % run_root(Path(args.project).resolve()), file=sys.stderr)
+        return 2
     if args.print_gates_only:
         others = [flag for flag, value in (
             ("--require-component-passes", args.require_component_passes), ("--ref", args.refs),

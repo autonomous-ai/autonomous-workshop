@@ -19,17 +19,22 @@ class DesignFlowTest(unittest.TestCase):
     def stage(self, start: str, end: str) -> str:
         return self.skill[self.skill.index(start):self.skill.index(end)]
 
-    def test_one_proof_subagent_is_kept_and_one_fresh_read_closes_it(self):
+    def test_one_proof_subagent_is_kept_and_the_critic_replaces_the_fresh_read(self):
+        # ADR 0096 decision 1c drops the contract-only fresh read; the kept
+        # Proof and one Proof Critic remain.
         proof = self.stage("## Stage 3a", "### Trial")
         for required in (
-            "Keep this one subagent for the whole design: every amendment goes to it",
-            "**Fresh read.**",
-            "spawn one **fresh** Proof subagent with the same prompt",
-            "never after a change of words alone",
+            "Keep this one subagent for the whole design: every amendment, image edit",
+            "**Proof Critic.**",
+            "stop after 5",
             "in every `build-a-toy` root amendment",
+            "workshop.make.proof_diff",
         ):
             with self.subTest(required=required):
                 self.assertIn(required, proof)
+        for removed in ("**Fresh read.**", "spawn one **fresh** Proof subagent", "has seen no image"):
+            with self.subTest(removed=removed):
+                self.assertNotIn(removed, proof)
 
     def test_lint_claims_and_audit_stage_is_gone(self):
         self.assertNotIn("## Stage 3e", self.skill)

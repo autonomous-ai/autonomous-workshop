@@ -2,6 +2,7 @@
 """The Assembly Tree gates of a schema 7 Design Contract (ADR 0092 decision 8).
 
     kit_tree.py --install <cad-project> --wish <run>/WISH.json
+    kit_tree.py --install <cad-project> --contract CONTRACT.md   (outside a run)
     kit_tree.py <cad-project> --component <geometry> [--nozzle 0.4] [--json]
     kit_tree.py <cad-project> --assembly [--nozzle 0.4] [--json]
     kit_tree.py <cad-project> --final [--nozzle 0.4] [--json]
@@ -199,6 +200,48 @@ def install(project: Path, wish_path: Path) -> dict:
     if not project.is_dir():
         raise ValueError("%s: not a CAD project directory" % project)
     document = wish_document(json.loads(Path(wish_path).read_text(encoding="utf-8")))
+    data = document_bytes(document)
+    target = project / KIT_DIR / KIT_FILE
+    if target.exists() and target.read_bytes() != data:
+        raise ValueError("%s exists with other bytes; the tree install is never edited" % target)
+    target.parent.mkdir(exist_ok=True)
+    target.write_bytes(data)
+    return {"installed": str(target), "sha256": hashlib.sha256(data).hexdigest()}
+
+
+def contract_catalogue(text: str) -> dict:
+    """The catalogue snapshot a run would seal for this contract text: the
+    Workshop parser's own ``kit_catalogue()`` over the owner's catalogues,
+    so an install outside a run carries the colours and sizes a run's does."""
+
+    from workshop.wish.design_contract import parse_design_contract  # the Workshop package
+
+    from workshop.errors import WorkshopError
+
+    try:
+        return parse_design_contract(text).kit_catalogue() or {}
+    except WorkshopError as error:
+        raise ValueError(str(error)) from None
+
+
+def install_contract(project: Path, contract_path: Path) -> dict:
+    """Write ``tree/kit.json`` from a Design Contract file outside a run (the
+    Contract Proof, ADR 0096 decision 1b): the same document a sealed Wish
+    gives, its catalogue snapshot taken by the Workshop contract parser.
+    Refuses an existing install with other bytes."""
+
+    project = Path(project)
+    if not project.is_dir():
+        raise ValueError("%s: not a CAD project directory" % project)
+    text = Path(contract_path).read_text(encoding="utf-8")
+    match = re.search(r"```design-contract\s*\n(.*?)```", text, re.DOTALL)
+    try:
+        block = json.loads(match.group(1) if match else text)
+    except ValueError as exc:
+        raise ValueError("%s holds no design-contract JSON block: %s" % (contract_path, exc)) from None
+    if not isinstance(block, dict) or not block.get("assembly_tree"):
+        raise ValueError("%s: the Design Contract has no Assembly Tree" % contract_path)
+    document = install_document(block, contract_catalogue(text))
     data = document_bytes(document)
     target = project / KIT_DIR / KIT_FILE
     if target.exists() and target.read_bytes() != data:
@@ -1188,6 +1231,8 @@ def main(argv=None) -> int:
     parser.add_argument("project", nargs="?", help="the CAD project")
     parser.add_argument("--install", metavar="CAD_PROJECT", help="install the sealed Assembly Tree")
     parser.add_argument("--wish", help="with --install: the run's WISH.json")
+    parser.add_argument("--contract", help="with --install outside a run: the Design Contract file "
+                                           "(the Contract Proof, ADR 0096)")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--component", metavar="GEOMETRY", help="the checks wholly inside one Component")
     mode.add_argument("--assembly", action="store_true", help="the checks across Components")
@@ -1202,9 +1247,11 @@ def main(argv=None) -> int:
         return self_check()
     try:
         if args.install:
-            if not args.wish:
-                parser.error("--install needs --wish <run>/WISH.json")
-            print(json.dumps(install(Path(args.install), Path(args.wish)), sort_keys=True))
+            if bool(args.wish) == bool(args.contract):
+                parser.error("--install needs exactly one of --wish <run>/WISH.json or --contract CONTRACT.md")
+            result = (install(Path(args.install), Path(args.wish)) if args.wish
+                      else install_contract(Path(args.install), Path(args.contract)))
+            print(json.dumps(result, sort_keys=True))
             return EXIT_PASS
         if not args.project or not (args.component or args.assembly or args.final):
             parser.error("give a CAD project and one of --component, --assembly or --final")
@@ -1212,7 +1259,7 @@ def main(argv=None) -> int:
         selected = "component" if args.component else "final" if args.final else "assembly"
         report = run(project, selected, args.component.removeprefix("part_").removesuffix(".step.py")
                      if args.component else None, args.nozzle)
-    except (OSError, ValueError, KeyError, TypeError) as error:
+    except (OSError, ValueError, KeyError, TypeError, ImportError) as error:
         print("kit_tree: %s" % error, file=sys.stderr)
         return EXIT_USAGE
     except Exception as error:  # noqa: BLE001 - a Component's own source failed to build or place

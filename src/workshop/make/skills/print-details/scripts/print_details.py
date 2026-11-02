@@ -1570,6 +1570,50 @@ def install(project) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def install_print_contract(project, contract) -> dict:
+    """Install a Design Contract file's Print Sheets outside a run (the
+    Contract Proof, ADR 0096 decision 1b): the same `print/pieces.json`
+    bytes `install_print` writes from a sealed Wish, and each art file read
+    from beside the contract. Nothing is sealed yet, so no art hash is
+    checked; an existing install with other bytes is still refused."""
+    import re
+    from pathlib import Path
+    project, contract_path = Path(project), Path(contract)
+    if not project.is_dir():
+        raise SystemExit(f"{project}: not a CAD project directory")
+    text = contract_path.read_text(encoding="utf-8")
+    match = re.search(r"```design-contract\s*\n(.*?)```", text, re.DOTALL)
+    try:
+        block = json.loads(match.group(1) if match else text)
+    except ValueError as exc:
+        raise SystemExit(f"{contract_path}: holds no design-contract JSON block ({exc})")
+    section = block.get("print") if isinstance(block, dict) else None
+    if not isinstance(section, dict):
+        raise SystemExit(f"{contract_path}: the Design Contract declares no Print Sheets")
+    files = {PRINT_PIECES_FILE: (json.dumps({"title": block.get("title"), "print": section},
+                                            indent=2, sort_keys=True) + "\n").encode()}
+    for item in section["art"]:
+        name = item["file"]
+        art = contract_path.parent / name
+        if Path(name).name != name or not art.is_file():
+            raise SystemExit(f"{name}: no such print art file beside {contract_path}")
+        files[f"{PRINT_ART_DIR}/{name}"] = art.read_bytes()
+    _write_print_install(project, files)
+    return {"pieces": len(section["pieces"]), "art": len(section["art"])}
+
+
+def _write_print_install(project, files) -> None:
+    root = project / PRINT_DIR
+    for name, data in files.items():
+        target = root / name
+        if target.exists() and target.read_bytes() != data:
+            raise SystemExit(f"{target}: exists with other bytes; the print install is never edited")
+    for name, data in files.items():
+        target = root / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+
+
 def install_print(project, wish) -> dict:
     """Install the sealed Design Contract's Print Sheets into `project`
     (ADR 0091): `print/pieces.json` holds the title and the contract's print
@@ -1596,15 +1640,7 @@ def install_print(project, wish) -> dict:
         if sealed.get(name) != hashlib.sha256(data).hexdigest():
             raise SystemExit(f"{name}: its bytes are not the ones the Wish sealed")
         files[f"{PRINT_ART_DIR}/{name}"] = data
-    root = project / PRINT_DIR
-    for name, data in files.items():
-        target = root / name
-        if target.exists() and target.read_bytes() != data:
-            raise SystemExit(f"{target}: exists with other bytes; the print install is never edited")
-    for name, data in files.items():
-        target = root / name
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(data)
+    _write_print_install(project, files)
     return {"pieces": len(section["pieces"]), "art": len(section["art"])}
 
 
@@ -1862,6 +1898,9 @@ def main(argv=None) -> int:
                         help="install the sealed contract's Print Sheets (with --wish) into "
                              "CAD_PROJECT/print/")
     parser.add_argument("--wish", default=None, help="--install-print: the run's WISH.json")
+    parser.add_argument("--contract", default=None,
+                        help="--install-print outside a run: the Design Contract file, its art "
+                             "beside it (the Contract Proof, ADR 0096)")
     parser.add_argument("--jobs", type=int, default=None, help="self-check: parallel entries")
     parser.add_argument("--keep", default=None, help="self-check: build the entries in this directory")
     parser.add_argument("--only", action="append", default=None, help="self-check: one case by name")
@@ -1879,9 +1918,11 @@ def main(argv=None) -> int:
         print(f"installed features/print_details.py sha256 {digest}")
         return 0
     if args.install_print:
-        if args.wish is None:
-            parser.error("--install-print needs --wish <run>/WISH.json")
-        counts = install_print(args.install_print, args.wish)
+        if (args.wish is None) == (args.contract is None):
+            parser.error("--install-print needs exactly one of --wish <run>/WISH.json "
+                         "or --contract CONTRACT.md")
+        counts = (install_print(args.install_print, args.wish) if args.wish
+                  else install_print_contract(args.install_print, args.contract))
         print(f"installed print/pieces.json ({counts['pieces']} piece(s)) and {counts['art']} art file(s)")
         return 0
     return self_check(args.nozzle, args.overhang_angle, args.jobs, args.keep, args.only)

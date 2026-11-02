@@ -23,12 +23,12 @@
       "source_url": "https://github.com/autonomous-ai/autonomous-product-to-cad"
     },
     "make-round": {
-      "sha256": "e78f3f99fda1502d06321d71c25cc51ad5df5a674256f5dc9a582cde55120086",
+      "sha256": "c6fbcd69ad0ef2b6186372c9d47803ebfdd1371e96ca4424659e1ba5d471c0e4",
       "source_commit": "db64280a9ee12f3d3e8a728c64906f00a456c150",
       "source_url": "https://github.com/autonomous-ai/autonomous-workshop"
     },
     "print-details": {
-      "sha256": "b64ce1f3e011f737dd8edf5d1bb3275c2f3e2d183e5bd85d0a135d97dbe4aad0",
+      "sha256": "df343e062268436f5341fcaffe1fdd48de443e60e554ded78ac164eec743add3",
       "source_commit": "e7c5581fb307016564ee4ed71f79da186cc1e8c5",
       "source_url": "https://github.com/autonomous-ai/autonomous-workshop"
     },
