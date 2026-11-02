@@ -38,6 +38,14 @@ root's ``Stop`` event and refuses the turn end while the current Make
 attempt holds an open Blocked Report, unless the turn ends on a recorded
 need. ``blocked_reports`` reads the ledger; the host imports it from here.
 
+make_round only appends to a Blocked Report ledger, so the guard also keeps
+the host's record of what it held (issue #181): on the root's ``Stop`` and
+before every make_round call it appends the size and sha256 of each of the
+current attempt's ledgers that is this run's record, every event bound to
+this run's ``WISH.json``, to the ledger read log beside this file. The host
+refuses Make acceptance when a ledger no longer begins with every read it
+recorded: an agent deleted or rewrote it.
+
 A command that names make_round fails closed when the hook cannot see its
 call (issue #113): it is refused when it holds a heredoc, cannot be parsed,
 or parses to no call while doing more than read the script (``sed``,
@@ -56,12 +64,16 @@ import os
 import re
 import secrets
 import shlex
+import stat
 import sys
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional
 
 NONCE_TABLE_NAME = "worker-nonces.jsonl"
 READ_LOG_NAME = "reviewer-reads.jsonl"
+# Issue #182: every read of a Blocked Report ledger the host relies on.
+LEDGER_READ_LOG_NAME = "blocked-ledger-reads.jsonl"
+MAX_LEDGER_READ_LOG_BYTES = 4 * 1024 * 1024
 SUBAGENT_LOG_NAME = "subagents.jsonl"
 COMPONENT_REVIEWER = "component-reviewer"
 # ADR 0085: the fresh reader who confirms a Contract Amendment.
@@ -515,6 +527,103 @@ def turn_end(event: Mapping[str, Any]) -> Optional[dict[str, Any]]:
     }
 
 
+def ledger_read(ledger: Path, wish_sha256: str) -> Optional[dict[str, Any]]:
+    """The ledger read log's record of one Blocked Report ledger, or ``None``.
+
+    Only a ledger that is this run's record is logged: a valid ledger whose
+    every report is bound to ``wish_sha256`` (``blocked_reports`` already
+    refuses an answer bound to another run than its report). Another run's
+    ledger, or one that does not parse, is refused by the host's Make gate on
+    its own and is nothing this run must keep (issue #181).
+    """
+
+    try:
+        identity = ledger.lstat()
+        if not stat.S_ISREG(identity.st_mode) or identity.st_size > MAX_BLOCKED_LEDGER_BYTES:
+            return None
+        content = ledger.read_bytes()
+        reports = blocked_reports(content.decode("utf-8"))
+    except (OSError, UnicodeError, ValueError):
+        return None
+    if not reports or any(report["wish_sha256"] != wish_sha256 for report in reports.values()):
+        return None
+    return {
+        "ledger": str(ledger.resolve()),
+        "bytes": len(content),
+        "sha256": hashlib.sha256(content).hexdigest(),
+    }
+
+
+def ledger_reads(content: str) -> list[dict[str, Any]]:
+    """Every record of a ledger read log; raises ``ValueError`` for one that
+    is not a sequence of such records."""
+
+    reads = []
+    for line in content.splitlines():
+        record = json.loads(line)
+        if (
+            not isinstance(record, dict)
+            or not _text(record.get("ledger"), 4096)
+            or type(record.get("bytes")) is not int or record["bytes"] < 1
+            or not (isinstance(record.get("sha256"), str)
+                    and re.fullmatch(r"[0-9a-f]{64}", record["sha256"]))
+        ):
+            raise ValueError("a Blocked Report ledger read is invalid")
+        reads.append(record)
+    return reads
+
+
+def record_ledger_reads(log: Path, ledgers: list[Path], wish_sha256: str) -> None:
+    """Append a read of each ledger to ``log`` unless it is already there."""
+
+    records = [record for record in (ledger_read(path, wish_sha256) for path in ledgers) if record]
+    if not records:
+        return
+    seen: set[tuple[str, str]] = set()
+    if os.path.lexists(log):
+        identity = log.lstat()
+        if not stat.S_ISREG(identity.st_mode) or identity.st_size > MAX_LEDGER_READ_LOG_BYTES:
+            return
+        seen = {(read["ledger"], read["sha256"]) for read in ledger_reads(log.read_text(encoding="utf-8"))}
+    for record in records:
+        if (record["ledger"], record["sha256"]) not in seen:
+            _append(log, record)
+
+
+def _event_run_root(event: Mapping[str, Any]) -> Optional[Path]:
+    cwd = event.get("cwd")
+    if not isinstance(cwd, str) or not cwd:
+        return None
+    start = Path(cwd)
+    for parent in [start, *start.parents]:
+        if (parent / "WISH.json").is_file() and (parent / "STAGE.json").is_file():
+            return parent
+    return None
+
+
+def observe_ledgers(event: Mapping[str, Any], log: Path) -> None:
+    """Log the current attempt's ledgers on the root's ``Stop`` and before
+    every make_round call (issue #181). Evidence only: nothing is refused."""
+
+    if event.get("hook_event_name") == "Stop":
+        if event.get("agent_type") or event.get("agent_id"):
+            return
+    else:
+        tool_input = event.get("tool_input")
+        command = next(
+            (tool_input.get(name) for name in _COMMAND_KEYS
+             if isinstance(tool_input, Mapping) and isinstance(tool_input.get(name), str)),
+            None,
+        )
+        if command is None or SCRIPT_NAME not in command:
+            return
+    run_root = _event_run_root(event)
+    if run_root is None:
+        return
+    wish_sha256 = hashlib.sha256((run_root / "WISH.json").read_bytes()).hexdigest()
+    record_ledger_reads(log, _current_ledgers(run_root), wish_sha256)
+
+
 def _append(table: Path, record: Mapping[str, Any]) -> None:
     line = (json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
     descriptor = os.open(str(table), os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
@@ -551,6 +660,10 @@ def main() -> int:
         print(json.dumps(_deny("the hook input is not a JSON object")))
         return 0
     directory = Path(__file__).resolve().parent
+    try:
+        observe_ledgers(event, directory / LEDGER_READ_LOG_NAME)
+    except (OSError, UnicodeError, ValueError):
+        pass
     stop = turn_end(event)
     if stop is not None:
         print(json.dumps(stop))

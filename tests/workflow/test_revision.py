@@ -12,7 +12,7 @@ from workshop.errors import ContractError, StateConflict
 from workshop.release.public_archive import build_public_archive_manifest
 from workshop.workflow import AgentRun
 from workshop.workflow.revision import (
-    prepare_revision, materialize_revision, revision_input, REVISION_INPUT,
+    prepare_revision, materialize_revision, revision_input, REVISION_GUIDANCE, REVISION_INPUT,
 )
 
 
@@ -62,6 +62,25 @@ class RevisionTest(unittest.TestCase):
         self.assertEqual((self.source / "make/source/toy.step.py").read_bytes(), b"# original CAD\n")
         self.assertFalse((workspace / "agent-run.json").exists())
         self.assertFalse((workspace / "release-effect.json").exists())
+
+    def test_the_sources_blocked_report_ledger_stays_in_the_read_only_baseline(self):
+        # Issue #181: Turtle Moods v03 cloned v02's closed ledger, the host
+        # refused it as another run's, and the Manager deleted it by hand.
+        ledger = b'{"event":"report","report":1,"at":"2026-10-31T15:00:00Z"}\n'
+        self.write("make/verification/reports/blocked-reports.jsonl", ledger)
+        self.write("make/verification/reports/contract-amendments.jsonl", b"{}\n")
+        self.seal()
+        wish, snapshot = prepare_revision(self.source, "Fix the faces")
+        with zipfile.ZipFile(io.BytesIO(snapshot)) as archive:
+            self.assertEqual(archive.read("make/verification/reports/blocked-reports.jsonl"), ledger)
+        workspace = self.root / "workspace"
+        workspace.mkdir()
+        materialize_revision(workspace, snapshot)
+        reports = workspace / "revision-work/make/verification/reports"
+        self.assertFalse((reports / "blocked-reports.jsonl").exists())
+        self.assertTrue((reports / "contract-amendments.jsonl").is_file())
+        self.assertTrue((workspace / "revision-work/make/source/toy.step.py").is_file())
+        self.assertIn("revision-source.zip as its record", REVISION_GUIDANCE)
 
     def test_attaches_reference_images_and_keeps_image_less_bytes_stable(self):
         from workshop.wish.contracts import WishReference

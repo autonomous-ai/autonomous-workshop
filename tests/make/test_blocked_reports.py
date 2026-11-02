@@ -8,18 +8,21 @@ import hashlib
 import importlib.util
 import io
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 
 from tests.make.test_make_round import load_module
-from workshop.errors import ContractError
+from workshop.errors import ContractError, StateConflict
 from workshop.make import make_round_guard
 from workshop.make.blocked_reports import (
     run_blocked_reports,
     verify_no_open_blocked_reports,
 )
+from workshop.make.make_round_guard import LEDGER_READ_LOG_NAME, observe_ledgers
 
 REPOSITORY = Path(__file__).resolve().parents[2]
 STAGE_PROPOSAL = (
@@ -44,7 +47,7 @@ def _stage_proposal():
     return tool
 
 
-class BlockedReportTest(unittest.TestCase):
+class _LedgerFixture(unittest.TestCase):
     def setUp(self):
         self.module = load_module()
         temporary = tempfile.TemporaryDirectory()
@@ -83,6 +86,8 @@ class BlockedReportTest(unittest.TestCase):
             code = self.module.main([str(self.project), *arguments])
         return code, stdout.getvalue(), stderr.getvalue()
 
+
+class BlockedReportTest(_LedgerFixture):
     # -- the worker's report -------------------------------------------------
 
     def test_a_report_records_its_component_latest_round_and_rows_verbatim(self):
@@ -261,6 +266,120 @@ class BlockedReportTest(unittest.TestCase):
         self.assertEqual(listed[0]["rows"], [STANCE, SEATS])
         ledger.write_text("{nope\n")
         self.assertEqual(run_blocked_reports(self.run_root)[0]["status"], "invalid")
+
+
+class LedgerReadTest(_LedgerFixture):
+    """Issue #181: the host refuses a ledger an agent deleted or rewrote."""
+
+    def setUp(self):
+        super().setUp()
+        (self.run_root / "STAGE.json").write_text(json.dumps({"stage": "make", "round": 1}))
+        guard = tempfile.TemporaryDirectory()
+        self.addCleanup(guard.cleanup)
+        self.read_log = Path(guard.name) / LEDGER_READ_LOG_NAME
+        self.ledger = self.project / "measure/blocked-reports.jsonl"
+        self.product = self.run_root / "artifacts/make/r0001/product"
+
+    def accept(self):
+        return verify_no_open_blocked_reports(
+            self.project, wish_sha256=self.wish_sha256,
+            product=self.product, read_log=self.read_log,
+        )
+
+    def reads(self):
+        return make_round_guard.ledger_reads(self.read_log.read_text())
+
+    def hook(self, event):
+        observe_ledgers({"cwd": str(self.project), **event}, self.read_log)
+
+    def test_a_refused_open_report_cannot_be_deleted_away(self):
+        self.report()
+        with self.assertRaisesRegex(ContractError, "Blocked Report 1 .* is open"):
+            self.accept()
+        [read] = self.reads()
+        self.assertEqual(read["ledger"], str(self.ledger.resolve()))
+        self.assertEqual(read["bytes"], self.ledger.stat().st_size)
+        self.ledger.unlink()
+        with self.assertRaisesRegex(ContractError, "cad/measure/blocked-reports.jsonl was deleted or rewritten"):
+            self.accept()
+
+    def test_a_rewritten_ledger_is_refused_and_an_appended_one_accepted(self):
+        self.report()
+        with self.assertRaises(ContractError):
+            self.accept()
+        content = self.ledger.read_bytes()
+        # Answering appends: the logged read is still its first bytes.
+        self.clear(report=1, decision="Add a 50 degree vault under each seat.")
+        [summary] = self.accept()
+        self.assertEqual(summary["cleared_by"], "decision")
+        self.assertEqual(len(self.reads()), 2)
+        for rewrite in (
+            content.replace(b"Nothing stands", b"Something stands"),
+            content[:-1],
+            b"",
+        ):
+            with self.subTest(rewrite=rewrite[:20]):
+                self.ledger.write_bytes(rewrite)
+                with self.assertRaisesRegex(ContractError, "deleted or rewritten"):
+                    self.accept()
+
+    def test_the_guard_logs_before_every_make_round_call_and_on_the_roots_turn_end(self):
+        self.report()
+        # Not a make_round call, and a subagent's stop: nothing is logged.
+        self.hook({"hook_event_name": "PreToolUse", "tool_input": {"command": "ls measure"}})
+        self.hook({"hook_event_name": "Stop", "agent_type": "component-worker", "agent_id": "a1"})
+        self.assertFalse(self.read_log.exists())
+        self.hook({"hook_event_name": "PreToolUse", "agent_type": "component-worker",
+                   "tool_input": {"command": "make_round cad --blocked-reports"}})
+        self.hook({"hook_event_name": "Stop"})
+        self.assertEqual(len(self.reads()), 1)  # an unchanged ledger is logged once
+        # The agent deletes the report before the host ever read it.
+        self.ledger.unlink()
+        with self.assertRaisesRegex(ContractError, "deleted or rewritten"):
+            self.accept()
+
+    def test_the_installed_hook_script_logs_beside_itself(self):
+        self.report()
+        script = self.read_log.parent / "make_round_guard.py"
+        script.write_bytes(Path(make_round_guard.__file__).read_bytes())
+        event = {"hook_event_name": "Stop", "session_id": "s-1", "cwd": str(self.run_root)}
+        completed = subprocess.run([sys.executable, str(script)], input=json.dumps(event),
+                                   capture_output=True, text=True, check=True)
+        self.assertEqual(json.loads(completed.stdout)["decision"], "block")
+        [read] = self.reads()
+        self.assertEqual(read["sha256"], hashlib.sha256(self.ledger.read_bytes()).hexdigest())
+
+    def test_another_runs_ledger_is_refused_but_never_logged(self):
+        # The fix-run case: a source ledger copied into the product tree.
+        self.report()
+        self.clear(report=1, decision="The stocked green is final.")
+        source = self.ledger.read_text()
+        self.ledger.write_text(source.replace(self.wish_sha256, "b" * 64))
+        self.hook({"hook_event_name": "Stop"})
+        with self.assertRaisesRegex(ContractError, "not bound to this run's Wish; a fix run never carries"):
+            self.accept()
+        self.assertFalse(self.read_log.exists())
+        # It is not this run's record, so removing it loses nothing.
+        self.ledger.unlink()
+        self.assertEqual(self.accept(), [])
+
+    def test_a_read_outside_this_attempts_product_binds_nothing_here(self):
+        self.report()
+        self.clear(report=1, need="'%s' vs '%s'" % (STANCE, SEATS))
+        self.accept()
+        self.product = self.run_root / "artifacts/make/r0002/product"
+        self.project = self.product / "cad"
+        self.project.mkdir(parents=True)
+        self.assertEqual(self.accept(), [])
+
+    def test_an_unguarded_run_keeps_its_earlier_check_and_a_bad_log_is_a_conflict(self):
+        self.report()
+        self.clear(report=1, decision="x")
+        self.ledger.unlink()
+        self.assertEqual(verify_no_open_blocked_reports(self.project, wish_sha256=self.wish_sha256), [])
+        self.read_log.write_text('{"ledger": "x"}\n')
+        with self.assertRaisesRegex(StateConflict, "read log is invalid"):
+            self.accept()
 
 
 if __name__ == "__main__":

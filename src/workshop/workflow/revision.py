@@ -20,6 +20,7 @@ from typing import Any, Mapping, Optional, Sequence
 
 from workshop.artifacts.core import artifact_manifest_from_mapping
 from workshop.errors import ContractError, StateConflict
+from workshop.make.make_round_guard import BLOCKED_REPORTS_NAME
 from workshop.make.native import NativeMade
 from workshop.release.native import NativeRelease
 from workshop.release.public_archive import (
@@ -38,6 +39,11 @@ from workshop.wish import Wish, generate_wish_id
 
 REVISION_INPUT = "revision-source.zip"
 REVISION_WORK = "revision-work"
+# Issue #181: a source run's Blocked Report ledger is its own record. It stays
+# in the read-only revision-source.zip and is never cloned into revision-work/,
+# so a fix run starts with no ledger, as it starts with no reviewer binding
+# (issue #119) and no ruling (issue #164).
+SOURCE_RECORD_NAMES = frozenset({BLOCKED_REPORTS_NAME})
 MAX_REVISION_BYTES = 128 * 1024 * 1024
 
 REVISION_GUIDANCE = (
@@ -55,7 +61,12 @@ REVISION_GUIDANCE = (
     "first, then compare every correction requirement separately, including "
     "negative requirements, against those observations. Never reuse an old "
     "review as proof of a correction. Fresh finalization and normal Release "
-    "are required; do not update the original publication. "
+    "are required; do not update the original publication. The source's "
+    "Blocked Report ledgers (blocked-reports.jsonl) stay only in "
+    "revision-source.zip as its record: none of their reports, open or "
+    "answered, holds or binds this run, and none is ever copied into the "
+    "product tree; if a source report still applies, the worker files it "
+    "again in this run. "
 )
 
 
@@ -324,7 +335,11 @@ def _prepare_revision_from_archive(
 
 
 def materialize_revision(workspace: Path, snapshot: bytes) -> None:
-    """Create independent writable files; no links and no restored checkpoint."""
+    """Create independent writable files; no links and no restored checkpoint.
+
+    A source record (its Blocked Report ledgers, issue #181) is left out of
+    the clone; ``revision-source.zip`` keeps its exact bytes read-only.
+    """
     with zipfile.ZipFile(io.BytesIO(snapshot)) as archive:
         if sum(info.file_size for info in archive.infolist()) > MAX_REVISION_BYTES:
             raise ContractError("revision source expands beyond 128 MiB")
@@ -340,6 +355,8 @@ def materialize_revision(workspace: Path, snapshot: bytes) -> None:
         target = workspace / REVISION_WORK
         target.mkdir(mode=0o700)
         for info in archive.infolist():
+            if PurePosixPath(info.filename).name in SOURCE_RECORD_NAMES:
+                continue
             path = target / info.filename
             path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
             with path.open("xb") as output:

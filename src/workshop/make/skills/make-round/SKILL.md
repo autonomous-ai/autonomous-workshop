@@ -574,10 +574,13 @@ into the visual packet and the summary as `rulings`: `{"report", "round",
 "rows", "request", "ruling", "decided_at"}`, copied from the ledger (the
 worker's report as `request`, the Manager's last decision as `ruling`). Only
 a report whose last answer is a decision that waits on nothing is a ruling,
-and only one decided in this run (issue #164): a `workshop fix` run carries
-its source's ledger, whose reports name the source run's Wish, and none of
-those rulings binds its reviewers. A ruling that should still hold is decided
-again in the fix run, on a new Blocked Report. The rulings join the carry key, so a review carries to a later round only
+and only one decided in this run (issue #164). A `workshop fix` run starts
+with no ledger: the source's stays only in `revision-source.zip` as its
+record and is never copied into the product tree (issue #181), and none of
+its rulings binds this run's reviewers. A ruling that should still hold is
+decided again in the fix run, on a new Blocked Report. make_round only
+appends to the ledger; never delete or edit it by hand. Make acceptance
+refuses a ledger that no longer begins with what Workshop read of it. The rulings join the carry key, so a review carries to a later round only
 under the same rulings; without any, packet and key are unchanged. An
 unchanged rerun after a new ruling is therefore reviewed afresh and is not
 a shape round. `--record-review` refuses a review of a packet rendered

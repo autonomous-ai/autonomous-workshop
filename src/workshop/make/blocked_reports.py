@@ -12,21 +12,31 @@ another Component) the host refuses Make acceptance, as ``make_round``
 refuses an assembly round and the stage finalizer refuses the Make proposal.
 The run report lists every report with how it was cleared and how long it
 stayed open. Nothing here judges a report or answers one.
+
+make_round only appends to a ledger. The host logs each read of a ledger
+that is this run's record, as the make_round guard does before every
+make_round call and on the root's turn end, and refuses Make acceptance
+when a ledger no longer begins with every logged read: it was deleted or
+rewritten (issue #181).
 """
 
 from __future__ import annotations
 
+import hashlib
 import stat
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
-from workshop.errors import ContractError
+from workshop.errors import ContractError, StateConflict
 from workshop.make.make_round_guard import (
     BLOCKED_REPORTS_NAME,
     MAX_BLOCKED_LEDGER_BYTES,
+    MAX_LEDGER_READ_LOG_BYTES,
     OPEN_BLOCKED,
     blocked_reports,
+    ledger_reads,
+    record_ledger_reads,
 )
 
 _MAKE_ATTEMPTS = ("artifacts", "make")
@@ -79,13 +89,65 @@ def report_summary(report: Mapping[str, Any], *, now: Optional[datetime] = None)
     }
 
 
-def verify_no_open_blocked_reports(project: Path, *, wish_sha256: str) -> list[dict[str, Any]]:
+def _logged_reads(read_log: Path) -> list[dict[str, Any]]:
+    if not read_log.exists() and not read_log.is_symlink():
+        return []
+    try:
+        identity = read_log.lstat()
+        if not stat.S_ISREG(identity.st_mode) or identity.st_size > MAX_LEDGER_READ_LOG_BYTES:
+            raise ValueError("not a bounded regular file")
+        return ledger_reads(read_log.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise StateConflict("the Blocked Report ledger read log is invalid") from exc
+
+
+def verify_ledger_reads(product: Path, read_log: Path) -> None:
+    """Refuse a ledger under ``product`` that no longer begins with the exact
+    bytes of every read the host or the make_round guard logged of it."""
+
+    root = Path(product).resolve()
+    for read in _logged_reads(read_log):
+        ledger = Path(read["ledger"])
+        if root not in ledger.parents:
+            continue
+        try:
+            identity = ledger.lstat()
+            kept = (
+                stat.S_ISREG(identity.st_mode)
+                and identity.st_size >= read["bytes"]
+                and hashlib.sha256(ledger.read_bytes()[:read["bytes"]]).hexdigest()
+                == read["sha256"]
+            )
+        except OSError:
+            kept = False
+        if not kept:
+            raise ContractError(
+                "the Blocked Report ledger %s was deleted or rewritten after Workshop "
+                "read it; make_round only appends to it and nothing else may edit it. "
+                "Put back its exact bytes: every report and answer stays this run's "
+                "record" % ledger.relative_to(root).as_posix()
+            )
+
+
+def verify_no_open_blocked_reports(
+    project: Path,
+    *,
+    wish_sha256: str,
+    product: Optional[Path] = None,
+    read_log: Optional[Path] = None,
+) -> list[dict[str, Any]]:
     """Refuse Make output while a Blocked Report is open; return every report.
 
     A project without a ledger has none. A report not bound to this run's
     Wish, or a ledger that is not a valid sequence of events, is refused.
+    With a ``read_log`` (a guarded run), every ledger under ``product`` must
+    still begin with each read logged of it, and this read is logged before
+    an open report is refused, so the refusal cannot be undone by deleting
+    the report (issue #181).
     """
 
+    if read_log is not None:
+        verify_ledger_reads(product if product is not None else project, read_log)
     ledger = Path(project) / "measure" / BLOCKED_REPORTS_NAME
     if not ledger.exists() and not ledger.is_symlink():
         return []
@@ -94,10 +156,17 @@ def verify_no_open_blocked_reports(project: Path, *, wish_sha256: str) -> list[d
     for number, report in sorted(reports.items()):
         if report["wish_sha256"] != wish_sha256:
             raise ContractError(
-                "Blocked Report %d is not bound to this run's Wish" % number
+                "Blocked Report %d is not bound to this run's Wish; a fix run never "
+                "carries its source's ledger, which stays in revision-source.zip "
+                "as the source's record" % number
             )
         if report["status"] in OPEN_BLOCKED:
             held.append("%d (%s, %s)" % (number, report["component"], report["status"]))
+    if read_log is not None:
+        try:
+            record_ledger_reads(read_log, [ledger], wish_sha256)
+        except (OSError, UnicodeError, ValueError) as exc:
+            raise StateConflict("the Blocked Report ledger read could not be logged") from exc
     if held:
         raise ContractError(
             "Blocked Report %s is open; the Workshop Manager answers each with "
@@ -138,6 +207,7 @@ def run_blocked_reports(run_root: Path, *, now: Optional[datetime] = None) -> li
 
 __all__ = [
     "report_summary",
+    "verify_ledger_reads",
     "run_blocked_reports",
     "verify_no_open_blocked_reports",
 ]
