@@ -316,6 +316,28 @@ read used to protect the shape:
 | Contract amendment (design-side or a `build-a-toy` root amendment) | the previous Approved Proof | a visible change: the critic judges it and the owner approves it, giving a new `APPROVAL.json`. Within tolerance it needs no owner, matching "only visible changes wait for the owner" |
 | An ADR 0085 in-run amendment | the Approved Proof | the change is visible, so ADR 0085 refuses it, as it already refuses a change a reference shows |
 
+- **Validation on K4 (2026-11-02, `src/workshop/make/proof_diff.py`).**
+
+  | Pair | Grumpy head | Wink head | Keycap base |
+  |---|---|---|---|
+  | v02 (fix) vs v01 (drifted faces) | two-way 0.77%, surface 0.600 mm: **passes** | dV 0.14%, surface 0.319 mm: **passes** | identical |
+  | Proof vs v02 | 0.00%, surface 0.001 mm | Boolean failed (faceted Proof), surface 0.001 mm | dV 1.30%, surface 1.000 mm: **fails** (the hidden 9.4 mm³ stem pocket) |
+
+  - **The three accepted criteria miss the visible face drift.** They
+    pass the v01 faces, which took an 18-unit fix to undo, and they fail
+    an invisible hidden pocket.
+  - **Volume measures cannot see visibility.** An engraving moves very
+    little material.
+  - **A surface measure does see it.** `proof_diff` therefore also
+    reports each Part's surface deviation: the largest distance from
+    either surface to the other. It separates the cases cleanly: 0.001
+    mm for the same shape modelled differently (faceted vs arcs), 0.3-0.6
+    mm for the redrawn faces.
+  - **It is reported, not yet a pass criterion.** It fails a Part only
+    with `--surface-limit`, until the owner decides whether a 0.1 mm
+    surface limit becomes the fourth criterion. The tool also treats a
+    Boolean that returns an operand unchanged (K4's faceted wink: only-A
+    = all of A) as failed, by checking `A - B = only_A - only_B`.
 - **Where the host runs it.** The host runs `proof_diff` itself before
   Make acceptance, on the sealed approved STEP and the made STEP. This
   is a byte comparison with a fixed tolerance, not an engineering
