@@ -138,8 +138,9 @@ Files under `.claude/skills/design-a-toy/`:
   - After the three views, a fresh subagent that sees only the concept
     and its three views writes `CONCEPT-CHECKLIST.md`: 8-12 traits, with
     measured ratios where possible.
-  - The owner marks each required or changeable. This costs about 0.3
-    units and two minutes of the owner's time.
+  - Every trait is required (owner rule, 2026-11-02). The owner is asked
+    only about a trait the Proof or critic finds cannot be made, and that
+    answer is its mark. The checklist costs about 0.3 units.
 - **`SKILL.md` Stage 3a**
   - Step 1: the kept Proof sees images, the concept and the checklist
     from round 1.

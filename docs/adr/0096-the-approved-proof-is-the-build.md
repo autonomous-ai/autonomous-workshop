@@ -106,7 +106,13 @@ build away from it.
     the concept and its three views writes `CONCEPT-CHECKLIST.md`:
     8-12 defining traits, each with one line and, where possible, a
     ratio measured on the image.
-  - The owner marks each trait required or changeable.
+  - The owner marks each trait required or changeable. *Amended
+    2026-11-02 (owner rule): every trait is required by default; the owner
+    is not asked to mark the checklist and no changeable mark is proposed.
+    Only when the Proof or its critic finds a trait that cannot be made (a
+    print gate, a function or mechanism, the cost cap) does design-a-toy
+    stop and ask, with a pictured trade-off, and the owner's answer is
+    recorded as that trait's mark.*
   - The critic judges every trait on the Proof at the concept's cameras:
     kept, lost, or changed by a named owner decision.
   - A required trait that is lost is a difference, like any other.
@@ -508,6 +514,8 @@ The owner accepted every recommendation, and decided the last question
 2. **One critic for the whole toy,** plus a close look at one Component
    only when the critic needs one (decision 1).
 3. **A Concept Checklist** is added and held by the critic (decision 1).
+   Amended the same day: every trait is required; the owner answers only a
+   trait that cannot be made, and that answer is its mark.
 4. **A visible seed deviation** goes through the in-run Component Worker
    and Component Reviewer, is listed on the receipt, and is shown to the
    owner by `build-a-toy` before publication.

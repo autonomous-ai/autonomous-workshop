@@ -15,11 +15,12 @@ image-to-cad skill's `measure_image.py`
 (`src/workshop/make/skills/image-to-cad/`) where an edge is clear; say "by
 eye" where it is not.
 
-Use a table with columns: id (T1, T2, ...), trait, view, measure, and an
-empty "owner" column. Choose traits that are the toy's character (the
-silhouette, a proportion, a gesture, a signature detail, a count), not
-colours or surface finish the contract owns. Leave the "owner" column empty:
-the owner marks each trait required or changeable.
+Use a table with columns: id (T1, T2, ...), trait, view, measure, and
+"owner". Choose traits that are the toy's character (the silhouette, a
+proportion, a gesture, a signature detail, a count), not colours or surface
+finish the contract owns. Write "required" in every "owner" cell: every
+trait must be kept. Propose no other mark; only the owner's answer to a
+trait that cannot be made changes it.
 
 Change nothing outside `<OUT>`. Reply with the number of traits and the path
 of the checklist.

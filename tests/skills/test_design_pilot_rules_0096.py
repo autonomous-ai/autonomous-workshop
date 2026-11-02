@@ -3,9 +3,10 @@
 Contract: design-a-toy writes schema 11 and CONTRACT-FORMAT documents it
 (`shape`, optional prose sections, the seeded build, validation); an
 amended concept gets three new views drawn from it, and counts are held by
-retries and per-view counting; the owner marks the Concept Checklist at
-Stage 1 with one question, and an unanswered mark is "(proposed)", counted
-as required by the critic and confirmed at Stage 4; a Proof from before ADR
+retries and per-view counting; every Concept Checklist trait is required
+(owner rule, 2026-11-02) and the owner is asked, with a pictured trade-off,
+only about a trait the Proof or critic finds cannot be made, their answer
+becoming its mark; a Proof from before ADR
 0096 has a migration path into Make's layout; fits come from the wiki,
 groove ends from the print-details library, and pins and springs are Bought
 Parts, not stdparts."""
@@ -42,12 +43,27 @@ class PilotRulesTest(unittest.TestCase):
         self.assertIn("Never edit the old views one by one", SKILL)
         self.assertIn("generate three or four sheets and keep the first whose every view holds every count", SKILL)
 
-    def test_the_owner_marks_the_checklist_at_stage_1(self):
-        self.assertIn("The owner marks it here, not at Stage 4", SKILL)
-        self.assertIn('write your proposed marks with "(proposed)", treat every trait as required', SKILL)
-        self.assertIn('If any checklist mark is still "(proposed)", list those marks', SKILL)
+    def test_every_trait_is_required_and_only_a_trait_at_risk_asks_the_owner(self):
+        # Owner rule 2026-11-02: no Stage 1 marking, no proposed marks.
+        self.assertNotIn("(proposed)", SKILL)
+        self.assertNotIn("The owner marks it here", SKILL)
+        self.assertIn("Do not ask the owner to mark the checklist and do not propose a changeable mark", SKILL)
+        self.assertIn("**Trait at risk.** When the Proof's findings or the critic show that a checklist trait cannot be made", SKILL)
+        self.assertIn("Show the trade-off in pictures", SKILL)
+        self.assertIn("Write the owner's answer into that trait's \"owner\" cell", SKILL)
+        self.assertIn("Never change a mark without the owner", SKILL)
         critic = _text(DESIGN / "critic-prompt.md")
-        self.assertIn('A trait marked "(proposed)" or not marked counts as required.', critic)
+        self.assertNotIn("changeable", critic)
+        self.assertNotIn("(proposed)", critic)
+        self.assertIn("list it under **Trait at risk** instead of as a difference", critic)
+        self.assertIn("no trait is lost or at risk", critic)
+        checklist = _text(DESIGN / "checklist-prompt.md")
+        self.assertIn('Write "required" in every "owner" cell', checklist)
+        proof = _text(DESIGN / "proof-prompt.md")
+        self.assertIn('list it under "Trait at risk"', proof)
+        self.assertIn("Never drop or change the trait yourself: the owner decides", proof)
+        adr = _text(next((ROOT / "docs/adr").glob("0096-*.md")))
+        self.assertIn("Amended 2026-11-02 (owner rule): every trait is required by default", adr)
 
     def test_a_pre_0096_proof_has_a_migration_path(self):
         self.assertIn("**A Proof from before ADR 0096.**", SKILL)

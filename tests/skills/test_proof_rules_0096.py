@@ -82,7 +82,7 @@ class CriticAndChecklistTest(unittest.TestCase):
                          "**camera mismatch**", "**Close look.**", "stops after 5",
                          "one verdict per requirement id", "`<OUT>/CRITIC.json`",
                          '"schema_version": 1', '"close_looks"', '"checklist"', '"requirements"',
-                         "A lost required trait is a difference"):
+                         "a lost trait is a difference"):
             with self.subTest(required=required):
                 self.assertIn(required, critic)
 
@@ -91,7 +91,8 @@ class CriticAndChecklistTest(unittest.TestCase):
         self.assertIn("Look only at the chosen Concept Image", checklist)
         self.assertIn("Read no contract", checklist)
         self.assertIn("8 to 12 traits", checklist)
-        self.assertIn("required or changeable", checklist)
+        self.assertIn('Write "required" in every "owner" cell', checklist)
+        self.assertNotIn("changeable", checklist)
 
 
 class SkillWiringTest(unittest.TestCase):
@@ -101,7 +102,8 @@ class SkillWiringTest(unittest.TestCase):
     def test_stage_one_writes_and_marks_the_checklist(self):
         stage = self.skill[self.skill.index("### The chosen Concept Image"):self.skill.index("## Stage 2 ")]
         self.assertIn("[checklist-prompt.md](checklist-prompt.md)", stage)
-        self.assertIn("is marked required or changeable", stage)
+        self.assertIn("Every trait is required (owner rule, 2026-11-02)", stage)
+        self.assertNotIn("Changeable:", stage)
 
     def test_stage_four_opens_with_the_concept_beside_the_proof(self):
         stage = self.skill[self.skill.index("## Stage 4"):self.skill.index("## Stage 5")]
