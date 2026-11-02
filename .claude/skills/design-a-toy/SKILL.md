@@ -25,7 +25,8 @@ contract.
 
 ## Lessons
 
-[LESSONS.md](LESSONS.md) holds what earlier designs and builds taught. Read
+[LESSONS.md](LESSONS.md) holds what earlier designs and builds taught, with
+its Stage 3 entries in [LESSONS-REFERENCE-IMAGES.md](LESSONS-REFERENCE-IMAGES.md). Read
 its section for each stage before working that stage. It never overrides this
 file, the Taste or the human's answer.
 
@@ -163,7 +164,7 @@ one with AI generation now. Work on it with the human, one change per round,
 until they say it is right.
 
 1. **Three sides.** Redraw the chosen Concept Image from three cameras in one
-   generation, one row on one ground line (LESSONS.md, "Draw a part's extra
+   generation, one row on one ground line (LESSONS-REFERENCE-IMAGES.md, "Draw a part's extra
    views in one turnaround image"). Choose the cameras that show the most:
    the camera it was drawn from, then the sides it hides, such as the back,
    the side that shows a profile, or a top view of a scene in a box. Split
@@ -422,7 +423,7 @@ component, also generate **one assembly image** of the whole toy, in its
 Display Pose when it has moving parts: the overall silhouette is what a vehicle,
 robot or creature is judged by first.
 
-Draw each Component as a **three-view sheet**, in one generation (LESSONS.md,
+Draw each Component as a **three-view sheet**, in one generation (LESSONS-REFERENCE-IMAGES.md,
 "Draw a part's extra views in one turnaround image"): its reference camera
 and two more that show what that camera hides. Split it with
 `proof_views.py split` (Stage 3a). The view at the reference camera becomes
@@ -752,7 +753,7 @@ Component's worker reads it.
 
 A toy whose parts move between poses (a transformer, a folding vehicle) also
 gets a colour-coded **transformation sheet** that draws every move, made with
-AI editing from the approved references (LESSONS.md, "Draw transformation
+AI editing from the approved references (LESSONS-REFERENCE-IMAGES.md, "Draw transformation
 steps as one chain of edits"), one colour per Unique Geometry. Its entry
 lists the `steps` it draws, in order, worded as the Transformation section's
 moves, and has no `geometries`, so it reaches every worker. Check it by eye
