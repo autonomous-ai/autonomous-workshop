@@ -66,6 +66,7 @@ PART_PREFIX = "part_"
 GEN_FUNC = "gen_" + "step"
 
 DEFAULT_MANIFEST = Path("measure") / "mounts.json"
+BOUGHT_BODIES = Path("measure") / "bought-bodies.json"
 
 # Contact is not collision, as everywhere else in this toolchain.
 CLASH_TOL_MM3 = 1e-3
@@ -160,14 +161,50 @@ def index_parts(shape) -> dict[str, object]:
     return parts
 
 
+def bought_bodies(project: Path) -> frozenset[str]:
+    """The labels of the drawn Bought Part bodies ``measure/bought-bodies.json``
+    lists (ADR 0095 amendment of 2026-11-01).
+
+    ``bought_model.py`` seats each body inside the envelope its mount declares,
+    so a body is the component itself, never the model holding it: measured as
+    an obstacle, every mount would clash with its own part.
+    """
+    try:
+        document = json.loads((project / BOUGHT_BODIES).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return frozenset()
+    if not isinstance(document, dict) or document.get("kind") != "bought-bodies":
+        return frozenset()
+    return frozenset(
+        item["name"] for key in ("bodies", "routes")
+        for item in (document.get(key) if isinstance(document.get(key), list) else [])
+        if isinstance(item, dict) and isinstance(item.get("name"), str)
+        and item["name"].startswith("bought_")
+    )
+
+
+def model_solids(node, skip: frozenset[str]) -> list:
+    """Every solid of the model except those of a leaf labelled in ``skip``."""
+    if (getattr(node, "label", "") or "") in skip:
+        return []
+    children = list(getattr(node, "children", []) or [])
+    if not children:
+        return list(node.solids())
+    return [solid for child in children for solid in model_solids(child, skip)]
+
+
 def obstacle_solids(shape, parts: dict, names) -> list:
     """The solids the component is measured against, in assembly pose.
 
     Solids rather than the compound: a Compound's own volume is 0 when the
     geometry hangs off its children, and every measurement below is a boolean
-    that wants real bodies.
+    that wants real bodies. The whole model excludes the drawn Bought Part
+    bodies (``bought_bodies``); a mount naming one in ``parts`` still gets it.
     """
     if names is None:
+        skip = parts.get("__bought__", frozenset())
+        if any(name in parts for name in skip):
+            return model_solids(shape, skip)
         return list(shape.solids())
     if isinstance(names, str):
         names = [names]
@@ -179,7 +216,7 @@ def obstacle_solids(shape, parts: dict, names) -> list:
         if name in ambiguous:
             raise ManifestError(f'part "{name}" is ambiguous; use its dotted path')
         if name not in parts:
-            known = ", ".join(sorted(k for k in parts if k != "__ambiguous__")) or "none"
+            known = ", ".join(sorted(k for k in parts if k not in ("__ambiguous__", "__bought__"))) or "none"
             raise ManifestError(f'no part labelled "{name}" in the assembly (have: {known})')
         solids.extend(parts[name].solids())
     return solids
@@ -539,6 +576,7 @@ def main() -> int:
         entry = find_assembly_entry(project, manifest.get("assembly"))
         shape = build_assembly(entry)
         parts = index_parts(shape)
+        parts["__bought__"] = bought_bodies(project)
     except ManifestError as error:
         print(f"check_mount: {error}", file=sys.stderr)
         return 2
@@ -548,7 +586,7 @@ def main() -> int:
         return 2
 
     if args.list_parts:
-        for name in sorted(name for name in parts if name != "__ambiguous__"):
+        for name in sorted(name for name in parts if name not in ("__ambiguous__", "__bought__")):
             print(name)
         for name in parts["__ambiguous__"]:
             print(f"{name}  (ambiguous - use its dotted path)")

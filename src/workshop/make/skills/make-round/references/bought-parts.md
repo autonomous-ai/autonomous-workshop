@@ -39,7 +39,11 @@ they get no `parts/` production STEP.
 3. Run `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/bought_model.py
    <project> --build`. It writes `bought/<name>.step`, `bought/__init__.py`
    and `measure/bought-bodies.json`. Fix every refusal it prints; never edit
-   what it writes.
+   what it writes. The bodies that list names with their current bytes are
+   no components: final verification asks them for no mount row,
+   `check_mount` leaves them out of the model it measures each mount
+   against, and `bought/__init__.py` is no Shared Helper. Any other STEP
+   outside `ref/`, including an unlisted one in `bought/`, is still refused.
 4. In the assembly entry, add the group to the compound:
 
    ```python
