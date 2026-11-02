@@ -244,6 +244,15 @@ SIGNATURE_REVIEW_FIELDS_V9_REVIEWED_GEOMETRY = SIGNATURE_REVIEW_FIELDS_V9 | {"ge
 # A packet binds only the sheet that holds every view (ADR 0087).
 GEOMETRY_PACKET_VIEWS = ("sheet",)
 BLIND_REREAD_IMAGES = ("iso", "signature")
+# Schema 10 (Workshop ADR 0096): the assembly review a seeded run carries
+# from its Approved Proof instead of spending a blind critic.
+CARRIED_REVIEW_SCHEMA = 10
+CARRIED_REVIEWER = "the owner (Approved Proof)"
+CARRIED_REVIEW_FIELDS = {
+    "schema_version", "kind", "carried_from", "reviewer", "concept_sha256", "iso_sha256",
+    "signature_sha256", "approval_sha256", "critic_sha256", "assembly_identity", "critic_round",
+    "critic_verdict", "open_lines_approved", "requirements", "print_gate_sha256s",
+}
 SHA256_TEXT = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -317,6 +326,9 @@ def _required_signature_review(project: Path) -> str:
     if content != canonical or not isinstance(review, dict):
         raise ValueError("signature review must use canonical JSON encoding")
     schema_version = review.get("schema_version")
+    if schema_version == CARRIED_REVIEW_SCHEMA:
+        _carried_signature_review(review)
+        return _bound_review_evidence(review, review_path, content)
     if schema_version == 9:
         fields = set(review)
         has_geometry_rows = fields in (
@@ -495,6 +507,13 @@ def _required_signature_review(project: Path) -> str:
             raise ValueError("signature review critical form requirement must match")
     if review.get("blocking_visual_defects") != []:
         raise ValueError("signature review still has blocking visual defects")
+    return _bound_review_evidence(review, review_path, content)
+
+
+def _bound_review_evidence(review: dict, review_path: Path, content: bytes) -> str:
+    """Check a review's print gate map and that it binds the current snap
+    images; return the review's sha256."""
+
     print_gate_sha256s = review.get("print_gate_sha256s")
     if not isinstance(print_gate_sha256s, dict) or any(
         not isinstance(path, str)
@@ -525,6 +544,44 @@ def _required_signature_review(project: Path) -> str:
         if hashlib.sha256(image_bytes).hexdigest() != expected:
             raise ValueError(f"signature review is stale for snap/{filename}")
     return hashlib.sha256(content).hexdigest()
+
+
+def _carried_signature_review(review: dict) -> None:
+    """Schema 10 (Workshop ADR 0096): an assembly review carried from a
+    seeded run's Approved Proof by ``make_round --carry-assembly-review``,
+    never written by hand. This in-sandbox gate cannot see the sealed seed,
+    so it checks the shape only; the finalizer binds it to the approval, the
+    critic, every Component's approved round and the assembly identity, and
+    refuses it outside a seeded run."""
+
+    if set(review) != CARRIED_REVIEW_FIELDS:
+        raise ValueError("signature review fields do not match schema 10")
+    if (review.get("kind") != SIGNATURE_REVIEW_KIND or review.get("carried_from") != "seed-approval"
+            or review.get("reviewer") != CARRIED_REVIEWER):
+        raise ValueError("signature review identity is invalid")
+    for key in ("concept_sha256", "approval_sha256", "critic_sha256", "assembly_identity"):
+        value = review.get(key)
+        if not isinstance(value, str) or not SHA256_TEXT.fullmatch(value):
+            raise ValueError(f"signature review {key} is invalid")
+    open_lines = review.get("open_lines_approved")
+    if type(open_lines) is not bool:
+        raise ValueError("signature review open_lines_approved is invalid")
+    if review.get("critic_verdict") != "agree" and not open_lines:
+        raise ValueError("a carried signature review needs a critic that agreed or open lines the owner approved")
+    critic_round = review.get("critic_round")
+    if critic_round is not None and (type(critic_round) is not int or critic_round < 1):
+        raise ValueError("signature review critic_round is invalid")
+    requirements = review.get("requirements")
+    if not isinstance(requirements, list):
+        raise ValueError("signature review requirements is invalid")
+    for requirement in requirements:
+        if (not isinstance(requirement, dict) or set(requirement) != {"id", "verdict", "note"}
+                or not isinstance(requirement.get("id"), str) or not requirement["id"].strip()
+                or requirement.get("verdict") not in ("agree", "differences")
+                or not isinstance(requirement.get("note"), str)):
+            raise ValueError("signature review requirement verdict is invalid")
+        if requirement["verdict"] != "agree" and not open_lines:
+            raise ValueError("a carried signature review cannot carry a requirement with differences")
 
 
 def _discover_entries(project: Path, assembly_arg: str | None, cwd: Path) -> tuple[Path, list[Path]]:

@@ -10,7 +10,9 @@ comparison of exact bytes, not a gate rerun (ADR 0061). It refuses:
   B-rep identity is not the approved one, or whose delivered STEP is not
   within tolerance of the approved STEP;
 - a round locked by the approval whose delivered STEP is over tolerance:
-  a deviation over tolerance needs its Component Review.
+  a deviation over tolerance needs its Component Review;
+- an assembly review carried from the Approved Proof
+  (``make_round --carry-assembly-review``) when any Component deviated.
 
 Every Component whose identity is not the approved one is returned as a
 seed deviation, for the receipt and ``workshop status --json``.
@@ -104,7 +106,22 @@ def verify_made_seed(
         if "error" in report:
             deviation["error"] = report["error"]
         deviations.append(deviation)
+    if deviations and _carried_assembly_review(Path(project)):
+        raise ContractError(
+            "seed: the assembly review is carried from the Approved Proof, but %s deviated; "
+            "the assembly needs the blind review" % ", ".join(d["component"] for d in deviations)
+        )
     return deviations
+
+
+def _carried_assembly_review(project: Path) -> bool:
+    """Whether snap/SIGNATURE-REVIEW.json is carried from the Approved Proof."""
+
+    try:
+        review = json.loads((project / "snap" / "SIGNATURE-REVIEW.json").read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError):
+        return False
+    return isinstance(review, dict) and review.get("carried_from") == SEED_APPROVAL
 
 
 __all__ = ["SEED_APPROVAL", "latest_component_summary", "verify_made_seed"]

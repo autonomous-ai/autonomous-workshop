@@ -1,7 +1,13 @@
 # ADR 0096: The approved Contract Proof is the build, and Workshop certifies it
 
 - Status: Proposed on 2026-11-02 from the owner's direction of the same day.
-  Nothing is implemented. The plan is
+  Implemented on main and not yet run live: `proof_diff` (#189), the
+  design-a-toy Proof prompts (#190), schema 11 and `seal_proof` (#191), the
+  host `--seed-source` path with approval-locked rounds and the seed
+  deviation check (#192), build-a-toy and DETECT (#193), and the assembly
+  review carried from `CRITIC.json` (`make_round --carry-assembly-review`,
+  signature review schema 10). Still migrating: the
+  Approved Proof copy in the published archive. The plan is
   [docs/plans/0096-seeded-build-plan.md](../plans/0096-seeded-build-plan.md).
   The owner decided every open question on 2026-11-02 (see "Owner
   decisions" at the end).
