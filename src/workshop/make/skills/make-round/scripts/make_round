@@ -14,6 +14,7 @@
     make_round <cad-dir> --print-gates-only [--component part_<id>.step.py]
                [--nozzle 0.4] [--overhang-angle 45] [--contract CONTRACT.md] [--json]
     make_round <cad-dir> --shared-helpers --contract CONTRACT.md [--nozzle 0.4] [--json]
+    make_round <cad-dir> --identities-only --contract CONTRACT.md [--out IDENTITIES.json]
 
 Every verdict comes from the original cad tools, run unchanged; this script
 only sequences them, remembers what changed between rounds, and prints a
@@ -138,6 +139,13 @@ every gate verdict is a round's. design-a-toy's Contract Proof runs it.
 and freeze on a CAD directory outside a Workshop run, reading the Interfaces
 from that contract file instead of a sealed Wish; inside a run it refuses.
 The Contract Proof runs it, as Make's Manager would (ADR 0096 decision 1b).
+--identities-only --contract CONTRACT.md builds every part_<id>.step.py of a
+CAD directory outside a run and prints, as JSON, each Component's B-rep
+identity, STEP sha256, imported Shared Helpers, contract rows hash and carry
+key, and the assembly identity: what a component round of a run sealing that
+contract and its images would compute, with no ruling or amendment. It
+reviews nothing and gates nothing. design-a-toy's seal_proof records the
+Approved Proof with it (ADR 0096).
 This tool makes no model calls.
 
 Exit 0: all checks and the recorded (or carried) review passed. Exit 1:
@@ -2425,6 +2433,13 @@ def component_prose(project: Path, role: str) -> list | None:
     contract = current_contract(project)
     if contract is None or contract_schema(project) < PROSE_SCHEMA_VERSION:
         return None
+    return prose_of(contract, role)
+
+
+def prose_of(contract: dict, role: str) -> list:
+    """``[{"heading", "text"}]`` of the prose sections ``role``'s geometry
+    names in a schema 8 or later contract dict, in its order."""
+
     geometry = next((item for item in contract.get("geometries") or ()
                      if isinstance(item, dict) and item.get("id") == role), None)
     names = geometry.get("prose_sections") if isinstance(geometry, dict) else None
@@ -3237,29 +3252,39 @@ def contract_rows_document(project: Path, role: str) -> dict | None:
         # ADR 0085: the rows as every applied Contract Amendment left them.
         contract = current_contract(project)
         if isinstance(contract, dict):
-            scope = GEOMETRY_LABEL + role
-            rows = {
-                "geometries": [g for g in contract.get("geometries") or () if isinstance(g, dict) and g.get("id") == role],
-                "requirements": [r for r in contract.get("requirements") or () if isinstance(r, dict) and r.get("scope") == scope],
-                "references": [r for r in contract.get("references") or () if isinstance(r, dict) and r.get("shows") == scope],
-            }
-            schema = contract.get("schema_version")
-            if type(schema) is int and schema >= INTERFACE_TEXT_SCHEMA_VERSION:
-                # ADR 0084: the Interfaces a schema 4 review read are its rows too.
-                rows["interfaces"] = [i for i in contract.get("interfaces") or () if isinstance(i, dict)
-                                      and isinstance(i.get("components"), list)
-                                      and role in reference_roles(i["components"])]
-            if type(schema) is int and schema >= PROSE_SCHEMA_VERSION:
-                # ADR 0093 (owner decision 2026-10-26): the worker builds from
-                # its prose sections, so they bind its rows too. A changed
-                # section unlocks every Component naming it and stops its
-                # review carrying, the same as a changed row.
-                rows["prose"] = component_prose(project, role)
+            rows = contract_rows_of(contract, role)
             # An amended assembly row binds every Component (ADR 0085). The
             # key appears only then, so a run without one keeps its hashes.
             amended = amended_assembly_rows(project)
             if amended:
                 rows["amended_assembly_rows"] = amended
+    return rows
+
+
+def contract_rows_of(contract: dict, role: str) -> dict:
+    """One Component's rows in a Design Contract dict as a run seals it: its
+    Unique Geometry, the requirements and references scoped to it, from
+    schema 4 the Interfaces naming it and from schema 8 its prose sections.
+    The one definition a round's rows hash and ``--identities-only`` share."""
+
+    scope = GEOMETRY_LABEL + role
+    rows = {
+        "geometries": [g for g in contract.get("geometries") or () if isinstance(g, dict) and g.get("id") == role],
+        "requirements": [r for r in contract.get("requirements") or () if isinstance(r, dict) and r.get("scope") == scope],
+        "references": [r for r in contract.get("references") or () if isinstance(r, dict) and r.get("shows") == scope],
+    }
+    schema = contract.get("schema_version")
+    if type(schema) is int and schema >= INTERFACE_TEXT_SCHEMA_VERSION:
+        # ADR 0084: the Interfaces a schema 4 review read are its rows too.
+        rows["interfaces"] = [i for i in contract.get("interfaces") or () if isinstance(i, dict)
+                              and isinstance(i.get("components"), list)
+                              and role in reference_roles(i["components"])]
+    if type(schema) is int and schema >= PROSE_SCHEMA_VERSION:
+        # ADR 0093 (owner decision 2026-10-26): the worker builds from
+        # its prose sections, so they bind its rows too. A changed
+        # section unlocks every Component naming it and stops its
+        # review carrying, the same as a changed row.
+        rows["prose"] = prose_of(contract, role)
     return rows
 
 
@@ -5549,6 +5574,99 @@ def gates_only_parts(project: Path, args) -> list[Path]:
     return generators
 
 
+# --identities-only (ADR 0096): what seal_proof records of an Approved Proof,
+# computed by the code a component round runs.
+IDENTITIES_SCHEMA = 1
+
+
+def proof_identities(project: Path, contract_path: Path, cad: Path) -> dict:
+    """Each Component's B-rep identity, STEP sha256, imported Shared Helpers,
+    contract rows hash and carry key, as a component round of a run sealing
+    ``contract_path`` would compute them with no ruling and no amendment,
+    plus the assembly identity. ValueError when the contract or a reference
+    cannot be read or a Component does not build."""
+
+    try:
+        from workshop.errors import WorkshopError
+        from workshop.wish.design_contract import parse_design_contract
+    except ImportError as exc:
+        raise ValueError("the Workshop contract parser is not importable: %s" % exc) from exc
+    try:
+        text = contract_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise ValueError("cannot read %s: %s" % (contract_path, exc)) from exc
+    try:
+        contract = parse_design_contract(text).to_dict()
+    except WorkshopError as exc:
+        raise ValueError(str(exc)) from exc
+    schema = contract.get("schema_version")
+    out = project / "measure" / "identities"
+    out.mkdir(parents=True, exist_ok=True)
+    parts = sorted(project.glob("part_*.step.py"))
+    if not parts:
+        raise ValueError("%s has no part_<id>.step.py" % project)
+    geometry_ids = {g.get("id") for g in contract.get("geometries") or () if isinstance(g, dict)}
+    components, digests = {}, {}
+    for part in parts:
+        role = part.name.removeprefix("part_").removesuffix(".step.py")
+        if role not in geometry_ids:
+            raise ValueError("%s builds no Unique Geometry of the contract" % part.name)
+        identity = component_identity(project, role, out, cad)
+        if identity is None:
+            raise ValueError("%s does not build; see %s" % (part.name, out / ("gen-%s.log" % role)))
+        step = part.with_name(part.name[:-len(".py")])
+        refs = []
+        for reference in contract.get("references") or ():
+            if not isinstance(reference, dict) or reference.get("shows") != GEOMETRY_LABEL + role:
+                continue
+            path = contract_path.parent / str(reference.get("file"))
+            if not path.is_file():
+                raise ValueError("reference %s is not beside the contract" % reference.get("file"))
+            camera = camera_text(reference.get("camera")) if type(schema) is int and schema >= CAMERA_SCHEMA_VERSION else None
+            refs.append((GEOMETRY_LABEL + role, str(path) + ("@" + camera if camera else "")))
+        rows = rows_hash(contract_rows_of(contract, role))
+        digests[role] = identity
+        components[role] = {
+            "identity": identity, "step_sha256": file_hash(step),
+            "imported_helpers": imported_helpers(project, part),
+            "contract_rows": rows, "carry_key": carry_key(identity, refs, project, rows, []),
+        }
+    missing = sorted(i for i in geometry_ids if i not in components)
+    if missing:
+        raise ValueError("no part_<id>.step.py for the contract's geometries: %s" % ", ".join(missing))
+    return {"schema_version": IDENTITIES_SCHEMA, "tool": "make_round --identities-only",
+            "contract_sha256": file_hash(contract_path), "components": components,
+            "assembly_identity": hashlib.sha256(json.dumps(digests, sort_keys=True).encode()).hexdigest()}
+
+
+def identities_only(args) -> int:
+    """Print ``proof_identities`` as JSON (to ``--out`` too when given).
+    Exit 0 on success, 2 when it cannot be computed."""
+
+    project = Path(args.project).resolve()
+    if not project.is_dir():
+        print("make_round: not a directory: %s" % project, file=sys.stderr)
+        return 2
+    if run_root(project) is not None:
+        print("make_round: --identities-only is for an Approved Proof outside a Workshop run; %s is inside "
+              "the run at %s" % (project, run_root(project)), file=sys.stderr)
+        return 2
+    roots = skills_root()
+    if roots is None:
+        print("make_round: cannot locate the cad and image-to-cad skills", file=sys.stderr)
+        return 2
+    try:
+        document = proof_identities(project, Path(args.contract).resolve(), roots / "cad" / "scripts")
+    except ValueError as exc:
+        print("make_round: %s" % exc, file=sys.stderr)
+        return 2
+    text = json.dumps(document, indent=2, sort_keys=True) + "\n"
+    if args.out:
+        Path(args.out).write_text(text, encoding="utf-8")
+    print(text, end="")
+    return 0
+
+
 def print_gates_only(args) -> int:
     """Build every part and run Make's print gates on it exactly as a round
     does (the same jobs, parsers and records), with no nonce, hook, Shared
@@ -6693,6 +6811,7 @@ def main(argv=None) -> int:
     parser.add_argument("--json", action="store_true", help="print the summary as one JSON line")
     parser.add_argument("--print-gates-only", action="store_true", help="build every part (or --component) and run Make's print gates on it exactly as a round does, with no run, nonce, freeze or round history; writes only under the directory (measure/print-gates/, __cadgen__/); exit 1 on any failure. The Contract Proof runs this")
     parser.add_argument("--contract", metavar="CONTRACT.md", help="with --print-gates-only: the Design Contract whose Assembly Tree says which Parts each kit Component prints (default: the project's installed tree/kit.json); with --shared-helpers outside a run: the Design Contract whose Interfaces the samples must cover (the Contract Proof, ADR 0096)")
+    parser.add_argument("--identities-only", action="store_true", help="outside a run, with --contract: print each Component's B-rep identity, STEP sha256, Shared Helpers, contract rows hash and carry key, and the assembly identity, as a component round would compute them; --out also writes the JSON there. seal_proof records an Approved Proof with this (ADR 0096)")
     parser.add_argument("--worker-nonce", help=argparse.SUPPRESS)  # issued by the Workshop guard hook only
     parser.add_argument("--self-check", action="store_true")
     args = parser.parse_args(argv)
@@ -6700,8 +6819,20 @@ def main(argv=None) -> int:
         return self_check()
     if not args.project:
         parser.error("project is required")
+    if args.identities_only:
+        if not args.contract:
+            parser.error("--identities-only needs --contract")
+        given = [flag for flag in ("component", "entry", "refs", "shared_helpers", "print_gates_only",
+                                   "record_visual", "record_review", "record_unlock", "interface",
+                                   "report_blocked", "clear_blocked", "blocked_reports", "propose_amendment",
+                                   "record_amendment_review", "contract_amendments", "full", "json")
+                 if getattr(args, flag, None)]
+        if given:
+            parser.error("--identities-only takes only the project, --contract and --out (not --%s)"
+                         % given[0].replace("_", "-"))
+        return identities_only(args)
     if args.contract and not (args.print_gates_only or args.shared_helpers):
-        parser.error("--contract belongs to --print-gates-only or --shared-helpers")
+        parser.error("--contract belongs to --print-gates-only, --shared-helpers or --identities-only")
     if args.contract and args.shared_helpers and run_root(Path(args.project).resolve()) is not None:
         # In a run the Interfaces are the sealed contract's, never a file's.
         print("make_round: --shared-helpers --contract is for a CAD directory outside a Workshop run; "

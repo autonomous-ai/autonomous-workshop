@@ -1288,11 +1288,28 @@ block's `references[].file` entries now match Stage 3's images one for one —
 that is what lets `workshop wish --contract` seal this exact file, byte for
 byte, as the run's hash-checked objective.
 
+Then seal what the owner approved (ADR 0096): run the Proof's print gates
+and `make_round <proof> --shared-helpers --contract CONTRACT.md` once more on
+the final contract, then
+
+```sh
+uv run python .claude/skills/design-a-toy/scripts/seal_proof.py seal <contract-dir>/proof \
+  --contract CONTRACT.md --checklist CONCEPT-CHECKLIST.md --nozzle <NOZZLE> \
+  --approved-by <owner> --cost <design units from build-a-toy's tokens.py>
+```
+
+It writes `proof/APPROVAL.json` and `proof/approved/` (the docstring lists
+what it binds and refuses). Add `--open-lines-approved` only when the owner
+approved the Proof Critic's open lines at Stage 4. Any later change to the
+proof directory needs a new Stage 4 approval and a new seal;
+`seal_proof.py verify <contract-dir>/proof` says whether the tree still
+matches.
+
 Approving the images is the go-ahead. Do not ask again: write the contract
 and hand off to the `build-a-toy` skill straight away (for a kit,
 only once its Make gates exist; until then report the contract as designed
 and unbuilt) with the path to this
-`CONTRACT.md`. That skill owns every run this design
+`CONTRACT.md` and the sealed proof directory. That skill owns every run this design
 starts, round 0 through every correction, always under `--contract`. Do not print a bare `workshop wish` command here.
 
 Then state plainly what happens next: Make builds against these images, each

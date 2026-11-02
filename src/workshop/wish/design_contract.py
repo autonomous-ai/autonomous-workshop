@@ -47,7 +47,7 @@ from workshop.wish.print_sheets import ContractPrint, parse_print_section
 # complete path, the supply, current, standby drain, runtime, switch logic
 # and who joins the leads. Make gates it with ``verify_project --powered``
 # and the host checks Make's power report against it.
-SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 INTERFACES_SCHEMA_VERSION = 2
 CAMERA_SCHEMA_VERSION = 3
 INTERFACE_TEXT_SCHEMA_VERSION = 4
@@ -57,6 +57,12 @@ TREE_SCHEMA_VERSION = 7
 PROSE_SCHEMA_VERSION = 8
 NO_WALL_SCHEMA_VERSION = 9
 ELECTRICAL_SCHEMA_VERSION = 10
+# ADR 0096 decision 1c: schema 11 is schema 10 whose shape is the Approved
+# Proof. ``shape`` must say so; geometry prose sections become optional,
+# because the Proof, not the prose, holds the shape. No run seals it until
+# the seeded host path (``--seed-source``) exists.
+SHAPE_SCHEMA_VERSION = 11
+APPROVED_PROOF_SHAPE = "approved-proof"
 # A run may seal these. Schema 7 became sealable once every gate it needs was
 # wired: Make's tree gates (ADR 0092 decision 8, issue #136) and its Manual
 # (decision 9, issue #137), which the host checks before Make is accepted.
@@ -245,6 +251,9 @@ class DesignContract:
     # Schema 10 (ADR 0095): a powered toy's circuit. None before schema 10
     # and for a toy with no electrical load.
     electrical: Optional[ContractElectrical] = None
+    # Schema 11 (ADR 0096): ``"approved-proof"``, the shape's source of
+    # truth. None before schema 11.
+    shape: Optional[str] = None
 
     def check_sealable(self) -> None:
         """Refuse a contract no run can seal yet (schema 7: see
@@ -396,6 +405,7 @@ class DesignContract:
                 if self.electrical is not None
                 else {}
             ),
+            **({"shape": self.shape} if self.shape is not None else {}),
         }
 
 
@@ -428,7 +438,8 @@ def _scope(value: Any, geometry_ids: Optional[frozenset], label: str, errors: Li
 
 
 def _parse_geometries(
-    value: Any, errors: List[str], prose: bool = False, wall: bool = True
+    value: Any, errors: List[str], prose: bool = False, wall: bool = True,
+    prose_optional: bool = False,
 ) -> Tuple[Tuple[ContractGeometry, ...], frozenset]:
     """The Unique Geometries; ``prose`` (schema 8) requires each one's
     ``prose_sections``, and before schema 8 the field is refused rather than
@@ -473,7 +484,10 @@ def _parse_geometries(
             errors.append("%s.wall_min_mm must be a positive number" % label)
             wall_min = 0.0
         sections: Optional[Tuple[str, ...]] = None
-        if prose:
+        if prose and prose_optional and "prose_sections" not in item:
+            # Schema 11 (ADR 0096): the Approved Proof holds the shape.
+            pass
+        elif prose:
             raw = item.get("prose_sections")
             if (
                 not isinstance(raw, list) or not raw
@@ -1009,7 +1023,7 @@ def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) ->
 
     schema_version = block.get("schema_version")
     if isinstance(schema_version, bool) or schema_version not in SCHEMA_VERSIONS:
-        errors.append("schema_version must be 1, 2, 3, 4, 5, 6, 7, 8, 9 or 10")
+        errors.append("schema_version must be 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 or 11")
     # Each feature below starts at one schema and carries into every later
     # one; an unknown schema reads as none of them.
     version = (
@@ -1031,7 +1045,19 @@ def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) ->
     geometries, geometry_ids = _parse_geometries(
         block.get("geometries"), errors, prose=version >= PROSE_SCHEMA_VERSION,
         wall=version < NO_WALL_SCHEMA_VERSION,
+        prose_optional=version >= SHAPE_SCHEMA_VERSION,
     )
+    shape: Optional[str] = None
+    if version >= SHAPE_SCHEMA_VERSION:
+        if block.get("shape") != APPROVED_PROOF_SHAPE:
+            errors.append(
+                'shape must be "%s" under schema_version 11: the Approved Proof is '
+                "the shape's source of truth (ADR 0096)" % APPROVED_PROOF_SHAPE
+            )
+        else:
+            shape = APPROVED_PROOF_SHAPE
+    elif "shape" in block:
+        errors.append("shape needs schema_version 11")
     references = _parse_references(
         block.get("references"), geometry_ids, errors,
         cameras=version >= CAMERA_SCHEMA_VERSION,
@@ -1129,4 +1155,5 @@ def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) ->
         assembly_tree=assembly_tree,
         prose=prose,
         electrical=electrical,
+        shape=shape,
     )

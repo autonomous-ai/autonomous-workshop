@@ -503,7 +503,7 @@ class InterfaceTextTest(unittest.TestCase):
         self.assertIn("text needs schema_version 4", self._refused(camera))
 
     def test_an_unknown_schema_is_refused(self):
-        self.assertIn("schema_version must be 1, 2, 3, 4, 5, 6, 7, 8, 9 or 10", self._refused(_block(schema_version=11)))
+        self.assertIn("schema_version must be 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 or 11", self._refused(_block(schema_version=12)))
 
 
 def _guide_block(**overrides):
@@ -844,3 +844,74 @@ class NoWallSchemaTest(unittest.TestCase):
         self.assertIn("geometries[0].wall_min_mm must be a positive number", self._refused(block))
         sealed = parse_design_contract(_contract_text(_prose_block(), prose=_PROSE)).to_dict()
         self.assertEqual(sealed["geometries"][0]["wall_min_mm"], 1.2)
+
+
+class ApprovedProofSchemaTest(unittest.TestCase):
+    """ADR 0096 decision 1c: schema 11 is schema 10 whose shape is the
+    Approved Proof. ``shape`` must be "approved-proof", prose sections are
+    optional, and no run seals it before the seeded host path exists."""
+
+    def _schema11(self, prose=True):
+        block = NoWallSchemaTest._schema9(None)
+        block["schema_version"] = 11
+        block["shape"] = "approved-proof"
+        if not prose:
+            for geometry in block["geometries"]:
+                del geometry["prose_sections"]
+        return block
+
+    def _refused(self, block):
+        with self.assertRaises(ContractError) as caught:
+            parse_design_contract(_contract_text(block, prose=_PROSE))
+        return str(caught.exception)
+
+    def test_a_schema_11_contract_records_its_shape_source(self):
+        contract = parse_design_contract(_contract_text(self._schema11(), prose=_PROSE))
+        self.assertEqual(contract.schema_version, 11)
+        self.assertEqual(contract.shape, "approved-proof")
+        self.assertEqual(contract.to_dict()["shape"], "approved-proof")
+        self.assertEqual(contract.geometries[0].prose_sections, ("Wing",))
+
+    def test_prose_sections_are_optional_but_still_checked_when_given(self):
+        contract = parse_design_contract(_contract_text(self._schema11(prose=False), prose=_PROSE))
+        self.assertTrue(all(item.prose_sections is None for item in contract.geometries))
+        self.assertEqual(contract.prose, ())
+        block = self._schema11()
+        block["geometries"][0]["prose_sections"] = ["No such heading"]
+        self.assertIn("names prose section 'No such heading'", self._refused(block))
+        block = self._schema11()
+        block["geometries"][0]["prose_sections"] = []
+        self.assertIn("geometries[0].prose_sections must name at least one", self._refused(block))
+
+    def test_schema_11_needs_the_approved_proof_shape(self):
+        block = self._schema11()
+        del block["shape"]
+        self.assertIn('shape must be "approved-proof" under schema_version 11', self._refused(block))
+        block["shape"] = "prose"
+        self.assertIn('shape must be "approved-proof"', self._refused(block))
+
+    def test_shape_is_refused_before_schema_11(self):
+        block = NoWallSchemaTest._schema9(None)
+        block["shape"] = "approved-proof"
+        self.assertIn("shape needs schema_version 11", self._refused(block))
+        self.assertNotIn("shape", parse_design_contract(
+            _contract_text(NoWallSchemaTest._schema9(None), prose=_PROSE)).to_dict())
+
+    def test_schema_11_keeps_the_guide_and_wall_rules(self):
+        block = self._schema11()
+        block["guides"][1]["geometries"] = ["wing"]
+        self.assertIn("geometry 'heart-core' is named by no guides[] entry's geometries", self._refused(block))
+        block = self._schema11()
+        block["geometries"][0]["wall_min_mm"] = 1.2
+        self.assertIn("wall_min_mm is not part of schema_version 9", self._refused(block))
+
+    def test_no_run_seals_schema_11_until_the_seeded_path_exists(self):
+        contract = parse_design_contract(_contract_text(self._schema11(), prose=_PROSE))
+        with self.assertRaises(ContractError) as caught:
+            contract.check_sealable()
+        self.assertIn("schema_version 11 is validated, but no run can seal it yet", str(caught.exception))
+
+    def test_an_unknown_schema_lists_eleven(self):
+        block = self._schema11()
+        block["schema_version"] = 12
+        self.assertIn("schema_version must be 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 or 11", self._refused(block))
