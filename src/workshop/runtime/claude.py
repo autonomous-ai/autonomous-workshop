@@ -116,7 +116,8 @@ CLAUDE_SUBPROCESS_ENVIRONMENT_ALLOWLIST = (
 def claude_hook_settings(script: Path) -> str:
     """The ``--settings`` JSON registering the make_round guard (ADR 0080).
 
-    ``Bash`` admits make_round calls by role. ``Read`` and ``SubagentStart``
+    ``Bash`` admits make_round calls by role. ``Bash``, ``Read``, ``Grep``
+    and ``Glob`` also meet the run boundary (ADR 0096 pilot). ``Read`` and ``SubagentStart``
     give the guard the evidence that binds each Component Review to the
     reviewer that read its packet (ADR 0081, issue #77); an older guard
     ignores both events. ``Stop`` refuses the root's turn end while the
@@ -137,6 +138,10 @@ def claude_hook_settings(script: Path) -> str:
                 "PreToolUse": [
                     {"matcher": "Bash", "hooks": hook},
                     {"matcher": "Read", "hooks": hook},
+                    # The run boundary (ADR 0096 pilot): a search may not
+                    # reach the Workshop source checkout either.
+                    {"matcher": "Grep", "hooks": hook},
+                    {"matcher": "Glob", "hooks": hook},
                 ],
                 "Stop": [{"hooks": hook}],
                 "SubagentStart": [{"hooks": hook}],

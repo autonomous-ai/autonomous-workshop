@@ -23,6 +23,7 @@ import json
 import os
 import re
 import stat
+import sys
 import zipfile
 from importlib import resources
 from pathlib import Path
@@ -30,6 +31,9 @@ from typing import Any, Mapping, Optional
 
 from workshop.errors import ContractError, StateConflict
 from workshop.make.make_round_guard import (
+    BOUNDARY_LOG_NAME,
+    BOUNDARY_NAME,
+    MAX_BOUNDARY_LOG_BYTES,
     NONCE_TABLE_NAME,
     READ_LOG_NAME,
     SUBAGENT_LOG_NAME,
@@ -82,22 +86,61 @@ def make_round_guard_marker_bytes() -> bytes:
     ).encode("utf-8")
 
 
-def install_make_round_guard(host_state_root: Path) -> str:
-    """Materialize the guard into fresh host state; return its sha256."""
+def workshop_source_checkout() -> Optional[Path]:
+    """The Workshop source checkout this install runs from, or None when it
+    runs from an installed package (ADR 0096 pilot, B8)."""
 
-    content = make_round_guard_bytes()
-    directory = Path(host_state_root) / MAKE_ROUND_GUARD_DIRECTORY
-    directory.mkdir(mode=0o700)
-    os.chmod(directory, 0o700)
-    script = directory / MAKE_ROUND_GUARD_SCRIPT
-    descriptor = os.open(str(script), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o400)
+    root = Path(__file__).resolve().parents[3]
+    if (root / "pyproject.toml").is_file() and (root / "src" / "workshop").is_dir():
+        return root
+    return None
+
+
+def boundary_bytes(source: Optional[Path] = None, prefix: Optional[Path] = None) -> bytes:
+    """The guard's ``boundary.json``: the checkout a run may not reach and
+    the interpreter prefix it may (the run root is always allowed)."""
+
+    source = workshop_source_checkout() if source is None else source
+    prefix = Path(sys.prefix).resolve() if prefix is None else prefix
+    allowed = [str(prefix)]
+    executable = Path(os.path.normpath(Path(sys.executable).absolute())).parent.parent
+    if str(executable) not in allowed:
+        allowed.append(str(executable))
+    return json.dumps(
+        {"kind": "workshop-run-boundary", "schema_version": 1,
+         "forbidden": [str(source)] if source is not None else [], "allowed": allowed},
+        sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")
+
+
+def _write_once(path: Path, content: bytes) -> None:
+    descriptor = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o400)
     try:
         os.write(descriptor, content)
         os.fsync(descriptor)
     finally:
         os.close(descriptor)
-    os.chmod(script, 0o400)
+    os.chmod(path, 0o400)
+
+
+def install_make_round_guard(host_state_root: Path) -> str:
+    """Materialize the guard and its run boundary into fresh host state;
+    return the guard's sha256."""
+
+    content = make_round_guard_bytes()
+    directory = Path(host_state_root) / MAKE_ROUND_GUARD_DIRECTORY
+    directory.mkdir(mode=0o700)
+    os.chmod(directory, 0o700)
+    _write_once(directory / MAKE_ROUND_GUARD_SCRIPT, content)
+    _write_once(directory / BOUNDARY_NAME, boundary_bytes())
     return hashlib.sha256(content).hexdigest()
+
+
+def boundary_refusals(host_state_root: Path) -> list[dict]:
+    """Every run-boundary refusal the guard logged (ADR 0096 pilot, B8)."""
+
+    return _guard_records(host_state_root, BOUNDARY_LOG_NAME, MAX_BOUNDARY_LOG_BYTES * 2,
+                          "boundary refusal log")
 
 
 def verify_make_round_guard(host_state_root: Path, expected_sha256: str) -> Path:
@@ -518,7 +561,10 @@ __all__ = [
     "MAKE_ROUND_GUARD_SCRIPT",
     "REVIEWER_BINDING_MANAGER_IDS",
     "contract_reviewer_check",
+    "boundary_bytes",
+    "boundary_refusals",
     "install_make_round_guard",
+    "workshop_source_checkout",
     "installed_make_round_guard",
     "make_round_guard_bytes",
     "make_round_guard_marker_bytes",

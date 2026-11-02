@@ -12,7 +12,12 @@ comparison of exact bytes, not a gate rerun (ADR 0061). It refuses:
 - a round locked by the approval whose delivered STEP is over tolerance:
   a deviation over tolerance needs its Component Review;
 - an assembly review carried from the Approved Proof
-  (``make_round --carry-assembly-review``) when any Component deviated.
+  (``make_round --carry-assembly-review``) when a Component deviated and the
+  review does not name it with a basis that covers it: schema 10 covers no
+  deviation; schema 11 (the partial carry) covers one within tolerance as
+  ``within-tolerance`` or ``component-review``, and one over tolerance only
+  as ``component-review``. A Component the review calls ``exact`` must be
+  the approved B-rep.
 
 Every Component whose identity is not the approved one is returned as a
 seed deviation, for the receipt and ``workshop status --json``.
@@ -106,22 +111,40 @@ def verify_made_seed(
         if "error" in report:
             deviation["error"] = report["error"]
         deviations.append(deviation)
-    if deviations and _carried_assembly_review(Path(project)):
-        raise ContractError(
-            "seed: the assembly review is carried from the Approved Proof, but %s deviated; "
-            "the assembly needs the blind review" % ", ".join(d["component"] for d in deviations)
-        )
+    carried = _carried_assembly_review(Path(project))
+    if carried is not None:
+        _check_carried_bases(carried, deviations)
     return deviations
 
 
-def _carried_assembly_review(project: Path) -> bool:
-    """Whether snap/SIGNATURE-REVIEW.json is carried from the Approved Proof."""
+def _check_carried_bases(review: Mapping[str, Any], deviations: list[dict[str, Any]]) -> None:
+    """Refuse a carried assembly review whose bases do not cover the
+    deviations the host measured itself (ADR 0096 partial carry)."""
+
+    bases = review.get("components") if review.get("schema_version") == 11 else None
+    bases = bases if isinstance(bases, Mapping) else {}
+    uncovered = []
+    deviated = {item["component"]: item for item in deviations}
+    for role, item in sorted(deviated.items()):
+        basis = bases.get(role, {}).get("basis") if isinstance(bases.get(role), Mapping) else None
+        allowed = ("within-tolerance", "component-review") if item["within_tolerance"] else ("component-review",)
+        if basis not in allowed:
+            uncovered.append(role)
+    if uncovered:
+        raise ContractError(
+            "seed: the assembly review is carried from the Approved Proof, but %s deviated "
+            "with no basis that carries it; the assembly needs the blind review" % ", ".join(uncovered)
+        )
+
+
+def _carried_assembly_review(project: Path) -> Mapping[str, Any] | None:
+    """snap/SIGNATURE-REVIEW.json when it is carried from the Approved Proof."""
 
     try:
         review = json.loads((project / "snap" / "SIGNATURE-REVIEW.json").read_text(encoding="utf-8"))
     except (OSError, UnicodeError, ValueError):
-        return False
-    return isinstance(review, dict) and review.get("carried_from") == SEED_APPROVAL
+        return None
+    return review if isinstance(review, dict) and review.get("carried_from") == SEED_APPROVAL else None
 
 
 __all__ = ["SEED_APPROVAL", "latest_component_summary", "verify_made_seed"]

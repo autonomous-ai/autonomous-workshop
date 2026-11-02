@@ -27,6 +27,14 @@ its `# wiki:` citation and `assert`). It refuses a Proof Critic that did not
 agree unless the owner approved its open lines at Stage 4
 (`--open-lines-approved`).
 
+It also refuses what final verification would reject (the beaver pilot,
+B2-B5): no passing `make_round --print-gates-only` summary of every
+Component at the sealed nozzle, written by a make_round that checks each
+Component's validity in its Display Pose and its print stance on the bed,
+over the current sources; and no `*_spec.md` (exactly one, passing
+`check_spec_format` and `check_spec_numbers`) or no `measure/check_fit.py`,
+`measure/check_spec.py` and `measure/check_landmarks.py`.
+
 `verify` recomputes the manifest and exits 1 on a missing, extra or changed
 file, or a contract whose sha256 is not the sealed one.
 
@@ -54,6 +62,12 @@ APPROVED_DIR = "approved"
 CHECKLIST = "CONCEPT-CHECKLIST.md"
 CRITIC = "CRITIC.json"
 FREEZE = Path("measure/shared-helpers-freeze.json")
+PRINT_GATES = Path("measure/print-gates/summary.json")
+# What a print-gate summary must have checked; kept in step with make_round's
+# PRINT_GATES_ONLY_CHECKS.
+REQUIRED_CHECKS = ("build", "thickness", "overhang", "mesh", "datum", "posed")
+AUDITS = ("measure/check_fit.py", "measure/check_spec.py", "measure/check_landmarks.py")
+CAD_SCRIPTS = MAKE_SKILLS / "cad/scripts"
 
 
 class Refusal(Exception):
@@ -135,6 +149,68 @@ def check_rules(proof: Path, record: dict) -> None:
                               % (role, path))
 
 
+def geometry_sources(proof: Path) -> dict:
+    """The Proof's Geometry Sources and their sha256, by the CAD skill's one
+    definition (what make_round binds a print-gate summary to)."""
+
+    import runpy
+
+    tool = runpy.run_path(str(CAD_SCRIPTS / "geometry_sources.py"))
+    return dict(sorted(tool["geometry_sources"](proof).items()))
+
+
+def check_final_inputs(proof: Path, roles, nozzle: float) -> None:
+    """What final verification rejects, checked before the owner's approval
+    is sealed: the print gates with Display-Pose validity and the bed datum,
+    and the spec and project audits the seeded run's verifier needs."""
+
+    command = ("make_round %s --print-gates-only --nozzle %g --overhang-angle 45 --contract CONTRACT.md"
+               % (proof, nozzle))
+    try:
+        summary = json.loads((proof / PRINT_GATES).read_text(encoding="utf-8"))
+        if not isinstance(summary, dict):
+            raise ValueError("not an object")
+    except (OSError, ValueError) as exc:
+        raise Refusal("no print-gate summary (%s): run %s" % (exc, command)) from exc
+    missing = [check for check in REQUIRED_CHECKS if check not in (summary.get("checks") or ())]
+    if missing:
+        raise Refusal("the print-gate summary did not check %s; rerun %s" % (", ".join(missing), command))
+    if sorted(summary.get("parts") or ()) != sorted(roles):
+        raise Refusal("the print-gate summary covers %s, not every Component; rerun %s without --component"
+                      % (", ".join(sorted(summary.get("parts") or ())) or "nothing", command))
+    if summary.get("nozzle") != nozzle:
+        raise Refusal("the print gates ran at nozzle %s, not %g; rerun %s" % (summary.get("nozzle"), nozzle, command))
+    if summary.get("sources") != geometry_sources(proof):
+        raise Refusal("a source changed since the print gates ran; rerun %s" % command)
+    if summary.get("ok") is not True:
+        failed = sorted(role for role, item in (summary.get("print") or {}).items()
+                        if isinstance(item, dict) and item.get("verdict") != "PASS")
+        failed += sorted(role for role, item in (summary.get("build") or {}).items()
+                         if isinstance(item, dict) and item.get("verdict") != "PASS")
+        raise Refusal("the print gates failed for %s (a self-intersection in the Display Pose and a part off "
+                      "the bed are failures too); see %s" % (", ".join(sorted(set(failed))) or "a part",
+                                                            PRINT_GATES.parent))
+    specs = sorted(path.name for path in proof.glob("*_spec.md"))
+    if len(specs) != 1:
+        raise Refusal("final verification needs exactly one *_spec.md in the Proof; found %d" % len(specs))
+    absent = [name for name in AUDITS if not (proof / name).is_file()]
+    if absent:
+        raise Refusal("final verification needs the project audits %s; write them as proof-prompt's "
+                      "\"Final verification inputs\" says" % ", ".join(absent))
+    for tool in ("check_spec_format", "check_spec_numbers"):
+        code, output = run_spec_tool(proof, tool)
+        if code != 0:
+            raise Refusal("%s fails on %s: %s" % (tool, specs[0], output.strip()[-600:]))
+
+
+def run_spec_tool(proof: Path, tool: str) -> tuple[int, str]:
+    """Run one of the CAD skill's spec checks on the Proof."""
+
+    done = subprocess.run([sys.executable, str(CAD_SCRIPTS / tool), str(proof)], capture_output=True,
+                          text=True, cwd=ROOT)
+    return done.returncode, done.stdout or done.stderr
+
+
 def seal(args) -> dict:
     proof = Path(args.proof).resolve()
     contract = Path(args.contract).resolve()
@@ -154,6 +230,7 @@ def seal(args) -> dict:
     if record.get("contract_sha256") != sha256(contract):
         raise Refusal("make_round read another contract than %s" % contract)
     check_rules(proof, record)
+    check_final_inputs(proof, record["components"], args.nozzle)
 
     copied = proof / CHECKLIST
     if checklist != copied:

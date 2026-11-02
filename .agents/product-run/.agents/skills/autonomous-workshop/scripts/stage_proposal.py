@@ -2400,7 +2400,9 @@ def _validate_blind_rereads(
 
 # ADR 0096: the assembly review a seeded run carries from its Approved Proof
 # (`make_round --carry-assembly-review`) instead of spending a blind critic.
+# Schema 11 (its partial-carry amendment) adds each Component's basis.
 CARRIED_REVIEW_SCHEMA = 10
+CARRIED_REVIEW_SCHEMAS = (10, 11)
 CARRIED_REVIEWER = "the owner (Approved Proof)"
 SEED_APPROVAL = "seed-approval"
 CARRIED_REVIEW_FIELDS = frozenset({
@@ -2408,6 +2410,27 @@ CARRIED_REVIEW_FIELDS = frozenset({
     "signature_sha256", "approval_sha256", "critic_sha256", "assembly_identity", "critic_round",
     "critic_verdict", "open_lines_approved", "requirements", "print_gate_sha256s",
 })
+
+
+def _carry_basis(summary: Mapping[str, Any], approved: Mapping[str, Any]) -> Optional[str]:
+    """Kept in step with make_round's ``carry_basis`` (ADR 0096 partial
+    carry): ``exact``, ``within-tolerance``, ``component-review`` or None."""
+
+    review = summary.get("review") if isinstance(summary.get("review"), dict) else {}
+    identity = summary.get("identity")
+    if not isinstance(identity, str) or not identity:
+        return None
+    if review.get("carried_from") == SEED_APPROVAL:
+        if review.get("seed") == "exact":
+            return "exact" if identity == approved.get("identity") else None
+        return "within-tolerance" if review.get("seed") == "within-tolerance" else None
+    if (
+        review.get("agrees") is True
+        and not summary.get("accepted")
+        and summary.get("checks_ok", True) is not False
+    ):
+        return "component-review"
+    return None
 
 
 def _frozen_seed(run_root: Path) -> Optional[Mapping[str, Any]]:
@@ -2430,13 +2453,17 @@ def _validate_carried_signature_review(
     concept_sha256: str,
 ) -> None:
     """Bind a carried assembly review to the run's sealed seed: the frozen
-    approval, its critic, every Component's approved round and the assembly
-    identity. Only a seeded run whose every Component is the approved B-rep,
-    locked by the approval as exact, carries; any deviation spends the blind
-    review."""
+    approval, its critic, every Component's latest round and the assembly
+    identity. Schema 10 carries only when every Component is the approved
+    B-rep, locked by the approval as exact. Schema 11 (partial carry) also
+    carries a Component changed within proof_diff tolerance or locked by an
+    agreeing in-run Component Review, each named with its basis; anything
+    else spends the blind review."""
 
-    if set(review) != CARRIED_REVIEW_FIELDS:
-        raise ProposalError("Make carried signature review fields do not match schema 10")
+    schema = review.get("schema_version")
+    expected_fields = CARRIED_REVIEW_FIELDS | ({"components"} if schema == 11 else frozenset())
+    if schema not in CARRIED_REVIEW_SCHEMAS or set(review) != expected_fields:
+        raise ProposalError("Make carried signature review fields do not match schema %s" % schema)
     if content != canonical_json(dict(review)):
         raise ProposalError("Make signature review must use canonical JSON encoding")
     if (
@@ -2503,7 +2530,8 @@ def _validate_carried_signature_review(
         raise ProposalError(
             "Make carried signature review: the project's Components are not the approved ones"
         )
-    identities = {}
+    identities: dict[str, str] = {}
+    bases: dict[str, dict[str, Any]] = {}
     for role in built:
         rounds = project_relative / "measure/component-rounds" / role
         state, _, _ = _read_json(
@@ -2517,22 +2545,28 @@ def _validate_carried_signature_review(
             (rounds / ("r%04d" % number) / "summary.json").as_posix(),
             "Make component round summary",
         )
-        recorded = summary.get("review") if isinstance(summary.get("review"), dict) else {}
         approved_role = approved[role] if isinstance(approved[role], dict) else {}
-        if (
-            summary.get("identity") != approved_role.get("identity")
-            or recorded.get("carried_from") != SEED_APPROVAL
-            or recorded.get("seed") != "exact"
-        ):
+        basis = _carry_basis(summary, approved_role)
+        if basis is None or (schema == 10 and basis != "exact"):
             raise ProposalError(
-                "Make carried signature review: %s deviates from the Approved Proof, so "
-                "the assembly needs the blind review" % role
+                "Make carried signature review: %s deviates from the Approved Proof%s, so "
+                "the assembly needs the blind review"
+                % (role, " and no basis carries it" if schema == 11 else "")
             )
         identities[role] = summary["identity"]
+        bases[role] = {"basis": basis, "identity": summary["identity"], "round": number}
     assembly = hashlib.sha256(json.dumps(identities, sort_keys=True).encode()).hexdigest()
-    if not assembly == approval.get("assembly_identity") == review["assembly_identity"]:
+    exact = all(item["basis"] == "exact" for item in bases.values())
+    if assembly != review["assembly_identity"] or (
+        exact and assembly != approval.get("assembly_identity")
+    ):
         raise ProposalError(
             "Make carried signature review: the assembly identity is not the approved one"
+            if exact else "Make carried signature review: the assembly identity is not the built one"
+        )
+    if schema == 11 and review["components"] != bases:
+        raise ProposalError(
+            "Make carried signature review: its Component bases are not the latest rounds'"
         )
     _validate_review_print_gates(
         run_root, review=review, project_relative=project_relative
@@ -2566,7 +2600,7 @@ def _validate_signature_review(
         "Make signature review",
         maximum=MAX_SIGNATURE_REVIEW_BYTES,
     )
-    if review.get("schema_version") == CARRIED_REVIEW_SCHEMA:
+    if review.get("schema_version") in CARRIED_REVIEW_SCHEMAS:
         _validate_carried_signature_review(
             run_root,
             review=review,

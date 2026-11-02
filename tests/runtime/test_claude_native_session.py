@@ -444,7 +444,7 @@ class ClaudeNativeSessionTest(unittest.TestCase):
         # Issue #77: the evidence that binds a Component Review to its reviewer.
         script = Path("/state/make-round-guard/make_round_guard.py")
         hooks = json.loads(claude_hook_settings(script))["hooks"]
-        self.assertEqual([entry["matcher"] for entry in hooks["PreToolUse"]], ["Bash", "Read"])
+        self.assertEqual([entry["matcher"] for entry in hooks["PreToolUse"]], ["Bash", "Read", "Grep", "Glob"])
         for entry in (hooks["PreToolUse"][1], hooks["SubagentStart"][0]):
             self.assertIn(str(script), entry["hooks"][0]["command"])
 

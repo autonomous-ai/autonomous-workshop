@@ -130,7 +130,9 @@ class SeedValidationTest(unittest.TestCase):
         copy_seed(seed, self.proof, target)
         self.assertEqual(seed_manifest(target), dict(seed.files))
         self.assertEqual(hashlib.sha256((target / "APPROVAL.json").read_bytes()).hexdigest(), seed.approval_sha256)
-        self.assertFalse((target / "measure").exists())
+        self.assertFalse((target / "measure/evidence.txt").exists())
+        self.assertEqual(sorted(path.name for path in (target / "measure").iterdir()),
+                         ["check_fit.py", "check_landmarks.py", "check_spec.py"])
         self.assertEqual(validate_seed(target, ("body",), self.digest), seed)
         with self.assertRaises(ContractError):
             copy_seed(seed, self.proof, target)

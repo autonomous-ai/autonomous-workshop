@@ -113,6 +113,7 @@ from workshop.make.contract_amendments import (
     verify_contract_amendments,
 )
 from workshop.make.role_guard import (
+    boundary_refusals,
     contract_reviewer_check,
     MAKE_ROUND_GUARD_MANAGER_IDS,
     verify_component_round_nonces,
@@ -3340,6 +3341,16 @@ def _power_history(host_state_root: Path) -> list[dict[str, Any]]:
     """The circuit the current Make's acceptance checked (ADR 0095)."""
 
     return _latest_make_check(host_state_root, "power")
+
+
+def _boundary_refusals(host_state_root: Path) -> list[dict[str, Any]]:
+    """The run-boundary refusals the guard logged; an unreadable log is
+    reported as one refusal rather than hidden."""
+
+    try:
+        return boundary_refusals(host_state_root)
+    except StateConflict as exc:
+        return [{"reason": str(exc)}]
 
 
 def _seed_deviation_history(host_state_root: Path) -> list[dict[str, Any]]:
@@ -11400,6 +11411,12 @@ def _native_receipt(
         # Component the accepted Make delivered other than the approved one.
         receipt["seed"] = seed
         receipt["seed_deviations"] = _seed_deviation_history(paths.host_state)
+    if paths is not None:
+        refusals = _boundary_refusals(paths.host_state)
+        if refusals:
+            # ADR 0096 pilot (B7, B8): what the guard refused at the run
+            # boundary, reported rather than left in host state.
+            receipt["boundary_refusals"] = {"count": len(refusals), "recent": refusals[-5:]}
     if checkpoint.effort is not None:
         receipt["workflow"] = checkpoint.effort
     receipt["agent"] = checkpoint.manager_id

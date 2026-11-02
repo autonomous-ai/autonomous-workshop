@@ -259,5 +259,87 @@ class PrintGatesOnlyTest(unittest.TestCase):
         self.assertEqual(self.tools.gated(), [self.project / "part_plate.step.py"] * 3)
 
 
+class FinalCheckTools(FakeTools):
+    """FakeTools that also answers final verification's own checks."""
+
+    def __init__(self):
+        super().__init__()
+        self.reports = {}
+
+    def __call__(self, command, **kwargs):
+        tool = Path(command[1]).name
+        if tool not in ("inspect", "check_fit"):
+            return super().__call__(command, **kwargs)
+        self.calls.append((command, kwargs))
+        target = command[3] if tool == "inspect" else command[command.index("--entry") + 1]
+        role = Path(target).name.removeprefix("display_pose_").removeprefix("part_").removesuffix(".step.py")
+        stdout, code = self.reports.get((role, tool), ('{"ok":true,"parts":[],"findings":[]}\n', 0))
+        Path(kwargs["log"]).write_text(stdout, encoding="utf-8")
+        return subprocess.CompletedProcess(command, code, stdout, "")
+
+
+class FinalChecksTest(unittest.TestCase):
+    """ADR 0096 pilot B2/B3: the mode also runs final verification's own
+    checks on each Component -- validity in the Display Pose (``posed``,
+    ``inspect validate`` on ``assembly_pose(gen_step(), None)``) and the print
+    stance on the bed (``datum``, check_fit) -- so the Proof and a round see
+    what final verification refuses."""
+
+    POSED = "def gen_step(): pass\ndef assembly_pose(shape, state): return shape\n"
+    gates = PrintGatesOnlyTest.gates
+    part = PrintGatesOnlyTest.part
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.project = self.root / "proof"
+        self.project.mkdir()
+        self.tools = FinalCheckTools()
+        self.reports = self.tools.reports
+
+    def test_each_component_is_checked_posed_and_on_the_bed(self):
+        self.part("body", self.POSED)
+        self.part("eye")
+        summary, printed = self.gates(code=0)
+        self.assertEqual(summary["checks"], list(load_module().PRINT_GATES_ONLY_CHECKS))
+        self.assertEqual(summary["print"]["body"]["final"],
+                         {"posed": {"verdict": "PASS", "failures": []}, "datum": {"verdict": "PASS", "failures": []}})
+        # Only a Component with an assembly_pose has a Display Pose to check.
+        self.assertEqual(sorted(summary["print"]["eye"]["final"]), ["datum"])
+        entry = (self.project / "measure/print-gates/display_pose_body.step.py").read_text()
+        self.assertIn("assembly_pose", entry)
+        self.assertIn("part_body.step.py", entry)
+        self.assertIn("posed PASS body", printed)
+        self.assertIn("datum PASS eye", printed)
+        self.assertIn("part_body.step.py", summary["sources"])
+
+    def test_a_self_intersection_when_posed_and_a_part_below_the_bed_fail(self):
+        self.part("body", self.POSED)
+        self.part("eye")
+        self.reports[("body", "inspect")] = (json.dumps({"ok": False, "parts": [
+            {"ref": "1", "name": "body", "reasons": ["selfIntersecting"]}], "errors": []}), 1)
+        self.reports[("eye", "check_fit")] = (json.dumps({"ok": False, "findings": [
+            {"rule": "print-datum", "detail": "min(Z) is -1.400"}]}), 1)
+        summary, printed = self.gates(code=1)
+        self.assertFalse(summary["ok"])
+        self.assertEqual(summary["print"]["body"]["verdict"], "FAIL")
+        self.assertEqual(summary["print"]["body"]["final"]["posed"]["failures"],
+                         ["in the Display Pose body: selfIntersecting"])
+        self.assertEqual(summary["print"]["eye"]["final"]["datum"]["failures"], ["[print-datum] min(Z) is -1.400"])
+        self.assertIn("posed FAIL body", printed)
+        self.assertIn("datum FAIL eye", printed)
+
+    def test_a_check_that_does_not_report_fails(self):
+        self.part("body", self.POSED)
+        self.reports[("body", "inspect")] = ("Traceback: killed", -9)
+        self.reports[("body", "check_fit")] = (json.dumps({"ok": True, "status": "unverified"}), 0)
+        summary, _ = self.gates(code=1)
+        self.assertIn("posed did not report", summary["print"]["body"]["final"]["posed"]["failures"][0])
+        unverified = load_module().parse_final_check(
+            "posed", subprocess.CompletedProcess([], 0, json.dumps({"ok": True, "status": "unverified"}), ""))
+        self.assertEqual(unverified["verdict"], "FAIL")
+
+
 if __name__ == "__main__":
     unittest.main()

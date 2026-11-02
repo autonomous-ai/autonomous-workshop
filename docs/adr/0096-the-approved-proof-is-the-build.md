@@ -7,7 +7,9 @@
   deviation check (#192), build-a-toy and DETECT (#193), and the assembly
   review carried from `CRITIC.json` (`make_round --carry-assembly-review`,
   signature review schema 10, #194), and the Approved Proof copied into the
-  published archive under `wish/seed/`. The plan is
+  published archive under `wish/seed/`. Amended the same day after the
+  beaver pilot's round 0 (see "Amendment: finishing a seeded build" at the
+  end); implemented on main and not yet run live. The plan is
   [docs/plans/0096-seeded-build-plan.md](../plans/0096-seeded-build-plan.md).
   The owner decided every open question on 2026-11-02 (see "Owner
   decisions" at the end).
@@ -534,3 +536,86 @@ The owner accepted every recommendation, and decided the last question
      amendments and seed deviations (decision 2b).
    - The Approved Proof is the shape's source of truth, and the contract
      keeps what gates measure or the owner decides (decision 1c).
+
+## Amendment: finishing a seeded build (2026-11-02, beaver pilot round 0)
+
+The beaver pilot (`wish-20261102-105919-75ef53a3`) locked all nine
+Components from the seed, repaired two in the run within `proof_diff`
+tolerance, passed final verification, and then could not finish. The
+carried assembly review needed every Component exact, and the blind review
+needed visual packets that exact-locked rounds never render. The pilot's
+findings are B1-B11 in the toy's notes. This amendment changes:
+
+1. **Partial carry (B1).** `make_round --carry-assembly-review` writes
+   signature review **schema 11**. It carries the critic's assembly
+   verdict when every Component's latest round has a **carry basis**:
+   - `exact`: the approved B-rep, locked by the approval;
+   - `within-tolerance`: a change `proof_diff` found within tolerance,
+     locked by the approval;
+   - `component-review`: a change an agreeing in-run Component Review
+     locked. A Component Acceptance is not a basis.
+
+   The review records each Component's `{basis, identity, round}` as
+   `components`. Only an all-exact assembly must have the approved
+   assembly identity. The finalizer recomputes the bases from the latest
+   rounds and refuses a review whose bases differ. The host
+   (`verify_made_seed`) measures every deviation itself. It refuses a
+   carried review that leaves a deviation without a basis that covers it:
+   a deviation over tolerance needs `component-review`. So the changed
+   Components are the ones reviewed, each by its own Component Reviewer,
+   and the critic's verdict carries for the rest. Schema 10 stays valid
+   for an all-exact assembly. Generating packets for locked Components on
+   demand was rejected: it would add a round mode and a second review of
+   an approved shape.
+2. **A within-tolerance repair relocks.** When an approval-locked
+   Component is unlocked and its repair stays within tolerance under the
+   same rows, the round locks on the approval again, with its diff. A
+   repair over tolerance waits for its Component Review as before.
+3. **Unlock for a check (B6).** `--record-unlock` also accepts
+   `{"assembly_round", "verification": {"log", "quote"}, "reason"}`. The
+   quote is the check's own words, verbatim from a regular file under
+   `measure/`, and it names the Component. The record binds the log's
+   sha256. A self-intersection or a part below the bed no longer has to
+   pass as a visual finding.
+4. **The Proof gates what final verification refuses (B2, B3).**
+   `make_round --print-gates-only` also runs two checks. `posed` runs
+   `inspect validate` on `assembly_pose(gen_step(), None)` for every
+   Component that defines it. `datum` runs `check_fit` on each non-kit
+   Component's print stance: min Z at 0, inside the bed. Its summary
+   records `checks` and the Geometry Source hashes. `seal_proof.py seal`
+   refuses without a passing summary of every Component that:
+   - ran at the sealed nozzle;
+   - covers all six checks;
+   - is current with the sources.
+5. **The Proof writes final verification's inputs (B4, B5).** The Proof
+   subagent writes the `*_spec.md`, `measure/check_spec.py`,
+   `measure/check_landmarks.py` and `measure/check_fit.py`, as Make
+   would. `seal_proof` refuses a Proof without exactly one spec that
+   passes `check_spec_format` and `check_spec_numbers`, or without the
+   three audits. The seed manifest carries the three audits, though it
+   excludes the rest of `measure/`. The host does not generate them: a
+   spec is the toy's own numbers, and only the Proof knows them.
+6. **The run boundary (B7, B8).** The host writes `boundary.json` beside
+   the make_round guard: the Workshop source checkout is forbidden and
+   the interpreter prefix is allowed. The run root is always allowed. On
+   Claude Code the guard also sees Grep and Glob. It denies a Bash
+   command that installs a Python, a package or a toolchain from the
+   network, and a command or file tool that names a checkout path
+   outside the allowed trees. It logs each refusal. The receipt reports
+   `boundary_refusals` and the CLI prints them. The guard and its
+   boundary are sealed host state, so only new runs get them; a run
+   sealed before has no boundary and refuses nothing new.
+7. **A killed verifier is reported and resumable (B7).** A `--full`
+   verifier ended by a signal records `killed_by` and a detail that says
+   no gate failed. A SIGKILL is most often the machine's out-of-memory
+   killer. Repeating the same `--record-visual FEEDBACK --full` on that
+   round reruns only the verifier, and `full.reruns` records the earlier
+   run. The packet and the feedback must be unchanged. Workshop does not
+   tune the machine.
+
+These changes apply to new runs and to a resumed run whose tools are
+refreshed (`workshop resume --refresh-tools`). The host checks of item 1
+are host code and always current. Frozen runs keep their sealed guard.
+B9 (STEP bytes not reproducible) and B10 (a build-a-toy name line not
+applied) are tracked as issues.
+

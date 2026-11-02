@@ -2,20 +2,27 @@
 
 Contract:
 - `make_round --carry-assembly-review` composes `snap/SIGNATURE-REVIEW.json`
-  schema 10 from the sealed `CRITIC.json` only when every Component's latest
-  round is the approved B-rep locked by the approval as exact, the assembly
-  identity is the approved one and the critic agreed (or the owner approved
-  its open lines). It refuses a critic that is not the sealed one, a critic
+  schema 11 from the sealed `CRITIC.json` only when the critic agreed (or the
+  owner approved its open lines) and every Component's latest round has a
+  carry basis: the approved B-rep locked as exact, a change within
+  `proof_diff` tolerance locked by the approval, or a change an agreeing
+  in-run Component Review locked (the partial carry). When every basis is
+  exact the assembly identity must be the approved one. It records each
+  Component's basis, identity and round. It refuses an unlocked or
+  disagreeing Component, a Component Acceptance, a critic that is not the sealed one, a critic
   that disagreed with no approved open lines, a deviation, a Component the
   approval does not hold, a missing snap image and a bad concept hash; it
   applies only in a seeded run, takes no round options and is root-only.
-- `verify_project` accepts the schema 10 shape and refuses a wrong field set,
+- `verify_project` accepts the schema 10 and 11 shapes, refuses a bad basis and refuses a wrong field set,
   identity, an unapproved disagreement and stale images.
 - The finalizer binds it to the frozen seed and refuses it in an unseeded
-  run, against another approval, after a deviation, with edited verdicts or
-  another concept.
+  run, against another approval, after a deviation with no basis, against
+  bases that are not the latest rounds', with edited verdicts or another
+  concept.
 - A carried review needs the motion judged by its own independent critic.
-- The host check refuses a carried assembly review when a Component deviated.
+- The host check refuses a carried assembly review whose bases do not cover
+  a deviation it measured: within tolerance needs `within-tolerance` or
+  `component-review`, over tolerance needs `component-review`.
 - Unseeded and frozen runs keep the blind review: schemas 8 and 9 are
   validated as before by the existing tests."""
 
@@ -101,8 +108,21 @@ class _SeededProject:
         (rounds / ("r%04d" % number)).mkdir(parents=True, exist_ok=True)
         (rounds / "make-round-state.json").write_text(json.dumps({"round": number}), encoding="utf-8")
         review = {"agrees": True, "carried_from": "seed-approval", "seed": seed} if seed else None
-        (rounds / ("r%04d" % number) / "summary.json").write_text(
-            json.dumps({"identity": identity, "review": review}), encoding="utf-8")
+        self.summary(role, number, {"identity": identity, "review": review})
+
+    def reviewed(self, role, identity, number, *, agrees=True, accepted=False):
+        """An in-run Component Review of a repaired Component (ADR 0077)."""
+        summary = {"identity": identity, "checks_ok": True,
+                   "review": {"reviewer": "agent-1", "agrees": agrees, "reason": "r", "round": number}}
+        if accepted:
+            summary["accepted"] = {"reviewer": "agent-1", "reason": "r", "shape_rounds": 5}
+        self.summary(role, number, summary)
+
+    def summary(self, role, number, summary):
+        rounds = self.project / "measure/component-rounds" / role
+        (rounds / ("r%04d" % number)).mkdir(parents=True, exist_ok=True)
+        (rounds / "make-round-state.json").write_text(json.dumps({"round": number}), encoding="utf-8")
+        (rounds / ("r%04d" % number) / "summary.json").write_text(json.dumps(summary), encoding="utf-8")
 
     def critic_bytes(self):
         return (self.run / "seed/CRITIC.json").read_bytes()
@@ -124,7 +144,9 @@ class CarryComposerTest(unittest.TestCase):
         (seeded.project / "measure/thickness-body.md").write_text("t", encoding="utf-8")
         (seeded.project / "measure/overhang-body.md").write_text("o", encoding="utf-8")
         review = self._compose(seeded)
-        self.assertEqual(review["schema_version"], 10)
+        self.assertEqual(review["schema_version"], 11)
+        self.assertEqual(review["components"], {role: {"basis": "exact", "identity": identity, "round": 1}
+                                                for role, identity in IDENTITIES.items()})
         self.assertEqual((review["carried_from"], review["reviewer"]), ("seed-approval", "the owner (Approved Proof)"))
         self.assertEqual(review["assembly_identity"], seeded.approval["assembly_identity"])
         self.assertEqual(review["approval_sha256"], seeded.approval_sha256)
@@ -156,8 +178,10 @@ class CarryComposerTest(unittest.TestCase):
             "not the critic the approval sealed": lambda s: s.approval["critic"].update(sha256="0" * 64),
             "did not agree": disagreed,
             "left a requirement with differences": row_differs,
-            "not the approved Component": lambda s: s.round("lid", "C" * 64, seed="within-tolerance"),
+            "lid's latest round is neither": lambda s: s.round("lid", "C" * 64, seed="exact"),
             "locked by the approval as exact": lambda s: s.round("lid", IDENTITIES["lid"], seed=None),
+            "an agreeing Component": lambda s: s.reviewed("lid", "C" * 64, 2, agrees=False),
+            "Component Review locked": lambda s: s.reviewed("lid", "C" * 64, 2, accepted=True),
             "Components are not the approved ones": lambda s: (s.project / "part_extra.step.py").write_text("x"),
             "assembly identity": lambda s: s.approval.update(assembly_identity="0" * 64),
             "snap/signature.png": lambda s: (s.project / "snap/signature.png").unlink(),
@@ -172,6 +196,22 @@ class CarryComposerTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "concept hash"):
             self.m.assembly_carry_review(seeded.project, seeded.approval, seeded.approval_sha256,
                                          seeded.critic_bytes(), "nope")
+
+    def test_a_partial_carry_records_each_changed_basis(self):
+        # B1: the beaver's deadlock -- body repaired in-run under its own
+        # Component Review, lid repaired within tolerance; the rest exact.
+        seeded = _SeededProject(self.base)
+        seeded.round("lid", "C" * 64, seed="within-tolerance", number=2)
+        seeded.reviewed("body", "D" * 64, 3)
+        review = self._compose(seeded)
+        self.assertEqual(review["components"], {
+            "body": {"basis": "component-review", "identity": "D" * 64, "round": 3},
+            "lid": {"basis": "within-tolerance", "identity": "C" * 64, "round": 2}})
+        self.assertEqual(review["assembly_identity"], _assembly({"body": "D" * 64, "lid": "C" * 64}))
+        self.assertNotEqual(review["assembly_identity"], seeded.approval["assembly_identity"])
+        # The assembly identity binds only an all-exact assembly to the approval.
+        seeded.approval["assembly_identity"] = "0" * 64
+        self.assertEqual(self._compose(seeded)["components"]["lid"]["basis"], "within-tolerance")
 
     def test_the_mode_takes_only_its_options_and_needs_a_seeded_run(self):
         project = self.base / "cad"
@@ -219,6 +259,10 @@ class VerifierShapeTest(unittest.TestCase):
     def test_a_carried_review_passes_the_preflight(self):
         self._review()
         self.verifier["_required_signature_review"](self.project)
+        self._review(schema_version=11, components={
+            "body": {"basis": "component-review", "identity": "d" * 64, "round": 3},
+            "lid": {"basis": "exact", "identity": "e" * 64, "round": 1}})
+        self.verifier["_required_signature_review"](self.project)
         self._review(critic_verdict="differences", open_lines_approved=True,
                      requirements=[{"id": "R1", "verdict": "differences", "note": "open"}])
         self.verifier["_required_signature_review"](self.project)
@@ -226,6 +270,7 @@ class VerifierShapeTest(unittest.TestCase):
     def test_refusals(self):
         cases = {
             "do not match schema 10": dict(blind_held_read="x"),
+            "do not match schema 11": dict(schema_version=11),
             "identity is invalid": dict(carried_from="r0003"),
             "critic that agreed": dict(critic_verdict="differences"),
             "requirement with differences": dict(requirements=[{"id": "R1", "verdict": "differences", "note": ""}]),
@@ -237,6 +282,18 @@ class VerifierShapeTest(unittest.TestCase):
                 self._review(**changes)
                 with self.assertRaisesRegex(ValueError, fragment):
                     self.verifier["_required_signature_review"](self.project)
+
+    def test_schema_11_refuses_a_bad_basis(self):
+        good = {"basis": "exact", "identity": "e" * 64, "round": 1}
+        for name, entry in {"basis": dict(good, basis="owner-said-so"), "identity": dict(good, identity=""),
+                            "round": dict(good, round=0), "fields": dict(good, extra=1)}.items():
+            with self.subTest(name):
+                self._review(schema_version=11, components={"body": entry})
+                with self.assertRaises(ValueError):
+                    self.verifier["_required_signature_review"](self.project)
+        self._review(schema_version=11, components={})
+        with self.assertRaises(ValueError):
+            self.verifier["_required_signature_review"](self.project)
 
 
 class FinalizerBindingTest(unittest.TestCase):
@@ -262,6 +319,12 @@ class FinalizerBindingTest(unittest.TestCase):
     def test_the_composed_review_binds_to_the_seed(self):
         self._check(_SeededProject(self.base / "ok"))
 
+    def test_a_partial_carry_binds_to_the_seed(self):
+        seeded = _SeededProject(self.base / "partial")
+        seeded.round("lid", "C" * 64, seed="within-tolerance", number=2)
+        seeded.reviewed("body", "D" * 64, 3)
+        self._check(seeded)
+
     def test_refusals(self):
         def composed(seeded):
             return self.m.assembly_carry_review(seeded.project, seeded.approval, seeded.approval_sha256,
@@ -283,7 +346,28 @@ class FinalizerBindingTest(unittest.TestCase):
         seeded = _SeededProject(self.base / "deviation")
         review = composed(seeded)
         seeded.round("lid", "C" * 64, seed="within-tolerance", number=2)
+        with self.assertRaisesRegex(self.tool.ProposalError, "assembly identity|not the latest rounds"):
+            self._check(seeded, review)
+
+        seeded = _SeededProject(self.base / "unreviewed")
+        review = composed(seeded)
+        seeded.reviewed("lid", "C" * 64, 2, agrees=False)
         with self.assertRaisesRegex(self.tool.ProposalError, "lid deviates from the Approved Proof"):
+            self._check(seeded, review)
+
+        seeded = _SeededProject(self.base / "schema10")
+        seeded.reviewed("lid", "C" * 64, 2)
+        review = composed(seeded)
+        review.pop("components")
+        review["schema_version"] = 10
+        with self.assertRaisesRegex(self.tool.ProposalError, "lid deviates from the Approved Proof"):
+            self._check(seeded, review)
+
+        seeded = _SeededProject(self.base / "bases")
+        seeded.reviewed("lid", "C" * 64, 2)
+        review = composed(seeded)
+        review["components"]["lid"]["basis"] = "within-tolerance"
+        with self.assertRaisesRegex(self.tool.ProposalError, "not the latest rounds"):
             self._check(seeded, review)
 
         seeded = _SeededProject(self.base / "edited")
@@ -349,9 +433,36 @@ class MotionAndHostTest(unittest.TestCase):
             return {"passed": True, "parts": [], "missing": [], "extra": []}
 
         self.assertEqual(len(verify_made_seed(project, run, approved, compare=compare)), 1)
-        (project / "snap/SIGNATURE-REVIEW.json").write_text(json.dumps({"carried_from": "seed-approval"}))
+        signature = project / "snap/SIGNATURE-REVIEW.json"
+        signature.write_text(json.dumps({"carried_from": "seed-approval"}))
         with self.assertRaisesRegex(ContractError, "carried from the Approved Proof, but body deviated"):
             verify_made_seed(project, run, approved, compare=compare)
+
+        def carried(basis):
+            signature.write_text(json.dumps({"schema_version": 11, "carried_from": "seed-approval",
+                                             "components": {"body": {"basis": basis, "identity": "B",
+                                                                     "round": 1}}}))
+
+        for basis in ("within-tolerance", "component-review"):
+            carried(basis)
+            self.assertEqual(len(verify_made_seed(project, run, approved, compare=compare)), 1)
+        carried("exact")
+        with self.assertRaisesRegex(ContractError, "body deviated with no basis"):
+            verify_made_seed(project, run, approved, compare=compare)
+
+        # Over tolerance, only the Component's own review carries it.
+        (rounds / "summary.json").write_text(json.dumps(
+            {"identity": "B", "review": {"agrees": True, "reviewer": "agent-1", "round": 1}}))
+
+        def over(approved_step, built):
+            return {"passed": False, "parts": [], "missing": [], "extra": []}
+
+        carried("within-tolerance")
+        with self.assertRaisesRegex(ContractError, "body deviated with no basis"):
+            verify_made_seed(project, run, approved, compare=over)
+        carried("component-review")
+        [deviation] = verify_made_seed(project, run, approved, compare=over)
+        self.assertEqual((deviation["within_tolerance"], deviation["locked_by"]), (False, "component-review"))
 
 
 if __name__ == "__main__":

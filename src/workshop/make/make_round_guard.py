@@ -26,9 +26,9 @@ Review to its reviewer (ADR 0081, issue #77). It is registered for ``Read``
 and ``SubagentStart`` as well: every subagent the runtime starts is appended
 to the subagent log, and every ``Read`` by a ``component-reviewer`` or a
 ``contract-reviewer`` (ADR 0085) is appended to the reviewer read log with
-the agent id, the resolved path and the sha256 of the bytes it read. A
-``Read`` is never denied. The host checks each recorded review against both
-logs.
+the agent id, the resolved path and the sha256 of the bytes it read. The
+evidence never denies a ``Read``; only the run boundary below does. The host
+checks each recorded review against both logs.
 
 Contract Amendments (ADR 0085): ``--propose-amendment`` and
 ``--record-amendment-review`` are the root's; ``--contract-amendments`` only
@@ -55,6 +55,17 @@ call (issue #113): it is refused when it holds a heredoc, cannot be parsed,
 or parses to no call while doing more than read the script (``sed``,
 ``grep``, ``cat`` and the like). make_round itself refuses a component round
 without a nonce in a guarded run.
+
+The run boundary (ADR 0096 pilot, B7 and B8): the host writes
+``boundary.json`` beside this script, naming the Workshop source checkout the
+host runs from (when it runs from one) and the interpreter prefix the run may
+use. The hook refuses, for the root and every subagent alike, a command or a
+file tool path that reaches into that checkout other than through the
+interpreter prefix or the run root, and a command that installs a Python, a
+package or a toolchain from the network. Each refusal is appended to
+``boundary-refusals.jsonl`` beside this script, which the host reports in
+``workshop status``. Without ``boundary.json`` (a run installed before it)
+only the install refusal applies.
 
 The hook decides who may run make_round, not who may spawn whom. It runs as a
 standalone script with the standard library only; it makes no model call.
@@ -125,6 +136,105 @@ _UNSEEN = (
 )
 
 Issuer = Callable[[Mapping[str, Any], str], str]
+
+BOUNDARY_NAME = "boundary.json"
+BOUNDARY_LOG_NAME = "boundary-refusals.jsonl"
+MAX_BOUNDARY_LOG_BYTES = 1024 * 1024
+_PATH_KEYS = ("file_path", "path", "notebook_path")
+# A Python, a package or a toolchain fetched from the network: the run's
+# tools are the ones it was sealed with.
+_NETWORK_INSTALL = re.compile(
+    r"(?:^|[\s;&|()`])(?:"
+    r"uv\s+(?:python\s+install|pip\s+install|tool\s+install|add|sync)"
+    r"|pip[0-9.]*\s+install|python[0-9.]*\s+-m\s+(?:pip\s+install|ensurepip)"
+    r"|conda\s+(?:install|create)|mamba\s+(?:install|create)|micromamba\s+(?:install|create)"
+    r"|pipx\s+(?:install|run)|uvx\s|curl\s[^|]*\|\s*(?:ba|z)?sh|wget\s[^|]*\|\s*(?:ba|z)?sh"
+    r")"
+)
+_PATH_CHARS = re.compile(r"[^\s'\"`;|&()<>]*")
+
+
+def _boundary(directory: Path) -> Mapping[str, Any]:
+    """The host's boundary record beside this script, or {} without one."""
+
+    try:
+        value = json.loads((directory / BOUNDARY_NAME).read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def _within(path: str, roots) -> bool:
+    return any(path == root or path.startswith(root.rstrip("/") + "/") for root in roots if root)
+
+
+def _outside(path: str, forbidden, allowed) -> bool:
+    """Whether ``path`` lies in a forbidden tree and in no allowed one."""
+
+    normal = os.path.normpath(path)
+    return _within(normal, forbidden) and not _within(normal, allowed)
+
+
+def boundary_refusal(event: Mapping[str, Any], boundary: Mapping[str, Any]) -> Optional[str]:
+    """Why one tool call crosses the run boundary, or None."""
+
+    if event.get("hook_event_name") not in (None, "PreToolUse"):
+        return None
+    tool_input = event.get("tool_input")
+    if not isinstance(tool_input, Mapping):
+        return None
+    forbidden = [str(root) for root in boundary.get("forbidden") or () if isinstance(root, str) and root]
+    allowed = [str(root) for root in boundary.get("allowed") or () if isinstance(root, str) and root]
+    run_root = _event_run_root(event)
+    if run_root is not None:
+        allowed.append(str(run_root))
+    home = os.path.expanduser("~")
+    command = next((tool_input[key] for key in _COMMAND_KEYS if isinstance(tool_input.get(key), str)), None)
+    if command is not None:
+        if _NETWORK_INSTALL.search(command):
+            return ("the run's tools are the ones it was sealed with; never install a Python, a package or a "
+                    "toolchain from the network")
+        text = re.sub(r"(?:(?<=[\s=:'\"])|^)(?:~|\$HOME|\$\{HOME\})(?=/)", home, command)
+        for root in forbidden:
+            for match in re.finditer(re.escape(root.rstrip("/")), text):
+                path = match.group(0) + _PATH_CHARS.match(text, match.end()).group(0)
+                if _outside(path, forbidden, allowed):
+                    return ("work only inside the run root; the Workshop source checkout %s is outside it"
+                            % root)
+        return None
+    for key in _PATH_KEYS:
+        value = tool_input.get(key)
+        if isinstance(value, str) and value:
+            cwd = event.get("cwd") if isinstance(event.get("cwd"), str) else ""
+            path = os.path.join(cwd, os.path.expanduser(value))
+            if _outside(path, forbidden, allowed):
+                return ("work only inside the run root; the Workshop source checkout %s is outside it"
+                        % next(root for root in forbidden if _within(os.path.normpath(path), [root])))
+    return None
+
+
+def boundary_record(event: Mapping[str, Any], reason: str) -> dict[str, Any]:
+    tool_input = event.get("tool_input") if isinstance(event.get("tool_input"), Mapping) else {}
+    attempted = next((tool_input[key] for key in (*_COMMAND_KEYS, *_PATH_KEYS)
+                      if isinstance(tool_input.get(key), str)), "")
+    return {
+        "tool": event.get("tool_name"),
+        "agent_type": event.get("agent_type"),
+        "agent_id": event.get("agent_id"),
+        "session_id": event.get("session_id"),
+        "attempted": attempted[:500],
+        "reason": reason,
+    }
+
+
+def _boundary_deny(reason: str) -> dict[str, Any]:
+    return {
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": "Workshop run boundary: " + reason,
+        }
+    }
 
 
 def _segments(command: str) -> list[list[str]]:
@@ -693,6 +803,16 @@ def main() -> int:
     stop = turn_end(event)
     if stop is not None:
         print(json.dumps(stop))
+        return 0
+    refusal = boundary_refusal(event, _boundary(directory))
+    if refusal is not None:
+        try:
+            log = directory / BOUNDARY_LOG_NAME
+            if not log.exists() or log.stat().st_size < MAX_BOUNDARY_LOG_BYTES:
+                _append(log, boundary_record(event, refusal))
+        except OSError:
+            pass
+        print(json.dumps(_boundary_deny(refusal)))
         return 0
     # Evidence only: a spawn or a read is never refused, and a record that
     # cannot be written is missing at the host's check instead.

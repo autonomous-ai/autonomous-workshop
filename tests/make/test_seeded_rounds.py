@@ -8,7 +8,9 @@ Contract:
   `carried_from: "seed-approval"`. A failed round, a deviation over (or not
   measured against) tolerance, rows that differ and a Component a reviewer
   disagreed with are not locked by the seed. A Shared Helper change after a
-  seed lock unlocks it as after any review.
+  seed lock unlocks it as after any review. An unlocked seed-locked
+  Component whose repair stays within tolerance under the same rows locks
+  on the approval again; one over tolerance waits for its review.
 - The guard hook issues the root of a seeded run a `--seed-nonce` for a
   component round, a worker a `--worker-nonce` as before, and denies the
   root of an unseeded run and a caller-supplied seed nonce.
@@ -94,6 +96,27 @@ class SeedPolicyTest(unittest.TestCase):
         self.assertTrue(outcome["admit"])
         self.assertEqual(outcome["unlocks"], [{"kind": "shared-helper", "paths": ["features/joints.py"]}])
         self.assertEqual(outcome["state"]["phase"], self.m.AWAITING)
+
+    def test_an_unlocked_seed_component_repaired_within_tolerance_relocks_on_the_approval(self):
+        # ADR 0096 pilot B1: a repair the assembly unlock admitted that stays
+        # within proof_diff tolerance needs no Component Review.
+        locked = self._round()["state"]
+        unlocked = dict(locked, unlocks=[{"kind": "verification", "assembly_round": 4}])
+        diff = {"passed": True, "parts": []}
+        outcome = self._round(unlocked, identity="C", carry_key="kC", round=2,
+                              seed=dict(SEED, within=True, diff=diff))
+        self.assertTrue(outcome["admit"])
+        self.assertFalse(outcome["shape_round"])
+        self.assertEqual(outcome["state"]["phase"], self.m.LOCKED)
+        self.assertEqual(outcome["state"]["unlocks"], [])
+        self.assertEqual((outcome["carried"]["review"]["seed"], outcome["carried"]["seed_diff"]),
+                         ("within-tolerance", diff))
+        # Over tolerance, or a lock no approval made, it waits for its review.
+        over = self._round(unlocked, identity="C", carry_key="kC", round=2, seed=dict(SEED, within=False))
+        self.assertEqual((over["carried"], over["state"]["phase"]), (None, self.m.AWAITING))
+        reviewed = dict(unlocked, reviewed=dict(locked["reviewed"], carried_from=None))
+        review = self._round(reviewed, identity="C", carry_key="kC", round=2, seed=dict(SEED, within=True))
+        self.assertEqual((review["carried"], review["state"]["phase"]), (None, self.m.AWAITING))
 
     def test_a_locked_seed_component_refuses_a_change(self):
         locked = self._round()["state"]

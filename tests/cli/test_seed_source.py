@@ -91,6 +91,21 @@ class SeedSourceTest(unittest.TestCase):
         self.assertIn("Seed: the Approved Proof approved by owner on 2026-11-02 (approval aaaaaaaaaaaa)",
                       stdout.getvalue())
 
+    def test_the_receipt_prints_run_boundary_refusals(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        from cli.main import _print_native_receipt
+        from tests.cli.test_cli import native_receipt
+
+        stdout = StringIO()
+        with redirect_stdout(stdout):
+            _print_native_receipt({**native_receipt(status="waiting", stage="make"), "boundary_refusals": {
+                "count": 2, "recent": [{"reason": "never install"}, {"reason": "work only inside the run root"}]}},
+                verb="Run")
+        self.assertIn("Run boundary: 2 attempt(s) refused; latest: work only inside the run root",
+                      stdout.getvalue())
+
     def test_a_seed_for_another_contract_is_refused(self):
         self.contract.write_text(self.contract.read_text() + "\nchanged\n")
         with self.assertRaisesRegex(ContractError, "sealed for another contract"):

@@ -245,14 +245,18 @@ SIGNATURE_REVIEW_FIELDS_V9_REVIEWED_GEOMETRY = SIGNATURE_REVIEW_FIELDS_V9 | {"ge
 GEOMETRY_PACKET_VIEWS = ("sheet",)
 BLIND_REREAD_IMAGES = ("iso", "signature")
 # Schema 10 (Workshop ADR 0096): the assembly review a seeded run carries
-# from its Approved Proof instead of spending a blind critic.
+# from its Approved Proof instead of spending a blind critic. Schema 11 (its
+# partial-carry amendment) adds each Component's basis: exact, within
+# proof_diff tolerance, or changed and locked by an agreeing Component Review.
 CARRIED_REVIEW_SCHEMA = 10
+CARRIED_REVIEW_SCHEMAS = (10, 11)
 CARRIED_REVIEWER = "the owner (Approved Proof)"
 CARRIED_REVIEW_FIELDS = {
     "schema_version", "kind", "carried_from", "reviewer", "concept_sha256", "iso_sha256",
     "signature_sha256", "approval_sha256", "critic_sha256", "assembly_identity", "critic_round",
     "critic_verdict", "open_lines_approved", "requirements", "print_gate_sha256s",
 }
+CARRY_BASES = ("exact", "within-tolerance", "component-review")
 SHA256_TEXT = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -326,7 +330,7 @@ def _required_signature_review(project: Path) -> str:
     if content != canonical or not isinstance(review, dict):
         raise ValueError("signature review must use canonical JSON encoding")
     schema_version = review.get("schema_version")
-    if schema_version == CARRIED_REVIEW_SCHEMA:
+    if schema_version in CARRIED_REVIEW_SCHEMAS:
         _carried_signature_review(review)
         return _bound_review_evidence(review, review_path, content)
     if schema_version == 9:
@@ -554,8 +558,19 @@ def _carried_signature_review(review: dict) -> None:
     critic, every Component's approved round and the assembly identity, and
     refuses it outside a seeded run."""
 
-    if set(review) != CARRIED_REVIEW_FIELDS:
-        raise ValueError("signature review fields do not match schema 10")
+    schema = review.get("schema_version")
+    if set(review) != (CARRIED_REVIEW_FIELDS | ({"components"} if schema == 11 else set())):
+        raise ValueError(f"signature review fields do not match schema {schema}")
+    if schema == 11:
+        components = review.get("components")
+        if not isinstance(components, dict) or not components or any(
+                not isinstance(role, str) or not isinstance(item, dict)
+                or set(item) != {"basis", "identity", "round"}
+                or item.get("basis") not in CARRY_BASES
+                or not isinstance(item.get("identity"), str) or not item["identity"]
+                or type(item.get("round")) is not int or item["round"] < 1
+                for role, item in components.items()):
+            raise ValueError("signature review components are invalid")
     if (review.get("kind") != SIGNATURE_REVIEW_KIND or review.get("carried_from") != "seed-approval"
             or review.get("reviewer") != CARRIED_REVIEWER):
         raise ValueError("signature review identity is invalid")
