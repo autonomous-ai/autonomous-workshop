@@ -160,12 +160,14 @@ contract and its images would compute, with no ruling or amendment. It
 reviews nothing and gates nothing. design-a-toy's seal_proof records the
 Approved Proof with it (ADR 0096).
 --carry-assembly-review --concept-sha256 HEX, in a run seeded from an
-Approved Proof whose every Component's latest round is the approved B-rep
-locked by the approval as exact, writes snap/SIGNATURE-REVIEW.json schema 10
-carried from the sealed seed/CRITIC.json: the critic's verdict and
-requirement verdicts the owner approved, bound to the approval, the assembly
-identity, the snap images and the print gate reports. Any deviation exits 1:
-the run spends the blind review as before (ADR 0096).
+Approved Proof, writes snap/SIGNATURE-REVIEW.json schema 11 carried from the
+sealed seed/CRITIC.json: the critic's verdict and requirement verdicts the
+owner approved, bound to the approval, the assembly identity, the snap images
+and the print gate reports, and each Component's basis. Every Component's
+latest round must be the approved B-rep locked as exact, a change within
+proof_diff tolerance, or a change an agreeing Component Review locked (the
+partial carry); anything else exits 1 and the run spends the blind review
+(ADR 0096).
 This tool makes no model calls.
 
 Exit 0: all checks and the recorded (or carried) review passed. Exit 1:
@@ -581,6 +583,8 @@ def record_visual(project, feedback_path, full=False, component=None, check_moti
     summary = json.loads(summary_path.read_text())
     visual = summary["visual"]
     if visual["status"] != "pending":
+        if full and killed_detail((summary.get("full") or {}).get("returncode")) is not None:
+            return rerun_killed_full(project, out, summary, summary_path, visual, feedback_path, check_motion)
         raise ValueError("visual feedback is only accepted once for a pending round")
     stale = packet_error(visual, project)
     if stale is not None:
@@ -614,29 +618,84 @@ def record_visual(project, feedback_path, full=False, component=None, check_moti
     if full:
         if not summary["ok"]:
             raise ValueError("final verification requires a clean round and visual pass")
-        cad = skills_root() / "cad" / "scripts"
-        # The final verifier independently requires the separate blind review.
-        command = [sys.executable, str(cad / "verify_project"), str(project),
-                   "--strict-fit", "--print-gates", "--nozzle", str(summary.get("nozzle", 0.4)),
-                   "--report", str(project / "measure/verification-pipeline.md")]
-        motion_option = summary.get("check_motion") if check_motion is None else check_motion
-        if motion_option is not None:
-            command += ["--check-motion", str(motion_option).lower()]
-        image_derived = bool(summary["refs"] or summary.get("sealed"))
-        if image_derived:
-            command.append("--image-derived")
-        command += power_options(project, image_derived)
-        done = run(command, cwd=project, log=out / "verify.log", timeout=FULL_TIMEOUT_SECONDS)
-        summary["full"] = {"ok": done.returncode == 0, "returncode": done.returncode, "tail": tail(done.stdout or done.stderr)}
-        summary["ok"] = done.returncode == 0
-        report = project / "measure/geometry-inspection.json"
-        if report.is_file() and json.loads(report.read_bytes()).get("status") == "unverified":
-            summary["geometry_status"] = "unverified"
-            summary["print_ready_claim"] = False
-            summary["full"]["status"] = "unverified"
+        run_full(project, out, summary, check_motion)
     (out / "visual-feedback.json").write_text(json.dumps(feedback, sort_keys=True, indent=2) + "\n")
     summary_path.write_text(json.dumps(summary, sort_keys=True, indent=1) + "\n")
     return summary
+
+
+def run_full(project: Path, out: Path, summary: dict, check_motion=None) -> None:
+    """Run the final verifier for a clean, visually passed assembly round
+    and record its result in ``summary``."""
+
+    cad = skills_root() / "cad" / "scripts"
+    # The final verifier independently requires the separate blind review.
+    command = [sys.executable, str(cad / "verify_project"), str(project),
+               "--strict-fit", "--print-gates", "--nozzle", str(summary.get("nozzle", 0.4)),
+               "--report", str(project / "measure/verification-pipeline.md")]
+    motion_option = summary.get("check_motion") if check_motion is None else check_motion
+    if motion_option is not None:
+        command += ["--check-motion", str(motion_option).lower()]
+    image_derived = bool(summary["refs"] or summary.get("sealed"))
+    if image_derived:
+        command.append("--image-derived")
+    command += power_options(project, image_derived)
+    done = run(command, cwd=project, log=out / "verify.log", timeout=FULL_TIMEOUT_SECONDS)
+    summary["full"] = {"ok": done.returncode == 0, "returncode": done.returncode, "tail": tail(done.stdout or done.stderr)}
+    killed = killed_detail(done.returncode)
+    if killed is not None:
+        summary["full"].update(killed)
+    summary["ok"] = done.returncode == 0
+    report = project / "measure/geometry-inspection.json"
+    if report.is_file() and json.loads(report.read_bytes()).get("status") == "unverified":
+        summary["geometry_status"] = "unverified"
+        summary["print_ready_claim"] = False
+        summary["full"]["status"] = "unverified"
+
+
+def rerun_killed_full(project: Path, out: Path, summary: dict, summary_path: Path, visual: dict,
+                      feedback_path, check_motion=None) -> dict:
+    """Run the final verifier again on the same assembly round when its last
+    run was killed by a signal (ADR 0096 pilot, B7): nothing about the round
+    changed and no gate failed, so the recorded feedback stands. The same
+    feedback must be given, the packet must be unchanged and the round must
+    have passed its checks and the visual review."""
+
+    stale = packet_error(visual, project)
+    if stale is not None:
+        raise ValueError("the round changed since its final verification was killed (%s); run a new assembly round"
+                         % stale)
+    recorded = json.loads((out / "visual-feedback.json").read_text(encoding="utf-8"))
+    if json.loads(Path(feedback_path).read_text(encoding="utf-8")) != recorded:
+        raise ValueError("a killed final verification reruns only with the feedback this round recorded")
+    if not summary.get("checks_ok") or visual.get("status") != "pass":
+        raise ValueError("final verification requires a clean round and visual pass")
+    previous = summary["full"]
+    run_full(project, out, summary, check_motion)
+    summary["full"]["reruns"] = [*(previous.get("reruns") or []),
+                                 {"returncode": previous["returncode"], "killed_by": previous.get("killed_by")}]
+    summary_path.write_text(json.dumps(summary, sort_keys=True, indent=1) + "\n")
+    return summary
+
+
+def killed_detail(returncode: int) -> dict | None:
+    """What a final verification ended by a signal means (ADR 0096 pilot,
+    B7): no gate failed; the process was stopped from outside, most often a
+    SIGKILL from the machine's out-of-memory killer. None for a normal exit."""
+
+    if type(returncode) is not int or returncode >= 0:
+        return None
+    number = -returncode
+    try:
+        name = signal.Signals(number).name
+    except ValueError:
+        name = "signal %d" % number
+    return {"killed_by": name,
+            "detail": ("verify_project was killed by %s before it finished: no gate failed, the process was "
+                       "stopped from outside (a SIGKILL is most often the machine's out-of-memory killer). "
+                       "Rerun the same --record-visual FEEDBACK --full on this round when the machine has memory free; it "
+                       "reruns only the verifier. Do not change the model or install another toolchain for it"
+                       % name)}
 
 
 def check_verdicts(record: dict, visual: dict, passing: bool, what: str) -> None:
@@ -1845,6 +1904,8 @@ def render_summary(summary: dict) -> str:
         lines.append("  move  %-4s %s" % (motion["verdict"].upper()[:4], motion["detail"][:90]))
     if summary.get("full") is not None:
         lines.append("  full  %-4s verify_project exit %s  %s" % ("ok" if summary["full"]["ok"] else "FAIL", summary["full"]["returncode"], summary["full"]["tail"][:90]))
+        if summary["full"].get("killed_by"):
+            lines.append("        %s" % summary["full"]["detail"])
     if summary.get("visual") is not None:
         visual = summary["visual"]
         verdicts = ""
@@ -3110,6 +3171,11 @@ def round_policy(previous: dict, new: dict) -> dict:
              "shape_rounds": shape_rounds + (1 if result["shape_round"] else 0),
              "reviewed": reviewed, "unlocks": unlocks}
     approved = seed_review(new) if passed and reviewed is None and phase in (OPEN, AWAITING) else None
+    if (approved is None and passed and phase == LOCKED and not carry and unlocks
+            and reviewed.get("carried_from") == SEED_APPROVAL):
+        # ADR 0096: an unlocked approved Component whose repair stays within
+        # proof_diff tolerance under the same rows keeps the approval.
+        approved = seed_review(new)
     if approved is not None:
         result["carried"] = approved
         state.update(phase=LOCKED, reviewed=approved, unlocks=[])
@@ -3212,10 +3278,15 @@ def seed_diff(approved: Path, built: Path, out: Path) -> dict:
 
 # --carry-assembly-review (ADR 0096): in a seeded run whose every Component is
 # the approved one, the Proof Critic's verdict that the owner approved is the
-# assembly review, and no blind critic is spent on the same shape.
+# assembly review, and no blind critic is spent on the same shape. Its
+# partial-carry amendment (schema 11): a Component a gate forced the run to
+# change carries too when its change is within proof_diff tolerance or an
+# in-run Component Review agreed with it; the review names each Component's
+# basis, and only those changed Components were reviewed again.
 SIGNATURE_REVIEW_RELATIVE = Path("snap/SIGNATURE-REVIEW.json")
 SIGNATURE_REVIEW_KIND = "autonomous-workshop.signature-experience-review"
-CARRIED_REVIEW_SCHEMA = 10
+CARRIED_REVIEW_SCHEMA = 11
+CARRY_BASES = ("exact", "within-tolerance", "component-review")
 SEED_REVIEWER = "the owner (Approved Proof)"
 CRITIC_NAME = "CRITIC.json"
 PRINT_GATE_REPORTS = ("thickness-*.md", "overhang-*.md")
@@ -3232,11 +3303,13 @@ def assembly_carry_review(project: Path, approval: dict, approval_sha256: str, c
     the blind review must run instead.
 
     It carries only when every ``part_<id>.step.py`` is a Component of the
-    approval, each one's latest round is that Component's approved B-rep,
-    locked by the approval as exact, the assembly identity is the approved
-    one, and the sealed ``CRITIC.json`` agreed or the owner approved its
-    open lines. It binds the current snap images and print gate reports as
-    the blind review does."""
+    approval and the sealed ``CRITIC.json`` agreed or the owner approved its
+    open lines, and each Component's latest round has a basis
+    (``carry_basis``): the approved B-rep locked as exact, a change within
+    ``proof_diff`` tolerance locked by the approval, or a change an in-run
+    Component Review agreed with. When every basis is exact the assembly
+    identity must be the approved one. It binds the current snap images and
+    print gate reports as the blind review does."""
 
     if not re.fullmatch(r"[0-9a-f]{64}", concept_sha256 or ""):
         raise ValueError("--concept-sha256 must be the canonical Invented concept hash")
@@ -3268,7 +3341,7 @@ def assembly_carry_review(project: Path, approval: dict, approval_sha256: str, c
                    for path in project.glob("part_*.step.py"))
     if built != sorted(approved):
         raise ValueError("the project's Components are not the approved ones")
-    identities = {}
+    identities, bases = {}, {}
     for role in built:
         number = latest_component_round(project, role)
         try:
@@ -3278,14 +3351,15 @@ def assembly_carry_review(project: Path, approval: dict, approval_sha256: str, c
             summary = None
         if not isinstance(summary, dict):
             raise ValueError("%s has no component round" % role)
-        review = summary.get("review") if isinstance(summary.get("review"), dict) else {}
-        if (summary.get("identity") != approved[role].get("identity")
-                or review.get("carried_from") != SEED_APPROVAL or review.get("seed") != "exact"):
-            raise ValueError("%s's latest round is not the approved Component, locked by the approval as "
-                             "exact" % role)
+        basis = carry_basis(summary, approved[role])
+        if basis is None:
+            raise ValueError("%s's latest round is neither the approved Component locked by the approval as "
+                             "exact, a change within proof_diff tolerance, nor a change an agreeing Component "
+                             "Review locked" % role)
         identities[role] = summary["identity"]
+        bases[role] = {"basis": basis, "identity": summary["identity"], "round": number}
     assembly = hashlib.sha256(json.dumps(identities, sort_keys=True).encode()).hexdigest()
-    if assembly != approval.get("assembly_identity"):
+    if all(item["basis"] == "exact" for item in bases.values()) and assembly != approval.get("assembly_identity"):
         raise ValueError("the assembly identity is not the approved one")
     images = {}
     for name in ("iso", "signature"):
@@ -3307,7 +3381,29 @@ def assembly_carry_review(project: Path, approval: dict, approval_sha256: str, c
         "requirements": [{"id": row["id"], "verdict": row["verdict"], "note": str(row.get("note") or "")}
                          for row in requirements],
         "print_gate_sha256s": gates,
+        "components": bases,
     }
+
+
+def carry_basis(summary: dict, approved: dict) -> str | None:
+    """Why one Component's latest round may carry the critic's assembly
+    verdict (ADR 0096, partial carry), or None: ``exact`` (the approved
+    B-rep, locked by the approval), ``within-tolerance`` (a change
+    ``proof_diff`` found within tolerance, locked by the approval) or
+    ``component-review`` (a change an in-run Component Review agreed with;
+    never a Component Acceptance)."""
+
+    review = summary.get("review") if isinstance(summary.get("review"), dict) else {}
+    identity = summary.get("identity")
+    if not isinstance(identity, str) or not identity:
+        return None
+    if review.get("carried_from") == SEED_APPROVAL:
+        if review.get("seed") == "exact":
+            return "exact" if identity == approved.get("identity") else None
+        return "within-tolerance" if review.get("seed") == "within-tolerance" else None
+    if review.get("agrees") is True and not summary.get("accepted") and summary.get("checks_ok", True) is not False:
+        return "component-review"
+    return None
 
 
 def carry_assembly_review(args) -> int:
@@ -3338,9 +3434,12 @@ def carry_assembly_review(args) -> int:
         print("make_round: %s is a symlink" % target, file=sys.stderr)
         return 2
     target.write_bytes(canonical_bytes(review))
-    print("carried the assembly review from the Approved Proof (critic %s%s) to %s"
+    changed = ["%s (%s)" % (role, item["basis"]) for role, item in sorted(review["components"].items())
+               if item["basis"] != "exact"]
+    print("carried the assembly review from the Approved Proof (critic %s%s) to %s%s"
           % (review["critic_verdict"], ", open lines approved by the owner" if review["open_lines_approved"]
-             else "", SIGNATURE_REVIEW_RELATIVE))
+             else "", SIGNATURE_REVIEW_RELATIVE,
+             "; changed and reviewed apart: " + ", ".join(changed) if changed else ""))
     return 0
 
 
@@ -3666,9 +3765,11 @@ def carry_key(identity: str | None, refs: list, project: Path, rows: str, ruling
 def record_unlock(project: Path, unlock_path, component: str) -> dict:
     """Record that an assembly round requires a change to one locked Component.
 
-    The record cites the assembly round and one finding the Workshop Manager
-    recorded there with --record-visual. It builds nothing; the Component's
-    next rounds are admitted and are never Shape Rounds (ADR 0081).
+    The record cites the assembly round and either one finding the Workshop
+    Manager recorded there with --record-visual, or (ADR 0096 amendment) a
+    deterministic check's words quoted verbatim from its log, for a defect
+    no render shows. It builds nothing; the Component's next rounds are
+    admitted and are never Shape Rounds (ADR 0081).
     """
 
     role, _source = component_role(project, component)
@@ -3680,14 +3781,83 @@ def record_unlock(project: Path, unlock_path, component: str) -> dict:
     if policy.get("phase") != LOCKED:
         raise ValueError("part_%s.step.py is not locked; its rounds need no unlock" % role)
     record = json.loads(Path(unlock_path).read_text(encoding="utf-8"))
-    if not isinstance(record, dict) or set(record) != {"assembly_round", "finding", "reason"}:
-        raise ValueError("an unlock needs assembly_round, finding and reason")
-    number, index = record["assembly_round"], record["finding"]
-    if type(number) is not int or number < 1 or type(index) is not int or index < 0:
-        raise ValueError("assembly_round and finding must be a round number and a finding index")
+    if isinstance(record, dict) and set(record) == {"assembly_round", "verification", "reason"}:
+        unlock = verification_unlock(project, role, record)
+    else:
+        unlock = visual_unlock(project, record)
+    policy = {**policy, "unlocks": [*(policy.get("unlocks") or []), unlock]}
+    state["policy"] = policy
+    with (round_root / "unlocks.jsonl").open("a", encoding="utf-8") as ledger:
+        ledger.write(json.dumps(unlock, sort_keys=True) + "\n")
+    state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    return unlock
+
+
+def unlock_reason(record: dict) -> str:
     reason = record["reason"]
     if not isinstance(reason, str) or not 1 <= len(reason.strip()) <= MAX_REASON:
         raise ValueError("an unlock needs a reason of 1 to %d characters" % MAX_REASON)
+    return reason.strip()
+
+
+# A non-visual unlock (ADR 0096 amendment): a deterministic check found a
+# defect in a locked Component (validity, bed placement, a gate) that no
+# look at a render shows. It quotes the check's own words from a log under
+# the project's measure/ tree, bound by hash, instead of a visual finding.
+VERIFICATION_QUOTE_MIN, VERIFICATION_QUOTE_MAX = 12, 1000
+
+
+def verification_unlock(project: Path, role: str, record: dict) -> dict:
+    """The unlock record for a locked Component a deterministic check failed.
+
+    ``verification`` is ``{"log", "quote"}``: ``log`` a project-relative
+    regular file under ``measure/`` that a check wrote (the assembly round's
+    ``verify.log``, ``measure/verification-pipeline.md``, a gate report),
+    and ``quote`` its words verbatim, naming the Component. The cited
+    assembly round must exist. ValueError otherwise."""
+
+    number = record["assembly_round"]
+    if type(number) is not int or number < 1:
+        raise ValueError("assembly_round must be a round number")
+    reason = unlock_reason(record)
+    assembly = project / "measure" / ROUNDS_DIR / ("r%04d" % number)
+    if not (assembly / "summary.json").is_file():
+        raise ValueError("assembly round r%04d does not exist" % number)
+    verification = record["verification"]
+    if not isinstance(verification, dict) or set(verification) != {"log", "quote"}:
+        raise ValueError("a verification unlock needs verification.log and verification.quote")
+    log, quote = verification["log"], verification["quote"]
+    if not isinstance(log, str) or not log or Path(log).is_absolute() or ".." in Path(log).parts:
+        raise ValueError("verification.log must be a project-relative path")
+    path = project / log
+    if Path(log).parts[:1] != ("measure",) or path.is_symlink() or not path.is_file():
+        raise ValueError("verification.log must be a regular file under measure/: %s" % log)
+    if not isinstance(quote, str) or not VERIFICATION_QUOTE_MIN <= len(quote.strip()) <= VERIFICATION_QUOTE_MAX:
+        raise ValueError("verification.quote must be %d to %d characters" % (VERIFICATION_QUOTE_MIN,
+                                                                           VERIFICATION_QUOTE_MAX))
+    content = path.read_bytes()
+    if quote.strip() not in content.decode("utf-8", errors="replace"):
+        raise ValueError("verification.quote is not in %s verbatim; quote the check's own words" % log)
+    names = (role, role.replace("-", "_"))
+    if not any(name in quote for name in names):
+        raise ValueError("verification.quote must name the Component (%s)" % role)
+    return {"kind": "verification", "assembly_round": number,
+            "verification": {"log": log, "log_sha256": hashlib.sha256(content).hexdigest(),
+                             "quote": quote.strip()},
+            "reason": reason}
+
+
+def visual_unlock(project: Path, record) -> dict:
+    """The unlock record citing one finding an assembly round recorded with
+    --record-visual."""
+
+    if not isinstance(record, dict) or set(record) != {"assembly_round", "finding", "reason"}:
+        raise ValueError("an unlock needs assembly_round, finding and reason (a visual finding), or "
+                         "assembly_round, verification and reason (a check's log)")
+    number, index = record["assembly_round"], record["finding"]
+    if type(number) is not int or number < 1 or type(index) is not int or index < 0:
+        raise ValueError("assembly_round and finding must be a round number and a finding index")
+    reason = unlock_reason(record)
     assembly = project / "measure" / ROUNDS_DIR / ("r%04d" % number)
     try:
         feedback_bytes = (assembly / "visual-feedback.json").read_bytes()
@@ -3697,15 +3867,9 @@ def record_unlock(project: Path, unlock_path, component: str) -> dict:
         raise ValueError("assembly round r%04d has no recorded visual finding" % number) from None
     if not isinstance(findings, list) or index >= len(findings):
         raise ValueError("assembly round r%04d has no finding %d" % (number, index))
-    unlock = {"kind": "assembly", "assembly_round": number, "finding": findings[index],
-              "visual_feedback_sha256": hashlib.sha256(feedback_bytes).hexdigest(),
-              "reason": reason.strip()}
-    policy = {**policy, "unlocks": [*(policy.get("unlocks") or []), unlock]}
-    state["policy"] = policy
-    with (round_root / "unlocks.jsonl").open("a", encoding="utf-8") as ledger:
-        ledger.write(json.dumps(unlock, sort_keys=True) + "\n")
-    state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
-    return unlock
+    return {"kind": "assembly", "assembly_round": number, "finding": findings[index],
+            "visual_feedback_sha256": hashlib.sha256(feedback_bytes).hexdigest(),
+            "reason": reason}
 
 
 # ---------------------------------------------------------------------------
@@ -5914,6 +6078,79 @@ def identities_only(args) -> int:
     return 0
 
 
+# What --print-gates-only checks, so seal_proof can refuse a summary an
+# older make_round wrote without the final verification's own checks.
+PRINT_GATES_ONLY_CHECKS = ("build", "thickness", "overhang", "mesh", "datum", "posed")
+
+
+def geometry_source_hashes(project: Path) -> dict:
+    """Project-relative path -> sha256 of every Geometry Source: what a
+    print-gate summary measured, so a later check can tell it is current."""
+
+    try:
+        sources = geometry_sources_tool()["geometry_sources"](project)
+    except Exception:  # noqa: BLE001 - an unreadable tree binds nothing, and so never matches
+        return {}
+    return dict(sorted(sources.items()))
+
+
+def final_check_jobs(python: str, cad: Path, project: Path, parts: list, roles: list, out: Path, bed: str,
+                     built: set, kit_roles: set) -> list:
+    """``[(role, check, job)]``: for each built Component, final
+    verification's validity check (``inspect validate``) on the Component
+    placed by ``assembly_pose(gen_step(), None)`` (``posed``), and, for one
+    that is not a kit Component, check_fit on its print stance (``datum``:
+    min Z at 0, the bed footprint, a positive volume)."""
+
+    jobs = []
+    width, depth = bed.split("x")[:2]
+    for part, role in zip(parts, roles):
+        if role not in built:
+            continue
+        if "def assembly_pose" in part.read_text(encoding="utf-8"):
+            posed = out / ("display_pose_%s.step.py" % role.replace("-", "_"))
+            posed.write_text(DISPLAY_POSE_ENTRY % {"project": str(project), "part": part.name}, encoding="utf-8")
+            jobs.append((role, "posed", {"command": [python, str(cad / "inspect"), "validate", str(posed),
+                                                     "--format", "json"],
+                                         "cwd": project, "log": out / ("posed-%s.log" % role),
+                                         "extra_env": NO_BYTECODE}))
+        if role not in kit_roles:
+            jobs.append((role, "datum", {"command": [python, str(cad / "check_fit"), str(project), "--entry",
+                                                     str(part), "--bed", width, depth, "--json"],
+                                         "cwd": project, "log": out / ("datum-%s.log" % role),
+                                         "extra_env": NO_BYTECODE}))
+    return jobs
+
+
+def parse_final_check(check: str, done) -> dict:
+    """``{"verdict", "failures"}`` of one final check's run. A check that
+    could not report (no JSON, an unverified validity) fails: nothing
+    established counts as a pass."""
+
+    try:
+        report = json.loads(done.stdout)
+    except (TypeError, ValueError):
+        report = None
+    if not isinstance(report, dict):
+        return {"verdict": "FAIL", "failures": ["%s did not report (exit %s): %s"
+                                                % (check, done.returncode, tail(done.stderr or done.stdout))]}
+    if check == "posed":
+        failures = ["in the Display Pose %s: %s" % (item.get("name") or item.get("ref"),
+                                                   ", ".join(item.get("reasons") or ()))
+                    for item in report.get("parts") or () if isinstance(item, dict)]
+        failures += ["%s" % (error.get("message") if isinstance(error, dict) else error)
+                     for error in report.get("errors") or ()]
+        if report.get("status") == "unverified":
+            failures.append("in the Display Pose: some solids have no completed self-intersection verdict")
+    else:
+        failures = ["[%s] %s" % (item.get("rule"), item.get("detail"))
+                    for item in report.get("findings") or () if isinstance(item, dict)]
+    if done.returncode != 0 and not failures:
+        failures = ["%s exited %s" % (check, done.returncode)]
+    return {"verdict": "PASS" if done.returncode == 0 and report.get("ok") is True and not failures else "FAIL",
+            "failures": failures}
+
+
 def print_gates_only(args) -> int:
     """Build every part and run Make's print gates on it exactly as a round
     does (the same jobs, parsers and records), with no nonce, hook, Shared
@@ -5996,10 +6233,20 @@ def _print_gates_only(project: Path, args, cad: Path, parts: list, kit: dict | N
                 role in hosts and paper_error is None):
             job["extra_env"] = {**job.get("extra_env", {}), **NO_BYTECODE}
             gate_jobs.append((role, name, gate, job))
-    checked = run_all([job for _role, _name, _gate, job in gate_jobs])
+    # 2b. what final verification also rejects and the print gates do not
+    # measure (ADR 0096 pilot, B2 and B3): the Component's B-rep validity in
+    # its Display Pose, and its print stance on the bed (check_fit).
+    final_jobs = final_check_jobs(python, cad, project, parts, roles, out, bed,
+                                  {role for role in built_roles if role not in kit_refusals}, kit_roles)
+    finished = run_all([job for _role, _name, _gate, job in gate_jobs]
+                       + [job for _role, _check, job in final_jobs])
+    checked, final_done = finished[:len(gate_jobs)], finished[len(gate_jobs):]
     measured: dict[str, dict] = {}
     for (role, name, gate, job), done in zip(gate_jobs, checked):
         measured.setdefault(role, {}).setdefault(name, {})[gate] = (job["log"], done)
+    finals: dict[str, dict] = {}
+    for (role, check, job), done in zip(final_jobs, final_done):
+        finals.setdefault(role, {})[check] = parse_final_check(check, done)
     printing: dict[str, dict] = {}
     for role in roles:
         if role not in built_roles:
@@ -6010,11 +6257,16 @@ def _print_gates_only(project: Path, args, cad: Path, parts: list, kit: dict | N
             printing[role] = print_record(measured[role], part_identities.get(role), 1, role in hosts, paper_error)
         else:
             printing[role] = empty_kit_print_record(1)
+    for role, checks in finals.items():
+        printing[role]["final"] = checks
+        if any(item["verdict"] != "PASS" for item in checks.values()):
+            printing[role]["verdict"] = "FAIL"
     ok = (all(item["verdict"] == "PASS" for item in build.values())
           and all(item["verdict"] == "PASS" for item in printing.values()))
     summary = {"scope": PRINT_GATES_SCOPE, "project": str(project), "nozzle": args.nozzle,
                "overhang_angle": args.overhang_angle, "bed": bed, "kit": kit is not None,
-               "parts": roles, "build": build, "print": printing, "ok": ok, "out": str(out)}
+               "parts": roles, "build": build, "print": printing, "ok": ok, "out": str(out),
+               "checks": list(PRINT_GATES_ONLY_CHECKS), "sources": geometry_source_hashes(project)}
     (out / "summary.json").write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     if args.json:
         print(json.dumps(summary, sort_keys=True))
@@ -6024,6 +6276,9 @@ def _print_gates_only(project: Path, args, cad: Path, parts: list, kit: dict | N
         for role in roles:
             lines += build_lines(role, build[role])
             lines += print_lines(role, printing[role])
+            for check, item in sorted((printing[role].get("final") or {}).items()):
+                lines.append(("  %-5s %s %s  %s" % (check, item["verdict"], role,
+                                                      "; ".join(item["failures"])[:300])).rstrip())
         lines.append("  %s  reports under %s" % ("PASS" if ok else "FAIL", out))
         print("\n".join(lines))
     return 0 if ok else 1
@@ -7082,7 +7337,7 @@ def main(argv=None) -> int:
     parser.add_argument("--no-motion", action="store_true", help="skip check_motion even when measure/motion.json exists")
     parser.add_argument("--record-visual", help="record native Manager feedback for the last assembly round without rebuilding")
     parser.add_argument("--record-review", metavar="REVIEW.json", help="with --component: record an independent reviewer's judgement of the latest round without rebuilding")
-    parser.add_argument("--record-unlock", metavar="UNLOCK.json", help="with --component: record that an assembly round's recorded finding requires a change to this locked Component, as {assembly_round, finding, reason}; builds nothing")
+    parser.add_argument("--record-unlock", metavar="UNLOCK.json", help="with --component: record that an assembly round's recorded finding requires a change to this locked Component, as {assembly_round, finding, reason}, or that a deterministic check failed it, as {assembly_round, verification: {log, quote}, reason} quoting the check's log under measure/ verbatim (ADR 0096); builds nothing")
     parser.add_argument("--shared-helpers", action="store_true", help="Workshop Manager: build the samples under samples/, run the print gates on them, and freeze the Shared Helpers on a pass (ADR 0082)")
     parser.add_argument("--interface", metavar="ID", help="Workshop Manager: run the coupled motion check of one sealed Coupled Interface on its locked Components (ADR 0082)")
     parser.add_argument("--report-blocked", metavar="BLOCKED.json", help="Component Worker, with --component: record a Blocked Report, {rows, reason}, quoting the contract rows verbatim; builds nothing (issue #88)")

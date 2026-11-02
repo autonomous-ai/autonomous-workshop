@@ -682,6 +682,44 @@ class MakeRoundTest(unittest.TestCase):
             self.assertFalse(result["ok"])
             self.assertEqual(result["full"]["returncode"], 2)
 
+    def test_a_killed_final_verification_reruns_only_the_verifier(self):
+        # ADR 0096 pilot B7: a verifier stopped by a signal failed no gate.
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            module, summary = self._round(project)
+            feedback = self._feedback(project, summary)
+            killed = subprocess.CompletedProcess([], -9, "", "")
+            with mock.patch.object(module, "skills_root", return_value=project), \
+                    mock.patch.object(module, "run", return_value=killed):
+                result = module.record_visual(project, feedback, full=True)
+            self.assertEqual((result["ok"], result["full"]["killed_by"]), (False, "SIGKILL"))
+            self.assertIn("no gate failed", result["full"]["detail"])
+            # Not killed: a second feedback is refused as before.
+            other = project / "measure/other-feedback.json"
+            other.write_text(json.dumps({**json.loads(feedback.read_text()), "observation": "another look"}))
+            with self.assertRaisesRegex(ValueError, "only with the feedback this round recorded"):
+                module.record_visual(project, other, full=True)
+            with self.assertRaisesRegex(ValueError, "only accepted once"):
+                module.record_visual(project, feedback)
+            passed = subprocess.CompletedProcess([], 0, "", "")
+            with mock.patch.object(module, "skills_root", return_value=project), \
+                    mock.patch.object(module, "run", return_value=passed) as runner:
+                result = module.record_visual(project, feedback, full=True)
+            self.assertEqual(runner.call_count, 1)
+            self.assertIn("--print-gates", runner.call_args.args[0])
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["full"]["reruns"], [{"returncode": -9, "killed_by": "SIGKILL"}])
+            # A passing or gate-failing verifier is never rerun this way.
+            with self.assertRaisesRegex(ValueError, "only accepted once"):
+                module.record_visual(project, feedback, full=True)
+
+    def test_killed_detail_names_only_a_signal(self):
+        module = load_module()
+        self.assertIsNone(module.killed_detail(0))
+        self.assertIsNone(module.killed_detail(2))
+        self.assertIsNone(module.killed_detail(None))
+        self.assertEqual(module.killed_detail(-15)["killed_by"], "SIGTERM")
+
     def test_one_piece_entry_is_built_and_reported_as_the_product(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)
@@ -2187,6 +2225,54 @@ class ContractComponentReviewTest(unittest.TestCase):
                           "--worker-nonce", "ab" * 16]):
                 with self.subTest(argv=argv), self.assertRaises(SystemExit):
                     module.main(argv)
+
+    def test_a_check_failure_unlocks_a_locked_component_without_a_visual_finding(self):
+        # ADR 0096 pilot B6: a self-intersection or a part below the bed is
+        # no visual finding; the unlock quotes the check's log instead.
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = load_module(), []
+            _, summary = self._component(module, project, calls)
+            self._review(module, project, summary)
+            self._main(module, project, [], calls)
+            assembly = self._assembly(project)
+            log = project / "measure/verification-pipeline.md"
+            log.write_text("validate:part_body FAIL reasons:[selfIntersecting] in the Display Pose\n")
+            quote = "validate:part_body FAIL reasons:[selfIntersecting]"
+            path = project / "measure/unlock.json"
+
+            def unlock(**changes):
+                record = {"assembly_round": assembly["round"], "reason": "the body self-intersects when posed",
+                          "verification": {"log": "measure/verification-pipeline.md", "quote": quote}}
+                for key, value in changes.items():
+                    if key in ("log", "quote"):
+                        record["verification"][key] = value
+                    else:
+                        record[key] = value
+                path.write_text(json.dumps(record))
+                return module.record_unlock(project, path, "part_body.step.py")
+
+            refusals = {
+                "is not in measure/verification-pipeline.md verbatim": dict(quote="validate:part_body passed fine"),
+                "must name the Component": dict(quote="FAIL reasons:[selfIntersecting]"),
+                "12 to 1000 characters": dict(quote="body"),
+                "project-relative path": dict(log="/etc/passwd"),
+                "under measure/": dict(log="params.py"),
+                "r0099 does not exist": dict(assembly_round=99),
+                "a reason": dict(reason=" "),
+            }
+            for fragment, changes in refusals.items():
+                with self.subTest(fragment), self.assertRaisesRegex(ValueError, fragment):
+                    unlock(**changes)
+            (project / "measure/linked.md").symlink_to(log)
+            with self.assertRaisesRegex(ValueError, "under measure/"):
+                unlock(log="measure/linked.md")
+            record = unlock()
+            self.assertEqual(record["kind"], "verification")
+            self.assertEqual(record["verification"]["log_sha256"], hashlib.sha256(log.read_bytes()).hexdigest())
+            code, summary = self._component(module, project, calls)
+            self.assertEqual((summary["shape_round"], summary["phase"]), (False, "awaiting-review"))
+            self.assertEqual(summary["unlock"][-1], record)
 
     def test_a_changed_reference_or_contract_row_does_not_carry_a_review(self):
         with tempfile.TemporaryDirectory() as tmp:

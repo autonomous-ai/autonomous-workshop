@@ -140,10 +140,17 @@ stays in the Proof.
    `check_overhang` and `check_thickness`, a kit Component Part by Part from
    its `print_parts()`. It prints a `wall`, `over` and `mesh` line per part
    (per Part of a kit: `cabinet/B04-top-board`), each failure with the
-   region it names; it exits 1 on any failure and writes only inside
-   `<OUT>`, its reports under `<OUT>/measure/print-gates/`. Never run the CAD
-   skill's `check_` scripts yourself: only this command measures what Make
-   measures. A `parts FAIL` line is your modelling, not the contract's: fix
+   region it names. It also runs two checks final verification runs, so a
+   Proof that passes here cannot fail them in the build: `datum`, check_fit
+   on the print stance (the bottom at Z 0, the bed footprint), and `posed`,
+   `inspect validate` on the Component placed by `assembly_pose(gen_step(),
+   None)`, since a solid valid as printed can self-intersect in the Display
+   Pose. Both are your modelling: fix them. It exits 1 on any failure and
+   writes only inside `<OUT>`, its reports under
+   `<OUT>/measure/print-gates/`. `seal_proof.py` refuses a Proof without a
+   passing run of every Component over its current sources. Never run the
+   CAD skill's `check_` scripts yourself: only this command measures what
+   Make measures. A `parts FAIL` line is your modelling, not the contract's: fix
    `print_parts()` and run it again. Add every gate failure to
    `FINDINGS.md` under a heading of its own: the part (and Part), the gate,
    the region it names. A failure forced by a contract value stays a finding,
@@ -164,6 +171,27 @@ stays in the Proof.
    45, and a face designed that close lands past it once tessellated; 52 is
    the print-details library's design margin (`_DESIGN_MARGIN`). The
    designer gives each one margin.
+
+## Final verification inputs
+
+A seeded build runs final verification on your project as it is, so write
+what it reads, as Make would, and keep it true to the model after every
+change:
+
+- `<OUT>/<toy_name>_spec.md`, exactly one, filled from
+  `src/workshop/make/skills/image-to-cad/templates/build_spec.md` as that
+  skill's `## Output` says (this is the spec, not Step 8's likeness gate);
+- `<OUT>/measure/check_spec.py` and `<OUT>/measure/check_landmarks.py`, the
+  two local audits `src/workshop/make/skills/cad/references/image-derived-verification.md`
+  defines;
+- `<OUT>/measure/check_fit.py`, the project fit audit `check_fit` asks for
+  (seal_proof needs it even for one part): each mating pair from one base dimension
+  with its clearance applied once, every connector named in the spec, and an
+  assembly order that can be done.
+
+Run each audit with `uv run python` and the CAD skill's `check_spec_format`
+and `check_spec_numbers` on `<OUT>`; each must exit 0. `seal_proof.py`
+refuses a Proof without them, and the seed carries them into the build.
 
 Change nothing outside `<OUT>`, and never edit the contract or an image.
 Reply with the number of guesses, contradictions, print-gate failures,

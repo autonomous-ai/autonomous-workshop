@@ -7,7 +7,11 @@ sealed tree and fails on a missing, extra or changed file or another
 contract. Seal refuses a Proof without the installed print-details library,
 without a passing Shared Helper freeze, with a helper changed since the
 freeze or imported outside it, with a Critic that did not agree (unless the
-owner approved its open lines), and a STEP make_round did not build."""
+owner approved its open lines), a STEP make_round did not build, and (beaver
+pilot B2-B5) what final verification would reject: no passing print-gate
+summary of every Component at the sealed nozzle over the current sources
+with the Display-Pose and bed-datum checks, not exactly one `*_spec.md`, a
+spec its format or numbers check fails, or a missing `measure/` audit."""
 
 from __future__ import annotations
 
@@ -67,6 +71,20 @@ class SealProofTest(unittest.TestCase):
         self.checklist = self.design / "CONCEPT-CHECKLIST.md"
         self.checklist.write_text("| id | trait |\n| T1 | round |\n")
         self.imported = {"params.py": self.helpers["params.py"]}
+        SealProofTest._final_inputs(self)
+
+    def _final_inputs(self, **changes):
+        """What final verification needs (B2-B5): a passing print-gate
+        summary over the current sources, one spec and the three audits."""
+        (self.proof / "toy_spec.md").write_text("# spec\n")
+        for name in self.module.AUDITS:
+            (self.proof / name).write_text("print('ok')\n")
+        summary = {"ok": True, "parts": ["body"], "nozzle": 0.4, "checks": list(self.module.REQUIRED_CHECKS),
+                   "sources": self.module.geometry_sources(self.proof),
+                   "print": {"body": {"verdict": "PASS"}}, "build": {"body": {"verdict": "PASS"}}}
+        summary.update(changes)
+        (self.proof / "measure/print-gates").mkdir(parents=True, exist_ok=True)
+        (self.proof / self.module.PRINT_GATES).write_text(json.dumps(summary))
 
     def _record(self, proof, contract):
         return {"schema_version": 1, "contract_sha256": sha(contract), "assembly_identity": "asm",
@@ -78,10 +96,15 @@ class SealProofTest(unittest.TestCase):
         argv = ["seal", str(self.proof), "--contract", str(self.contract), "--checklist", str(self.checklist),
                 "--nozzle", "0.4", "--approved-by", "owner", "--date", "2026-11-02", "--cost", "3.5", *extra]
         with mock.patch.object(self.module, "identities", side_effect=self._record), \
+                mock.patch.object(self.module, "run_spec_tool",
+                                  side_effect=lambda proof, tool: SealProofTest._spec_tool(self, proof, tool)), \
                 contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as err:
             code = self.module.main(argv)
         self.stderr = err.getvalue()
         return code
+
+    def _spec_tool(self, proof, tool):
+        return getattr(self, "spec_failure", {}).get(tool, (0, "ok"))
 
     def _verify(self, *extra):
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as err:
@@ -110,7 +133,8 @@ class SealProofTest(unittest.TestCase):
                           approval["design_cost_units"]), (0.4, "owner", "2026-11-02", 3.5))
         self.assertEqual(sorted(approval["manifest"]), [
             "CONCEPT-CHECKLIST.md", "CRITIC.json", "approved/part_body.step", "features/print_details.py",
-            "params.py", "part_body.step.py"])
+            "measure/check_fit.py", "measure/check_landmarks.py", "measure/check_spec.py",
+            "params.py", "part_body.step.py", "toy_spec.md"])
         self.assertEqual(approval["critic"]["verdict"], "agree")
         self.assertEqual(self._verify("--contract", str(self.contract)), 0, self.stderr)
         # Evidence under measure/ is not part of the seed.
@@ -190,6 +214,40 @@ class SealProofTest(unittest.TestCase):
         (self.proof / "CONCEPT-CHECKLIST.md").write_text("other")
         self.assertEqual(self._seal(), 1)
         self.assertIn("already holds another checklist", self.stderr)
+
+    def test_seal_refuses_what_final_verification_would_reject(self):
+        # Beaver pilot B2-B5: a Proof whose body self-intersects in its
+        # Display Pose, whose eye sits below the bed, or that lacks the spec
+        # and audits final verification reads, is never sealed.
+        def unlink(name):
+            return lambda: (self.proof / name).unlink()
+
+        cases = {
+            "no print-gate summary": unlink(str(self.module.PRINT_GATES)),
+            "did not check datum, posed": lambda: self._final_inputs(
+                checks=["build", "thickness", "overhang", "mesh"]),
+            "covers nothing, not every Component": lambda: self._final_inputs(parts=[]),
+            "nozzle 0.6, not 0.4": lambda: self._final_inputs(nozzle=0.6),
+            "a source changed": lambda: self._final_inputs(sources={}),
+            "failed for body": lambda: self._final_inputs(ok=False, print={"body": {"verdict": "FAIL"}}),
+            "exactly one \\*_spec.md": unlink("toy_spec.md"),
+            "measure/check_landmarks.py": unlink("measure/check_landmarks.py"),
+        }
+        for fragment, change in cases.items():
+            with self.subTest(fragment):
+                self.setUp()
+                change()
+                self.assertEqual(self._seal(), 1)
+                self.assertRegex(self.stderr, fragment)
+                self.assertFalse((self.proof / "APPROVAL.json").exists())
+        self.setUp()
+        (self.proof / "other_spec.md").write_text("# two\n")
+        self.assertEqual(self._seal(), 1)
+        self.assertIn("found 2", self.stderr)
+        self.setUp()
+        self.spec_failure = {"check_spec_numbers": (1, "S3 has no number")}
+        self.assertEqual(self._seal(), 1)
+        self.assertIn("check_spec_numbers fails on toy_spec.md: S3 has no number", self.stderr)
 
     def test_identities_come_from_make_round(self):
         done = mock.Mock(returncode=2, stdout="", stderr="make_round: part_body.step.py does not build")

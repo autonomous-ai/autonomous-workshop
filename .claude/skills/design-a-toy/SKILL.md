@@ -1335,8 +1335,11 @@ that is what lets `workshop wish --contract` seal this exact file, byte for
 byte, as the run's hash-checked objective.
 
 Then seal what the owner approved (ADR 0096): run the Proof's print gates
-and `make_round <proof> --shared-helpers --contract CONTRACT.md` once more on
-the final contract, then
+(`make_round <proof> --print-gates-only`, which also checks each Component
+in its Display Pose and on the bed) and `make_round <proof> --shared-helpers
+--contract CONTRACT.md` once more on the final contract. Check that the
+Proof wrote its `*_spec.md` and its three `measure/` audits (proof-prompt.md,
+"Final verification inputs"). Then
 
 ```sh
 uv run python .claude/skills/design-a-toy/scripts/seal_proof.py seal <contract-dir>/proof \
@@ -1361,8 +1364,8 @@ starts, round 0 through every correction, always under `--contract`. Do not prin
 Then state plainly what happens next: the run is seeded from the sealed
 Proof, so Make reruns each approved Component and certifies it rather than
 modelling the toy again. Only a Component that deviates goes to a worker and
-its Component Reviewer, the assembly review carries from the Proof Critic
-unless something deviated, the host reports every deviation from the
+its Component Reviewer, the assembly review carries from the Proof Critic for
+every Component the approval or its own review locked, the host reports every deviation from the
 approved STEP files, and every correction runs through `build-a-toy`, not
 back through this skill.
 

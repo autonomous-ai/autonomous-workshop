@@ -33,6 +33,9 @@ APPROVED_DIR = "approved"
 # builds beside itself (its approved copy is under approved/) or a build log.
 EXCLUDED_DIRS = frozenset({"measure", "__cadgen__", "__pycache__", "compare", ".cache"})
 EXCLUDED_TOP_SUFFIXES = frozenset({".step", ".log"})
+# The project audits final verification runs (ADR 0096 pilot, B5): source
+# the Proof writes under measure/, so the seed carries them.
+SEED_AUDITS = ("measure/check_fit.py", "measure/check_spec.py", "measure/check_landmarks.py")
 MAX_APPROVAL_BYTES = 4 * 1024 * 1024
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 
@@ -70,7 +73,8 @@ def seed_manifest(root: Path) -> Dict[str, str]:
         if path.is_symlink():
             raise ContractError("seed: %s is a symlink; the seed tree holds only plain files"
                                 % relative.as_posix())
-        if not path.is_file() or any(part in EXCLUDED_DIRS for part in relative.parts[:-1]):
+        if not path.is_file() or (any(part in EXCLUDED_DIRS for part in relative.parts[:-1])
+                                  and relative.as_posix() not in SEED_AUDITS):
             continue
         if relative.as_posix() == APPROVAL_NAME:
             continue
