@@ -65,6 +65,32 @@ class MotionPolicyTest(unittest.TestCase):
             enabled()
 
 
+    def _seeded(self, value):
+        self.materialize(value)
+        return runpy.run_path(str(self.root / ".agents/skills/cad/scripts/motion_policy.py"))
+
+    def test_schema_3_freezes_the_seed_and_keeps_motion_and_carry(self):
+        seed = {"approval_sha256": "a" * 64, "manifest_sha256": "b" * 64}
+        policy = self._seeded({"schema_version": 3, "check_motion": True, "seed": seed})
+        self.assertEqual(policy["seed"](), seed)
+        self.assertTrue(policy["enabled"]())
+        self.assertFalse(policy["carry_unchanged"]())
+        policy = self._seeded({"schema_version": 3, "check_motion": False, "seed": seed,
+                               "carry_unchanged": True})
+        self.assertTrue(policy["carry_unchanged"]())
+        self.assertIsNone(self._seeded({"schema_version": 1, "check_motion": False})["seed"]())
+
+    def test_a_malformed_schema_3_seed_refuses(self):
+        good = {"approval_sha256": "a" * 64, "manifest_sha256": "b" * 64}
+        for payload in ({"schema_version": 3, "check_motion": False},
+                        {"schema_version": 3, "check_motion": False, "seed": {"approval_sha256": "a" * 64}},
+                        {"schema_version": 3, "check_motion": False, "seed": dict(good, manifest_sha256="b")},
+                        {"schema_version": 3, "check_motion": False, "seed": good, "carry_unchanged": False},
+                        {"schema_version": 3, "check_motion": False, "seed": good, "quick_fix": True}):
+            with self.subTest(payload=sorted(payload)), self.assertRaises(ValueError):
+                self._seeded(payload)["seed"]()
+
+
 class VerifyMotionOptionTest(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()

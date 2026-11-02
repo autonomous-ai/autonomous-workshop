@@ -205,3 +205,34 @@ def copy_seed(seed: SeedApproval, source: Path, destination: Path) -> None:
         shutil.copyfile(Path(source) / name, target)
         if _sha256(target) != digest:
             raise ContractError("seed: %s changed while it was copied" % name)
+
+
+def seed_context(seed: SeedApproval, contract_sha256: str) -> Dict[str, str]:
+    """What the Wish context records of its seed: the hashes the host binds
+    and who approved it when, for the receipt and status."""
+
+    return {"approval_sha256": seed.approval_sha256, "manifest_sha256": seed.manifest_sha256,
+            "contract_sha256": contract_sha256, "approved_by": seed.approved_by, "date": seed.date}
+
+
+def contract_geometry_ids(design_contract: Mapping[str, Any]):
+    """The Unique Geometry ids of a sealed Design Contract dict."""
+
+    return tuple(item.get("id") for item in design_contract.get("geometries") or ()
+                 if isinstance(item, Mapping) and isinstance(item.get("id"), str))
+
+
+def seed_files(seed: SeedApproval, directory: Path) -> Dict[str, bytes]:
+    """The approval and its manifest's files, read and checked again, for
+    the run's immutable seed/ input."""
+
+    directory = Path(directory)
+    files = {APPROVAL_NAME: (directory / APPROVAL_NAME).read_bytes()}
+    if hashlib.sha256(files[APPROVAL_NAME]).hexdigest() != seed.approval_sha256:
+        raise ContractError("seed: %s changed after it was validated" % APPROVAL_NAME)
+    for name, digest in sorted(seed.files.items()):
+        content = (directory / name).read_bytes()
+        if hashlib.sha256(content).hexdigest() != digest:
+            raise ContractError("seed: %s changed after it was validated" % name)
+        files[name] = content
+    return files

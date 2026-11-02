@@ -3239,6 +3239,22 @@ def _sealed_contract_inputs(
     return (contract if isinstance(contract, dict) else None), references
 
 
+def _sealed_seed(run_root: Path, wish_sha256: str) -> Optional[dict[str, Any]]:
+    """The Approved Proof a seeded run started from, as ``WISH.json``
+    records it (ADR 0096), or None for every other run."""
+
+    try:
+        content = (Path(run_root) / "WISH.json").read_bytes()
+    except OSError:
+        return None
+    if _sha256(content) != wish_sha256:
+        raise StateConflict("materialized Wish differs from the run binding")
+    document = _strict_json_bytes(content, label="materialized Wish")
+    context = document.get("context") if isinstance(document, dict) else None
+    seed = context.get("seed") if isinstance(context, dict) else None
+    return dict(seed) if isinstance(seed, dict) else None
+
+
 def _sealed_guide_inputs(run_root: Path, wish_sha256: str) -> dict[str, tuple[Path, str]]:
     """Each sealed Guide Image file -> its run path and sealed sha256."""
 
@@ -11338,6 +11354,10 @@ def _native_receipt(
         # ADR 0095 (2026-11-01): the Bought Parts drawn into the model and
         # the electrical pictures, only for a run whose catalogue models them.
         receipt["bought_model"] = bought_model[0]
+    seed = _sealed_seed(paths.workspace, checkpoint.wish_sha256) if paths is not None else None
+    if seed is not None:
+        # ADR 0096: the Approved Proof this run was seeded from.
+        receipt["seed"] = seed
     if checkpoint.effort is not None:
         receipt["workflow"] = checkpoint.effort
     receipt["agent"] = checkpoint.manager_id
@@ -11434,6 +11454,48 @@ def _reject_grid_keepalive_wish_start() -> None:
         )
 
 
+def _seed_start_inputs(
+    wish: Wish,
+    seed_source: Optional[Path],
+    selected_effort: Any,
+    revision_snapshot: Optional[bytes],
+) -> tuple[Optional[dict], Optional[dict]]:
+    """``(frozen seed, seed files)`` for a run seeded from an Approved Proof
+    (ADR 0096), or ``(None, None)``. The host validates the directory itself
+    against the sealed contract and the Wish's recorded seed; the CLI's
+    earlier check is a courtesy, never the authority."""
+
+    from workshop.wish.seed import contract_geometry_ids, seed_files, validate_seed
+
+    context = wish.context
+    recorded = context.get("seed")
+    contract = context.get("design_contract")
+    if seed_source is None:
+        if recorded is not None:
+            raise ContractError("the Wish records a seed but no --seed-source was given")
+        if isinstance(contract, Mapping) and contract.get("shape") == "approved-proof":
+            raise ContractError("a schema 11 contract seals only with --seed-source")
+        return None, None
+    if not isinstance(contract, Mapping):
+        raise ContractError("--seed-source needs a Design Contract")
+    if selected_effort is not None and selected_effort.name != "spark":
+        raise ContractError("--seed-source runs only the spark workflow")
+    if not isinstance(recorded, Mapping) or set(recorded) != {
+        "approval_sha256", "manifest_sha256", "contract_sha256", "approved_by", "date",
+    }:
+        raise ContractError("the Wish does not record the seed it is started from")
+    if revision_snapshot is None and (
+        hashlib.sha256(wish.objective.encode("utf-8")).hexdigest() != recorded["contract_sha256"]
+    ):
+        raise ContractError("the seed was approved for another contract than the sealed objective")
+    seed = validate_seed(Path(seed_source), contract_geometry_ids(contract), recorded["contract_sha256"])
+    if seed.frozen() != {key: recorded[key] for key in ("approval_sha256", "manifest_sha256")}:
+        raise ContractError("the seed directory is not the one the Wish records")
+    if (seed.approved_by, seed.date) != (recorded["approved_by"], recorded["date"]):
+        raise ContractError("the seed directory is not the one the Wish records")
+    return seed.frozen(), seed_files(seed, Path(seed_source))
+
+
 def start_native_run(
     wish: Wish,
     *,
@@ -11454,6 +11516,7 @@ def start_native_run(
     revision_snapshot: Optional[bytes] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
     timing_observer: Optional[WishRunTimingObserver] = None,
+    seed_source: Optional[Path] = None,
 ) -> Mapping[str, Any]:
     """Persist one Wish and immediately start its whole-run native session.
 
@@ -11523,6 +11586,7 @@ def start_native_run(
         raise ContractError("carrying unchanged parts forward needs a correction source")
 
     selected_effort = workshop_effort(effort) if effort is not None else None
+    seed, seed_inputs = _seed_start_inputs(wish, seed_source, selected_effort, revision_snapshot)
     selected_runtime = manager_runtime_selection(
         DEFAULT_MANAGER_ID if manager_id is None else manager_id,
         model=manager_model,
@@ -11596,6 +11660,8 @@ def start_native_run(
                 turn_untimed=turn_untimed,
                 check_motion=check_motion,
                 carry_unchanged=carry_unchanged,
+                seed=seed,
+                seed_files=seed_inputs,
                 make_role_agents=make_role_agent_files(),
                 # ADR 0080: only runtimes whose hooks name the calling
                 # subagent can admit Component rounds by role.

@@ -24,6 +24,12 @@ they were created. `workshop fix --full` declines it. The policy changes only
 what a round may CARRY FORWARD. It lowers no threshold, relaxes no gate and
 skips nothing about the assembly.
 
+**A seeded run records its Approved Proof.** `workshop wish|fix --seed-source`
+(Workshop ADR 0096) freezes `seed: {approval_sha256, manifest_sha256}` under
+`schema_version: 3`, beside `check_motion` and, for a correction,
+`carry_unchanged: true`; `motion_policy.seed()` reads it and is None for every
+other run. It changes no gate.
+
 What it permits, and only after the changed-part set is established by
 building and exporting EVERY part and hashing each against the source
 archive's `make/made.json` `product_manifest`:

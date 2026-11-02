@@ -59,14 +59,14 @@ NO_WALL_SCHEMA_VERSION = 9
 ELECTRICAL_SCHEMA_VERSION = 10
 # ADR 0096 decision 1c: schema 11 is schema 10 whose shape is the Approved
 # Proof. ``shape`` must say so; geometry prose sections become optional,
-# because the Proof, not the prose, holds the shape. No run seals it until
-# the seeded host path (``--seed-source``) exists.
+# because the Proof, not the prose, holds the shape. The host seals it only
+# with ``--seed-source`` (``needs_seed``).
 SHAPE_SCHEMA_VERSION = 11
 APPROVED_PROOF_SHAPE = "approved-proof"
 # A run may seal these. Schema 7 became sealable once every gate it needs was
 # wired: Make's tree gates (ADR 0092 decision 8, issue #136) and its Manual
 # (decision 9, issue #137), which the host checks before Make is accepted.
-SEALABLE_SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+SEALABLE_SCHEMA_VERSIONS = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 MAX_GUIDE_SHOWS_CHARS = 500
 MAX_GUIDE_STEPS = 24
 MAX_GUIDE_STEP_CHARS = 300
@@ -264,6 +264,12 @@ class DesignContract:
                 "design contract: schema_version %d is validated, but no run can seal it yet"
                 % self.schema_version
             )
+
+    def needs_seed(self) -> bool:
+        """Whether only a seeded run may seal this contract (schema 11, ADR
+        0096): its shape is the Approved Proof, not its words."""
+
+        return self.shape == APPROVED_PROOF_SHAPE
 
     def kit_catalogue(self) -> Optional[Dict[str, Any]]:
         """The catalogue entries a schema 7 or later tree uses, sealed beside

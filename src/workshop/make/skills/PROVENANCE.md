@@ -1,5 +1,13 @@
 # Shared skill provenance
 
+## Workshop-local: MAKE-OPTIONS schema 3 records a seed (2026-11-02, ADR 0096)
+
+- **Local change to upstream `cad` (upstream does not need it: seeding is
+  Workshop's).** `cad/scripts/motion_policy.py` reads `MAKE-OPTIONS.json`
+  schema 3, schema 1/2 plus `seed: {approval_sha256, manifest_sha256}`, and
+  gains `seed()`; `cad/SKILL.md` says so. Schemas 1 and 2 read as before.
+  Only `cad`'s lock moves; `source_commit` values are unchanged.
+
 ## Workshop-local: a fix run starts with no Blocked Report ledger (2026-11-02, issue #181)
 
 - `make-round`: `SKILL.md` and `references/fix-runs.md` say a `workshop fix`

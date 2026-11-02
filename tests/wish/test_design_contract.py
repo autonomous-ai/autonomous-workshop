@@ -905,11 +905,14 @@ class ApprovedProofSchemaTest(unittest.TestCase):
         block["geometries"][0]["wall_min_mm"] = 1.2
         self.assertIn("wall_min_mm is not part of schema_version 9", self._refused(block))
 
-    def test_no_run_seals_schema_11_until_the_seeded_path_exists(self):
+    def test_schema_11_seals_and_needs_a_seed(self):
         contract = parse_design_contract(_contract_text(self._schema11(), prose=_PROSE))
-        with self.assertRaises(ContractError) as caught:
-            contract.check_sealable()
-        self.assertIn("schema_version 11 is validated, but no run can seal it yet", str(caught.exception))
+        contract.check_sealable()
+        self.assertTrue(contract.needs_seed())
+        block = self._schema11()
+        block["schema_version"] = 10
+        block.pop("shape")
+        self.assertFalse(parse_design_contract(_contract_text(block, prose=_PROSE)).needs_seed())
 
     def test_an_unknown_schema_lists_eleven(self):
         block = self._schema11()
