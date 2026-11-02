@@ -937,6 +937,40 @@ def _carried_steps(project: Path) -> set[Path]:
     return carried
 
 
+BOUGHT_BODIES = "measure/bought-bodies.json"
+BOUGHT_BODY_STEP = re.compile(r"bought/bought_[a-z0-9_]+\.step")
+
+
+def _bought_steps(project: Path) -> set[Path]:
+    """The bought-body STEP files ``measure/bought-bodies.json`` lists.
+
+    ``bought_model.py --build`` (ADR 0095, 2026-11-01) writes each not-printed
+    Bought Part body as ``bought/<name>.step`` and records it with its sha256.
+    Those files are the model's bought bodies, not components needing a
+    mount: ``--final`` replans them and the host checks them by hash. Only a
+    listed path whose bytes are the recorded ones is excluded; any other STEP
+    under ``bought/`` stays a stray, and a list that is no ``bought-bodies``
+    document excludes nothing.
+    """
+    try:
+        document = json.loads((project / BOUGHT_BODIES).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    if not isinstance(document, dict) or document.get("kind") != "bought-bodies":
+        return set()
+    listed: set[Path] = set()
+    for key in ("bodies", "routes"):
+        items = document.get(key)
+        for item in items if isinstance(items, list) else []:
+            step = item.get("step") if isinstance(item, dict) else None
+            if not isinstance(step, str) or not BOUGHT_BODY_STEP.fullmatch(step):
+                continue
+            path = project / step
+            if path.is_file() and not path.is_symlink() and _sha256_file(path) == item.get("step_sha256"):
+                listed.add(path.resolve())
+    return listed
+
+
 def _component_steps(project: Path) -> tuple[list[Path], list[Path]]:
     """Component STEP files, split into canonical and misplaced paths.
 
@@ -950,9 +984,12 @@ def _component_steps(project: Path) -> tuple[list[Path], list[Path]]:
     Every remaining STEP is bought/foreign geometry and must live under ``ref/``
     so the final mount preflight cannot be bypassed by putting the supplier file
     in a sibling ``catalog/`` directory and checking a hand-authored envelope.
+    The one exception is a bought body ``measure/bought-bodies.json`` lists
+    with its exact bytes (``_bought_steps``).
     """
     reference_dir = project / "ref"
     carried = _carried_steps(project)
+    bought = _bought_steps(project)
     canonical: list[Path] = []
     misplaced: list[Path] = []
     for path in sorted(project.rglob("*")):
@@ -964,7 +1001,7 @@ def _component_steps(project: Path) -> tuple[list[Path], list[Path]]:
         # a generated deliverable, not a fetched component.
         if Path(str(path) + ".py").is_file():
             continue
-        if path.resolve() in carried:
+        if path.resolve() in carried or path.resolve() in bought:
             continue
         if reference_dir in path.parents:
             canonical.append(path)
@@ -2467,6 +2504,27 @@ def self_check() -> int:
             fixture("a component STEP outside ref/ cannot bypass the mount preflight",
                     img + ["--unpowered"], "Move a component source under ref/")
 
+            # bought_model.py writes each Bought Part body as bought/<name>.step
+            # and lists it with its sha256 (issue #186): exactly those bytes are
+            # bought bodies, and any other STEP in the group is still a stray.
+            body = "ISO-10303-21;\nbought usb-c\nEND-ISO-10303-21;\n"
+            listed = json.dumps({"kind": "bought-bodies", "schema_version": 1, "routes": [],
+                                 "bodies": [{"name": "bought_usb_c", "step": "bought/bought_usb_c.step",
+                                             "step_sha256": hashlib.sha256(body.encode()).hexdigest()}]})
+            bought_project = _sc_project(root, {"bought/bought_usb_c.step": body,
+                                                "measure/bought-bodies.json": listed})
+            components, misplaced = _component_steps(bought_project)
+            case("a bought body measure/bought-bodies.json lists is no component",
+                 not components and not misplaced, f"got {components} and {misplaced}")
+            (bought_project / "bought" / "bought_usb_c.step").write_text(body + "edited\n", encoding="utf-8")
+            _components, misplaced = _component_steps(bought_project)
+            case("a listed bought body whose bytes changed is a stray again",
+                 [p.name for p in misplaced] == ["bought_usb_c.step"], f"got {misplaced}")
+            _sc_project(root, {"bought/bought_usb_c.step": body, "bought/bought_spare.step": body,
+                               "measure/bought-bodies.json": listed})
+            fixture("an unlisted STEP beside the bought bodies still blocks final",
+                    img + ["--unpowered"], "bought/bought_spare.step")
+
             # The mesh route converts a supplied STL into ref/<name>.step and
             # gives it a carrier entry that imports and returns it, so that file
             # is the model rather than a part seated in one -- a mount row would
@@ -3015,7 +3073,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "resolve bought/foreign or stale STEP files before final verification: "
                 f"{listed}. Move a component source under ref/, or delete a stale exported "
                 "copy; only generated STEP artifacts with sibling .step.py entries belong "
-                "elsewhere. Every component under ref/ must be checksum-pinned and declared "
+                "elsewhere, besides the bought bodies measure/bought-bodies.json lists with their "
+                "exact bytes. Every component under ref/ must be checksum-pinned and declared "
                 "in measure/mounts.json"
             )
         mount_manifest = project / "measure" / "mounts.json"
