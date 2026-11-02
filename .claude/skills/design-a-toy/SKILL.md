@@ -212,20 +212,15 @@ until they say it is right.
    [checklist-prompt.md](checklist-prompt.md), given only the chosen Concept
    Image and its three views. It writes `CONCEPT-CHECKLIST.md` beside the
    contract: 8 to 12 traits that make this concept itself, with measured
-   ratios where it can. The owner marks it here, not at Stage 4: the Proof
-   builds to the marks and the Proof Critic judges by them long before the
-   owner's first look at the Proof. Ask one short question beside the
-   concept, proposing a mark for each trait from what the human already
-   decided: "Required: T1-T6, T8. Changeable: T7, T9-T12. OK, or which to
-   move?" Write the answer into the "owner" column. When the human does not
-   answer before the Proof starts, write your proposed marks with
-   "(proposed)", treat every trait as required, and show the proposed marks
-   again at Stage 4 for the human to confirm.
+   ratios where it can. Every trait is required (owner rule, 2026-11-02):
+   its "owner" cell says "required". Do not ask the owner to mark the
+   checklist and do not propose a changeable mark. A mark changes only when
+   the Proof or its critic finds a trait that cannot be made, and then only
+   by the owner's answer (Stage 3a, **Trait at risk**).
 
 Done when: the human has said the chosen Concept Image is right, its three
 views agree, every detail at risk has the human's answer in the spec, and
-every trait of `CONCEPT-CHECKLIST.md` is marked required or changeable (by the
-human, or "(proposed)" until Stage 4).
+`CONCEPT-CHECKLIST.md` lists its traits, each "required".
 
 ## Stage 2 - Draft the contract
 
@@ -617,6 +612,17 @@ decision 1c).
    camera mismatch re-estimates that camera. When it cannot settle one
    Component from the whole toy it asks for a close look at that Component
    alone, which the same thread judges.
+   **Trait at risk.** When the Proof's findings or the critic show that a
+   checklist trait cannot be made (a print gate fails on it, a function or
+   mechanism of the contract forbids it, or it breaks the spec's cost cap),
+   stop and ask the owner before another round. Show the trade-off in
+   pictures: the concept's crop of the trait beside the Proof at the same
+   camera with the smallest change that makes it (and a second way, if
+   there is one), with the cause in one line and the way you recommend.
+   Write the owner's answer into that trait's "owner" cell ("changed: tail
+   2 mm thicker to pass the wall gate (owner, 2026-11-02)"), then go on;
+   the critic judges the trait by that answer. Never change a mark without
+   the owner.
 6. **Print gates.** `FINDINGS.md` lists every failure of Make's own print
    gates, run by Make's own code on every printable Part in its print
    stance at the contract's nozzle, and every placement, At the limit and
@@ -1266,8 +1272,8 @@ Reference Image; until they do, neither is sealed.
 Open the page with the chosen Concept Image beside the Contract Proof at
 the concept's cameras and their 50% overlay, and the checklist count in one
 line ("11 of 12 traits kept; the tail is shorter, as you chose for
-printing"). If any checklist mark is still "(proposed)", list those marks
-in one line for the human to confirm. Then show each reference as its Stage 3a compare: the AI image,
+printing"). Every trait changed there is one the owner already answered at
+Stage 3a. Then show each reference as its Stage 3a compare: the AI image,
 the Contract Proof at the same camera and their 50% overlay, side by side,
 then the Proof Critic's open lines, one plain line each. Approving now means
 "this is what ships" (ADR 0096): Workshop certifies this Proof and models

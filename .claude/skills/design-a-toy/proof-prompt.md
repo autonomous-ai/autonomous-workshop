@@ -150,7 +150,11 @@ stays in the Proof.
    with the contract words that put the material there: never change the
    model to pass it. A failure on your own shape is repaired in make.md's
    overhang order and listed under "Shape repairs" (the part, the gate, what
-   you changed), which the Proof Critic reads. Also list, under "At the limit", every wall,
+   you changed), which the Proof Critic reads. When a gate failure, a
+   function or mechanism the contract states, or the spec's cost cap stops
+   you building a `CONCEPT-CHECKLIST.md` trait as drawn, list it under
+   "Trait at risk": the trait id, the cause, and the smallest change that
+   makes it. Never drop or change the trait yourself: the owner decides. Also list, under "At the limit", every wall,
    web, land, relief or cut the contract sizes exactly at its print minimum
    (a 0.80 web at a 0.8 minimum): it can pass here and fail in Make, whose
    model of it differs in detail and can be measured on a coarser grid (the

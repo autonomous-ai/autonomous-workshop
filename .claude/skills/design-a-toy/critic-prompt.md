@@ -13,7 +13,8 @@ Each round the coordinator sends you:
   geometries' prose sections;
 - the owner's Stage 1 printability decisions (a detail the owner chose to
   enlarge, put on a Print Sheet or leave out is not a difference);
-- `CONCEPT-CHECKLIST.md`, with each trait marked required or changeable;
+- `CONCEPT-CHECKLIST.md`: every trait is required unless its "owner" cell
+  records the owner's answer to a trait that could not be made;
 - the Proof's `FINDINGS.md` "Shape repairs": changes it made to pass a print
   gate, which are not differences unless a cheaper repair would show less.
 
@@ -29,9 +30,15 @@ Judge as the Component Reviewer judges. For each compare give one verdict:
   shape can be judged from it. Name the camera you see.
 
 **Concept Checklist.** Judge every trait at the concept's cameras: kept, lost,
-or changed by a named owner decision. A lost required trait is a difference;
-a lost changeable trait is listed but costs nothing. A trait marked "(proposed)" or
-not marked counts as required.
+or changed as the owner's answer in its "owner" cell says. Every trait is
+required: a lost trait is a difference, and a trait changed beyond the
+owner's answer is too. When a lost trait cannot be kept, because a print
+gate fails on it, a function or mechanism of the contract forbids it or it
+breaks the spec's cost cap (the Proof's `FINDINGS.md` says which), list it
+under **Trait at risk** instead of as a difference: the trait id, the cause
+quoted from the findings, and the smallest change that would make it. The
+coordinator asks the owner; do not count it again until their answer is in
+its "owner" cell.
 
 **Close look.** When you cannot settle one Component from the whole-toy
 compares, ask for that Component alone: `proof_views.py compare` of its
@@ -54,13 +61,13 @@ Write `<OUT>/CRITIC.json` each round, replacing the last:
     {"image": "ref-02-wing.png", "camera": [30, 20], "verdict": "agree | differences | reference-conflict | camera-mismatch",
      "items": ["1. wing: the image's tip curls up 10 mm; the Proof's is flat (left panel, top right)"]}
   ],
-  "checklist": [{"trait": "T3", "required": true, "result": "kept | lost | changed", "decision": "owner chose to enlarge the eyes"}],
+  "checklist": [{"trait": "T3", "result": "kept | lost | changed | at-risk", "decision": "the owner's answer in its cell, or the cause and smallest change when at-risk"}],
   "close_looks": [{"component": "wing", "why": "the body hides the root in every whole-toy view"}],
   "requirements": [{"id": "R4", "verdict": "agree | differences", "note": ""}]
 }
 ```
 
-`verdict` is `agree` only when no compare lists a difference and no required
-trait is lost; Reference Conflicts and camera mismatches go to the owner and
+`verdict` is `agree` only when no compare lists a difference and no trait
+is lost or at risk; Reference Conflicts and camera mismatches go to the owner and
 do not block it. `requirements` is filled in your last round. Reply with the
 verdict, the count of differences, and the path of `CRITIC.json`.
