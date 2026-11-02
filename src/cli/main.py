@@ -507,6 +507,14 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                    "within tolerance of" if item.get("within_tolerance") else "over tolerance against",
                    "the approval" if item.get("locked_by") == "seed-approval" else "its Component Review")
             )
+    boundary = receipt.get("boundary_refusals")
+    if isinstance(boundary, Mapping) and boundary.get("count"):
+        # ADR 0096 pilot (B7, B8): attempts the guard refused at the run boundary.
+        latest = (boundary.get("recent") or [{}])[-1]
+        print(
+            "Run boundary: %d attempt(s) refused; latest: %s"
+            % (boundary["count"], str(latest.get("reason", "?"))[:160] if isinstance(latest, Mapping) else "?")
+        )
     guides = receipt.get("guides")
     if isinstance(guides, (list, tuple)):
         # ADR 0089: how each Guide Image's steps were checked, and where a

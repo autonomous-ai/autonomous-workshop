@@ -20,6 +20,8 @@ from tests.invent.fake_gamevault import install_fake_gamevault
 from tests.skills import test_seal_proof as seal_tests
 from tests.workflow.test_resume_motion import MotionLauncher
 from workshop.errors import ContractError, StateConflict
+from workshop.make.make_round_guard import BOUNDARY_LOG_NAME
+from workshop.make.role_guard import MAKE_ROUND_GUARD_DIRECTORY
 from workshop.wish import Wish
 from workshop.wish.seed import seed_context, validate_seed
 import workshop.workflow.native_run as host
@@ -64,6 +66,19 @@ class SeededRunTest(unittest.TestCase):
         options = json.loads((workspace / "MAKE-OPTIONS.json").read_bytes())
         self.assertEqual((options["check_motion"], options["seed"]), (True, frozen))
         self.assertEqual(len(self.launcher.starts), 1)
+
+    def test_the_receipt_reports_run_boundary_refusals(self):
+        # ADR 0096 pilot (B7, B8): a refusal the guard logged reaches the receipt.
+        receipt = host.start_native_run(self.wish, seed_source=self.proof)
+        self.assertNotIn("boundary_refusals", receipt)
+        paths = host.native_run_paths(self.product_id)
+        log = paths.host_state / MAKE_ROUND_GUARD_DIRECTORY / BOUNDARY_LOG_NAME
+        if not log.parent.is_dir():
+            self.skipTest("this launcher installs no make_round guard")
+        records = [{"tool": "Bash", "reason": "never install %d" % index} for index in range(7)]
+        log.write_text("".join(json.dumps(record) + "\n" for record in records))
+        receipt = host.resume_native_run(self.product_id, check_motion=True)
+        self.assertEqual(receipt["boundary_refusals"], {"count": 7, "recent": records[-5:]})
 
     def test_a_changed_seed_refuses_before_any_run(self):
         (self.proof / "params.py").write_text("PEG_D = 9\n")
