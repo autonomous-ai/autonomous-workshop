@@ -54,9 +54,6 @@ APPROVED_DIR = "approved"
 CHECKLIST = "CONCEPT-CHECKLIST.md"
 CRITIC = "CRITIC.json"
 FREEZE = Path("measure/shared-helpers-freeze.json")
-# Never part of the seed tree: evidence, caches and the built STEP beside each
-# source (its approved copy is under approved/).
-EXCLUDED_DIRS = {"measure", "__cadgen__", "__pycache__", "compare", ".cache"}
 
 
 class Refusal(Exception):
@@ -68,23 +65,23 @@ def sha256(path: Path) -> str:
 
 
 def manifest(proof: Path) -> dict[str, str]:
-    """Project-relative path -> sha256 of every file of the seed tree."""
+    """Relative path -> sha256 of every file of the seed tree: the host's own
+    definition (`workshop.wish.seed.seed_manifest`), so design seals exactly
+    the files `--seed-source` checks."""
 
-    files = {}
-    for path in sorted(proof.rglob("*")):
-        relative = path.relative_to(proof)
-        if path.is_symlink():
-            raise Refusal("%s is a symlink; the seed tree holds only plain files" % relative.as_posix())
-        if not path.is_file() or any(part in EXCLUDED_DIRS for part in relative.parts[:-1]):
-            continue
-        if relative.as_posix() == APPROVAL or (len(relative.parts) == 1 and path.suffix in (".step", ".log")):
-            continue
-        files[relative.as_posix()] = sha256(path)
-    return files
+    from workshop.errors import ContractError
+    from workshop.wish.seed import seed_manifest
+
+    try:
+        return seed_manifest(proof)
+    except ContractError as exc:
+        raise Refusal(str(exc)) from exc
 
 
 def manifest_sha256(files: dict[str, str]) -> str:
-    return hashlib.sha256(json.dumps(files, sort_keys=True).encode()).hexdigest()
+    from workshop.wish.seed import manifest_sha256 as digest
+
+    return digest(files)
 
 
 def identities(proof: Path, contract: Path) -> dict:
