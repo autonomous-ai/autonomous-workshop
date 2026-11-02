@@ -68,6 +68,12 @@ uv run workshop wish --contract build-a-toy/r00/CONTRACT.md --inventor <inventor
   --no-publish --turn-minutes 360 --max-tokens 100000000 [--check-motion true]
 ```
 
+When design sealed an Approved Proof (`<contract-dir>/proof/APPROVAL.json`
+exists; a schema 11 contract always has one, ADR 0096), add `--seed-source
+<contract-dir>/proof`. Make then certifies that build instead of modelling
+the toy again. The `Name this toy exactly` line does not change the
+contract the seed binds.
+
 **Show the person the exact command and wait for explicit approval.** Then run
 it. When the receipt prints, check that its `References:` line reports as
 many images as the contract lists, its `Guides:` line as many Guide
@@ -215,13 +221,18 @@ uv run workshop fix "<previous-run-workspace>" --prompt-file build-a-toy/r<NN>/b
   --no-publish --turn-minutes 360 --max-tokens 100000000 [--check-motion true]
 ```
 
+A seeded toy's correction takes `--seed-source <contract-dir>/proof` too,
+after any design-side amendment has been re-sealed (below).
+
 Check the receipt's `References:` line against the contract's reference
 count, exactly as in Step 2, and stop if they differ. Record the new wish id in
 the ledger, then return to Step 3.
 
 ## Step 7 - Publish the conforming build
 
-Only a build with zero findings is published. It carries a suffixed title
+Only a build with zero findings is published. In a seeded toy, first show
+the owner every `seed_deviations` entry of the receipt; a visible one
+waits for their approval. It carries a suffixed title
 such as `<title> v03`. Publish it under the clean `<title>` with
 `uv run workshop publish <wish-id> --title "<title>"`. This re-seals only the
 host's own Release; Make's sealed bytes are untouched, no correction run is
@@ -379,8 +390,16 @@ one of these: fold it as above.) Fix the contract:
    none: open a harness issue and fix it like any harness defect, and record
    it in the entry's `design_check`. The swept-volume-over-ceiling check in
    Stage 3c is the first such check (attempt 15).
-4. **Apply it, or batch it for the owner**, by the approval rule below.
-5. **Resume the stopped run with it when it is invisible.** Once every
+4. **In a seeded toy, rebuild and re-seal the kept Proof** (ADR 0096).
+   Rebuild the Proof in `<contract-dir>/proof` from the amended contract,
+   then run `proof_diff` against the last Approved Proof's `approved/`.
+   Within tolerance, re-seal with `seal_proof.py seal` without waiting for
+   the owner. Over tolerance, ask the Proof Critic again, show the owner the
+   change as a visible one, and re-seal only on their approval. An in-run
+   (ADR 0085) amendment folds back as below; `proof_diff` refuses one that
+   changed the shape.
+5. **Apply it, or batch it for the owner**, by the approval rule below.
+6. **Resume the stopped run with it when it is invisible.** Once every
    Contract Contradiction of the attempt is applied, invisible (`visible:
    false`) and nothing else is pending, `ledger.py next` prints
    `resume-amendment`. Resume the run that stopped instead of relaunching,
