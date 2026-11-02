@@ -207,6 +207,22 @@ def copy_seed(seed: SeedApproval, source: Path, destination: Path) -> None:
             raise ContractError("seed: %s changed while it was copied" % name)
 
 
+# Kept in step with ``NAME_LINE`` in ``workshop.make.contract_amendments``:
+# build-a-toy prepends this line to the contract file a round seals.
+NAME_LINE = re.compile(r"Name this (?:toy|revision) exactly: [^\n]*")
+
+
+def seed_contract_sha256(text: str) -> str:
+    """The sha256 the Approved Proof binds for a contract text: the bytes
+    design sealed, without a leading build-a-toy name line (and the blank
+    lines after it), which names a build, not its shape."""
+
+    first, _, rest = text.partition("\n")
+    if NAME_LINE.fullmatch(first):
+        text = rest.lstrip("\n")
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
 def seed_context(seed: SeedApproval, contract_sha256: str) -> Dict[str, str]:
     """What the Wish context records of its seed: the hashes the host binds
     and who approved it when, for the receipt and status."""

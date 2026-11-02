@@ -46,6 +46,15 @@ class SeedSourceTest(unittest.TestCase):
         self.assertEqual(set(recorded), {"approval_sha256", "manifest_sha256", "contract_sha256",
                                          "approved_by", "date"})
 
+    def test_a_round_copy_with_a_name_line_binds_the_same_contract(self):
+        copy = self.contract.with_name("r00-CONTRACT.md")
+        copy.write_text("Name this toy exactly: Beaver v01.\n\n" + self.contract.read_text())
+        recorded = _load_seed(self._args(contract=copy), self.design)
+        self.assertEqual(recorded["contract_sha256"], seal_tests.sha(self.contract))
+        copy.write_text("Name this toy exactly: Beaver v01.\n\n" + self.contract.read_text() + "x")
+        with self.assertRaisesRegex(ContractError, "sealed for another contract"):
+            _load_seed(self._args(contract=copy), self.design)
+
     def test_no_seed_for_an_ordinary_contract(self):
         self.assertIsNone(_load_seed(self._args(seed_source=None), {"schema_version": 10}))
         self.assertIsNone(_load_seed(self._args(seed_source=None), None))

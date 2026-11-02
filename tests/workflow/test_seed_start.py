@@ -76,6 +76,8 @@ class SeedStartTest(unittest.TestCase):
         self._refused("only the spark workflow", self._wish(), effort="forge")
 
     def test_the_objective_must_be_the_approved_contract(self):
+        named = "Name this toy exactly: Beaver v01.\n" + self.text
+        self.assertIsNotNone(self._start(self._wish(objective=named))[0])
         self._refused("another contract than the sealed objective", self._wish(objective=self.text + "\nmore"))
         # A correction's objective is its prompt; the seed binds the contract hash it records.
         self.assertIsNotNone(self._start(self._wish(objective="fix the lid"), snapshot=b"snapshot")[0])

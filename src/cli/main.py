@@ -1048,7 +1048,7 @@ def _load_seed(args: argparse.Namespace, sealed_contract: Optional[Mapping]) -> 
     A schema 11 contract (``shape: approved-proof``) seals only with a seed;
     a seed needs a contract and the spark workflow."""
 
-    from workshop.wish.seed import contract_geometry_ids, seed_context, validate_seed
+    from workshop.wish.seed import contract_geometry_ids, seed_context, seed_contract_sha256, validate_seed
 
     source = getattr(args, "seed_source", None)
     shaped = isinstance(sealed_contract, Mapping) and sealed_contract.get("shape") == "approved-proof"
@@ -1071,7 +1071,7 @@ def _load_seed(args: argparse.Namespace, sealed_contract: Optional[Mapping]) -> 
         # The sealed objective is the file's text; the seed's contract hash is
         # of its bytes. Only one encoding keeps the two the same.
         raise WorkshopError("--seed-source needs a UTF-8 contract file with LF line endings")
-    digest = hashlib.sha256(contract_bytes).hexdigest()
+    digest = seed_contract_sha256(contract_bytes.decode("utf-8"))
     seed = validate_seed(source, contract_geometry_ids(sealed_contract), digest)
     return seed_context(seed, digest)
 

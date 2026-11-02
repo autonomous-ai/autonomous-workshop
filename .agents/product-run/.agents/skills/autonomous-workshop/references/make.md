@@ -21,6 +21,8 @@ only when it applies:
   [make-older-runs.md](make-older-runs.md).
 - A fix run (`MAKE-OPTIONS.json` has `carry_unchanged: true`): the make-round
   skill's `references/fix-runs.md`.
+- A seeded run (`MAKE-OPTIONS.json` has `seed`):
+  [make-seeded.md](make-seeded.md).
 
 ## Critical path
 

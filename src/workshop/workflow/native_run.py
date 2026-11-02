@@ -11507,7 +11507,7 @@ def _seed_start_inputs(
     against the sealed contract and the Wish's recorded seed; the CLI's
     earlier check is a courtesy, never the authority."""
 
-    from workshop.wish.seed import contract_geometry_ids, seed_files, validate_seed
+    from workshop.wish.seed import contract_geometry_ids, seed_contract_sha256, seed_files, validate_seed
 
     context = wish.context
     recorded = context.get("seed")
@@ -11526,9 +11526,7 @@ def _seed_start_inputs(
         "approval_sha256", "manifest_sha256", "contract_sha256", "approved_by", "date",
     }:
         raise ContractError("the Wish does not record the seed it is started from")
-    if revision_snapshot is None and (
-        hashlib.sha256(wish.objective.encode("utf-8")).hexdigest() != recorded["contract_sha256"]
-    ):
+    if revision_snapshot is None and seed_contract_sha256(wish.objective) != recorded["contract_sha256"]:
         raise ContractError("the seed was approved for another contract than the sealed objective")
     seed = validate_seed(Path(seed_source), contract_geometry_ids(contract), recorded["contract_sha256"])
     if seed.frozen() != {key: recorded[key] for key in ("approval_sha256", "manifest_sha256")}:

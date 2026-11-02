@@ -270,6 +270,7 @@ MAKE_OPTIONS_NAME = "MAKE-OPTIONS.json"
 MAKE_COMPANION_REFERENCES = (
     "references/make-forge-quest.md",
     "references/make-older-runs.md",
+    "references/make-seeded.md",
 )
 # Host-owned camera-only amendments of a schema 3 Design Contract (ADR 0083).
 AMENDMENTS_NAME = "CONTRACT-AMENDMENTS.json"
