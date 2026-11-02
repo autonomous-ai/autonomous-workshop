@@ -23,7 +23,7 @@ import tempfile
 from pathlib import Path
 
 from workshop.errors import StateConflict
-from workshop.workflow.native_run import _sealed_seed, _seed_start_inputs
+from workshop.workflow.native_run import _sealed_seed, _sealed_seed_components, _seed_start_inputs
 
 
 class SeedStartTest(unittest.TestCase):
@@ -103,6 +103,26 @@ class SeedStartTest(unittest.TestCase):
             (root / "WISH.json").write_bytes(plain)
             self.assertIsNone(_sealed_seed(root, hashlib.sha256(plain).hexdigest()))
             self.assertIsNone(_sealed_seed(root / "missing", "0" * 64))
+
+
+    def test_the_host_reads_the_frozen_approvals_components(self):
+        with tempfile.TemporaryDirectory() as name:
+            root = Path(name)
+            self.assertIsNone(_sealed_seed_components(root))
+            (root / "MAKE-OPTIONS.json").write_text('{"check_motion":false,"schema_version":1}')
+            self.assertIsNone(_sealed_seed_components(root))
+            approval = (self.proof / "APPROVAL.json").read_bytes()
+            frozen = {"approval_sha256": hashlib.sha256(approval).hexdigest(), "manifest_sha256": "a" * 64}
+            (root / "MAKE-OPTIONS.json").write_text(json.dumps({"schema_version": 3, "check_motion": False,
+                                                                 "seed": frozen}))
+            with self.assertRaisesRegex(StateConflict, "missing"):
+                _sealed_seed_components(root)
+            (root / "seed").mkdir()
+            (root / "seed/APPROVAL.json").write_bytes(approval)
+            self.assertEqual(set(_sealed_seed_components(root)), {"body"})
+            (root / "seed/APPROVAL.json").write_bytes(approval + b" ")
+            with self.assertRaisesRegex(StateConflict, "not the frozen one"):
+                _sealed_seed_components(root)
 
 
 if __name__ == "__main__":

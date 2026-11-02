@@ -2780,7 +2780,33 @@ def _verify_make_round_workers(
         run_root=Path(run_root),
         require_every_component=require_every_component,
         bind_reviewers=bind_reviewers,
+        seed_components=_sealed_seed_components(Path(run_root)),
     )
+
+
+def _sealed_seed_components(run_root: Path) -> Optional[dict[str, Any]]:
+    """The sealed Approved Proof's Components of a seeded run (ADR 0096),
+    read from ``seed/APPROVAL.json`` after checking it is the approval
+    ``MAKE-OPTIONS.json`` froze; None for a run with no seed."""
+
+    try:
+        options = json.loads((run_root / "MAKE-OPTIONS.json").read_bytes())
+    except (OSError, ValueError):
+        return None
+    seed = options.get("seed") if isinstance(options, dict) else None
+    if not isinstance(seed, dict):
+        return None
+    try:
+        content = (run_root / "seed" / "APPROVAL.json").read_bytes()
+    except OSError as exc:
+        raise StateConflict("the sealed seed approval is missing") from exc
+    if _sha256(content) != seed.get("approval_sha256"):
+        raise StateConflict("the sealed seed approval is not the frozen one")
+    approval = _strict_json_bytes(content, label="sealed seed approval")
+    components = approval.get("components") if isinstance(approval, dict) else None
+    if not isinstance(components, dict):
+        raise StateConflict("the sealed seed approval has no components")
+    return components
 
 
 def _made_component_acceptances(product: Mapping[str, Any]) -> list[dict[str, Any]]:

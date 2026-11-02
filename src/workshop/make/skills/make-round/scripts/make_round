@@ -63,6 +63,18 @@ component round without a nonce in such a run (the host's sealed
 .agents/MAKE-ROUND-GUARD.json) is refused at once: run make_round as its own
 plain Bash command so the guard sees it (issue #113).
 
+In a run seeded from an Approved Proof (Workshop ADR 0096) a component round
+reads the run's sealed seed/APPROVAL.json. A passing round of a Component no
+review has judged that is the approved Component (B-rep identity and carry
+key) is locked by the owner's approval, review carried_from "seed-approval",
+with nothing rendered. Any other passing round runs proof_diff against the
+approved STEP (seed-diff.json): within tolerance under the same rows it is
+locked the same way with the diff recorded, otherwise it awaits its
+Component Review as in any run. The root may run a seeded round itself: the
+guard passes --seed-nonce, and make_round refuses such a round, leaving
+nothing, unless it is exactly the approved Component; a deviation is a
+Component Worker's round.
+
 When the sealed Design Contract has an Interfaces section (ADR 0082), the
 Workshop Manager first runs --shared-helpers: it builds the samples under
 samples/ and runs the print gates on them, and a pass freezes the Shared
@@ -1849,7 +1861,9 @@ def render_summary(summary: dict) -> str:
             lines.append("    inspect %s then use --record-visual <feedback.json>" % visual.get("sheet", visual["packet"]))
     review = summary.get("review")
     if review is not None:
-        carried = " (carried from r%04d)" % review["carried_from"] if review.get("carried_from") else ""
+        carried_from = review.get("carried_from")
+        carried = ("" if not carried_from else " (carried from the Approved Proof)" if carried_from == SEED_APPROVAL
+                   else " (carried from r%04d)" % carried_from)
         verdicts = ""
         if "matches_plan" in review:
             verdicts = "plan=%s ref=%s " % (
@@ -3013,6 +3027,8 @@ def preview_assembly(project: Path, entry: Path, parts: list, cad: Path) -> int:
 # Shape Round counting and the lock; make_round only gathers its inputs.
 
 OPEN, AWAITING, DISAGREED, LOCKED = "open", "awaiting-review", "disagreed", "locked"
+# Workshop ADR 0096: a review a seeded run's Approved Proof stands in for.
+SEED_APPROVAL = "seed-approval"
 
 
 def round_policy(previous: dict, new: dict) -> dict:
@@ -3027,7 +3043,12 @@ def round_policy(previous: dict, new: dict) -> dict:
     ``identity`` (None when it did not build), ``helpers`` (current sha256
     of the Shared Helpers it imports), ``checks_ok`` (None to ask only
     whether it is admitted) and ``carry_key`` (identity, shown reference
-    bytes and contract rows together).
+    bytes and contract rows together). In a seeded run (Workshop ADR 0096)
+    ``seed`` is the approved Component, ``{"identity", "carry_key",
+    "contract_rows", "within", "diff"}``: a passing round of a Component no
+    review has judged yet that equals it (identity and carry key), or whose
+    ``proof_diff`` against the approved STEP is ``within`` tolerance with the
+    same rows, is locked by the owner's approval instead of a review.
 
     Returns ``{"admit", "refusal", "shape_round", "unlocks", "carried",
     "state"}``: ``carried`` is the review this round inherits, ``state`` the
@@ -3057,7 +3078,8 @@ def round_policy(previous: dict, new: dict) -> dict:
                             for item in unlocks)):
             unlocks.append({"kind": "contract-amendment", "contract_rows": rows})
         if not unlocks and identity != reviewed["identity"]:
-            how = "an agreeing review" if reviewed.get("agrees") else "a Component Acceptance"
+            how = ("the owner's approval of the Proof, applied" if reviewed.get("carried_from") == SEED_APPROVAL
+                   else "an agreeing review" if reviewed.get("agrees") else "a Component Acceptance")
             result.update(admit=False, refusal=(
                 "the Component is locked by %s of r%04d; its geometry may change only when a Shared "
                 "Helper it imports changes, a Contract Amendment changes its rows, or the Workshop Manager "
@@ -3079,6 +3101,12 @@ def round_policy(previous: dict, new: dict) -> dict:
     state = {"phase": phase, "identity": identity, "round": new.get("round"),
              "shape_rounds": shape_rounds + (1 if result["shape_round"] else 0),
              "reviewed": reviewed, "unlocks": unlocks}
+    approved = seed_review(new) if passed and reviewed is None and phase in (OPEN, AWAITING) else None
+    if approved is not None:
+        result["carried"] = approved
+        state.update(phase=LOCKED, reviewed=approved, unlocks=[])
+        result["state"] = state
+        return result
     if phase == LOCKED:
         if passed and carry:
             # The reviewed B-rep came back: the review carries and relocks.
@@ -3095,6 +3123,83 @@ def round_policy(previous: dict, new: dict) -> dict:
         state.update(phase=AWAITING if passed else OPEN, reviewed=None)
     result["state"] = state
     return result
+
+
+def seed_review(new: dict) -> dict | None:
+    """The review the Approved Proof stands in for (Workshop ADR 0096), or
+    None when the round is neither the approved Component nor within
+    ``proof_diff`` tolerance of it under the same contract rows."""
+
+    seed = new.get("seed")
+    identity = new.get("identity")
+    if not seed or identity is None:
+        return None
+    exact = identity == seed.get("identity") and new.get("carry_key") == seed.get("carry_key")
+    within = (not exact and seed.get("within") is True
+              and new.get("contract_rows") is not None and new.get("contract_rows") == seed.get("contract_rows"))
+    if not exact and not within:
+        return None
+    approved = {"round": new.get("round"), "carried_from": SEED_APPROVAL, "identity": identity,
+                "carry_key": new.get("carry_key"), "agrees": True, "accepted": False,
+                "imported_helpers": new.get("helpers") or {}, "contract_rows": new.get("contract_rows"),
+                "review": {"agrees": True, "seed": "exact" if exact else "within-tolerance",
+                           "reviewer": "the owner (Approved Proof)",
+                           "reason": ("the Component the owner approved in design" if exact else
+                                      "within proof_diff tolerance of the Component the owner approved")}}
+    if within:
+        approved["seed_diff"] = seed.get("diff")
+    return approved
+
+
+def carried_label(carried: dict) -> str:
+    """Where a carried review came from: its round, or the Approved Proof."""
+
+    if carried.get("carried_from") == SEED_APPROVAL:
+        return "the Approved Proof"
+    return "r%04d" % carried["round"]
+
+
+def seed_approval(project: Path) -> dict | None:
+    """The Approved Proof a seeded run froze (Workshop ADR 0096): the run's
+    sealed ``seed/APPROVAL.json``, checked against the hash
+    ``MAKE-OPTIONS.json`` froze, or None in every other run."""
+
+    if run_root(project) is None:
+        return None
+    seed = motion_policy().get("seed")
+    frozen = seed() if seed is not None else None
+    if frozen is None:
+        return None
+    path = run_root(project) / "seed" / "APPROVAL.json"
+    try:
+        content = path.read_bytes()
+    except OSError as exc:
+        raise ValueError("this run is seeded but seed/APPROVAL.json is unreadable: %s" % exc) from exc
+    if hashlib.sha256(content).hexdigest() != frozen.get("approval_sha256"):
+        raise ValueError("seed/APPROVAL.json is not the approval MAKE-OPTIONS.json froze")
+    approval = json.loads(content)
+    if not isinstance(approval, dict) or not isinstance(approval.get("components"), dict):
+        raise ValueError("seed/APPROVAL.json has no components")
+    return approval
+
+
+def seed_diff(approved: Path, built: Path, out: Path) -> dict:
+    """``proof_diff`` of one built Component against its approved STEP,
+    written to ``out/seed-diff.json``. ``passed`` is None when the diff
+    could not run, which counts as over tolerance."""
+
+    try:
+        from workshop.make import proof_diff
+        report = proof_diff.compare(approved, built)
+    except Exception as exc:  # noqa: BLE001 - an unmeasured deviation awaits its review
+        report = {"passed": None, "error": "%s: %s" % (type(exc).__name__, exc)}
+    (out / "seed-diff.json").write_text(json.dumps(report, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    return {"passed": report.get("passed"), "report": "seed-diff.json",
+            **({"error": report["error"]} if "error" in report else {}),
+            "parts": [{key: part.get(key) for key in ("part", "passed", "volume_delta", "bbox_side_delta_mm",
+                                                       "two_way", "surface_deviation_mm")}
+                      for part in report.get("parts") or ()],
+            "missing": list(report.get("missing") or ()), "extra": list(report.get("extra") or ())}
 
 
 def review_policy(previous: dict, review: dict) -> dict:
@@ -6019,6 +6124,14 @@ def make_round(args) -> int:
     state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.is_file() else {}
     previous_state = state
     policy = component_policy(state, round_root) if component is not None else None
+    try:
+        approval = seed_approval(project) if component is not None else None
+    except ValueError as exc:
+        print("make_round: %s" % exc, file=sys.stderr)
+        return 2
+    if getattr(args, "seed_nonce", None) is not None and approval is None:
+        print("make_round: a root component round runs only in a seeded run (Workshop ADR 0096)", file=sys.stderr)
+        return 2
     round_index = int(state.get("round", 0)) + 1
     out = Path(args.out) if args.out else round_root / ("r%04d" % round_index)
     if component is not None and out.exists():
@@ -6329,6 +6442,7 @@ def make_round(args) -> int:
     # The round policy (ADR 0081): whether this is a Shape Round, whether an
     # earlier review carries to it, and the lock it leaves.
     outcome = None
+    seed = None
     if component is not None:
         key = carry_key(round_identity, refs, project, rows_digest, rulings)
         # The key the review's own key is compared with: made with the STEP
@@ -6339,9 +6453,33 @@ def make_round(args) -> int:
             key_identity = reviewed_before["step_identity"]
         judged_key = (key if key_identity == round_identity and judged_rows == rows_digest
                       else carry_key(key_identity, refs, project, judged_rows, rulings))
+        seed = None
+        approved_component = (approval or {}).get("components", {}).get(component) if approval else None
+        if isinstance(approved_component, dict):
+            seed = {key: approved_component.get(key) for key in ("identity", "carry_key", "contract_rows")}
+            seed["within"] = None
+            if ok and round_identity is not None and round_identity != seed["identity"]:
+                seed["diff"] = seed_diff(run_root(project) / "seed" / str(approved_component.get("approved_step")),
+                                         built_step, out)
+                seed["within"] = seed["diff"]["passed"]
         outcome = round_policy(policy, {"identity": round_identity, "helpers": current_helpers,
                                         "checks_ok": ok, "carry_key": judged_key, "round": round_index,
-                                        "contract_rows": judged_rows})
+                                        "contract_rows": judged_rows, "seed": seed})
+        exact_seed = (outcome["carried"] is not None and outcome["carried"].get("carried_from") == SEED_APPROVAL
+                      and outcome["carried"]["review"].get("seed") == "exact")
+        if getattr(args, "seed_nonce", None) is not None and not exact_seed:
+            # Workshop ADR 0096: the root runs only a round that is the
+            # Approved Proof; any deviation is a component-worker's round.
+            shutil.rmtree(out)
+            if earlier_step is not None:
+                built_step.write_bytes(earlier_step)
+            elif built_step.is_file():
+                built_step.unlink()
+            print("make_round: this round of %s is not the Approved Proof's Component (%s); a deviation "
+                  "is a component-worker's round. Spawn one component-worker for it and give it this "
+                  "Component's inputs" % (component, "it did not pass its checks" if not ok else
+                                          "its B-rep or carry key differs"), file=sys.stderr)
+            return 2
 
     # 5. Visual inspection is a separate evidence submission, not a model call.
     # A component round that failed its checks is not rendered: nobody reviews
@@ -6351,8 +6489,8 @@ def make_round(args) -> int:
                   "detail": "build and print checks failed; repair them first. Nothing was rendered"}
     elif outcome is not None and outcome["carried"] is not None:
         visual = {"status": "carried", "findings": [],
-                  "detail": "the reviewed B-rep, references and contract rows of r%04d are unchanged"
-                            % outcome["carried"]["round"]}
+                  "detail": "the reviewed B-rep, references and contract rows of %s are unchanged"
+                            % carried_label(outcome["carried"])}
     else:
         # A component round's renders, and a one-piece project's, read the
         # entry's kept build; an assembly entry builds its parts as before.
@@ -6415,7 +6553,7 @@ def make_round(args) -> int:
         carried = outcome["carried"]
         review = None
         if carried is not None:
-            review = {**carried["review"], "carried_from": carried["round"]}
+            review = {**carried["review"], "carried_from": carried.get("carried_from") or carried["round"]}
             if carried.get("acceptance"):
                 summary["accepted"] = carried["acceptance"]
             if carried.get("reference_conflicts"):
@@ -6429,9 +6567,14 @@ def make_round(args) -> int:
             shape_limit=SHAPE_REPAIR_LIMIT, phase=next_policy["phase"], locked=lock_record(next_policy),
             unlock=outcome["unlocks"], imported_helpers=helpers, carry_key=key, contract_rows=rows_digest,
             worker_nonce=getattr(args, "worker_nonce", None),
+            **({"seed_nonce": args.seed_nonce} if getattr(args, "seed_nonce", None) else {}),
             # Issue #98: the B-rep identity the Component Worker reports.
             identity=round_identity,
         )
+        if seed is not None:
+            # Workshop ADR 0096: this round against the Approved Proof.
+            summary["seed"] = {"identity": seed["identity"], "exact": round_identity == seed["identity"],
+                               "within": seed["within"], **({"diff": seed["diff"]} if "diff" in seed else {})}
         if colour_only:
             # Issue #176: only colour words moved in its rows since the review.
             summary["rows_colour_only"] = True
@@ -6813,6 +6956,7 @@ def main(argv=None) -> int:
     parser.add_argument("--contract", metavar="CONTRACT.md", help="with --print-gates-only: the Design Contract whose Assembly Tree says which Parts each kit Component prints (default: the project's installed tree/kit.json); with --shared-helpers outside a run: the Design Contract whose Interfaces the samples must cover (the Contract Proof, ADR 0096)")
     parser.add_argument("--identities-only", action="store_true", help="outside a run, with --contract: print each Component's B-rep identity, STEP sha256, Shared Helpers, contract rows hash and carry key, and the assembly identity, as a component round would compute them; --out also writes the JSON there. seal_proof records an Approved Proof with this (ADR 0096)")
     parser.add_argument("--worker-nonce", help=argparse.SUPPRESS)  # issued by the Workshop guard hook only
+    parser.add_argument("--seed-nonce", help=argparse.SUPPRESS)  # issued to the root of a seeded run only
     parser.add_argument("--self-check", action="store_true")
     args = parser.parse_args(argv)
     if args.self_check:
@@ -6851,7 +6995,7 @@ def main(argv=None) -> int:
             ("--propose-amendment", args.propose_amendment),
             ("--record-amendment-review", args.record_amendment_review),
             ("--contract-amendments", args.contract_amendments), ("--full", args.full), ("--out", args.out),
-            ("--worker-nonce", args.worker_nonce is not None)) if value]
+            ("--worker-nonce", args.worker_nonce is not None), ("--seed-nonce", args.seed_nonce is not None)) if value]
         if others:
             parser.error("--print-gates-only takes only the project, --component or --entry, --nozzle, "
                          "--overhang-angle, --contract and --json, not %s" % ", ".join(others))
@@ -6892,7 +7036,7 @@ def main(argv=None) -> int:
             parser.error("%s are separate records" % " and ".join(blocked_modes))
         if (args.entry or args.require_component_passes or args.record_visual or args.record_review
                 or args.record_unlock or args.full or args.out or args.refs or args.shared_helpers
-                or args.interface or args.worker_nonce):
+                or args.interface or args.worker_nonce or args.seed_nonce):
             parser.error("%s builds nothing and takes no round options" % blocked_modes[0])
         if args.report_blocked and not args.component:
             parser.error("--report-blocked requires --component")
@@ -6904,10 +7048,13 @@ def main(argv=None) -> int:
         if (args.component or args.entry or args.require_component_passes or args.record_visual
                 or args.record_review or args.record_unlock or args.full or args.out or args.refs):
             parser.error("--shared-helpers and --interface take no component, assembly or record options")
-    if args.worker_nonce is not None:
+    if args.worker_nonce is not None and args.seed_nonce is not None:
+        parser.error("--worker-nonce and --seed-nonce are never issued together")
+    nonce = args.worker_nonce if args.worker_nonce is not None else args.seed_nonce
+    if nonce is not None:
         if not args.component or args.record_review or args.record_unlock:
             parser.error("--worker-nonce belongs only to a component build round")
-        if not re.fullmatch(r"[0-9a-f]{32}", args.worker_nonce):
+        if not re.fullmatch(r"[0-9a-f]{32}", nonce):
             parser.error("--worker-nonce is invalid")
     elif (args.component and not (args.record_review or args.record_unlock or blocked_modes)
           and guarded_run(Path(args.project).resolve())):
