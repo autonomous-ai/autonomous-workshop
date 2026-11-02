@@ -50,3 +50,4 @@ ADR. Small factual corrections that do not change the decision are allowed.
 - [0091: Print Sheets carry colour and detail on paper](0091-print-sheets-carry-colour-and-detail-on-paper.md)
 - [0092: An Assembly Tree splits a toy into kit Parts and writes its Manual](0092-kit-assembly-tree-and-manual.md)
 - [0095: Powered toys state their circuit, and Make proves it with check_power](0095-powered-toys.md)
+- [0096: The approved Contract Proof is the build, and Workshop certifies it](0096-the-approved-proof-is-the-build.md) (proposed)
