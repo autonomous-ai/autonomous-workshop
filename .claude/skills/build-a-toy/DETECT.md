@@ -12,6 +12,7 @@ so the same defect must get the same id in every round.
 | `print:<geometry>` | print | a print gate of a Component built to it did not pass in final verification, or no row proves it ran |
 | `count:<geometry>` | geometry | the number of Components built to it differs from `count` |
 | `unmapped:<geometry>` | geometry | no Component could be mapped to the geometry at all |
+| `shape:<geometry>` | geometry | schema 11: a Component built to it is over `proof_diff` tolerance against the Approved Proof it was seeded from |
 | `requirement:<id>` | requirements | the review has no contract-bound row for it (should not happen for a run started with `--contract`) |
 
 Anything that could not be measured is a finding, never a pass. That rule is
@@ -60,6 +61,24 @@ contract's numbers are decisions, not estimates.
   still a finding.
 - `count:<geometry>`: the number of Components mapped to the geometry, against
   `count`. Say what the count was read from.
+### Schema 11: the Approved Proof is the shape
+
+A schema 11 contract (`shape: "approved-proof"`, ADR 0096) states its shape
+by the Proof the owner approved, not by its words. Raise no `extents:` and
+no form-requirement findings for it. Keep `envelope` when the contract states
+it, and keep `print:`, `count:`, motion, power and the contract-owned
+requirement rows. For each geometry, diff every Component built to it
+against the approved STEP the run was seeded from:
+
+```bash
+uv run python -m workshop.make.proof_diff <contract-dir>/proof/approved/part_<role>.step "$R/step/part_<role>.step" --json "$R/shape-<role>.json"
+```
+
+A Part over tolerance is a `shape:<geometry>` finding. Record a Component
+within tolerance whose B-rep is not the approved one in `notes`. These are
+the receipt's `seed_deviations` with `within_tolerance: true`. Schemas 1 to
+10 are unchanged.
+
 ## Print (Make's own gates)
 
 Read `<toy-dir>/make/verification/CAD-GATE.json`, final verification's
