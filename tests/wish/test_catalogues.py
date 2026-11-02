@@ -171,3 +171,59 @@ class CatalogueTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BoughtPartModelTest(unittest.TestCase):
+    """ADR 0095 amendment (2026-11-01): how a Bought Part is drawn in the
+    toy's model, and when a vendor STEP may ship with it."""
+
+    def _bought(self, **model):
+        bought = _bought()
+        bought["parts"][1]["sizes"] = [{"what": "bead diameter", "max_mm": [5.9]},
+                                       {"what": "bead height", "max_mm": [8.7]}]
+        bought["parts"][1]["model"] = model
+        return bought
+
+    def _refused(self, bought):
+        with self.assertRaises(ContractError) as caught:
+            parse_catalogues(_filaments(), bought)
+        return str(caught.exception)
+
+    def test_a_form_built_from_the_entrys_sizes_parses_and_snapshots(self):
+        part = parse_catalogues(_filaments(), self._bought(form="radial-led")).parts["led-3v-warm-white"]
+        self.assertEqual(part.model, {"form": "radial-led"})
+        self.assertEqual(part.snapshot()["model"], {"form": "radial-led"})
+        self.assertEqual(part.size_mm("bead height"), (8.7,))
+        pin = parse_catalogues(_filaments(), _bought()).parts["steel-pin-1.5x29.5"]
+        self.assertNotIn("model", pin.snapshot())
+
+    def test_a_form_needs_its_sizes_and_must_suit_the_category(self):
+        bought = self._bought(form="radial-led")
+        bought["parts"][1]["sizes"] = [{"what": "bead diameter", "max_mm": [5.9]}]
+        self.assertIn("form radial-led is built from a 'bead height' size", self._refused(bought))
+        self.assertIn("form receptacle does not draw a lamp part", self._refused(self._bought(form="receptacle")))
+        self.assertIn("model.form must be one of", self._refused(self._bought(form="blob")))
+        self.assertIn("must be {form} with an optional vendor step",
+                      self._refused(self._bought(form="radial-led", colour="red")))
+
+    def test_a_vendor_step_names_its_licence_and_must_be_redistributable(self):
+        step = {"file": "models/wp7113.step", "sha256": "a" * 64, "licence": "CC-BY-4.0",
+                "url": "https://example.com/wp7113.step", "redistributable": True}
+        part = parse_catalogues(_filaments(), self._bought(form="radial-led", step=step)).parts["led-3v-warm-white"]
+        self.assertEqual(part.model["step"]["licence"], "CC-BY-4.0")
+        refused = self._refused(self._bought(form="radial-led", step=dict(step, redistributable=False)))
+        self.assertIn("must be redistributable", refused)
+        refused = self._refused(self._bought(form="radial-led", step=dict(step, file="../x.step", licence="")))
+        self.assertIn("step.file must be models/<name>.step", refused)
+        self.assertIn("step.licence must name it", refused)
+        self.assertIn("must be exactly {file, licence, redistributable, sha256, url}",
+                      self._refused(self._bought(form="radial-led", step={"file": "models/a.step"})))
+
+    def test_the_packaged_circuit_seeds_name_their_forms(self):
+        parts = load_catalogues().parts
+        expected = {"usb-c-receptacle-power": "receptacle", "microswitch-mini-lever": "lever-switch",
+                    "led-5mm-amber-diffused": "radial-led", "led-2835-warm-2200k": "smd-led",
+                    "resistor-150r": "chip", "resistor-75r": "axial", "wire-28awg": "wire",
+                    "cell-aaa": "cylinder", "contact-aaa-plate": "plate"}
+        self.assertEqual({key: parts[key].model["form"] for key in expected}, expected)
+        self.assertFalse(any((part.model or {}).get("step") for part in parts.values()))

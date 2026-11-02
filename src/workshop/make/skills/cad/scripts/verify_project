@@ -87,6 +87,7 @@ PRINT_DETAILS_SCRIPTS = SCRIPTS_DIR.parents[1] / "print-details" / "scripts"
 KIT_TREE_SCRIPT = MAKE_ROUND_SCRIPT.with_name("kit_tree.py")
 # ADR 0092 decision 9: the kit's Manual, written from the tree and the build.
 KIT_MANUAL_SCRIPT = MAKE_ROUND_SCRIPT.with_name("kit_manual.py")
+BOUGHT_MODEL_SCRIPT = MAKE_ROUND_SCRIPT.with_name("bought_model.py")
 # ADR 0092 (owner decision 2026-10-28): each kit Part, alone in its print stance.
 KIT_PRINT_PARTS_SCRIPT = MAKE_ROUND_SCRIPT.with_name("kit_print_parts.py")
 KIT_COMPANY_FILE = MAKE_ROUND_SCRIPT.parents[1] / "company.json"
@@ -1410,6 +1411,26 @@ def _run_kit_manual(runner: Runner, project: Path) -> int:
     ) != 0 else 0
 
 
+def _run_bought_model(runner: Runner, project: Path) -> int:
+    """A powered toy's Bought Parts in its model (ADR 0095 amendment,
+    2026-11-01): the bought bodies Make drew are still the plan of the
+    sealed circuit, the power report's envelopes and the placements, and the
+    electrical pictures, wiring diagram and Electrical Assembly text are
+    written into measure/electrical/. The host checks them before Make is
+    accepted. Nothing runs for a kit, an unpowered contract or a run sealed
+    before catalogue models existed."""
+
+    if not BOUGHT_MODEL_SCRIPT.is_file():
+        return 0
+    tool = runpy.run_path(str(BOUGHT_MODEL_SCRIPT))
+    if not tool["applies"](project):
+        return 0
+    return 1 if runner.command(
+        [sys.executable, BOUGHT_MODEL_SCRIPT, _path_arg(project, runner.cwd), "--final"],
+        replay_success_stdout=True,
+    ) != 0 else 0
+
+
 def _kit_print_parts(project: Path) -> tuple[dict | None, object | None]:
     """``(kit, kit_print_parts module)`` of a kit run, else ``(None, None)``.
 
@@ -2264,6 +2285,11 @@ def _final(
 
     # ADR 0092 decision 9: the kit's Manual, once its tree and sheets passed.
     if _run_kit_manual(runner, project) != 0:
+        return 1
+
+    # ADR 0095 (2026-11-01): a powered toy's Bought Parts and its circuit
+    # pictures, once its power report passed check_power.
+    if _run_bought_model(runner, project) != 0:
         return 1
 
     # Last, where the print sweep has always run. Two independent reasons put it

@@ -38,6 +38,17 @@ from it passes a carried ``inlet`` part (the USB receptacle). That maps to
 inlet. Such a circuit has no cells to run down, so its ``runtime_h`` is null
 or absent, and ``batteries_included`` is false.
 
+A circuit whose parts partly arrive on one factory-assembled board (ADR 0095
+amendment of 2026-11-01) lists them in an optional ``pcba``: ``{"parts":
+["usb-c", "r-screen", "screen-led"], "bounds_mm": [[-12, 29.4, 2.4], [12, 31.0,
+34.4]]}``. Those parts stay individual catalogue Bought Parts in ``parts``;
+the board itself is no catalogue part, so the contract states its outline,
+the box it fills in the Display Pose frame, which Make draws as the board's
+body and never estimates.
+``assembled_by`` and ``joins`` then say who joins, and how, every part that
+is not on the board, and the toy's Electrical Assembly text and wiring
+diagram are written from both, so the README follows the contract.
+
 Roles are ``check_power``'s. A path lists its parts from the source back to
 the source, without wires: Make's report may put any wire segment between
 them. Every Bought Part the section names is a catalogue entry, sealed beside
@@ -49,6 +60,7 @@ Assembly Tree and its Electrical section name the same catalogue entries.
 from __future__ import annotations
 
 import copy
+import math
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional, Tuple
@@ -84,6 +96,8 @@ FIELDS = {"parts", "paths", "supply_v", "standby_ma", "runtime_h", "switch_logic
           "assembled_by", "joins", "batteries_included"}
 # ``runtime_h`` may be absent when every source is external.
 EXTERNAL_OPTIONAL = {"runtime_h"}
+# Optional sections (ADR 0095 amendment, 2026-11-01).
+OPTIONAL_FIELDS = {"pcba"}
 _ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
@@ -108,6 +122,15 @@ def _number(value: Any) -> bool:
     return not isinstance(value, bool) and isinstance(value, (int, float))
 
 
+def _bounds(value: Any) -> bool:
+    return (
+        isinstance(value, list) and len(value) == 2
+        and all(isinstance(corner, list) and len(corner) == 3 and all(_number(v) and math.isfinite(v) for v in corner)
+                for corner in value)
+        and all(value[0][i] < value[1][i] for i in range(3))
+    )
+
+
 def _text(value: Any) -> bool:
     return isinstance(value, str) and bool(value.strip()) and len(value) <= MAX_TEXT_CHARS
 
@@ -124,7 +147,7 @@ def parse_electrical(
     if not isinstance(value, dict):
         errors.append("%s must be an object" % label)
         return None
-    unknown = sorted(set(value) - FIELDS)
+    unknown = sorted(set(value) - FIELDS - OPTIONAL_FIELDS)
     if unknown:
         errors.append("%s has unknown field(s): %s" % (label, ", ".join(unknown)))
 
@@ -284,6 +307,29 @@ def parse_electrical(
     elif only_external and value["batteries_included"]:
         errors.append("%s.batteries_included is false: every source is external" % label)
 
+    if "pcba" in value:
+        board = value["pcba"]
+        members = board.get("parts") if isinstance(board, dict) and set(board) == {"parts", "bounds_mm"} else None
+        if not isinstance(members, list) or not members or len(members) > MAX_PARTS:
+            errors.append("%s.pcba must be {parts, bounds_mm}: the 1 to %d circuit parts that arrive on one "
+                          "factory-assembled board, and the board's outline" % (label, MAX_PARTS))
+        else:
+            if not _bounds(board["bounds_mm"]):
+                errors.append("%s.pcba.bounds_mm must be [[x, y, z], [x, y, z]], the board's lowest and "
+                              "highest corners in the Display Pose frame, each above the other on every "
+                              "axis" % label)
+            seen_members = set()
+            for key in members:
+                if not isinstance(key, str) or key not in parts:
+                    errors.append("%s.pcba names %r, which is no electrical part" % (label, key))
+                elif key in seen_members:
+                    errors.append("%s.pcba names %s twice" % (label, key))
+                elif key in external:
+                    errors.append("%s.pcba names %s, the buyer's own supply, which no board carries" % (label, key))
+                elif role(key) == "wire":
+                    errors.append("%s.pcba names %s, a wire: wires join the board to the rest" % (label, key))
+                seen_members.add(key)
+
     if tree_bought is not None:
         named = {item.get("bought") for item in parts.values() if "bought" in item}
         for part, catalogue_id in sorted(tree_bought.items()):
@@ -301,12 +347,25 @@ def parse_electrical(
         return None
     snapshot = {
         "bought_parts": {
-            entry.id: {"name": entry.name, "category": entry.category,
-                       "sizes": copy.deepcopy(list(entry.sizes)), "confirmed": entry.confirmed}
+            entry.id: entry.snapshot()
             for entry in sorted(used.values(), key=lambda item: item.id)
         }
     }
     return ContractElectrical(section=value, catalogue=snapshot, unconfirmed=tuple(sorted(unconfirmed)))
 
 
-__all__ = ["CATEGORY_ROLES", "ContractElectrical", "ROLES", "parse_electrical"]
+def pcba_parts(section: Mapping[str, Any]) -> Tuple[str, ...]:
+    """The parts a validated section puts on its factory-assembled board."""
+
+    board = section.get("pcba")
+    return tuple(board["parts"]) if isinstance(board, dict) else ()
+
+
+def pcba_bounds(section: Mapping[str, Any]) -> Optional[List[List[float]]]:
+    """The contract's outline of its factory-assembled board, if it has one."""
+
+    board = section.get("pcba")
+    return copy.deepcopy(board["bounds_mm"]) if isinstance(board, dict) else None
+
+
+__all__ = ["CATEGORY_ROLES", "ContractElectrical", "ROLES", "parse_electrical", "pcba_bounds", "pcba_parts"]

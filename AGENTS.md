@@ -358,6 +358,14 @@ Bought Part, and every path from it passes a carried `inlet`, matching
 `check_power`'s `external` boundary. It is not sealed, listed or counted,
 `runtime_h` is null or absent, and the host refuses a report whose boundary
 or the source's `carried` disagrees. Several paths may share one load.
+Its 2026-11-01 amendment puts a powered toy's Bought Parts in its model when
+the sealed catalogue snapshot records a `model` for them: Make's run-local
+`bought_model.py` seats magenta `bought_<part>` bodies in the power report's
+envelopes, which no print gate reads and which need no `parts/` STEP. Final
+verification writes deterministic exploded, cut-away and wiring pictures and
+the contract's Electrical assembly text, which the README carries verbatim.
+An optional `pcba` names the factory-assembled board, and the host checks
+all of it on sealed bytes. Kits and runs sealed without models are unchanged.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

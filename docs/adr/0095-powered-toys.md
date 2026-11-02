@@ -245,3 +245,147 @@ gaps in decision 1:
 - The draft's new catalogue seeds (`usb-c-receptacle-power`,
   `led-2835-warm-2200k` and the 150, 470 and 110 ohm resistors) wait for
   the owner. The tests use them only in a test catalogue.
+
+## Amendment: Bought Parts in the model, electrical pictures, and a PCBA (2026-11-01)
+
+Owner-approved, 2026-11-01. Adds no schema; `pcba` is an optional field of a
+schema 10 section, the way the 2026-10-30 amendment added `external`.
+
+### Context
+
+A powered toy's sealed `assembled.step` held only its printed parts. The
+Macintosh fidget (`rowan-vale-amber-desk-computer`, run
+`wish-20261101-080040-0b8c084a`) looked like an empty shell. Its receptacle,
+switches, LEDs and resistors existed only as Make's box envelopes
+(`ref/validation/*-envelope.step`), which back `check_mount` and ship
+nowhere. Nothing pictured where each part goes or how it is wired.
+
+Its README said "Everything is soldered by hand", though the owner had
+decided the board is a factory-assembled PCBA. That sentence was the native
+Manager's own prose in the product `README.md`, which Release copies byte
+for byte. The contract could not say otherwise: `assembled_by: maker` and
+`joins: solder` describe every join, and E4 above left the PCBA to contract
+prose.
+
+### Decision
+
+1. **Catalogue models.** A Bought Part catalogue entry may carry an optional
+   `model`:
+   - `{"form": F}` names one of `box`, `receptacle`, `lever-switch`,
+     `radial-led`, `smd-led`, `chip`, `axial`, `cylinder`, `plate` or
+     `wire`. The form is drawn from the entry's own `sizes`, and the
+     catalogue refuses a form whose sizes the entry lacks or that does not
+     suit its category.
+   - `{"form": F, "step": {file, sha256, licence, url, redistributable}}`
+     names the owner's vendor STEP under `models/`. The catalogue refuses
+     one whose `redistributable` is not true, because the toy's model files
+     are published.
+   The packaged catalogue gives every current entry a form; no vendor STEP
+   is recorded yet. The Wish's sealed catalogue snapshot carries `model`, so
+   a run reads the model it sealed.
+2. **Factory-assembled board.** A schema 10 section may name `pcba:
+   {"parts": [ids], "bounds_mm": [[x, y, z], [x, y, z]]}`: the parts that
+   arrive on one factory-assembled board, and the box the board fills in the
+   Display Pose frame. Each part is an electrical part listed once, never an
+   external source or a wire. The board is no catalogue part, so the
+   contract is the only source of its outline; Make never estimates one,
+   and a `pcba` without `bounds_mm` is refused. `assembled_by` and `joins` then describe only the parts off the
+   board. This settles E4's wording; buying the board as one catalogue line
+   is still the owner's.
+3. **Bought bodies in the model.** For a schema 10 circuit with no Assembly
+   Tree, whose sealed snapshot records a `model` for one of its parts, Make
+   runs the run-local `make-round/scripts/bought_model.py --build`. From the
+   power report's mount envelopes and a Make-authored
+   `measure/bought-placements.json` (each directional part's `facing`, a
+   lever's `hinge`, optional wire routes), it draws:
+   - one body per carried part instance, seated against its envelope's back
+     face and centred across it, refusing a body larger than its envelope;
+   - `bought_pcba` exactly when the contract names a `pcba`, exactly at its
+     `bounds_mm` (a placements file may not place the board);
+   - wire routes swept at the wire's lead diameter.
+   It writes them as `bought/<name>.step` and a `bought_group()`. The
+   assembly entry adds the group, so the sealed `assembled.step` and the
+   toy's model files carry each body as a leaf named `bought_<part>` in the
+   reserved not-printed magenta (ADR 0092 Q29). No body is a `part_*` entry,
+   so no print gate reads one. The assembly-package rules exempt a magenta
+   `bought_` occurrence from the stocked-colour name and the `parts/`
+   production STEP. A `bought_` name in a printed colour is still a print
+   part.
+4. **Deterministic pictures.** Final verification (`verify_project`, after
+   `check_power`) runs `bought_model.py --final`. It refuses bodies that are
+   no longer the plan of the sealed inputs, then writes
+   `measure/electrical/`:
+   - `exploded.png`, the bodies backed out along their facing, labelled;
+   - `cutaway.png`, the printed parts cut away on the camera side, every
+     body in place and labelled;
+   - `wiring.png`, the contract's paths, each join marked as a board trace,
+     solder, solderless, the plug or the return;
+   - `assembly.md`, the Electrical assembly text, written from the contract
+     fields and catalogue names alone;
+   - `electrical.json`, the hashes of all of these.
+   No model judges any of them.
+5. **README wording follows the contract.** The product `README.md` carries
+   `assembly.md` verbatim, and Make writes nothing else there about who
+   assembles or solders. The toy README Release generates gains an
+   Electrical assembly section with the three pictures and the same text.
+6. **Host check.** Before Make is accepted, the host
+   (`workshop.make.bought_model.verify_made_bought`) checks, on sealed bytes
+   and without rebuilding geometry (ADR 0061), that:
+   - the record passed `bought_model.py`;
+   - one body exists per carried part instance, and the board exactly when
+     there is a `pcba`, drawn from the contract at its `bounds_mm`;
+   - every body STEP is the one listed;
+   - the assembly-package's `bought_` occurrences are exactly those bodies,
+     in magenta;
+   - the pictures and text are those `electrical.json` names;
+   - the README carries the text.
+   The receipt gains `bought_model`.
+7. **Frozen runs.** A run whose snapshot records no model, a kit (its
+   Assembly Tree already models its Bought Parts), and every schema 1 to 9
+   contract keep what they sealed.
+
+### An existing build: the Macintosh fidget
+
+The Mac's sealed snapshot predates catalogue models, so no host step can
+add bodies to it. A host re-projection would also author Make bytes after
+acceptance, which ADR 0061 forbids. It gets them through one small fix
+round:
+
+1. The owner adds to the contract's `electrical` section
+   (`toys-spec/macintosh-fidget/contract/CONTRACT.md`) a `pcba` naming the
+   receptacle, the seven resistors and the four LEDs. Its `bounds_mm` is the
+   outline the contract's "Circuit and board" prose already states:
+   `[[-12.0, 29.4, 2.4], [12.0, 31.0, 34.4]]`.
+2. build-a-toy runs one correction round from the r00 run workspace, with
+   this PR merged into the checkout it runs from:
+   `workshop fix <r00 run workspace> --prompt-file <brief> --contract
+   CONTRACT.md --ref ...(8) --guide ...(7) --agent claude --no-publish
+   --turn-minutes 360 --max-tokens 100000000 --check-motion true`. The brief
+   asks for the Bought Parts in the model and the README text. The revision
+   Wish reseals the current catalogue, now with models.
+3. Every printed Component should carry forward: a Component's carry key
+   binds its rows, its named prose sections and its references, and the
+   `electrical` block is none of them. The owner therefore edits only the
+   JSON block, not the "Circuit and board" prose, which the chamber, base
+   and floppy name.
+   An earlier Mac fix did not carry unchanged Components when a shared
+   helper's hash moved, so the round's carry is checked, not assumed. The round writes the placements, runs `--build`, adds
+   `bought_group()` to the assembly entry, then runs an assembly round,
+   `--full`, and the README text.
+
+build-a-toy then publishes the conforming build as usual.
+
+That Make modelled the Mac's resistors as axial 1/4 W parts
+(6.3 x 2.5 x 2.5 envelopes), while the sealed catalogue says 0805 SMD. The
+fix round's `--build` seats the catalogue's chips in those envelopes, so it
+does not refuse. build-a-toy detection should report the drift.
+
+### Not decided here
+
+- Kits: their Assembly Tree and Manual already model Bought Part bodies; a
+  wiring page in the kit Manual is later work.
+- Vendor STEP files: none is recorded until the owner adds a
+  redistributable one with its licence.
+- The shop: Factory publishes `assembled.step` as before. The bought bodies
+  render in magenta there, and the shop's part list stays the `parts/`
+  STEPs.

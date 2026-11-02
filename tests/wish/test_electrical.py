@@ -399,3 +399,56 @@ class WiredPartTreeTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FactoryBoardTest(unittest.TestCase):
+    """ADR 0095 amendment (2026-11-01): the parts that arrive on one
+    factory-assembled board, so the toy's wording follows the contract."""
+
+    def _parse(self, electrical):
+        return parse_design_contract(_contract_text(_schema10(electrical), prose=_PROSE),
+                                     catalogues=_mac_usb_catalogues())
+
+    def _refused(self, electrical):
+        with self.assertRaises(ContractError) as caught:
+            self._parse(electrical)
+        return str(caught.exception)
+
+    def _board(self):
+        return ["usb-c", "r-screen", "screen-led"] + ["%s-%d" % (kind, n) for kind in ("r-dim", "r-bright", "warm")
+                                                      for n in (1, 2, 3)]
+
+    # The Mac contract's "Circuit and board": X -12 to 12, Y 29.4 to 31.0, Z 2.4 to 34.4.
+    BOUNDS = [[-12.0, 29.4, 2.4], [12.0, 31.0, 34.4]]
+
+    def test_the_usb_mac_fidget_puts_its_receptacle_resistors_and_leds_on_a_pcba(self):
+        from workshop.wish.electrical import pcba_bounds, pcba_parts
+
+        electrical = _mac_usb()
+        electrical["pcba"] = {"parts": self._board(), "bounds_mm": self.BOUNDS}
+        contract = self._parse(electrical)
+        self.assertEqual(contract.to_dict()["electrical"]["pcba"], electrical["pcba"])
+        self.assertEqual(pcba_parts(contract.electrical.to_dict()), tuple(self._board()))
+        self.assertEqual(pcba_bounds(contract.electrical.to_dict()), self.BOUNDS)
+        self.assertEqual((pcba_parts(_mac_usb()), pcba_bounds(_mac_usb())), ((), None))
+
+    def test_a_board_holds_carried_circuit_parts_once_and_no_wire(self):
+        for members, message in (
+            (["usb-supply"], "pcba names usb-supply, the buyer's own supply"),
+            (["wire"], "pcba names wire, a wire"),
+            (["usb-c", "usb-c"], "pcba names usb-c twice"),
+            (["board-chip"], "pcba names 'board-chip', which is no electrical part"),
+            ([], "pcba must be {parts, bounds_mm}"),
+        ):
+            electrical = _mac_usb()
+            electrical["pcba"] = {"parts": members, "bounds_mm": self.BOUNDS}
+            self.assertIn(message, self._refused(electrical))
+
+    def test_the_contract_states_the_board_outline_which_nothing_estimates(self):
+        electrical = _mac_usb()
+        electrical["pcba"] = {"parts": ["usb-c"]}
+        self.assertIn("pcba must be {parts, bounds_mm}", self._refused(electrical))
+        for bounds in ([[12.0, 29.4, 2.4], [-12.0, 31.0, 34.4]], [[0, 0, 0]], [[0, 0, 0], [1, 1, True]],
+                       [[0, 0, 0], [1, 1, float("nan")]]):
+            electrical["pcba"] = {"parts": ["usb-c"], "bounds_mm": bounds}
+            self.assertIn("pcba.bounds_mm must be [[x, y, z], [x, y, z]]", self._refused(electrical))

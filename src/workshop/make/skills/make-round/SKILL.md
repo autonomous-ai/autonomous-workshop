@@ -775,6 +775,18 @@ pipeline record passed `check_power`; it does not rerun the gate. For Forge and
 Quest the host then performs the authoritative `--fresh` rebuild; Spark
 accepts Make's output without one (ADR 0061).
 
+**Its Bought Parts in the model** (ADR 0095, 2026-11-01). When the sealed
+catalogue snapshot records a `model` for one of the circuit's parts (and the
+contract has no Assembly Tree), the sealed assembly carries every Bought
+Part, so the toy is not an empty shell. Once `measure/power.json` seats each
+part in its mount envelope, read
+[references/bought-parts.md](references/bought-parts.md) once: write
+`measure/bought-placements.json`, run `bought_model.py <project> --build`,
+add `bought_group()` to the assembly entry, then run an assembly round.
+Final verification checks the bodies and writes the electrical pictures and
+`measure/electrical/assembly.md`; the product README carries that text
+verbatim and says nothing else about who assembles or solders the circuit.
+
 ## Summary
 
 The summary names, in order: the changed parts with their build and print
@@ -803,6 +815,7 @@ Every gate `make_round` runs, exactly as it runs it. `$C` is
 | motion | `"$WORKSHOP_PYTHON" $C/check_motion <project> --manifest measure/motion.json --json` | `status` per condition: `pass`, `fail`, `inconclusive` |
 | inspection views | `"$WORKSHOP_PYTHON" $C/render_review <selected entry.step.py> --view iso --view front --view left --view top --view iso_front --view iso_back --view iso_left --view iso_right --view iso_bottom [--view=AZ,EL ...] --sheet -o <round>/visual` | `sheet.png` (every view, labelled) plus each exact shaded PNG; the reference-camera views are composed into `compare-NN.png` beside each reference |
 | final verify | `"$WORKSHOP_PYTHON" $C/verify_project <project> --strict-fit --print-gates [--image-derived] [--powered\|--unpowered] --report <project>/measure/verification-pipeline.md`: `--powered` for a schema 10 contract with an `electrical` section, or an image-derived run with `measure/power.json`; otherwise an image-derived run passes `--unpowered` | exit 0 = verifier passed; host gate still required |
+| bought parts | `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/bought_model.py <project> --build` after `measure/bought-placements.json`; final verification runs `--final` | every refusal on stderr, exit 1; else the `bought/` bodies and `measure/bought-bodies.json` |
 | motion sheet | `"$WORKSHOP_PYTHON" $C/motion_presentation.py` (see the cad skill) | presentation only, not a gate |
 
 ## What this is not

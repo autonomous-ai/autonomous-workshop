@@ -578,6 +578,20 @@ not bought, sealed, listed in a Manual or counted in the receipt, and the toy
 states no runtime.
 _Avoid_: Bought charger, power Bought Part
 
+**PCBA**:
+The factory-assembled board of a powered toy: the Electrical section's
+`pcba` names the parts that arrive soldered onto it. Its joins are made in
+the factory; the section's who-assembles and joins then describe only the
+parts off the board. The model shows it as one Bought Part body.
+_Avoid_: Board (alone), circuit board, PCB (an unpopulated board)
+
+**Electrical assembly text**:
+The toy's sentences and tables on who fits and joins each electrical part,
+written by a tool from the Electrical section and the catalogue names alone.
+The README carries it verbatim, so its wording can never contradict the
+contract.
+_Avoid_: Wiring notes, assembly prose
+
 **Tree defect**:
 A sealed Assembly Tree that does not hold together: a Part missing, extra or
 duplicated against its Print Sheet or catalogue side, or a step in the wrong

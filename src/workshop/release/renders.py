@@ -642,7 +642,8 @@ def _render_pass(
     shell_colors: list[dict[str, Any]] = []
     base_colour = NEUTRAL_COLOUR
     if package is not None and package.is_multipart:
-        for occurrence in package.occurrences:
+        # A Bought Part body has no production STEP and prints in no colour.
+        for occurrence in package.printed_occurrences:
             colour = colours.get(occurrence.name)
             if colour is None:
                 continue

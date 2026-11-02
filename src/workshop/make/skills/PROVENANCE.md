@@ -1,5 +1,21 @@
 # Shared skill provenance
 
+## Workshop-local: a powered toy's Bought Parts in its model (2026-11-01, ADR 0095 amendment)
+
+- `make-round` gains `scripts/bought_model.py` and `references/bought-parts.md`:
+  `--build` seats one magenta `bought_<part>` body per Bought Part in the
+  power report's mount envelopes and writes `bought_group()`; `--final`
+  re-checks them and writes the exploded, cut-away and wiring pictures and
+  the Electrical assembly text into `measure/electrical/`. `SKILL.md` says
+  so. It reads `cad/scripts/render_review`'s `tessellate_occurrences`,
+  `render`, `camera_basis`, `_runtime_paths` and `BACKGROUND`, so a resync of `cad` must keep those names.
+- **Local patch to upstream `cad`.** `verify_project` runs
+  `make-round/scripts/bought_model.py --final` after the kit Manual, when the
+  sealed catalogue snapshot models a schema 10 circuit's parts
+  (`_run_bought_model`). Upstream has no Workshop catalogue, so a resync must
+  keep the hook, as it keeps `_run_kit_manual`. Only `cad`'s and
+  `make-round`'s locks move; `source_commit` values are unchanged.
+
 ## Workshop-local: fix runs keep STEP-byte locks and colour-only rows; sealed numbers reach the reviewer (2026-11-01, issues #175-#177)
 
 - `make-round` reads a lock a round recorded on STEP bytes as the B-rep its
