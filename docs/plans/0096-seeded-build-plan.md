@@ -14,12 +14,15 @@ Decided on 2026-11-02 (ADR 0096, "Owner decisions"):
 - a Concept Checklist;
 - a visible deviation goes through the in-run reviewer and is shown
   before publication;
-- a diff tolerance of 1% volume and 0.1 mm;
+- a diff tolerance of 1% volume, 0.1 mm per bounding-box side and a
+  two-way difference of at most 1%;
 - every Proof follows Make's rules;
 - the beaver coaster pilot.
 
-Pending: whether the contract-only first round and the contract-only
-fresh read stay.
+- no contract-only first round and no contract-only fresh read. The
+  Approved Proof owns the shape and the contract keeps what gates measure
+  or the owner decides (ADR 0096 decision 1c). `proof_diff` replaces the
+  contract-only read wherever it protected the shape (decision 2b).
 
 ## Phase 1: design-a-toy (skill only, no host change)
 
@@ -27,9 +30,17 @@ Files under `.claude/skills/design-a-toy/`:
 
 - **`proof-prompt.md`** (ADR 0096 decision 1b: the Proof follows Make's
   authoring rules exactly, so its source can seed the build)
-  1. **Opening paragraph.** "Read only the Design Contract" becomes
-     "only the Design Contract in round 1". Allow the Make rule homes
-     below in every round.
+  1. **Opening paragraph.**
+     - "You check the contract; you do not design. Read only the Design
+       Contract" becomes: "You build the toy the owner will approve and
+       Workshop will ship."
+     - It reads the contract, the references, the Guide Images, the
+       concept and its three views, and `CONCEPT-CHECKLIST.md`, from
+       round 1.
+     - The contract owns function, critical dimensions, Interfaces,
+       print choices, colours, Bought Parts and electrical (ADR 0096
+       decision 1c). The images own the shape.
+     - The Make rule homes below are allowed in every round.
   2. **New "Write it as Make writes it" section.** It points at these
      homes and copies none of their text:
      - `.agents/product-run/.agents/skills/autonomous-workshop/references/make.md`
@@ -60,9 +71,8 @@ Files under `.claude/skills/design-a-toy/`:
        `src/workshop/make/skills/wiki/scripts/wiki search …` and `show …`.
      - Write `# wiki: <slug>` beside the value and add the page's
        `assert`.
-     - A value the contract does not give and the wiki decides is not a
-       guess when it changes nothing visible. When it does change
-       something visible, it is a guess, with the page cited.
+     - A fit the contract does not give is a guess, because fits are a
+       contract field, with the page cited.
   6. **Standard-part step.** Every gear, bearing and fastener comes from
      `src/workshop/make/skills/cad/scripts/stdpart` (`bd_warehouse`,
      `py_gearworks`). No hand-written involute.
@@ -75,28 +85,40 @@ Files under `.claude/skills/design-a-toy/`:
        if the current one needs run state.
   8. **Surfaces.** True arcs and sweeps, not engraving built from many
      small flat faces.
-  9. **New "When you are sent images" section (round 2 on).**
+  9. **New "Model the shape from the images" section (round 1 on).**
      - Measure each reference, Guide Image and concept view with
        `src/workshop/make/skills/image-to-cad/SKILL.md` Steps 1-4b and 6:
        triage, `measure_image.py`, the cross-check gate, scale anchor,
        three views, per-component description, the operation map. Never
        Step 5 or Step 8.
-     - Every number taken goes into `GUESSES.md` as "from image
-       <file>", so the coordinator amends the contract that round.
-     - The list must still reach zero.
-  10. **Kept unchanged.** The print-gates command, "a failing gate is a
-      finding, never change the model to pass it", `FINDINGS.md`,
-      `GUESSES.md`, and the amendment re-read.
-  11. **Reply line.** Add the counts of refused details and wiki
-      citations.
-
-  The fresh contract-only read uses the same prompt minus the images
-  section, so its STEP diff compares like with like.
+     - Build the shape to those measurements and the checklist's traits.
+       A shape number stays in the Proof.
+     - Write to `GUESSES.md` only a number that falls in a contract
+       field: a fit, a critical dimension, an Interface pose, a colour,
+       a bought part. The coordinator closes those in the contract; the
+       list must reach zero.
+     - Where the images and a contract field disagree, the contract
+       wins. Write it under "Image vs contract" in `FINDINGS.md`, so the
+       coordinator can decide whether to amend the contract or edit the
+       image.
+  10. **Gate failures, split** (ADR 0096 decision 1b):
+      - A failure forced by a contract value stays a finding:
+        "never change the model to pass it".
+      - A failure on the Proof's own shape is repaired under make.md's
+        overhang order and listed under "Shape repairs" for the critic.
+  11. **Kept unchanged.** The print-gates command, `FINDINGS.md`'s
+      contradiction and placement rules, and the amendment re-read.
+  12. **Remove.** The "contract has to stand on its words" sentence, and
+      "the list must reach zero" for shape choices.
+  13. **Reply line.** Add the counts of refused details, wiki citations
+      and shape repairs.
 - **New `critic-prompt.md`** (the Proof Critic)
   - It reads: the compares (`proof_views.py refs`/`compare`, the concept
     at its cameras), the requirement rows, Interface text, the prose
-    sections, and the owner's Stage 1 printability decisions (so it does
-    not ask for a detail the owner left out).
+    sections, the owner's Stage 1 printability decisions (so it does
+    not ask for a detail the owner left out), and the Proof's "Shape
+    repairs".
+  - It is now the only reader that judges the shape before the owner.
   - It never reads or writes the Proof's code.
   - Its verdicts are the Component Reviewer's: agree, differences,
     Reference Conflict, camera mismatch.
@@ -119,9 +141,15 @@ Files under `.claude/skills/design-a-toy/`:
   - The owner marks each required or changeable. This costs about 0.3
     units and two minutes of the owner's time.
 - **`SKILL.md` Stage 3a**
-  - Step 1: the kept Proof sees images from round 2.
-  - New step: the critic loop until it agrees, capped at 5 geometry-changing rounds.
-  - Step 6: the fresh read, then a new `proof_views.py diff` (below).
+  - Step 1: the kept Proof sees images, the concept and the checklist
+    from round 1.
+  - Step 2: guesses to zero only for contract fields.
+  - New step: the critic loop until it agrees, capped at 5
+    geometry-changing rounds.
+  - Step 6 (the fresh read) is removed.
+  - The rule "the Proof runs again after every amendment" stays. Each
+    amendment then runs `proof_diff` against the last Approved Proof,
+    so a visible change goes to the critic and the owner.
   - Remove "a Proof is never a Reference Image, and nothing compares it
     with the model" and the Trial F caveat that the build differs from
     the Proof.
@@ -132,32 +160,52 @@ Files under `.claude/skills/design-a-toy/`:
   - Run the new `scripts/seal_proof.py`, which writes `APPROVAL.json`.
   - Hand off to `build-a-toy` with the contract and the proof directory.
   - The "what happens next" text: Workshop certifies, not rebuilds.
-- **`scripts/proof_views.py diff A B`**
-  - Compares two Proof projects Part by Part with OCP: volume, bounding
-    box, two-way Boolean difference, the method of CONCEPT-DRIFT Part 1.
-  - When the Boolean fails on faceted faces (as on K4's heads), it falls
-    back to volume and bounding box.
-  - It writes `proof/fresh-diff.json` and exits 1 over 1% volume or 0.1 mm
-    per bounding-box side.
+- **`proof_diff` (shared tool, not a skill script).**
+  - It lives at `src/workshop/make/proof_diff.py`, with a CLI, so that
+    design, Make, the host and DETECT run the same bytes.
+  - It compares two STEP files or two projects Part by Part with OCP:
+    volume, the bounding box in the print stance and the Display Pose,
+    and the two-way Boolean difference (only-A plus only-B).
+  - It passes a Part at |dV| ≤ 1%, each bounding-box side ≤ 0.1 mm, and
+    the two-way difference ≤ 1% of volume.
+  - When the Boolean fails, it reports `boolean: failed` and judges on
+    volume and bounding box alone.
+  - It writes JSON and exits 1 over tolerance.
+  - Design calls it in Stage 3a after each amendment and in Stage 5.
 - **`scripts/seal_proof.py`**
   - Calls make_round's own identity and carry-key code; it does not
     reimplement them. To make this possible, Phase 3 exposes
     `make_round --identities-only <project> --contract`.
-  - Writes `APPROVAL.json`: the contract's sha256, the manifest, each
-    Component's identity and carry key, the assembly identity, the hashes
-    of `CRITIC.json`, `fresh-diff.json` and the make_round tool, the
-    nozzle, `approved_by`, the date, and the design's cost from
-    `tokens.py`. Also the sha256 of `src/workshop/make/skills/LOCK.json`
+  - Exports each Component's approved STEP (print stance and Display
+    Pose) into `proof/approved/`.
+  - Writes `APPROVAL.json`:
+    - the contract's sha256 and the manifest;
+    - each Component's identity and carry key, and each STEP's sha256,
+      volume per Part and bounding box;
+    - the assembly identity;
+    - the hashes of `CRITIC.json`, `CONCEPT-CHECKLIST.md` and the
+      make_round tool;
+    - the nozzle, `approved_by` and the date;
+    - the design's cost from `tokens.py`. Also the sha256 of `src/workshop/make/skills/LOCK.json`
     and of the installed `features/print_details.py`.
   - Refuses a project that breaks decision 1b: no installed
     `features/print_details.py`, a joint value with no `# wiki:` and
     `assert`, or a `samples/` helper freeze that did not pass.
-- **Tests:** unit tests for `diff` (identical, a hidden pocket, a
-  faceted-vs-arc pair) and for `seal_proof` (a manifest mismatch refuses).
+- **Tests:**
+  - `proof_diff`: identical; a hidden pocket over 1%; an add-and-remove
+    change with a net dV of 0 that the two-way difference catches; a
+    0.2 mm bounding-box change; a faceted-vs-arc pair where the Boolean
+    fails.
+  - `seal_proof`: a manifest mismatch refuses.
 - **`LESSONS.md`:** nothing new until the pilot.
 
 ## Phase 2: host (`src/cli/`, `src/workshop/wish/`, `src/workshop/workflow/`)
 
+- **Contract schema 11** (`src/workshop/wish/design_contract.py`).
+  - Schema 10 plus `shape: "approved-proof"`.
+  - Geometry-scoped form rows and prose sections are optional.
+  - The host refuses schema 11 without `--seed-source`.
+  - Schemas 1-10 parse as before.
 - **CLI.** `wish --seed-source DIR` and `fix --seed-source DIR`.
   - Refused without `--contract`.
   - Refused with `--workflow forge|quest`.
@@ -167,9 +215,8 @@ Files under `.claude/skills/design-a-toy/`:
   - a contract sha256 that is not the sealed contract's;
   - a missing, extra or changed file against the manifest;
   - a symlink or a path outside `DIR`;
-  - a missing `CRITIC.json` or `fresh-diff.json`, or one whose hash
-    differs;
-  - a fresh diff that is not passing;
+  - a missing `CRITIC.json`, `CONCEPT-CHECKLIST.md` or approved STEP,
+    or one whose hash differs;
   - a geometry in the contract with no Component in the manifest.
 - **Sealing.** Copy the tree into the run as an immutable input, covered
   by the existing hash manifest.
@@ -179,12 +226,21 @@ Files under `.claude/skills/design-a-toy/`:
 - **Receipt and status.** Add `seed` and `seed_deviations` to the
   checkpoint, the run receipt and `workshop status --json`. The CLI prints
   "approved in design by the owner on <date>".
-- **Make acceptance.** The host check refuses:
+- **Archive.** The published toy archive and the local toy project
+  carry the Approved Proof (code, `proof/approved/` STEP,
+  `APPROVAL.json`) as a required artifact. `fix` of a schema 11 toy
+  without it is refused.
+- **Make acceptance.** The host runs `proof_diff` itself, on the sealed
+  approved STEP and the made STEP, for every Component and the assembly.
+  This is a byte comparison, not a verifier rerun. The host check
+  refuses:
   - a carried `seed-approval` review whose identity is not in the sealed
     approval;
   - an assembly review carried from the critic when any Component
     deviated;
-  - a deviation without its Component Review.
+  - a deviation over tolerance without its Component Review;
+  - on `fix`, a Component over tolerance against the Approved Proof
+    without a new approval.
 
   It does not rerun any gate (ADR 0061).
 - **Tests:** a failure-path test for each refusal above, plus the
@@ -195,8 +251,13 @@ Files under `.claude/skills/design-a-toy/`:
 - **`round_policy` gains a seed input.**
   - A component round whose identity and carry key equal the approval's
     is passed and locked, with `review.carried_from: "seed-approval"`.
-  - A different identity is a deviation. It goes to "passed, awaiting
-    review" with the ADR 0081 rules from Shape Round 0.
+  - A different identity is a deviation, and the round runs `proof_diff`
+    against the approved STEP.
+    - Within tolerance: passed and locked, with
+      `review.carried_from: "seed-approval"`, and the diff recorded in
+      the round.
+    - Over tolerance: "passed, awaiting review", with the ADR 0081 rules
+      from Shape Round 0.
 - **Assembly carry.** When every Component carries and the assembly
   identity matches, the assembly review is composed from `CRITIC.json`'s
   assembly verdict and its requirement verdicts, and the blind-review
@@ -237,16 +298,28 @@ Files under `.claude/skills/design-a-toy/`:
   - Step 6: `fix --seed-source` after a design-side amendment.
   - "Fixing a Contract Contradiction at the root": in seeded runs, use
     the kept Proof, the critic, the owner if visible, then re-seal.
-  - Folding in ADR 0085 amendments: unchanged.
-- **`DETECT.md`:** unchanged. It reads the contract and Make's gate rows.
-  Seed deviations are copied into `notes`.
+  - Root amendments: the kept Proof rebuilds, then `proof_diff` runs
+    against the last Approved Proof. Within tolerance, re-seal without
+    waiting for the owner. Over tolerance, the critic judges and the
+    owner approves.
+  - Before publication, show the owner every visible seed deviation.
+  - Folding in ADR 0085 amendments: unchanged. A visible ADR 0085
+    amendment is refused by `proof_diff`.
+- **`DETECT.md`:**
+  - New `shape:<geometry>` row: `proof_diff` of each made Component
+    against the Approved Proof it was seeded from.
+  - For schema 11, drop `extents:` and form rows.
+  - Keep `envelope` when stated, and keep `print:`, `count:`, motion,
+    power and the contract-owned requirement rows.
+  - Seed deviations within tolerance go into `notes`.
+  - Schemas 1-10 are unchanged.
 
 ## Phase 5: pilot and measurement
 
 - **Toy:** the beaver coasters (owner, 2026-11-02),
   currently at Stage 4.
 - **Measure:**
-  - design cost split into Proof, critic, fresh read and coordinator;
+  - design cost split into Proof, critic, checklist and coordinator;
   - Make cost against K4's 33.6;
   - seed deviations;
   - gates;
@@ -254,7 +327,8 @@ Files under `.claude/skills/design-a-toy/`:
 - **Success:**
   - Make at or below 12 units with 0 deviations, or every deviation
     traced to a gate;
-  - the fresh diff closed before Stage 4;
+  - every `proof_diff` in the build within tolerance, or the deviation
+    shown to the owner;
   - the owner says the build is what they approved.
 - **Optional A/B:** reseed K4 from its kept Proof, so the cost is
   compared on one toy.
@@ -267,8 +341,9 @@ Files under `.claude/skills/design-a-toy/`:
 | Drift fix rounds | K4 v02: 18 units, partly face drift | 0 for in-run ruling drift |
 | Design: critic rounds | none | +0.5-1.5 units (2-4 rounds at about 0.3) |
 | Design: image-aware Proof rounds | 0.1-0.5 per amendment | about the same; images add some context |
-| Fresh read | 1.1-1.7 units, already required | unchanged, plus a free diff |
-| **Net per toy** | | **about 15-25 units saved** |
+| Fresh contract-only read | 1.1-1.7 units | 0 (dropped; `proof_diff` is free) |
+| Contract-only first Proof round | 0.7-0.85 units, then rebuilt | 0 (round 1 already sees images) |
+| **Net per toy** | | **about 16-27 units saved** |
 
 ## Risks
 
@@ -278,5 +353,15 @@ Files under `.claude/skills/design-a-toy/`:
   in subagents (PROOF-COST: the coordinator is 55-60% of design cost).
 - **Gate or catalogue drift between design and build.** Every gate is
   rerun in the run; a failure is a deviation or a need, never ignored.
+- **Rebuilding without the Proof's code is harder** (ADR 0096
+  Consequences).
+  - A schema 11 contract alone does not define the shape.
+  - Mitigation: the archive keeps the code and the STEP files, the STEP
+    files outlive the toolchain, and `fix` refuses a toy without its
+    Approved Proof.
+- **A small visible change under 1%.** A changed engraved face, for
+  example, may stay inside the tolerance. The two-way difference
+  narrows this, every deviation is still listed, and the pilot measures
+  it on K4's v01 faces.
 - **The approval can be forged by whoever runs the CLI.** Recorded
   honestly in ADR 0096 §3: it is operator input, like the contract.

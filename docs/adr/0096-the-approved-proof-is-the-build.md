@@ -3,14 +3,16 @@
 - Status: Proposed on 2026-11-02 from the owner's direction of the same day.
   Nothing is implemented. The plan is
   [docs/plans/0096-seeded-build-plan.md](../plans/0096-seeded-build-plan.md).
-  The owner decided its open questions on 2026-11-02 (see "Owner
-  decisions" at the end). One decision is still pending: whether the
-  contract-only first round and the contract-only fresh read stay.
+  The owner decided every open question on 2026-11-02 (see "Owner
+  decisions" at the end).
 - Date: 2026-11-02
-- Amends: ADR 0093 (the Proof sees no image; "a Proof is never a Reference
-  Image, and nothing compares it with the model"; the deferred "Proof's CAD
-  source as Make's starting skeleton"), ADR 0094 decision 4 (the kept
-  Proof reader), and for **seeded runs only** ADR 0075 (where the second
+- Amends: ADR 0072 (the sealed contract as the whole objective; for new
+  contracts the approved Proof is the shape's source of truth), ADR 0093
+  decision 1 (the Proof sees no image and closes every guess in the
+  contract; "a Proof is never a Reference Image, and nothing compares it
+  with the model"; the deferred "Proof's CAD source as Make's starting
+  skeleton"), ADR 0094 decisions 3 and 4 (the kept Proof reader, the
+  fresh contract-only read, and what DETECT compares), and for **seeded runs only** ADR 0075 (where the second
   reader lives), ADR 0076/0077/0080/0081 (Component Workers, the Component
   Reviewer and Shape Rounds) and the assembly blind review of ADRs
   0022/0023/0060.
@@ -66,13 +68,15 @@ build away from it.
 
 ### 1. The Proof becomes the official build, reviewed in design
 
-- **The kept Proof sees the images.** Its first build stays contract-only,
-  so its first `GUESSES.md` lists the contract's real silences. From its
-  second round on, the kept Proof receives the Reference Images, Guide
-  Images, the chosen Concept Image and its three views, and each Stage 3a
-  compare. It models to them, and every number it takes from an image
-  becomes a contract amendment the same round: the contract keeps saying
-  everything the Proof builds.
+- **The kept Proof sees everything from round 1** (owner, 2026-11-02).
+  - It receives the contract, the Reference Images, the Guide Images,
+    the chosen Concept Image and its three views, and the Concept
+    Checklist.
+  - From round 2 it also receives each Stage 3a compare.
+  - It models the shape to the images.
+  - Nothing it takes from an image has to become contract text (see
+    decision 1c).
+  - There is no contract-only round.
 - **A Proof Critic replaces the Component Reviewer and the blind review.**
   A fresh subagent that never wrote Proof code compares the Proof with
   each reference at its Reference Camera, with the concept at the concept's
@@ -112,25 +116,66 @@ build away from it.
   Component and for the assembly, the verdict, each difference, and the
   hashes of the Proof sources and compare images it judged. Its last round
   carries one verdict per requirement id, which is what ADR 0072 needs.
-- **One fresh contract-only read stays, and is measured.** Once the critic
-  agrees, one fresh Proof subagent that has seen no image builds the final
-  contract, as ADR 0094 decision 4 has it. A script then compares its
-  STEP with the kept Proof's, Part by Part, by volume, bounding box and
-  two-way Boolean difference (the method of CONCEPT-DRIFT Part 1). The
-  tolerance is 1% of volume per Part and 0.1 mm per bounding-box side
-  (owner, 2026-11-02). Any difference over tolerance is a silent gap in the contract: something
-  the kept Proof built from an image that the words never say. It is
-  closed in the contract before Stage 4. This matters more than before:
-  a fix run, DETECT and every later amendment read the contract, not the
-  Proof's code.
+- **No fresh contract-only read** (owner, 2026-11-02). ADR 0094's
+  fresh read existed to find contract silences that the kept Proof had
+  filled from memory. Under decision 1c the contract no longer has to
+  describe the shape, so a silence about shape is no longer a gap. The
+  places a fresh read used to protect are now protected by the shape
+  diff of decision 2b, which compares against the approved shape itself
+  rather than against a second model's reading of words.
 - **The owner's approval is the acceptance record.** Stage 4 shows the
   owner each reference beside the Proof, the concept beside the Proof, and
   the critic's open lines. On approval, Stage 5 writes
-  `proof/APPROVAL.json`: the contract's sha256, the Proof tree's manifest
-  (every source file's sha256), each Component's B-rep identity and carry
-  key as make_round computes them, the assembly identity, the
-  `CRITIC.json` hash, the fresh-read diff's hash, the make_round tool hash
-  the gates ran under, the nozzle, and `approved_by: owner` with the date.
+  `proof/APPROVAL.json`. It records:
+  - the contract's sha256;
+  - the Proof tree's manifest: the sha256 of every source file;
+  - each Component's B-rep identity and carry key as make_round computes
+    them;
+  - each Component's approved STEP (print stance) and its Display-Pose
+    STEP, each with its sha256, its volume per Part and its bounding
+    box, the measures decision 2b compares against;
+  - the assembly identity;
+  - the `CRITIC.json` and `CONCEPT-CHECKLIST.md` hashes;
+  - the make_round tool hash the gates ran under, and the nozzle;
+  - `approved_by: owner` with the date.
+
+  The Proof's code, its STEP files and `APPROVAL.json` together are the
+  **Approved Proof**.
+
+### 1c. The Approved Proof owns the shape; the contract owns what is measured or decided
+
+- **The shape's source of truth.** For a contract designed under this
+  ADR, the Approved Proof defines what the toy looks like: every surface,
+  proportion, curve and visible detail.
+- **What the contract keeps.** Only what a gate measures or the owner
+  decides:
+  - function and motion;
+  - critical dimensions: anything a gate, fit, Interface, motion sweep,
+    envelope, bed size or a stated owner number holds;
+  - Interfaces and their text;
+  - print choices: the nozzle, Print Sheets, and details made larger,
+    put on paper or left out;
+  - colours and filaments;
+  - Bought Parts and the `electrical` section;
+  - the Assembly Tree and count;
+  - the requirement rows for all of these.
+- **Prose and form rows become optional.** They may describe the shape
+  for people, but they are no longer the authority, and no one checks
+  them against the Proof.
+- **Who wins.** The two cannot disagree silently, because the Proof is
+  gated against the contract.
+  - Where a contract-owned value and the Proof differ, the contract wins,
+    and the Proof is rebuilt.
+  - Where the contract is silent about shape, the Proof decides.
+- **What `GUESSES.md` becomes.** It lists only choices inside the
+  contract's fields: a fit, a colour, a critical dimension, an Interface
+  pose, a bought part. Such a guess still closes in the contract. A
+  shape choice is judged by the critic, not closed in words.
+- **New contract schema.** Design Contract schema 11 is schema 10 with
+  `shape: "approved-proof"`.
+  - Geometry-scoped form rows and prose sections are optional.
+  - The host refuses a schema 11 contract without `--seed-source`.
+  - Schemas 1-10 keep the contract as the whole objective.
 
 ### 1b. The Proof is written by Make's authoring rules
 
@@ -164,13 +209,15 @@ toolchain as Make. Partly.
 | Standard parts | same paragraph | every gear, bearing and fastener from `cad/scripts/stdpart` (`bd_warehouse`, `py_gearworks`); never a hand-written involute |
 | Shared Helpers | same paragraph and the next one (`samples/<name>.step.py`, `make_round --shared-helpers`) | Shared Helpers hold only Interface values, joint sections and standard profiles; one sample per helper; `--shared-helpers` passes and freezes them before any Component is gated |
 | Component file shape | `component-worker.toml`, the Shared Helper, `assembly_pose` and `<id>#<n>` instance bullets, and the kit bullet (`gen_step`, `bought_parts`, `print_parts`, labels, colours) | the same functions and signatures a worker writes |
-| Reading references (from round 2) | product-run `AGENTS.md`, the reference-images bullet ("measure them with the `image-to-cad` skill"); `image-to-cad/SKILL.md` Steps 1-4b and 6 | measure each reference with `image-to-cad` (triage, `measure_image.py`, the cross-check gate, scale anchor, three views, per-component description, the build123d operation map) rather than reading it by eye; every number taken becomes a contract amendment the same round. Not its Step 5 (the contract already chose the design) or Step 8 (no likeness gate, ADR 0076) |
+| Reading references (from round 1) | product-run `AGENTS.md`, the reference-images bullet ("measure them with the `image-to-cad` skill"); `image-to-cad/SKILL.md` Steps 1-4b and 6 | measure each reference with `image-to-cad` (triage, `measure_image.py`, the cross-check gate, scale anchor, three views, per-component description, the build123d operation map) rather than reading it by eye. A number that falls in a contract-owned field (decision 1c) becomes a contract amendment the same round; a shape number stays in the Proof. Not its Step 5 (the contract already chose the design) or Step 8 (no likeness gate, ADR 0076) |
 
-- **Where the Proof still differs from a worker,** on purpose, because
-  it checks a contract:
-  - **A gate failure is a finding,** not a repair. It goes to
-    `FINDINGS.md` and is fixed by amending the contract. The Proof then
-    rebuilds to the amended contract with the same rules.
+- **Where the Proof still differs from a worker,** on purpose:
+  - **A gate failure forced by a contract-owned value is a finding.**
+    It goes to `FINDINGS.md` and is fixed by amending the contract (a
+    fit, a wall a requirement sizes, a stated dimension). A failure on
+    the Proof's own shape choice is repaired by the Proof under Make's
+    repair rules (the overhang order in make.md § Pipeline step 1), and
+    the critic judges the result.
   - **A Detail Refusal is a finding too.** It is never silently left
     out after two refusals. Stage 3c puts it to the owner.
   - **One agent writes the shared files and every Component.** It needs
@@ -217,10 +264,19 @@ toolchain as Make. Partly.
   of it: every gate runs again in the run on the sealed bytes.
 - **Fix rounds stay for real defects.** If a gate, Interface, motion or
   power check fails in the run, the Manager may change the Component.
-  The changed Component loses its carried approval and goes through
-  today's path: one Component Worker and one Component Reviewer (ADRs
-  0077/0080/0081), Shape Rounds counted. The receipt and `workshop status
-  --json` list it as a **seed deviation** with the gate that forced it.
+  The changed Component is a **seed deviation**, and the shape diff
+  (decision 2b) decides what happens next:
+  - **Within tolerance.** The change cannot be seen. The Component
+    keeps the approval, its round records the diff, and no reviewer is
+    asked.
+  - **Over tolerance.** The change is visible. The Component goes
+    through today's path: one Component Worker and one Component
+    Reviewer (ADRs 0077/0080/0081), with Shape Rounds counted. The
+    worker reads the approved part source and STEP as its shape.
+  - **Either way,** the receipt and `workshop status --json` list every
+    deviation with the gate that forced it and its diff, and
+    `build-a-toy` shows each visible one to the owner before
+    publication.
 - **No in-run rulings on the approved shape.** A seeded run raises no
   Blocked Report about shape and makes no Manager ruling on one. A
   Contract Contradiction stops the run with a need. `build-a-toy` answers
@@ -231,6 +287,44 @@ toolchain as Make. Partly.
   proof_manifest_sha256, critic_sha256, deviations: [...]}`, and the
   run report prints "approved in design by the owner on <date>; N
   Components certified unchanged; M deviations".
+
+### 2b. The shape diff replaces the contract-only read
+
+One deterministic tool, `proof_diff`, compares a built STEP with the
+Approved Proof's STEP, Part by Part. It reads only bytes and computes:
+- volume per Part;
+- the bounding box in the print stance and in the Display Pose;
+- the two-way Boolean difference: the material only in A and the
+  material only in B, summed, so that a change which adds and removes
+  the same amount still counts.
+
+A Part passes when all three hold (owner, 2026-11-02):
+- its volume differs by at most 1%;
+- each bounding-box side differs by at most 0.1 mm;
+- its two-way difference is at most 1% of its volume.
+
+When the Boolean fails, as it did on K4's faceted heads, the tool
+reports `boolean: failed` and the Part is judged on volume and bounding
+box alone, which the receipt says. It runs everywhere the contract-only
+read used to protect the shape:
+
+| Where | Compared against | Over tolerance means |
+|---|---|---|
+| Seeded build: every Component whose identity differs from the approved one, and the final assembly | the Approved Proof sealed with the run | a visible seed deviation (decision 2) |
+| `workshop fix` of a seeded toy | the Approved Proof in the toy's archive; or a new one, when the fix was approved in design | a fix changed the shape without a new approval: refused at Make acceptance |
+| DETECT (`build-a-toy`) | the Approved Proof the build was seeded from | a `shape:<geometry>` finding |
+| Contract amendment (design-side or a `build-a-toy` root amendment) | the previous Approved Proof | a visible change: the critic judges it and the owner approves it, giving a new `APPROVAL.json`. Within tolerance it needs no owner, matching "only visible changes wait for the owner" |
+| An ADR 0085 in-run amendment | the Approved Proof | the change is visible, so ADR 0085 refuses it, as it already refuses a change a reference shows |
+
+- **Where the host runs it.** The host runs `proof_diff` itself before
+  Make acceptance, on the sealed approved STEP and the made STEP. This
+  is a byte comparison with a fixed tolerance, not an engineering
+  judgement, so ADR 0061's rule that Spark does not rerun the verifier
+  still holds.
+- **What DETECT keeps.** DETECT keeps `print:`, `count:`, motion, power
+  and the requirement rows the contract still owns.
+- **What DETECT drops.** For schema 11 it drops `extents:` and form
+  rows. `envelope` stays when the owner stated it.
 
 ### 3. Where independence and trust now live
 
@@ -244,7 +338,7 @@ Component acceptance. Under this ADR:
 | The geometry is what was approved | host | sha256 of every seed file against `APPROVAL.json`; B-rep identity of every built Component against the approved identity |
 | It prints, moves, is powered, fits | host-run deterministic gates | the same gates as today, rerun in the run on the sealed bytes |
 | It looks like the references and the concept | the Proof Critic (fresh, never wrote Proof code), then the owner | only that `CRITIC.json` and `APPROVAL.json` bind the exact Proof hash the run built; not the judgement itself |
-| The contract says what the Proof builds | the fresh contract-only read and its STEP diff | the diff report's hash in `APPROVAL.json` |
+| The build, a fix or an amendment keeps the approved shape | `proof_diff` | the host runs the diff itself on sealed bytes, with the fixed tolerance |
 | A changed Component still looks right | the Component Reviewer, as today | as today (ADR 0081 and its #77 extension) |
 
 - **The second reader is stronger, not weaker.** Before, the second
@@ -259,15 +353,27 @@ Component acceptance. Under this ADR:
   reviewer start and read every image) has no equivalent in design. The
   receipt must therefore say "approved in design", never "reviewed in
   run".
+- **A model reading is replaced by a deterministic one.** The
+  contract-only read was a model's reading of words. It is replaced by a
+  byte comparison the host runs itself. For the places it protected,
+  that is a stronger guarantee under AGENTS.md's rule.
+- **The cost: the contract no longer proves anything about shape.** No
+  independent reader checks that the words alone could rebuild the toy.
+  See Consequences.
 - **Model judgement is still only a proposal.** The critic's agreement
   only lets the design reach Stage 4. Two things advance the build: the
   owner's approval and the gates the host reruns.
 
 ### 4. Compatibility and lifecycles
 
-- **Unseeded runs, frozen runs, schemas 1-10:** unchanged. Every run
-  without `seed` keeps workers, reviewers, the blind review and all
-  current rules. Frozen runs keep the tool bytes they materialized.
+- **Unseeded runs, frozen runs, schemas 1-10:** unchanged.
+  - Every run without `seed` keeps workers, reviewers, the blind review
+    and all current rules, with the contract as the whole objective.
+  - DETECT keeps its contract extents for them.
+  - Frozen runs keep the tool bytes they materialized.
+  - An existing schema 1-10 contract may still be designed the old way.
+    Its Proof then keeps ADR 0094's contract-only rounds and fresh read,
+    because its contract is still the shape's authority.
 - **Spark:** the only lifecycle that accepts a seed. ADR 0061 holds: the
   host does not rerun the verifier. It checks the seed binding and reads
   Make's sealed records, as ADR 0095 reads the power report.
@@ -278,9 +384,14 @@ Component acceptance. Under this ADR:
 - **Runtimes:** the seeded path needs no reviewer evidence from the
   runtime, so Codex and Claude Code behave the same. This also ends the
   Codex/Claude split of ADR 0081 #77 for seeded runs.
-- **`workshop fix` of a seeded toy:** with a new `--seed-source`, unchanged
-  Components carry by STEP hash (ADR 0069) and changed ones carry the new
-  approval. Without one, the fix runs today's path.
+- **`workshop fix` of a seeded toy:**
+  - The toy's archive carries its Approved Proof: code, STEP and
+    `APPROVAL.json`.
+  - Unchanged Components carry by STEP hash (ADR 0069).
+  - A changed Component either stays within tolerance of the Approved
+    Proof or carries a new approval passed with `--seed-source`.
+  - A fix of a schema 11 toy without its Approved Proof is refused,
+    because the contract alone no longer defines its shape.
 
 ## Considered options
 
@@ -289,11 +400,15 @@ Component acceptance. Under this ADR:
   keeps in-run review evidence. Rejected as the default: the reviewers
   would re-judge geometry the owner approved, and a reviewer or ruling
   is the one in-run step that has moved a build away from it (K4 v01).
-- **Drop the fresh contract-only read** now that the build no longer
-  depends on the contract's words. Not recommended. Fix runs, DETECT and
-  amendments still read the contract, and a kept Proof that sees images
-  will fill silences from them. One read is about 1.3 units, and its diff
-  is deterministic.
+- **Keep a contract-only first round and a fresh contract-only read**
+  (the first draft's recommendation). Rejected by the owner on
+  2026-11-02.
+  - What they protected: that fix runs, DETECT and amendments, reading
+    only the contract, would reproduce the approved shape.
+  - Why they are not needed: under decision 1c those consumers compare
+    against the Approved Proof with a deterministic diff instead.
+  - The saving: about 1.1-1.7 units for the fresh read, plus one Proof
+    round built blind and then rebuilt.
 - **Seal the concept as a Make reference** (CONCEPT-DRIFT option 7).
   Rejected there and here: the contract wins, so a sealed concept only
   produces Reference Conflicts.
@@ -309,7 +424,8 @@ Component acceptance. Under this ADR:
 - **Cost moves from Make to design.** Make keeps only certification and
   packaging. Estimate, not yet measured: a seeded K4-sized build costs
   about 6-12 units instead of 33.6. Design gains about 1-2.5 units of
-  critic rounds and image-aware Proof rounds. Net about 15-25 units saved
+  critic rounds and image-aware Proof rounds, and saves the fresh read and
+  the blind first round (about 1.5-2.5 units). Net about 16-27 units saved
   per toy, plus the drift fix rounds avoided (K4 v02 was 18 units).
 - **Design cost leaves Workshop's token accounting.** design-a-toy runs
   outside the host, so `--max-tokens` and the run's TOKENS no longer cover
@@ -322,6 +438,26 @@ Component acceptance. Under this ADR:
   round costs a little more: wiki lookups, `image-to-cad` measurement and
   the helper sample freeze. Estimate +0.1-0.3 units per first build,
   unmeasured.
+- **Trade-off: rebuilding without the Proof's code is harder.** For a
+  schema 11 toy the words no longer describe the shape.
+  - **Losing the Proof means losing the shape.** If its code or STEP is
+    lost, or a future kernel cannot build it, nothing regenerates the
+    shape from the contract. Another tool or vendor cannot build the
+    toy from the contract alone, and a person reading the contract
+    learns its function, sizes and choices, not its form.
+  - **What the archive must keep.** The toy archive, the receipt and
+    every fix carry the Approved Proof as a required artifact. The STEP
+    files stay readable without the code, so the shape survives a dead
+    toolchain even if editing it does not.
+  - **Rebuilding from images and STEP is no longer checked.** The
+    contract-only read used to prove this was possible. Nothing proves
+    it now.
+- **The diff is necessary, not sufficient.** A visible change that
+  moves little material can stay under 1%: the K4 v01 face change is the
+  case to measure. The two-way difference catches a change that adds and
+  removes the same amount, and every deviation is listed on the receipt
+  and shown to the owner when visible. The pilot measures `proof_diff`
+  on K4 v01's faces against its Proof before the tolerance is trusted.
 - **Older Proofs cannot seed.** A Proof written before decision 1b
   (K4's, the cabinet's) does not follow these rules. It is rebuilt under
   the new prompt first; `seal_proof.py` refuses a project with no
@@ -336,7 +472,8 @@ Component acceptance. Under this ADR:
 
 ## Owner decisions (2026-11-02)
 
-The owner accepted every recommendation:
+The owner accepted every recommendation, and decided the last question
+(item 8):
 
 1. **Critic cap.** Five rounds that change the Proof's geometry. Open
    differences then go to the owner at Stage 4.
@@ -346,11 +483,18 @@ The owner accepted every recommendation:
 4. **A visible seed deviation** goes through the in-run Component Worker
    and Component Reviewer, is listed on the receipt, and is shown to the
    owner by `build-a-toy` before publication.
-5. **Fresh-read diff tolerance:** 1% of volume per Part and 0.1 mm per
-   bounding-box side.
+5. **Diff tolerance:** 1% of volume per Part, 0.1 mm per bounding-box
+   side, and the two-way difference at most 1% of volume. It applies
+   everywhere `proof_diff` runs (decision 2b).
 6. **Every Proof follows Make's authoring rules** (decision 1b), not
    only a Proof meant to seed a build.
 7. **Pilot:** the beaver coasters.
 
-**Pending:** whether the contract-only first round of the kept Proof and
-the contract-only fresh read are still needed.
+8. **No contract-only first round and no contract-only fresh read.**
+   - The kept Proof sees the references, the concept and the checklist
+     from round 1.
+   - The deterministic shape diff against the Approved Proof replaces
+     them wherever they protected: the seeded build, fix runs, DETECT,
+     amendments and seed deviations (decision 2b).
+   - The Approved Proof is the shape's source of truth, and the contract
+     keeps what gates measure or the owner decides (decision 1c).
