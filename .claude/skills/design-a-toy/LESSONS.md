@@ -24,7 +24,7 @@ Each entry is one `###` heading stating the rule, then:
 
 Extend an entry before adding a near-duplicate. Keep the file under 250
 lines; when it grows past that, merge entries or move a stage into its own
-file.
+file (Stage 3 lives in `LESSONS-REFERENCE-IMAGES.md`).
 
 ## Stage 1 - Spec
 
@@ -58,7 +58,11 @@ file.
   the silhouette in the front or side view. If it does, give its outline in
   numbers: how far it stands proud, where the outline steps in or is cut
   away, how the end rounds or curls. Only a detail that leaves the silhouette
-  unchanged may be written as an engraved line or a groove.
+  unchanged may be written as an engraved line or a groove. The same holds
+  for a small cut that means a direction: an eye pit written as a 1.6 circle
+  under a sloping lid was built to its numbers and read backwards by two
+  reviews, and only a wedge outline (5 degree sill, 40 degree lid) read. Write
+  such a cut as an outline that points.
 
 ### Specify a bent or folded form as a 3D centre curve, never a fitted silhouette
 
@@ -106,108 +110,20 @@ file.
   add that these sizes are not bound by the blunt-edge land rule, which sizes
   only the flat end of a point, chisel, keel or V underside.
 
+### Write each Component's colour in its own row, never in a shared section
+- **Why:** a set's member-to-colour list sat in the print-stance and
+  assembly sections every Component names. Recolouring one shell changed
+  all nine Components' contract text, so every carried review stopped
+  binding and one colour fix cost fresh reviews of parts it never touched.
+- **How to apply:** give each colour in a requirement row of the geometry
+  it colours ("shell 4 is opaque brass"), and keep shared sections free of
+  colour words; a recolour then reaches only that Component's review.
+
 ## Stage 3 - Reference images
 
-### Draw a part's extra views in one turnaround image, never one view per call
-- **Why:** each separate AI edit of a reference into a back or side view
-  redesigned the part. In one toy, five of eleven parts drifted: a band
-  wrapped onto the open back, a solid block grew a window, and a fist's back
-  was drawn as its front. Views cut from one image that shows all three
-  views agreed with each other.
-- **How to apply:** make one generation per part: LEFT copies the reference,
-  MIDDLE and RIGHT are the new cameras, at one scale on one ground line.
-  Spell out the part's construction and, for a profile, its proportions in
-  units. Cut the views apart by empty columns. Compose each row at the
-  sheet's single scale, with the reference matched to the LEFT view's height.
-
-### Fix a wrong detail by editing the image, on two models, and pick
-- **Why:** regenerating to fix one detail redraws everything around it. In
-  one round of six fixes `openai/gpt-image-2.5-sunburst` kept the source
-  intact best (won four), `openai/gpt-5.4-image-2` placed parts where the
-  prompt said they sit (won two), `google/gemini-3-pro-image` won none.
-- **How to apply:** pass the current image as IMAGE 1, name only the change
-  and say "keep everything else exactly"; run sunburst and gpt-5.4
-  ([`scripts/gen_image.py`](scripts/gen_image.py); sunburst is image-only,
-  via `/images`) and compare. For a turnaround set `IMAGE_ASPECT=3:2`. State
-  a spatial fact one way only: "the post's back face is flush with the
-  helmet's back face; the front half of the helmet overhangs it".
-
-### Draw what the camera can see, and pick a camera that shows the defining profile
-- **Why:** the owner caught a slot open on top invisible from 15 degrees
-  above, an L-shaped wing read as a flat bar head-on, and a post and guard
-  contracted level drawn at different heights.
-- **How to apply:** for each feature the contract places, edit it in if the
-  camera can see it. Give a profile part (L, T, U) a three-quarter camera
-  showing the profile at one end. Say "ends at exactly the same height as"
-  for level things, and give widths as a percentage of the height, because
-  the models draw parts too slim.
-
-### Draw transformation steps as one chain of edits, one move per edit
-- **Why:** step panels made as separate edits each redrew the toy, so parts
-  changed between steps and the owner rejected the whole sheet.
-- **How to apply:** start from the approved robot (or end) image. Make
-  each step one edit of the previous step's image that names only that
-  move, and keep the camera. Give the moved part's new size relative to a
-  part in the image, such as "the nose above the chest is 1.2 times the
-  chest's height", because the models shorten long parts. Lay the vehicle
-  down from the last stood-up step, and pass the old vehicle view only as
-  a camera example.
-
-### Show a colour layer hidden inside a fold with a cutaway; fix one defect by editing
-
-- **Why:** views looking into a narrow fold came out as a cup on every model,
-  and edge-on profiles of a thick bent part came out as a bent pipe. A cutaway
-  showed the hidden layer as one unbroken line round the fold. When one small
-  defect was left (a flared foot), regenerating would have lost the rest, but
-  an edit of the chosen image fixed only that spot.
-- **How to apply:** prompt "sliced in half down its middle, look square at the
-  cut face" and name the layer's start, path and end. Fix a leftover defect by
-  editing (see above). Check the drawn thickness against the contract, since a
-  model can draw a thick part as a blade or a pipe.
-
-### Edits drop objects nobody asked to remove
-- **Why:** each "change only X" edit lost one or two unrelated objects (an
-  inkwell, a framed picture, a sill plant) in four of seven rounds.
-- **How to apply:** name every object to keep in each edit prompt, compare
-  object lists after, and restore a lost one in one edit with the earlier
-  image passed and the object described as it looked there; a generic noun
-  brings back a different object.
-
-### When the models keep moving a part, change the composition, not the prompt
-- **Why:** a cabinet "under the stair" landed on the dais in seven tries,
-  and an open door lay flat beside its cabinet or hung on its far edge in
-  four of six; a niche in the stair's side and "the open door continues the
-  side panel forward" were drawn right at once.
-- **How to apply:** after three generations put a part in the same wrong
-  spot, build it into a neighbour the model already draws; amend the contract.
-
-### Redraw fresh after about four chained edits, counting the whole lineage
-- **Why:** editing an edit accumulates blur; the owner saw it after five,
-  including an assembly fixed back and forth across rounds with no single
-  round making four edits. A text-only redraw lost the box proportions; one
-  with the last image as a layout guide kept them.
-- **How to apply:** count every edit since the last fresh generation. At
-  four, regenerate with the last image as the only reference, labelled "a
-  LAYOUT GUIDE: do not copy its pixels", describing every object as it is
-  drawn there (shape, colour, count, position) at the same camera; then
-  compare object by object and fix any difference with one edit.
-
-### Extract a component by removing, not by redrawing
-- **Why:** "redraw this as the empty case" reflowed the layout; "remove the
-  chair, the desk ... keep everything else" kept every position.
-- **How to apply:** edit the assembly and name every part to remove and
-  what shows behind it. For a top view pass a clean earlier top view first
-  (camera) and the assembly second; text alone returns a three-quarter view.
-
-### Ask for proportion changes as relative edits
-- **Why:** "N times taller than wide" was ignored for thin parts (a ladder
-  asked at 9:1 came back 4:1; a window asked at 2.6:1 came back far
-  slimmer than asked); "make it half as wide" landed within the 20% resize
-  allowance.
-- **How to apply:** generate, measure the aspect, then edit with a
-  relative instruction ("half as wide", "move the left end to 52% of the
-  width") and close the rest with the allowed resize. Side profiles: pass
-  an existing side-profile image as a second reference.
+The Stage 3 entries are in
+[LESSONS-REFERENCE-IMAGES.md](LESSONS-REFERENCE-IMAGES.md), under the same
+rules as this file.
 
 ## Stage 3b-3d - Reconcile, print, motion
 
@@ -229,6 +145,17 @@ file.
   0.2 clearance; give round objects against the wall a 52 degree cone back.
   Remove the moved feature from the host's image so it does not become a
   Reference Conflict.
+
+### Overlay every sealed small cut on its reference before the review
+- **Why:** two face references drew their eyes and mouths larger than the
+  sealed cut sizes. The run built the sealed sizes, and every fresh
+  Component Reviewer asked for the drawn faces, which the contract forbids;
+  a colour fix stalled on two faces nobody had changed.
+- **How to apply:** for each engraved or cut feature under about 3 mm,
+  project its contract outline through the reference camera onto the image
+  and compare. Where they differ, redraw that area to the outline (blank the
+  face with one edit, then place each cut at its contract size) before
+  Stage 4, never after a run has sealed the images.
 
 ### Check purchased parts against every ceiling
 - **Why:** a battery box at its stated maximum height rose 1 mm into the
