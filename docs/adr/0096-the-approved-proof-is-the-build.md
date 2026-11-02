@@ -6,8 +6,8 @@
   host `--seed-source` path with approval-locked rounds and the seed
   deviation check (#192), build-a-toy and DETECT (#193), and the assembly
   review carried from `CRITIC.json` (`make_round --carry-assembly-review`,
-  signature review schema 10). Still migrating: the
-  Approved Proof copy in the published archive. The plan is
+  signature review schema 10, #194), and the Approved Proof copied into the
+  published archive under `wish/seed/`. The plan is
   [docs/plans/0096-seeded-build-plan.md](../plans/0096-seeded-build-plan.md).
   The owner decided every open question on 2026-11-02 (see "Owner
   decisions" at the end).

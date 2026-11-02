@@ -426,6 +426,47 @@ def _public_wish(
             )
 
 
+# ADR 0096: a seeded toy's archive carries the Approved Proof it was built
+# from, so the owner's approval travels with the toy and a correction can be
+# seeded from the exact bytes design sealed.
+PUBLIC_SEED_DIRECTORY = "wish/seed"
+
+
+def _copy_seed(writer: PublicWriter, run_root: Path, context: Any) -> None:
+    """Write a seeded run's sealed ``seed/`` tree under ``wish/seed/``.
+
+    The Wish context records the approval and manifest hashes; every file is
+    checked against them, so a missing, extra or changed file refuses the
+    archive. An unseeded run writes nothing."""
+
+    seed = context.get("seed") if isinstance(context, Mapping) else None
+    if seed is None:
+        return
+    if not isinstance(seed, Mapping):
+        raise StateConflict("the Wish records a malformed seed")
+    root = run_root / "seed"
+    approval_content = stable_file(root / "APPROVAL.json", "sealed seed approval")
+    if hashlib.sha256(approval_content).hexdigest() != seed.get("approval_sha256"):
+        raise StateConflict("the sealed seed approval differs from the Wish")
+    approval = strict_json(approval_content, "sealed seed approval")
+    files = approval.get("manifest")
+    if not isinstance(files, dict) or not files:
+        raise StateConflict("the sealed seed approval has no manifest")
+    digest = hashlib.sha256(json.dumps(files, sort_keys=True).encode()).hexdigest()
+    if digest != seed.get("manifest_sha256") or digest != approval.get("manifest_sha256"):
+        raise StateConflict("the sealed seed manifest differs from the Wish")
+    writer("%s/APPROVAL.json" % PUBLIC_SEED_DIRECTORY, approval_content)
+    for name, expected in sorted(files.items()):
+        relative = PurePosixPath(name)
+        if relative.is_absolute() or ".." in relative.parts or relative.as_posix() != name:
+            raise StateConflict("the sealed seed manifest names an unsafe path")
+        content = stable_file(root.joinpath(*relative.parts), "sealed seed file %s" % name,
+                              allow_empty=True)
+        if hashlib.sha256(content).hexdigest() != expected:
+            raise StateConflict("sealed seed file differs from its approval: %s" % name)
+        writer("%s/%s" % (PUBLIC_SEED_DIRECTORY, name), content)
+
+
 def _copy_made_tree(
     writer: PublicWriter,
     run_root: Path,
@@ -962,6 +1003,7 @@ def write_public_workflow_archive(
         disclose_exact_wish=disclose_exact_wish,
         reference_bytes=reference_bytes,
     )
+    _copy_seed(writer, run_root, wish_document.get("context"))
 
     invent_root = run_root / "artifacts/invent"
     explicit_invent = (
@@ -1095,6 +1137,7 @@ def write_public_workflow_archive(
 __all__ = [
     "PUBLIC_ARCHIVE_SCHEMA_VERSION",
     "PUBLIC_PUBLICATION_STATUS",
+    "PUBLIC_SEED_DIRECTORY",
     "SUPPORTED_PUBLICATION_STATUSES",
     "UNRELEASED_PUBLICATION_ADAPTER",
     "UNRELEASED_PUBLICATION_STATUS",
