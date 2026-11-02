@@ -107,6 +107,57 @@ build away from it.
   `CRITIC.json` hash, the fresh-read diff's hash, the make_round tool hash
   the gates ran under, the nozzle, and `approved_by: owner` with the date.
 
+### 1b. The Proof is written by Make's authoring rules
+
+The owner asked whether the Proof uses the same `autonomous-product-to-cad`
+toolchain as Make. Partly.
+
+- **What it shares today.**
+  - It may read the vendored `cad` skill and the print-details library.
+  - It lays its project out as Make does.
+  - It gates through make_round's own code (`--print-gates-only`,
+    ADR 0094).
+- **What it is not required to do.** Everything Make's Manager and
+  Component Worker must do when they write source. So today a Proof
+  that passes the same gates can still be code Make would never have
+  written: hand-modelled rivets, a fit chosen without the wiki, a
+  hand-written involute, a joint value inside one Component's file.
+  K4's heads, engraved with 123-253 small flat faces, are an example.
+  A seed must be the source Make would have produced. So from this ADR
+  on, the Proof follows **exactly** the authoring rules below, which
+  are cited by section rather than copied. One home per rule (ADR 0094
+  decision 6): the Proof prompt points at them and does not paraphrase
+  them.
+
+| Rule | Make's home | What the Proof must do |
+|---|---|---|
+| Component list and shared files | `references/make.md` § Pipeline step 1, first three paragraphs | one `part_<id>.step.py` per Component at a natural seam; overhang repair order before any print split; shared values only in `params.py` and `features/` |
+| print-details layout | `make.md` § Pipeline step 1, `print_details.py --install <cad-project>` (and `--install-print` for a `print` section, `kit_tree.py --install` for a tree) | install the library into `<OUT>/features/print_details.py` byte for byte; never edit it |
+| Decorative detail | `component-worker.toml`, the "Build decorative detail…" bullet (`pd = print_details.Details(nozzle=…)`, Detail Refusals) and the Print Piece bullet | every rivet, boss, dome, band, rim, rib, panel, window, slit and teardrop bore through `Details()`, never by hand; every hosted Print Piece through `pd.print_*` |
+| Blunt tips | `component-worker.toml`, the "End every point, chisel, keel…" bullet | `pd.blunt_tip` / `pd.rib_end` to one print minimum; never a thinner chamfer |
+| Joints, fits, clearances, gears | `make.md` § Pipeline step 1, the Interfaces paragraph; `wiki/SKILL.md` § The loop | run the wiki's `search` and `show` before every joint, fit, clearance or gear; write `# wiki: <slug>` beside each value and that page's `assert` naming it |
+| Standard parts | same paragraph | every gear, bearing and fastener from `cad/scripts/stdpart` (`bd_warehouse`, `py_gearworks`); never a hand-written involute |
+| Shared Helpers | same paragraph and the next one (`samples/<name>.step.py`, `make_round --shared-helpers`) | Shared Helpers hold only Interface values, joint sections and standard profiles; one sample per helper; `--shared-helpers` passes and freezes them before any Component is gated |
+| Component file shape | `component-worker.toml`, the Shared Helper, `assembly_pose` and `<id>#<n>` instance bullets, and the kit bullet (`gen_step`, `bought_parts`, `print_parts`, labels, colours) | the same functions and signatures a worker writes |
+| Reading references (from round 2) | product-run `AGENTS.md`, the reference-images bullet ("measure them with the `image-to-cad` skill"); `image-to-cad/SKILL.md` Steps 1-4b and 6 | measure each reference with `image-to-cad` (triage, `measure_image.py`, the cross-check gate, scale anchor, three views, per-component description, the build123d operation map) rather than reading it by eye; every number taken becomes a contract amendment the same round. Not its Step 5 (the contract already chose the design) or Step 8 (no likeness gate, ADR 0076) |
+
+- **Where the Proof still differs from a worker,** on purpose, because
+  it checks a contract:
+  - **A gate failure is a finding,** not a repair. It goes to
+    `FINDINGS.md` and is fixed by amending the contract. The Proof then
+    rebuilds to the amended contract with the same rules.
+  - **A Detail Refusal is a finding too.** It is never silently left
+    out after two refusals. Stage 3c puts it to the owner.
+  - **One agent writes the shared files and every Component.** It needs
+    no worker nonce, because it is not a run.
+- **The approval binds the toolchain.** `APPROVAL.json` also records
+  `src/workshop/make/skills/LOCK.json`'s sha256 and the installed
+  `features/print_details.py` sha256.
+- **A resync between design and build can change the toolchain.** When
+  the run materializes a different library, `make_round` reinstalls it
+  and rebuilds. A Component whose shape fingerprint then changes is a
+  seed deviation, never a silent pass.
+
 ### 2. A seeded run certifies and packages
 
 - **`--seed-source DIR`** on `workshop wish` and `workshop fix`, only with
@@ -239,11 +290,18 @@ Component acceptance. Under this ADR:
   outside the host, so `--max-tokens` and the run's TOKENS no longer cover
   modelling. `APPROVAL.json` carries the design's measured cost for
   information only.
-- **The Proof's code quality now ships.** The Proof prompt must ask for
-  production CAD: the print-details library, true arcs rather than faceted
-  engraving (K4's heads had 123-253 faces against Make's 45-51), and
-  readable helpers. A worker that must repair a seed deviation edits code
-  it did not write.
+- **The Proof's code quality now ships.** Decision 1b requires Make's
+  own authoring rules, plus true arcs rather than faceted engraving (K4's
+  heads had 123-253 faces against Make's 45-51). A worker that must repair
+  a seed deviation then edits code written to its own rules. A Proof
+  round costs a little more: wiki lookups, `image-to-cad` measurement and
+  the helper sample freeze. Estimate +0.1-0.3 units per first build,
+  unmeasured.
+- **Older Proofs cannot seed.** A Proof written before decision 1b
+  (K4's, the cabinet's) does not follow these rules. It is rebuilt under
+  the new prompt first; `seal_proof.py` refuses a project with no
+  `# wiki:` citations where it has joints, or with no installed
+  `features/print_details.py`.
 - **design-a-toy becomes heavier and more important.** Its coordinator
   context is already the largest design cost. The critic and the compares
   must stay in subagents.
@@ -265,5 +323,8 @@ Component acceptance. Under this ADR:
 5. Fresh-read diff tolerance: is the proposed 1% volume per Part and
    0.1 mm per bounding-box side right? (The cabinet's Make-vs-Proof spread
    was 0-0.8%.)
-6. Pilot toy: the beaver coasters (at Stage 4 now), or a rebuild of K4 as a
+6. Decision 1b makes the Proof follow Make's rules for every Proof, or
+   only for one meant to seed a build? Recommended: every Proof, so any
+   approved design can seed.
+7. Pilot toy: the beaver coasters (at Stage 4 now), or a rebuild of K4 as a
    measured A/B?

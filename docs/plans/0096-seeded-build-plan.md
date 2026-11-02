@@ -7,27 +7,81 @@ needs all of them.
 
 ## Phase 0: owner answers
 
-The six open questions at the end of ADR 0096. Defaults if the owner does
+The seven open questions at the end of ADR 0096. Defaults if the owner does
 not answer: cap 5, one critic thread, no checklist yet, a visible deviation
-goes through the in-run reviewer, 1% / 0.1 mm, beaver pilot.
+goes through the in-run reviewer, 1% / 0.1 mm, Make's rules for every Proof, beaver pilot.
 
 ## Phase 1: design-a-toy (skill only, no host change)
 
 Files under `.claude/skills/design-a-toy/`:
 
-- **`proof-prompt.md`**
-  - Round 1 stays contract-only: the guess list must be honest.
-  - New section "When you are sent images": from round 2, the kept Proof
-    reads the references, Guide Images, the concept and its three views,
-    and the compares. Every number taken from an image goes into
-    `GUESSES.md` as "from image", so the coordinator amends the contract
-    that round. The list must still reach zero.
-  - Production CAD rules: the print-details library, true arcs and
-    sweeps instead of faceted engraving, named helpers in `features/`,
-    only Interface values and joint sections in `params.py` (ADR 0082).
-    The run will ship this code.
-  - Unchanged: the print-gates command, `FINDINGS.md`, kit
-    `print_parts()`.
+- **`proof-prompt.md`** (ADR 0096 decision 1b: the Proof follows Make's
+  authoring rules exactly, so its source can seed the build)
+  1. **Opening paragraph.** "Read only the Design Contract" becomes
+     "only the Design Contract in round 1". Allow the Make rule homes
+     below in every round.
+  2. **New "Write it as Make writes it" section.** It points at these
+     homes and copies none of their text:
+     - `.agents/product-run/.agents/skills/autonomous-workshop/references/make.md`
+       § Pipeline step 1: the component list, the overhang repair order,
+       the shared files, the install commands, the Interfaces paragraph
+       and the Shared Helper sample paragraph;
+     - `src/workshop/make/agents/component-worker.toml`: the Shared
+       Helper, `assembly_pose`, instance, decorative-detail, Print Piece,
+       kit and blunt-tip bullets.
+
+     Wherever they say "the Manager" or "the worker", the Proof does
+     both.
+  3. **Layout step, before any part.**
+     - `uv run python src/workshop/make/skills/print-details/scripts/print_details.py --install <OUT>`,
+       plus `--install-print <OUT> --wish <draft WISH>` for a `print`
+       section and `make-round/scripts/kit_tree.py --install` for a tree.
+       Phase 2 must check that these work on a contract outside a run,
+       or add a `--contract` input as `--print-gates-only` has.
+     - Never edit the installed files.
+  4. **Detail step.**
+     - Every listed decorative detail goes through `Details(nozzle=…)`;
+       every point or rib end through `blunt_tip` / `rib_end`.
+     - A Detail Refusal goes into `FINDINGS.md` under "Refused detail",
+       with the passing value the refusal names. It is never modelled by
+       hand and never silently dropped.
+  5. **Joint step.**
+     - Before each joint, fit, clearance or gear, run
+       `src/workshop/make/skills/wiki/scripts/wiki search …` and `show …`.
+     - Write `# wiki: <slug>` beside the value and add the page's
+       `assert`.
+     - A value the contract does not give and the wiki decides is not a
+       guess when it changes nothing visible. When it does change
+       something visible, it is a guess, with the page cited.
+  6. **Standard-part step.** Every gear, bearing and fastener comes from
+     `src/workshop/make/skills/cad/scripts/stdpart` (`bd_warehouse`,
+     `py_gearworks`). No hand-written involute.
+  7. **Shared Helper step.**
+     - `params.py` and `features/` hold only Interface values, joint
+       sections and standard profiles.
+     - One `samples/<name>.step.py` per helper.
+     - `make_round <OUT> --shared-helpers --contract <CONTRACT>` must
+       pass before step 4's print gates. Phase 3 adds a standalone mode
+       if the current one needs run state.
+  8. **Surfaces.** True arcs and sweeps, not engraving built from many
+     small flat faces.
+  9. **New "When you are sent images" section (round 2 on).**
+     - Measure each reference, Guide Image and concept view with
+       `src/workshop/make/skills/image-to-cad/SKILL.md` Steps 1-4b and 6:
+       triage, `measure_image.py`, the cross-check gate, scale anchor,
+       three views, per-component description, the operation map. Never
+       Step 5 or Step 8.
+     - Every number taken goes into `GUESSES.md` as "from image
+       <file>", so the coordinator amends the contract that round.
+     - The list must still reach zero.
+  10. **Kept unchanged.** The print-gates command, "a failing gate is a
+      finding, never change the model to pass it", `FINDINGS.md`,
+      `GUESSES.md`, and the amendment re-read.
+  11. **Reply line.** Add the counts of refused details and wiki
+      citations.
+
+  The fresh contract-only read uses the same prompt minus the images
+  section, so its STEP diff compares like with like.
 - **New `critic-prompt.md`** (the Proof Critic)
   - It reads: the compares (`proof_views.py refs`/`compare`, the concept
     at its cameras), the requirement rows, Interface text, the prose
@@ -67,7 +121,11 @@ Files under `.claude/skills/design-a-toy/`:
     Component's identity and carry key, the assembly identity, the hashes
     of `CRITIC.json`, `fresh-diff.json` and the make_round tool, the
     nozzle, `approved_by`, the date, and the design's cost from
-    `tokens.py`.
+    `tokens.py`. Also the sha256 of `src/workshop/make/skills/LOCK.json`
+    and of the installed `features/print_details.py`.
+  - Refuses a project that breaks decision 1b: no installed
+    `features/print_details.py`, a joint value with no `# wiki:` and
+    `assert`, or a `samples/` helper freeze that did not pass.
 - **Tests:** unit tests for `diff` (identical, a hidden pocket, a
   faceted-vs-arc pair) and for `seal_proof` (a manifest mismatch refuses).
 - **`LESSONS.md`:** nothing new until the pilot.
@@ -119,6 +177,14 @@ Files under `.claude/skills/design-a-toy/`:
   requirement is skipped. Any deviation restores the blind review.
 - **Kept as is:** `--full`, `--interface`, `--shared-helpers`,
   `--powered`, `--print-gates`.
+- **Standalone modes for the Proof.** `--shared-helpers` (and the
+  `print_details.py --install-print` / `kit_tree.py --install` inputs)
+  take `--contract` outside a run, as `--print-gates-only` does. They
+  write only inside the project.
+- **Toolchain drift in a seeded run.** When the seed's
+  `features/print_details.py` differs from the run's library bytes,
+  reinstall the library and rebuild. A changed shape fingerprint is a
+  seed deviation.
 - **`--identities-only`** for `seal_proof.py`: build and hash, with no
   gates, renders or state.
 - **Guard and hook.** On a seeded run, a component round of an
