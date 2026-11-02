@@ -1222,6 +1222,18 @@ def run_condition(condition: dict, parts: dict, index: int) -> dict:
         return _run_condition(condition, parts, index)
 
 
+def _turned_start_seated(name, condition: dict, inputs: dict) -> bool:
+    """A clear-expecting rotation that asks to skip a seated step 0 while starting turned from rest."""
+    if name != "rotation_motion_collision" or condition.get("expect", "clear") != "clear":
+        return False
+    if not inputs.get("allow_seated_contact", False):
+        return False
+    try:
+        return float(inputs.get("start_deg", 0.0)) != 0.0
+    except (TypeError, ValueError):
+        return False  # check_rotation reports the bad value itself
+
+
 def _run_condition(condition: dict, parts: dict, index: int) -> dict:
     name = condition.get("check")
     ident = condition.get("id", f"condition_{index}")
@@ -1266,6 +1278,15 @@ def _run_condition(condition: dict, parts: dict, index: int) -> dict:
         known = ", ".join(sorted([*CHECKS, "assembly_sequence"]))
         record.update(status="inconclusive", detail=f"unknown check {name!r}; known: {known}")
         return record
+
+    if _turned_start_seated(name, condition, inputs):
+        # allow_seated_contact skips step 0 as the installed pose, but a
+        # rotation that starts away from 0 degrees has no installed pose at
+        # step 0: a contact there was skipped and the sweep read clear. A stop
+        # (expect "blocked") keeps the skip: a hit at its start would pass it
+        # for the wrong reason.
+        inputs = {**inputs, "allow_seated_contact": False}
+        record["seatedSkipRefused"] = "the sweep starts turned from rest, so its first pose is swept, not seated"
 
     try:
         outcome = handler(inputs, thresholds, parts)
