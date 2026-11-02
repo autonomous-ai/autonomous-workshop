@@ -3,7 +3,9 @@
 - Status: Proposed on 2026-11-02 from the owner's direction of the same day.
   Nothing is implemented. The plan is
   [docs/plans/0096-seeded-build-plan.md](../plans/0096-seeded-build-plan.md).
-  Open questions are listed at the end and must be answered before any code.
+  The owner decided its open questions on 2026-11-02 (see "Owner
+  decisions" at the end). One decision is still pending: whether the
+  contract-only first round and the contract-only fresh read stay.
 - Date: 2026-11-02
 - Amends: ADR 0093 (the Proof sees no image; "a Proof is never a Reference
   Image, and nothing compares it with the model"; the deferred "Proof's CAD
@@ -76,9 +78,31 @@ build away from it.
   each reference at its Reference Camera, with the concept at the concept's
   cameras, and with every requirement row. Rounds go on until it agrees.
   It judges as the Component Reviewer does: differences, Reference
-  Conflicts (ADR 0084) and camera mismatch (ADR 0083). One critic thread is
-  kept for the design and reused, as ADR 0077 reuses a reviewer, so its
-  cache survives.
+  Conflicts (ADR 0084) and camera mismatch (ADR 0083).
+- **One critic for the whole toy** (owner, 2026-11-02). One critic thread
+  is kept for the whole design and reused, as ADR 0077 reuses a reviewer,
+  so its cache survives. It judges every Component and the assembly from
+  the compares.
+- **A close look only when needed.** When the critic cannot settle a
+  Component from the whole-toy compares, it asks for one (a small part,
+  a hidden face, a detail below the compare's resolution). The
+  coordinator then renders that Component alone at its Reference Camera
+  and its Guide Image cameras, and the same critic thread judges it.
+  It is not a second critic. `CRITIC.json` records each close look and
+  why it was needed.
+- **The critic holds a Concept Checklist** (owner, 2026-11-02;
+  CONCEPT-DRIFT solution 1).
+  - After the three views in Stage 1, a fresh subagent that sees only
+    the concept and its three views writes `CONCEPT-CHECKLIST.md`:
+    8-12 defining traits, each with one line and, where possible, a
+    ratio measured on the image.
+  - The owner marks each trait required or changeable.
+  - The critic judges every trait on the Proof at the concept's cameras:
+    kept, lost, or changed by a named owner decision.
+  - A required trait that is lost is a difference, like any other.
+  - Stage 4 opens with concept | Proof | 50% overlay and the
+    checklist's count ("10 of 12 kept; the blush and the two-tone shell
+    left out, by your choice").
 - **A cap, then the owner.** After five rounds that changed the Proof's
   geometry, the critic's open differences go to Stage 4 as lines under
   their compares, for the owner to decide. Nothing is accepted silently,
@@ -92,8 +116,9 @@ build away from it.
   agrees, one fresh Proof subagent that has seen no image builds the final
   contract, as ADR 0094 decision 4 has it. A script then compares its
   STEP with the kept Proof's, Part by Part, by volume, bounding box and
-  two-way Boolean difference (the method of CONCEPT-DRIFT Part 1). Any
-  difference over tolerance is a silent gap in the contract: something
+  two-way Boolean difference (the method of CONCEPT-DRIFT Part 1). The
+  tolerance is 1% of volume per Part and 0.1 mm per bounding-box side
+  (owner, 2026-11-02). Any difference over tolerance is a silent gap in the contract: something
   the kept Proof built from an image that the words never say. It is
   closed in the contract before Stage 4. This matters more than before:
   a fix run, DETECT and every later amendment read the contract, not the
@@ -309,22 +334,23 @@ Component acceptance. Under this ADR:
   (ADR 0092). The Manual, Print Sheets and the power report stay Make
   work.
 
-## Open questions for the owner
+## Owner decisions (2026-11-02)
 
-1. Is the critic's cap five geometry-changing rounds, with open lines
-   going to the owner at Stage 4? Or does it run without a cap until it
-   agrees, as on the beaver arms?
-2. One critic thread for the whole toy, or one per Component plus one for
-   the assembly? The second is closer to today's reviewer and costs more.
-3. Should the critic also hold a Concept Checklist (CONCEPT-DRIFT
-   solution 1), or only the concept image at its cameras?
-4. A seed deviation that is visible: should it stop the run and return to
-   design, or go through the in-run Component Reviewer as proposed?
-5. Fresh-read diff tolerance: is the proposed 1% volume per Part and
-   0.1 mm per bounding-box side right? (The cabinet's Make-vs-Proof spread
-   was 0-0.8%.)
-6. Decision 1b makes the Proof follow Make's rules for every Proof, or
-   only for one meant to seed a build? Recommended: every Proof, so any
-   approved design can seed.
-7. Pilot toy: the beaver coasters (at Stage 4 now), or a rebuild of K4 as a
-   measured A/B?
+The owner accepted every recommendation:
+
+1. **Critic cap.** Five rounds that change the Proof's geometry. Open
+   differences then go to the owner at Stage 4.
+2. **One critic for the whole toy,** plus a close look at one Component
+   only when the critic needs one (decision 1).
+3. **A Concept Checklist** is added and held by the critic (decision 1).
+4. **A visible seed deviation** goes through the in-run Component Worker
+   and Component Reviewer, is listed on the receipt, and is shown to the
+   owner by `build-a-toy` before publication.
+5. **Fresh-read diff tolerance:** 1% of volume per Part and 0.1 mm per
+   bounding-box side.
+6. **Every Proof follows Make's authoring rules** (decision 1b), not
+   only a Proof meant to seed a build.
+7. **Pilot:** the beaver coasters.
+
+**Pending:** whether the contract-only first round of the kept Proof and
+the contract-only fresh read are still needed.

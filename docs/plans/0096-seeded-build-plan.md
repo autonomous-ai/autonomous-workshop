@@ -5,11 +5,21 @@ Each phase is one PR with deterministic tests, per AGENTS.md. Phases 1 and
 2 can run in parallel. Phase 3 needs 2, phase 4 needs 3, and the pilot
 needs all of them.
 
-## Phase 0: owner answers
+## Phase 0: owner decisions
 
-The seven open questions at the end of ADR 0096. Defaults if the owner does
-not answer: cap 5, one critic thread, no checklist yet, a visible deviation
-goes through the in-run reviewer, 1% / 0.1 mm, Make's rules for every Proof, beaver pilot.
+Decided on 2026-11-02 (ADR 0096, "Owner decisions"):
+- a critic cap of 5;
+- one critic for the whole toy, with a close look at one Component only
+  when needed;
+- a Concept Checklist;
+- a visible deviation goes through the in-run reviewer and is shown
+  before publication;
+- a diff tolerance of 1% volume and 0.1 mm;
+- every Proof follows Make's rules;
+- the beaver coaster pilot.
+
+Pending: whether the contract-only first round and the contract-only
+fresh read stay.
 
 ## Phase 1: design-a-toy (skill only, no host change)
 
@@ -92,16 +102,31 @@ Files under `.claude/skills/design-a-toy/`:
     Reference Conflict, camera mismatch.
   - Its last round gives one verdict per requirement id.
   - It writes `proof/CRITIC.json`; its schema lives in the prompt.
-  - Kept and reused for the whole design.
+  - One thread for the whole toy, kept and reused for the whole design.
+  - **Close look.** When it cannot settle a Component from the whole-toy
+    compares, it asks for that Component alone at its Reference Camera
+    and its Guide Image cameras (`proof_views.py compare` on the one
+    `part_<id>.step.py`). The same thread judges it, and `CRITIC.json`
+    records why.
+  - **Concept Checklist.** It judges every trait in
+    `CONCEPT-CHECKLIST.md` at the concept's cameras: kept, lost, or
+    changed by a named owner decision. A lost required trait is a
+    difference.
+- **New `checklist-prompt.md` and a Stage 1 step.**
+  - After the three views, a fresh subagent that sees only the concept
+    and its three views writes `CONCEPT-CHECKLIST.md`: 8-12 traits, with
+    measured ratios where possible.
+  - The owner marks each required or changeable. This costs about 0.3
+    units and two minutes of the owner's time.
 - **`SKILL.md` Stage 3a**
   - Step 1: the kept Proof sees images from round 2.
-  - New step: the critic loop until it agrees, with the cap from Phase 0.
+  - New step: the critic loop until it agrees, capped at 5 geometry-changing rounds.
   - Step 6: the fresh read, then a new `proof_views.py diff` (below).
   - Remove "a Proof is never a Reference Image, and nothing compares it
     with the model" and the Trial F caveat that the build differs from
     the Proof.
 - **`SKILL.md` Stage 4.** Open with concept | Proof | 50% overlay at the
-  concept's cameras, then each reference compare, then the critic's open
+  concept's cameras and the checklist count, then each reference compare, then the critic's open
   lines. Approving now means "this is what ships".
 - **`SKILL.md` Stage 5**
   - Run the new `scripts/seal_proof.py`, which writes `APPROVAL.json`.
@@ -112,7 +137,8 @@ Files under `.claude/skills/design-a-toy/`:
     box, two-way Boolean difference, the method of CONCEPT-DRIFT Part 1.
   - When the Boolean fails on faceted faces (as on K4's heads), it falls
     back to volume and bounding box.
-  - It writes `proof/fresh-diff.json` and exits 1 over tolerance.
+  - It writes `proof/fresh-diff.json` and exits 1 over 1% volume or 0.1 mm
+    per bounding-box side.
 - **`scripts/seal_proof.py`**
   - Calls make_round's own identity and carry-key code; it does not
     reimplement them. To make this possible, Phase 3 exposes
@@ -217,7 +243,7 @@ Files under `.claude/skills/design-a-toy/`:
 
 ## Phase 5: pilot and measurement
 
-- **Toy:** the owner's choice; the default is the beaver coasters,
+- **Toy:** the beaver coasters (owner, 2026-11-02),
   currently at Stage 4.
 - **Measure:**
   - design cost split into Proof, critic, fresh read and coordinator;
