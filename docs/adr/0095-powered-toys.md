@@ -307,7 +307,11 @@ prose.
    assembly entry adds the group, so the sealed `assembled.step` and the
    toy's model files carry each body as a leaf named `bought_<part>` in the
    reserved not-printed magenta (ADR 0092 Q29). No body is a `part_*` entry,
-   so no print gate reads one. The assembly-package rules exempt a magenta
+   so no print gate reads one. Nor is a body a component (issue #186):
+   `verify_project`'s component preflight asks no mount of a STEP
+   `measure/bought-bodies.json` lists with its current bytes, and
+   `check_mount` leaves those leaves out of the model it measures a mount
+   against. An unlisted STEP is still refused. The assembly-package rules exempt a magenta
    `bought_` occurrence from the stocked-colour name and the `parts/`
    production STEP. A `bought_` name in a printed colour is still a print
    part.

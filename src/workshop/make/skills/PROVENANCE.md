@@ -8,6 +8,21 @@
   hand. Documentation only; only `make-round`'s lock moves; `source_commit`
   values are unchanged.
 
+## Workshop-local: the bought bodies are no components (2026-11-02, issue #186)
+
+- **Local patch to upstream `cad`.** `verify_project`'s final component
+  preflight (`_component_steps`) skips a `bought/bought_<name>.step` that
+  `measure/bought-bodies.json` lists with its current sha256
+  (`_bought_steps`); any other STEP outside `ref/` is still refused.
+  `check_mount` leaves the listed `bought_` leaves out of the whole model it
+  measures a mount against (`bought_bodies`, `model_solids`), because each
+  body sits inside its own mount envelope. The `--self-check` fixtures gain
+  three cases. Upstream has no bought group, so a resync must keep these.
+- `make-round`'s `shared_helpers` counts the generated `bought/__init__.py`
+  as no Shared Helper when the body list records it (`bought_group_module`).
+  Only `cad`'s and `make-round`'s locks move; `source_commit` values are
+  unchanged.
+
 ## Workshop-local: a powered toy's Bought Parts in its model (2026-11-01, ADR 0095 amendment)
 
 - `make-round` gains `scripts/bought_model.py` and `references/bought-parts.md`:

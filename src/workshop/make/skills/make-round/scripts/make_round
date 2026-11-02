@@ -4447,19 +4447,36 @@ def contract_interfaces(project: Path) -> tuple[list | None, str | None]:
     return interfaces, None
 
 
+def bought_group_module(project: Path) -> Path | None:
+    """``bought/__init__.py`` when ``measure/bought-bodies.json`` records it:
+    the group ``bought_model.py --build`` writes for the Bought Parts (ADR
+    0095, 2026-11-01). It is generated, never edited, and only the assembly
+    imports it, so it is no Shared Helper."""
+
+    try:
+        document = json.loads((project / "measure" / "bought-bodies.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(document, dict) or document.get("kind") != "bought-bodies" \
+            or document.get("group") != "bought" or not isinstance(document.get("module_sha256"), str):
+        return None
+    return (project / "bought" / "__init__.py").resolve()
+
+
 def shared_helpers(project: Path) -> dict[str, str]:
     """Project-relative path -> sha256 of every Shared Helper: each importable
-    project-local ``.py`` module that is not an entry, a sample, evidence or
-    the Colour Module (issue #160)."""
+    project-local ``.py`` module that is not an entry, a sample, evidence,
+    the Colour Module (issue #160) or the bought group module."""
 
     project = project.resolve()
     colours = geometry_sources_tool()["colour_module"](project)
+    bought = bought_group_module(project)
     found = {}
     for path in sorted(project.rglob("*.py")):
         relative = path.relative_to(project)
         if path.name.endswith(".step.py") or any(part in NOT_HELPERS for part in relative.parts[:-1]):
             continue
-        if colours is not None and path.resolve() == colours:
+        if path.resolve() in (colours, bought):
             continue
         if path.is_file():
             found[relative.as_posix()] = file_hash(path)
