@@ -234,6 +234,7 @@ def prepare_revision(
     reference_sources: Optional[Mapping[str, str]] = None,
     design_contract: Optional[Mapping[str, Any]] = None,
     kit_catalogue: Optional[Mapping[str, Any]] = None,
+    seed: Optional[Mapping[str, Any]] = None,
 ) -> tuple[Wish, bytes]:
     """Verify a local toy snapshot; never import private run authority."""
     source = Path(source)
@@ -249,10 +250,10 @@ def prepare_revision(
             _project_run_workspace_archive(source, staging)
             return _prepare_revision_from_archive(
                 staging, prompt, references, reference_sources, design_contract,
-                kit_catalogue,
+                kit_catalogue, seed,
             )
     return _prepare_revision_from_archive(
-        source, prompt, references, reference_sources, design_contract, kit_catalogue
+        source, prompt, references, reference_sources, design_contract, kit_catalogue, seed
     )
 
 
@@ -263,6 +264,7 @@ def _prepare_revision_from_archive(
     reference_sources: Optional[Mapping[str, str]] = None,
     design_contract: Optional[Mapping[str, Any]] = None,
     kit_catalogue: Optional[Mapping[str, Any]] = None,
+    seed: Optional[Mapping[str, Any]] = None,
 ) -> tuple[Wish, bytes]:
     manifest_bytes = stable_file(source / "MANIFEST.json", "public archive manifest")
     document = strict_json(manifest_bytes, "public archive manifest")
@@ -327,6 +329,11 @@ def _prepare_revision_from_archive(
     if kit_catalogue is not None:
         # ADR 0092: a schema 7 contract's catalogue entries, for Make's tree gates.
         context["kit_catalogue"] = dict(kit_catalogue)
+    if seed is not None:
+        if design_contract is None:
+            raise ContractError("a seeded correction needs a Design Contract")
+        # ADR 0096: the Approved Proof this correction is seeded from.
+        context["seed"] = dict(seed)
     wish = Wish.create(
         generate_wish_id(), prompt, context=context, references=references,
     )

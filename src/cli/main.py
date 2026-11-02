@@ -490,6 +490,23 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                         item.get("contract", "?"),
                     )
                 )
+    seed = receipt.get("seed")
+    if isinstance(seed, Mapping):
+        # ADR 0096: the Approved Proof this run was seeded from.
+        print(
+            "Seed: the Approved Proof approved by %s on %s (approval %s)"
+            % (seed.get("approved_by", "?"), seed.get("date", "?"),
+               str(seed.get("approval_sha256", "?"))[:12])
+        )
+        for item in receipt.get("seed_deviations") or ():
+            if not isinstance(item, Mapping):
+                continue
+            print(
+                "Seed deviation: %s %s the Approved Proof; locked by %s"
+                % (item.get("component", "?"),
+                   "within tolerance of" if item.get("within_tolerance") else "over tolerance against",
+                   "the approval" if item.get("locked_by") == "seed-approval" else "its Component Review")
+            )
     guides = receipt.get("guides")
     if isinstance(guides, (list, tuple)):
         # ADR 0089: how each Guide Image's steps were checked, and where a
@@ -825,6 +842,7 @@ def _start_run(
     carry_unchanged: bool = False,
     wish_reference_files: Optional[Mapping[str, bytes]] = None,
     revision_snapshot: Optional[bytes] = None,
+    seed_source: Optional[Path] = None,
     progress: TextIO,
     live_progress: "_LiveWishProgress",
 ) -> Mapping[str, Any]:
@@ -913,6 +931,14 @@ def _start_run(
                     file=progress,
                     flush=True,
                 )
+    seed = wish.context.get("seed")
+    if isinstance(seed, Mapping):
+        print(
+            "Seed: the Approved Proof, approved in design by %s on %s; Make "
+            "certifies it and models nothing again" % (seed.get("approved_by"), seed.get("date")),
+            file=progress,
+            flush=True,
+        )
     if no_publish:
         print(
             "Publication: disabled (--no-publish). Release seals this toy "
@@ -954,6 +980,7 @@ def _start_run(
         **({"carry_unchanged": True} if carry_unchanged else {}),
         wish_reference_files=wish_reference_files,
         **({"revision_snapshot": revision_snapshot} if revision_snapshot is not None else {}),
+        **({"seed_source": seed_source} if seed_source is not None else {}),
         github_publish_requested=github,
         **({"local_release_only": True} if no_publish else {}),
         activity_observer=live_progress.activity,
@@ -1007,6 +1034,48 @@ def _load_sealed_contract(
     return text, contract.to_dict(), contract.kit_catalogue()
 
 
+SEED_SOURCE_HELP = (
+    "seed Make from design-a-toy's Approved Proof, the directory seal_proof.py "
+    "sealed (ADR 0096): its files are sealed read-only under seed/ and frozen "
+    "for every resume; needs --contract and the spark workflow"
+)
+
+
+def _load_seed(args: argparse.Namespace, sealed_contract: Optional[Mapping]) -> Optional[dict]:
+    """Validate ``--seed-source`` against the sealed contract before any run
+    starts and return what the Wish context records of it, or None.
+
+    A schema 11 contract (``shape: approved-proof``) seals only with a seed;
+    a seed needs a contract and the spark workflow."""
+
+    from workshop.wish.seed import contract_geometry_ids, seed_context, seed_contract_sha256, validate_seed
+
+    source = getattr(args, "seed_source", None)
+    shaped = isinstance(sealed_contract, Mapping) and sealed_contract.get("shape") == "approved-proof"
+    if source is None:
+        if shaped:
+            raise WorkshopError(
+                "this contract's shape is its Approved Proof (schema 11): pass --seed-source DIR"
+            )
+        return None
+    if sealed_contract is None:
+        raise WorkshopError("--seed-source seeds a Design Contract's build: pass --contract FILE too")
+    workflow = getattr(args, "workflow", "spark")
+    if workflow != "spark":
+        raise WorkshopError("--seed-source runs only the spark workflow, not %s" % workflow)
+    try:
+        contract_bytes = args.contract.read_bytes()
+    except OSError as exc:
+        raise WorkshopError("cannot read design contract file") from exc
+    if contract_bytes.decode("utf-8", "replace").encode("utf-8") != contract_bytes or b"\r" in contract_bytes:
+        # The sealed objective is the file's text; the seed's contract hash is
+        # of its bytes. Only one encoding keeps the two the same.
+        raise WorkshopError("--seed-source needs a UTF-8 contract file with LF line endings")
+    digest = seed_contract_sha256(contract_bytes.decode("utf-8"))
+    seed = validate_seed(source, contract_geometry_ids(sealed_contract), digest)
+    return seed_context(seed, digest)
+
+
 def _load_references(args: argparse.Namespace) -> tuple[LoadedWishReference, ...]:
     """The --ref images, then the --guide images (ADR 0089), then the
     --print-art images (ADR 0091).
@@ -1052,7 +1121,11 @@ def _wish(args: argparse.Namespace) -> int:
         if kit_catalogue is not None:
             # ADR 0092: the catalogue entries Make's tree gates read.
             context["kit_catalogue"] = kit_catalogue
+        seed = _load_seed(args, sealed_contract)
+        if seed is not None:
+            context["seed"] = seed
     else:
+        _load_seed(args, None)
         if not args.objective:
             raise WorkshopError("provide a WISH objective or --contract FILE")
         objective = " ".join(args.objective)
@@ -1080,6 +1153,7 @@ def _wish(args: argparse.Namespace) -> int:
         turn_minutes=args.turn_minutes,
         check_motion=args.check_motion,
         wish_reference_files=wish_reference_files(loaded_references),
+        seed_source=args.seed_source,
         progress=progress,
         live_progress=live_progress,
     )
@@ -1117,6 +1191,9 @@ def _fix(args: argparse.Namespace) -> int:
         )
         if kit_catalogue is not None:
             revision_options["kit_catalogue"] = kit_catalogue
+    seed = _load_seed(args, revision_options.get("design_contract"))
+    if seed is not None:
+        revision_options["seed"] = seed
     wish, snapshot = prepare_revision(args.source, prompt, **revision_options)
     runtime = manager_runtime_selection(
         args.agent, model=args.model, reasoning_effort=args.effort,
@@ -1128,6 +1205,7 @@ def _fix(args: argparse.Namespace) -> int:
         turn_minutes=args.turn_minutes, check_motion=args.check_motion,
         carry_unchanged=not args.full, revision_snapshot=snapshot,
         wish_reference_files=wish_reference_files(loaded_references),
+        seed_source=args.seed_source,
         progress=progress, live_progress=_LiveWishProgress(progress, runtime.spec.display_name),
     )
     if args.contract is not None:
@@ -2456,6 +2534,7 @@ def parser() -> argparse.ArgumentParser:
             "failure at once"
         ),
     )
+    wish.add_argument("--seed-source", type=Path, metavar="DIR", help=SEED_SOURCE_HELP)
     wish.add_argument(
         "--ref",
         action="append",
@@ -2605,6 +2684,7 @@ def parser() -> argparse.ArgumentParser:
     )
     fix.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
                       help="enable Make motion checks and animation review (default: false)")
+    fix.add_argument("--seed-source", type=Path, metavar="DIR", help=SEED_SOURCE_HELP)
     fix.add_argument("--max-tokens", type=_token_budget, default=DEFAULT_PRODUCT_TOKENS)
     fix.add_argument("--turn-minutes", type=_turn_minutes, default=None)
     fix.add_argument(

@@ -12,6 +12,10 @@ and subagents alike. The runtime names the calling subagent in the hook input
   ``--worker-nonce``. make_round records the nonce in the round, and the host
   refuses a Make proposal holding a Component round whose nonce it did not
   issue to a worker for that Component.
+- In a run seeded from an Approved Proof (Workshop ADR 0096), the root may
+  run a Component round too. The hook issues it a nonce as ``--seed-nonce``;
+  make_round keeps such a round only when it is the approved Component, and
+  the host accepts it only then. Any deviation is a worker's round.
 - ``--record-review``, ``--record-unlock`` (ADR 0081), ``--record-visual``,
   assembly rounds, and the checks that span Components -- the Shared Helper
   check ``--shared-helpers`` and the Coupled Interface check ``--interface``
@@ -82,6 +86,9 @@ _LOGGED_READERS = frozenset({COMPONENT_REVIEWER, CONTRACT_REVIEWER})
 # A file larger than any packet image is logged without a hash.
 MAX_HASHED_READ_BYTES = 64 * 1024 * 1024
 NONCE_FLAG = "--worker-nonce"
+# Workshop ADR 0096: in a seeded run the root may run a Component's round,
+# which make_round keeps only when it is the Approved Proof's Component.
+SEED_NONCE_FLAG = "--seed-nonce"
 COMPONENT_WORKER = "component-worker"
 SCRIPT_NAME = "make_round"
 _COMMAND_KEYS = ("command", "cmd")
@@ -239,8 +246,9 @@ def _deny(reason: str) -> dict[str, Any]:
     }
 
 
-def decide(event: Mapping[str, Any], *, issue: Issuer) -> Optional[dict[str, Any]]:
-    """The hook output for one tool call, or ``None`` to let it run unchanged."""
+def decide(event: Mapping[str, Any], *, issue: Issuer, seeded: bool = False) -> Optional[dict[str, Any]]:
+    """The hook output for one tool call, or ``None`` to let it run unchanged.
+    ``seeded``: the run was seeded from an Approved Proof (ADR 0096)."""
 
     tool_input = event.get("tool_input")
     if not isinstance(tool_input, Mapping):
@@ -266,8 +274,9 @@ def decide(event: Mapping[str, Any], *, issue: Issuer) -> Optional[dict[str, Any
     if len(calls) > 1:
         return _deny("run one make_round call per command")
     arguments = calls[0]
-    if any(argument == NONCE_FLAG or argument.startswith(NONCE_FLAG + "=") for argument in arguments):
-        return _deny("%s is issued by Workshop; never pass one" % NONCE_FLAG)
+    for flag in (NONCE_FLAG, SEED_NONCE_FLAG):
+        if any(argument == flag or argument.startswith(flag + "=") for argument in arguments):
+            return _deny("%s is issued by Workshop; never pass one" % flag)
     if any(argument in ("--self-check", "-h", "--help", BLOCKED_STATUS, AMENDMENT_STATUS)
            for argument in arguments):
         return None
@@ -287,22 +296,25 @@ def decide(event: Mapping[str, Any], *, issue: Issuer) -> Optional[dict[str, Any
         for argument in arguments
         for flag in _ROOT_RECORDS
     ):
+        flag = NONCE_FLAG
         if agent_type != COMPONENT_WORKER:
-            return _deny(
-                "only a component-worker runs a Component's rounds; spawn one "
-                "component-worker for %s and give it that Component's inputs" % component
-            )
+            if not (seeded and is_root):
+                return _deny(
+                    "only a component-worker runs a Component's rounds; spawn one "
+                    "component-worker for %s and give it that Component's inputs" % component
+                )
+            flag = SEED_NONCE_FLAG
         if len(_SCRIPT_TOKEN.findall(command)) != 1:
             return _deny("name make_round exactly once in the command")
         rewritten = _SCRIPT_TOKEN.sub(
-            lambda match: match.group(0) + " %s %s" % (NONCE_FLAG, "0" * 32), command, count=1
+            lambda match: match.group(0) + " %s %s" % (flag, "0" * 32), command, count=1
         )
         # A quoted script path would swallow the nonce into the path; refuse
         # it rather than issue a nonce the round never records.
-        if make_round_calls(rewritten) != [[NONCE_FLAG, "0" * 32, *arguments]]:
+        if make_round_calls(rewritten) != [[flag, "0" * 32, *arguments]]:
             return _deny("run make_round with an unquoted script path, as one plain command")
         nonce = issue(event, os.path.basename(component))
-        rewritten = rewritten.replace("%s %s" % (NONCE_FLAG, "0" * 32), "%s %s" % (NONCE_FLAG, nonce), 1)
+        rewritten = rewritten.replace("%s %s" % (flag, "0" * 32), "%s %s" % (flag, nonce), 1)
         return {
             "hookSpecificOutput": {
                 "hookEventName": "PreToolUse",
@@ -601,6 +613,20 @@ def _event_run_root(event: Mapping[str, Any]) -> Optional[Path]:
     return None
 
 
+def seeded_run(event: Mapping[str, Any]) -> bool:
+    """Whether the event's run froze a seed in ``MAKE-OPTIONS.json`` (ADR
+    0096). Unreadable options are not a seed: the root is then refused."""
+
+    run_root = _event_run_root(event)
+    if run_root is None:
+        return False
+    try:
+        options = json.loads((run_root / "MAKE-OPTIONS.json").read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError):
+        return False
+    return isinstance(options, dict) and isinstance(options.get("seed"), dict)
+
+
 def observe_ledgers(event: Mapping[str, Any], log: Path) -> None:
     """Log the current attempt's ledgers on the root's ``Stop`` and before
     every make_round call (issue #181). Evidence only: nothing is refused."""
@@ -682,7 +708,7 @@ def main() -> int:
         return 0
     table = directory / NONCE_TABLE_NAME
     try:
-        output = decide(event, issue=_table_issuer(table))
+        output = decide(event, issue=_table_issuer(table), seeded=seeded_run(event))
     except OSError:
         output = _deny("the worker nonce could not be recorded")
     if output is not None:

@@ -26,7 +26,7 @@ import stat
 import zipfile
 from importlib import resources
 from pathlib import Path
-from typing import Optional
+from typing import Any, Mapping, Optional
 
 from workshop.errors import ContractError, StateConflict
 from workshop.make.make_round_guard import (
@@ -59,6 +59,8 @@ _COMPONENT_ROUNDS = ("measure", "component-rounds")
 # make_round, which only checks that it exists.
 MAKE_ROUND_GUARD_MARKER = ".agents/MAKE-ROUND-GUARD.json"
 _COMPONENT_STATE = "make-round-state.json"
+# Kept in step with ``SEED_APPROVAL`` in make_round (ADR 0096).
+SEED_APPROVAL = "seed-approval"
 
 
 def _component_source(role: str) -> str:
@@ -144,6 +146,38 @@ def _issued_worker_nonces(host_state_root: Path) -> dict[str, str]:
         ):
             issued[record["nonce"]] = record["component"]
     return issued
+
+
+def _issued_seed_nonces(host_state_root: Path) -> dict[str, str]:
+    """Nonce -> the Component source it was issued to the root for, in a
+    seeded run (Workshop ADR 0096)."""
+
+    issued: dict[str, str] = {}
+    for record in _guard_records(
+        host_state_root, NONCE_TABLE_NAME, MAX_NONCE_TABLE_BYTES, "nonce table"
+    ):
+        if not isinstance(record.get("nonce"), str):
+            raise StateConflict("the make_round guard nonce table is invalid")
+        if (not record.get("agent_type") and not record.get("agent_id")
+                and isinstance(record.get("component"), str)):
+            issued[record["nonce"]] = record["component"]
+    return issued
+
+
+def _approved_seed_round(summary: dict, approved: Any) -> bool:
+    """Whether a root round is exactly the Approved Proof's Component: its
+    B-rep identity and carry key, locked by the approval (ADR 0096)."""
+
+    review = summary.get("review")
+    return (
+        isinstance(approved, Mapping)
+        and isinstance(review, dict)
+        and review.get("carried_from") == SEED_APPROVAL
+        and review.get("seed") == "exact"
+        and summary.get("identity") == approved.get("identity")
+        and summary.get("carry_key") == approved.get("carry_key")
+        and summary.get("phase") == "locked"
+    )
 
 
 def _started_reviewers(host_state_root: Path, role: str = COMPONENT_REVIEWER) -> set[str]:
@@ -380,6 +414,7 @@ def verify_component_round_nonces(
     run_root: Path,
     require_every_component: bool = False,
     bind_reviewers: bool = False,
+    seed_components: Optional[Mapping[str, Any]] = None,
 ) -> None:
     """Refuse a Component round no ``component-worker`` ran (ADR 0080).
 
@@ -393,7 +428,9 @@ def verify_component_round_nonces(
     ``part_<id>.step.py`` must also have at least one such round. With
     ``bind_reviewers`` every review recorded on a round (not carried forward
     from an earlier one) must come from the Component's one proven
-    Component Reviewer (issue #77).
+    Component Reviewer (issue #77). In a seeded run ``seed_components`` is
+    the sealed approval's Components (ADR 0096): a round the root ran under
+    a seed nonce is accepted only when it is exactly the approved Component.
     """
 
     rounds = Path(project).joinpath(*_COMPONENT_ROUNDS)
@@ -421,6 +458,7 @@ def verify_component_round_nonces(
     if not summaries:
         return
     issued = _issued_worker_nonces(host_state_root)
+    seed_issued = _issued_seed_nonces(host_state_root) if seed_components is not None else {}
     carried: Optional[set[str]] = None
     used: dict[str, str] = {}
     reviewed: list[tuple[str, str, dict]] = []
@@ -445,6 +483,20 @@ def verify_component_round_nonces(
                     carried = _carried_summaries(run_root)
                 if hashlib.sha256(content).hexdigest() not in carried:
                     reviewed.append((role, label, summary))
+            continue
+        seed_nonce = summary.get("seed_nonce") if isinstance(summary, dict) else None
+        if isinstance(seed_nonce, str) and seed_issued.get(seed_nonce) == _component_source(role):
+            if seed_nonce in used:
+                raise ContractError(
+                    "Component round %s reuses the seed nonce of %s" % (label, used[seed_nonce])
+                )
+            used[seed_nonce] = label
+            if not _approved_seed_round(summary, (seed_components or {}).get(role)):
+                raise ContractError(
+                    "Component round %s was run by the Workshop Manager but is not the "
+                    "Approved Proof's Component; a deviation is a component-worker's "
+                    "round" % label
+                )
             continue
         if carried is None:
             carried = _carried_summaries(run_root)

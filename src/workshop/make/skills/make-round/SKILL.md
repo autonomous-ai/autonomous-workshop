@@ -60,6 +60,14 @@ calls were reassembling by hand.
   cannot see (a heredoc, or no call it can parse, beyond reading the script
   with `sed`, `grep` or `cat`), and in a guarded run make_round itself
   refuses a component round without a nonce (issue #113).
+- In a run seeded from an Approved Proof (`MAKE-OPTIONS.json` has `seed`,
+  ADR 0096), the root runs each approved Component's round itself; the hook
+  passes it a `--seed-nonce`. A round that is the approved Component is
+  locked by the owner's approval (`review.carried_from: "seed-approval"`)
+  with nothing to review. A root round that deviates is refused and leaves
+  nothing: spawn a Component Worker for that Component. A worker's round
+  within `proof_diff` tolerance (`seed-diff.json`) is locked the same way;
+  one over tolerance awaits its Component Review as usual.
 - A round can take minutes. Wait for it in as few requests as possible: on
   Codex start it with `yield_time_ms: 300000` and continue with an empty
   `write_stdin` poll at the same yield. On Claude Code run it in the

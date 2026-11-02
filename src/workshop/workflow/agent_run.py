@@ -127,6 +127,13 @@ MAX_AGENT_CHECKPOINT_BYTES = 256 * 1024
 # refresh.
 MAX_AGENT_INPUT_BYTES = 6 * 1024 * 1024
 MAX_AGENT_INPUT_FILES = 768
+# ADR 0096: an Approved Proof sealed under seed/ has its own byte budget, so
+# its STEP files cannot crowd out the constitution and skills.
+SEED_DIRECTORY = "seed"
+SEED_APPROVAL_PATH = SEED_DIRECTORY + "/APPROVAL.json"
+MAX_SEED_FILE_BYTES = 64 * 1024 * 1024
+MAX_SEED_TOTAL_BYTES = 256 * 1024 * 1024
+MAX_SEED_FILES = 256
 MAX_AGENT_ARTIFACT_BYTES = MAX_FILE_BYTES
 # A four-round physical-product run may retain several immutable CAD, mesh,
 # slicer, and Playtest revisions. Keep a cumulative host budget while allowing
@@ -263,6 +270,7 @@ MAKE_OPTIONS_NAME = "MAKE-OPTIONS.json"
 MAKE_COMPANION_REFERENCES = (
     "references/make-forge-quest.md",
     "references/make-older-runs.md",
+    "references/make-seeded.md",
 )
 # Host-owned camera-only amendments of a schema 3 Design Contract (ADR 0083).
 AMENDMENTS_NAME = "CONTRACT-AMENDMENTS.json"
@@ -273,7 +281,8 @@ def _plain_angle(value: Any) -> Any:
     return int(number) if number.is_integer() else number
 
 
-def _make_options_bytes(*, check_motion: bool, carry_unchanged: bool) -> bytes:
+def _make_options_bytes(*, check_motion: bool, carry_unchanged: bool,
+                        seed: Optional[Mapping[str, str]] = None) -> bytes:
     """Canonical bytes of the immutable run-root Make options.
 
     `carry_unchanged` is the correction carry policy: a part whose freshly
@@ -290,12 +299,82 @@ def _make_options_bytes(*, check_motion: bool, carry_unchanged: bool) -> bytes:
     """
     if type(check_motion) is not bool or type(carry_unchanged) is not bool:
         raise ContractError("Make options must be boolean")
+    if seed is not None:
+        # Schema 3 (ADR 0096): the Approved Proof this run was seeded from.
+        payload = {"schema_version": 3, "check_motion": check_motion,
+                   "seed": _checked_seed(seed)}
+        if carry_unchanged:
+            payload["carry_unchanged"] = True
+        return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     if not carry_unchanged:
         payload = {"schema_version": 1, "check_motion": check_motion}
     else:
         payload = {"schema_version": 2, "check_motion": check_motion,
                    "carry_unchanged": True}
     return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def _checked_seed(seed: Any) -> dict[str, str]:
+    if not isinstance(seed, Mapping) or set(seed) != {"approval_sha256", "manifest_sha256"}:
+        raise ContractError("a seed freezes exactly approval_sha256 and manifest_sha256")
+    for value in seed.values():
+        require_sha256(value, "seed sha256")
+    return {key: seed[key] for key in sorted(seed)}
+
+
+def _frozen_seed(run_root: Path) -> Optional[dict[str, str]]:
+    """The Approved Proof frozen into a run's Make options (ADR 0096), or
+    None. A resume rewrites the options file with it, so no resume can add
+    or drop a seed."""
+
+    path = run_root / MAKE_OPTIONS_NAME
+    if path.is_symlink() or not path.is_file():
+        return None
+    if path.stat().st_size > 1024:
+        raise StateConflict("invalid frozen Make options")
+    payload = json.loads(path.read_bytes())
+    if not isinstance(payload, dict):
+        raise StateConflict("invalid frozen Make options")
+    if "seed" not in payload:
+        return None
+    try:
+        return _checked_seed(payload["seed"])
+    except ContractError as exc:
+        raise StateConflict("invalid frozen Make options") from exc
+
+
+def _seed_inputs(
+    seed: Optional[Mapping[str, str]], files: Optional[Mapping[str, bytes]]
+) -> list[tuple[PurePosixPath, bytes, int]]:
+    """The Approved Proof's files under seed/, checked against the frozen
+    approval hash, or no input for an unseeded run."""
+
+    if seed is None and files is None:
+        return []
+    if seed is None or not isinstance(files, Mapping) or not files:
+        raise ContractError("a seeded run needs both its frozen seed and its files")
+    frozen = _checked_seed(seed)
+    approval = files.get("APPROVAL.json")
+    if not isinstance(approval, bytes) or _sha256(approval) != frozen["approval_sha256"]:
+        raise ContractError("the seed's APPROVAL.json is not the frozen approval")
+    if len(files) > MAX_SEED_FILES:
+        raise ContractError("the seed has too many files")
+    inputs = []
+    total = 0
+    for name, content in sorted(files.items()):
+        relative = _safe_relative(name, "seed file path")
+        if not isinstance(content, bytes) or len(content) > MAX_SEED_FILE_BYTES:
+            raise ContractError("seed file is too large or not bytes: %s" % name)
+        total += len(content)
+        _reject_private_agent_bytes(relative.as_posix(), content)
+        inputs.append((PurePosixPath(SEED_DIRECTORY) / relative, content, 0o400))
+    if total > MAX_SEED_TOTAL_BYTES:
+        raise ContractError("the seed exceeds its byte limit")
+    return inputs
+
+
+def _is_seed_path(path: str) -> bool:
+    return path.startswith(SEED_DIRECTORY + "/")
 
 
 def _frozen_carry_unchanged(run_root: Path) -> bool:
@@ -914,6 +993,8 @@ class AgentRun:
         revision_snapshot: Optional[bytes] = None,
         make_role_agents: Optional[Mapping[str, bytes]] = None,
         make_round_guard: bool = False,
+        seed: Optional[Mapping[str, str]] = None,
+        seed_files: Optional[Mapping[str, bytes]] = None,
     ) -> "AgentRun":
         if type(check_motion) is not bool:
             raise ContractError("agent run check_motion must be boolean")
@@ -1219,7 +1300,7 @@ class AgentRun:
             (PurePosixPath("WISH.json"), wish_bytes, 0o400),
             (PurePosixPath("MAKE-OPTIONS.json"),
              _make_options_bytes(check_motion=check_motion,
-                                 carry_unchanged=carry_unchanged), 0o400),
+                                 carry_unchanged=carry_unchanged, seed=seed), 0o400),
             (PurePosixPath("AGENTS.md"), constitution_bytes, 0o400),
             (
                 PurePosixPath(MANAGER_PROJECT_PATH),
@@ -1254,6 +1335,8 @@ class AgentRun:
         )
         all_input_files.extend(wish_reference_inputs)
         all_input_files.extend(revision_inputs)
+        seed_inputs = _seed_inputs(seed, seed_files)
+        all_input_files.extend(seed_inputs)
         if make_round_guard:
             # Issue #113: make_round refuses a component round without a
             # worker nonce in a run holding this sealed marker.
@@ -1264,7 +1347,7 @@ class AgentRun:
         input_paths = [relative.as_posix() for relative, _, _ in all_input_files]
         if len(input_paths) != len(set(input_paths)):
             raise ArtifactError("agent run input paths collide")
-        if len(all_input_files) > MAX_AGENT_INPUT_FILES:
+        if len(all_input_files) - len(seed_inputs) > MAX_AGENT_INPUT_FILES:
             raise ArtifactError("agent run has too many input files")
         # Reference images carry their own byte budget so a few photographs
         # cannot crowd out the constitution and skills, and vice versa.
@@ -1275,6 +1358,7 @@ class AgentRun:
             sum(len(content) for _, content, _ in all_input_files)
             - reference_input_bytes
             - sum(len(content) for _, content, _ in revision_inputs)
+            - sum(len(content) for _, content, _ in seed_inputs)
         )
         if total_input_bytes > MAX_AGENT_INPUT_BYTES:
             raise ArtifactError("agent run inputs exceed their total byte limit")
@@ -1371,6 +1455,12 @@ class AgentRun:
         references_root = selected / WISH_REFERENCES_DIRECTORY
         if references_root.exists():
             os.chmod(references_root, 0o500)
+        seed_root = selected / SEED_DIRECTORY
+        if seed_root.exists():
+            for directory in sorted((path for path in seed_root.rglob("*") if path.is_dir()),
+                                    key=lambda path: len(path.parts), reverse=True):
+                os.chmod(directory, 0o500)
+            os.chmod(seed_root, 0o500)
         if revision_snapshot is not None:
             materialize_revision(selected, revision_snapshot)
         core: dict[str, Any] = {
@@ -1662,12 +1752,13 @@ class AgentRun:
 
     def _verify_inputs(self, payload: Mapping[str, Any]) -> None:
         inputs = payload.get("inputs")
-        if not isinstance(inputs, list) or not 3 <= len(inputs) <= MAX_AGENT_INPUT_FILES:
+        if not isinstance(inputs, list) or not 3 <= len(inputs) <= MAX_AGENT_INPUT_FILES + MAX_SEED_FILES:
             raise StateConflict("agent run input manifest is invalid")
         observed_paths = []
         input_content: dict[str, bytes] = {}
         total = 0
         reference_total = 0
+        seed_total = 0
         for item in inputs:
             if not isinstance(item, Mapping) or set(item) != {
                 "path",
@@ -1681,6 +1772,7 @@ class AgentRun:
                 MAX_WISH_REFERENCE_BYTES
                 if _is_wish_reference_path(item["path"])
                 else MAX_REVISION_BYTES if item["path"] == REVISION_INPUT
+                else MAX_SEED_FILE_BYTES if _is_seed_path(item["path"])
                 else MAX_AGENT_INPUT_BYTES
             )
             if type(item["size"]) is not int or not 0 <= item["size"] <= size_limit:
@@ -1698,14 +1790,35 @@ class AgentRun:
             input_content[relative.as_posix()] = content
             if _is_wish_reference_path(relative.as_posix()):
                 reference_total += size
+            elif _is_seed_path(relative.as_posix()):
+                seed_total += size
             elif relative.as_posix() != REVISION_INPUT:
                 total += size
         if (
             len(observed_paths) != len(set(observed_paths))
             or total > MAX_AGENT_INPUT_BYTES
             or reference_total > MAX_WISH_REFERENCE_TOTAL_BYTES
+            or seed_total > MAX_SEED_TOTAL_BYTES
         ):
             raise StateConflict("agent run input manifest is invalid")
+        # ADR 0096: a frozen seed and the sealed APPROVAL.json agree, and no
+        # seed file exists without one.
+        frozen_seed = None
+        if MAKE_OPTIONS_NAME in input_content:
+            try:
+                options = json.loads(input_content[MAKE_OPTIONS_NAME])
+                if isinstance(options, dict) and "seed" in options:
+                    frozen_seed = _checked_seed(options["seed"])
+            except (ValueError, ContractError) as exc:
+                raise StateConflict("invalid frozen Make options") from exc
+        seeded_paths = [path for path in observed_paths if _is_seed_path(path)]
+        if frozen_seed is None and seeded_paths:
+            raise StateConflict("seed files without a frozen seed")
+        if frozen_seed is not None and (
+            SEED_APPROVAL_PATH not in input_content
+            or _sha256(input_content[SEED_APPROVAL_PATH]) != frozen_seed["approval_sha256"]
+        ):
+            raise StateConflict("the sealed seed approval is not the frozen one")
         required = {
             PRODUCT_RUN_ROOT_MARKER,
             "WISH.json",
@@ -2055,6 +2168,7 @@ class AgentRun:
             content = _make_options_bytes(
                 check_motion=check_motion,
                 carry_unchanged=_frozen_carry_unchanged(self.run_root),
+                seed=_frozen_seed(self.run_root),
             )
             digest = _sha256(content)
             previous = by_path.get(path)
@@ -2283,11 +2397,12 @@ class AgentRun:
         checkpoint revision, and append the host-correction record."""
 
         inputs = sorted(by_path.values(), key=lambda item: item["path"])
-        if len(inputs) > MAX_AGENT_INPUT_FILES:
+        if len([item for item in inputs if not _is_seed_path(item["path"])]) > MAX_AGENT_INPUT_FILES:
             raise ContractError("%s exceeds the agent input file limit" % label)
         total = sum(
             item["size"] for item in inputs
             if not _is_wish_reference_path(item["path"]) and item["path"] != REVISION_INPUT
+            and not _is_seed_path(item["path"])
         )
         if total > MAX_AGENT_INPUT_BYTES:
             raise ContractError("%s exceeds the agent input byte budget" % label)

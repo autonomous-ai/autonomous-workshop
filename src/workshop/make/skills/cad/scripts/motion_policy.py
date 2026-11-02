@@ -42,11 +42,22 @@ def _payload(root: Path) -> dict | None:
     if not isinstance(payload, dict):
         raise ValueError("invalid frozen Make options")
     version = payload.get("schema_version")
-    if type(version) is not int or version not in (1, 2):
+    if type(version) is not int or version not in (1, 2, 3):
         raise ValueError("invalid frozen Make options")
     base = {"schema_version", "check_motion"}
     if version == 1:
         if set(payload) != base:
+            raise ValueError("invalid frozen Make options")
+    elif version == 3:
+        # Workshop ADR 0096: the Approved Proof a seeded run starts from, and
+        # a correction's carry policy when it is one.
+        seed = payload.get("seed")
+        if (not isinstance(seed, dict) or set(seed) != {"approval_sha256", "manifest_sha256"}
+                or not all(isinstance(v, str) and len(v) == 64 for v in seed.values())):
+            raise ValueError("invalid frozen Make options")
+        if not set(payload) <= base | {"seed", "carry_unchanged"} or not base | {"seed"} <= set(payload):
+            raise ValueError("invalid frozen Make options")
+        if "carry_unchanged" in payload and payload["carry_unchanged"] is not True:
             raise ValueError("invalid frozen Make options")
     else:
         # Exactly one carry field, under either of its two names.
@@ -102,3 +113,16 @@ def carry_unchanged() -> bool:
 
 #: The policy's original name, kept so a tool frozen into an older run resolves.
 quick_fix = carry_unchanged
+
+
+def seed() -> dict | None:
+    """The Approved Proof frozen into a seeded run (Workshop ADR 0096),
+    ``{"approval_sha256", "manifest_sha256"}``, or None for every other run,
+    including every run created before schema 3 existed."""
+    root = _options_root()
+    if root is None:
+        return None
+    payload = _payload(root)
+    if payload is None or payload.get("schema_version") != 3:
+        return None
+    return dict(payload["seed"])
