@@ -549,18 +549,24 @@ class AssemblyTreeTest(unittest.TestCase):
         catalogues = load_catalogues()
         self.assertTrue(catalogues.filaments)
         self.assertTrue(catalogues.parts)
-        # Seeds are the owner's to confirm: none claims a supplier fact.
+        # Seeds are the owner's to confirm. Only the parts the owner added
+        # with a supplier listing (2026-11-03) name a source, and they stay
+        # unconfirmed until the owner confirms the real reel.
+        sourced = {"led-2835-pink", "led-2835-cyan"}
         for entry in list(catalogues.filaments.values()) + list(catalogues.parts.values()):
             self.assertFalse(entry.confirmed, entry.id)
         for entry in catalogues.parts.values():
             self.assertIsNone(entry.pack, entry.id)
-            self.assertIsNone(entry.source, entry.id)
+            if entry.id not in sourced:
+                self.assertIsNone(entry.source, entry.id)
+        self.assertTrue(all(catalogues.parts[name].source for name in sourced))
         # The packaged catalogues validate the example as well as the fake.
         contract = parse_design_contract(_contract_text(_tree_block()))
         self.assertIn("filaments.json:navy", contract.assembly_tree.unconfirmed)
-        # Every lamp seed gives the lead diameter Make's lead-route gate sweeps.
+        # Every through-hole lamp seed gives the lead diameter Make's
+        # lead-route gate sweeps; a surface-mount LED has no leads (ADR 0095).
         for entry in catalogues.parts.values():
-            if entry.category == "lamp":
+            if entry.category == "lamp" and (entry.model or {}).get("form") != "smd-led":
                 self.assertIn("lead diameter", [size["what"] for size in entry.sizes], entry.id)
 
 
