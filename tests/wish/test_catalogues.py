@@ -161,6 +161,17 @@ class CatalogueTest(unittest.TestCase):
         natural = catalogues.filaments["translucent-natural"]
         self.assertEqual((natural.hex, natural.kind, natural.confirmed), ("#efe9dc", "translucent", False))
 
+    def test_the_packaged_seed_holds_the_synthwave_lamp_leds_unconfirmed(self):
+        # Owner, 2026-11-03: pink and cyan 2835 LEDs for the synthwave
+        # arcade lamp, each with its real supplier entry as its source.
+        parts = load_catalogues().parts
+        for name, supplier in (("led-2835-pink", "LCSC C2843873"), ("led-2835-cyan", "LCSC C6533949")):
+            part = parts[name]
+            self.assertEqual((part.category, part.confirmed, part.lead_diameter_mm), ("lamp", False, None))
+            self.assertEqual(part.model["form"], "smd-led")
+            self.assertIn(supplier, part.source)
+        self.assertIn("506 nm", parts["led-2835-cyan"].name)
+
     def test_the_lead_diameter_is_the_largest_one_given(self):
         bought = _bought()
         bought["parts"][1]["sizes"].append({"what": "lead diameter", "max_mm": [0.45, 0.5]})
