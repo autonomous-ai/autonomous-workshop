@@ -327,6 +327,9 @@ amendment changes prose, and it unlocks every Component whose geometry
 names the changed section. A Contract Proof before Stage 4 and the
 printability choice belong to `design-a-toy`. Schema 1 to 7 contracts and
 frozen runs keep what they sealed.
+Its 2026-11-03 amendment (B18) has the toy README Release writes carry a
+sealed `Bought Parts and assembly` prose section verbatim, with the
+host-recorded owner amendments applied; a contract without it is unchanged.
 ADR 0094 makes the Contract Proof run make_round's own print gates, so design
 and Make share one gate; 45 degrees is the only overhang limit, 52 being the
 print-details library's design margin. One Proof subagent is kept for the

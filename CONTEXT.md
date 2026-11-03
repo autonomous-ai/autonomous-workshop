@@ -592,6 +592,13 @@ The README carries it verbatim, so its wording can never contradict the
 contract.
 _Avoid_: Wiring notes, assembly prose
 
+**Bought Parts and assembly text**:
+The contract's prose section headed `Bought Parts and assembly`: which
+Bought Parts a toy needs and the order a maker fits them and the printed
+parts. The toy README carries it verbatim (ADR 0093's 2026-11-03
+amendment), so a toy that needs assembling ships its steps.
+_Avoid_: Assembly notes, build steps (written anywhere but the contract)
+
 **Tree defect**:
 A sealed Assembly Tree that does not hold together: a Part missing, extra or
 duplicated against its Print Sheet or catalogue side, or a step in the wrong

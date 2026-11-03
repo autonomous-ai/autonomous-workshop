@@ -44,6 +44,7 @@ from workshop.release.native import (
     validate_release_product,
 )
 from workshop.release.public_example import (
+    contract_assembly_text,
     _public_hero_path,
     _public_token_summary,
     materialize_public_example,
@@ -1508,6 +1509,87 @@ class NativeReleaseTest(unittest.TestCase):
             ),
             target,
         )
+
+    def test_readme_carries_the_contract_bought_parts_and_assembly_verbatim(self):
+        """B18: the host passes the contract's sealed "Bought Parts and
+        assembly" prose and the README copies it, byte for byte, under its
+        own heading; a toy without that section gets no such heading."""
+
+        release = self._release(schema_version=1)
+        self._write_contract(release)
+        text = (
+            "Bought Parts: one steel pin 1.5 across (`steel-pin-1.5x29.5`).\n\n"
+            "Assembly order:\n"
+            "1. Press a cork disc into each coaster's well.\n"
+            "2. Stand the spring in the plate's pocket and push the pin in."
+        )
+        plain_repository = self.run_root / "plain"
+        (plain_repository / "toys").mkdir(parents=True)
+        plain = materialize_public_example(
+            plain_repository, self.run_root, release=release, made=self.made,
+            inventor_id="eve",
+        )
+        plain_readme = (plain / "README.md").read_text(encoding="utf-8")
+        self.assertNotIn("## Bought Parts and assembly", plain_readme)
+
+        repository = self.run_root / "repository"
+        (repository / "toys").mkdir(parents=True)
+        target = materialize_public_example(
+            repository, self.run_root, release=release, made=self.made,
+            inventor_id="eve", assembly_text=text,
+        )
+        readme = (target / "README.md").read_text(encoding="utf-8")
+        self.assertIn("\n## Bought Parts and assembly\n\n" + text + "\n\n", readme)
+        self.assertEqual(readme.count("## Bought Parts and assembly"), 1)
+        # Only the section is added: the README is otherwise the plain one.
+        self.assertEqual(
+            readme.replace("## Bought Parts and assembly\n\n" + text + "\n\n", ""),
+            plain_readme,
+        )
+        # The same text again reprojects identically, not as a collision.
+        self.assertEqual(
+            materialize_public_example(
+                repository, self.run_root, release=release, made=self.made,
+                inventor_id="eve", assembly_text=text,
+            ),
+            target,
+        )
+
+    def test_readme_assembly_text_must_be_non_empty_text(self):
+        release = self._release(schema_version=1)
+        self._write_contract(release)
+        repository = self.run_root / "repository"
+        (repository / "toys").mkdir(parents=True)
+        for bad in ("", "   \n", 7, ["a"]):
+            with self.assertRaisesRegex(ContractError, "assembly text"):
+                materialize_public_example(
+                    repository, self.run_root, release=release, made=self.made,
+                    inventor_id="eve", assembly_text=bad,
+                )
+        self.assertEqual(list((repository / "toys").iterdir()), [])
+
+    def test_contract_assembly_text_reads_only_the_named_prose_section(self):
+        self.assertIsNone(contract_assembly_text(None))
+        self.assertIsNone(contract_assembly_text({"schema_version": 7}))
+        self.assertIsNone(contract_assembly_text(
+            {"prose": [{"heading": "Base", "text": "A stump."}]}
+        ))
+        self.assertEqual(
+            contract_assembly_text({"prose": [
+                {"heading": "Base", "text": "A stump."},
+                {"heading": "Bought Parts and assembly", "text": "1. Fit the spring."},
+            ]}),
+            "1. Fit the spring.",
+        )
+        with self.assertRaisesRegex(ContractError, "Bought Parts and assembly"):
+            contract_assembly_text({"prose": [
+                {"heading": "Bought Parts and assembly", "text": "a"},
+                {"heading": "Bought Parts and assembly", "text": "b"},
+            ]})
+        with self.assertRaisesRegex(ContractError, "Bought Parts and assembly"):
+            contract_assembly_text({"prose": [
+                {"heading": "Bought Parts and assembly", "text": "  "},
+            ]})
 
     def test_public_example_uses_sealed_inventory_and_never_overwrites(self):
         release = self._release(schema_version=1)
