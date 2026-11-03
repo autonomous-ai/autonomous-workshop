@@ -38,11 +38,15 @@ Run the commands below from the Workshop repository root, with `uv run`.
 Measure each copied STEP:
 
 ```bash
-uv run python src/workshop/make/skills/cad/scripts/inspect refs "$R/step/<file>.step" --facts
+uv run python -m workshop.make.envelope "$R/step/<file>.step" --json "$R/envelope-<file>.json"
 ```
 
-Read `tokens[0].entryFacts.size`: the `[x, y, z]` extents in mm, taken from
-the exact STEP with no rebuild. Sort both the measured extents and the
+Read `size`: the `[x, y, z]` extents in mm, the union of every solid's exact
+(optimal) bounding box, taken from the STEP with no rebuild. Do not use
+`inspect refs --facts` for extents: its box is loose on curved faces and
+measured the beaver coaster keeper at 308.8 x 350.5 x 183.0 mm against its
+true 186.3 x 312.5 x 183.0 mm. A file the tool cannot read (exit 2) is an
+*unverified* finding. Sort both the measured extents and the
 contract's extents in descending order, then compare them pairwise. Axis order
 is Make's choice, not the contract's. Each pair must agree within
 **±0.05 mm**. That tolerance describes the instrument, not the design. The
@@ -133,6 +137,21 @@ row is somehow missing for a requirement, that is itself a `requirement:<id>`
 finding: it means this run did not, in fact, start under `--contract` with
 this exact contract, and no other layer would catch that.
 
+A seeded run's review is carried from the Approved Proof (`carried_from:
+"seed-approval"`, `schema_version` 10 or 11, ADR 0096). It has no
+`critical_form_requirements`, `geometry_form_requirements` or
+`blind_evidence`: its rows are `requirements[{id, verdict, note}]`, the
+sealed Proof Critic's verdicts. For each contract requirement, take the row
+with its `id`. `verdict: "agree"` is `passed: "requirement:<id>"`; quote
+`note` (or "the Proof Critic agreed" when it is empty) and the review's
+`critic_sha256` as the evidence. `verdict: "differences"` is passed only
+when `open_lines_approved` is true, which means the owner approved that open
+line at Stage 4: record it in `passed` and copy the `note` into `notes`.
+Otherwise it is a `requirement:<id>` finding quoting the note. A missing row
+is a `requirement:<id>` finding, as above. For schema 11, copy each
+`components` entry whose `basis` is not `exact` into `notes`; these are the
+changed Components the run's own Component Reviewers judged.
+
 ## Output
 
 Write `<contract-dir>/build-a-toy/r<NN>/findings.json`:
@@ -144,7 +163,7 @@ Write `<contract-dir>/build-a-toy/r<NN>/findings.json`:
   "mapping": {"world-disc": ["part_world_mercury_sol", "..."]},
   "findings": [
     {"id": "extents:world-disc", "contract": [30, 30, 6], "measured": [30.0, 30.0, 4.2],
-     "evidence": "inspect entryFacts.size of part_world_mercury_sol.step", "unverified": false}
+     "evidence": "workshop.make.envelope size of part_world_mercury_sol.step", "unverified": false}
   ],
   "notes": ["Component Acceptance: world-disc after 5 Shape Rounds (receipt)"],
   "passed": ["envelope", "print:world-disc"]

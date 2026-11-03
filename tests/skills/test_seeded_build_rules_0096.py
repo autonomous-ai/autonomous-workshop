@@ -62,3 +62,24 @@ class SeededBuildRulesTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PilotFollowupRulesTest(unittest.TestCase):
+    """B12 and B16 (ADR 0096 pilot, build round 0)."""
+
+    def test_detect_measures_the_true_envelope(self):
+        text = _squash(DETECT)
+        self.assertIn('uv run python -m workshop.make.envelope "$R/step/<file>.step"', text)
+        self.assertIn("Do not use `inspect refs --facts` for extents", text)
+        self.assertNotIn("entryFacts", text)
+
+    def test_detect_reads_a_carried_reviews_requirement_rows(self):
+        text = _squash(DETECT)
+        self.assertIn('`carried_from: "seed-approval"`', text)
+        self.assertIn("`requirements[{id, verdict, note}]`", text)
+        self.assertIn('`verdict: "agree"` is `passed: "requirement:<id>"`', text)
+        self.assertIn('`verdict: "differences"` is passed only when `open_lines_approved` is true', text)
+
+    def test_make_names_the_toy_from_the_name_line(self):
+        make = _squash((REFERENCES / "make.md").read_text())
+        self.assertIn("Name this toy exactly: <name>.", make)

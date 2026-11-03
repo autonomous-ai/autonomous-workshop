@@ -593,7 +593,10 @@ Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
   customer copy that reaches the shop unchanged: the title is a sayable name
   of one to four words with no dimensions, part counts, or sentences, and
   neither may use Workshop vocabulary (Wish, Taste, Goal, Make, Release,
-  Playtest, Spark, Forge, Quest, artifact, gate);
+  Playtest, Spark, Forge, Quest, artifact, gate). When the Wish's first
+  line is `Name this toy exactly: <name>.` (or `Name this revision
+  exactly:`), the title is exactly `<name>`, version and all; the finalizer
+  refuses any other;
 - the self-contained CAD project, source, generated STEP, measurements, the
   passing `measure/thickness-<role>.md` and `measure/overhang-<role>.md`
   reports for every printable part, and final

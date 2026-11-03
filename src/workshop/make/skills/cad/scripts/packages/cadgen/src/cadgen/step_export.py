@@ -137,6 +137,7 @@ def _create_bin_xcaf_doc(to_export: Any) -> Any:
     color_tool = XCAFDoc_DocumentTool.ColorTool_s(doc.Main())
     is_assembly = isinstance(to_export, Compound) and len(to_export.children) > 0
     shape_definitions: dict[int, object] = {}
+    definition_names: dict[int, str] = {}
 
     def set_label_name(label: object, name: str | None) -> None:
         if name and not label.IsNull():
@@ -201,9 +202,25 @@ def _create_bin_xcaf_doc(to_export: Any) -> Any:
                 set_label_color(child_component, getattr(child, "color", None))
             return definition_label
 
-        definition_label = shape_tool.AddShape(shape_without_location(shape), False)
+        name = getattr(shape, "label", None) or None
+        unlocated = shape_without_location(shape)
+        definition_label = shape_tool.AddShape(unlocated, False)
+        tag = definition_label.Tag()
+        if name and definition_names.get(tag, name) != name:
+            # Instances of one solid share its definition, and the STEP
+            # writer gives a shared solid one PRODUCT. Naming it after each
+            # instance in turn left every instance reading back the last
+            # one's name (Workshop ADR 0096 pilot, B13). An instance named
+            # differently gets its own copy of the B-rep, and so its own
+            # PRODUCT and name; instances named alike still share one.
+            from OCP.BRepBuilderAPI import BRepBuilderAPI_Copy
+
+            definition_label = shape_tool.AddShape(BRepBuilderAPI_Copy(unlocated, True, False).Shape(), False)
+            tag = definition_label.Tag()
+        if name:
+            definition_names[tag] = name
         shape_definitions[key] = definition_label
-        set_label_name(definition_label, getattr(shape, "label", None))
+        set_label_name(definition_label, name)
         set_label_color(definition_label, getattr(shape, "color", None))
         return definition_label
 
