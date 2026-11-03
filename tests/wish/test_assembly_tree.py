@@ -550,13 +550,15 @@ class AssemblyTreeTest(unittest.TestCase):
         self.assertTrue(catalogues.filaments)
         self.assertTrue(catalogues.parts)
         # Seeds are the owner's to confirm. Only the parts the owner added
-        # with a supplier listing (2026-11-03) name a source, and they stay
-        # unconfirmed until the owner confirms the real reel.
-        sourced = {"led-2835-pink", "led-2835-cyan"}
+        # with a supplier listing (2026-11-03) name a source, and a pack only
+        # where the listing sells a fixed pack; they stay unconfirmed until the
+        # owner confirms the real reel or measures a sample.
+        sourced = {"led-2835-pink", "led-2835-cyan", "test-tube-pp-25x150"}
+        packed = {"test-tube-pp-25x150": 250}
         for entry in list(catalogues.filaments.values()) + list(catalogues.parts.values()):
             self.assertFalse(entry.confirmed, entry.id)
         for entry in catalogues.parts.values():
-            self.assertIsNone(entry.pack, entry.id)
+            self.assertEqual(entry.pack, packed.get(entry.id), entry.id)
             if entry.id not in sourced:
                 self.assertIsNone(entry.source, entry.id)
         self.assertTrue(all(catalogues.parts[name].source for name in sourced))
