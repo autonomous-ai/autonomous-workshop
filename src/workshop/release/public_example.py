@@ -1258,6 +1258,41 @@ def _electrical_markdown(staging: Path) -> str:
     return "%s\n\n%s%s\n\n" % (heading, pictures, body.strip())
 
 
+# B18: a toy's Bought Parts and assembly order, the Design Contract's prose
+# section of this exact heading (ADR 0093 schema 8 prose).
+ASSEMBLY_PROSE_HEADING = "Bought Parts and assembly"
+
+
+def contract_assembly_text(contract: Any) -> Optional[str]:
+    """The text of a Design Contract's sealed ``Bought Parts and assembly``
+    prose section, exactly as sealed, or None for a contract without it.
+    Refuses a contract that carries the section twice or empty."""
+
+    prose = contract.get("prose") if isinstance(contract, Mapping) else None
+    found = [
+        item.get("text")
+        for item in prose or ()
+        if isinstance(item, Mapping) and item.get("heading") == ASSEMBLY_PROSE_HEADING
+    ]
+    if not found:
+        return None
+    if len(found) > 1 or not isinstance(found[0], str) or not found[0].strip():
+        raise ContractError(
+            "the Design Contract's %r prose section is not one section with text"
+            % ASSEMBLY_PROSE_HEADING
+        )
+    return found[0]
+
+
+def _assembly_markdown(text: Optional[str]) -> str:
+    """The contract's Bought Parts and assembly text (B18), verbatim under
+    its own heading, or nothing for a toy without it."""
+
+    if text is None:
+        return ""
+    return "## %s\n\n%s\n\n" % (ASSEMBLY_PROSE_HEADING, text.strip("\n").rstrip())
+
+
 def _reproduce_markdown(
     staging: Path,
     *,
@@ -1398,6 +1433,7 @@ def materialize_public_example(
     wish_id: Optional[str] = None,
     stage_timing_record: Optional[Mapping[str, Any]] = None,
     public_title: Optional[str] = None,
+    assembly_text: Optional[str] = None,
 ) -> Path:
     """Create ``toys/<inventor>-<slug>`` from exact public Release bytes.
 
@@ -1433,6 +1469,10 @@ def materialize_public_example(
         # effect: this reuses the exact rule the unreleased archive already
         # applies to a title, so the check is identical either way.
         unreleased_public_slug(public_title)
+    if assembly_text is not None and (
+        not isinstance(assembly_text, str) or not assembly_text.strip()
+    ):
+        raise ContractError("public example assembly text must be non-empty text")
     manager = manager_spec(manager_id)
     runtime = (
         manager_runtime_selection(
@@ -1880,6 +1920,7 @@ def materialize_public_example(
             "| Inventor | [%s](../../inventors/%s/) |\n"
             "| Factory | %s |\n\n"
             "%s"
+            "%s"
             "%s\n"
             "%s\n"
             "%s\n"
@@ -1913,6 +1954,7 @@ def materialize_public_example(
             _display_inventor_id(inventor_id) or inventor_id,
             inventor_id,
             factory_cell,
+            _assembly_markdown(assembly_text),
             _electrical_markdown(staging),
             _workflow_overview_markdown(staging),
             _creation_story_markdown(staging),
@@ -2035,6 +2077,7 @@ def materialize_public_example_if_source_checkout(
     wish_id: Optional[str] = None,
     stage_timing_record: Optional[Mapping[str, Any]] = None,
     public_title: Optional[str] = None,
+    assembly_text: Optional[str] = None,
 ) -> Optional[Path]:
     """Materialize a public example when the host is running from a checkout."""
 
@@ -2057,10 +2100,12 @@ def materialize_public_example_if_source_checkout(
         wish_id=wish_id,
         stage_timing_record=stage_timing_record,
         public_title=public_title,
+        assembly_text=assembly_text,
     )
 
 
 __all__ = [
+    "contract_assembly_text",
     "materialize_public_example",
     "materialize_public_example_if_source_checkout",
 ]

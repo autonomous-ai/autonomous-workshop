@@ -134,3 +134,28 @@ never reviewed against what they describe.
   whose geometry names it, as a changed row does (owner decision
   2026-10-26).
 - Every Component has Guide Images, so ADR 0089's "may" becomes "does".
+
+## Amendment: the toy README carries the assembly prose (2026-11-03, B18)
+
+A toy with Bought Parts or hand assembly (the beaver coaster keeper's pin,
+spring and cork discs) shipped a toy README with no way to assemble it: the
+README Release writes (`workshop.release.public_example`) is host-written,
+and only a powered toy's Electrical assembly text (ADR 0095, 2026-11-01)
+had a path into it. Owner decision 2026-11-03:
+
+- When the sealed contract's `prose` holds a section headed exactly
+  `Bought Parts and assembly`, the toy README gains a
+  `## Bought Parts and assembly` section with that text verbatim, before
+  any Electrical assembly section. It is copied, never rewritten: no model
+  text reaches it.
+- The host composes it from sealed bytes: the contract in `WISH.json`,
+  checked against the run's Wish hash, with every owner amendment the host
+  recorded applied (only an owner amends prose; an in-run Contract
+  Amendment cannot). A projection that cannot read it fails closed like any
+  other projection error and leaves the sealed Release unchanged.
+- A contract without that section, a contract before schema 8, and a run
+  without a Design Contract get the README they did before. The section
+  reaches the sealed `prose` only when a geometry names it in
+  `prose_sections`, as every section the worker reads does.
+- `workshop publish` re-projects the toy directory, so an existing
+  unreleased build gains the section at publish without another build.

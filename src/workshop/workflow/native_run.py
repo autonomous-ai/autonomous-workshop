@@ -101,6 +101,7 @@ from workshop.make.contract_amendments import (
     AMENDMENT_LEDGER_NAME,
     OWNER_AMENDMENT_KIND,
     OWNER_AMENDMENTS_MARKER,
+    apply_owner_amendments,
     contract_digest,
     contract_in_effect,
     owner_affects,
@@ -184,6 +185,7 @@ from workshop.release.public_archive import (
     unreleased_public_slug,
 )
 from workshop.release.public_example import (
+    contract_assembly_text,
     materialize_public_example_if_source_checkout,
 )
 from workshop.runtime import (
@@ -3267,6 +3269,21 @@ def _sealed_contract_inputs(
     return (contract if isinstance(contract, dict) else None), references
 
 
+def _public_assembly_text(
+    run_root: Path, wish_sha256: str, owners: Sequence[Mapping[str, Any]]
+) -> Optional[str]:
+    """The Design Contract's ``Bought Parts and assembly`` prose as this run
+    reads it now (B18): the section sealed in ``WISH.json`` with every owner
+    amendment the host recorded applied, or None for a run without a Design
+    Contract or without that section. Only an owner amends prose (ADR 0093),
+    so no in-run Contract Amendment can change it."""
+
+    sealed, _references = _sealed_contract_inputs(run_root, wish_sha256)
+    if sealed is None:
+        return None
+    return contract_assembly_text(apply_owner_amendments(sealed, owners))
+
+
 def _sealed_seed(run_root: Path, wish_sha256: str) -> Optional[dict[str, Any]]:
     """The Approved Proof a seeded run started from, as ``WISH.json``
     records it (ADR 0096), or None for every other run."""
@@ -3924,6 +3941,11 @@ def _record_public_example_projection(
                     product_id=checkpoint.product_id,
                 ),
                 public_title=public_title,
+                assembly_text=_public_assembly_text(
+                    run.run_root,
+                    checkpoint.wish_sha256,
+                    _verified_owner_contract_amendments(run),
+                ),
             )
             target_relative = (
                 target.relative_to(repository).as_posix()
