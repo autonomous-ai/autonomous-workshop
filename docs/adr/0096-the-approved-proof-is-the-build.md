@@ -616,6 +616,38 @@ findings are B1-B11 in the toy's notes. This amendment changes:
 These changes apply to new runs and to a resumed run whose tools are
 refreshed (`workshop resume --refresh-tools`). The host checks of item 1
 are host code and always current. Frozen runs keep their sealed guard.
-B9 (STEP bytes not reproducible) and B10 (a build-a-toy name line not
-applied) are tracked as issues.
+B9 (STEP bytes not reproducible) is tracked as an issue; B10 is fixed by
+the follow-up below.
 
+
+## Follow-up: what DETECT reads after a carried build (2026-11-03)
+
+The beaver's round 0 conformed after the amendment above, and its DETECT
+pass found four more defects (B12, B13, B15/B10 and B16).
+
+1. **DETECT measures the true envelope (B12).** `inspect refs --facts` has
+   a loose box on curved faces. It measured the beaver at 308.8 x 350.5 x
+   183.0 mm against its true 186.3 x 312.5 x 183.0 mm, which made a false
+   `envelope` finding. DETECT now runs `python -m workshop.make.envelope`,
+   which takes the union of every solid's optimal bounding box with no
+   rebuild, for both `envelope` and `extents:`. A file it cannot read exits
+   2 and is an *unverified* finding, never a size.
+2. **Each assembly instance has its own STEP label (B13).** Instances of
+   one solid shared one PRODUCT, so the beaver's four coasters were all read
+   back as `coaster_4_dark_oak`. cadgen's STEP export gives an instance named
+   differently its own copy of the B-rep, so each PRODUCT keeps its own
+   name. Instances named alike still share one definition. This changes the
+   bytes of an assembly STEP with differently named instances, not its
+   geometry, and applies to new and refreshed runs.
+3. **The name line names the toy (B10/B15, issue #201).** When a Wish opens
+   with `Name this toy exactly: <name>.` (or `Name this revision exactly:`),
+   the Make finalizer refuses a `product.json` title other than `<name>`,
+   version and all. Release already requires its title to equal Make's. A
+   Wish without the line, or a frozen run with no `WISH.json`, is not
+   checked. Toys built before this keep their titles.
+4. **DETECT reads a carried review's rows (B16).** A review carried from
+   the Approved Proof (`carried_from: "seed-approval"`) has no
+   `blind_evidence`. Its rows are `requirements[{id, verdict, note}]`.
+   DETECT passes an `agree` row and a `differences` row whose open line the
+   owner approved. Any other row, or a missing one, is a `requirement:<id>`
+   finding.

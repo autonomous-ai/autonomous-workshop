@@ -2035,6 +2035,39 @@ def _materialized_wish(run_root: Path, wish_sha256: str) -> Mapping[str, Any]:
     return wish
 
 
+# Kept in step with ``NAME_LINE`` in ``workshop.wish.seed`` and
+# ``workshop.make.contract_amendments``: build-a-toy prepends this line to
+# the contract a round seals, and the toy is named by it (issue #201).
+NAME_LINE = re.compile(r"Name this (?:toy|revision) exactly: (?P<name>[^\n]*?)\.?")
+
+
+def wish_name(objective: object) -> Optional[str]:
+    """The name a Wish's leading name line gives the toy, or None."""
+
+    if not isinstance(objective, str):
+        return None
+    match = NAME_LINE.fullmatch(objective.partition("\n")[0].strip())
+    name = match.group("name").strip() if match else ""
+    return name or None
+
+
+def _require_named_title(run_root: Path, wish_sha256: str, title: object) -> None:
+    """Refuse a Make title that is not the name the sealed Wish gives the
+    toy (``Name this toy exactly: <name>.``, issue #201); a Wish without
+    one names nothing. A run with no materialized WISH.json (frozen before
+    ADR 0072) has no name to check; a WISH.json present but unbound still
+    refuses."""
+
+    if not os.path.lexists(run_root / "WISH.json"):
+        return
+    name = wish_name(_materialized_wish(run_root, wish_sha256).get("objective"))
+    if name is not None and (title.strip() if isinstance(title, str) else title) != name:
+        raise ProposalError(
+            "Make product title must be exactly %r, the name the sealed Wish gives the toy, not %r"
+            % (name, title)
+        )
+
+
 def _sealed_design_contract(
     run_root: Path, wish_sha256: str
 ) -> Optional[Mapping[str, Any]]:
@@ -3479,6 +3512,7 @@ def _make_contract(
     )
     product = _mapping(product_document, "Make product.json", nonempty=True)
     _bounded_text(product.get("title"), "Make product title", 2_000)
+    _require_named_title(run_root, assignment["wish_sha256"], product["title"])
     _bounded_text(product.get("summary"), "Make product summary", 2_000)
     verification_sha256, _, _ = _hash_regular(
         run_root,
