@@ -186,6 +186,7 @@ from workshop.release.public_archive import (
 )
 from workshop.release.public_example import (
     contract_assembly_text,
+    contract_print_settings,
     materialize_public_example_if_source_checkout,
 )
 from workshop.runtime import (
@@ -3282,6 +3283,25 @@ def _public_assembly_text(
     if sealed is None:
         return None
     return contract_assembly_text(apply_owner_amendments(sealed, owners))
+
+
+def _make_output_design_notes(
+    run_root: Path, wish_sha256: str, owners: Sequence[Mapping[str, Any]]
+) -> Optional[dict[str, str]]:
+    """What a Spark page tells Factory's content drafter about how the toy is
+    printed and put together (B23, B24): the sealed Design Contract's words
+    with every owner amendment applied, or None when it states neither."""
+
+    sealed, _references = _sealed_contract_inputs(run_root, wish_sha256)
+    if sealed is None:
+        return None
+    contract = apply_owner_amendments(sealed, owners)
+    assembly = contract_assembly_text(contract)
+    notes = {
+        "print_settings": contract_print_settings(contract),
+        "assembly": None if assembly is None else assembly.strip(),
+    }
+    return {key: value for key, value in notes.items() if value is not None} or None
 
 
 def _sealed_seed(run_root: Path, wish_sha256: str) -> Optional[dict[str, Any]]:
@@ -9736,6 +9756,17 @@ def _prepare_spark_publication(
     the new carrier lives in its own directory beside those retained files.
     """
 
+    def prepare() -> NativeRelease:
+        return prepare_make_output_release(
+            run.run_root,
+            made,
+            design_notes=_make_output_design_notes(
+                run.run_root,
+                checkpoint.wish_sha256,
+                _verified_owner_contract_amendments(run),
+            ),
+        )
+
     path = run.run_root / "artifacts/release/release.json"
     has_contract = path.exists() or path.is_symlink()
     original_error = None
@@ -9766,7 +9797,7 @@ def _prepare_spark_publication(
             if EffectLedger.inspect_latest(ledger, checkpoint.product_id, kind) is not None:
                 raise StateConflict("existing Factory intent forbids replacing Release bytes") from original_error
     if not has_contract:
-        return prepare_make_output_release(run.run_root, made)
+        return prepare()
     try:
         descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
     except OSError as error:
@@ -9797,7 +9828,7 @@ def _prepare_spark_publication(
     if fingerprint(path.lstat()) != fingerprint(after) or path.read_bytes() != content:
         raise StateConflict("unsealed Release changed before archival completed")
     path.unlink()
-    return prepare_make_output_release(run.run_root, made)
+    return prepare()
 
 
 def _verify_release_print_ready_cad(

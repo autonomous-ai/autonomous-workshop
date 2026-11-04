@@ -25,10 +25,11 @@ class MakeOutputPublishHostTest(unittest.TestCase):
         self.addCleanup(self.fixture.doCleanups)
         self.release = self.fixture._release(schema_version=3)
         self.contract_path = self.fixture._write_contract(self.release)
-        self.run = SimpleNamespace(run_root=self.fixture.run_root)
+        self.run = SimpleNamespace(run_root=self.fixture.run_root, amendments_document=lambda: None)
         self.checkpoint = SimpleNamespace(
             effort="spark", status="waiting", stage="release",
             product_id="pending-product", checkpoint_sha256="a" * 64,
+            wish_sha256=self.fixture.assignment.wish_sha256,
             input_sha256s={native_run._PRODUCT_RUN_MANUAL_DESIGN_EVIDENCE_INPUT: "d" * 64},
         )
         self.context = {
@@ -126,7 +127,13 @@ class MakeOutputPublishHostTest(unittest.TestCase):
         self.assertEqual(saved["subject_sha256"], subject)
         self.assertEqual(process.call_args.kwargs["pending_proposal"].checkpoint_sha256, active.checkpoint_sha256)
 
+    def seal_wish(self, context):
+        content = json.dumps({"context": context}).encode("utf-8")
+        (self.fixture.run_root / "WISH.json").write_bytes(content)
+        self.checkpoint.wish_sha256 = hashlib.sha256(content).hexdigest()
+
     def test_partial_unsealed_legacy_release_is_retained_without_pdf_checks(self):
+        self.seal_wish({})
         self.run.host_state_root = self.fixture.run_root / "private-state"
         self.run.host_state_root.mkdir()
         self.checkpoint.stage_artifacts = {}
@@ -144,6 +151,7 @@ class MakeOutputPublishHostTest(unittest.TestCase):
         self.assertEqual(archive.read_bytes(), original)
 
     def test_unsealed_legacy_package_without_contract_does_not_block_publish(self):
+        self.seal_wish({})
         self.run.host_state_root = self.fixture.run_root / "private-state"
         self.run.host_state_root.mkdir()
         self.checkpoint.stage_artifacts = {}
@@ -154,6 +162,23 @@ class MakeOutputPublishHostTest(unittest.TestCase):
         release = native_run._prepare_spark_publication(self.run, self.checkpoint, self.fixture.made)
         self.assertEqual(release.schema_version, 4)
         self.assertEqual(old_product.read_bytes(), original)
+
+    def test_a_new_publication_carrier_seals_the_contracts_design_notes(self):
+        self.run.host_state_root = self.fixture.run_root / "private-state"
+        self.run.host_state_root.mkdir()
+        self.checkpoint.stage_artifacts = {}
+        self.checkpoint.status = "active"
+        self.contract_path.unlink()
+        contract = {"schema_version": 8, "prose": [
+            {"heading": "Print stances", "text": "Workshop prints in PETG."},
+            {"heading": "Bought Parts and assembly", "text": "1. Press the cork in."},
+        ]}
+        self.seal_wish({"design_contract": contract})
+        release = native_run._prepare_spark_publication(self.run, self.checkpoint, self.fixture.made)
+        self.assertEqual(release.product["design_notes"], {
+            "print_settings": "Workshop prints in PETG.",
+            "assembly": "1. Press the cork in.",
+        })
 
     def test_partial_contract_with_any_factory_intent_cannot_be_replaced(self):
         self.run.host_state_root = self.fixture.run_root / "private-state"
@@ -246,7 +271,7 @@ class PendingSparkPublicationIntegrationTest(unittest.TestCase):
             "product_schema_version": 5, "product_status": "manual-ready",
             "playtest_status": "not-run", "playtest_omission_path": "PLAYTEST-NOT-RUN.json",
         }
-        def prepare_legacy(run_root, made):
+        def prepare_legacy(run_root, made, **_options):
             stage = json.loads((run_root / "STAGE.json").read_bytes())
             launcher._author_release(run_root, stage)
             return read_native_release(run_root)

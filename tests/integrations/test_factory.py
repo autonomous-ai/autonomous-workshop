@@ -19,6 +19,7 @@ from workshop.errors import (
 )
 from tests.make.step_documents import step_solid_document
 from workshop.integrations.factory import (
+    _project_notes,
     FACTORY_COVER_RENDER_PATH,
     DEFAULT_FACTORY_API,
     FACTORY_USAGE_FIELD,
@@ -829,7 +830,7 @@ class FactoryReleaseTest(unittest.TestCase):
         )
         self.assertNotIn("Authorization", manual_call[2])
 
-    def use_make_output_release(self):
+    def use_make_output_release(self, design_notes=None):
         hero = self.made.artifact_root / "cad/project/snap/iso.png"
         hero.parent.mkdir(parents=True, exist_ok=True)
         hero.write_bytes(PNG_COVER)
@@ -845,6 +846,8 @@ class FactoryReleaseTest(unittest.TestCase):
             "playtest_evidence_artifact_sha256": playtest_omission_sha256(),
             "claims": direct_release_claims(), "source_document": None,
         }
+        if design_notes is not None:
+            self.page["design_notes"] = design_notes
         content = canonical_json(self.page)
         (self.release / "product.json").write_bytes(content)
         self.manifest = build_artifact_manifest(self.release, created_at="content-addressed")
@@ -895,6 +898,42 @@ class FactoryReleaseTest(unittest.TestCase):
             self.assertEqual(
                 receipt.details["cover_render_source_path"],
                 "cad/project/snap/iso.png",
+            )
+
+    def test_project_notes_carry_the_pages_design_notes_exactly(self):
+        page = {"title": "Toy", "summary": "A toy.", "what_arrives": [], "limitations": []}
+        self.assertEqual(
+            _project_notes("toy", page), {"id": "toy", "name": "Toy", "summary": "A toy."}
+        )
+        notes = {"print_settings": "Prints in PETG.", "assembly": "1. Press the cork in."}
+        self.assertEqual(
+            _project_notes("toy", {**page, "design_notes": notes}),
+            {"id": "toy", "name": "Toy", "summary": "A toy.", **notes},
+        )
+
+    def test_make_output_import_sends_the_sealed_design_notes_in_project_json(self):
+        notes = {"print_settings": "Prints in PETG.", "assembly": "1. Press the cork in."}
+        anchor = self.use_make_output_release(notes)
+        transport = FactoryTransport(include_thumbnails=False)
+
+        def send(method, url, headers, body, timeout):
+            if url.endswith("/workshop-release-page.json"):
+                return HttpResponse(200, {"Content-Type": "application/json"}, anchor)
+            return transport(method, url, headers, body, timeout)
+
+        self.writer(send)(self.context, self.release, self.manifest)
+        import_call = next(call for call in transport.calls if call[1].endswith("/designs/import"))
+        parts = multipart_parts(import_call[2], import_call[3])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            project = json.loads(archive.read("project.json"))
+        self.assertEqual(project["print_settings"], "Prints in PETG.")
+        self.assertEqual(project["assembly"], "1. Press the cork in.")
+
+    def test_make_output_refuses_a_page_with_malformed_design_notes(self):
+        self.use_make_output_release({"material": "PETG"})
+        with self.assertRaises(ContractError):
+            self.writer(FactoryTransport(include_thumbnails=False))(
+                self.context, self.release, self.manifest
             )
 
     def test_make_output_requires_one_sealed_canonical_cover(self):

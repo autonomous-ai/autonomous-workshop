@@ -330,6 +330,9 @@ frozen runs keep what they sealed.
 Its 2026-11-03 amendment (B18) has the toy README Release writes carry a
 sealed `Bought Parts and assembly` prose section verbatim, with the
 host-recorded owner amendments applied; a contract without it is unchanged.
+Its 2026-11-04 amendment (B23, B24) has a new Spark page seal optional
+`design_notes`, the contract's print-material sentences and that same section,
+which the Factory adapter copies into `project.json` for Factory's drafter.
 ADR 0094 makes the Contract Proof run make_round's own print gates, so design
 and Make share one gate; 45 degrees is the only overhang limit, 52 being the
 print-details library's design margin. One Proof subagent is kept for the
