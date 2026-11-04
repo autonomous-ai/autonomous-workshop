@@ -58,6 +58,8 @@ exactly: <title> v01.`, ahead of the prose. This does not touch the fenced
 `design-contract` block, only the prose above it. Every build in the chain
 takes a suffixed name. A local, unpublished projection can never overwrite a
 different `toys/<slug>`, so reusing a name strands the run at its last step.
+Choose `<title>`, the toy's public name, by
+[docs/TOY_NAMING.md](../../../docs/TOY_NAMING.md).
 Build the command:
 
 ```bash
@@ -234,7 +236,8 @@ Only a build with zero findings is published. In a seeded toy, first show
 the owner every `seed_deviations` entry of the receipt; a visible one
 waits for their approval. It carries a suffixed title
 such as `<title> v03`. Publish it under the clean `<title>` with
-`uv run workshop publish <wish-id> --title "<title>"`. This re-seals only the
+`uv run workshop publish <wish-id> --title "<title>"`; run that file's
+checklist on the title first. This re-seals only the
 host's own Release; Make's sealed bytes are untouched, no correction run is
 spent, and no detection needs to run again. Omit `--title` to publish under
 the exact suffixed name Make sealed instead.

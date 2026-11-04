@@ -110,7 +110,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--inventor", required=True, help="roster Inventor whose Factory account publishes")
     parser.add_argument("--primary-step", help="top-level primary STEP (default: the one PRINTABLE entry)")
     parser.add_argument("--product-id", help="Workshop product id (default: from the directory name)")
-    parser.add_argument("--title", help="listing title (default: README heading)")
+    parser.add_argument("--title", help="listing title (default: README heading); follow docs/TOY_NAMING.md")
     parser.add_argument("--summary", help="listing description (default: README first paragraph)")
     parser.add_argument("--what-arrives", action="append", default=[], metavar="TEXT",
                         help="what the buyer receives; repeatable; read by Factory's copy auditor")

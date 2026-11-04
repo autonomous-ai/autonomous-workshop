@@ -441,6 +441,10 @@ Issues live in GitHub Issues for `autonomous-ai/autonomous-workshop`, via the
 The five canonical triage roles, each label string equal to its name. See
 `docs/agents/triage-labels.md`.
 
+### Toy naming
+
+Every public toy name on autonomous.ai/toys follows `docs/TOY_NAMING.md`.
+
 ### Domain docs
 
 Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See

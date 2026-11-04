@@ -40,7 +40,7 @@ PYTHONPATH=src uv run python tools/publish_direct.py --cad-dir <staged project> 
 | `--inventor ID` | Required. It must be a roster Inventor under `inventors/`, and `--live` needs that Inventor's own credential file. |
 | `--primary-step NAME` | The top-level STEP that crosses as `assembled.step`. Default: the one top-level entry that declares `PRINTABLE = True`. |
 | `--product-id ID` | The ledger key and the unknown-import discovery slug. Default: the directory name, without the `<inventor>-` prefix for an archive. |
-| `--title`, `--summary` | Default: the README's first heading and first paragraph. |
+| `--title`, `--summary` | Default: the README's first heading and first paragraph. The title follows [TOY_NAMING.md](TOY_NAMING.md). |
 | `--what-arrives`, `--limitation` | Optional and repeatable. These become Made facts, and Factory's copy auditor reads them. |
 | `--verify` | `--cad-dir` only. Runs autonomous-product-to-cad's `skills/cad/scripts/verify_project --fresh --print-gates --assembly <primary entry>` on the project, in place, and writes `measure/direct-publish-evidence.json`. The checkout comes from `--verifier-repo`, `$PRODUCT_TO_CAD_REPO` or the sibling directory. The interpreter is `--verifier-python`, that checkout's `.venv`, or this one. |
 | `--known-gate-failure GATE:REASON` | Repeatable. Lets one failing gate (for example `check_thickness`) through, with the owner's reason. See [Gate evidence](#gate-evidence). |
