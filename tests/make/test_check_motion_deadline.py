@@ -155,3 +155,24 @@ def test_verify_project_bounds_the_motion_gate_by_default(monkeypatch):
     assert VERIFY["_motion_deadline_seconds"]() == 0.0  # opt out of the bound
     monkeypatch.setenv(VERIFY["MOTION_DEADLINE_ENV"], "soon")
     assert VERIFY["_motion_deadline_seconds"]() == VERIFY["DEFAULT_MOTION_DEADLINE_SECONDS"]
+
+
+def test_the_default_deadline_follows_a_raised_geometry_timeout(monkeypatch):
+    """B22: rounds run a 1030 s sweep under the geometry timeout alone, so a
+    fixed 900 s here made the final verification UNVERIFIED and forced a rerun."""
+    monkeypatch.delenv(VERIFY["MOTION_DEADLINE_ENV"], raising=False)
+    monkeypatch.setenv("WORKSHOP_GEOMETRY_TIMEOUT", "14400")
+    assert VERIFY["_motion_deadline_seconds"]() == 14400.0
+
+
+def test_an_explicit_motion_deadline_still_beats_the_geometry_timeout(monkeypatch):
+    monkeypatch.setenv("WORKSHOP_GEOMETRY_TIMEOUT", "14400")
+    monkeypatch.setenv(VERIFY["MOTION_DEADLINE_ENV"], "120")
+    assert VERIFY["_motion_deadline_seconds"]() == 120.0
+
+
+@pytest.mark.parametrize("timeout", ["600", "0", "-5", "nan", "inf", "not-a-number", ""])
+def test_a_small_or_unusable_geometry_timeout_keeps_the_default(monkeypatch, timeout):
+    monkeypatch.delenv(VERIFY["MOTION_DEADLINE_ENV"], raising=False)
+    monkeypatch.setenv("WORKSHOP_GEOMETRY_TIMEOUT", timeout)
+    assert VERIFY["_motion_deadline_seconds"]() == VERIFY["DEFAULT_MOTION_DEADLINE_SECONDS"]

@@ -244,6 +244,11 @@ def _write(project, relative, data):
     path.write_bytes(data)
 
 
+def plan(project, frames=8):
+    """Read the manifest alone: no CAD, no output, and cheap enough to run first."""
+    return state_tool()["presentation_plan"](json.loads(read_file(project, "measure/motion.json")), frames)
+
+
 def resolve_deadline(flag, environment):
     """Seconds this presentation may spend: the flag, else the environment."""
     for value, label in ((flag, "--deadline"), (environment, DEADLINE_ENV)):
@@ -264,6 +269,9 @@ def generate(project, *, selections=None, frames=8, view="iso", size=600, deadli
     tool = state_tool()
     manifest = json.loads(read_file(project, "measure/motion.json"))
     conditions = tool["coupled_conditions"](manifest)
+    problem = tool["presentation_plan"](manifest)["problem"]
+    if problem:
+        raise ValueError(problem)
     selections = dict(selections or {})
     if set(selections) - {c["id"] for c in conditions}:
         raise ValueError("sample selection names an unknown coupled condition")
@@ -302,6 +310,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("project", type=Path)
     parser.add_argument("--describe-states", action="store_true", help="print bound state identities and per-mover caption values without generating or verifying geometry")
+    parser.add_argument("--plan", action="store_true", help="read measure/motion.json alone, before any motion gate: print the coupled condition count, the ceiling (48 states / --frames, so 6 at the default 8) and every gap where a condition does not start at the previous one's final pose; exit 1 past the ceiling")
     parser.add_argument("--frames", type=int, default=8, help="default sampled states per coupled condition (8 to 48)")
     parser.add_argument("--samples", action="append", default=[], metavar="CONDITION=0,1,...", help="explicit increasing indices from a condition's motion table")
     parser.add_argument("--view", default="iso", help="named view or AZ,EL")
@@ -314,12 +323,16 @@ def main():
     try:
         deadline = resolve_deadline(args.deadline, os.environ.get(DEADLINE_ENV))
         if args.describe_states:
-            if args.samples or args.frames != 8 or args.view != "iso" or args.size != 600:
+            if args.plan or args.samples or args.frames != 8 or args.view != "iso" or args.size != 600:
                 raise ValueError("--describe-states reads existing states; generation options do not apply")
             print(json.dumps(describe_states(args.project.resolve()), sort_keys=True, allow_nan=False))
             return
         if not 8 <= args.frames <= 48:
             raise ValueError("--frames must be 8 to 48")
+        if args.plan:
+            report = plan(args.project.resolve(), args.frames)
+            print(json.dumps(report, sort_keys=True, allow_nan=False))
+            raise SystemExit(1 if report["problem"] else 0)
         selected = {}
         for text in args.samples:
             ident, indices = text.split("=", 1)

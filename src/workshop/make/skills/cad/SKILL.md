@@ -177,8 +177,9 @@ docs show recommended workflows, not every flag.
 **A motion sweep is bounded, and an unfinished one is never clear.** Its cost
 is set by the manifest, not by the model -- `steps` x pairs of Boolean
 operations -- so `check_motion` prints the sample count it is about to spend
-before the first sweep, and `verify_project` gives it a 900s budget
-(`WORKSHOP_MOTION_DEADLINE_SECONDS`; `0` removes the bound). Run directly it is
+before the first sweep, and `verify_project` gives it a 900s budget, or
+`WORKSHOP_GEOMETRY_TIMEOUT` when that is higher
+(`WORKSHOP_MOTION_DEADLINE_SECONDS` sets it exactly; `0` removes the bound). Run directly it is
 unbounded unless you pass `--deadline SECONDS`. A condition that runs out of
 budget stops and reports `inconclusive` with the sample it reached, and that
 **fails the gate even with `--allow-inconclusive`**: a sweep that was cut off

@@ -63,6 +63,7 @@ from datetime import datetime, timezone
 import errno
 import hashlib
 import json
+import math
 import os
 import re
 import runpy
@@ -260,17 +261,34 @@ CARRY_BASES = ("exact", "within-tolerance", "component-review")
 SHA256_TEXT = re.compile(r"^[0-9a-f]{64}$")
 
 
+def _default_motion_deadline() -> float:
+    """900s, or the geometry timeout a long sweep already had to raise.
+
+    A Make round bounds check_motion by that timeout alone, so a fixed 900s
+    here marked a sweep the rounds had passed UNVERIFIED, and an UNVERIFIED
+    final verification is never reused.
+    """
+    try:
+        budget = float(os.environ.get("WORKSHOP_GEOMETRY_TIMEOUT", ""))
+    except ValueError:
+        return DEFAULT_MOTION_DEADLINE_SECONDS
+    if not math.isfinite(budget):
+        return DEFAULT_MOTION_DEADLINE_SECONDS
+    return max(DEFAULT_MOTION_DEADLINE_SECONDS, budget)
+
+
 def _motion_deadline_seconds() -> float:
     """Seconds to allow check_motion, from the environment or the default."""
     raw = os.environ.get(MOTION_DEADLINE_ENV)
     if raw is None or not raw.strip():
-        return DEFAULT_MOTION_DEADLINE_SECONDS
+        return _default_motion_deadline()
     try:
         seconds = float(raw)
     except ValueError:
+        fallback = _default_motion_deadline()
         print(f"verify_project: ignoring unparseable {MOTION_DEADLINE_ENV}={raw!r}; "
-              f"using {DEFAULT_MOTION_DEADLINE_SECONDS:g}s", file=sys.stderr)
-        return DEFAULT_MOTION_DEADLINE_SECONDS
+              f"using {fallback:g}s", file=sys.stderr)
+        return fallback
     return seconds if seconds > 0 else 0.0
 
 

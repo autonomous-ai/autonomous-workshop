@@ -65,7 +65,9 @@ tolerance relocks on the approval with no review.
 If a final verification is killed by a signal (`killed_by` in the round
 summary, exit -9), no gate failed: rerun the same `--record-visual FEEDBACK
 --full` on that round when the machine has memory free. It reruns only the
-verifier. Never install another Python or toolchain for it.
+verifier. Never install another Python or toolchain for it. Before any second
+final verification, write in `MAKE-NOTES.md` which row stopped the first and
+why.
 
 ## Rules
 
