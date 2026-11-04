@@ -332,6 +332,27 @@ class DirectPublishTest(unittest.TestCase):
         ledger = EffectLedger(TOOL.ledger_path(PRODUCT_ID, self.environment))
         self.assertEqual(ledger.latest(PRODUCT_ID, "factory-publish").state, "succeeded")
 
+    def run_without_a_settle_wait(self, unlisted_reads):
+        """pause is the only sleep inside publish(); a raise there would be
+        swallowed as an unknown outcome, so it is recorded and checked after."""
+        self.ready()
+        transport, clock = LateListingTransport(unlisted_reads=unlisted_reads), FakeClock()
+        with mock.patch.object(TOOL.FactoryAgentSession, "pause") as pause:
+            code, _, _ = self.run_tool("--live", transport=transport, clock=clock)
+        pause.assert_not_called()
+        self.assertEqual(transport.publishes, 1)
+        return code, clock
+
+    def test_a_late_listing_sleeps_only_in_the_tools_own_wait(self):
+        code, clock = self.run_without_a_settle_wait(unlisted_reads=3)
+        self.assertEqual(code, 0)
+        self.assertTrue(clock.sleeps)
+
+    def test_a_listing_that_never_comes_sleeps_only_in_the_tools_own_wait(self):
+        code, clock = self.run_without_a_settle_wait(unlisted_reads=10_000)
+        self.assertEqual(code, TOOL.EXIT_EFFECT)
+        self.assertLessEqual(sum(clock.sleeps), TOOL.LISTING_WAIT_SECONDS)
+
     def test_the_listing_wait_is_bounded_and_a_rerun_still_reconciles(self):
         self.ready()
         transport, clock = LateListingTransport(unlisted_reads=10_000), FakeClock()

@@ -3557,13 +3557,22 @@ class FactoryReleaseWriter:
 class FactoryPublicTransition:
     """Promote one exact private draft under the Wish's Release authority."""
 
-    def __init__(self, ledger: EffectLedger, session: FactoryAgentSession) -> None:
+    def __init__(
+        self,
+        ledger: EffectLedger,
+        session: FactoryAgentSession,
+        *,
+        settle_polls: int = PUBLICATION_SETTLE_POLLS,
+    ) -> None:
         if not isinstance(ledger, EffectLedger):
             raise ContractError("Factory public transition requires an EffectLedger")
         if not isinstance(session, FactoryAgentSession):
             raise ContractError("Factory public transition requires an agent session")
+        if type(settle_polls) is not int or settle_polls < 0:
+            raise ContractError("Factory settle polls must be a nonnegative integer")
         self.ledger = ledger
         self.session = session
+        self.settle_polls = settle_polls
 
     def _public_receipt(
         self,
@@ -3605,7 +3614,7 @@ class FactoryPublicTransition:
     ) -> tuple[Mapping[str, Any], Receipt]:
         """Read the listing back, waiting a bounded time on an accepted publish."""
 
-        polls = PUBLICATION_SETTLE_POLLS if accepted else 0
+        polls = self.settle_polls if accepted else 0
         while True:
             try:
                 design = self._design(client, draft.slug)

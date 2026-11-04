@@ -2464,6 +2464,25 @@ class FactoryPublicTransitionTest(unittest.TestCase):
         self.assertEqual(waits, [PUBLICATION_SETTLE_INTERVAL_SECONDS] * 3)
         self.assertEqual(transport.publish_posts, 1)
 
+    def test_a_caller_with_its_own_wait_can_turn_the_settle_wait_off(self):
+        transport = _SlowListingTransport(draft_reads=3)
+        waits = []
+        ledger, default = self._settling_publish(transport, sleeper=waits.append)
+        transition = FactoryPublicTransition(ledger, default.session, settle_polls=0)
+
+        with self.assertRaises(FactoryPublicationPending):
+            transition.publish(draft_receipt())
+
+        self.assertEqual(waits, [])
+        self.assertEqual(ledger.latest("verified-toy", "factory-publish").state, "unknown")
+        self.assertEqual(transport.publish_posts, 1)
+
+    def test_settle_polls_must_be_a_nonnegative_integer(self):
+        ledger, default = self._settling_publish(FactoryTransport(), sleeper=lambda seconds: None)
+        for value in (-1, True, 1.5, None):
+            with self.subTest(value=value), self.assertRaises(ContractError):
+                FactoryPublicTransition(ledger, default.session, settle_polls=value)
+
     def test_a_listing_that_never_settles_is_pending_after_a_bounded_wait(self):
         transport = _SlowListingTransport(draft_reads=10**6)
         waits = []

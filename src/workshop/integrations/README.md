@@ -26,7 +26,8 @@ repeating a possibly completed publication.
 After Factory accepts a publish, the transition reads the listing back for up
 to five minutes, because a listing goes active minutes after the POST. A listing
 still inactive after that is `FactoryPublicationPending`: unknown in the ledger,
-and a later run reconciles it by readback alone.
+and a later run reconciles it by readback alone. `tools/publish_direct.py` keeps
+its own 120-second wait, so it passes `settle_polls=0`.
 
 The handoff carries every sealed regular file produced by Make except content
 inside `__cadgen__` or `__pycache__`. Paths, sizes, and hashes are recorded in
