@@ -159,3 +159,25 @@ had a path into it. Owner decision 2026-11-03:
   `prose_sections`, as every section the worker reads does.
 - `workshop publish` re-projects the toy directory, so an existing
   unreleased build gains the section at publish without another build.
+
+## Amendment: the design notes carry the print material and assembly (2026-11-04, B23, B24)
+
+The Beaver Coaster Keeper's page says PLA, but its contract prints in PETG, and
+the page shows no assembly steps. Factory owns both: `print_specs.materials`
+is the default of its own slicing, and the page a buyer reads is Factory's
+landing page, drafted from what it is sent. Workshop never sent the material
+or the steps in `project.json`, the design notes the drafter reads in full.
+
+- A new Spark page may seal an optional `design_notes` object, which the
+  Factory adapter copies into `project.json`. Its `print_settings` is the
+  sentences of a prose section whose heading starts with `Print` that name
+  PLA, PETG, ABS, ASA or TPU, with line wraps closed up. Its `assembly` is
+  the `Bought Parts and assembly` text. Nothing else is rewritten, and
+  owner amendments apply as in the 2026-11-03 amendment.
+- A contract states its material only in prose, so a contract with no such
+  sentence sends no `print_settings`; no default is assumed.
+- The notes live in the sealed page, so a Release already sealed keeps its
+  exact bytes, and its Factory intent stays valid. A page without notes is
+  unchanged.
+- This informs Factory's drafter; it does not set a field. Whether a page shows
+  the material or steps stays Factory's, and no Workshop gate claims it.

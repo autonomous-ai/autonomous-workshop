@@ -19,6 +19,7 @@ from workshop.errors import (
 )
 from tests.make.step_documents import step_solid_document
 from workshop.integrations.factory import (
+    _project_notes,
     FACTORY_COVER_RENDER_PATH,
     DEFAULT_FACTORY_API,
     FACTORY_USAGE_FIELD,
@@ -31,9 +32,12 @@ from workshop.integrations.factory import (
     FactoryAgentSession,
     FactoryClient,
     FactoryCredentialRejected,
+    FactoryPublicationPending,
     FactoryPublicTransition,
     FactoryReleaseWriter,
     HttpResponse,
+    PUBLICATION_SETTLE_INTERVAL_SECONDS,
+    PUBLICATION_SETTLE_POLLS,
     factory_credentials_from_environment,
 )
 from workshop.make.contracts import Made
@@ -365,6 +369,30 @@ class FactoryTransport:
             self.public = True
             return HttpResponse(200, {}, b"{}")
         raise AssertionError("unexpected Factory call %s %s" % (method, url))
+
+
+class _SlowListingTransport(FactoryTransport):
+    """Factory accepts the publish and the listing activates some reads later."""
+
+    def __init__(self, *, draft_reads, unavailable_reads=0):
+        super().__init__()
+        self.draft_reads = draft_reads
+        self.unavailable_reads = unavailable_reads
+        self.publish_posts = 0
+        self.accepted = False
+
+    def __call__(self, method, url, headers, body, timeout):
+        if method == "POST" and url.endswith("/publish"):
+            self.publish_posts += 1
+            self.accepted = True
+            return HttpResponse(200, {}, b"{}")
+        if self.accepted and method == "GET" and "/designs/" in url:
+            if self.unavailable_reads:
+                self.unavailable_reads -= 1
+                return HttpResponse(503, {}, b"{}")
+            self.public = not self.draft_reads
+            self.draft_reads = max(0, self.draft_reads - 1)
+        return super().__call__(method, url, headers, body, timeout)
 
 
 def backend_import_workspace(content):
@@ -829,7 +857,7 @@ class FactoryReleaseTest(unittest.TestCase):
         )
         self.assertNotIn("Authorization", manual_call[2])
 
-    def use_make_output_release(self):
+    def use_make_output_release(self, design_notes=None):
         hero = self.made.artifact_root / "cad/project/snap/iso.png"
         hero.parent.mkdir(parents=True, exist_ok=True)
         hero.write_bytes(PNG_COVER)
@@ -845,6 +873,8 @@ class FactoryReleaseTest(unittest.TestCase):
             "playtest_evidence_artifact_sha256": playtest_omission_sha256(),
             "claims": direct_release_claims(), "source_document": None,
         }
+        if design_notes is not None:
+            self.page["design_notes"] = design_notes
         content = canonical_json(self.page)
         (self.release / "product.json").write_bytes(content)
         self.manifest = build_artifact_manifest(self.release, created_at="content-addressed")
@@ -895,6 +925,42 @@ class FactoryReleaseTest(unittest.TestCase):
             self.assertEqual(
                 receipt.details["cover_render_source_path"],
                 "cad/project/snap/iso.png",
+            )
+
+    def test_project_notes_carry_the_pages_design_notes_exactly(self):
+        page = {"title": "Toy", "summary": "A toy.", "what_arrives": [], "limitations": []}
+        self.assertEqual(
+            _project_notes("toy", page), {"id": "toy", "name": "Toy", "summary": "A toy."}
+        )
+        notes = {"print_settings": "Prints in PETG.", "assembly": "1. Press the cork in."}
+        self.assertEqual(
+            _project_notes("toy", {**page, "design_notes": notes}),
+            {"id": "toy", "name": "Toy", "summary": "A toy.", **notes},
+        )
+
+    def test_make_output_import_sends_the_sealed_design_notes_in_project_json(self):
+        notes = {"print_settings": "Prints in PETG.", "assembly": "1. Press the cork in."}
+        anchor = self.use_make_output_release(notes)
+        transport = FactoryTransport(include_thumbnails=False)
+
+        def send(method, url, headers, body, timeout):
+            if url.endswith("/workshop-release-page.json"):
+                return HttpResponse(200, {"Content-Type": "application/json"}, anchor)
+            return transport(method, url, headers, body, timeout)
+
+        self.writer(send)(self.context, self.release, self.manifest)
+        import_call = next(call for call in transport.calls if call[1].endswith("/designs/import"))
+        parts = multipart_parts(import_call[2], import_call[3])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            project = json.loads(archive.read("project.json"))
+        self.assertEqual(project["print_settings"], "Prints in PETG.")
+        self.assertEqual(project["assembly"], "1. Press the cork in.")
+
+    def test_make_output_refuses_a_page_with_malformed_design_notes(self):
+        self.use_make_output_release({"material": "PETG"})
+        with self.assertRaises(ContractError):
+            self.writer(FactoryTransport(include_thumbnails=False))(
+                self.context, self.release, self.manifest
             )
 
     def test_make_output_requires_one_sealed_canonical_cover(self):
@@ -2371,6 +2437,117 @@ class FactoryPublicTransitionTest(unittest.TestCase):
             len([call for call in transport.calls if call[1].endswith("/publish")]),
             1,
         )
+
+    def _settling_publish(self, transport, *, sleeper):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        ledger = EffectLedger(Path(temporary.name) / "effects.sqlite3")
+        content = draft_factory_content()
+        transport.use_case = content["use_case"]
+        transport.story_blocks = content["story_blocks"]
+        session = FactoryAgentSession(
+            FactoryAgentCredentials("alice", "test-secret"),
+            transport=transport,
+            sleeper=sleeper,
+        )
+        return ledger, FactoryPublicTransition(ledger, session)
+
+    def test_accepted_publication_waits_for_the_listing_to_go_active(self):
+        transport = _SlowListingTransport(draft_reads=3)
+        waits = []
+        ledger, transition = self._settling_publish(transport, sleeper=waits.append)
+
+        receipt = transition.publish(draft_receipt())
+
+        self.assertTrue(receipt.is_verified_public)
+        self.assertEqual(ledger.latest("verified-toy", "factory-publish").state, "succeeded")
+        self.assertEqual(waits, [PUBLICATION_SETTLE_INTERVAL_SECONDS] * 3)
+        self.assertEqual(transport.publish_posts, 1)
+
+    def test_a_listing_that_never_settles_is_pending_after_a_bounded_wait(self):
+        transport = _SlowListingTransport(draft_reads=10**6)
+        waits = []
+        ledger, transition = self._settling_publish(transport, sleeper=waits.append)
+
+        with self.assertRaisesRegex(FactoryPublicationPending, "outcome is unknown"):
+            transition.publish(draft_receipt())
+
+        intent = ledger.latest("verified-toy", "factory-publish")
+        self.assertEqual(intent.state, "unknown")
+        self.assertEqual(len(waits), PUBLICATION_SETTLE_POLLS)
+        self.assertEqual(transport.publish_posts, 1)
+
+    def test_a_later_run_reconciles_a_settled_listing_without_resending(self):
+        transport = _SlowListingTransport(draft_reads=10**6)
+        ledger, transition = self._settling_publish(transport, sleeper=lambda seconds: None)
+        with self.assertRaises(FactoryPublicationPending):
+            transition.publish(draft_receipt())
+
+        transport.draft_reads = 0
+        receipt = transition.publish(draft_receipt())
+
+        self.assertTrue(receipt.is_verified_public)
+        self.assertEqual(ledger.latest("verified-toy", "factory-publish").state, "succeeded")
+        self.assertEqual(transport.publish_posts, 1)
+
+    def test_a_rerun_before_the_listing_settles_is_pending_and_never_waits_or_resends(self):
+        transport = _SlowListingTransport(draft_reads=10**6)
+        waits = []
+        unused_ledger, transition = self._settling_publish(transport, sleeper=waits.append)
+        with self.assertRaises(FactoryPublicationPending):
+            transition.publish(draft_receipt())
+        del waits[:]
+
+        with self.assertRaises(FactoryPublicationPending):
+            transition.publish(draft_receipt())
+
+        self.assertEqual(waits, [])
+        self.assertEqual(transport.publish_posts, 1)
+
+    def test_transient_readback_failure_during_the_wait_keeps_waiting(self):
+        transport = _SlowListingTransport(draft_reads=2, unavailable_reads=2)
+        waits = []
+        unused_ledger, transition = self._settling_publish(transport, sleeper=waits.append)
+
+        self.assertTrue(transition.publish(draft_receipt()).is_verified_public)
+        self.assertEqual(len(waits), 4)
+        self.assertEqual(transport.publish_posts, 1)
+
+    def test_a_lost_send_is_never_waited_on(self):
+        class LostSend(_SlowListingTransport):
+            def __call__(self, method, url, headers, body, timeout):
+                if method == "POST" and url.endswith("/publish"):
+                    self.publish_posts += 1
+                    raise RuntimeError("connection lost")
+                return super().__call__(method, url, headers, body, timeout)
+
+        transport = LostSend(draft_reads=10**6)
+        waits = []
+        unused_ledger, transition = self._settling_publish(transport, sleeper=waits.append)
+
+        with self.assertRaises(FactoryPublicationPending):
+            transition.publish(draft_receipt())
+
+        self.assertEqual(waits, [])
+        self.assertEqual(transport.publish_posts, 1)
+
+    def test_a_rejected_publication_is_not_waited_on(self):
+        class Rejected(_SlowListingTransport):
+            def __call__(self, method, url, headers, body, timeout):
+                if method == "POST" and url.endswith("/publish"):
+                    self.publish_posts += 1
+                    return HttpResponse(403, {}, b"{}")
+                return super().__call__(method, url, headers, body, timeout)
+
+        transport = Rejected(draft_reads=10**6)
+        waits = []
+        ledger, transition = self._settling_publish(transport, sleeper=waits.append)
+
+        with self.assertRaisesRegex(EffectError, "rejected publication"):
+            transition.publish(draft_receipt())
+
+        self.assertEqual(waits, [])
+        self.assertEqual(ledger.latest("verified-toy", "factory-publish").state, "rejected")
 
     def test_changed_page_content_is_not_published(self):
         with tempfile.TemporaryDirectory() as temporary:

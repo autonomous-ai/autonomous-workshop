@@ -65,6 +65,9 @@ FACTORY_CONTENT_LABEL_MAX = 40
 FACTORY_CONTENT_BODY_MIN = 180
 FACTORY_CONTENT_BODY_MAX = 400
 FACTORY_CONTENT_STORY_BLOCKS_MAX = 10
+# The Design Contract's words a Spark page carries to Factory as design notes.
+MAKE_OUTPUT_DESIGN_NOTE_FIELDS = ("print_settings", "assembly")
+MAKE_OUTPUT_DESIGN_NOTE_MAX = 20_000
 _PAGE_SECTION_FIELDS = frozenset(
     ("headline", "body", "visual_direction", "evidence_refs")
 )
@@ -827,8 +830,10 @@ def validate_release_product(
     if product_schema_version == DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION:
         return _validate_direct_release_product(product)
     if product_schema_version == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION:
-        if set(product) != _DIRECT_RELEASE_PRODUCT_FIELDS | {"source_document"}:
+        if set(product) - {"design_notes"} != _DIRECT_RELEASE_PRODUCT_FIELDS | {"source_document"}:
             raise ContractError("Make-output Release product fields are invalid")
+        if "design_notes" in product:
+            _validate_design_notes(product["design_notes"])
         if product.get("status") != MAKE_OUTPUT_RELEASE_PRODUCT_STATUS:
             raise ContractError("Make-output Release status is invalid")
         document = product.get("source_document")
@@ -1248,23 +1253,45 @@ class NativeRelease:
         )
 
 
+def _validate_design_notes(notes: Any) -> None:
+    if (
+        not isinstance(notes, Mapping)
+        or not notes
+        or not set(notes) <= set(MAKE_OUTPUT_DESIGN_NOTE_FIELDS)
+    ):
+        raise ContractError("Make-output design notes fields are invalid")
+    for name, text in notes.items():
+        if (
+            not isinstance(text, str)
+            or not text
+            or text != text.strip()
+            or len(text) > MAKE_OUTPUT_DESIGN_NOTE_MAX
+        ):
+            raise ContractError("Make-output design note %s is invalid" % name)
+
+
 def make_output_release_product(
     facts: Mapping[str, Any],
     *,
     product_artifact_sha256: str,
     source_document: Mapping[str, str] | None,
+    design_notes: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Derive the schema-6 site metadata from Made facts; nothing is authored.
 
     Title and summary are Make's own, the optional text lists pass through
     only when Make wrote them, and Playtest is truthfully ``not-run``.
+    ``design_notes`` are the sealed Design Contract's own words, present only
+    when the host found them, so a page without them keeps its exact bytes.
     """
 
     def optional_texts(name: str) -> list[str]:
         value = facts.get(name)
         return list(value) if isinstance(value, (list, tuple)) and all(isinstance(item, str) for item in value) else []
 
+    notes = {} if design_notes is None else {"design_notes": design_notes}
     return validate_release_product({
+        **notes,
         "schema_version": MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION,
         "kind": "workshop.release-package",
         "status": MAKE_OUTPUT_RELEASE_PRODUCT_STATUS,
@@ -1280,7 +1307,12 @@ def make_output_release_product(
     }, release_schema_version=4)
 
 
-def prepare_make_output_release(run_root: Path, made: NativeMade) -> NativeRelease:
+def prepare_make_output_release(
+    run_root: Path,
+    made: NativeMade,
+    *,
+    design_notes: Mapping[str, str] | None = None,
+) -> NativeRelease:
     """Seal a deterministic publication carrier without changing Make output.
 
     No manual, image, CAD, review, or model invocation is created. An existing
@@ -1302,6 +1334,7 @@ def prepare_make_output_release(run_root: Path, made: NativeMade) -> NativeRelea
         facts,
         product_artifact_sha256=made.product_manifest.artifact_sha256,
         source_document=document,
+        design_notes=design_notes,
     )
     contents = {
         NATIVE_RELEASE_PRODUCT_PATH: _canonical_json(product),

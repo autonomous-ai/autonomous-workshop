@@ -23,12 +23,22 @@ authenticated readback can reconcile them. That fence protects the remote
 effect and leaves Release waiting rather than claiming success or blindly
 repeating a possibly completed publication.
 
+After Factory accepts a publish, the transition reads the listing back for up
+to five minutes, because a listing goes active minutes after the POST. A listing
+still inactive after that is `FactoryPublicationPending`: unknown in the ledger,
+and a later run reconciles it by readback alone.
+
 The handoff carries every sealed regular file produced by Make except content
 inside `__cadgen__` or `__pycache__`. Paths, sizes, and hashes are recorded in
 the handoff facts so source, exports, renders, and evidence cross the Factory
 import boundary as exact bytes. Make files that collide with Release-owned
 root metadata are preserved under `_workshop/make/`; the canonical Release
 version retains the root path.
+
+`project.json` is the design notes Factory's content drafter reads. It carries
+only the sealed page's words, including the optional `design_notes` of a Spark
+page. Factory's `print_specs.materials` is its own slicing default: no import
+field sets it.
 
 Multipart occurrence transport remains optional. When the complete Factory
 sidecar, or the exact hash-bound native CAD descriptor and product inventory
