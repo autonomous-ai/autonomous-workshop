@@ -44,6 +44,7 @@ from workshop.integrations.factory import (
     FactoryAgentSession,
     FactoryAuthenticationError,
     FactoryCredentialRejected,
+    FactoryPublicationPending,
     FactoryPublicTransition,
     factory_credentials_from_environment,
     urllib_project_file_transport,
@@ -229,6 +230,7 @@ from workshop.runtime.progress import (
     NativeRunProgress,
     WishRunTimingEvent,
     WishRunTimingObserver,
+    WishRunTimingPending,
     begin_native_progress,
     native_progress_turn_floor,
     read_wish_run_timing_record,
@@ -404,6 +406,12 @@ _FACTORY_PUBLICATION_NEED = (
     "then resume this run. Workshop will perform authenticated reconciliation "
     "of the existing effect before any retry."
 )
+_FACTORY_PUBLICATION_PENDING_REASON = (
+    "Factory publication is pending: it may already be live, and no "
+    "authenticated readback proves it yet. Nothing failed and it will not be "
+    "resent. A later run of the same command settles it by authenticated "
+    "reconciliation."
+)
 _LEGACY_RELEASE_UPGRADE_NEED = (
     "This historical run has an obsolete Release contract. It remains readable, "
     "but it cannot complete today's Workshop until it has a validated MANUAL.pdf "
@@ -519,6 +527,10 @@ class _FactoryCredentialsUnavailable(Exception):
 
 class _RequiredPublicationUnavailable(Exception):
     """Required publication is unverified and must remain resumable at Release."""
+
+
+class _PublicationOutcomePending(_RequiredPublicationUnavailable, WishRunTimingPending):
+    """A sent publication is unproven, and a later run reconciles it."""
 
 
 class _LegacyReleaseUpgradeRequired(Exception):
@@ -9694,6 +9706,8 @@ def _attempt_release_publication(
         raise
     except FactoryCredentialRejected:
         raise _FactoryCredentialsUnavailable(verified.inventor_id) from None
+    except FactoryPublicationPending as exc:
+        raise _PublicationOutcomePending() from exc
     except (AmbiguousEffectError, FactoryAuthenticationError) as exc:
         raise _RequiredPublicationUnavailable() from exc
 
@@ -11187,6 +11201,24 @@ def _native_receipt(
                 pass
             else:
                 publication["public_example"] = dict(projection)
+        ledger = paths.host_state / "factory-effects.sqlite3"
+        if ledger.exists() or ledger.is_symlink():
+            # `workshop publish` restores the restriction when it does not
+            # finish, but a sent publication is an effect all the same.
+            try:
+                intent = EffectLedger.inspect_latest(
+                    ledger, checkpoint.product_id, "factory-publish"
+                )
+            except WorkshopError:
+                intent = None
+            if intent is not None and intent.state in ("sending", "unknown"):
+                publication = {
+                    "status": "unknown",
+                    "requested": True,
+                    "required": False,
+                    "verified": False,
+                    "reason": _FACTORY_PUBLICATION_PENDING_REASON,
+                }
     elif paths is not None:
         if checkpoint.stage == "release" and checkpoint.status == "waiting":
             wait_run = _open_budgeted_agent_run(paths)
@@ -11281,11 +11313,7 @@ def _native_receipt(
                                 "requested": True,
                                 "required": True,
                                 "verified": False,
-                                "reason": (
-                                    "Factory publication requires authenticated "
-                                    "reconciliation and will not be blindly "
-                                    "retried."
-                                ),
+                                "reason": _FACTORY_PUBLICATION_PENDING_REASON,
                             }
         else:
             ledger = paths.host_state / "factory-effects.sqlite3"
@@ -12052,7 +12080,9 @@ def publish_native_run(
 
     The restriction is dropped only for the publication attempt and restored
     unless authenticated public readback succeeds, so a run that fails to
-    publish is left exactly as it was rather than half-open.
+    publish is left exactly as it was rather than half-open. An accepted
+    publication with no public readback yet is reported pending: a later
+    publish reconciles it by readback and never sends it again.
 
     ``title`` publishes the toy under a new public name instead of the exact
     one Make sealed. It never touches Make's sealed bytes or the immutable
@@ -12119,6 +12149,8 @@ def publish_native_run(
                 del unused_receipt
         except _FactoryCredentialsUnavailable:
             action = "publication-not-created"
+        except _PublicationOutcomePending:
+            action = "publication-pending"
         except _RequiredPublicationUnavailable:
             action = "publication-unverified"
         else:

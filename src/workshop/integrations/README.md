@@ -23,6 +23,11 @@ authenticated readback can reconcile them. That fence protects the remote
 effect and leaves Release waiting rather than claiming success or blindly
 repeating a possibly completed publication.
 
+After Factory accepts a publish, the transition reads the listing back for up
+to five minutes, because a listing goes active minutes after the POST. A listing
+still inactive after that is `FactoryPublicationPending`: unknown in the ledger,
+and a later run reconciles it by readback alone.
+
 The handoff carries every sealed regular file produced by Make except content
 inside `__cadgen__` or `__pycache__`. Paths, sizes, and hashes are recorded in
 the handoff facts so source, exports, renders, and evidence cross the Factory
