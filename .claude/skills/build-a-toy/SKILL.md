@@ -239,11 +239,16 @@ host's own Release; Make's sealed bytes are untouched, no correction run is
 spent, and no detection needs to run again. Omit `--title` to publish under
 the exact suffixed name Make sealed instead.
 
-Its summary line can report `effect.factory failed` after the listing
-actually went live. Before concluding anything, read the effect ledger in
-`<workshop-home>/state/<wish-id>/factory-effects.sqlite3` and fetch the live
-page. Rows marked `factory-publish|unknown` mean the publication went out, so
-do not publish again.
+A listing goes live a few minutes after Factory accepts it, and the command
+waits up to five minutes for that. If it is still not live, the action is
+`publication-pending` and `effect.factory` ends `state=pending`. Nothing failed
+and nothing was lost: a `factory-publish|unknown` row in
+`<workshop-home>/state/<wish-id>/factory-effects.sqlite3` means the publication
+went out, and the host never sends it twice. **A later run settles it**: wait a
+few minutes and run `uv run workshop publish <wish-id>` again, without
+`--title`, since the listing already has its name. That run only reads the
+listing back and records the receipt. It stays pending until the listing reads
+active.
 
 ## Step 8 - Write back what the build taught
 

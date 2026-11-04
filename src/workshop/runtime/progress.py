@@ -48,7 +48,7 @@ WISH_RUN_TIMING_OPERATIONS = (
     "gate.evaluate",
     "effect.factory",
 )
-WISH_RUN_TIMING_STATES = ("started", "completed", "failed")
+WISH_RUN_TIMING_STATES = ("started", "completed", "failed", "pending")
 WISH_RUN_TIMING_STAGES = (
     "wish", "match", "invent", "make", "playtest", "release", "deliver"
 )
@@ -180,6 +180,10 @@ def _timestamp(value_ms: int) -> str:
     )
 
 
+class WishRunTimingPending(Exception):
+    """An operation ended with its outcome unsettled, which is not a failure."""
+
+
 @contextmanager
 def wish_run_timing_span(
     observer: Optional[WishRunTimingObserver],
@@ -206,6 +210,20 @@ def wish_run_timing_span(
     )
     try:
         yield
+    except WishRunTimingPending:
+        elapsed_ms = int(max(0.0, time.monotonic() - started_at) * 1000)
+        _observe_wish_timing(
+            observer,
+            WishRunTimingEvent(
+                observed_at=_timestamp(_now_ms()),
+                product_id=product_id,
+                stage=stage,
+                operation=operation,
+                state="pending",
+                elapsed_ms=elapsed_ms,
+            ),
+        )
+        raise
     except BaseException:
         elapsed_ms = int(max(0.0, time.monotonic() - started_at) * 1000)
         _observe_wish_timing(
@@ -273,7 +291,7 @@ WISH_RUN_TIMING_RECORD_FILENAME = "wish-run-timing.json"
 _WISH_RUN_TIMING_RECORD_KIND = "autonomous-workshop.wish-run-timing-record"
 _WISH_RUN_TIMING_RECORD_SCHEMA_VERSION = 1
 _MAX_WISH_RUN_TIMING_RECORD_BYTES = 256 * 1024
-_WISH_RUN_TIMING_TERMINAL_STATES = ("completed", "failed")
+_WISH_RUN_TIMING_TERMINAL_STATES = ("completed", "failed", "pending")
 
 
 def _wish_run_timing_ms(observed_at: str) -> int:
@@ -896,6 +914,7 @@ __all__ = [
     "WISH_RUN_TIMING_RECORD_FILENAME",
     "WISH_RUN_TIMING_STAGES",
     "WISH_RUN_TIMING_STATES",
+    "WishRunTimingPending",
     "NativeProgressUnavailable",
     "NativeRunProgress",
     "WishRunTimingEvent",

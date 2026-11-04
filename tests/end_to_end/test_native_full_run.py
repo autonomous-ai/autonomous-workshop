@@ -21,6 +21,7 @@ from reportlab.pdfgen.canvas import Canvas
 
 from workshop.artifacts import build_artifact_manifest
 from workshop.workflow.native_run import (
+    native_run_status,
     _MAX_NATIVE_TURNS,
     native_run_paths,
     resume_native_run,
@@ -32,7 +33,10 @@ from workshop.invent.vault import RUN_VAULT_PATH, Vault
 from tests.invent.fake_gamevault import E2E_NODES, FakeGameVaultTransport, install_fake_gamevault
 from workshop.errors import ArtifactError, EffectError, StateConflict
 from workshop.invent.native import NativeInvented
-from workshop.integrations.factory import FACTORY_CONTENT_MAPPING
+from workshop.integrations.factory import (
+    FACTORY_CONTENT_MAPPING,
+    FactoryPublicationPending,
+)
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
     NATIVE_CAD_FULL_TIER,
@@ -3492,6 +3496,50 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertTrue(_local_release_only_at(paths, wish.product_id))
             self.assertTrue((paths.host_state / "release-effect.json").exists())
             uploads_after_stall = len(effects.writer_calls)
+
+            # Factory accepted the publish and the listing has not gone active.
+            # That is a pending outcome: said so, not timed as a failure, and
+            # the restriction still returns so the next publish can settle it.
+            def pending_transition(ledger, session):
+                class Pending:
+                    def publish(self, draft):
+                        raise FactoryPublicationPending("fixture listing is settling")
+
+                return Pending()
+
+            timing = []
+            unsettled = SimpleNamespace(state="unknown")
+            with host(), checkout(), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                side_effect=no_session,
+            ), mock.patch(
+                "workshop.workflow.native_run._factory_credentials",
+                side_effect=effects.credentials,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryAgentSession",
+                side_effect=effects.session,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryPublicTransition",
+                side_effect=pending_transition,
+            ), mock.patch(
+                "workshop.workflow.native_run.EffectLedger.inspect_latest",
+                return_value=unsettled,
+            ):
+                pending = publish_native_run(
+                    wish.product_id, timing_observer=timing.append
+                )
+                inspected = native_run_status(wish.product_id)
+            self.assertEqual(pending["action"], "publication-pending")
+            self.assertEqual(
+                [event.state for event in timing if event.operation == "effect.factory"],
+                ["started", "pending"],
+            )
+            self.assertTrue(_local_release_only_at(paths, wish.product_id))
+            for reported in (pending, inspected):
+                self.assertEqual(reported["publication"]["status"], "unknown")
+                self.assertIn("pending", reported["publication"]["reason"])
+                self.assertIn("later run", reported["publication"]["reason"])
+                self.assertFalse(reported["publication"]["verified"])
 
             # The operator changes their mind and Factory confirms.
             with host(), checkout(), mock.patch(

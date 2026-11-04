@@ -157,6 +157,10 @@ FACTORY_FORBIDDEN_MEDIA_SUFFIXES = frozenset(
 FACTORY_MADE_FORBIDDEN_PAGE_FIELDS = frozenset(
     ("attachments", "cinematic", "hero", "images", "story_blocks", "use_case")
 )
+# A listing goes active a few minutes after Factory accepts its publish (2-3
+# minutes on 2026-11-03). Reads only: nothing is ever sent again while waiting.
+PUBLICATION_SETTLE_POLLS = 20
+PUBLICATION_SETTLE_INTERVAL_SECONDS = 15
 PROVEN_NO_EFFECT_STATUSES = frozenset(
     (400, 401, 403, 404, 405, 406, 410, 411, 412, 413, 414, 415,
      416, 417, 421, 422, 426, 428, 431, 451)
@@ -1623,6 +1627,14 @@ class FactoryAuthenticationError(EffectError):
     """Factory could not establish an authenticated agent session."""
 
 
+class FactoryPublicationPending(AmbiguousEffectError):
+    """The publication may be live and is unproven; a later run reconciles it."""
+
+
+class _ListingNotActive(ReceiptError):
+    """The exact draft still reads back as not yet publicly listed."""
+
+
 class FactoryCredentialRejected(FactoryAuthenticationError):
     """Factory rejected a rotated or disabled credential."""
 
@@ -1795,6 +1807,11 @@ class FactoryAgentSession:
         except (ContractError, EffectError) as exc:
             raise FactoryAuthenticationError("Factory login response was malformed") from exc
         return token, identity
+
+    def pause(self, seconds: float) -> None:
+        """Wait between readbacks through this session's injected sleeper."""
+
+        self._sleeper(seconds)
 
     def login(self, *, force: bool = False) -> FactoryAgentIdentity:
         if not force and self._access_token is not None and self._identity is not None:
@@ -3572,8 +3589,32 @@ class FactoryPublicTransition:
         if not _same_factory_identity(draft, receipt):
             raise ReceiptError("Factory public readback changed the draft identity")
         if not receipt.is_verified_public:
-            raise ReceiptError("Factory readback does not prove an active public listing")
+            raise _ListingNotActive("Factory readback does not prove an active public listing")
         return receipt
+
+    def _settled_readback(
+        self,
+        client: FactoryClient,
+        draft: Receipt,
+        sending: EffectIntent,
+        owner_id: str,
+        *,
+        accepted: bool,
+    ) -> tuple[Mapping[str, Any], Receipt]:
+        """Read the listing back, waiting a bounded time on an accepted publish."""
+
+        polls = PUBLICATION_SETTLE_POLLS if accepted else 0
+        while True:
+            try:
+                design = self._design(client, draft.slug)
+                return design, self._public_receipt(
+                    design, draft, sending, owner_id, client=client
+                )
+            except (_ListingNotActive, AmbiguousEffectError):
+                if polls == 0:
+                    raise
+            polls -= 1
+            self.session.pause(PUBLICATION_SETTLE_INTERVAL_SECONDS)
 
     @staticmethod
     def _is_make_output(draft: Receipt) -> bool:
@@ -3783,7 +3824,7 @@ class FactoryPublicTransition:
         if not before.is_verified_draft:
             raise AmbiguousEffectError("Factory preflight does not prove the private draft")
         if intent.state == "unknown":
-            raise AmbiguousEffectError(
+            raise FactoryPublicationPending(
                 "Factory publication remains unknown; a draft readback does not prove absence"
             )
 
@@ -3797,9 +3838,12 @@ class FactoryPublicTransition:
         else:
             send_error = None
         try:
-            after_design = self._design(client, draft.slug)
-            after = self._public_receipt(
-                after_design, draft, sending, identity.owner_id, client=client
+            after_design, after = self._settled_readback(
+                client,
+                draft,
+                sending,
+                identity.owner_id,
+                accepted=response is not None and 200 <= response.status < 300,
             )
         except Exception as readback_error:
             if response is not None and response.status in PROVEN_NO_EFFECT_STATUSES:
@@ -3821,7 +3865,12 @@ class FactoryPublicTransition:
                     else None
                 ),
             )
-            raise AmbiguousEffectError(
+            outcome = (
+                FactoryPublicationPending
+                if isinstance(readback_error, (_ListingNotActive, AmbiguousEffectError))
+                else AmbiguousEffectError
+            )
+            raise outcome(
                 "Factory publication outcome is unknown and will not be blindly retried"
             ) from (send_error or readback_error)
         completed = self.ledger.mark_succeeded(
@@ -3847,9 +3896,12 @@ __all__ = [
     "FactoryAuthenticationError",
     "FactoryClient",
     "FactoryCredentialRejected",
+    "FactoryPublicationPending",
     "FactoryPublicTransition",
     "FactoryReleaseWriter",
     "HttpResponse",
+    "PUBLICATION_SETTLE_INTERVAL_SECONDS",
+    "PUBLICATION_SETTLE_POLLS",
     "build_release_handoff",
     "factory_credentials_from_environment",
     "urllib_transport",

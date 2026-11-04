@@ -13,6 +13,7 @@ from workshop.runtime.progress import (
     WISH_RUN_TIMING_RECORD_FILENAME,
     NativeProgressUnavailable,
     WishRunTimingEvent,
+    WishRunTimingPending,
     begin_native_progress,
     native_progress_turn_floor,
     read_native_progress,
@@ -368,6 +369,22 @@ class WishRunTimingTest(unittest.TestCase):
         self.assertEqual([event.state for event in events], ["started", "failed"])
         self.assertEqual(events[1].elapsed_ms, 125)
         self.assertNotIn("private provider response", repr(events[1].to_dict()))
+
+    def test_an_unsettled_outcome_is_timed_as_pending_not_failed(self):
+        class Unsettled(WishRunTimingPending):
+            pass
+
+        events = []
+        with self.assertRaises(Unsettled):
+            with wish_run_timing_span(
+                events.append,
+                product_id="wish-progress",
+                stage="release",
+                operation="effect.factory",
+            ):
+                raise Unsettled()
+        self.assertEqual([event.state for event in events], ["started", "pending"])
+        self.assertIsNotNone(events[1].elapsed_ms)
 
     def test_failed_observer_cannot_mask_operation_failure(self):
         failure = RuntimeError("operation failed")
