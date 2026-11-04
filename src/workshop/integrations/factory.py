@@ -208,7 +208,8 @@ def _project_notes(
 
     Factory's content drafter and its copy auditor read project.json in full
     as design notes.  Every word here is the validated Release page's own
-    (summary, what arrives, limitations); the adapter authors nothing.
+    (summary, what arrives, limitations, and the Design Contract's print
+    material and assembly a Spark page seals); the adapter authors nothing.
     """
 
     notes: dict[str, Any] = {
@@ -224,6 +225,7 @@ def _project_notes(
             and all(isinstance(item, str) and item.strip() for item in value)
         ):
             notes[key] = list(value)
+    notes.update(release_page.get("design_notes") or {})
     return notes
 
 

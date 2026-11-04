@@ -1284,6 +1284,38 @@ def contract_assembly_text(contract: Any) -> Optional[str]:
     return found[0]
 
 
+# B24: the print material a Design Contract states. It has no field of its own,
+# so the sealed words of a print section are the only source.
+PRINT_PROSE_HEADING_PREFIX = "print"
+_PRINT_MATERIAL = re.compile(r"\b(?:PLA|PETG|ABS|ASA|TPU)\b")
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
+
+
+def contract_print_settings(contract: Any) -> Optional[str]:
+    """The sentences of a Design Contract's print prose sections that name a
+    print material, in sealed order with line wraps closed up, or None for a
+    contract that states none. A material named in any other section describes
+    a part's behaviour, not what the toy is printed in."""
+
+    prose = contract.get("prose") if isinstance(contract, Mapping) else None
+    found = []
+    for item in prose or ():
+        heading = item.get("heading") if isinstance(item, Mapping) else None
+        if not isinstance(heading, str) or not heading.casefold().startswith(
+            PRINT_PROSE_HEADING_PREFIX
+        ):
+            continue
+        text = item.get("text")
+        if not isinstance(text, str):
+            raise ContractError("the Design Contract's %r prose section has no text" % heading)
+        found.extend(
+            sentence
+            for sentence in _SENTENCE_END.split(" ".join(text.split()))
+            if _PRINT_MATERIAL.search(sentence)
+        )
+    return " ".join(found) or None
+
+
 def _assembly_markdown(text: Optional[str]) -> str:
     """The contract's Bought Parts and assembly text (B18), verbatim under
     its own heading, or nothing for a toy without it."""
@@ -2106,6 +2138,7 @@ def materialize_public_example_if_source_checkout(
 
 __all__ = [
     "contract_assembly_text",
+    "contract_print_settings",
     "materialize_public_example",
     "materialize_public_example_if_source_checkout",
 ]

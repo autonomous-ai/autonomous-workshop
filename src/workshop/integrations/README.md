@@ -35,6 +35,11 @@ import boundary as exact bytes. Make files that collide with Release-owned
 root metadata are preserved under `_workshop/make/`; the canonical Release
 version retains the root path.
 
+`project.json` is the design notes Factory's content drafter reads. It carries
+only the sealed page's words, including the optional `design_notes` of a Spark
+page. Factory's `print_specs.materials` is its own slicing default: no import
+field sets it.
+
 Multipart occurrence transport remains optional. When the complete Factory
 sidecar, or the exact hash-bound native CAD descriptor and product inventory
 from which it is derived, validates, the adapter additionally writes Factory's

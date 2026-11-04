@@ -298,6 +298,36 @@ class NativeReleaseTest(unittest.TestCase):
         ProductRelease.from_root(package.root, release.product_artifact_sha256, None, release.claims)
         self.assertEqual({entry.path for entry in release.package_manifest.entries}, {"product.json", "PLAYTEST-NOT-RUN.json"})
 
+    def test_make_output_release_seals_the_hosts_design_notes(self):
+        notes = {"assembly": "1. Press the cork in.", "print_settings": "Prints in PETG."}
+        release = prepare_make_output_release(self.run_root, self.made, design_notes=notes)
+        self.assertEqual(release.product["design_notes"], notes)
+        release.validate_package_tree(self.run_root, self.made, None)
+        self.assertEqual(read_native_release(self.run_root), release)
+
+    def test_make_output_release_without_notes_keeps_its_exact_fields(self):
+        release = prepare_make_output_release(self.run_root, self.made, design_notes=None)
+        self.assertNotIn("design_notes", release.product)
+
+    def test_make_output_release_refuses_malformed_design_notes(self):
+        for notes in (
+            {"material": "PETG"},
+            {"print_settings": ""},
+            {"print_settings": "  padded  "},
+            {"assembly": 3},
+            {"print_settings": "x" * 20_001},
+            ["PETG"],
+        ):
+            with self.subTest(notes=notes), self.assertRaises(ContractError):
+                prepare_make_output_release(self.run_root, self.made, design_notes=notes)
+
+    def test_a_sealed_page_without_notes_cannot_gain_them_on_a_later_prepare(self):
+        prepare_make_output_release(self.run_root, self.made)
+        with self.assertRaises(ArtifactError):
+            prepare_make_output_release(
+                self.run_root, self.made, design_notes={"print_settings": "Prints in PETG."}
+            )
+
     def test_make_output_release_rejects_changed_made_bytes(self):
         prepare_make_output_release(self.run_root, self.made)
         (self.run_root / self.made.product_root / "assembled.step").write_bytes(b"different")
