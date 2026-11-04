@@ -103,6 +103,7 @@ Launch six subagents in one message, one per slot, each with this brief:
 - The toy is a motion toy with one Signature Motion made by a coupled
   Interface, inspired by the Trend and owning its expression (the scope
   paragraphs above, verbatim).
+- Title the draft by [docs/TOY_NAMING.md](../../../docs/TOY_NAMING.md).
 - Write `CONTRACT.md` in `brainstorm-trend/<run>/<slot>/` with three prose
   sections the gate looks for:
   - `## Trend Hook`: the one countable or pointable feature that makes the

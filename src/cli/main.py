@@ -2879,7 +2879,8 @@ def parser() -> argparse.ArgumentParser:
             "only the host's own Factory listing and local unreleased archive are "
             "re-sealed under it, and that re-sealed record keeps the Make title "
             "beside the public one. Requires an Unreleased toy, and refuses a "
-            "title that cannot produce a safe public slug before any effect."
+            "title that cannot produce a safe public slug before any effect. "
+            "Name it by docs/TOY_NAMING.md."
         ),
     )
     publish.set_defaults(handler=_publish)

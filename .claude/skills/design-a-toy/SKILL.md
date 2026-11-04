@@ -1332,7 +1332,8 @@ print art: the prose, then the
 [CONTRACT-FORMAT.md](../build-a-toy/CONTRACT-FORMAT.md) requires. Confirm the
 block's `references[].file` entries now match Stage 3's images one for one —
 that is what lets `workshop wish --contract` seal this exact file, byte for
-byte, as the run's hash-checked objective.
+byte, as the run's hash-checked objective. Name the toy in its `#` title by
+[docs/TOY_NAMING.md](../../../docs/TOY_NAMING.md).
 
 Then seal what the owner approved (ADR 0096): run the Proof's print gates
 (`make_round <proof> --print-gates-only`, which also checks each Component

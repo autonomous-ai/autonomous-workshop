@@ -90,7 +90,8 @@ for that STEP by `mesh_name` or part-file stem, verified on readback. Make still
 builds and gates the per-part STEPs; only the upload drops them. The release
 receipt records `handoff_transport` (`single-mesh`) and `occurrence_count` (1).
 
-The handoff's `project.json` carries, beside the product id and title, the
+The handoff's `project.json` carries, beside the product id and title (named
+by [TOY_NAMING.md](TOY_NAMING.md)), the
 sealed Release page's own `summary`, `what_arrives`, and `limitations`. Factory's product-page drafter and
 its claims auditor read that file in full as design notes; with only an id
 and a name an imported toy had no source text behind any use claim, so every
