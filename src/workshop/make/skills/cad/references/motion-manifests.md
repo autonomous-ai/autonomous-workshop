@@ -388,9 +388,10 @@ so a manifest that has just asked for hundreds of thousands of kernel operations
 says so in the first second rather than four hours in.
 
 Sweeps are bounded so they cannot silently become the whole run.
-`verify_project` gives `check_motion` 900s (`WORKSHOP_MOTION_DEADLINE_SECONDS`,
-`0` to remove the bound), and `--deadline SECONDS` does the same for a direct
-run. A condition that runs out of budget stops where it is and reports
+`verify_project` gives `check_motion` 900s, or `WORKSHOP_GEOMETRY_TIMEOUT` when
+that is higher, so a sweep a Make round passed under a raised timeout passes the
+same way there. `WORKSHOP_MOTION_DEADLINE_SECONDS` sets it exactly (`0` removes
+the bound), and `--deadline SECONDS` does the same for a direct run. A condition that runs out of budget stops where it is and reports
 **inconclusive** with the sample it reached — and unlike other inconclusive
 results, a budget stop fails the gate even under `--allow-inconclusive`, because
 nothing was measured past that point. The fix is to sample what actually needs

@@ -19,6 +19,16 @@ For an operating mechanism declare its complete cycle as
 and driven outputs. Assembly-only paths keep their existing checks and need
 no operating animation. Do not omit the coupled cycle to avoid this contract.
 
+Before the first motion gate, run `motion_presentation.py <cad-project> --plan`.
+It reads only the manifest. A presentation holds at most six coupled conditions
+(8 states each, 48 in all), and `--plan` and `make_round` refuse a seventh. It
+also lists every `gap`, where a condition does not start at the previous one's
+final pose for every mover: the movie cuts there and a blind critic reads a
+teleport. A gap is a missing condition, not an animation defect, so reorder the
+conditions or declare the span. If the ceiling forbids that, tell the critic at
+the reveal that the animation is separate sweeps. Changing the manifest later
+reruns the whole sweep.
+
 Use the bundled constructor to build 8–48 ordered states directly from the
 assembly and the same pose table used by the motion checker:
 

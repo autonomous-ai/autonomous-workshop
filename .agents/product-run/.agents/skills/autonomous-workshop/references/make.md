@@ -456,10 +456,16 @@ specialist form and character judgment. The host retains stage authority.
    prove a state transition. The signature sheet must show the promised
    states or interaction, not repeated angles. For a moving mechanism with
    motion enabled, also produce and review exact-state animation using
-   [motion review](motion-review-v1.md).
+   [motion review](motion-review-v1.md). Read its condition ceiling and
+   chaining rule before writing `measure/motion.json`, and run
+   `motion_presentation.py <cad-project> --plan` before the first motion gate.
 
 6. **Blind review** (below), then **final verification**: run the integrated
-   final verifier once, never as an iteration loop. Whenever the Wish has
+   final verifier once, never as an iteration loop. If a sweep ran long in a
+   round, set `WORKSHOP_GEOMETRY_TIMEOUT` above its cost first: the motion
+   deadline follows it. An `UNVERIFIED` verdict is never reused, so a second
+   run repeats the whole pipeline: before starting one, write in
+   `MAKE-NOTES.md` which row stopped the first and why. Whenever the Wish has
    references, run it with `--image-derived`; the finalizer refuses a toy
    with sealed references unless the current final report ran in that mode.
    In Contract Mode the verifier fails unless every `geometry:<id>` image has

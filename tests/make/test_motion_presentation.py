@@ -312,3 +312,90 @@ def test_nonfinite_mover_is_rejected_before_geometry():
     c["inputs"]["movers"][0]["rotation"]["end_deg"] = float("nan")
     with pytest.raises(ValueError, match="finite"):
         list(STATES["posed_occurrences"](nested_model(), c, list(range(8))))
+
+
+def moving(ident, part="driver", start=0, end=90):
+    row = condition(ident, part)
+    row["inputs"]["movers"][0]["rotation"].update(start_deg=start, end_deg=end)
+    return row
+
+
+def test_the_ceiling_is_a_count_of_coupled_conditions_and_seven_is_refused_up_front():
+    conditions = [condition(f"c{i}") for i in range(7)]
+    plan = STATES["presentation_plan"]({"conditions": conditions})
+    assert plan["coupled_conditions"] == 7 and plan["ceiling"] == 6
+    assert "7 coupled conditions" in plan["problem"] and "at most 6" in plan["problem"]
+    assert "8 states" in plan["problem"] and "48" in plan["problem"]
+
+
+def test_six_coupled_conditions_fit_and_other_checks_do_not_count():
+    conditions = [condition(f"c{i}") for i in range(6)]
+    conditions.append({"id": "seat", "check": "linear_motion_collision", "inputs": {}})
+    plan = STATES["presentation_plan"]({"conditions": conditions})
+    assert plan["coupled_conditions"] == 6 and plan["problem"] is None
+
+
+def test_more_frames_lower_what_a_presentation_can_hold():
+    conditions = [condition(f"c{i}") for i in range(4)]
+    assert STATES["presentation_plan"]({"conditions": conditions}, frames=12)["problem"] is None
+    problem = STATES["presentation_plan"]({"conditions": conditions}, frames=13)["problem"]
+    assert "--frames 13" in problem and "at most 3" in problem
+
+
+def test_conditions_that_chain_report_no_gap():
+    plan = STATES["presentation_plan"]({"conditions": [moving("out", end=90), moving("back", start=90, end=0)]})
+    assert plan["gaps"] == []
+
+
+def test_a_gap_names_both_conditions_the_mover_and_its_poses():
+    plan = STATES["presentation_plan"]({"conditions": [moving("out", end=90), moving("next", start=45, end=0)]})
+    assert plan["problem"] is None
+    (gap,) = plan["gaps"]
+    assert (gap["from"], gap["to"], gap["part"]) == ("out", "next", "driver")
+    assert gap["ends"]["rotation_deg"] == pytest.approx(90)
+    assert gap["starts"]["rotation_deg"] == pytest.approx(45)
+
+
+def test_a_mover_the_next_condition_leaves_out_returns_home_so_it_is_a_gap():
+    plan = STATES["presentation_plan"]({"conditions": [moving("lift", "lid"), moving("turn", "driver")]})
+    assert [gap["part"] for gap in plan["gaps"]] == ["lid"]
+    assert plan["gaps"][0]["starts"]["rotation_deg"] == 0
+
+
+def test_the_generator_refuses_the_ceiling_before_it_builds_the_assembly(tmp_path):
+    (tmp_path / "measure").mkdir()
+    (tmp_path / "model.step.py").write_text("raise SystemExit('the assembly must not be built')\n")
+    (tmp_path / "measure/motion.json").write_text(json.dumps(
+        {"assembly": "model.step.py", "conditions": [condition(f"c{i}") for i in range(7)]}))
+    with pytest.raises(ValueError, match="7 coupled conditions"):
+        HELPER["generate"](tmp_path)
+
+
+def _plan_cli(project, *arguments):
+    return subprocess.run([sys.executable, str(TOOLS / "motion_presentation.py"), str(project), "--plan", *arguments],
+                          capture_output=True, text=True)
+
+
+def test_plan_cli_reads_only_the_manifest_and_reports_gaps_without_refusing(tmp_path):
+    (tmp_path / "measure").mkdir()
+    (tmp_path / "measure/motion.json").write_text(json.dumps(
+        {"conditions": [moving("out", end=90), moving("next", start=45, end=0)]}))
+    done = _plan_cli(tmp_path)
+    assert done.returncode == 0, done.stderr
+    report = json.loads(done.stdout)
+    assert report["coupled_conditions"] == 2 and len(report["gaps"]) == 1
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["measure"]
+
+
+def test_plan_cli_exits_one_with_the_reason_past_the_ceiling(tmp_path):
+    (tmp_path / "measure").mkdir()
+    (tmp_path / "measure/motion.json").write_text(json.dumps({"conditions": [condition(f"c{i}") for i in range(7)]}))
+    done = _plan_cli(tmp_path)
+    assert done.returncode == 1
+    assert "7 coupled conditions" in json.loads(done.stdout)["problem"]
+
+
+def test_plan_cli_treats_a_malformed_manifest_as_a_usage_error(tmp_path):
+    (tmp_path / "measure").mkdir()
+    (tmp_path / "measure/motion.json").write_text("{}")
+    assert _plan_cli(tmp_path).returncode == 2

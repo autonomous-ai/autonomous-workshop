@@ -16,6 +16,27 @@ sequences. Give each one a unique `id`. All animation states share one camera,
 scale and world frame; source occurrence colors are retained. `--view` accepts
 the named views from `render_review` or an `AZ,EL` pair.
 
+**Before the first motion gate, read the plan.** It takes a second and reads
+only the manifest:
+
+```bash
+python "$CAD_SKILL_ROOT/scripts/motion_presentation.py" <project> --plan
+```
+
+- **Six coupled conditions is the ceiling.** Each one needs at least 8 states
+  and the whole presentation holds 48, so a seventh cannot be animated at any
+  setting. `--plan` exits 1 and names the count, and `make_round` fails the
+  motion step with the same words instead of spending the sweep. More frames
+  lower the ceiling: 48 divided by `--frames`.
+- **Conditions must chain.** The movie is the conditions in manifest order, so
+  it cuts wherever a condition does not start at the previous one's final pose
+  for every mover. A mover a condition leaves out sits at home. `--plan` lists
+  each such `gap`. A blind critic reads a gap as a teleport. Reorder the
+  conditions, or declare the missing span as its own condition if the ceiling
+  allows. Where it does not, tell the critic at the reveal that the animation
+  is separate declared sweeps. Fix this before the gate: a reordered manifest
+  reruns the whole sweep.
+
 The default selects eight increasing indices from each condition's table,
 including its endpoints. For an indexed display or a nonuniform cycle, select
 the exact meaningful indices from that same table:

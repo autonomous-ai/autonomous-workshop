@@ -1,5 +1,19 @@
 # Shared skill provenance
 
+## Workshop-local: a motion plan before the sweep, and a deadline that follows the rounds (2026-11-04)
+
+- **Local patch to upstream `cad`.** `motion_states.presentation_plan` and
+  `motion_presentation.py --plan` read the manifest alone: the six-condition
+  ceiling (refused, exit 1) and every gap in the chain of conditions (listed).
+  `generate` refuses the ceiling first. `verify_project`'s default `check_motion`
+  deadline is now the higher of 900s and `WORKSHOP_GEOMETRY_TIMEOUT`.
+  `cad/SKILL.md` and `references/motion-presentation.md`,
+  `references/motion-manifests.md` say so. Upstream can take these; a resync
+  must keep them until it has.
+- **`make-round`** runs `--plan` before its motion step and fails the step with
+  the refusal, spending no sweep. Only the `cad` and `make-round` locks move;
+  `source_commit` values are unchanged.
+
 ## Workshop-local: a seeded run carries its assembly review (2026-11-02, ADR 0096)
 
 - **Local patch to upstream `cad` (seeding is Workshop's).**

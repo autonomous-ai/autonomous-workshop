@@ -2193,6 +2193,26 @@ def kept_instances(part: Path, role: str, interfaces: list | None, display_pose:
     return sorted(found)
 
 
+def motion_plan_problem(python: str, cad: Path, project: Path, log: Path) -> str | None:
+    """Why this manifest can never be presented, before its sweep is paid for.
+
+    Anything but the tool's own refusal is left to check_motion to report.
+    """
+    tool = cad / "motion_presentation.py"
+    if not tool.is_file():
+        return None
+    done = subprocess.run([python, str(tool), str(project), "--plan"], cwd=project,
+                          capture_output=True, text=True)
+    if done.returncode != 1:
+        return None
+    try:
+        problem = json.loads(done.stdout)["problem"]
+    except (ValueError, KeyError, TypeError):
+        return None
+    log.write_text(problem + "\n", encoding="utf-8")
+    return problem
+
+
 def parse_motion(stdout: str | bytes, returncode: int, stderr: str | bytes = "") -> dict:
     """Read the complete motion result without promoting partial output to PASS."""
     if isinstance(stdout, bytes):
@@ -6814,8 +6834,12 @@ def make_round(args) -> int:
     motion = None
     manifest = measure / "motion.json"
     if component is None and manifest.is_file() and check_motion:
-        done = run([python, str(cad / "check_motion"), str(project), "--manifest", str(manifest), "--json"], cwd=project, log=out / "motion.log")
-        motion = parse_motion(done.stdout, done.returncode, done.stderr)
+        problem = motion_plan_problem(python, cad, project, out / "motion.log")
+        if problem is not None:
+            motion = {"verdict": "fail", "detail": problem, "returncode": 1, "conditions": []}
+        else:
+            done = run([python, str(cad / "check_motion"), str(project), "--manifest", str(manifest), "--json"], cwd=project, log=out / "motion.log")
+            motion = parse_motion(done.stdout, done.returncode, done.stderr)
     full = None
 
     if component is None and kit is not None and tree is not None and tree["verdict"] != "DEFECT":

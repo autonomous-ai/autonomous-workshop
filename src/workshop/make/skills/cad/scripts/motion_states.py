@@ -22,6 +22,8 @@ import progresslib  # noqa: E402  (needs SCRIPTS on sys.path)
 TOLERANCE = 0.08
 QUANTUM_MM = 1e-3  # state vertex grid, far below TOLERANCE
 MAX_STATES = 48
+MIN_STATES = 8
+POSE_TOLERANCE = 1e-6
 
 # One wall-clock bound for the states and frames of a single presentation.
 # Posing tessellates every leaf of the assembly per sample and rendering
@@ -84,6 +86,62 @@ def sample_indices(condition, requested=None, frames=8):
             or requested != sorted(set(requested))):
         raise ValueError(f"{condition['id']} needs 8 to 48 increasing, distinct sample indices within 0..{steps}")
     return requested
+
+
+def _home_pose(mover=None):
+    """A mover's pose, with what a condition leaves undeclared at home."""
+    mover = mover or {}
+    angle = mover.get("rotation_deg") or 0.0
+    return {"rotation_deg": angle,
+            "axis_point": mover.get("axis_point") if angle else None,
+            "axis_direction": mover.get("axis_direction") if angle else None,
+            "translation_mm": mover.get("translation_mm") or [0.0, 0.0, 0.0]}
+
+
+def _same_pose(first, second):
+    if not math.isclose(first["rotation_deg"], second["rotation_deg"], abs_tol=POSE_TOLERANCE):
+        return False
+    vectors = [(first[key], second[key]) for key in ("axis_point", "axis_direction", "translation_mm")
+               if first[key] is not None and second[key] is not None]
+    return all(math.isclose(a, b, abs_tol=POSE_TOLERANCE) for pair in vectors for a, b in zip(*pair))
+
+
+def presentation_plan(manifest, frames=8):
+    """What the movie of this manifest will be, from its declarations alone.
+
+    The states are a fixed budget: every coupled condition takes at least
+    MIN_STATES of MAX_STATES, so `problem` names a manifest no presentation
+    can hold. It is read before a motion gate is spent, not after. A gap is a
+    place the movie will cut, because one condition does not start where the
+    last one ended. A gap is real motion nothing sweeps, and only the run can
+    say whether to declare it, so it is reported and never refused.
+    """
+    if type(frames) is not int or not MIN_STATES <= frames <= MAX_STATES:
+        raise ValueError("frames must be an integer from 8 to 48")
+    conditions = coupled_conditions(manifest)
+    ceiling = MAX_STATES // frames
+    problem = None
+    if len(conditions) > ceiling:
+        problem = (f"{len(conditions)} coupled conditions, but a motion presentation holds at most {ceiling}: "
+                   f"--frames {frames} gives each one {frames} states of the {MAX_STATES} allowed, and "
+                   f"a condition needs at least {MIN_STATES} states. Merge or remove "
+                   f"{len(conditions) - ceiling} of them in measure/motion.json before running the motion gate")
+    ends = []
+    check, _ = helpers()
+    for condition in conditions:
+        steps = condition.get("inputs", {}).get("steps", check["DEFAULT_STEPS"])
+        first, last = sample_annotations(manifest, [{"condition_id": condition["id"], "sample_index": index}
+                                                    for index in (0, steps)])
+        ends.append((condition["id"], *({mover["part"]: _home_pose(mover) for mover in row["movers"]}
+                                        for row in (first, last))))
+    gaps = []
+    for (previous, _, ended), (following, started, _) in zip(ends, ends[1:]):
+        for part in sorted(set(ended) | set(started)):
+            end, start = ended.get(part, _home_pose()), started.get(part, _home_pose())
+            if not _same_pose(end, start):
+                gaps.append({"from": previous, "to": following, "part": part, "ends": end, "starts": start})
+    return {"coupled_conditions": len(conditions), "ceiling": ceiling, "frames": frames,
+            "states": len(conditions) * frames, "problem": problem, "gaps": gaps}
 
 
 def _finite(value):
@@ -274,7 +332,8 @@ def construct(project, manifest, selections):
         raise ValueError("motion presentation must cover every coupled condition exactly once")
     indices_by_id = {c["id"]: sample_indices(c, selections[c["id"]]) for c in conditions}
     if sum(map(len, indices_by_id.values())) > MAX_STATES:
-        raise ValueError("motion presentation exceeds 48 states across its coupled conditions")
+        raise ValueError("motion presentation exceeds 48 states across its coupled conditions; "
+                         "lower --frames or --samples (motion_presentation.py --plan shows the budget)")
     entry = check["find_assembly_entry"](project, manifest.get("assembly"))
     try:
         relative = entry.relative_to(project).as_posix()
