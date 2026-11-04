@@ -2,9 +2,11 @@
 from contextlib import redirect_stdout
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
+import threading
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -13,7 +15,8 @@ from tests.make.test_make_round import _gate_output, _gate_report, fake_visual_r
 
 
 class MakeRoundMotionEvidenceTest(unittest.TestCase):
-    def run_motion(self, stdout, returncode=0, stderr="", check_motion=True, plan_tool=None, sweeps=True):
+    def run_motion(self, stdout, returncode=0, stderr="", check_motion=True, plan_tool=None, sweeps=True,
+                   mesh_first=False):
         module = load_module()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -32,10 +35,15 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
                 (cad / "motion_presentation.py").write_text(plan_tool)
             (skills / "image-to-cad" / "scripts").mkdir(parents=True)
             calls = []
+            mesh_started = threading.Event()
 
             def run(command, *, cwd, log, **kwargs):
                 tool = Path(command[1]).name
+                if mesh_first and tool in ("check_thickness", "check_overhang"):
+                    self.assertTrue(mesh_started.wait(30))
                 calls.append(tool)
+                if tool == "check_mesh":
+                    mesh_started.set()
                 if tool == "gen":
                     source = Path(command[2])
                     source.with_name(source.name[:-len(".py")]).write_bytes(b"stable fake part")
@@ -75,11 +83,14 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
             self.assertEqual(code, 1)
             # The interference check runs beside motion and the render.
             self.assertEqual(calls.count("inspect"), 1)
+            ran = [tool for tool in calls if tool != "inspect"]
+            # The print gates run at once (run_all), so only their order is free:
+            # each still runs exactly once, after the build and before motion.
+            self.assertCountEqual(ran[1:4], ["check_thickness", "check_overhang", "check_mesh"])
             self.assertEqual(
-            [tool for tool in calls if tool != "inspect"],
-            ["gen", "check_thickness", "check_overhang", "check_mesh",
-             *(["check_motion"] if check_motion and sweeps else []), "render_review"],
-        )
+                ran[:1] + ran[4:],
+                ["gen", *(["check_motion"] if check_motion and sweeps else []), "render_review"],
+            )
             pending = json.loads(output.getvalue())
             self.assertFalse(pending["ok"])
             self.assertEqual(pending["visual"]["status"], "pending")
@@ -95,6 +106,12 @@ class MakeRoundMotionEvidenceTest(unittest.TestCase):
         self.assertFalse(summary["check_motion"])
         self.assertEqual(summary["motion_status"], "not-run")
         self.assertIn("SKIP motion unverified", rendered)
+
+    def test_print_gates_may_start_in_any_order(self):
+        stdout = json.dumps({"ok": False, "results": [self.record("real", "fail", "from check_motion")]})
+        with patch.dict(os.environ, {"MAKE_ROUND_JOBS": "3"}):
+            code, summary, _ = self.run_motion(stdout, 1, mesh_first=True)
+        self.assertEqual((code, summary["motion"]["verdict"]), (1, "fail"))
 
     def test_a_manifest_past_the_presentation_ceiling_never_pays_for_its_sweep(self):
         refusal = ("import json, sys; print(json.dumps({'problem': '7 coupled conditions, but a motion "
