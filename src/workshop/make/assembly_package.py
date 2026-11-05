@@ -18,8 +18,10 @@ an exchange solid rather than sliced meshes and printability is not asserted
 here.
 
 Colour channels are the raw values the designer passed to build123d's
-``Color``.  The cadgen GLB exporter and the shop viewer display those values
-as sRGB, so this module reports them as the ``#rrggbb`` a viewer shows.
+``Color``.  Every viewer and the shop display those values as sRGB, so this
+module reports them as the ``#rrggbb`` a viewer shows; a package sealed before
+2026-11-05 in the legacy linear convention reads as the hex it was authored
+from (:func:`workshop.make.cad.step_color.displayed_hex`).
 """
 
 from __future__ import annotations
@@ -33,6 +35,7 @@ from typing import Any, Collection, Mapping, Optional, Sequence, Tuple
 
 from workshop.errors import ContractError
 from workshop.wish.catalogues import BOUGHT_PART_HEX
+from workshop.make.cad.step_color import displayed_hex, is_legacy_linear
 from workshop.make.cad.filament_names import (
     FILAMENT_COLOUR_NAMES,
     occurrence_colour_name,
@@ -133,7 +136,11 @@ class AssemblyOccurrence:
 
     @property
     def color_hex(self) -> Optional[str]:
-        return None if self.color is None else srgb_channels_hex(self.color)
+        if self.color is None:
+            return None
+        if is_legacy_linear(self.color[:3]):
+            return displayed_hex(self.color[:3])
+        return srgb_channels_hex(self.color)
 
     @property
     def colour_name(self) -> Optional[str]:

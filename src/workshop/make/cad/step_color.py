@@ -5,12 +5,14 @@ XCAF surface style.  Release needs those exact colours to describe the shop
 listing's rendered thumbnail, so this module reads them back from the sealed
 bytes with only the standard library, exactly like :mod:`workshop.make.cad.mesh`.
 
-Colour space is the one contract worth stating out loud.  ``cadgen.color.srgb``
-converts the hex a designer picked into **linear** RGB, ``build123d.Color``
-carries those linear channels unchanged, and OpenCascade writes them verbatim
-into ``COLOUR_RGB``.  A STEP produced by this workshop therefore holds linear
-RGB, and the sRGB hex a customer sees is recovered by the inverse transfer
-function applied here.
+Colour space is the one contract worth stating out loud.  ``COLOUR_RGB``
+holds sRGB display values: ``cadgen.color.srgb`` hands ``build123d.Color`` the
+hex's channels, OpenCascade writes them unchanged, and every STEP viewer and
+the shop show them as that hex.  STEPs written before 2026-11-05 hold the
+same hex converted to **linear** RGB (``cadgen`` then pre-converted), which
+opens far too dark; :func:`is_legacy_linear` recognises such a colour exactly,
+every channel the linear value of a byte, and :func:`displayed_hex` reads it as
+the hex it was authored from, so older sealed STEPs still read correctly.
 
 Every read is fail-closed.  A colour that cannot be tied to exactly one named
 part, a style chain this reader does not fully understand, or a channel outside
@@ -27,6 +29,8 @@ from typing import Dict, Iterator, List, Mapping, Optional, Sequence, Tuple
 
 __all__ = [
     "StepPartColor",
+    "displayed_hex",
+    "is_legacy_linear",
     "linear_to_srgb_hex",
     "read_step_part_colors",
     "srgb_channels_hex",
@@ -70,10 +74,10 @@ class StepPartColor:
     """One part name bound to one exact surface colour.
 
     ``channels`` are the raw 0..1 values sealed in the STEP.  build123d writes
-    the values a designer passed to ``Color`` unchanged, the cadgen GLB
-    exporter converts those same values from sRGB to linear for glTF, and the
-    shop viewer therefore displays them as sRGB.  ``hex`` is that displayed
-    ``#rrggbb``.
+    the values a designer passed to ``Color`` unchanged, and every viewer and
+    the shop display them as sRGB.  ``hex`` is that displayed ``#rrggbb``, or
+    for a legacy linear colour the hex it was authored from
+    (:func:`displayed_hex`).
     """
 
     name: str
@@ -95,11 +99,65 @@ def srgb_channels_hex(rgb: Sequence[float]) -> str:
     return "#%02x%02x%02x" % tuple(channels)
 
 
+def _srgb_to_linear(value: float) -> float:
+    return value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
+
+
+_LINEAR_BYTES = tuple(_srgb_to_linear(k / 255.0) for k in range(256))
+# OpenCascade keeps a colour in float32 and build123d rounds it to 7 digits,
+# so a legacy channel strays up to 5e-8 from its byte's linear value; no
+# k/255 lies within 1.04e-6 of one.
+_LEGACY_TOLERANCE = 2e-7
+
+
+def _is_linear_byte(value: float) -> bool:
+    low, high = 0, 255
+    while low < high:
+        middle = (low + high) // 2
+        if _LINEAR_BYTES[middle] < value:
+            low = middle + 1
+        else:
+            high = middle
+    return any(
+        abs(_LINEAR_BYTES[k] - value) <= _LEGACY_TOLERANCE
+        for k in (low - 1, low)
+        if 0 <= k <= 255
+    )
+
+
+def is_legacy_linear(rgb: Sequence[float]) -> bool:
+    """True for a colour sealed in the pre-2026-11-05 linear convention.
+
+    Every channel is exactly the linear value of a byte and at least one is
+    neither 0 nor 1, where the two conventions agree.  ``cadgen.color``
+    applies the same test on the authoring side.
+    """
+
+    if len(rgb) != 3:
+        return False
+    channels = [float(value) for value in rgb]
+    if all(value in (0.0, 1.0) for value in channels):
+        return False
+    return all(_is_linear_byte(value) for value in channels)
+
+
+def displayed_hex(rgb: Sequence[float]) -> str:
+    """Return the ``#rrggbb`` sealed channels stand for.
+
+    Channels are sRGB and shown as they are; a legacy linear colour is shown
+    as the hex it was authored from.
+    """
+
+    if is_legacy_linear(rgb):
+        return linear_to_srgb_hex(rgb)
+    return srgb_channels_hex(rgb)
+
+
 def linear_to_srgb_hex(rgb: Sequence[float]) -> str:
     """Return the ``#rrggbb`` for linear ``rgb`` channels (sRGB transfer applied).
 
     Kept for callers that hold genuinely linear channels; sealed STEP colours
-    are read with :func:`srgb_channels_hex` instead.
+    are read with :func:`displayed_hex` instead.
     """
 
     if len(rgb) != 3:
@@ -495,7 +553,7 @@ def read_step_part_colors(content: bytes) -> Dict[str, StepPartColor]:
             if colour is None:
                 continue
             try:
-                value = StepPartColor(product, srgb_channels_hex(colour), colour)
+                value = StepPartColor(product, displayed_hex(colour), colour)
             except ValueError:
                 continue
             if resolved.get(product, value) != value:

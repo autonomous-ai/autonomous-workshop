@@ -7,6 +7,9 @@ __all__ = [
     "srgb",
     "srgb_to_linear",
     "linear_to_srgb",
+    "is_legacy_linear",
+    "display_channels",
+    "linear_channels",
     "MateRelation",
     "MateTarget",
     "label_text",
@@ -27,7 +30,7 @@ def __getattr__(name: str):
             "label_shape": label_shape,
             "target": target,
         }[name]
-    if name in {"srgb", "srgb_to_linear", "linear_to_srgb"}:
+    if name in {"srgb", "srgb_to_linear", "linear_to_srgb", "is_legacy_linear", "display_channels", "linear_channels"}:
         from cadgen import color
 
         return getattr(color, name)
@@ -36,4 +39,4 @@ def __getattr__(name: str):
 
 if TYPE_CHECKING:
     from cadgen.assembly import AssemblyHelper, MateRelation, MateTarget, label_shape, label_text, target
-    from cadgen.color import srgb, srgb_to_linear, linear_to_srgb
+    from cadgen.color import display_channels, is_legacy_linear, linear_channels, linear_to_srgb, srgb, srgb_to_linear

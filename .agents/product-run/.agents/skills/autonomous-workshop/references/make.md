@@ -593,8 +593,9 @@ Leave the tree at the exact `product_root` from `STAGE.json`. It contains:
   lock and carries its review too (issue #176);
 - a surface colour on every leaf part of a multi-part model, authored as
   `Color(r, g, b)` with channels 0..1 taken directly from the sRGB hex you want
-  the shop to show (`Color(0.82, 0.51, 0.18)` shows as `#d1822e`). Do not
-  pre-convert channels to linear;
+  the shop to show (`Color(0.82, 0.51, 0.18)` shows as `#d1822e`), as
+  `cadfilament.filament` and `cadgen.color.srgb` do. Do not pre-convert
+  channels to linear: such a STEP opens near-black in every viewer;
 - `product.json` with nonempty `title` and `summary` strings. Both are
   customer copy that reaches the shop unchanged: the title is a sayable name
   of one to four words with no dimensions, part counts, or sentences, and

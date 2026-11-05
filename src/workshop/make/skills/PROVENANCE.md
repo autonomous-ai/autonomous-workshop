@@ -2803,3 +2803,21 @@ leads step by its `method`, adds the soldering tools and
 `company.json`'s new `warnings.soldering` for a soldered one, and prints one
 batteries line for loose cells. `SKILL.md` and `references/kit-tree.md` say
 so. The `make-round` lock moves; a resync must keep these lines.
+
+## Local change: STEP colours are sRGB (2026-11-05)
+
+A Workshop-local fix; upstream autonomous-product-to-cad still writes linear
+channels. build123d's `Color(r, g, b)` reads its channels as sRGB and the
+STEP writer stores them unchanged, and every viewer shows `COLOUR_RGB` as
+sRGB. `cad/scripts/packages/cadgen/src/cadgen/color.py`'s `srgb()` and
+`cad/scripts/cadfilament.py`'s `filament()` handed `Color` linear channels,
+so dark oak `#5a3a22` opened as `#1a0b04` in FreeCAD, slicers and the shop.
+Both now pass the hex's sRGB channels. `cadgen.color` adds
+`is_legacy_linear`, `display_channels` and `linear_channels`: a colour whose
+every channel is exactly a byte's linear value is read as the old linear
+convention, so sealed STEPs and frozen runs keep their colours.
+`cad/scripts/render_review`, `cad/scripts/motion_states.py` and
+`image-to-cad/scripts/render_views.py` read colours through them, and
+`cad/references/build123d-modeling.md` and the wiki's
+`product-design/colour-matching.md` say so. The `cad`, `image-to-cad` and
+`wiki` locks move; a resync must keep these lines.

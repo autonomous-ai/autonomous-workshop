@@ -370,10 +370,12 @@ def _paint_sphere(decal, pixels, depths, toward_viewer, right, up, scale, x_offs
     window[visible] = np.maximum(window[visible], depth[visible])
 
 
-def _linear_to_srgb(value: float) -> int:
-    value = min(1.0, max(0.0, value))
-    encoded = 12.92 * value if value <= 0.0031308 else 1.055 * value ** (1 / 2.4) - 0.055
-    return round(encoded * 255)
+def _display_rgb(channels) -> tuple[int, int, int]:
+    """The sRGB bytes a Color shows as, the same in every STEP viewer
+    (`cadgen.color`: channels are sRGB; a legacy linear colour is encoded)."""
+    from cadgen.color import display_channels
+
+    return tuple(round(value * 255) for value in display_channels(channels))
 
 
 def _shape_colour(shape, index: int) -> tuple[int, int, int]:
@@ -383,7 +385,7 @@ def _shape_colour(shape, index: int) -> tuple[int, int, int]:
     channels = tuple(colour)
     if len(channels) < 3:
         return FALLBACK_COLOURS[index % len(FALLBACK_COLOURS)]
-    return tuple(_linear_to_srgb(float(value)) for value in channels[:3])
+    return _display_rgb(channels[:3])
 
 
 def _leaves(shape, parent_location=None, inherited_colour=None):

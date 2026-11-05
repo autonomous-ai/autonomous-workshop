@@ -137,17 +137,19 @@ For repeated parts, keep occurrence labels, transforms, or joint connections exp
 Three rules. The first and the last fail silently — no error, just a model that
 looks wrong.
 
-**Channels are LINEAR RGB, not sRGB.** The renderer converts them to sRGB on the
-way to the screen, so `Color(0.5, 0.5, 0.5)` displays as roughly `#BCBCBC`, not
-`#808080`. Picking channel values off a hex palette by eye gives a washed-out,
-desaturated model. Never author a channel triple by hand.
+**Channels are sRGB display values.** `Color(r, g, b)` reads sRGB and the STEP
+stores the channels unchanged, so every viewer (FreeCAD, web viewers, slicers,
+the shop, the review renderer) shows `Color(0.5, 0.5, 0.5)` as `#808080`. Never
+pre-convert a hex to linear: that STEP opens far too dark everywhere (dark oak
+`#5A3A22` showed as `#1A0B04` until 2026-11-05). Still, never author a channel
+triple by hand: take it by name, below.
 
 **Every printable part takes its colour by name from the filament palette.** Four
 stocks are loaded — the owner's filament catalogue and Bambu Lab PLA Lite, PLA
 Matte and PETG Basic — so a model
 coloured from them shows spools that can actually be loaded; a free hex invents
-a filament nobody can buy. `scripts/cadfilament.py` owns the tables and does
-the sRGB conversion, and imports with no path setup wherever `cadfits` does:
+a filament nobody can buy. `scripts/cadfilament.py` owns the tables and turns
+a name into its hex's channels, and imports with no path setup wherever `cadfits` does:
 
 ```python
 from cadfilament import filament

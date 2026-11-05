@@ -26,9 +26,9 @@ here rather than drifting silently.
 
 Colour space is not this module's business.  The sealed channels are checked by
 ``make-part-colours-missing``; the name is checked here, and the two are not
-compared -- the palette authors a ``Color`` through ``cadgen.color.srgb`` while
-the host and the shop read sealed channels as sRGB, and that reconciliation is
-still open.
+compared.  (The palette authors a ``Color`` through ``cadgen.color.srgb``, whose
+channels are sRGB, the space the host and the shop read sealed channels in;
+:mod:`workshop.make.cad.step_color` reads older linear seals.)
 """
 
 from __future__ import annotations

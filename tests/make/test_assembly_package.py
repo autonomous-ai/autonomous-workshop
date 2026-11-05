@@ -95,6 +95,20 @@ class ReadAssemblyPackageTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             srgb_channels_hex((1.2, 0.0, 0.0))
 
+    def test_a_package_sealed_in_linear_channels_shows_its_authored_hex(self):
+        def linear(value: float) -> float:
+            return value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
+
+        document = quarterhoot_package()
+        document["occurrences"][0]["color"] = [
+            float("%.12f" % linear(byte / 255.0)) for byte in (0x5A, 0x3A, 0x22)
+        ] + [1.0]
+
+        package = read_assembly_package(encode(document))
+
+        self.assertEqual(package.part_colors()["reversible_nest"], "#5a3a22")
+        self.assertEqual(package.part_colors()["owl_follower"], "#d1822e")
+
     def test_a_single_occurrence_package_is_not_multipart(self):
         document = quarterhoot_package()
         document["occurrences"] = document["occurrences"][:1]
