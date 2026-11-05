@@ -1316,6 +1316,51 @@ def contract_print_settings(contract: Any) -> Optional[str]:
     return " ".join(found) or None
 
 
+# The infill a Design Contract's print sections state ("8% infill in every
+# part"), which Factory measures, prices and prints the toy at instead of its
+# shop default of 15%. Factory accepts a whole percent from 5 to 100 and
+# refuses anything else, so the same bounds hold here.
+_PRINT_INFILL = re.compile(r"(\d+(?:\.\d+)?)\s*%\s*infill\b", re.IGNORECASE)
+CONTRACT_INFILL_MIN = 5
+CONTRACT_INFILL_MAX = 100
+
+
+def contract_infill_percent(contract: Any) -> Optional[int]:
+    """The one sparse infill, in whole percent, that a Design Contract's print
+    prose sections state, or None for a contract that states none.
+
+    Factory sets one infill for the whole design. A contract that states two
+    different infills, or one Factory cannot print, is refused rather than
+    published at an infill its owner did not choose."""
+
+    prose = contract.get("prose") if isinstance(contract, Mapping) else None
+    found = set()
+    for item in prose or ():
+        heading = item.get("heading") if isinstance(item, Mapping) else None
+        if not isinstance(heading, str) or not heading.casefold().startswith(
+            PRINT_PROSE_HEADING_PREFIX
+        ):
+            continue
+        text = item.get("text")
+        if not isinstance(text, str):
+            raise ContractError("the Design Contract's %r prose section has no text" % heading)
+        found.update(float(match) for match in _PRINT_INFILL.findall(" ".join(text.split())))
+    if not found:
+        return None
+    if len(found) > 1:
+        raise ContractError(
+            "the Design Contract's print sections state %s infill; Factory prints a "
+            "design at one infill" % " and ".join("%g%%" % value for value in sorted(found))
+        )
+    value = found.pop()
+    if value != int(value) or not CONTRACT_INFILL_MIN <= value <= CONTRACT_INFILL_MAX:
+        raise ContractError(
+            "the Design Contract's %g%% infill is not a whole percent from %d to %d, "
+            "which Factory requires" % (value, CONTRACT_INFILL_MIN, CONTRACT_INFILL_MAX)
+        )
+    return int(value)
+
+
 def _assembly_markdown(text: Optional[str]) -> str:
     """The contract's Bought Parts and assembly text (B18), verbatim under
     its own heading, or nothing for a toy without it."""
@@ -2138,6 +2183,7 @@ def materialize_public_example_if_source_checkout(
 
 __all__ = [
     "contract_assembly_text",
+    "contract_infill_percent",
     "contract_print_settings",
     "materialize_public_example",
     "materialize_public_example_if_source_checkout",

@@ -857,7 +857,7 @@ class FactoryReleaseTest(unittest.TestCase):
         )
         self.assertNotIn("Authorization", manual_call[2])
 
-    def use_make_output_release(self, design_notes=None):
+    def use_make_output_release(self, design_notes=None, print_overrides=None):
         hero = self.made.artifact_root / "cad/project/snap/iso.png"
         hero.parent.mkdir(parents=True, exist_ok=True)
         hero.write_bytes(PNG_COVER)
@@ -875,6 +875,8 @@ class FactoryReleaseTest(unittest.TestCase):
         }
         if design_notes is not None:
             self.page["design_notes"] = design_notes
+        if print_overrides is not None:
+            self.page["print_overrides"] = print_overrides
         content = canonical_json(self.page)
         (self.release / "product.json").write_bytes(content)
         self.manifest = build_artifact_manifest(self.release, created_at="content-addressed")
@@ -955,6 +957,59 @@ class FactoryReleaseTest(unittest.TestCase):
             project = json.loads(archive.read("project.json"))
         self.assertEqual(project["print_settings"], "Prints in PETG.")
         self.assertEqual(project["assembly"], "1. Press the cork in.")
+
+    def test_project_notes_carry_the_pages_print_overrides_as_their_own_object(self):
+        page = {"title": "Toy", "summary": "A toy.", "what_arrives": [], "limitations": []}
+        notes = {"print_settings": "Prints in PETG."}
+        self.assertEqual(
+            _project_notes("toy", {**page, "design_notes": notes, "print_overrides": {"infill_percent": 8}}),
+            {
+                "id": "toy", "name": "Toy", "summary": "A toy.", **notes,
+                "print_overrides": {"infill_percent": 8},
+            },
+        )
+
+    def test_make_output_import_sends_the_sealed_infill_in_project_json(self):
+        anchor = self.use_make_output_release(
+            {"print_settings": "Prints in PETG."}, {"infill_percent": 8}
+        )
+        transport = FactoryTransport(include_thumbnails=False)
+
+        def send(method, url, headers, body, timeout):
+            if url.endswith("/workshop-release-page.json"):
+                return HttpResponse(200, {"Content-Type": "application/json"}, anchor)
+            return transport(method, url, headers, body, timeout)
+
+        self.writer(send)(self.context, self.release, self.manifest)
+        import_call = next(call for call in transport.calls if call[1].endswith("/designs/import"))
+        parts = multipart_parts(import_call[2], import_call[3])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            project = json.loads(archive.read("project.json"))
+        self.assertEqual(project["print_overrides"], {"infill_percent": 8})
+        self.assertEqual(project["print_settings"], "Prints in PETG.")
+
+    def test_make_output_import_without_an_infill_sends_no_override(self):
+        anchor = self.use_make_output_release({"print_settings": "Prints in PETG."})
+        transport = FactoryTransport(include_thumbnails=False)
+
+        def send(method, url, headers, body, timeout):
+            if url.endswith("/workshop-release-page.json"):
+                return HttpResponse(200, {"Content-Type": "application/json"}, anchor)
+            return transport(method, url, headers, body, timeout)
+
+        self.writer(send)(self.context, self.release, self.manifest)
+        import_call = next(call for call in transport.calls if call[1].endswith("/designs/import"))
+        parts = multipart_parts(import_call[2], import_call[3])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            project = json.loads(archive.read("project.json"))
+        self.assertNotIn("print_overrides", project)
+
+    def test_make_output_refuses_a_page_with_malformed_print_overrides(self):
+        self.use_make_output_release(print_overrides={"infill_percent": 3})
+        with self.assertRaises(ContractError):
+            self.writer(FactoryTransport(include_thumbnails=False))(
+                self.context, self.release, self.manifest
+            )
 
     def test_make_output_refuses_a_page_with_malformed_design_notes(self):
         self.use_make_output_release({"material": "PETG"})

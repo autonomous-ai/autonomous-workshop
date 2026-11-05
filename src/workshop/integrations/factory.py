@@ -210,6 +210,8 @@ def _project_notes(
     as design notes.  Every word here is the validated Release page's own
     (summary, what arrives, limitations, and the Design Contract's print
     material and assembly a Spark page seals); the adapter authors nothing.
+    ``print_overrides`` carries the contract's infill, which Factory measures,
+    prices and prints the design at.
     """
 
     notes: dict[str, Any] = {
@@ -226,6 +228,12 @@ def _project_notes(
         ):
             notes[key] = list(value)
     notes.update(release_page.get("design_notes") or {})
+    # Not notes: settings Factory applies to its shop process when it
+    # measures, prices and prints the design (today the infill).  Their own
+    # key, beside the notes' print_settings sentence, which stays prose.
+    overrides = release_page.get("print_overrides")
+    if overrides:
+        notes["print_overrides"] = dict(overrides)
     return notes
 
 

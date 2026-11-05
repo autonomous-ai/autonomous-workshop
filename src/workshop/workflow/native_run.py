@@ -187,6 +187,7 @@ from workshop.release.public_archive import (
 )
 from workshop.release.public_example import (
     contract_assembly_text,
+    contract_infill_percent,
     contract_print_settings,
     materialize_public_example_if_source_checkout,
 )
@@ -3314,6 +3315,20 @@ def _make_output_design_notes(
         "assembly": None if assembly is None else assembly.strip(),
     }
     return {key: value for key, value in notes.items() if value is not None} or None
+
+
+def _make_output_print_overrides(
+    run_root: Path, wish_sha256: str, owners: Sequence[Mapping[str, Any]]
+) -> Optional[dict[str, int]]:
+    """The print settings a Spark page asks Factory to measure, price and
+    print the toy with: the sealed Design Contract's infill with every owner
+    amendment applied, or None when it states none (Factory's 15%)."""
+
+    sealed, _references = _sealed_contract_inputs(run_root, wish_sha256)
+    if sealed is None:
+        return None
+    infill = contract_infill_percent(apply_owner_amendments(sealed, owners))
+    return None if infill is None else {"infill_percent": infill}
 
 
 def _sealed_seed(run_root: Path, wish_sha256: str) -> Optional[dict[str, Any]]:
@@ -9771,13 +9786,15 @@ def _prepare_spark_publication(
     """
 
     def prepare() -> NativeRelease:
+        owners = _verified_owner_contract_amendments(run)
         return prepare_make_output_release(
             run.run_root,
             made,
             design_notes=_make_output_design_notes(
-                run.run_root,
-                checkpoint.wish_sha256,
-                _verified_owner_contract_amendments(run),
+                run.run_root, checkpoint.wish_sha256, owners
+            ),
+            print_overrides=_make_output_print_overrides(
+                run.run_root, checkpoint.wish_sha256, owners
             ),
         )
 
