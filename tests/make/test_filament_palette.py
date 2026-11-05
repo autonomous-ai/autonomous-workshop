@@ -38,7 +38,7 @@ class FilamentPaletteTests(unittest.TestCase):
         cls.palette = cadfilament
 
     def test_both_stocks_round_trip_to_the_hex_their_catalogue_publishes(self):
-        from cadgen.color import linear_to_srgb
+        from cadgen.color import is_legacy_linear
 
         for stock, table in self.palette.MATERIALS.items():
             for name, published in table.items():
@@ -46,11 +46,13 @@ class FilamentPaletteTests(unittest.TestCase):
                     red, green, blue, alpha = tuple(
                         self.palette.filament(name, material=stock)
                     )
+                    # The channels are the hex's own sRGB values, which every
+                    # STEP viewer shows unchanged.
                     shown = "#%02X%02X%02X" % tuple(
-                        round(linear_to_srgb(channel) * 255)
-                        for channel in (red, green, blue)
+                        round(channel * 255) for channel in (red, green, blue)
                     )
                     self.assertEqual(shown, published)
+                    self.assertFalse(is_legacy_linear((red, green, blue)))
                     self.assertEqual(alpha, 1.0)
 
     def test_petg_basic_holds_exactly_the_stocked_colours_and_their_codes(self):
@@ -246,6 +248,43 @@ class FilamentPaletteTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("all checks passed", result.stdout)
+
+
+class StepColourAuthoringTests(unittest.TestCase):
+    """``srgb()`` seals a hex's sRGB channels; colours sealed linear before
+    2026-11-05 still display and light as they were authored."""
+
+    def test_srgb_hands_build123d_the_hex_channels(self):
+        from cadgen.color import srgb
+
+        self.assertEqual(
+            tuple(srgb("#5a3a22")),
+            (round(0x5A / 255, 7), round(0x3A / 255, 7), round(0x22 / 255, 7), 1.0),
+        )
+        self.assertEqual(tuple(srgb("#38414D", 0.42))[3], 0.42)
+
+    def test_a_legacy_linear_colour_displays_as_its_hex(self):
+        from build123d import Color
+        from cadgen.color import display_channels, is_legacy_linear, linear_channels, srgb_to_linear
+
+        exact = tuple(srgb_to_linear(byte / 255) for byte in (0x5A, 0x3A, 0x22))
+        legacy = tuple(Color(*exact))[:3]
+
+        self.assertTrue(is_legacy_linear(legacy))
+        self.assertEqual(
+            tuple(round(channel * 255) for channel in display_channels(legacy)),
+            (0x5A, 0x3A, 0x22),
+        )
+        self.assertEqual(linear_channels(legacy), legacy)
+
+    def test_an_srgb_colour_displays_unchanged_and_lights_in_linear(self):
+        from cadgen.color import display_channels, is_legacy_linear, linear_channels, srgb, srgb_to_linear
+
+        channels = tuple(srgb("#5a3a22"))[:3]
+
+        self.assertFalse(is_legacy_linear(channels))
+        self.assertEqual(display_channels(channels), channels)
+        self.assertAlmostEqual(linear_channels(channels)[0], srgb_to_linear(0x5A / 255), places=6)
 
 
 if __name__ == "__main__":

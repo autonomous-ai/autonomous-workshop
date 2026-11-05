@@ -3,7 +3,7 @@
   "schema_version": 1,
   "skills": {
     "cad": {
-      "sha256": "64e399fcf35e1fc2af8f6b3b92f70fd2fab4414f12f56541ba132c6fd162c907",
+      "sha256": "d9931fb685079bf1a9cbc326e535d1ee289b24decbe9bc2ceb0fbcfc060af836",
       "source_commit": "23089af87fc77fee8378e839a95e75da303a66f8",
       "source_url": "https://github.com/autonomous-ai/autonomous-product-to-cad"
     },
@@ -18,7 +18,7 @@
       "source_url": "https://github.com/autonomous-ai/autonomous-product-to-cad"
     },
     "image-to-cad": {
-      "sha256": "9cd3f0b1426d58994f95a8bc383d2eec1e06f4a383e57b532225f08659e2693f",
+      "sha256": "8fea8b895fb47b0f7da37580715e58b6446cd4540f6e449c4540057dfcdb55b2",
       "source_commit": "23089af87fc77fee8378e839a95e75da303a66f8",
       "source_url": "https://github.com/autonomous-ai/autonomous-product-to-cad"
     },
@@ -43,7 +43,7 @@
       "source_url": "https://github.com/autonomous-ai/autonomous-product-to-cad"
     },
     "wiki": {
-      "sha256": "8beccb67bfa311f182ef84f0411ca10f9ed98803d7a7c73e07f0bbb38f9a9434",
+      "sha256": "277eff026120e5a3fd7f48e0e8bcbb6d30bdd66a598fc7f12c9d3827f1f2fc51",
       "source_commit": "23089af87fc77fee8378e839a95e75da303a66f8",
       "source_url": "https://github.com/autonomous-ai/autonomous-product-to-cad"
     }

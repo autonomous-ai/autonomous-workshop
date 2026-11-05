@@ -596,13 +596,17 @@ PART_PALETTE = (
 
 
 def part_colour(node, index: int):
-    """A part's own colour when the source set one, else a stable palette."""
+    """A part's own colour in linear light when the source set one, else a
+    stable palette. A Color's channels are sRGB (`cadgen.color`); a legacy
+    linear colour is kept as it is."""
+    from cadgen.color import linear_channels
+
     colour = getattr(node, "color", None)
     if colour is not None:
         with contextlib.suppress(TypeError, ValueError):
             values = tuple(float(channel) for channel in tuple(colour))[:3]
             if len(values) == 3:
-                return values
+                return linear_channels(values)
     return PART_PALETTE[index % len(PART_PALETTE)]
 
 
@@ -1432,20 +1436,25 @@ def self_check() -> int:
 
     from build123d import Color, Compound
     grey = Box(2, 2, 2)
-    grey.color = Color(0.21404114, 0.21404114, 0.21404114)
+    grey.color = Color(0.5, 0.5, 0.5)
     green = Pos(3, 0, 0) * Box(1, 1, 1)
     green.color = Color(0, 1, 0)
     nested = Compound(children=[grey, Pos(7, 0, 0) * Compound(children=[green])])
     leaf_points, leaf_faces, leaf_colours, leaf_ids = tessellate_parts(nested)
-    check("nested review leaves retain their own colours",
+    check("nested review leaves retain their own colours, in linear light",
           len(np.unique(leaf_ids)) == 2
           and any(np.allclose(c, (0, 1, 0)) for c in leaf_colours)
           and any(np.allclose(c, (0.21404114,) * 3) for c in leaf_colours))
     green_points = leaf_points[leaf_faces[leaf_ids == 1]].reshape(-1, 3)
     check("nested review leaves retain ancestor placement",
           abs(green_points[:, 0].max() - 10.5) < 1e-7)
-    check("linear middle grey encodes to sRGB middle grey",
+    check("an sRGB middle grey Color displays as sRGB middle grey",
           np.allclose(display_rgb(np.array([0.21404114])), [0.5], atol=1e-6))
+    from cadgen.color import srgb_to_linear
+    legacy = Box(1, 1, 1)
+    legacy.color = Color(*(srgb_to_linear(k / 255) for k in (0x5A, 0x3A, 0x22)))
+    check("a legacy linear Color keeps its linear channels",
+          np.allclose(part_colour(legacy, 0), tuple(legacy.color)[:3]))
     check("the sRGB linear branch preserves dark colour",
           np.allclose(display_rgb(np.array([0.001])), [0.01292]))
 

@@ -99,14 +99,16 @@ region splitting on figures.
 
 A spool the catalogue has no hex for (a sold colour whose code is
 unpublished) is shown in the photo's sampled colour through
-`cadgen.color.srgb`, never `Color("#hex")`: build123d stores a hex as given,
-the renderer reads channels as linear, and the part renders washed out. Name
-the real spool where the kit's colours are listed.
+`cadgen.color.srgb("#hex")`. Name the real spool where the kit's colours are
+listed.
 
-Colour channels are linear RGB and colour lives on leaves
-(`skills/cad/references/build123d-modeling.md`, "Colour"). A review renderer
-lights in linear light and encodes sRGB before writing pixels (raw linear
-values turn ivory brown), and it walks nested assemblies to each coloured leaf
+Colour channels are sRGB display values, which the STEP stores unchanged and
+every viewer shows as they are, and colour lives on leaves
+(`skills/cad/references/build123d-modeling.md`, "Colour"). A STEP whose
+channels were pre-converted to linear opens far too dark in every viewer
+(dark oak showed as near-black until 2026-11-05). A review renderer
+converts the sRGB channels to linear light, lights them and encodes sRGB
+before writing pixels (lit sRGB values turn ivory brown), and it walks nested assemblies to each coloured leaf
 with the accumulated ancestor placement: a module-level fallback colour or a
 dropped transform draws the wrong colour or a part at the origin while the
 whole-assembly silhouette still passes. Its regression fixtures include a

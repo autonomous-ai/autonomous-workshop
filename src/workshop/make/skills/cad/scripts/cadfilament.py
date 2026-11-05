@@ -257,10 +257,9 @@ def filament_hex(name: str, *, material: str = DEFAULT_MATERIAL) -> str:
 def filament(name: str, alpha: float = 1.0, *, material: str = DEFAULT_MATERIAL):
     """Build a build123d ``Color`` from a palette colour name.
 
-    The conversion is `cadgen.color.srgb`, so the channels come out linear and
-    the part displays as the hex the catalogue publishes. Never hand a palette
-    hex to ``Color()`` directly: those channels are linear RGB and a hex read
-    into them renders washed out.
+    The conversion is `cadgen.color.srgb`: the channels are the catalogue
+    hex's sRGB values, which the STEP stores unchanged and every viewer shows
+    as that hex.
     """
     from cadgen.color import srgb
 
@@ -268,8 +267,8 @@ def filament(name: str, alpha: float = 1.0, *, material: str = DEFAULT_MATERIAL)
 
 
 def _self_check() -> int:
-    """Round-trip every colour through the renderer's own conversion."""
-    from cadgen.color import linear_to_srgb
+    """Round-trip every colour through the channels the STEP stores."""
+    from cadgen.color import display_channels, is_legacy_linear
 
     failures: list[str] = []
 
@@ -282,11 +281,11 @@ def _self_check() -> int:
         for name, published in palette.items():
             red, green, blue, alpha = tuple(filament(name, material=stock))
             shown = "#%02X%02X%02X" % tuple(
-                round(linear_to_srgb(channel) * 255) for channel in (red, green, blue)
+                round(channel * 255) for channel in display_channels((red, green, blue))
             )
             check(
                 f"{stock}: {name} displays as {published}",
-                shown == published and alpha == 1.0,
+                shown == published and alpha == 1.0 and not is_legacy_linear((red, green, blue)),
                 shown,
             )
 

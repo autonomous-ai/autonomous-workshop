@@ -20,8 +20,14 @@ def srgb_channels(hex_color: str):
     return tuple(int(hex_color[index : index + 2], 16) / 255.0 for index in (1, 3, 5))
 
 
-def step_document(parts, *, colours=True) -> bytes:
-    """Build a STEP shaped exactly like the Open CASCADE writer's output."""
+def step_document(parts, *, colours=True, legacy_linear=False) -> bytes:
+    """Build a STEP shaped exactly like the Open CASCADE writer's output.
+
+    ``legacy_linear`` seals each colour's linear channels, as the authoring
+    helpers did before 2026-11-05.
+    """
+
+    channels_of = linear_channels if legacy_linear else srgb_channels
 
     lines = [
         "ISO-10303-21;",
@@ -68,7 +74,7 @@ def step_document(parts, *, colours=True) -> bytes:
                     "#%d = FILL_AREA_STYLE('',(#%d));" % (base + 13, base + 14),
                     "#%d = FILL_AREA_STYLE_COLOUR('',#%d);" % (base + 14, base + 15),
                     "#%d = COLOUR_RGB('',%.12f,%.12f,\n  %.12f);"
-                    % ((base + 15,) + srgb_channels(colour)),
+                    % ((base + 15,) + channels_of(colour)),
                 ]
             )
         identifier += 20

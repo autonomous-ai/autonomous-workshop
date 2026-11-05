@@ -262,7 +262,7 @@ def posed_occurrences(shape, condition, indices):
             if colour is None:
                 rgb = renderer["FALLBACK_COLOURS"][index % len(renderer["FALLBACK_COLOURS"])]
             else:
-                rgb = tuple(renderer["_linear_to_srgb"](float(c)) for c in tuple(colour)[:3])
+                rgb = renderer["_display_rgb"](tuple(colour)[:3])
             occurrences.append((points, faces, rgb))
         if not occurrences:
             raise ValueError("motion assembly has no drawable leaves")

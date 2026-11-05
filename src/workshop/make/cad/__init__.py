@@ -12,6 +12,8 @@ from workshop.make.cad.filament_names import (
 )
 from workshop.make.cad.step_color import (
     StepPartColor,
+    displayed_hex,
+    is_legacy_linear,
     linear_to_srgb_hex,
     read_step_part_colors,
 )
@@ -19,6 +21,8 @@ from workshop.make.cad.step_color import (
 __all__ = [
     "FILAMENT_COLOUR_NAMES",
     "StepPartColor",
+    "displayed_hex",
+    "is_legacy_linear",
     "linear_to_srgb_hex",
     "normalise_colour_name",
     "occurrence_colour_name",
