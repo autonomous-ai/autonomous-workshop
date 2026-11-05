@@ -347,8 +347,9 @@ def _publish_live(
         staged.context, staged.release_root, staged.release_manifest
     )
     if receipt.is_verified_draft:
+        # _await_listing is this tool's one wait, on its own injected clock.
         transition = FactoryPublicTransition(
-            ledger, FactoryAgentSession(credentials, **transports)
+            ledger, FactoryAgentSession(credentials, **transports), settle_polls=0
         )
         receipt = _await_listing(
             transition, receipt, ledger, product_id, sleeper=sleeper, clock=clock
