@@ -73,6 +73,16 @@ rule, this file only points to it; that source stays the authority.
   instead. Why: stickers peel off with handling (owner, turtle keycap).
   Decorative surfaces that are rarely touched may use Print Sheet stickers
   ([ADR 0091](../adr/0091-print-sheets-carry-colour-and-detail-on-paper.md)).
+- **A person must be able to remove every support by hand.** When designing
+  a printed model, check that fingers or pliers reach each support; never
+  leave support trapped in a closed or unreachable space. Why: on the
+  snowman cap, support above an inner X wall could not be reached, so the
+  walls were raised to the ceiling, leaving support only in open chambers
+  (owner, 2026-11-05).
+- **Prefer one piece in several colours over a separate assembly.** Parts
+  that fit in CAD can still be hard to fit together after printing, so print
+  them as one piece with a multi-colour print instead. Why: the snowman cap's
+  tip and body fitted in CAD but not in real prints (owner, 2026-11-05).
 
 ### Image models
 
