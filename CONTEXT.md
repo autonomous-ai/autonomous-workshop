@@ -466,12 +466,11 @@ _Avoid_: Contract judge, second Manager
 
 **Visible Change**:
 A Design Contract amendment that a reference image would show, so the image
-must be redrawn. Only a Visible Change waits for the owner: the unattended
-`build-a-toy` loop batches a pass's Visible Changes on one review page and
-applies every other amendment (a clearance, a print stance, hidden geometry, a
-value no image shows) without asking, recording it in the toy's ledger (issue
-#89). Inside a run, only a change that is not a Visible Change may be a
-Contract Amendment (ADR 0085).
+must be redrawn. `build-a-toy` decides a Visible Change itself, like every
+other amendment (owner rule, 2026-11-05; it replaced issue #89's owner review
+page): it redraws the images, records the decision in the toy's ledger, and
+lists the change in its report. Inside a run, only a change that is not a
+Visible Change may be a Contract Amendment (ADR 0085).
 _Avoid_: Cosmetic change, user-facing change
 
 **Unmeasurable Mesh**:

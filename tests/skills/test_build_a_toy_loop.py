@@ -91,7 +91,7 @@ def _ledger():
         "contract_contradictions": [_contradiction("cc-1", 2, "swept-volume-over-ceiling:housing", "amend-a")],
         "harness_issues": [
             {"number": 7, "title": "x", "opened_by_loop": True, "attempt": 1, "status": "merged",
-             "merge_commit": "def5678"},
+             "pr": 70, "merge_commit": "def5678"},
         ],
         "cost_units": {"cap": 100, "by_attempt": {"1": 10.5, "2": 20.25}, "unmeasured_attempts": [],
                        "total": 30.75},
@@ -108,17 +108,19 @@ class LedgerCheckTest(unittest.TestCase):
         self.assertEqual(ledger.check(legacy), [])
         self.assertEqual(ledger.next_action(legacy)["action"], "migrate")
 
-    def test_a_visible_change_cannot_skip_the_owner(self):
+    def test_a_visible_change_names_who_decided_it(self):
         data = _ledger()
         data["contract_contradictions"][0]["visible"] = True
 
-        self.assertTrue(any("owner's approval" in e for e in ledger.check(data)))
+        self.assertTrue(any("names who decided it" in e for e in ledger.check(data)))
+        data["contract_contradictions"][0]["approved"] = "agent 2026-11-05"
+        self.assertEqual(ledger.check(data), [])
 
-    def test_approval_is_the_owner_or_not_needed(self):
+    def test_approval_is_the_agent_the_owner_or_not_needed(self):
         data = _ledger()
         data["contract_contradictions"][0]["approved"] = "yes"
 
-        self.assertTrue(any("`owner <date>`" in e for e in ledger.check(data)))
+        self.assertTrue(any("`agent <date>` or `owner <date>`" in e for e in ledger.check(data)))
 
     def test_an_amendment_is_approved_before_it_is_applied(self):
         data = _ledger()
@@ -208,6 +210,12 @@ class LedgerCheckTest(unittest.TestCase):
         data["harness_issues"][0]["merge_commit"] = None
 
         self.assertTrue(any("merge_commit" in e for e in ledger.check(data)))
+
+    def test_a_harness_fix_names_its_pr(self):
+        data = _ledger()
+        data["harness_issues"][0].update(status="pr-open", merge_commit=None, pr=None)
+
+        self.assertTrue(any("without the `pr`" in e for e in ledger.check(data)))
 
     def test_the_loop_never_implements_an_issue_it_did_not_open(self):
         data = _ledger()
@@ -314,11 +322,23 @@ class StopConditionTest(unittest.TestCase):
         self.assertTrue(any("#8 meets a merge conflict" in r for r in reasons))
         self.assertTrue(any("#9 fails tests" in r for r in reasons))
 
-    def test_a_visible_change_waits_for_the_owner(self):
+    def test_a_visible_change_never_waits_for_the_owner(self):
+        # Owner rule: the build agent answers every contract need itself.
         data = _ledger()
         data["contract_contradictions"][0].update(visible=True, approved=None, applied=False)
 
-        self.assertTrue(any("awaits the owner's approval" in r for r in ledger.stop_conditions(data)))
+        self.assertEqual(ledger.stop_conditions(data), [])
+
+    def test_a_harness_fix_pr_waits_for_the_owner_to_merge(self):
+        data = _ledger()
+        data["loop"].update(state="fixing", wish_id="wish-2")
+        data["harness_issues"].append(
+            {"number": 12, "title": "v", "opened_by_loop": True, "attempt": 2, "status": "pr-open",
+             "pr": 300, "merge_commit": None})
+
+        action = ledger.next_action(data)
+        self.assertEqual(action["action"], "ask-owner")
+        self.assertTrue(any("#12's fix PR 300 awaits the owner's merge" in r for r in action["why"]))
 
 
 class NextActionTest(unittest.TestCase):
@@ -378,10 +398,10 @@ class NextActionTest(unittest.TestCase):
         self.assertEqual(action["action"], "fix")
         self.assertEqual(action["pending"], ["cc-1: apply amend-a and re-audit", "#11: implementing"])
 
-    def test_an_approved_visible_change_is_applied_next(self):
+    def test_a_decided_visible_change_is_applied_next(self):
         data = _ledger()
         data["loop"].update(state="fixing", wish_id="wish-2")
-        data["contract_contradictions"][0].update(visible=True, approved="owner 2026-10-04", applied=False)
+        data["contract_contradictions"][0].update(visible=True, approved="agent 2026-11-05", applied=False)
 
         self.assertEqual(ledger.next_action(data)["pending"], ["cc-1: apply amend-a and re-audit"])
 

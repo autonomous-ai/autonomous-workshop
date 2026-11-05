@@ -327,7 +327,7 @@ read used to protect the shape:
 | Seeded build: every Component whose identity differs from the approved one, and the final assembly | the Approved Proof sealed with the run | a visible seed deviation (decision 2) |
 | `workshop fix` of a seeded toy | the Approved Proof in the toy's archive; or a new one, when the fix was approved in design | a fix changed the shape without a new approval: refused at Make acceptance |
 | DETECT (`build-a-toy`) | the Approved Proof the build was seeded from | a `shape:<geometry>` finding |
-| Contract amendment (design-side or a `build-a-toy` root amendment) | the previous Approved Proof | a visible change: the critic judges it and the owner approves it, giving a new `APPROVAL.json`. Within tolerance it needs no owner, matching "only visible changes wait for the owner" |
+| Contract amendment (design-side or a `build-a-toy` root amendment) | the previous Approved Proof | a visible change: the critic judges it and the owner approves it, giving a new `APPROVAL.json`. Within tolerance it needs no owner. *Amended 2026-11-05 for `build-a-toy` root amendments: see the last section* |
 | An ADR 0085 in-run amendment | the Approved Proof | the change is visible, so ADR 0085 refuses it, as it already refuses a change a reference shows |
 
 - **Validation on K4 (2026-11-02, `src/workshop/make/proof_diff.py`).**
@@ -651,3 +651,18 @@ pass found four more defects (B12, B13, B15/B10 and B16).
    DETECT passes an `agree` row and a `differences` row whose open line the
    owner approved. Any other row, or a missing one, is a `requirement:<id>`
    finding.
+
+## Amendment: build-a-toy decides visible root amendments (2026-11-05)
+
+The owner ruled that the build agent answers every contract need itself,
+including one whose fix changes what a reference shows, because only the
+agent that drives the build knows what the contract meant. For a
+`build-a-toy` root amendment over `proof_diff` tolerance, the Proof Critic
+still judges the rebuilt Proof, but `build-a-toy` decides the change and
+re-seals the kept Proof itself with `seal_proof.py seal --approved-by
+build-a-toy`. `approved_by` names who decided; it never names the owner for
+a decision the owner did not make. The host check is unchanged: it binds
+whatever `APPROVAL.json` the run was seeded from. Design-side amendments in
+`design-a-toy` still go to the owner at Stage 4, and a visible seed
+deviation is still shown to the owner before publication, which needs their
+OK anyway.
