@@ -19,6 +19,7 @@ Every run this skill starts, whether `wish` or `fix`, uses:
 
 | Flag | Value | Why |
 |---|---|---|
+| `--agent` | `claude`, on every `wish` and `fix` | The CLI defaults to Codex, whose sandbox failed to start on the owner's build machine, and the agent is frozen for the run, so a wrong one costs a relaunch |
 | `--contract` | always | Seals the Design Contract into the run (ADR 0072). The host refuses to complete the run unless its review carries every one of the contract's requirements, in order, each visibly matching — **conformance for requirements is established by the run itself, not by this skill re-deriving coverage from a Manager-written list** |
 | `--no-publish` | always, round 0 included | Nothing reaches Factory until it conforms |
 | `--turn-minutes` | `360` | The maximum. The clock is not the limit |
@@ -63,7 +64,7 @@ Choose `<title>`, the toy's public name, by
 Build the command:
 
 ```bash
-uv run workshop wish --contract build-a-toy/r00/CONTRACT.md --inventor <inventor> \
+uv run workshop wish --agent claude --contract build-a-toy/r00/CONTRACT.md --inventor <inventor> \
   --ref <contract-dir>/ref-01-<slug>.png --ref ... \
   [--guide <contract-dir>/guide-01-<slug>.png --guide ...] \
   [--print-art <contract-dir>/print-01-<slug>.png --print-art ...] \
@@ -108,6 +109,12 @@ Poll `uv run workshop status <wish-id> --json`. Its `status` is `active`,
   adding `--check-motion true` whenever the run was started with it. This changes only that
   reference's camera: never edit the image, a requirement or the contract
   file to answer it. Record the old and new camera and the cue in the ledger.
+- `waiting` with a `need` quoting a **Contract Contradiction** (two
+  statements that cannot both hold): answer it yourself, whether or not the
+  fix changes what a reference shows; do not ask the person which option to
+  take (owner rule). Fix it at the root as "Fixing a Contract Contradiction
+  at the root" says, record the decision in the working notes and ledger,
+  answer or relaunch the run, and list the decision in the report.
 - `waiting` with a `need` naming a **Tree defect** (schema 7 kits, ADR 0092
   decision 10): Make found the sealed Assembly Tree itself inconsistent: a
   Print Piece or Bought Part it cannot account for, a leaf in two steps, a
@@ -215,7 +222,7 @@ workspace**, not from `toys/`. The workspace is smaller than the published
 archive, and it stays within `fix`'s 128 MiB source limit.
 
 ```bash
-uv run workshop fix "<previous-run-workspace>" --prompt-file build-a-toy/r<NN>/brief.md \
+uv run workshop fix "<previous-run-workspace>" --agent claude --prompt-file build-a-toy/r<NN>/brief.md \
   --contract <contract-dir>/CONTRACT.md \
   --ref <contract-dir>/ref-01-<slug>.png --ref ... \
   [--guide <contract-dir>/guide-01-<slug>.png --guide ...] \
@@ -316,9 +323,10 @@ owner is asked once, with the diagnosis in hand. Write every decision into the l
 Workshop checkout with `uv run python`; none assumes a platform or a home
 directory.
 
-Starting the loop is the person's approval of every Step 2 command and Step 6
-brief it builds with the settled run parameters. What still waits for the
-person is listed under "When the loop stops and asks".
+One owner OK per toy starts its unattended loop, and it covers every
+`workshop wish` and `workshop fix` launch in it: every Step 2 command and
+Step 6 brief the loop builds with the settled run parameters. What still
+waits for the person is listed under "When the loop stops and asks".
 
 ### One loop pass
 
@@ -402,11 +410,12 @@ one of these: fold it as above.) Fix the contract:
    Rebuild the Proof in `<contract-dir>/proof` from the amended contract,
    then run `proof_diff` against the last Approved Proof's `approved/`.
    Within tolerance, re-seal with `seal_proof.py seal` without waiting for
-   the owner. Over tolerance, ask the Proof Critic again, show the owner the
-   change as a visible one, and re-seal only on their approval. An in-run
+   the owner. Over tolerance the change is visible: ask the Proof Critic
+   again, decide it yourself, and re-seal with `--approved-by build-a-toy`,
+   never the owner's name (ADR 0096's 2026-11-05 amendment). An in-run
    (ADR 0085) amendment folds back as below; `proof_diff` refuses one that
    changed the shape.
-5. **Apply it, or batch it for the owner**, by the approval rule below.
+5. **Apply it** by the decision rule below.
 6. **Resume the stopped run with it when it is invisible.** Once every
    Contract Contradiction of the attempt is applied, invisible (`visible:
    false`) and nothing else is pending, `ledger.py next` prints
@@ -462,39 +471,44 @@ in-run amendment is a `need` like any other and is diagnosed by class.
 An applied amendment may also name Guide Image panels it makes wrong
 (`guides_wrong` in its review, printed as "Guide Image to redraw", ADR 0089).
 They never stopped the run. Before the next attempt, redraw each named panel
-with `design-a-toy` from the folded contract, and show the owner the changed
-Guide Image with the next images they approve; the run is not relaunched for
-it alone.
+with `design-a-toy` from the folded contract, and list the changed Guide
+Image in the report; the run is not relaunched for it alone.
 
-### Approval: only visible changes wait for the owner
+### Decisions: the loop answers every contract need itself
+
+The owner's rule: only the agent that drives the build knows what the
+contract meant, so the loop decides every Contract Contradiction fix itself,
+visible or not, and never stops to ask which option to take.
 
 A change is **visible** when a reference image would have to be redrawn
-because of it. A visible change waits for the owner: all of a loop pass's
-visible changes go on **one** review page,
-`toys-spec/<toy>/review-amend-<x>/index.html` in the main checkout, laid out
-as `design-a-toy` Stage 4 lays out its review (old and new image side by side,
-one plain line each). The loop then stops with `loop.state: awaiting-owner`.
-On approval, set the entry's `approved` to `owner <date>`, apply it, and set
-`applied: true`.
+because of it. Redraw the images with `design-a-toy` Stage 3b in the same
+pass, set the entry's `approved` to `agent <date>`, apply it, and set
+`applied: true`. Afterwards, put each visible change in the report: the
+contradiction, the decision, and the old and new image paths.
 
 An **invisible** change (a clearance, a print stance, hidden geometry, a value
-the images do not show) is applied without asking: set `approved` to
-`not-needed`, apply it, and set `applied: true`.
+the images do not show) is applied the same way with `approved` set to
+`not-needed`.
 
-### Harness defects: fixed and merged automatically
+`owner <date>` records a change the owner decided before the loop.
+
+### Harness defects: fixed through a PR the owner merges
 
 1. Open the issue with `gh issue create` and record it in `harness_issues`
-   with `opened_by_loop: true`. The loop implements and merges **only** issues
-   it opened itself.
+   with `opened_by_loop: true`. The loop implements **only** issues it opened
+   itself, and merges none.
 2. Implement it in a subagent, in a fresh worktree from `origin/main`
    (`status: implementing`), following the repository's `AGENTS.md`.
 3. Run the full test suite:
    `PYTHONPATH=src uv run python -m unittest discover -s tests -t . -p 'test_*.py'`.
-4. `git fetch origin && git rebase origin/main`, run the suite again, and
-   push the result to `main` as a fast-forward. Never force-push. Record
-   `status: merged` and the `merge_commit`.
-5. A conflict with someone else's change on `main` (`status: conflict`), or a
-   test failure it cannot fix (`status: failed`), stops the loop.
+4. `git fetch origin && git rebase origin/main`, run the suite again, push
+   the branch, and open a PR with `gh pr create`. Never push to `main` and
+   never force-push. Record `status: pr-open` and the `pr`; `ledger.py next`
+   then prints `ask-owner`, because merging needs the owner's OK.
+5. When the owner has merged it, record `status: merged` and the
+   `merge_commit`. A conflict with someone else's change on `main`
+   (`status: conflict`), or a test failure it cannot fix (`status: failed`),
+   also stops the loop.
 
 The next attempt then runs from a fresh worktree at the new `origin/main`.
 
@@ -534,13 +548,13 @@ review to unrelated sheet-review gates). Never refresh a running run from
   fewer repeated print defects than the attempt before it;
 - the cumulative cost passed `cost_units.cap`, 100 cost units for the toy
   unless the owner set another cap;
-- a harness fix fails tests the loop cannot fix, or meets a merge conflict;
-- a visible change awaits approval.
+- a harness fix's PR awaits the owner's merge;
+- a harness fix fails tests the loop cannot fix, or meets a merge conflict.
 
 Set `loop.state: awaiting-owner` with those reasons in `loop.awaiting`, and
 tell the owner in a few plain lines, with the review page's link when there is
-one. Record the owner's answer where it clears its reason: `approved` on the
-visible change, `recurrence_acknowledged` on the contradiction that came back,
+one. Record the owner's answer where it clears its reason:
+`recurrence_acknowledged` on the contradiction that came back,
 a new `cost_units.cap`, `loop.no_progress_cleared_through`, or the harness
 issue's new status. Then clear `loop.awaiting` and run `ledger.py next`
 again.
@@ -552,8 +566,8 @@ Done when, for each pass, the ledger shows:
   amendment, its re-audit and its `design-a-toy` check;
 - every applied in-run Contract Amendment in `in_run_amendments`, folded
   into `CONTRACT.md`;
-- every harness issue the loop opened in `harness_issues`, merged or stopping
-  the loop;
+- every harness issue the loop opened in `harness_issues`, with its PR,
+  merged by the owner or stopping the loop;
 - the attempt's cost in `cost_units`;
 - `ledger.py check` valid, and `ledger.py next` printing either the next
   attempt's `launch` or `ask-owner` with its reasons.
@@ -568,5 +582,7 @@ out of budget, with:
 
 - each round's wish id, toy directory, and finding ids;
 - which findings were **unverified** rather than failed;
+- every contract need the build answered, visible ones with their old and
+  new image paths;
 - what was published, if anything, and how it was confirmed;
 - the Wiki Rules Step 8 pushed upstream, with the commit, or "none".

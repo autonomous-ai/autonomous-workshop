@@ -36,7 +36,7 @@ CLASSES = (
     "budget-progressing",
     "other",
 )
-ISSUE_STATES = ("open", "implementing", "merged", "failed", "conflict", "abandoned")
+ISSUE_STATES = ("open", "implementing", "pr-open", "merged", "failed", "conflict", "abandoned")
 CHECK_STATES = ("proposed", "open", "merged")
 RESUME_STATES = (None, "resumed", "refused")
 DEFAULT_COST_CAP = 100.0
@@ -135,9 +135,9 @@ def check(ledger: dict) -> list[str]:
             errors.append(f"{where}.visible must be true or false")
         approved = item.get("approved")
         if item.get("visible") is True and approved == "not-needed":
-            errors.append(f"{where} is a visible change, so it needs the owner's approval")
-        if approved is not None and approved != "not-needed" and not str(approved).startswith("owner "):
-            errors.append(f"{where}.approved must be null, `not-needed` or `owner <date>`")
+            errors.append(f"{where} is a visible change, so it names who decided it (`agent <date>` or `owner <date>`)")
+        if approved is not None and approved != "not-needed" and not str(approved).startswith(("owner ", "agent ")):
+            errors.append(f"{where}.approved must be null, `not-needed`, `agent <date>` or `owner <date>`")
         if not isinstance(item.get("applied"), bool):
             errors.append(f"{where}.applied must be true or false")
         if item.get("applied") is True and approved is None:
@@ -165,6 +165,8 @@ def check(ledger: dict) -> list[str]:
             errors.append(f"{where}.status {issue.get('status')!r} is not one of {', '.join(ISSUE_STATES)}")
         if issue.get("status") == "merged" and not issue.get("merge_commit"):
             errors.append(f"{where} is merged without a merge_commit")
+        if issue.get("status") in ("pr-open", "merged") and issue.get("opened_by_loop") and not issue.get("pr"):
+            errors.append(f"{where} is {issue.get('status')} without the `pr` that carries the fix")
         if issue.get("status") == "implementing" and issue.get("opened_by_loop") is False:
             errors.append(f"{where}: the loop implements only issues it opened")
 
@@ -367,10 +369,8 @@ def stop_conditions(ledger: dict) -> list[str]:
             reasons.append(f"harness issue #{issue['number']} fails tests the loop cannot fix")
         elif issue.get("status") == "conflict":
             reasons.append(f"harness issue #{issue['number']} meets a merge conflict on main")
-
-    for item in ledger.get("contract_contradictions") or []:
-        if item.get("visible") is True and item.get("approved") is None:
-            reasons.append(f"visible change {item.get('amendment')} ({item['id']}) awaits the owner's approval")
+        elif issue.get("status") == "pr-open":
+            reasons.append(f"harness issue #{issue['number']}'s fix PR {issue.get('pr')} awaits the owner's merge")
     return reasons
 
 

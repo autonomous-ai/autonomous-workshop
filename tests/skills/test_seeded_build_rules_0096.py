@@ -35,7 +35,9 @@ class SeededBuildRulesTest(unittest.TestCase):
         text = _squash(BUILD)
         self.assertIn("rebuild and re-seal the kept Proof", text)
         self.assertIn("Within tolerance, re-seal with `seal_proof.py seal` without waiting for the owner", text)
-        self.assertIn("re-seal only on their approval", text)
+        # Owner rule (2026-11-05): build-a-toy decides a visible root amendment itself.
+        self.assertIn("decide it yourself, and re-seal with `--approved-by build-a-toy`", text)
+        self.assertNotIn("re-seal only on their approval", text)
 
     def test_seed_deviations_are_shown_before_publishing(self):
         self.assertIn("show the owner every `seed_deviations` entry", _squash(BUILD))

@@ -58,7 +58,7 @@ One entry per stop of an attempt, in order.
 | `rows` | at least two contract statements, verbatim |
 | `amendment` | the `contract_versions` key that fixes it |
 | `visible` | whether a reference image must be redrawn |
-| `approved` | null until approved: `owner <date>` for a visible change (or for one the owner approved before the loop), `not-needed` for an invisible one |
+| `approved` | null until decided: `agent <date>` for a visible change the loop decided, `owner <date>` for one the owner decided before the loop, `not-needed` for an invisible one |
 | `applied` | true once the amendment is in `CONTRACT.md` and re-audited; it needs `approved` |
 | `reaudit` | the whole-contract Stage 3a/3b/3c/3d notes; required once applied |
 | `recurrence_acknowledged` | `owner <date>` when the owner let a contradiction that came back be fixed again |
@@ -87,9 +87,10 @@ entries; set `contract_version` to the version that holds the fold.
 | Field | What it holds |
 |---|---|
 | `number`, `title` | the GitHub issue |
-| `opened_by_loop` | the loop implements and merges only issues it opened |
+| `opened_by_loop` | the loop implements only issues it opened, and merges none |
 | `attempt` | the attempt that exposed it, or null |
-| `status` | `open`, `implementing`, `merged`, `failed`, `conflict`, or `abandoned` when the owner drops it |
+| `status` | `open`, `implementing`, `pr-open` (the fix PR awaits the owner's merge), `merged`, `failed`, `conflict`, or `abandoned` when the owner drops it |
+| `pr` | the fix PR's number or URL; required for a loop-opened issue once `pr-open` or `merged` |
 | `merge_commit` | required when merged |
 
 ### `cost_units`

@@ -68,10 +68,11 @@ rule, this file only points to it; that source stays the authority.
 - **Measure the concept into the contract before redrawing references.**
   References AI-edited from Proof renders inherit the contract's
   simplifications, so a concept-faithful look must reach the contract first.
-- **No stickers on printed parts**; engrave or inlay instead. Why: stickers
-  fall off.
-- **One fire per room** in a scene: no stove beside a fireplace; a kitchen
-  cooks on the open hearth.
+- **No stickers on surfaces that are often touched or rubbed** (a keycap
+  face, a handle, a sliding or gripped part): engrave, emboss or inlay there
+  instead. Why: stickers peel off with handling (owner, turtle keycap).
+  Decorative surfaces that are rarely touched may use Print Sheet stickers
+  ([ADR 0091](../adr/0091-print-sheets-carry-colour-and-detail-on-paper.md)).
 
 ### Image models
 
@@ -122,12 +123,12 @@ estimate it:
   brief naming only what changes; never a fresh `workshop wish`. Quote the
   owner's exact words about the flow in any handoff. Why: a fresh wish
   rebuilt all ten parts of one toy for ~40 cost units.
-- **Answer run needs yourself.** When a run stops on a contract need, decide
-  the fix, record it in the notes and ledger, answer the run, and report the
-  decision afterwards; don't bring the owner options. Why: only the agent
-  that drives the build knows what the contract meant. A fix that changes
-  what a reference shows still goes through `build-a-toy`'s visible-change
-  review.
+- **Answer run needs yourself**, including a fix that changes what a
+  reference shows. Decide the fix, record it in the notes and ledger, answer
+  the run, and report the decision afterwards; don't bring the owner
+  options. Why: only the agent that drives the build knows what the contract
+  meant. See `build-a-toy` "Decisions: the loop answers every contract need
+  itself".
 - **Compare runs by repeated print defects**, not the failure rate (see
   **Repeated Print Defect** in [`CONTEXT.md`](../../CONTEXT.md)). Why:
   repeats show blind repair, which burns tokens.
@@ -143,9 +144,12 @@ estimate it:
 
 Wait for the owner's explicit OK before any of these:
 
-- a `workshop wish` or `workshop fix` launch (show the exact command);
+- a `workshop wish` or `workshop fix` launch (show the exact command). One
+  OK per toy for its unattended `build-a-toy` loop covers every launch in
+  that loop;
 - a publish, or any change to a live listing, including a rename;
-- merging a PR or pushing to `main`; never force-push.
+- merging a PR. Harness fixes, including those made during a build loop, go
+  through a PR; never push to `main` and never force-push.
 
 ## Repository and reports
 
