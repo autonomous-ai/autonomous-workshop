@@ -1,0 +1,162 @@
+# Owner rules
+
+Durable rules and lessons the owner has set for work on autonomous.ai/toys.
+Each rule says what to do and why. Where a skill, ADR or doc already holds a
+rule, this file only points to it; that source stays the authority.
+
+## Routing
+
+- **Look for an open-source base first.** Before building any toy from
+  scratch, search for a design to remix whose licence allows selling (CC0,
+  CC BY, CC BY-SA, MIT; not NC, ND or platform-exclusive). Why: a ready base
+  saves the whole design.
+- **Static or remixed toys go through `autonomous-product-to-cad`.** Build
+  them in that sibling repo, pack them with its `toy-archive` skill, and
+  publish through this repo ([`docs/PUBLISH_DIRECT.md`](../PUBLISH_DIRECT.md)).
+  Only motion toys built from scratch go through Workshop (`design-a-toy`,
+  then `build-a-toy`). Why: Workshop's heavy pipeline only pays off for
+  mechanisms.
+
+## Choosing ideas
+
+- **Skip marketplace commodities.** Before a concept round or `design-a-toy`,
+  check Amazon, Etsy, AliExpress, Temu and Shopee for the same type and a
+  near-identical design. If it is already sold, drop it. Why: buyers get it
+  cheaper there.
+- **Sell like the bestsellers.** Compare each idea with Moonlit Atlas, Trotter,
+  Windup Warrior and Flexi Axolotl: a beloved, recognisable subject, dense
+  detail, many colours, with the mechanism serving a reveal. Why: basic or
+  abstract mechanism toys were rejected; desirable subjects sell.
+- **Function first.** A new model starts from a concrete everyday job (what
+  it holds or does, at real-use sizes), then gets a character that makes it
+  unique, like Pelican Catchall. The function may be common; the design may
+  not be. Why: pure decoration doesn't sell.
+- **Cost cap: under US$20 per unit**, counting print and bought parts (since
+  2026-10-29). Estimate with [Pricing](#pricing).
+- **Themes are open.** Mix aesthetics (synthwave, vaporwave, art deco…) and
+  any subject, not only animals, unless the owner names one.
+- **Easter eggs follow the scene.** A hidden story reference comes from a
+  moment in that story, preferably in the same place, and is staged
+  mid-moment (dropped, thrown, half-done). In the report, name the source
+  moment in one line. Why: the owner may not know the story; a lone prop on
+  a shelf reads as decoration.
+- **No trademarks.** Never use a protected name, logo or official colour set
+  (falling-block designs never say Tetris). Why: trade-dress risk.
+- A daily funnel brief for autonomous.ai/toys exists and is the real per-toy
+  demand signal; the owner pastes its links when needed.
+
+## Design
+
+- **Reference images agree with the contract**, in proportions and landmark
+  positions as well as counts. When they disagree and the image looks better,
+  amend the contract to match the image. See `design-a-toy` Stage 3b. Why:
+  the owner prefers the concept art's look over a blocky contract.
+- **The assembly image follows the part images.** Whenever a component image
+  or a visible contract feature changes, edit the assembly image in the same
+  pass, with the new part images as references, and re-measure it. Why: the
+  blind review judges the whole build against it.
+- **Concept Checklist traits are required by default.** See `design-a-toy`
+  Stage 1 and **Trait at risk** in Stage 3a; ask only with a pictured
+  trade-off.
+- **Draw objects at true scale.** Headphones, phones and pens in a concept
+  image are drawn at real size, with real dimensions stated. Image models
+  pull old proportions back from `--ref` inputs; check every image and redraw
+  without `--ref` if needed.
+- **Judge faces feature by feature.** A whole-trait "agree" missed head tilt,
+  eyes, nose and paws the owner saw. Give judges measured close-ups of each
+  facial feature.
+- **Measure the concept into the contract before redrawing references.**
+  References AI-edited from Proof renders inherit the contract's
+  simplifications, so a concept-faithful look must reach the contract first.
+- **No stickers on printed parts**; engrave or inlay instead. Why: stickers
+  fall off.
+- **One fire per room** in a scene: no stove beside a fireplace; a kitchen
+  cooks on the open hearth.
+
+### Image models
+
+Model choice per edit is in
+[`design-a-toy` LESSONS-REFERENCE-IMAGES.md](../../.claude/skills/design-a-toy/LESSONS-REFERENCE-IMAGES.md)
+(sunburst keeps the source best; gpt-5.4 follows spatial instructions best;
+run both and pick). Facts it lacks:
+
+- `openai/gpt-image-2.5-sunburst` is image-only: call `POST {base}/images`
+  with `input_references`; chat/completions returns 404, and `/images/edits`
+  or `/images/generations` ignore the input image.
+- When sunburst's safety filter refuses a neutral prompt, run the same prompt
+  on gpt-5.4 instead of rewording.
+- To show something inside a fold, ask for a cutaway ("sliced in half down
+  its middle, look at the cut face"); gemini-3-pro drew the best one.
+- A thin part seen edge-on gets drawn as a bent pipe; use a three-quarter
+  view or let the contract's numbers carry it.
+
+## Naming
+
+Every public toy name follows [`docs/TOY_NAMING.md`](../TOY_NAMING.md). Run
+its checklist on every name you propose or pass on (wish name line,
+`--title`, concept pages).
+
+## Pricing
+
+Factory sets the listing price; Workshop sends none
+([`docs/PUBLISH_SEALED_PRODUCT.md`](../PUBLISH_SEALED_PRODUCT.md)). To
+estimate it:
+
+- price = ceil to the dollar of ($0.052 per gram × measured mass + $15 ops
+  fee + extra materials); no print-hours term, 0% margin (since 2026-11-02).
+- Mass is measured by OrcaSlicer with one fixed preset for every design:
+  Bambu A1, "0.20mm Standard", 15% crosshatch infill, 2 walls, tree support
+  past 45°, Bambu PLA Basic, auto-orient and arrange. Support counts.
+- The contract's infill and material are never read. So cutting support and
+  solid volume lowers price; lowering contract infill does not.
+- Source: `autonomous-ai/panda-social-backend`, `models/slice_job.go` and
+  `internal/slicer/orca.go`.
+
+## Running builds
+
+- **Pass `--agent claude`** on every `workshop wish` and `workshop fix`, and
+  show it in the command the owner approves. Why: the CLI defaults to Codex,
+  whose bwrap sandbox failed to start on the owner's build machine, and the
+  agent is frozen per run.
+- **"workshop fix" means `workshop fix`** on the last completed build, with a
+  brief naming only what changes; never a fresh `workshop wish`. Quote the
+  owner's exact words about the flow in any handoff. Why: a fresh wish
+  rebuilt all ten parts of one toy for ~40 cost units.
+- **Answer run needs yourself.** When a run stops on a contract need, decide
+  the fix, record it in the notes and ledger, answer the run, and report the
+  decision afterwards; don't bring the owner options. Why: only the agent
+  that drives the build knows what the contract meant. A fix that changes
+  what a reference shows still goes through `build-a-toy`'s visible-change
+  review.
+- **Compare runs by repeated print defects**, not the failure rate (see
+  **Repeated Print Defect** in [`CONTEXT.md`](../../CONTEXT.md)). Why:
+  repeats show blind repair, which burns tokens.
+- **Rank token levers by cost**, not raw count: cached input, fresh input and
+  output are priced differently (cost units in
+  [`build-a-toy` LEDGER.md](../../.claude/skills/build-a-toy/LEDGER.md)).
+  Why: cache-hit polling was 4% of cost despite 11M tokens.
+- **Judge a fix run by new rounds and the stage reached**, not by
+  `tally.py`'s lock count, which counts Components carried from the source
+  run as locked.
+
+## Approvals
+
+Wait for the owner's explicit OK before any of these:
+
+- a `workshop wish` or `workshop fix` launch (show the exact command);
+- a publish, or any change to a live listing, including a rename;
+- merging a PR or pushing to `main`; never force-push.
+
+## Repository and reports
+
+- **Never commit new files under `toys/`, `toys-spec/` or `inbox/`**; see
+  `AGENTS.md` working rules. Say they were synced to the main checkout.
+- **Keep questions and reports short**: only what the decision needs. The
+  owner reviews pictures, not contracts; ask about how a toy looks and what
+  it does, never about rows or millimetres.
+- **Give each file as a full absolute path**, one per file, never a folder
+  plus bare names. Why: the owner clicks them.
+- **Embed every image in an HTML page for the owner** as base64 (~900px
+  WebP). Why: the session runs on a server and the owner opens pages on
+  their own machine. Concept pages follow `brainstorm-concepts` (Vietnamese
+  page, standalone copy, a pick only marks it chosen).

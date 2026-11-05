@@ -431,6 +431,11 @@ authority.
 
 ## Agent skills
 
+### Owner rules
+
+Read `docs/agents/owner-rules.md` before choosing, designing, pricing,
+building or publishing a toy, or reporting to the owner.
+
 ### Issue tracker
 
 Issues live in GitHub Issues for `autonomous-ai/autonomous-workshop`, via the
