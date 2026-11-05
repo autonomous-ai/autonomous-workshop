@@ -31,8 +31,8 @@ rule, this file only points to it; that source stays the authority.
   it holds or does, at real-use sizes), then gets a character that makes it
   unique, like Pelican Catchall. The function may be common; the design may
   not be. Why: pure decoration doesn't sell.
-- **Cost cap: under US$20 per unit**, counting print and bought parts (since
-  2026-10-29). Estimate with [Pricing](#pricing).
+- **Cost cap: under US$25 per unit**, counting print and bought parts (owner,
+  2026-11-05). Estimate with [Pricing](#pricing).
 - **Themes are open.** Mix aesthetics (synthwave, vaporwave, art deco…) and
   any subject, not only animals, unless the owner names one.
 - **Easter eggs follow the scene.** A hidden story reference comes from a
