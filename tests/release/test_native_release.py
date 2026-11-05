@@ -308,6 +308,29 @@ class NativeReleaseTest(unittest.TestCase):
     def test_make_output_release_without_notes_keeps_its_exact_fields(self):
         release = prepare_make_output_release(self.run_root, self.made, design_notes=None)
         self.assertNotIn("design_notes", release.product)
+        self.assertNotIn("print_overrides", release.product)
+
+    def test_make_output_release_seals_the_hosts_print_overrides(self):
+        release = prepare_make_output_release(
+            self.run_root, self.made, print_overrides={"infill_percent": 8}
+        )
+        self.assertEqual(release.product["print_overrides"], {"infill_percent": 8})
+        release.validate_package_tree(self.run_root, self.made, None)
+        self.assertEqual(read_native_release(self.run_root), release)
+
+    def test_make_output_release_refuses_malformed_print_overrides(self):
+        for overrides in (
+            {},
+            {"wall_loops": 3},
+            {"infill_percent": 4},
+            {"infill_percent": 101},
+            {"infill_percent": 8.5},
+            {"infill_percent": "8"},
+            {"infill_percent": True},
+            [8],
+        ):
+            with self.subTest(overrides=overrides), self.assertRaises(ContractError):
+                prepare_make_output_release(self.run_root, self.made, print_overrides=overrides)
 
     def test_make_output_release_refuses_malformed_design_notes(self):
         for notes in (

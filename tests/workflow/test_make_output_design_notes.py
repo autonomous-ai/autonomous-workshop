@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 
 from workshop.errors import StateConflict
-from workshop.workflow.native_run import _make_output_design_notes
+from workshop.workflow.native_run import _make_output_design_notes, _make_output_print_overrides
 
 ASSEMBLY = "Bought Parts and assembly"
 PRINT = "Print stances and details"
@@ -80,6 +80,35 @@ class MakeOutputDesignNotesTest(unittest.TestCase):
         self.seal(_contract((PRINT, RULES)))
         with self.assertRaisesRegex(StateConflict, "differs from the run binding"):
             _make_output_design_notes(self.run_root, "0" * 64, [])
+
+
+class MakeOutputPrintOverridesTest(unittest.TestCase):
+    """The infill Factory measures, prices and prints the toy at comes from
+    the same sealed contract and owner amendments."""
+
+    setUp = MakeOutputDesignNotesTest.setUp
+    seal = MakeOutputDesignNotesTest.seal
+
+    def test_the_sealed_infill_is_the_override(self):
+        digest = self.seal(_contract((PRINT, RULES)))
+        self.assertEqual(
+            _make_output_print_overrides(self.run_root, digest, []), {"infill_percent": 8}
+        )
+
+    def test_no_infill_or_no_contract_is_no_override(self):
+        digest = self.seal(_contract((PRINT, SENTENCE)))
+        self.assertIsNone(_make_output_print_overrides(self.run_root, digest, []))
+        digest = self.seal(None)
+        self.assertIsNone(_make_output_print_overrides(self.run_root, digest, []))
+
+    def test_an_owner_amendment_of_the_infill_is_the_infill_in_effect(self):
+        digest = self.seal(_contract((PRINT, RULES)))
+        owners = [{"changes": [
+            {"row": "prose:" + PRINT, "scope": "prose", "from": RULES, "to": RULES.replace("8%", "10%")},
+        ]}]
+        self.assertEqual(
+            _make_output_print_overrides(self.run_root, digest, owners), {"infill_percent": 10}
+        )
 
 
 if __name__ == "__main__":
