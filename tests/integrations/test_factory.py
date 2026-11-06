@@ -18,6 +18,7 @@ from workshop.errors import (
     StateConflict,
 )
 from tests.make.step_documents import step_solid_document
+import workshop.integrations.factory as factory_module
 from workshop.integrations.factory import (
     _project_notes,
     FACTORY_COVER_RENDER_PATH,
@@ -2261,6 +2262,111 @@ class FactoryReleaseTest(unittest.TestCase):
                     "succeeded",
                 )
 
+
+    # Factory weighs every solid of the one STEP that crosses. These pin
+    # that it carries printed bodies only, alone, and that bought hardware
+    # is billed as extra materials instead.
+
+    def reseal_made(self, files, product=None):
+        product_dir = self.root / "resealed-product"
+        product_dir.mkdir()
+        facts = dict(self.made.product if product is None else product)
+        (product_dir / "product.json").write_bytes(canonical_json(facts) + b"\n")
+        for path, content in files.items():
+            target = product_dir / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(content)
+        self.made = Made.from_root(product_dir, facts)
+        self.context = ReleaseContext(self.made)
+        page_path = self.release / "product.json"
+        page = json.loads(page_path.read_text(encoding="utf-8"))
+        page["product_artifact_sha256"] = self.made.artifact_sha256
+        page_path.write_bytes(canonical_json(page))
+        self.manifest = build_artifact_manifest(self.release, created_at="content-addressed")
+
+    def assert_refused_before_any_effect(self, message):
+        transport = FactoryTransport()
+        with self.assertRaisesRegex(ContractError, message):
+            self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertEqual(transport.imports, 0)
+        self.assertIsNone(self.ledger.latest("verified-toy", "factory-import"))
+
+    def test_a_bought_named_body_in_the_primary_is_refused(self):
+        self.reseal_made({"assembled.step": step_solid_document(
+            [("workshop", "#4c859e"), ("bought_cell_aaa", "#9aa0a6")])})
+        self.assert_refused_before_any_effect("bought_cell_aaa")
+
+    def test_a_magenta_not_printed_body_in_the_primary_is_refused(self):
+        self.reseal_made({"assembled.step": step_solid_document(
+            [("workshop", "#4c859e"), ("pin#1", "#ff00ff")])})
+        self.assert_refused_before_any_effect("not-printed magenta")
+
+    def test_a_kit_not_printed_report_in_made_is_refused(self):
+        report = {"not_printed": [{"body": "P01-steel-pin#1", "part": "P01-steel-pin"}]}
+        self.reseal_made({
+            "assembled.step": TETRA_STEP,
+            "measure/not-printed.json": canonical_json(report),
+        })
+        self.assert_refused_before_any_effect("P01-steel-pin#1")
+
+    def test_a_printed_only_primary_is_not_refused(self):
+        self.reseal_made({"assembled.step": step_solid_document(
+            [("workshop", "#4c859e"), ("lid", "#d8dee9")])})
+        receipt = self.writer(FactoryTransport())(self.context, self.release, self.manifest)
+        self.assertTrue(receipt.is_verified_draft)
+
+    def test_a_mesh_in_made_never_crosses_beside_the_primary(self):
+        self.reseal_made({"assembled.step": TETRA_STEP, "extras/widget.stl": b"solid widget\n"})
+        self.assert_refused_before_any_effect("mesh Factory would weigh")
+
+    def test_the_handoff_check_refuses_a_second_step(self):
+        transport = FactoryTransport()
+        self.writer(transport)(self.context, self.release, self.manifest)
+        call = next(call for call in transport.calls if call[1].endswith("/designs/import"))
+        content = multipart_parts(call[2], call[3])["file"][0]
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(io.BytesIO(content)) as source, zipfile.ZipFile(buffer, "w") as target:
+            for info in source.infolist():
+                target.writestr(info, source.read(info.filename))
+            target.writestr("scene/review.step", TETRA_STEP)
+        with self.assertRaisesRegex(ContractError, "exactly the primary STEP"):
+            factory_module._assert_factory_handoff(buffer.getvalue())
+
+    def test_bought_hardware_is_sent_as_extra_materials_and_bound_in_the_intent(self):
+        product = dict(self.made.product)
+        product["bought_hardware"] = [
+            {"part": "m6-nut", "name": "M6 nut", "bodies": ["nut_a", "nut_b"], "count": 2,
+             "unit_price_cents": 12, "price_source": "operator"},
+            {"part": "rod", "name": "M6 rod 250 mm", "bodies": ["rod"], "count": 1,
+             "unit_price_cents": 150, "price_source": "operator"},
+        ]
+        self.reseal_made({"assembled.step": TETRA_STEP}, product)
+        transport = FactoryTransport()
+        self.writer(transport)(self.context, self.release, self.manifest)
+        call = next(call for call in transport.calls if call[1].endswith("/designs/import"))
+        sent = json.loads(multipart_parts(call[2], call[3])["extra_materials"][0])
+        expected = [{"name": "M6 nut (x2)", "price_cents": 24},
+                    {"name": "M6 rod 250 mm", "price_cents": 150}]
+        self.assertEqual(sent, expected)
+        intent = self.ledger.latest("verified-toy", "factory-import")
+        self.assertEqual(intent.request["extra_materials"], expected)
+
+    def test_an_unpriced_bought_part_is_refused_not_billed_as_zero(self):
+        product = dict(self.made.product)
+        product["bought_hardware"] = [
+            {"part": "m6-nut", "name": "M6 nut", "bodies": ["nut"], "count": 1,
+             "unit_price_cents": None, "price_source": "operator"},
+        ]
+        self.reseal_made({"assembled.step": TETRA_STEP}, product)
+        self.assert_refused_before_any_effect("no unit price")
+
+    def test_no_bought_hardware_sends_no_extra_materials_field(self):
+        transport = FactoryTransport()
+        self.writer(transport)(self.context, self.release, self.manifest)
+        call = next(call for call in transport.calls if call[1].endswith("/designs/import"))
+        self.assertNotIn("extra_materials", multipart_parts(call[2], call[3]))
+        intent = self.ledger.latest("verified-toy", "factory-import")
+        self.assertNotIn("extra_materials", intent.request)
 
 def draft_factory_content():
     return {

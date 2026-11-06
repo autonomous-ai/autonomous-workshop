@@ -41,8 +41,11 @@ from workshop.errors import (
     StateConflict,
 )
 from workshop.make.cad.step_color import read_step_part_colors
+from workshop.make.kit_tree import NOT_PRINTED_PATH
 from workshop.make.assembly_package import (
     ASSEMBLY_PACKAGE_PATH,
+    BOUGHT_OCCURRENCE_HEX,
+    BOUGHT_OCCURRENCE_PREFIX,
     is_assembly_package,
     read_assembly_package,
 )
@@ -145,6 +148,16 @@ FACTORY_HANDOFF_RESERVED_PATHS = frozenset(
 # assigned; a colour is read from the exact sealed bytes, never inferred
 # from a mesh, a render, or model prose.
 FACTORY_STEP_SUFFIXES = frozenset((".step", ".stp"))
+# Factory weighs meshes in preference to STEP whenever a handoff holds even
+# one (internal/slicer/tree.go PrintableSources), so none may cross.
+FACTORY_MESH_SUFFIXES = frozenset(
+    (".stl", ".3mf", ".glb", ".gltf", ".obj", ".ply", ".amf", ".gcode", ".bgcode")
+)
+# Factory takes at most 20 extra materials, each 0..$10,000 and named in at
+# most 120 characters (apis/handlers_import.go).
+FACTORY_MAX_EXTRA_MATERIALS = 20
+FACTORY_MAX_EXTRA_MATERIAL_CENTS = 1_000_000
+FACTORY_MAX_EXTRA_MATERIAL_NAME = 120
 FACTORY_MAX_STEP_COLOUR_BYTES = 256 * 1024 * 1024
 FACTORY_PART_COLORS_MAPPING = "workshop-sealed-step-colours-to-factory-part-colors-v1"
 FACTORY_FORBIDDEN_MEDIA_SUFFIXES = frozenset(
@@ -914,6 +927,28 @@ def _assert_factory_handoff(content: bytes) -> None:
                     raise ContractError(
                         "Factory model handoff contains non-model output: %s" % name
                     )
+            # Factory weighs every mesh when there is one, else every STEP
+            # it finds (internal/slicer/tree.go). Only the primary may be
+            # either, so what it weighs is exactly the primary's solids.
+            meshes = sorted(
+                name for name in names
+                if PurePosixPath(name).suffix.casefold() in FACTORY_MESH_SUFFIXES
+            )
+            if meshes:
+                raise ContractError(
+                    "Factory model handoff contains a mesh Factory would weigh instead "
+                    "of the primary STEP: %s" % ", ".join(meshes)
+                )
+            steps = sorted(
+                name for name in names
+                if PurePosixPath(name).suffix.casefold() in FACTORY_STEP_SUFFIXES
+            )
+            expected_steps = [primary_path] if primary_kind == "solid" else []
+            if steps != expected_steps:
+                raise ContractError(
+                    "Factory model handoff must carry exactly the primary STEP; found %s"
+                    % (", ".join(steps) or "none")
+                )
             if "product.json" in names:
                 try:
                     product = json.loads(archive.read("product.json").decode("utf-8"))
@@ -931,6 +966,99 @@ def _assert_factory_handoff(content: bytes) -> None:
         raise
     except (OSError, ValueError, zipfile.BadZipFile) as exc:
         raise ContractError("Factory model handoff is not a readable ZIP") from exc
+
+
+_STEP_PRODUCT_NAME = re.compile(rb"\bPRODUCT\s*\(\s*'((?:[^']|'')*)'")
+_STEP_MAGENTA = re.compile(rb"PRE_DEFINED_COLOUR\s*\(\s*'magenta'\s*\)", re.IGNORECASE)
+
+
+def _assert_printed_bodies_only(
+    content: bytes, root: Path, manifest: ArtifactManifest
+) -> None:
+    """Refuse a primary STEP that still carries a body nobody prints.
+
+    Factory splits the one STEP that crosses into its solids and bills every
+    one as filament (internal/slicer/fetch.go splitSolids), so a Bought Part
+    body in it is an overcharge. Make marks those bodies ``bought_<part>`` and
+    magenta (ADR 0095) and a kit lists them in ``measure/not-printed.json``.
+    The sealed bytes are what crosses, so nothing is removed here.
+    """
+
+    names = sorted(
+        {
+            match.group(1).replace(b"''", b"'").decode("utf-8", "replace")
+            for match in _STEP_PRODUCT_NAME.finditer(content)
+        }
+    )
+    found = {name for name in names if name.startswith(BOUGHT_OCCURRENCE_PREFIX)}
+    found.update(
+        name
+        for name, colour in read_step_part_colors(content).items()
+        if colour.hex == BOUGHT_OCCURRENCE_HEX
+    )
+    # Open CASCADE writes pure magenta as a named colour, which the RGB
+    # reader above never sees. No stocked filament is magenta.
+    if _STEP_MAGENTA.search(content):
+        found.add("a body coloured not-printed magenta")
+    for entry in manifest.entries:
+        if PurePosixPath(entry.path).name != PurePosixPath(NOT_PRINTED_PATH).name:
+            continue
+        report = _read_json_file(root / entry.path, "Made %s" % entry.path)
+        bodies = report.get("not_printed")
+        if isinstance(bodies, list) and bodies:
+            found.update(
+                str(item.get("body")) if isinstance(item, Mapping) else str(item)
+                for item in bodies
+            )
+    if found:
+        raise ContractError(
+            "Factory would bill these bodies of the primary STEP as filament, but they are "
+            "not printed: %s. Release publishes the sealed bytes unchanged, so Make must "
+            "seal a primary that holds printed bodies only" % ", ".join(sorted(found))
+        )
+
+
+def _extra_materials(product: Mapping[str, Any]) -> list:
+    """The bought hardware Made records, as Factory ``extra_materials``.
+
+    One line per bought part, priced at its recorded unit price times its
+    count; Factory has no quantity field. A malformed or unpriced record
+    refuses rather than publishing a listing that leaves the cost out.
+    """
+
+    hardware = product.get("bought_hardware")
+    if hardware is None:
+        return []
+    if not isinstance(hardware, list) or not hardware:
+        raise ContractError("Made bought_hardware must be a non-empty list")
+    if len(hardware) > FACTORY_MAX_EXTRA_MATERIALS:
+        raise ContractError(
+            "Factory takes at most %d extra materials; Made records %d bought parts"
+            % (FACTORY_MAX_EXTRA_MATERIALS, len(hardware))
+        )
+    result = []
+    for item in hardware:
+        if not isinstance(item, Mapping):
+            raise ContractError("Made bought_hardware entries must be objects")
+        name, count, unit = item.get("name"), item.get("count"), item.get("unit_price_cents")
+        if (
+            not isinstance(name, str) or not name.strip()
+            or isinstance(count, bool) or not isinstance(count, int) or count < 1
+        ):
+            raise ContractError("Made bought_hardware entry %r is malformed" % (item.get("part"),))
+        if isinstance(unit, bool) or not isinstance(unit, int) or unit < 1:
+            raise ContractError(
+                "bought part %s has no unit price; Release will not publish its cost as zero"
+                % name
+            )
+        label = name if count == 1 else "%s (x%d)" % (name, count)
+        if len(label) > FACTORY_MAX_EXTRA_MATERIAL_NAME:
+            raise ContractError("extra material name exceeds %d characters: %s"
+                                % (FACTORY_MAX_EXTRA_MATERIAL_NAME, label))
+        if unit * count > FACTORY_MAX_EXTRA_MATERIAL_CENTS:
+            raise ContractError("extra material %s exceeds Factory's price limit" % label)
+        result.append({"name": label, "price_cents": unit * count})
+    return result
 
 
 def _build_model_handoff(
@@ -960,6 +1088,10 @@ def _build_model_handoff(
     primary_entry = _manifest_entry(manifest, primary_source)
     if primary_entry is None or primary_entry.sha256 != primary_sha256:
         raise ContractError("Factory primary model is not sealed")
+    if sealed_primary["kind"] == "solid":
+        _assert_printed_bodies_only(
+            _read_bound_file(root, manifest, primary_source), root, manifest
+        )
 
     # Keep assembled.step at the root when Make provides it. Factory's importer
     # ranks that conventional name above all part solids for the product viewer.
@@ -1485,6 +1617,7 @@ class FactoryClient:
         metadata: Mapping[str, Any],
         idempotency_key: str,
         usage: Any = None,
+        extra_materials: Sequence[Mapping[str, Any]] = (),
     ) -> HttpResponse:
         filename = _safe_filename(filename)
         if not isinstance(content, bytes) or not content:
@@ -1497,6 +1630,15 @@ class FactoryClient:
                 fields.append((name, normalized[name]))
         for tag in normalized["tags"] or ("",):
             fields.append(("tags", tag))
+        if extra_materials:
+            fields.append((
+                "extra_materials",
+                json.dumps(
+                    [{"name": item["name"], "price_cents": item["price_cents"]}
+                     for item in extra_materials],
+                    sort_keys=True, separators=(",", ":"),
+                ),
+            ))
         usage_field = _usage_field(usage)
         if usage_field is not None:
             fields.append(usage_field)
@@ -3406,6 +3548,10 @@ class FactoryReleaseWriter:
             "manual_sha256": handoff["manual_sha256"],
             "metadata": dict(metadata),
         }
+        extra_materials = _extra_materials(context.made.product)
+        if extra_materials:
+            # Bound into the ledger intent, so a retry sends the same costs.
+            request["extra_materials"] = extra_materials
         if make_output:
             request.pop("manual_sha256")
             request.update(publication_mode=MAKE_OUTPUT_PUBLICATION_MODE,
@@ -3493,6 +3639,7 @@ class FactoryReleaseWriter:
                 metadata=metadata,
                 idempotency_key=sending.idempotency_key,
                 usage=_reportable_usage(context.token_usage),
+                extra_materials=intent.request.get("extra_materials") or (),
             )
         except Exception as exc:
             self.ledger.mark_unknown(
