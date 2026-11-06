@@ -88,6 +88,7 @@ from workshop.release.direct_publish import (
     load_public_toy_archive,
     published_design,
     readme_summary,
+    record_archive_publication,
     slugify,
     stage_direct_publication,
 )
@@ -932,8 +933,19 @@ def _run_update(
     write("measured: %s g -> %s g (predicted %s g)" % (
         version["weight_before_g"], version["weight_after_g"], version["predicted_weight_g"]))
     write("listing-update-record: %s" % json.dumps(version, sort_keys=True, separators=(",", ":")))
-    write("publication-record: %s" % json.dumps(
-        append_publication_version(record, version), sort_keys=True, separators=(",", ":")))
+    updated = append_publication_version(record, version)
+    write("publication-record: %s" % json.dumps(updated, sort_keys=True, separators=(",", ":")))
+    if args.archive is not None:
+        # The listing changed; the archive records it so the next update
+        # starts from this version. A --cad-dir update's archive is repacked
+        # by its packer from the printed record.
+        try:
+            changed = record_archive_publication(args.archive, updated)
+        except (ContractError, OSError) as exc:
+            write("archive: not updated (%s); write the publication-record above into "
+                  "publication/PUBLICATION.json and reseal it" % exc)
+        else:
+            write("archive: %s publication/PUBLICATION.json" % ("updated" if changed else "already records"))
     return 0
 
 

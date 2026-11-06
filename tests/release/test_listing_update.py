@@ -29,6 +29,7 @@ from workshop.integrations.factory_listing import (
     append_publication_version,
     factory_sale_price_cents,
 )
+from workshop.release.direct_publish import load_public_toy_archive
 from workshop.runtime import EffectLedger
 
 
@@ -255,12 +256,34 @@ class ListingUpdateTest(unittest.TestCase):
         self.assertEqual([entry["history_id"] for entry in record["versions"]], ["history-2"])
         self.assertEqual(record["versions"][0]["reason"], "reprice")
         self.assertEqual(self.intents().state, "succeeded")
+        # The archive now records the appended version and still verifies.
+        self.assertIn("archive: updated publication/PUBLICATION.json", out)
+        self.assertEqual(load_public_toy_archive(self.archive).publication, record)
         # The same command again reads the receipt back; nothing is sent.
         self.transport.calls.clear()
         code, out, _ = self.update(*self.predicted(), "--live", "--confirm", confirm)
         self.assertEqual(code, 0)
         self.assertEqual(self.transport.sends(), [])
         self.assertEqual(self.transport.versions, 1)
+        self.assertIn("archive: already records publication/PUBLICATION.json", out)
+
+    def test_an_archive_changed_during_the_update_is_not_resealed(self):
+        confirm, _ = self.preview_code()
+        original = load_public_toy_archive(self.archive).publication
+        stray = self.archive / "make" / "source" / "cad" / "stray.txt"
+
+        def tamper(method, url, headers, body, timeout):
+            if method == "POST" and url.endswith("/import"):
+                stray.write_text("changed\n")
+            return self.transport(method, url, headers, body, timeout)
+
+        code, out, err = self.update(*self.predicted(), "--live", "--confirm", confirm,
+                                     transport=tamper)
+        self.assertEqual((code, err), (0, ""), out)
+        self.assertEqual(self.transport.versions, 1)
+        self.assertIn("archive: not updated (archive changed since it was read", out)
+        stray.unlink()
+        self.assertEqual(load_public_toy_archive(self.archive).publication, original)
 
     def test_a_hand_set_price_is_reported_not_failed(self):
         self.transport.hand_price = 9900
@@ -392,9 +415,10 @@ class ListingUpdateTest(unittest.TestCase):
         confirm, _ = self.preview_code()
         self.assertEqual(self.update(*self.predicted(), "--live", "--confirm", confirm)[0], 0)
         _, out, _ = self.update(*self.predicted())
-        record = json.loads(re.search(r"(?m)^publication-record: (.*)$",
-                                      self.update(*self.predicted(), "--live", "--confirm", confirm)[1]).group(1))
-        self.archive = self.pack(record)
+        # The live update wrote its version into the archive; no repack.
+        self.assertEqual(
+            [entry["history_id"] for entry in load_public_toy_archive(self.archive).publication["versions"]],
+            ["history-2"])
         self.transport.next_weight = 170.0
         second, out = self.preview_code()
         self.assertNotEqual(second, confirm)

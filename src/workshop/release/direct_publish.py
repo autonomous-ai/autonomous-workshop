@@ -36,6 +36,7 @@ from workshop.release.native import (
 )
 from workshop.release.public_archive import (
     PUBLIC_ARCHIVE_SCHEMA_VERSION,
+    _canonical_json,
     build_public_archive_manifest,
 )
 
@@ -397,6 +398,49 @@ def load_cad_project(root: Path) -> DirectSource:
         readme=readme.read_bytes() if readme is not None else None,
         inputs=inputs,
     )
+
+
+def record_archive_publication(root: Path, record: Mapping[str, Any]) -> bool:
+    """Write ``record`` as the archive's PUBLICATION.json and reseal MANIFEST.json.
+
+    A Listing Update (ADR 0097) changes the publication an archive records,
+    so the next update reads the version it appended. The archive must still
+    match its manifest first; a file that changed under it is not resealed
+    into it. Returns False when the archive already records ``record``.
+    """
+
+    root = Path(root).resolve(strict=True)
+    manifest_path = root / "MANIFEST.json"
+    publication_path = root / "publication" / "PUBLICATION.json"
+    try:
+        document = json.loads(manifest_path.read_bytes())
+    except (OSError, ValueError) as exc:
+        raise ContractError("archive MANIFEST.json is unreadable") from exc
+    if (
+        not isinstance(document, Mapping)
+        or document.get("kind") != PUBLIC_TOY_ARCHIVE_KIND
+        or document.get("schema_version") != PUBLIC_ARCHIVE_SCHEMA_VERSION
+        or document.get("artifact_manifest") != build_public_archive_manifest(root).to_dict()
+    ):
+        raise ContractError("archive changed since it was read; it was not updated")
+    content = _canonical_json(dict(record))
+    try:
+        if publication_path.read_bytes() == content:
+            return False
+    except OSError as exc:
+        raise ContractError("archive publication record is unreadable") from exc
+    for path, data in (
+        (publication_path, content),
+        (manifest_path, None),
+    ):
+        if data is None:
+            data = _canonical_json(dict(
+                document, artifact_manifest=build_public_archive_manifest(root).to_dict()
+            ))
+        temporary = path.with_name(".%s.tmp" % path.name)
+        temporary.write_bytes(data)
+        temporary.replace(path)
+    return True
 
 
 def load_public_toy_archive(root: Path) -> DirectSource:
@@ -1001,6 +1045,7 @@ __all__ = [
     "load_cad_project",
     "load_public_toy_archive",
     "readme_summary",
+    "record_archive_publication",
     "slugify",
     "stage_direct_publication",
 ]

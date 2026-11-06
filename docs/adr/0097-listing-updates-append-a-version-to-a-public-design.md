@@ -459,6 +459,9 @@ Proposed and accepted on 2026-11-06.
   - `ListingUpdatePlan`, the confirmation code and Factory's price formula;
   - `append_publication_version`, which writes the schema 2
     `PUBLICATION.json`.
+- In `workshop.release.direct_publish`: `record_archive_publication`, which
+  writes that record into an `--archive` and reseals its manifest after a
+  live update.
 - On `FactoryClient`: `get_slice` and `put_extra_materials`.
 - On `FactoryAgentSession`: `read_product_facts`.
 - On `EffectLedger`: `prepare(supersede_settled=True)` and `note_unknown`.
@@ -472,5 +475,5 @@ Proposed and accepted on 2026-11-06.
   --update-listing … --reason fix`.
 - Carrying a live print override into a new version. An update of a design
   with a non-default infill is refused.
-- The product-to-cad wrapper's `--update-listing` passthrough, which comes
-  in its own PR.
+- The product-to-cad wrapper's `--update-listing` passthrough and schema 2
+  repack are in autonomous-product-to-cad#4, not yet merged.

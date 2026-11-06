@@ -433,7 +433,14 @@ new extras. On success the tool prints:
 - a `publication-record:` line with the schema 2 `PUBLICATION.json`, which
   is the archive's record with `versions[]` appended and the latest price.
 
-The toy-archive wrapper writes the record into the archive. A price that
+With `--archive`, the tool then writes that record into the archive's
+`publication/PUBLICATION.json` and reseals its `MANIFEST.json`, printing
+`archive: updated …`. It reseals only an archive that still matches its
+manifest; otherwise it prints `archive: not updated (…)` and leaves the
+archive alone, and the listing update itself still stands. The archive's
+README is not rewritten. With `--cad-dir`, the toy-archive wrapper's
+`--update-listing` repacks the archive from the record
+(autonomous-product-to-cad#4). A price that
 does not follow the formula is reported as `price not repriced (possibly
 set by hand)`, and it is not a failure.
 
