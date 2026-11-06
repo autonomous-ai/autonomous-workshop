@@ -36,6 +36,7 @@ from workshop.release.native import (
 )
 from workshop.release.public_archive import (
     PUBLIC_ARCHIVE_SCHEMA_VERSION,
+    _canonical_json,
     build_public_archive_manifest,
 )
 
@@ -175,6 +176,65 @@ def earlier_publications(
                     page_url=page if isinstance(page, str) else None,
                 ))
     return tuple(found)
+
+
+@dataclass(frozen=True)
+class PublishedDesign:
+    """The local ledger receipt that proves this Workshop published a slug."""
+
+    product_id: str
+    slug: str
+    design_id: str
+    page_url: Optional[str]
+
+
+def published_design(ledgers: Path, slug: str) -> PublishedDesign:
+    """Find the one succeeded factory import whose receipt is ``slug``.
+
+    A Listing Update writes into that product id's ledger, so a toy keeps one
+    ledger however many versions it gets. No receipt, or two, refuses: a
+    record copied from another machine is not proof the design is ours.
+    """
+
+    found: list[PublishedDesign] = []
+    paths = sorted(Path(ledgers).glob("*/factory-effects.sqlite3")) if Path(ledgers).is_dir() else []
+    for path in paths:
+        try:
+            connection = sqlite3.connect("file:%s?mode=ro" % path, uri=True)
+            try:
+                rows = connection.execute(
+                    "SELECT receipt_json FROM effect_intents"
+                    " WHERE kind = 'factory-import' AND state = 'succeeded'"
+                ).fetchall()
+            finally:
+                connection.close()
+        except sqlite3.Error as exc:
+            raise ContractError(
+                "cannot read the direct-publish ledger of %s: %s" % (path.parent.name, exc)
+            ) from exc
+        for (receipt_json,) in rows:
+            receipt = _json_object(receipt_json)
+            if receipt.get("slug") != slug or not isinstance(receipt.get("design_id"), str):
+                continue
+            details = receipt.get("details") if isinstance(receipt.get("details"), Mapping) else {}
+            page = details.get("page_url")
+            found.append(PublishedDesign(
+                product_id=path.parent.name,
+                slug=slug,
+                design_id=receipt["design_id"],
+                page_url=page if isinstance(page, str) else None,
+            ))
+    if not found:
+        raise ContractError(
+            "no local ledger records publishing %s; only a design this Workshop published "
+            "can be updated" % slug
+        )
+    if len({(item.product_id, item.design_id) for item in found}) > 1:
+        raise ContractError(
+            "several local ledgers record publishing %s (%s); the owner decides which is the toy"
+            % (slug, ", ".join(sorted({item.product_id for item in found})))
+        )
+    return found[0]
 
 
 def _json_object(text: Optional[str]) -> Mapping[str, Any]:
@@ -338,6 +398,49 @@ def load_cad_project(root: Path) -> DirectSource:
         readme=readme.read_bytes() if readme is not None else None,
         inputs=inputs,
     )
+
+
+def record_archive_publication(root: Path, record: Mapping[str, Any]) -> bool:
+    """Write ``record`` as the archive's PUBLICATION.json and reseal MANIFEST.json.
+
+    A Listing Update (ADR 0097) changes the publication an archive records,
+    so the next update reads the version it appended. The archive must still
+    match its manifest first; a file that changed under it is not resealed
+    into it. Returns False when the archive already records ``record``.
+    """
+
+    root = Path(root).resolve(strict=True)
+    manifest_path = root / "MANIFEST.json"
+    publication_path = root / "publication" / "PUBLICATION.json"
+    try:
+        document = json.loads(manifest_path.read_bytes())
+    except (OSError, ValueError) as exc:
+        raise ContractError("archive MANIFEST.json is unreadable") from exc
+    if (
+        not isinstance(document, Mapping)
+        or document.get("kind") != PUBLIC_TOY_ARCHIVE_KIND
+        or document.get("schema_version") != PUBLIC_ARCHIVE_SCHEMA_VERSION
+        or document.get("artifact_manifest") != build_public_archive_manifest(root).to_dict()
+    ):
+        raise ContractError("archive changed since it was read; it was not updated")
+    content = _canonical_json(dict(record))
+    try:
+        if publication_path.read_bytes() == content:
+            return False
+    except OSError as exc:
+        raise ContractError("archive publication record is unreadable") from exc
+    for path, data in (
+        (publication_path, content),
+        (manifest_path, None),
+    ):
+        if data is None:
+            data = _canonical_json(dict(
+                document, artifact_manifest=build_public_archive_manifest(root).to_dict()
+            ))
+        temporary = path.with_name(".%s.tmp" % path.name)
+        temporary.write_bytes(data)
+        temporary.replace(path)
+    return True
 
 
 def load_public_toy_archive(root: Path) -> DirectSource:
@@ -942,6 +1045,7 @@ __all__ = [
     "load_cad_project",
     "load_public_toy_archive",
     "readme_summary",
+    "record_archive_publication",
     "slugify",
     "stage_direct_publication",
 ]
