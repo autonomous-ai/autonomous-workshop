@@ -292,6 +292,75 @@ class DirectPublishTest(unittest.TestCase):
         self.assertIn("different durable factory-import intent", err)
         self.assertEqual(transport.imports, 1)
 
+    def test_a_toy_published_under_another_product_id_is_refused_before_any_effect(self):
+        # The palm vase case: published as one product id, then offered from
+        # a CAD project whose name gives another. The title's slug joins them.
+        self.ready()
+        transport = RootSelectingFactoryTransport()
+        self.assertEqual(self.run_tool("--live", transport=transport)[0], 0)
+        (self.project / "measure" / "check.md").write_text("a later fix\n")
+        code, _, err = self.run_tool("--live", "--product-id", "r24-widget-taper", transport=NoNetwork())
+        self.assertEqual(code, TOOL.EXIT_INPUT)
+        self.assertIn("product id %s already published this toy as verified-toy" % PRODUCT_ID, err)
+        self.assertIn("https://www.autonomous.ai/toys/product/verified-toy", err)
+        self.assertIn("would create a second design", err)
+        self.assertEqual(NoNetwork.calls, 0)
+        self.assertFalse((self.home / "direct-publish" / "r24-widget-taper").exists())
+        code, out, _ = self.run_tool("--product-id", "r24-widget-taper")
+        self.assertEqual(code, 0)
+        self.assertIn("live:          refused", out)
+        self.assertIn("already published this toy", out)
+
+    def test_an_import_of_unknown_outcome_under_another_product_id_also_refuses(self):
+        self.ready()
+        self.seed_ledger("earlier-id", state="unknown", title=TITLE)
+        code, out, _ = self.run_tool()
+        self.assertEqual(code, 0)
+        self.assertIn("product id earlier-id already published this toy as verified-toy", out)
+        self.assertIn("import unknown", out)
+
+    def test_a_rejected_import_or_another_title_does_not_refuse(self):
+        self.ready()
+        self.seed_ledger("rejected-id", state="rejected", title=TITLE)
+        self.seed_ledger("other-toy", state="succeeded", title="Another Toy", slug="another-toy")
+        code, out, _ = self.run_tool()
+        self.assertEqual(code, 0)
+        self.assertIn("live:          ready", out)
+        self.assertNotIn("already published this toy", out)
+
+    def test_the_same_product_ids_own_ledger_still_reconciles(self):
+        # A rerun under the publishing product id is the effect ledger's to
+        # reconcile; the earlier-publication check never blocks it.
+        self.ready()
+        transport = RootSelectingFactoryTransport()
+        self.assertEqual(self.run_tool("--live", transport=transport)[0], 0)
+        _, out, _ = self.run_tool()
+        self.assertIn("live:          ready", out)
+
+    def seed_ledger(self, product_id, *, state, title, slug=None):
+        """A local ledger row as an earlier publication leaves it."""
+
+        import sqlite3
+
+        folder = self.home / "direct-publish" / product_id
+        folder.mkdir(parents=True)
+        connection = sqlite3.connect(folder / "factory-effects.sqlite3")
+        connection.execute(
+            "CREATE TABLE effect_intents (id TEXT, kind TEXT, product_id TEXT, state TEXT,"
+            " request_json TEXT, receipt_json TEXT)"
+        )
+        receipt = None if slug is None and state != "succeeded" else json.dumps(
+            {"slug": slug or "verified-toy",
+             "details": {"page_url": "https://www.autonomous.ai/toys/product/%s" % (slug or "verified-toy")}}
+        )
+        connection.execute(
+            "INSERT INTO effect_intents VALUES (?, 'factory-import', ?, ?, ?, ?)",
+            ("intent-" + product_id, product_id, state,
+             json.dumps({"metadata": {"title": title}}), receipt),
+        )
+        connection.commit()
+        connection.close()
+
     def test_lost_import_response_is_reconciled_not_resent(self):
         self.ready()
         transport = RootSelectingFactoryTransport()
