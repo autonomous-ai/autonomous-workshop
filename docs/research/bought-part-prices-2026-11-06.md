@@ -66,6 +66,7 @@ stay as they were.
 | nut-m6-iso4032 (new) | piece | 300 | 2 | thegioiic.com/dai-oc-thep-m6 (627); thegioiic.com/m6-dai-oc-thep-carbon-den (285); congnghiep21 DIN 934 zinc (250) | high |
 | washer-m16-iso7093-50x3 (new) | piece | 4,000 | 16 | b2bmart.vn/long-den-phang-thep-ma-den-m16-50x4-0-s0-pd8550.html (4,400, 50 × 4, minimum 50); mecsu.vn/chi-tiet/long-den-phang-thep-ma-den-m16-50x40.q1J2 (3,731, 50 × 4) | medium price, no 50 × 3 listing |
 | washer-m12-iso7089 (new) | piece | 1,300 | 6 | anhduongvina.com/san-pham/long-den-phang-thep-ma-kem-m12-din-125/ (2,300); mecsu.vn/chi-tiet/long-den-phang-thep-ma-kem-m12-24x25.ZJQd (364); thegioiic.com/long-den-kin-m12-x-24mm-day-2-2mm-304 (2,736, stainless) | low-medium |
+| switch-push-latching-8x8 (new) | piece | 2,500 | 10 | dientunguyenhien.vn/show/626 (2,800, 8 × 8 self-locking, 6-pin); robocon.vn/detail/sw9-nut-nhan-6-chan-8x8mm.html (2,500 for 1–19); banlinhkien.com/nut-nhan-6-chan-8x8mm-nhan-giu-5-chiec-p23175903.html (8,000 per 5); nshopvn.com/product/nut-nhan-6-chan-8x8 (1,500, out of stock); caka.vn/nut-nhan-6-chan-8x8 (1,000) | medium-high: 8 × 8 listings; no Vietnamese 8.5 × 8.5 listing found |
 
 ## Caveats
 
