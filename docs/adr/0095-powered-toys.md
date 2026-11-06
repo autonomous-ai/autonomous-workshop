@@ -393,3 +393,21 @@ does not refuse. build-a-toy detection should report the drift.
 - The shop: Factory publishes `assembled.step` as before. The bought bodies
   render in magenta there, and the shop's part list stays the `parts/`
   STEPs.
+
+## Amendment: bought bodies never reach what Factory weighs (2026-11-06)
+
+Factory weighs every solid of the one STEP that crosses, the root
+`assembled.step`; it splits it into solids and has no name filter. The
+bodies of section 3 therefore cannot cross. Release publishes the sealed
+bytes unchanged, so the Factory adapter does not strip them. It refuses a
+handoff whose primary STEP holds a `bought_` leaf, a not-printed magenta
+colour, or whose Made lists bodies in `measure/not-printed.json`. It says
+that Make must seal a printed-only primary.
+
+Implemented: the refusal, and tests for it. Not implemented: Make sealing
+a printed-only `assembled.step` beside its review scene. Until that lands,
+a powered toy whose snapshot records a `model` builds and is accepted, and
+then its publication is refused. Bought hardware a Made records as
+`bought_hardware`, with a unit price, crosses as Factory `extra_materials`
+(see docs/PUBLISH_DIRECT.md). A Workshop run writes no such record yet.
+

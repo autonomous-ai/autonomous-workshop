@@ -98,6 +98,8 @@ COLOUR_TOLERANCE = 2
 
 _ID = re.compile(r"^[a-z0-9]+(?:[.-][a-z0-9]+)*$")
 _HEX = re.compile(r"^#[0-9a-f]{6}$")
+# Factory caps one extra material's price at $10,000.
+MAX_UNIT_PRICE_CENTS = 1_000_000
 
 
 @dataclass(frozen=True)
@@ -119,6 +121,10 @@ class CataloguedPart:
     source: Optional[str]
     confirmed: bool
     model: Optional[Dict[str, Any]] = None
+    # What one piece costs the shop, in US cents, when the owner has recorded
+    # it. Publication bills a bought part at this price and refuses one
+    # without it, rather than guessing. It never enters a contract snapshot.
+    unit_price_cents: Optional[int] = None
 
     def size_mm(self, what: str) -> Optional[Tuple[float, ...]]:
         """The numbers of the size named ``what`` (nominal or limit), or None."""
@@ -313,8 +319,9 @@ def parse_bought_parts(document: Any, errors: List[str]) -> Dict[str, Catalogued
     seen: set = set()
     for index, item in enumerate(items):
         where = "%s.parts[%d]" % (label, index)
-        if not isinstance(item, dict) or not fields <= set(item) or not set(item) <= fields | {"model"}:
-            errors.append("%s must be exactly {%s}, with an optional model" % (where, ", ".join(sorted(fields))))
+        if not isinstance(item, dict) or not fields <= set(item) or not set(item) <= fields | {"model", "unit_price_cents"}:
+            errors.append("%s must be exactly {%s}, with an optional model and unit_price_cents"
+                          % (where, ", ".join(sorted(fields))))
             continue
         valid = True
         if not isinstance(item["id"], str) or _ID.fullmatch(item["id"]) is None:
@@ -352,11 +359,18 @@ def parse_bought_parts(document: Any, errors: List[str]) -> Dict[str, Catalogued
             valid = False
         if "model" in item:
             valid = _model(item["model"], item, where, errors) and valid
+        price = item.get("unit_price_cents")
+        if "unit_price_cents" in item and (
+            isinstance(price, bool) or not isinstance(price, int) or not 0 < price <= MAX_UNIT_PRICE_CENTS
+        ):
+            errors.append("%s.unit_price_cents must be what one piece costs, 1 to %d US cents"
+                          % (where, MAX_UNIT_PRICE_CENTS))
+            valid = False
         if valid:
             parts[item["id"]] = CataloguedPart(
                 id=item["id"], name=item["name"], category=item["category"],
                 sizes=tuple(item["sizes"]), pack=pack, source=source, confirmed=confirmed,
-                model=copy.deepcopy(item.get("model")),
+                model=copy.deepcopy(item.get("model")), unit_price_cents=price,
             )
     return parts
 
@@ -397,6 +411,7 @@ __all__ = [
     "Filament",
     "LEAD_DIAMETER",
     "MATERIAL_CATEGORIES",
+    "MAX_UNIT_PRICE_CENTS",
     "MODEL_FORMS",
     "PART_CATEGORIES",
     "load_catalogues",

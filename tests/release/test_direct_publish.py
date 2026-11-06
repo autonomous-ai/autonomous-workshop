@@ -660,5 +660,125 @@ class DirectPublishTest(unittest.TestCase):
                 self.assertIn(message, err.getvalue())
 
 
+
+class PrintedBodiesOnlyTest(unittest.TestCase):
+    """Factory weighs every solid of assembled.step; only printed ones may be there."""
+
+    store_credential = DirectPublishTest.store_credential
+    ready = DirectPublishTest.ready
+    run_tool = DirectPublishTest.run_tool
+    uploaded = DirectPublishTest.uploaded
+
+    def setUp(self):
+        DirectPublishTest.setUp(self)
+        from tests.release.test_printed_primary import base, nut, placed, post, rod, step
+
+        (self.project / "part_arm.step.py").unlink()
+        (self.project / "part_arm.step").unlink()
+        (self.project / "widget.step.py").write_text(ENTRY.format(flag="False"))
+        for stem, label, colour, shape in (("part_base", "base", "#5a3a22", base()),
+                                           ("part_post", "post", "#1a1a1a", post())):
+            (self.project / (stem + ".step.py")).write_text(ENTRY.format(flag="True"))
+            (self.project / (stem + ".step")).write_bytes(step([(label, colour, shape)], single=True))
+        (self.project / "widget.step").write_bytes(step([
+            ("base", "#5a3a22", placed(base(), 0)),
+            ("post", "#1a1a1a", placed(post(), 50)),
+            ("rod_m6", "#9aa0a6", placed(rod(), 100)),
+            ("nut_top", "#9aa0a6", placed(nut(), 150)),
+            ("nut_bottom", "#9aa0a6", placed(nut(), 200)),
+            ("headphones_ref", "#3b3f46", placed(rod(), 250).scale(2)),
+        ]))
+
+    DECLARED = ("--primary-step", "widget.step", "--display-only", "headphones_ref",
+                "--bought", "rod_m6=M6 threaded rod 250 mm",
+                "--bought", "nut_top=M6 nut", "--bought", "nut_bottom=M6 nut")
+    PRICES = ("--part-price", "M6 threaded rod 250 mm=150", "--part-price", "M6 nut=12")
+
+    def test_an_undeclared_non_printed_body_refuses_the_dry_run(self):
+        code, out, err = self.run_tool("--primary-step", "widget.step")
+        self.assertEqual(code, TOOL.EXIT_INPUT, out)
+        self.assertIn("headphones_ref, nut_bottom, nut_top, rod_m6", err)
+        self.assertIn("would bill them as filament", err)
+
+    def test_bought_hardware_without_a_price_is_refused(self):
+        code, _, err = self.run_tool(*self.DECLARED)
+        self.assertEqual(code, TOOL.EXIT_INPUT)
+        self.assertIn("M6 nut has no catalogue price; pass --part-price M6 nut=CENTS", err)
+        self.assertIn("M6 threaded rod 250 mm has no catalogue price", err)
+
+    def test_a_body_both_display_only_and_bought_is_refused(self):
+        code, _, err = self.run_tool(*self.DECLARED, *self.PRICES, "--display-only", "rod_m6")
+        self.assertEqual(code, TOOL.EXIT_INPUT)
+        self.assertIn("either display-only or bought, not both: rod_m6", err)
+
+    def test_a_price_for_no_bought_part_is_refused(self):
+        code, _, err = self.run_tool(*self.DECLARED, *self.PRICES, "--part-price", "washer=5")
+        self.assertEqual(code, TOOL.EXIT_INPUT)
+        self.assertIn("--part-price names a part no --bought body is: washer", err)
+
+    def test_live_ships_printed_bodies_only_and_bills_the_hardware(self):
+        from workshop.release.printed_primary import scene_bodies
+
+        self.ready()
+        code, dry, err = self.run_tool(*self.DECLARED, *self.PRICES)
+        self.assertEqual(code, 0, err)
+        self.assertIn("removed, not weighed by Factory: rod_m6, nut_top, nut_bottom, headphones_ref", dry)
+        self.assertIn("M6 nut x2 at 12 cents (operator price) = 24 cents", dry)
+        transport = RootSelectingFactoryTransport()
+        code, out, err = self.run_tool(*self.DECLARED, *self.PRICES, "--live", transport=transport)
+        self.assertEqual((code, err), (0, ""), out)
+        content = self.uploaded(transport)
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            steps = [name for name in archive.namelist() if name.lower().endswith((".step", ".stp"))]
+            primary = archive.read("assembled.step")
+            product = json.loads(archive.read("product.json"))
+        self.assertEqual(steps, ["assembled.step"])
+        self.assertEqual([body.name for body in scene_bodies(primary)], ["base", "post"])
+        self.assertEqual(product["display_only_bodies"], ["headphones_ref"])
+        self.assertEqual(
+            [(item["name"], item["count"], item["unit_price_cents"]) for item in product["bought_hardware"]],
+            [("M6 nut", 2, 12), ("M6 threaded rod 250 mm", 1, 150)],
+        )
+        call = next(call for call in transport.calls if call[1].endswith("/designs/import"))
+        self.assertEqual(
+            json.loads(multipart_parts(call[2], call[3])["extra_materials"][0]),
+            [{"name": "M6 nut (x2)", "price_cents": 24},
+             {"name": "M6 threaded rod 250 mm", "price_cents": 150}],
+        )
+        record = json.loads(re.search(r"(?m)^publication-record: (.*)$", out).group(1))
+        self.assertEqual(record["primary_model"]["removed_bodies"],
+                         ["rod_m6", "nut_top", "nut_bottom", "headphones_ref"])
+
+    def test_a_catalogue_price_is_used_and_a_different_operator_price_refused(self):
+        from workshop.wish.catalogues import CATALOGUE_DIRECTORY, parse_catalogues
+
+        filaments = json.loads((CATALOGUE_DIRECTORY / "filaments.json").read_text())
+        parts = json.loads((CATALOGUE_DIRECTORY / "bought-parts.json").read_text())
+        parts["parts"].append({
+            "id": "m6-nut", "name": "M6 hex nut", "category": "fastener",
+            "sizes": [{"what": "thread", "mm": [6]}], "pack": None, "source": None,
+            "confirmed": False, "unit_price_cents": 9,
+        })
+        catalogues = parse_catalogues(filaments, parts)
+        source = load_cad_project(self.project)
+        arguments = dict(
+            product_id=PRODUCT_ID, inventor_display_name="Mira Fold", primary_step="widget.step",
+            title=TITLE, summary=SUMMARY, display_only=["headphones_ref"],
+            bought={"rod_m6": "rod", "nut_top": "m6-nut", "nut_bottom": "m6-nut"},
+            catalogues=catalogues,
+        )
+        workspace = self.root / "stage-catalogue"
+        workspace.mkdir()
+        staged = stage_direct_publication(source, workspace, part_prices={"rod": 150}, **arguments)
+        nut_row = next(item for item in staged.context.made.product["bought_hardware"]
+                       if item["part"] == "m6-nut")
+        self.assertEqual((nut_row["name"], nut_row["unit_price_cents"], nut_row["price_source"]),
+                         ("M6 hex nut", 9, "catalogue"))
+        workspace = self.root / "stage-conflict"
+        workspace.mkdir()
+        with self.assertRaisesRegex(ContractError, "m6-nut costs 9 cents in the catalogue, not 12"):
+            stage_direct_publication(
+                source, workspace, part_prices={"rod": 150, "m6-nut": 12}, **arguments)
+
 if __name__ == "__main__":
     unittest.main()

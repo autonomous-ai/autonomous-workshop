@@ -25,6 +25,8 @@ from workshop.contributors.manifest import load_manifest
 from workshop.contributors.taste import load_taste_header
 from workshop.errors import ContractError
 from workshop.make.contracts import Made
+from workshop.release.printed_primary import PrintedPrimary, printed_only_primary
+from workshop.wish.catalogues import MAX_UNIT_PRICE_CENTS, Catalogues, load_catalogues
 from workshop.release.native import (
     NATIVE_RELEASE_PLAYTEST_OMISSION_PATH,
     NATIVE_RELEASE_PRODUCT_PATH,
@@ -151,6 +153,23 @@ class DirectSource:
             if PurePosixPath(path).suffix.casefold() in _TEXT_SUFFIXES
             and _HOST_PATH.search(source.read_bytes())
         ]
+
+    def printed_entry_steps(self) -> dict[str, bytes]:
+        """Each top-level ``PRINTABLE = True`` entry's STEP bytes, or refuse."""
+
+        found = {}
+        for path, source in sorted(self.files.items()):
+            if "/" in path or not path.endswith(".step.py"):
+                continue
+            if not _PRINTABLE.search(source.read_text(encoding="utf-8", errors="replace")):
+                continue
+            step = self.files.get(path[: -len(".py")])
+            if step is None:
+                raise ContractError("PRINTABLE = True entry %s has no built %s" % (path, path[: -len(".py")]))
+            found[path[: -len(".py")]] = step.read_bytes()
+        if not found:
+            raise ContractError("the project has no top-level PRINTABLE = True entry")
+        return found
 
     def entry_step(self) -> str:
         """Name the one ``PRINTABLE = True`` entry's STEP, or refuse."""
@@ -600,6 +619,7 @@ class DirectPublication:
     page: Mapping[str, Any]
     primary_source: str
     cover_path: str
+    stripped_bodies: tuple[str, ...] = ()
 
 
 def _write(path: Path, content: bytes) -> None:
@@ -630,12 +650,24 @@ def stage_direct_publication(
     what_arrives: Sequence[str] = (),
     limitations: Sequence[str] = (),
     evidence: Optional[Mapping[str, Any]] = None,
+    display_only: Sequence[str] = (),
+    bought: Mapping[str, str] | None = None,
+    part_prices: Mapping[str, int] | None = None,
+    catalogues: Optional[Catalogues] = None,
 ) -> DirectPublication:
     """Write ``made/`` and ``release/`` under an empty private ``workspace``.
 
     The Made tree is ``product.json`` (title, summary and any owner-supplied
     lists), the primary STEP as ``assembled.step`` and every kept project file
     under ``cad/``. The carrier is derived exactly as Spark derives it.
+
+    ``assembled.step`` holds only printed bodies, because Factory weighs every
+    solid in it: each primary body that no ``PRINTABLE = True`` entry builds
+    must be named in ``display_only`` (a prop) or ``bought`` (body name to the
+    bought part it is), and is removed; any other refuses. Bought parts are
+    recorded in ``product.json`` as ``bought_hardware`` with a unit price from
+    the catalogue or ``part_prices``, so Factory bills them as extra
+    materials. A bought part with neither price refuses.
     """
 
     workspace = Path(workspace)
@@ -670,14 +702,33 @@ def stage_direct_publication(
     if covers != ["snap/iso.png"]:
         raise ContractError("exactly one snap/iso.png may ship; found %s" % ", ".join(covers))
 
+    bought = dict(bought or {})
+    hardware = _bought_hardware(
+        bought, dict(part_prices or {}),
+        catalogues if catalogues is not None else load_catalogues(),
+    )
+    both = sorted(set(display_only) & set(bought))
+    if both:
+        raise ContractError("a body is either display-only or bought, not both: %s" % ", ".join(both))
+    declared = [*display_only, *bought]
+    printed_steps = source.printed_entry_steps()
+    if primary_step in printed_steps and not declared:
+        # The primary is itself a printed entry: there is nothing to compare.
+        printed = PrintedPrimary(content=primary_content, kept=(), stripped=())
+    else:
+        printed = printed_only_primary(primary_content, printed_steps, declared=declared)
     facts: dict[str, Any] = {"title": title, "summary": summary}
     for name, values in (("what_arrives", what_arrives), ("limitations", limitations)):
         if values:
             facts[name] = _text_list(values, name)
+    if hardware:
+        facts["bought_hardware"] = hardware
+    if display_only:
+        facts["display_only_bodies"] = sorted(set(display_only))
     made_root = workspace / "made"
     made_root.mkdir()
     _write(made_root / "product.json", _canonical_json(facts) + b"\n")
-    _write(made_root / MADE_PRIMARY_PATH, primary_content)
+    _write(made_root / MADE_PRIMARY_PATH, printed.content)
     for relative, path in sorted(source.files.items()):
         _write(made_root / MADE_CAD_ROOT / relative, path.read_bytes())
     made = Made.from_root(made_root, facts)
@@ -726,7 +777,67 @@ def stage_direct_publication(
         page=page,
         primary_source=primary_step,
         cover_path=MADE_CAD_ROOT + "/snap/iso.png",
+        stripped_bodies=printed.stripped,
     )
+
+
+def _bought_hardware(
+    bought: Mapping[str, str],
+    part_prices: Mapping[str, int],
+    catalogues: Catalogues,
+) -> list[dict[str, Any]]:
+    """Each bought part, its bodies and its unit price, or refuse.
+
+    A part priced in the catalogue takes that price; any other needs an
+    operator price. Nothing is estimated.
+    """
+
+    by_part: dict[str, list[str]] = {}
+    for body, part in sorted(bought.items()):
+        if not isinstance(part, str) or not part.strip() or part != part.strip():
+            raise ContractError("--bought %s names no part" % body)
+        by_part.setdefault(part, []).append(body)
+    unused = sorted(set(part_prices) - set(by_part))
+    if unused:
+        raise ContractError("--part-price names a part no --bought body is: %s" % ", ".join(unused))
+    result = []
+    errors = []
+    for part, bodies in sorted(by_part.items()):
+        entry = catalogues.parts.get(part)
+        operator = part_prices.get(part)
+        if operator is not None and (
+            isinstance(operator, bool) or not isinstance(operator, int)
+            or not 0 < operator <= MAX_UNIT_PRICE_CENTS
+        ):
+            errors.append("--part-price %s must be 1 to %d US cents" % (part, MAX_UNIT_PRICE_CENTS))
+            continue
+        catalogued = entry.unit_price_cents if entry is not None else None
+        if catalogued is not None and operator is not None and operator != catalogued:
+            errors.append("%s costs %d cents in the catalogue, not %d" % (part, catalogued, operator))
+            continue
+        price = catalogued if catalogued is not None else operator
+        if price is None:
+            errors.append(
+                "%s has no catalogue price; pass --part-price %s=CENTS with what one piece costs"
+                % (part, part)
+            )
+            continue
+        count = len(bodies)
+        if price * count > MAX_UNIT_PRICE_CENTS:
+            errors.append("%s x%d exceeds Factory's %d-cent limit for one extra material"
+                          % (part, count, MAX_UNIT_PRICE_CENTS))
+            continue
+        result.append({
+            "part": part,
+            "name": entry.name if entry is not None else part,
+            "bodies": bodies,
+            "count": count,
+            "unit_price_cents": price,
+            "price_source": "catalogue" if catalogued is not None else "operator",
+        })
+    if errors:
+        raise ContractError("; ".join(errors))
+    return result
 
 
 __all__ = [
