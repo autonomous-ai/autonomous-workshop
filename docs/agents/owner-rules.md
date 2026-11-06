@@ -165,6 +165,11 @@ Wait for the owner's explicit OK before any of these:
 
 - **Never commit new files under `toys/`, `toys-spec/` or `inbox/`**; see
   `AGENTS.md` working rules. Say they were synced to the main checkout.
+- **`inbox/` holds only files the owner sends in.** Read them without
+  changing them; never write outputs, renders, reports or new versions
+  there. Write work to a folder under `toys/` (for example
+  `toys/<model-name>/`). Why: the owner uses `inbox/` only to hand files to
+  agents, and work mixed into it cannot be told apart from what they sent.
 - **Keep questions and reports short**: only what the decision needs. The
   owner reviews pictures, not contracts; ask about how a toy looks and what
   it does, never about rows or millimetres.
