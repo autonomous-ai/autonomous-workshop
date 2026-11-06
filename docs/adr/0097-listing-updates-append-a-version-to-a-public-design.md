@@ -1,7 +1,9 @@
 # ADR 0097: A Listing Update appends a version to a public Factory design
 
-- **Status:** Proposed on 2026-11-06 from the owner's direction of the same
-  day. Nothing is implemented.
+- **Status:** Accepted on 2026-11-06. It was proposed the same day, and the
+  owner answered its open questions then (§ Owner decisions).
+- **Implementation:** see § Implementation status. That section is the
+  current account of what is built.
 - **Amends:** [ADR 0065](0065-published-toy-correction-runs.md). Its rule that
   a correction run publishes a new design stays the default; this ADR adds an
   opt-in alternative.
@@ -23,7 +25,7 @@ and bought hardware, and Factory weighs every solid as filament. The
 - the headphones prop alone weighs 253.05 g.
 
 The owner wants these listings repriced in place: same listing, same URL.
-Today that is impossible, and every path that tries now refuses:
+Before this ADR every path that tried refused:
 
 | Path | What happens |
 |---|---|
@@ -75,28 +77,43 @@ repository.
 - **No idempotency:** the backend has no `Idempotency-Key` handling, so a
   retried POST appends a second version.
 
+**The extras route:**
+
+- `PUT /designs/:slug/extra-materials` (`apis/router.go:236`,
+  `apis/handlers_design_extra_materials.go:57-72`,
+  `services/design_extra_materials.go:22-54`) replaces the whole list. It is
+  open to the owner.
+- It does not touch `updated_at`.
+- It reprices a platform-priced listing at once against the **last
+  measurement**.
+- Because it replaces the whole list, sending it again changes nothing.
+
 **A second create does not update anything.** It creates a new design.
 `Slugify` keeps `[a-z0-9-]` (`services/slug.go:28-47`), and a taken slug gets
 a random `-xxxx` suffix (`slug.go:91-131`).
 
-**Price:**
+**Price.** Per unit (`models/slice_job.go:135-217`):
 
-- Per unit: 4.0 ¢/g of print plus 1.2 ¢/g of freight and duty, on Orca's mass
-  with support at the shop's 15 % infill or the design's override, plus a
-  $15 operations fee, plus the sum of the extra materials. It is rounded up
-  to the whole dollar and clamped to the catalogue band
-  (`models/slice_job.go:142-217`, `services/listing_pricing.go:209-225`).
-- An extra material is `{name, price_cents, material}` with no count, at
-  most 20 entries (`models/design_extra_material.go:43-65`). Workshop's
-  adapter already folds count × unit price into one entry.
-- The listing belongs to the design, not to a version (`models/design.go:62,
-  344-352`).
-- `RepriceOnMeasurement` (`services/listing_pricing.go:30-143`) reprices a
-  `measured` or `estimate` listing when the new slice lands. A listing priced
-  by hand is never moved; it is only paused if it falls below the floor.
-- Sending extras reprices at once, against the **old** mass, until the slice
-  lands (`import_version.go:290-294`).
-- A slice that fails for good pauses a platform-priced listing
+```text
+material = ceil(grams × 5.2) cents                  (4.0 print + 1.2 freight/duty, per gram)
+cost     = material + 1500 (operations) + 0 (packaging) + Σ extras.price_cents
+price    = cost rounded up to the whole dollar      (margin 0 % since 2026-11-02)
+           clamped to 100 … 1,000,000 cents         (services/listing.go:26-27, listing_pricing.go:209-225)
+```
+
+- **Mass:** Orca's support-on mass at the shop's 15 % infill or the design's
+  override, measured on a bounded bed first and on an unbounded bed if a part
+  does not fit (`services/slice_worker_engines.go:80-115`).
+- **Extras:** an extra material is `{name, price_cents, material}` with no
+  count, at most 20 entries (`models/design_extra_material.go:43-65`).
+  Workshop's adapter already folds count × unit price into one entry.
+- **The listing** belongs to the design, not to a version
+  (`models/design.go:62, 344-352`).
+- **Repricing:** `RepriceOnMeasurement` (`services/listing_pricing.go:59-143`)
+  reprices a `measured` or `estimate` listing when a slice lands or the
+  extras change. A listing priced by hand is never moved; it is only paused
+  if it falls below the new floor.
+- **Failure:** a slice that fails for good pauses a platform-priced listing
   (`listing_pricing.go:167-201`).
 
 **Readback and orders:**
@@ -108,15 +125,40 @@ a random `-xxxx` suffix (`slug.go:91-131`).
 - It does **not** return the listing's `priced_from`, which is `json:"-"` at
   `models/design.go:93`. So a reader cannot tell a price set by hand from one
   Factory has not repriced yet.
-- `GET /designs/:slug/slice` returns the slice state (`apis/router.go:261`).
+- `GET /designs/:slug/slice` (`apis/handlers_slice.go:97-110`) returns the
+  current version's slice job, owner only: its `history_id`, `status`
+  (`queued`, `slicing`, `done` or `failed`), `will_retry` and
+  `totals.weight_g`.
 - The listing SKU never changes, and orders key on it, not on a version
   (`services/listing.go:150-195`).
 
 **Workshop already has the client side.** `FactoryClient.import_model_version`
-(`src/workshop/integrations/factory.py:1664`) and a `factory-import-version`
-ledger kind exist. Both serve only root repair of a still-private draft, and
-that path refuses a public design ("Factory root repair cannot change a
-public design").
+(`src/workshop/integrations/factory.py:1664`) and the
+`factory-import-version` ledger kind serve root repair of a still-private
+draft. That path refuses a public design ("Factory root repair cannot change
+a public design").
+
+## Owner decisions (2026-11-06)
+
+1. **`workshop fix` defaults are unchanged.** It still creates a new design.
+   `--update-listing` is opt-in.
+2. **Allowed reasons are `fix` and `reprice` only.** A changed print
+   override, such as infill, is a `fix`, not a `reprice`.
+3. **Re-floating is acceptable.** Re-floating in Factory's "latest
+   published" feed after an update is fine.
+4. **Confirm each update's price.** Before any update the command shows the
+   listing's current price and the predicted new price. It runs only after
+   the owner confirms that one run. There is no blanket override, because
+   hand-set prices cannot be detected.
+5. **No mixed interim price.** Bought-part extras are sent only after the
+   new version's slice has landed. A price computed from the old mass and
+   the new extras is never shown.
+6. **Backend requests go into this ADR** as a list for the backend team
+   (§ Requests to the backend team). Workshop does not wait for them.
+7. **The palm vase's `unknown` publish intent** is reconciled by Factory
+   readback only. Nothing new is sent.
+8. **Buyers do not see version history.** It lives in the archive and the
+   ledger only.
 
 ## Decision
 
@@ -125,77 +167,110 @@ public design").
 A **Listing Update** appends one version to a public Factory design that this
 Workshop published. All of these must hold:
 
-- **The design is proven to be ours.** A toy archive's `PUBLICATION.json`
-  records the design's slug and page, and either a local ledger receipt or the
-  archive's own receipt identities name the same `design_id`. Preflight
-  readback must show the same `design_id`, a public status, the Inventor's
-  account as owner, and no running generation job.
-- **The owner asks for this update.** It is never automatic.
-  `--update-listing SLUG` is required on every path, and the SLUG must equal
-  the archive's recorded slug.
+- **The design is proven to be ours.**
+  - A toy archive's `PUBLICATION.json` records the design's slug and page.
+  - A local ledger receipt for that slug names its `design_id`.
+  - Preflight readback shows the same `design_id` and slug, a public status,
+    the Inventor's account as author, and no running generation job.
+  - Without a local receipt the update is refused. A record copied from
+    another machine is not proof.
+- **The owner asks for this update and confirms its price.** It is never
+  automatic. `--update-listing SLUG` is required, and the SLUG must equal the
+  archive's slug. `--live` also needs the confirmation code from that run's
+  preview (§ 5).
 - **The reason is one of two:**
-  - `fix`: a correction run's sealed output for the same toy;
-  - `reprice`: the same printed geometry, re-published only to correct what
-    Factory weighs and bills (#219: the primary stripped of display-only and
-    bought bodies, plus `extra_materials`). A `reprice` is refused when any
-    printed body's volume or area differs from the live version's, as read
-    back from `project_url`. A geometry change is a `fix`.
+  - `fix`: changed printed geometry or print settings, with the same gate
+    evidence a create needs.
+  - `reprice`: the same printed geometry and print settings, re-published
+    only to correct what Factory weighs and bills (#219: the primary
+    stripped of display-only and bought bodies, plus `extra_materials`).
+    The host reads the live `assembled.step` from `project_url` and requires
+    that, after the declared bodies are removed, its body names and each
+    body's volume and area equal the new primary's. Nothing printed changes,
+    so a reprice needs no new gate evidence. A changed infill override is a
+    `fix`.
 - **Nothing of the listing's identity changes.** That covers the title, slug,
   URL, description, category, tags and license, and Factory refuses them on
   this route anyway. A rename stays a separate, out-of-scope owner action
   through `PATCH`.
 - **Drafts are not covered.** A draft is still root repair's job.
 
-**The ADR 0065 amendment:** `workshop fix` still creates a new design by
-default. `workshop fix TOY --update-listing` makes the new run's Release
-append to the source toy's listing instead, and `workshop publish <wish-id>
---update-listing` does the same for a finished unreleased run. The run keeps
-its own Wish, session, budget and ledger, exactly as ADR 0065 says; only its
-Release effect changes.
+**The ADR 0065 amendment:**
+
+- `workshop fix` still creates a new design by default.
+- `workshop fix TOY --update-listing` freezes the run as unreleased, exactly
+  like `--no-publish`, and records the source toy's slug as its target
+  listing.
+- The owner then runs `workshop publish <wish-id> --update-listing` to
+  preview the price. Running it again with `--confirm CODE` performs the
+  update with the bytes the run sealed.
+- The run keeps its own Wish, session, budget and ledger, as ADR 0065 says;
+  only its Release effect changes.
 
 ### 2. The effect
 
-There is one host effect, in the existing Factory adapter: a new ledger kind,
-`factory-listing-version`. It is separate from root repair's
-`factory-import-version`, so the rule "root repair cannot change a public
-design" stays true.
+There is one host effect, in the Factory adapter
+(`FactoryListingUpdate`). Credentials stay host-only, and no native agent
+turn performs or sees it. It runs in four steps:
 
-The steps:
-
-1. **Preflight read.** `GET /designs/{slug}` returns `design_id`, status,
-   author, `current_history_id`, `published_history_id`, the listing
-   (`price_cents`, `active`), `print_specs`, `print_settings` and the current
-   `extra_materials`.
+1. **Preflight read** (authenticated, read-only):
+   - `GET /designs/{slug}`: `design_id`, status, author,
+     `current_history_id`, `published_history_id`, `project_url`, the
+     listing, `print_settings` and `extra_materials`;
+   - `GET /designs/{slug}/slice`: the current version's measured
+     `weight_g`, which must be `done` and belong to `current_history_id`;
+   - for a reprice, the live `assembled.step` from `project_url`.
 2. **Send the version.** `POST /designs/{slug}/import` with:
    - `file`: the same single-STEP Make-output handoff a create sends;
-   - `extra_materials`: **always sent**, `[]` when nothing is bought, so a
-     version never inherits a stale list;
-   - `usage`, when a Workshop run supplies it.
-3. **Carry the print overrides.** The handoff's `project.json` carries the
-   same print override the toy was sealed with (#216's infill). If the live
-   design's `print_settings` show an override that the new version would
-   drop, the update is refused, not silently reset to 15 %.
+   - `usage`, when a Workshop run supplies it;
+   - **no `extra_materials` field**, so the live list stays as it is until
+     the slice lands (owner decision 5).
 
-Credentials stay host-only, as for every Factory effect. No native agent
-turn performs or sees it.
+   The handoff's `project.json` carries the toy's print override, if it has
+   one (#216). A version that would drop or change the live override is a
+   `fix`; a `reprice` refuses it.
+3. **Wait for the slice.** The host polls `GET /designs/{slug}/slice` until
+   the job for the new `history_id` is `done`. It is bounded, and a later
+   rerun resumes the wait.
+4. **Set the extras.** `PUT /designs/{slug}/extra-materials` with the new
+   list. Factory reprices from the new mass and the new extras at once.
+
+Between steps 3 and 4 the listing briefly shows the new mass with the
+previous extras. For the three repriced toys those are empty. The price
+computed from the old mass and the new extras, which owner decision 5
+forbids, is never shown. A backend request (§ Requests) would remove even
+this short window.
 
 ### 3. Ledger and idempotency
 
-- **Where it lives:** in the ledger of the product id that first published
-  the toy, taken from the archive's receipt. A new ledger is never started
-  under another id. For the palm vase that is `synthwave-palm-bud-vase`, not
-  `r24-synthwave-palm-vase-taper`.
-- **Intent identity:** the kind, `design_id`, the **base**
-  `current_history_id` read at preflight, the handoff pack SHA-256, the
-  canonical `extra_materials`, and the reason. The base history id makes the
-  update a compare-and-swap. If the design's current version is no longer the
-  base, because someone else appended one, the intent refuses and asks the
-  owner to look.
-- **Several updates over time are allowed.** Each update has its own base, so
-  each one is its own intent. The ledger's "a product has one import" rule
-  applies to `factory-import` only.
-- **No blind resend.** Factory has no idempotency, so the adapter never sends
-  the same intent twice without first proving the earlier send did not land.
+- **Ledger kind.** The update reuses the existing `factory-import-version`
+  kind rather than adding a kind. A new kind would need a migration of every
+  live ledger file. The request carries a `listing_update` object, which
+  holds:
+  - the reason;
+  - the base `current_history_id` and base price;
+  - the base and predicted grams;
+  - the confirmed code;
+  - the new extras.
+
+  Root repair keeps its own refusals. It still cannot change a public
+  design.
+- **Where it lives.** In the ledger of the product id that first published
+  the toy, found by its receipt slug (as #221 does). A new ledger is never
+  started under another id. For the palm vase that is
+  `synthwave-palm-bud-vase`, not `r24-synthwave-palm-vase-taper`.
+- **Intent identity.** Its request includes `design_id`, the base history id
+  and the handoff pack SHA-256. The base history id makes the update a
+  compare-and-swap. If the design's current version is no longer the base,
+  the update refuses and asks the owner to look.
+- **Several updates over time.** A succeeded `factory-import-version`
+  intent no longer blocks a later one carrying `listing_update`. One that is
+  `sending` or `unknown` still does, until it is reconciled.
+- **No blind resend.** The send is never repeated without first proving the
+  earlier one did not land.
+- **The extras step.** `PUT` replaces the whole list, so sending it again is
+  safe. Its success is recorded in the same intent's receipt only after
+  readback.
 
 ### 4. Readback
 
@@ -203,120 +278,149 @@ The update succeeds only when all of this reads back:
 
 1. `current_history_id == published_history_id`, a new id different from
    the base, the same `design_id`, slug and page URL, and a public status.
-2. The publication anchor and product facts under the new `project_url`
-   hash to what was sent. This reuses `verify_publication_anchor` and
-   `verify_import_root_facts`.
-3. The design's `extra_materials` equal what was sent. This is needed
-   because the backend writes them best-effort.
-4. The slice of the new version has landed, and `print_specs` describe it.
-   The adapter polls `GET /designs/{slug}/slice`, bounded like the existing
-   listing wait, but longer, because it is a re-slice.
-5. The listing reads back active, with its new `price_cents`.
+2. The publication anchor under the new `project_url` hashes to what was
+   sent (`verify_publication_anchor`).
+3. The slice job for that `history_id` is `done`, with its `weight_g`.
+4. `extra_materials` equal what was sent.
+5. The listing reads back active, with its `price_cents`.
 
-The receipt records the listing price before and after, the measured grams
-before and after, and the extras.
+The receipt records each of these, with the price and grams before and
+after. If the price read back is not the one Factory's formula gives for the
+measured grams and extras, the update is still recorded. It is reported as
+`price not repriced (possibly set by hand)`, and it is not a failure.
 
-When the listing was priced by hand, Factory does not move it. The readback
-does not say who set a price, so a price that has not changed after the new
-slice landed is recorded as `price: unchanged after slice (possibly
-owner-set)`. It is not reported as a failure. The backend request in open
-question 6 would make this exact.
+### 5. Price preview and confirmation
 
-### 5. Price and extra materials
+`--update-listing` without `--live` is a **preview**. It is the one dry run
+that reads Factory, with authenticated reads only, and it sends nothing. It
+prints:
 
-Workshop still submits no price. Factory computes it with its own formula
-(§ Context). Workshop's part is to make what Factory weighs and bills true:
+- **Current state:** the current listing price, the current measured grams
+  and the current extras. It also says whether the current price equals the
+  formula's price for those grams and extras. When it does not, the listing
+  may have been priced by hand: the new price would then not follow, and new
+  extras might pause it.
+- **Prediction:** the new extras, from the catalogue as in #219, and the
+  predicted price, computed with Factory's formula (§ Context) from the
+  predicted grams and the new extras.
+- **The confirmation code:** a short hash of the slug, `design_id`, base
+  history, current price, current grams, predicted grams, predicted price,
+  extras, reason and the new primary's printed-body measures.
 
-- a printed-only primary;
-- one `extra_materials` entry per bought part, `count × unit_price_cents`
-  from the catalogue, with the 2026-11-06 Vietnamese estimates, or from an
-  operator `--part-price`;
-- the same print override.
+**Predicted grams.** Factory measures mass only by slicing, after a version
+is live. So the predicted grams come from `--predicted-grams G
+--predicted-grams-source TEXT`, measured with Factory's own slice worker on
+the printed-only primary. Without them the preview prints the predicted
+price as unknown and gives no confirmation code, so `--live` refuses. There
+is no geometry estimate: tested on the lamp, it came out 21 % heavy,
+because supports dominate.
 
-The dry run prints the old price, the old extras and the new extras. It
-cannot print the new price, because only Factory's slice measures it. Between
-the 200 and the slice, Factory briefly shows the old mass plus the new
-extras.
+`--live --confirm CODE` recomputes the code from a fresh preflight and
+refuses on any difference: another base, another current price, other
+extras or other bytes. Each code confirms one run, and there is no blanket
+override (owner decision 4).
 
 ### 6. How the archive and PUBLICATION.json record versions
 
 - **Where the archive lives.** A Listing Update writes into the **same**
   `toys/<inventor>-<slug>/` directory, never a new slug. Its `make/` tree
   becomes the new version's bytes, and the git history keeps the old ones.
-- **New fields.** `PUBLICATION.json` gains schema 2 fields:
-  - `publication` keeps the design's slug, page URL, `design_id` and first
-    publication time;
-  - `versions[]` is appended once per published version, starting with the
-    original create:
-    - `history_id`, `published_at`, `reason`, `pack_sha256`;
-    - the primary model path and SHA-256;
-    - `extra_materials`;
-    - `listing.price_cents` before and after, and the measured grams;
-    - the receipt identities;
-    - for a `fix`, the correction run's Wish id.
-- **Older records.** A schema 1 record is read as one version.
-  `workshop fix` and the toy-archive packer keep reading `publication` for the
-  page URL.
+- **Schema 2 fields.** `PUBLICATION.json` (schema 2) adds `versions[]`,
+  appended once per update:
+  - `history_id`, `observed_at`, `reason`, `pack_sha256`;
+  - the primary model SHA-256;
+  - `extra_materials`;
+  - the price and grams before and after;
+  - the confirmation code;
+  - for a `fix`, the correction run's Wish id.
+- **What stays.** `publication` keeps the slug, page URL and first
+  publication. Its `listing` is the latest price.
+- **Older records.** A schema 1 record is read as having no versions.
+- **Buyers see none of this** (owner decision 8).
 
 ### 7. Command-line surface
 
 ```text
-tools/publish_direct.py --archive toys/<inventor>-<slug> --update-listing <slug> \
-    --reason reprice [--display-only B] [--bought B=PART] [--part-price PART=CENTS] [--live]
+tools/publish_direct.py --archive toys/<inventor>-<slug> --inventor <id> \
+    --update-listing <slug> --reason reprice [--display-only B] [--bought B=PART] \
+    [--predicted-grams G --predicted-grams-source TEXT] [--live --confirm CODE]
 tools/publish_direct.py --cad-dir <project> --published-archive toys/<inventor>-<slug> \
-    --update-listing <slug> --reason fix|reprice ... [--live]
+    --update-listing <slug> --reason fix ... [--live --confirm CODE]
+tools/publish_direct.py --reconcile-publish <product-id> --inventor <id>
 skills/toy-archive/scripts/publish output/<project> --inventor <id> \
-    --update-listing <slug> --reason fix|reprice ... [--live]
+    --update-listing <slug> --reason fix ... [--live --confirm CODE]
 workshop fix toys/<inventor>-<slug> --prompt-file FIX.md --update-listing
-workshop publish <wish-id> --update-listing
+workshop publish <wish-id> --update-listing [--predicted-grams …] [--confirm CODE]
 ```
 
 - `--update-listing` replaces `--reimport-slug` and `--reimport`.
-- Without `--live`, the commands stay offline and send nothing.
-- For the lamp, the reprice would be the flags already drafted
-  (`--display-only headphones_ref --bought rod_m6x250=threaded-rod-m6x250 …`)
-  with `--update-listing
-  victorian-lamp-post-headphone-stand-on-a-paving-slab-tray --reason
-  reprice`.
+- `--reconcile-publish` settles a ledger's `unknown` publish intent from
+  readback alone (owner decision 7). It can never send.
 
 ### 8. Failure and reconciliation
 
 | Outcome | What the host does |
 |---|---|
-| Preflight shows another owner, a non-public design, a running job, or a base that moved | Refuse (exit 2). Nothing is sent. |
-| 4xx on the POST | The intent is rejected. Nothing changed; report it. |
-| Timeout or lost response | The intent is `unknown`. Exit 3. A rerun re-reads first. If `current_history_id` moved off the base and the new folder's anchor hash is ours, the send landed: continue with readback. If it is still the base after a bounded wait, the send did not land, and the same intent may send once more. Any other version means a stop for the owner. |
-| `extra_materials` read back differ | Not proven (exit 3). A rerun appends no new version. It re-reads, and if a correcting route exists, uses it (open question 6). |
-| Slice still pending at the end of the wait | Exit 3, with the version recorded and the price `pending`. A rerun only re-reads. |
-| Slice failed for good (Factory pauses the listing) | Exit 3. Report "listing paused by Factory: slice failed". Never unpublish, and never send a revert on our own; the owner decides. |
-| Price unchanged after the slice landed (possibly priced by hand) | Success, with the price reported as unchanged. |
+| Preflight shows another author, a non-public design, a running job, a base slice not `done`, or a base that moved | Refuse (exit 2). Nothing is sent. |
+| The confirmation code differs from a fresh preview | Refuse (exit 2). Nothing is sent. |
+| A `reprice` whose printed bodies differ from the live STEP | Refuse (exit 2). It is a `fix`. |
+| 4xx on the version POST | The intent is rejected. Nothing changed; report it. |
+| Timeout or lost response on the POST | The intent is `unknown`, exit 3. A rerun re-reads and never resends. If `current_history_id` moved off the base and the new folder's anchor is ours, the send landed, and the rerun continues with steps 3–4. If it is still the base, the rerun reports exit 3, and the owner decides. Any other version means a stop for the owner. |
+| Slice still pending at the end of the wait | Exit 3, with the version recorded and the extras not yet sent. A rerun resumes the wait. |
+| Slice failed for good (Factory pauses the listing) | Exit 3, reported as "slice failed". The extras are not sent. Never unpublish, and never revert on our own; the owner decides. |
+| `PUT` extras fails or reads back different | Exit 3. A rerun sends the same `PUT` again and reads back. |
+| Price not the formula's after the extras | Success, reported as `price not repriced (possibly set by hand)`. |
 
 The adapter never unpublishes, never deletes, and never `PATCH`es metadata.
 
 ### 9. Tests
 
-The Factory fake transport gains `POST /designs/{slug}/import` for a public
-design. It holds a history list, `published_history_id`, a slice that lands
-later, best-effort extras and repricing by `priced_from`. With it, the tests
-cover:
+The Factory fake transport gains, for a public design:
 
-- the dry run sends nothing and reads no credential;
-- a reprice appends exactly one version, keeps the slug, URL and SKU, and
-  reads back the new price and extras;
+- `POST /designs/{slug}/import`, with a history list and
+  `published_history_id`;
+- a slice job per version that lands later;
+- `PUT /designs/{slug}/extra-materials`;
+- repricing by Factory's formula, or a price set by hand.
+
+With it, the tests cover:
+
+- the preview sends nothing and prints current and predicted prices with a
+  code;
+- `--live` without the code, or with a stale code, is refused;
+- a reprice appends exactly one version, sends extras only after the slice,
+  keeps the slug, URL and SKU, and reads back the new price;
 - a lost response, then a rerun: the rerun reconciles without a second
   version;
-- the base moving between preflight and send is refused;
-- another owner's design, or a draft, is refused;
+- a base that moved is refused;
+- another author's design, or a draft, is refused;
 - a `reprice` whose printed geometry changed is refused;
-- dropping a live print override is refused;
-- an extras write the backend drops is not reported as success;
-- a slice that never lands gives exit 3 and a re-read-only rerun;
-- a listing priced by hand reports its price unchanged;
+- a slice that never lands gives exit 3, and a rerun resumes without
+  resending;
+- an extras write that reads back different is retried by `PUT` only;
+- a listing priced by hand reports `possibly set by hand`;
+- `--reconcile-publish` settles an `unknown` publish from readback and never
+  sends;
 - schema 2 `PUBLICATION.json` appends a version, and schema 1 still reads;
-- `workshop fix --update-listing` keeps a fresh Wish and ledger but publishes
-  onto the source listing, and `workshop fix` without it still creates a new
-  design;
 - the #221 and p2c#3 refusals still hold without `--update-listing`.
+
+## Requests to the backend team
+
+Workshop is built without these; each would make it safer or simpler:
+
+1. **`Idempotency-Key` on `POST /designs/:slug/import`.** It is the only
+   effect Workshop cannot retry safely today. A duplicate key should return
+   the first response.
+2. **A content hash in readback.** The SHA-256 of the uploaded zip, or of
+   `assembled.step`, on each `design_history` row, so that a lost response
+   is proven by hash rather than by our anchor file.
+3. **`listing.priced_from` in owner readback.** Then a hand-set price can be
+   told from one the platform priced.
+4. **Extras applied at measurement.** A way to send `extra_materials` with a
+   version but apply them only when that version's slice lands. That would
+   remove the short window of new mass with the previous extras.
+5. **A dry-run quote:** the price a given STEP would get, without creating a
+   version. It would replace the operator-measured `--predicted-grams`.
 
 ## Consequences
 
@@ -324,32 +428,15 @@ cover:
   now shows what the buyer gets and is charged for it.
 - The toy re-floats to the top of Factory's "latest published" feed, because
   `SetPublished` re-stamps `published_at`. Its covers change when the new
-  handoff carries one, and it always does.
+  handoff carries one. The owner accepts both.
 - Without server-side idempotency, safety rests on the base-history
   compare-and-swap and on reading back before any resend.
+- The predicted price is only as good as the operator's measured grams. The
+  receipt records the real price beside the predicted one.
 - Whatever an external cart has cached of the old price is outside this
   repository and is not handled.
 
-## Open questions for the owner
+## Implementation status
 
-1. **Default for `workshop fix`:** keep ADR 0065's new design by default and
-   update only with `--update-listing`, as proposed, or make updating the
-   default?
-2. **Allowed reasons:** only `fix` and `reprice`? Should a `reprice` also
-   allow a changed print override, such as infill?
-3. **Re-floating:** an update re-stamps `published_at`, so the toy jumps to
-   the top of "latest". Is that acceptable, or should the backend gain a
-   version publish that keeps `published_at`?
-4. **Prices set by hand:** leave them untouched and report them, as proposed,
-   or let a Listing Update ask Factory to reprice them?
-5. **The interim price:** accept the short window of old mass plus new
-   extras, or send the version without extras first and the extras only after
-   the slice lands? The second needs a two-step effect.
-6. **Backend requests:** should we ask panda-social-backend for an
-   `Idempotency-Key` on `POST /designs/:slug/import`, a content hash and the
-   listing's `priced_from` in its readback, and a route to rewrite
-   `extra_materials` without a new version?
-7. **The palm vase:** its ledger has a publish intent left `unknown` since
-   2026-11-03. Reconcile it by readback before its first update, as proposed?
-8. **Version history for buyers:** keep `versions[]` only in the archive, or
-   also show "updated on …" on the toy page?
+Proposed and accepted on 2026-11-06. Implementation follows in its own PR,
+and this section is updated with what is built.
