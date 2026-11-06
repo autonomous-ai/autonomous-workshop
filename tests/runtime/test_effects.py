@@ -290,6 +290,44 @@ class EffectLedgerTest(unittest.TestCase):
             self.prepare(kind="factory-import-version", pack_sha256="f" * 64)
         self.assertEqual(self.ledger.get(original.intent_id), original)
 
+    def test_a_listing_update_may_follow_settled_versions_but_not_an_unknown_one(self):
+        first = self.prepare(kind="factory-import-version")
+        sending = self.ledger.begin(first.intent_id)
+        self.ledger.mark_succeeded(
+            sending.intent_id, sending.effect_token, self.receipt(sending), {"status": 200}
+        )
+        with self.assertRaisesRegex(StateConflict, "different durable"):
+            self.prepare(kind="factory-import-version", pack_sha256="f" * 64)
+        second = self.prepare(
+            kind="factory-import-version", pack_sha256="f" * 64, supersede_settled=True
+        )
+        self.assertEqual(second.state, "planned")
+        # A planned intent never left the host, so it does not block either.
+        third = self.prepare(
+            kind="factory-import-version", pack_sha256="1" * 64, supersede_settled=True
+        )
+        sending = self.ledger.begin(third.intent_id)
+        self.ledger.mark_unknown(sending.intent_id, sending.effect_token, "lost")
+        with self.assertRaises(AmbiguousEffectError):
+            self.prepare(
+                kind="factory-import-version", pack_sha256="2" * 64, supersede_settled=True
+            )
+
+    def test_note_unknown_keeps_an_open_outcome_unknown_and_only_that(self):
+        planned = self.prepare()
+        with self.assertRaises(StateConflict):
+            self.ledger.note_unknown(planned.intent_id, "not sent")
+        sending = self.ledger.begin(planned.intent_id)
+        noted = self.ledger.note_unknown(
+            sending.intent_id, "slice pending", response={"history_id": "h2"}
+        )
+        self.assertEqual((noted.state, noted.error), ("unknown", "slice pending"))
+        self.assertIsNone(noted.effect_token)
+        again = self.ledger.note_unknown(noted.intent_id, "still pending")
+        self.assertEqual(again.response, {"history_id": "h2"})
+        with self.assertRaises(AmbiguousEffectError):
+            self.ledger.begin(again.intent_id)
+
 
 if __name__ == "__main__":
     unittest.main()

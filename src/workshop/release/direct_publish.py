@@ -177,6 +177,65 @@ def earlier_publications(
     return tuple(found)
 
 
+@dataclass(frozen=True)
+class PublishedDesign:
+    """The local ledger receipt that proves this Workshop published a slug."""
+
+    product_id: str
+    slug: str
+    design_id: str
+    page_url: Optional[str]
+
+
+def published_design(ledgers: Path, slug: str) -> PublishedDesign:
+    """Find the one succeeded factory import whose receipt is ``slug``.
+
+    A Listing Update writes into that product id's ledger, so a toy keeps one
+    ledger however many versions it gets. No receipt, or two, refuses: a
+    record copied from another machine is not proof the design is ours.
+    """
+
+    found: list[PublishedDesign] = []
+    paths = sorted(Path(ledgers).glob("*/factory-effects.sqlite3")) if Path(ledgers).is_dir() else []
+    for path in paths:
+        try:
+            connection = sqlite3.connect("file:%s?mode=ro" % path, uri=True)
+            try:
+                rows = connection.execute(
+                    "SELECT receipt_json FROM effect_intents"
+                    " WHERE kind = 'factory-import' AND state = 'succeeded'"
+                ).fetchall()
+            finally:
+                connection.close()
+        except sqlite3.Error as exc:
+            raise ContractError(
+                "cannot read the direct-publish ledger of %s: %s" % (path.parent.name, exc)
+            ) from exc
+        for (receipt_json,) in rows:
+            receipt = _json_object(receipt_json)
+            if receipt.get("slug") != slug or not isinstance(receipt.get("design_id"), str):
+                continue
+            details = receipt.get("details") if isinstance(receipt.get("details"), Mapping) else {}
+            page = details.get("page_url")
+            found.append(PublishedDesign(
+                product_id=path.parent.name,
+                slug=slug,
+                design_id=receipt["design_id"],
+                page_url=page if isinstance(page, str) else None,
+            ))
+    if not found:
+        raise ContractError(
+            "no local ledger records publishing %s; only a design this Workshop published "
+            "can be updated" % slug
+        )
+    if len({(item.product_id, item.design_id) for item in found}) > 1:
+        raise ContractError(
+            "several local ledgers record publishing %s (%s); the owner decides which is the toy"
+            % (slug, ", ".join(sorted({item.product_id for item in found})))
+        )
+    return found[0]
+
+
 def _json_object(text: Optional[str]) -> Mapping[str, Any]:
     if not text:
         return {}

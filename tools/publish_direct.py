@@ -22,6 +22,13 @@ metadata anchor. On success it prints ``slug:``, ``public: <url>`` and one
 ``publication-record: <json>`` line with the receipt's identity hashes.
 Re-running the same bytes reconciles through the ledger instead of creating a
 second design. See docs/PUBLISH_DIRECT.md.
+
+``--update-listing SLUG --reason fix|reprice`` instead appends one version to
+a design this Workshop already published (ADR 0097), keeping its listing,
+slug and URL. Without ``--live`` it is a preview: authenticated reads only,
+printing the current price, the predicted price and a confirmation code.
+``--live --confirm CODE`` runs exactly that update. ``--reconcile-publish
+PRODUCT_ID`` settles an ``unknown`` publish intent by readback alone.
 """
 
 from __future__ import annotations
@@ -53,8 +60,18 @@ from workshop.integrations.factory import (
     FactoryCredentialRejected,
     FactoryPublicTransition,
     FactoryReleaseWriter,
+    _extra_materials,
     build_release_handoff,
     factory_credentials_from_environment,
+    urllib_project_file_transport,
+    urllib_transport,
+)
+from workshop.integrations.factory_listing import (
+    FactoryListingUpdate,
+    ListingUpdateBindings,
+    ListingUpdatePlan,
+    append_publication_version,
+    listing_update_version,
 )
 from workshop.release.direct_publish import (
     EVIDENCE_PATH,
@@ -69,6 +86,7 @@ from workshop.release.direct_publish import (
     inventor_name,
     load_cad_project,
     load_public_toy_archive,
+    published_design,
     readme_summary,
     slugify,
     stage_direct_publication,
@@ -105,7 +123,7 @@ def ledger_path(product_id: str, environment: Optional[Mapping[str, str]] = None
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    source = parser.add_mutually_exclusive_group(required=True)
+    source = parser.add_mutually_exclusive_group()
     source.add_argument("--cad-dir", type=Path, help="CAD project in its own layout")
     source.add_argument("--archive", type=Path, help="packed public toy archive (schema 4)")
     parser.add_argument("--inventor", required=True, help="roster Inventor whose Factory account publishes")
@@ -136,7 +154,26 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--verifier-python", type=Path,
                         help="interpreter for the verifier (default: its .venv, then this one)")
     parser.add_argument("--reimport-slug", metavar="SLUG",
-                        help="not supported yet: the host adapter never re-imports a public design")
+                        help="retired: use --update-listing SLUG --reason fix|reprice")
+    parser.add_argument("--update-listing", metavar="SLUG",
+                        help="append a version to this public design instead of creating one "
+                             "(ADR 0097); without --live a preview with authenticated reads")
+    parser.add_argument("--reason", choices=("fix", "reprice"),
+                        help="--update-listing: fix (changed printed geometry or print settings, "
+                             "needs gate evidence) or reprice (the live geometry, re-billed)")
+    parser.add_argument("--published-archive", type=Path,
+                        help="--update-listing with --cad-dir: the toy's packed archive, whose "
+                             "PUBLICATION.json names the listing")
+    parser.add_argument("--predicted-grams", type=float, metavar="G",
+                        help="--update-listing: the printed-only primary's mass, measured with "
+                             "Factory's own slice worker")
+    parser.add_argument("--predicted-grams-source", metavar="TEXT",
+                        help="--update-listing: how --predicted-grams was measured")
+    parser.add_argument("--confirm", metavar="CODE",
+                        help="--update-listing --live: the confirmation code the preview printed")
+    parser.add_argument("--reconcile-publish", metavar="PRODUCT_ID",
+                        help="settle this product's unknown publish intent by Factory readback "
+                             "alone; never sends")
     parser.add_argument("--inventors", type=Path, default=REPOSITORY / "inventors",
                         help=argparse.SUPPRESS)
     parser.add_argument("--live", action="store_true", help="publish; default is an offline dry run")
@@ -283,10 +320,16 @@ def _describe(
     handoff: Mapping[str, Any],
     evidence: EvidenceStatus,
     environment: Optional[Mapping[str, str]],
+    updating: bool = False,
 ) -> None:
     metadata = handoff["metadata"]
     content = handoff["content"]
-    write("publish_direct: %s" % ("LIVE" if live else "dry run, nothing is read from the credential store or sent"))
+    if updating:
+        write("publish_direct: %s" % ("LIVE listing update" if live else
+                                      "listing update preview: authenticated Factory reads only, "
+                                      "nothing is sent"))
+    else:
+        write("publish_direct: %s" % ("LIVE" if live else "dry run, nothing is read from the credential store or sent"))
     write("source:        %s %s" % (source.kind, source.root))
     if source.archive_sha256:
         write("               MANIFEST.json verified, artifact %s" % source.archive_sha256)
@@ -363,15 +406,17 @@ def _blockers(
     ):
         blockers.append(
             "product id %s already published this toy as %s (%s, import %s); publishing "
-            "it under product id %s would create a second design. Updating a published "
-            "listing in place is not supported yet (see docs/PUBLISH_DIRECT.md)"
+            "it under product id %s would create a second design. Update the listing in "
+            "place with --update-listing %s --reason fix|reprice (docs/PUBLISH_DIRECT.md)"
             % (earlier.product_id, earlier.slug, earlier.page_url or "no page recorded",
-               earlier.state, product_id)
+               earlier.state, product_id, earlier.slug)
         )
     if source.publication is not None:
         page = (source.publication.get("publication") or {}).get("page_url")
+        slug = (source.publication.get("publication") or {}).get("slug")
         blockers.append("archive already records a publication (%s); publishing again "
-                        "would create a second design" % page)
+                        "would create a second design. Update it in place with "
+                        "--update-listing %s --reason fix|reprice" % (page, slug))
     if packed is not None and packed != args.inventor:
         blockers.append(
             "archive was packed for Inventor %s; re-pack it with `toy_archive pack "
@@ -493,6 +538,179 @@ def publication_record(receipt: Any, staged: Any, evidence: EvidenceStatus) -> d
     }
 
 
+def _session(
+    inventor: str,
+    environment: Optional[Mapping[str, str]],
+    transports: Mapping[str, Any],
+    *,
+    read_only: bool = False,
+) -> FactoryAgentSession:
+    """The Inventor's own authenticated session; ``read_only`` refuses any send."""
+
+    values = factory_credential_environment(environment, inventor_id=inventor)
+    credentials = factory_credentials_from_environment(
+        factory_service_credential_environment(values)
+    )
+    options = dict(transports)
+    if read_only:
+        inner = options.get("transport", urllib_transport)
+
+        def guarded(method, url, headers, body, timeout):  # type: ignore[no-untyped-def]
+            if method != "GET" and not (method == "POST" and url.endswith("/auth/agent/login")):
+                raise AssertionError("a read-only Factory session refused %s %s" % (method, url))
+            return inner(method, url, headers, body, timeout)
+
+        options["transport"] = guarded
+        if "project_file_transport" not in options and inner is urllib_transport:
+            options["project_file_transport"] = urllib_project_file_transport
+    return FactoryAgentSession(credentials, **options)
+
+
+def _money(cents: Optional[int]) -> str:
+    return "unknown" if cents is None else "$%d.%02d" % (cents // 100, cents % 100)
+
+
+def _extras_text(items: Sequence[Mapping[str, Any]]) -> str:
+    if not items:
+        return "(none)"
+    return "; ".join("%s %s" % (item["name"], _money(item["price_cents"])) for item in items)
+
+
+def _update_record(
+    args: argparse.Namespace, source: DirectSource
+) -> Mapping[str, Any]:
+    """The PUBLICATION.json that names the listing this update targets."""
+
+    if args.archive is not None:
+        record = source.publication
+    elif args.published_archive is not None:
+        record = load_public_toy_archive(args.published_archive).publication
+    else:
+        raise ContractError("--update-listing with --cad-dir needs --published-archive")
+    if record is None:
+        raise ContractError("the archive records no publication; there is no listing to update")
+    slug = (record.get("publication") or {}).get("slug")
+    if slug != args.update_listing:
+        raise ContractError(
+            "--update-listing %s does not match the archive's listing %s"
+            % (args.update_listing, slug)
+        )
+    return record
+
+
+def _update_plan(
+    args: argparse.Namespace,
+    source: DirectSource,
+    record: Mapping[str, Any],
+    primary_step: str,
+    staged: Any,
+) -> ListingUpdatePlan:
+    versions = record.get("versions") or []
+    latest = versions[-1] if versions and isinstance(versions[-1], Mapping) else {}
+    return ListingUpdatePlan(
+        reason=args.reason,
+        slug=args.update_listing,
+        source_primary_path=primary_step,
+        source_primary_sha256=hashlib.sha256(source.files[primary_step].read_bytes()).hexdigest(),
+        kept_bodies=(),
+        stripped_bodies=tuple(staged.stripped_bodies),
+        extra_materials=tuple(_extra_materials(staged.context.made.product)),
+        predicted_weight_g=args.predicted_grams,
+        predicted_weight_source=args.predicted_grams_source,
+        recorded_source_primary_sha256=latest.get("source_primary_sha256"),
+        recorded_history_id=latest.get("history_id"),
+    )
+
+
+def _update_bindings(staged: Any, handoff: Mapping[str, Any]) -> ListingUpdateBindings:
+    return ListingUpdateBindings(
+        content=handoff["content"],
+        pack_sha256=handoff["pack_sha256"],
+        handoff_artifact_sha256=handoff["artifact_sha256"],
+        product_artifact_sha256=staged.context.made.artifact_sha256,
+        release_sha256=staged.release_manifest.artifact_sha256,
+        playtest_evidence_sha256=handoff["page"]["playtest_evidence_artifact_sha256"],
+        product_page_sha256=handoff["product_page_sha256"],
+        primary_model_sha256=handoff["primary_model"]["sha256"],
+        product_facts_sha256=handoff["product_facts_sha256"],
+    )
+
+
+def _describe_preview(write: Any, plan: ListingUpdatePlan, state: Any, problems: Sequence[str],
+                      code: Optional[str]) -> None:
+    write("listing update: %s (design %s), reason %s" % (plan.slug, state.design_id, plan.reason))
+    write("  current:     %s, listing %s, version %s" % (
+        _money(state.price_cents),
+        {True: "active", False: "paused", None: "absent"}[state.listing_active],
+        state.current_history_id))
+    write("               measured %s, extras %s" % (
+        "%.2f g" % state.weight_g if state.weight_g is not None else
+        "not yet (%s)" % (state.slice.status or "no slice"),
+        _extras_text(state.extra_materials)))
+    follows = state.price_follows_formula
+    write("               Factory's formula for that gives %s: %s" % (
+        _money(state.formula_price_cents),
+        "the price follows the formula" if follows else
+        "unknown" if follows is None else
+        "the price does NOT follow it; it may have been set by hand, in which case the "
+        "update will not move it and new extras may pause it"))
+    write("  infill:      %s" % ("%d%%" % state.infill_percent if state.infill_percent else
+                                   "not in Factory's readback (no print_settings); the new version "
+                                   "carries no override, so it prints at the shop's 15%"))
+    write("  geometry:    source %s sha256 %s" % (plan.source_primary_path, plan.source_primary_sha256))
+    write("               live version made from %s (%s)" % (
+        state.live_primary_sha256 or "an unrecorded primary",
+        "same" if state.live_primary_sha256 == plan.source_primary_sha256 else "different"))
+    write("  new extras:  %s = %s" % (_extras_text(plan.extra_materials), _money(plan.extras_cents)))
+    if plan.predicted_weight_g is not None:
+        write("  predicted:   %.2f g (%s) -> %s" % (
+            plan.predicted_weight_g, plan.predicted_weight_source, _money(plan.predicted_price_cents)))
+    else:
+        write("  predicted:   unknown (no --predicted-grams)")
+    write("  sends:       POST /designs/%s/import (no extras), waits for its slice, then "
+          "PUT /designs/%s/extra-materials" % (plan.slug, plan.slug))
+    if problems:
+        write("  refused:")
+        for problem in problems:
+            write("    - %s" % problem)
+    write("  confirmation: %s" % (code or "none (the update cannot run)"))
+
+
+def _reconcile_publish(
+    args: argparse.Namespace,
+    environment: Optional[Mapping[str, str]],
+    transports: Mapping[str, Any],
+    write: Any,
+) -> int:
+    """Settle an unknown publish intent by readback alone (ADR 0097, decision 7)."""
+
+    path = ledger_path(args.reconcile_publish, environment)
+    if not path.is_file():
+        raise ContractError("no direct-publish ledger for %s at %s" % (args.reconcile_publish, path))
+    ledger = EffectLedger(path)
+    publish = ledger.latest(args.reconcile_publish, "factory-publish")
+    draft_intent = ledger.latest(args.reconcile_publish, "factory-import")
+    if publish is None or draft_intent is None or draft_intent.receipt is None:
+        raise ContractError("%s has no import receipt and publish intent to reconcile"
+                            % args.reconcile_publish)
+    write("reconcile:     %s publish intent is %s (%s)" % (
+        args.reconcile_publish, publish.state, publish.error or "no error recorded"))
+    if publish.state not in ("sending", "unknown"):
+        write("nothing to reconcile")
+        return 0
+    session = _session(args.inventor, environment, transports, read_only=True)
+    transition = FactoryPublicTransition(ledger, session)
+    receipt = transition.publish(draft_intent.receipt)
+    settled = ledger.latest(args.reconcile_publish, "factory-publish")
+    write("reconciled:    publish intent is now %s" % settled.state)
+    write("slug: %s" % receipt.slug)
+    write("public: %s" % receipt.details.get("page_url", "https://www.autonomous.ai/toys/product/" + receipt.slug))
+    write("listing: %s %s, version %s" % (
+        _money(receipt.listing_price_cents),
+        "active" if receipt.listing_active else "not active", receipt.published_history_id))
+    return 0
+
+
 def main(
     argv: Optional[Sequence[str]] = None,
     *,
@@ -506,11 +724,24 @@ def main(
     args = _parser().parse_args(argv)
     write = lambda line="": print(line, file=out)  # noqa: E731
     try:
+        if args.reconcile_publish:
+            if args.cad_dir or args.archive or args.update_listing or args.live:
+                raise ContractError("--reconcile-publish takes only --inventor")
+            return _reconcile_publish(args, environment, transports or {}, write)
+        if args.cad_dir is None and args.archive is None:
+            raise ContractError("pass --cad-dir or --archive")
         if args.reimport_slug:
             raise ContractError(
-                "--reimport-slug is not supported yet: Workshop's Factory adapter never "
-                "appends a version to a public design (planned; see docs/PUBLISH_DIRECT.md)"
+                "--reimport-slug is retired: append a version to the public design with "
+                "--update-listing %s --reason fix|reprice (ADR 0097)" % args.reimport_slug
             )
+        updating = args.update_listing is not None
+        if updating and args.reason is None:
+            raise ContractError("--update-listing needs --reason fix or --reason reprice")
+        if not updating and (args.reason or args.confirm or args.predicted_grams is not None
+                             or args.published_archive):
+            raise ContractError("--reason, --confirm, --predicted-grams and --published-archive "
+                                "go with --update-listing")
         if args.verify and args.archive is not None:
             raise ContractError(
                 "--verify runs on a --cad-dir; verify the project and re-pack the archive"
@@ -523,7 +754,21 @@ def main(
             _run_verification(args, primary_step, environment or os.environ, err)
             source = _source(args)
         packed = _packed_inventor(source, _roster(args.inventors))
-        product_id = _product_id(args, source, packed)
+        record = None
+        published = None
+        if updating:
+            record = _update_record(args, source)
+            published = published_design(
+                default_workshop_home(environment) / "direct-publish", args.update_listing
+            )
+            if args.product_id and args.product_id != published.product_id:
+                raise ContractError(
+                    "%s was published as product id %s; an update keeps that id, not %s"
+                    % (args.update_listing, published.product_id, args.product_id)
+                )
+            product_id = published.product_id
+        else:
+            product_id = _product_id(args, source, packed)
         readme_title, readme_paragraph = readme_summary(source.readme or b"")
         title = args.title or readme_title
         summary = args.summary or readme_paragraph
@@ -553,7 +798,16 @@ def main(
                 write, live=args.live, source=source, product_id=product_id,
                 inventor=args.inventor, display_name=display_name, staged=staged,
                 handoff=handoff, evidence=evidence, environment=environment,
+                updating=updating,
             )
+            if updating:
+                assert record is not None and published is not None
+                return _run_update(
+                    args, write, source=source, packed=packed, evidence=evidence,
+                    environment=environment, transports=transports or {},
+                    product_id=product_id, record=record, primary_step=primary_step,
+                    staged=staged, handoff=handoff, sleeper=sleeper, clock=clock,
+                )
             blockers = _blockers(args, source, packed, evidence, environment,
                                  product_id=product_id, title=title)
             if blockers:
@@ -588,6 +842,99 @@ def main(
     except (ContractError, StateConflict, OSError) as exc:
         print("publish_direct: %s" % exc, file=err)
         return EXIT_INPUT
+
+
+def _update_blockers(
+    args: argparse.Namespace,
+    packed: Optional[str],
+    evidence: EvidenceStatus,
+    environment: Optional[Mapping[str, str]],
+) -> list[str]:
+    """What stops a Listing Update before any credential is read."""
+
+    blockers = []
+    if packed is not None and packed != args.inventor:
+        blockers.append(
+            "archive was packed for Inventor %s; re-pack it with `toy_archive pack "
+            "--inventor %s`" % (packed, args.inventor)
+        )
+    # A reprice republishes the live printed geometry, which the preview
+    # proves by hash, so it needs no new gate run. A fix changes it.
+    if args.reason == "fix" and not evidence.acceptable:
+        blockers.append("a fix needs gate evidence, and it is %s: %s"
+                        % (evidence.state, "; ".join(evidence.problems)))
+    if not inventor_credential_file(args.inventor, environment).exists():
+        blockers.append("no Factory credential for Inventor %s; run `workshop login %s`"
+                        % (args.inventor, args.inventor))
+    return blockers
+
+
+def _run_update(
+    args: argparse.Namespace,
+    write: Any,
+    *,
+    source: DirectSource,
+    packed: Optional[str],
+    evidence: EvidenceStatus,
+    environment: Optional[Mapping[str, str]],
+    transports: Mapping[str, Any],
+    product_id: str,
+    record: Mapping[str, Any],
+    primary_step: str,
+    staged: Any,
+    handoff: Mapping[str, Any],
+    sleeper: Callable[[float], None],
+    clock: Callable[[], float],
+) -> int:
+    blockers = _update_blockers(args, packed, evidence, environment)
+    if blockers:
+        write("listing update: refused")
+        for blocker in blockers:
+            write("  - %s" % blocker)
+        if args.live:
+            raise ContractError("--live refused: %s" % "; ".join(blockers))
+        write("preview stopped before any Factory read")
+        return 0
+    plan = _update_plan(args, source, record, primary_step, staged)
+    ledger = EffectLedger(ledger_path(product_id, environment))
+    updater = FactoryListingUpdate(
+        ledger,
+        _session(args.inventor, environment, transports, read_only=not args.live),
+        sleeper=sleeper, clock=clock,
+    )
+    if not args.live:
+        state, problems, code = updater.preview(plan)
+        _describe_preview(write, plan, state, problems, code)
+        pending = updater.pending(product_id)
+        if pending is not None and pending.state in ("sending", "unknown"):
+            write("  pending:     an earlier update (code %s) is %s: %s" % (
+                pending.request["listing_update"].get("confirmation_code"),
+                pending.state, pending.error))
+        write("preview complete; nothing was sent")
+        if code and not problems:
+            write("to run it: the same command with --live --confirm %s" % code)
+        return 0
+    if not args.confirm:
+        raise ContractError("--update-listing --live needs --confirm CODE from this update's preview")
+    receipt = updater.run(
+        product_id=product_id, plan=plan,
+        bindings=_update_bindings(staged, handoff), confirm=args.confirm,
+    )
+    version = listing_update_version(receipt)
+    write("slug: %s" % receipt.slug)
+    write("public: %s" % receipt.details["page_url"])
+    write("version: %s (was %s)" % (version["history_id"], version["base_history_id"]))
+    write("price: %s -> %s (predicted %s)%s" % (
+        _money(version["price_before_cents"]), _money(version["price_after_cents"]),
+        _money(version["predicted_price_cents"]),
+        "" if version["price_follows_formula"] else
+        "; price not repriced (possibly set by hand)"))
+    write("measured: %s g -> %s g (predicted %s g)" % (
+        version["weight_before_g"], version["weight_after_g"], version["predicted_weight_g"]))
+    write("listing-update-record: %s" % json.dumps(version, sort_keys=True, separators=(",", ":")))
+    write("publication-record: %s" % json.dumps(
+        append_publication_version(record, version), sort_keys=True, separators=(",", ":")))
+    return 0
 
 
 if __name__ == "__main__":

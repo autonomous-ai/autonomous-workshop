@@ -441,7 +441,16 @@ class EffectLedger:
         product_artifact_sha256: str,
         release_sha256: str,
         playtest_evidence_sha256: str,
+        supersede_settled: bool = False,
     ) -> EffectIntent:
+        """Record one exact intent before any network I/O.
+
+        A product normally has one live intent per kind. ``supersede_settled``
+        lets a later intent follow earlier ones that succeeded or never left
+        ``planned`` (a Listing Update appends one version per update); one
+        whose outcome is ``sending`` or ``unknown`` still blocks it.
+        """
+
         if kind not in _KINDS:
             raise ContractError("effect kind is unsupported")
         product_id = _text(product_id, "effect product id")
@@ -500,6 +509,10 @@ class EffectLedger:
                    ORDER BY created_at DESC, id DESC""",
                 (product_id, kind),
             ).fetchall()
+            if supersede_settled:
+                blockers = [
+                    row for row in blockers if row["state"] in ("sending", "unknown")
+                ]
             if blockers:
                 state = blockers[0]["state"]
                 if state in ("sending", "unknown"):
@@ -697,6 +710,30 @@ class EffectLedger:
             effect_token=effect_token,
             error=error,
             response=response,
+        )
+
+    def note_unknown(
+        self,
+        intent_id: str,
+        error: str,
+        response: Optional[Mapping[str, Any]] = None,
+    ) -> EffectIntent:
+        """Keep a ``sending`` or ``unknown`` intent unknown with a new note.
+
+        Used while reconciling by readback: the effect may have happened and
+        is not finished, so it must neither be resent nor marked settled.
+        """
+
+        intent = self.get(intent_id)
+        if intent.state not in ("sending", "unknown"):
+            raise StateConflict("only a sending or unknown effect can stay unknown")
+        return self._finish(
+            intent_id,
+            target="unknown",
+            effect_token=None,
+            error=error,
+            response=response,
+            reconcile=True,
         )
 
     def strand_as_unknown(self, intent_id: str, error: str) -> EffectIntent:

@@ -438,7 +438,8 @@ class DirectPublishTest(unittest.TestCase):
         self.store_credential()
         code, _, err = self.run_tool("--live", "--reimport-slug", "verified-toy", transport=NoNetwork())
         self.assertEqual(code, TOOL.EXIT_INPUT)
-        self.assertIn("--reimport-slug is not supported", err)
+        self.assertIn("--reimport-slug is retired", err)
+        self.assertIn("--update-listing verified-toy --reason fix|reprice", err)
         self.assertEqual(NoNetwork.calls, 0)
 
     def test_unknown_inventor_is_refused(self):

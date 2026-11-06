@@ -1679,6 +1679,46 @@ class FactoryClient:
             body=body, content_type=content_type, idempotency_key=idempotency_key,
         )
 
+    def get_slice(self, slug: str) -> HttpResponse:
+        """Read the current version's measurement (owner only)."""
+
+        if not isinstance(slug, str) or not slug:
+            raise ContractError("Factory design slug is required")
+        return self._request(
+            "GET", "/designs/%s/slice" % urllib.parse.quote(slug, safe="")
+        )
+
+    def put_extra_materials(
+        self, slug: str, extra_materials: Sequence[Mapping[str, Any]]
+    ) -> HttpResponse:
+        """Replace a design's whole extra-materials list; resending is a no-op."""
+
+        if not isinstance(slug, str) or not slug:
+            raise ContractError("Factory design slug is required")
+        items = [
+            {"name": item["name"], "price_cents": item["price_cents"]}
+            for item in extra_materials
+        ]
+        if len(items) > FACTORY_MAX_EXTRA_MATERIALS:
+            raise ContractError(
+                "Factory takes at most %d extra materials" % FACTORY_MAX_EXTRA_MATERIALS
+            )
+        for item in items:
+            if (
+                not isinstance(item["name"], str)
+                or not item["name"].strip()
+                or len(item["name"]) > FACTORY_MAX_EXTRA_MATERIAL_NAME
+                or type(item["price_cents"]) is not int
+                or not 0 <= item["price_cents"] <= FACTORY_MAX_EXTRA_MATERIAL_CENTS
+            ):
+                raise ContractError("Factory extra material is malformed")
+        return self._request(
+            "PUT",
+            "/designs/%s/extra-materials" % urllib.parse.quote(slug, safe=""),
+            body=_canonical_json({"extra_materials": items}),
+            content_type="application/json",
+        )
+
     def write_use_case(
         self,
         slug: str,
@@ -2100,6 +2140,34 @@ class FactoryAgentSession:
         if not response.body or observed != expected:
             raise ReceiptError("Factory publication anchor differs from the sealed Make-output metadata")
         return {"publication_anchor_url": url, "publication_anchor_readback_sha256": observed}
+
+    def read_product_facts(self, project_url: Any) -> Optional[Mapping[str, Any]]:
+        """Read a version's own ``workshop-product-facts.json``, or None if absent."""
+
+        url = _factory_project_file_url(project_url, "workshop-product-facts.json")
+        try:
+            response = self._project_file_transport(
+                "GET", url,
+                {"Accept": "application/json", "User-Agent": FACTORY_USER_AGENT},
+                None, self._timeout_seconds,
+            )
+        except (ContractError, EffectError):
+            raise
+        except Exception as exc:
+            raise AmbiguousEffectError("Factory product facts readback is unavailable") from exc
+        if response.status == 404:
+            return None
+        if response.status != 200:
+            raise AmbiguousEffectError(
+                "Factory product facts readback returned HTTP %s" % response.status
+            )
+        try:
+            value = json.loads(response.body.decode("utf-8"))
+        except (UnicodeError, ValueError) as exc:
+            raise ReceiptError("Factory product facts are not JSON") from exc
+        if not isinstance(value, Mapping):
+            raise ReceiptError("Factory product facts must be a JSON object")
+        return value
 
     def verify_import_root_facts(
         self, project_url: str, expected_sha256: str

@@ -47,7 +47,13 @@ PYTHONPATH=src uv run python tools/publish_direct.py --cad-dir <staged project> 
 | `--what-arrives`, `--limitation` | Optional and repeatable. These become Made facts, and Factory's copy auditor reads them. |
 | `--verify` | `--cad-dir` only. Runs autonomous-product-to-cad's `skills/cad/scripts/verify_project --fresh --print-gates --assembly <primary entry>` on the project, in place, and writes `measure/direct-publish-evidence.json`. The checkout comes from `--verifier-repo`, `$PRODUCT_TO_CAD_REPO` or the sibling directory. The interpreter is `--verifier-python`, that checkout's `.venv`, or this one. |
 | `--known-gate-failure GATE:REASON` | Repeatable. Lets one failing gate (for example `check_thickness`) through, with the owner's reason. See [Gate evidence](#gate-evidence). |
-| `--reimport-slug SLUG` | Refused (see [Planned](#planned)). |
+| `--update-listing SLUG` | Append a version to this public design instead of creating one. See [Update a published listing](#update-a-published-listing). |
+| `--reason fix\|reprice` | Required with `--update-listing`. |
+| `--published-archive DIR` | `--update-listing` with `--cad-dir`: the toy's packed archive, whose `PUBLICATION.json` names the listing. |
+| `--predicted-grams G`, `--predicted-grams-source TEXT` | `--update-listing`: the printed-only primary's mass, measured with Factory's own slice worker, and how. Without them there is no confirmation code. |
+| `--confirm CODE` | `--update-listing --live`: the code that run's preview printed. |
+| `--reconcile-publish PRODUCT_ID` | Settle that product's `unknown` publish intent by Factory readback alone. Takes only `--inventor`, and never sends. |
+| `--reimport-slug SLUG` | Retired: refused, naming `--update-listing`. |
 | `--live` | Performs the publication. On success it prints `slug: …`, `public: <url>` and one `publication-record: <json>` line. |
 
 Exit codes: `0` success, `2` input or state refusal, `3` Factory effect
@@ -265,7 +271,7 @@ The table covers what Factory or Release needs, whether a toy archive (or a
 | Effect ledger, idempotency | No | `$WORKSHOP_HOME/direct-publish/<product-id>/factory-effects.sqlite3`. A re-run with the same bytes reconciles. Changed bytes for an already published product id are refused, so no second design is created. The ledger is machine-local, so another machine has no record. |
 | Draft readback, anchor readback, public readback | n/a | The same adapter. Success is printed only after public readback. |
 | `release-effect.json`, `workshop status`, `toys/` projection with identity hashes | No | `workshop status` never sees a direct publication. The `publication-record` line carries the receipt's identity hashes, and the toy-archive wrapper merges them into `PUBLICATION.json`. |
-| Re-import of an existing design | No | **Refused for now** (see [Planned](#planned)). The adapter never appends a version to a public design, and `workshop fix` publishes corrections as new designs ([ADR 0065](adr/0065-published-toy-correction-runs.md)). |
+| Re-import of an existing design | No | `--update-listing SLUG --reason fix\|reprice` appends a version to the public design (see [Update a published listing](#update-a-published-listing)). `workshop fix` still publishes corrections as new designs by default ([ADR 0065](adr/0065-published-toy-correction-runs.md)). |
 | An archive that already records a publication | `publication/PUBLICATION.json` | `--live` is refused, because a second create would duplicate the listing. |
 | A CAD project for a toy already published under another product id | No | `--live` is refused when another product id's ledger records an import under the slug the title gets. See below. |
 
@@ -339,13 +345,122 @@ Limits:
 - A toy published only from another machine, with no archive record here, is
   not caught either.
 
-Factory itself is not asked, so the dry run stays offline.
+Factory itself is not asked, so the dry run stays offline. To update the
+listing the refusal names, see [Update a published listing](#update-a-published-listing).
 
-## Planned
+## Update a published listing
 
-Direct publications will later support appending a new version to an existing
-public design. That needs an ADR amending
-[ADR 0065](adr/0065-published-toy-correction-runs.md), and a Factory
-append-version effect with its own ledger intent, idempotency and
-authenticated readback. Until then `--reimport-slug` is refused, and a changed
-toy under an already-published product id is refused by the ledger.
+[ADR 0097](adr/0097-listing-updates-append-a-version-to-a-public-design.md)
+adds a Listing Update: one version appended to a public design that this
+Workshop published. The listing, slug, URL and SKU stay. It is how a toy
+published before #219 is repriced, now that props and bought hardware are
+no longer weighed.
+
+```sh
+# preview: authenticated Factory reads only, nothing is sent
+PYTHONPATH=src .venv/bin/python tools/publish_direct.py \
+    --archive toys/rowan-vale-otter-bamboo-pen-cup --inventor rowan-vale \
+    --primary-step r26-otter-bamboo-pen-cup.step \
+    --bought washer_1=washer-m12-iso7089 --bought washer_2=washer-m12-iso7089 \
+    --update-listing otter-bamboo-pen-cup --reason reprice \
+    --predicted-grams 120.5 --predicted-grams-source "Orca, psb-worker aea8c67, bounded bed"
+
+# the owner reads the prices, then runs exactly that update
+... the same command ... --live --confirm lu-0123456789ab
+```
+
+**Proof that the design is ours.** The archive's `PUBLICATION.json` names
+the slug, and `--update-listing` must repeat it. One local ledger must hold
+a succeeded `factory-import` receipt for that slug. The update goes into
+that product id's ledger, whatever the archive's directory is called. The
+preview then checks, by authenticated readback, that:
+
+- the design is public and its current version is the published one;
+- its author is the Inventor's own account;
+- its current version's slice is `done`;
+- it prints at the shop's 15 % infill. Workshop does not send print
+  overrides yet, so a new version would drop any other infill. That is a
+  `fix`, and it is refused.
+
+**`reprice` or `fix`.**
+
+- A `reprice` must publish the live printed geometry. The preview reads the
+  live version's own `workshop-product-facts.json` from the CDN, and its
+  `primary_model.sha256` must be the source primary's SHA-256. After a
+  first update it must be the `source_primary_sha256` of the archive's
+  latest `versions[]` entry, for the current version. Nothing printed
+  changes, so a reprice needs no new gate evidence.
+- A `fix` changes printed geometry or print settings, and it needs fresh
+  gate evidence exactly as a create does.
+
+**Preview.** Without `--live`, `--update-listing` prints:
+
+- the current price, the listing state, the version, the measured grams and
+  the extras;
+- Factory's formula applied to those, and whether the current price follows
+  it. A price that does not follow it may have been set by hand: Factory
+  will not move it, and new extras may pause it;
+- the source primary against the live one;
+- the new extras;
+- the predicted price;
+- any refusal;
+- a confirmation code.
+
+Factory measures mass only by slicing a live version. So the predicted
+grams come from `--predicted-grams`, and without them there is no code.
+
+The code is a short hash of the base design, version, price, grams and
+extras, the reason, the source primary SHA-256, the removed bodies, the new
+extras and the prediction. It does not hash the handoff ZIP, because those
+bytes carry timestamps.
+
+**Live.** `--live --confirm CODE` reads Factory again. It refuses if the
+code no longer matches, for example because the base version, the price or
+the extras moved. Otherwise it records a `factory-import-version` intent
+with a `listing_update` object, keyed on the base version, and then:
+
+1. `POST /designs/{slug}/import` with the handoff and **no** extras;
+2. polls `GET /designs/{slug}/slice` until the new version is `done`;
+3. `PUT /designs/{slug}/extra-materials` with the new list;
+4. reads back the design, the anchor, the extras and the listing.
+
+The extras wait for the slice, so Factory never shows the old mass with the
+new extras. On success the tool prints:
+
+- the slug and the page;
+- the old and new version, and the old, new and predicted price and grams;
+- one `listing-update-record:` line;
+- a `publication-record:` line with the schema 2 `PUBLICATION.json`, which
+  is the archive's record with `versions[]` appended and the latest price.
+
+The toy-archive wrapper writes the record into the archive. A price that
+does not follow the formula is reported as `price not repriced (possibly
+set by hand)`, and it is not a failure.
+
+**When it is not proven** (exit 3, rerun the same command):
+
+| Outcome | What a rerun does |
+|---|---|
+| The POST lost its response | Reads back. If the version moved and its anchor is ours, it carries on from step 2. If Factory still shows the base, nothing is resent and the owner decides. |
+| The slice is still running after 30 minutes | It keeps waiting. The extras are not sent until the slice is `done`. |
+| The slice failed for good | The extras are not sent. Factory pauses a platform price. The owner decides. |
+| The extras write failed or read back different | It sends the same `PUT` again. That is safe, because `PUT` replaces the whole list. |
+
+While one update is `unknown`, every other update is refused until the
+first is reconciled with its own `--confirm`. A Factory 4xx whose readback
+still shows the base records the intent as rejected, and nothing changed.
+
+## Reconcile an unknown publication
+
+`--reconcile-publish PRODUCT_ID --inventor ID` settles a ledger whose
+`factory-publish` intent is `unknown`. That happens when Factory accepted
+the publish but its listing was not yet readable within the wait. The flag
+runs the unchanged `FactoryPublicTransition` on the ledger's own import
+receipt, which reproduces the exact intent. It works only through a session
+whose transport refuses everything except `GET` and login:
+
+- if readback proves an active public listing, the intent becomes
+  `succeeded`;
+- if not, it stays `unknown`, and the run exits `3`.
+
+It never sends a publish.

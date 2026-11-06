@@ -184,11 +184,15 @@ Workshop published. All of these must hold:
   - `reprice`: the same printed geometry and print settings, re-published
     only to correct what Factory weighs and bills (#219: the primary
     stripped of display-only and bought bodies, plus `extra_materials`).
-    The host reads the live `assembled.step` from `project_url` and requires
-    that, after the declared bodies are removed, its body names and each
-    body's volume and area equal the new primary's. Nothing printed changes,
-    so a reprice needs no new gate evidence. A changed infill override is a
-    `fix`.
+    The host reads the live version's own `workshop-product-facts.json`
+    from `project_url`. Its `primary_model.sha256` must equal the SHA-256 of
+    the source primary STEP from which the new printed-only primary is
+    derived. After a first update, it must instead equal the
+    `source_primary_sha256` that the archive's latest `versions[]` entry
+    records for the current version. This proves the geometry by hash,
+    without downloading the live STEP, which for the palm vase is 66 MB.
+    Nothing printed changes, so a reprice needs no new gate evidence. A
+    changed infill override is a `fix`.
 - **Nothing of the listing's identity changes.** That covers the title, slug,
   URL, description, category, tags and license, and Factory refuses them on
   this route anyway. A rename stays a separate, out-of-scope owner action
@@ -219,7 +223,8 @@ turn performs or sees it. It runs in four steps:
      listing, `print_settings` and `extra_materials`;
    - `GET /designs/{slug}/slice`: the current version's measured
      `weight_g`, which must be `done` and belong to `current_history_id`;
-   - for a reprice, the live `assembled.step` from `project_url`.
+   - for a reprice, the live version's `workshop-product-facts.json` from
+     `project_url`.
 2. **Send the version.** `POST /designs/{slug}/import` with:
    - `file`: the same single-STEP Make-output handoff a create sends;
    - `usage`, when a Workshop run supplies it;
@@ -304,8 +309,11 @@ prints:
   predicted price, computed with Factory's formula (§ Context) from the
   predicted grams and the new extras.
 - **The confirmation code:** a short hash of the slug, `design_id`, base
-  history, current price, current grams, predicted grams, predicted price,
-  extras, reason and the new primary's printed-body measures.
+  history, current price, current grams, current extras, predicted grams,
+  predicted price, new extras, reason, source primary SHA-256 and removed
+  bodies. It does not hash the handoff ZIP: the STEP and manifest headers
+  carry timestamps, so the ZIP's bytes differ on every run. A rerun of an
+  unresolved update finds its intent by the code.
 
 **Predicted grams.** Factory measures mass only by slicing, after a version
 is live. So the predicted grams come from `--predicted-grams G
@@ -438,5 +446,31 @@ Workshop is built without these; each would make it safer or simpler:
 
 ## Implementation status
 
-Proposed and accepted on 2026-11-06. Implementation follows in its own PR,
-and this section is updated with what is built.
+Proposed and accepted on 2026-11-06.
+
+**Built:**
+
+- In `tools/publish_direct.py`:
+  - `--update-listing`, `--reason`, `--published-archive`,
+    `--predicted-grams`, `--predicted-grams-source` and `--confirm`;
+  - `--reconcile-publish`.
+- In `workshop.integrations.factory_listing`:
+  - `FactoryListingUpdate`;
+  - `ListingUpdatePlan`, the confirmation code and Factory's price formula;
+  - `append_publication_version`, which writes the schema 2
+    `PUBLICATION.json`.
+- On `FactoryClient`: `get_slice` and `put_extra_materials`.
+- On `FactoryAgentSession`: `read_product_facts`.
+- On `EffectLedger`: `prepare(supersede_settled=True)` and `note_unknown`.
+- Fake-transport tests for the § 9 cases.
+
+**Not built yet:**
+
+- `workshop fix --update-listing` and `workshop publish --update-listing`.
+  Until they exist, a correction run's output is published with
+  `tools/publish_direct.py --cad-dir … --published-archive …
+  --update-listing … --reason fix`.
+- Carrying a live print override into a new version. An update of a design
+  with a non-default infill is refused.
+- The product-to-cad wrapper's `--update-listing` passthrough, which comes
+  in its own PR.
