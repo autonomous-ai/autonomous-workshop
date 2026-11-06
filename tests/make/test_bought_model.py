@@ -12,6 +12,7 @@ import copy
 import hashlib
 import importlib.util
 import json
+import math
 import shutil
 import tempfile
 import types
@@ -185,6 +186,91 @@ class PlanTest(unittest.TestCase):
         self.assertTrue(tool.check_placements({"kind": "bought-placements", "schema_version": 1,
                                                "parts": {"s-half": {"hinge": "sideways"}}}))
         self.assertEqual(tool.check_placements(PLACEMENTS), [])
+
+    # Issue #225: a Bought Part seated square to a tilted face.
+
+    def test_without_a_pose_the_plan_is_the_one_runs_sealed_before_poses(self):
+        placements = copy.deepcopy(PLACEMENTS)
+        placements["routes"] = [{"wire": "wire", "from": "s-half", "to": "pcba",
+                                 "points": [[17.0, 3.5, 8.0], [17.0, 3.5, 20.0], [11.5, 1.0, 20.0]]}]
+        planned = self.plan(placements=placements)
+        self.assertFalse(any("pose" in body for body in planned["bodies"]))
+        # The canonical plan of this fixture before poses existed: a run
+        # sealed without one keeps its body list byte for byte.
+        self.assertEqual(hashlib.sha256(tool._canonical(planned)).hexdigest(),
+                         "c3b7c49f1e0476e258923d2e7effa387168c4ed4d67fa717dcff4e887da0a817")
+        self.assertEqual(tool.posed_requests(envelopes(), bounds(), placements), {})
+
+    def test_a_posed_part_is_planned_in_its_own_frame_and_records_its_pose(self):
+        placements = copy.deepcopy(PLACEMENTS)
+        pose = {"axis": [1, 0, 0], "angle_deg": 30}
+        placements["parts"]["screen-led"]["pose"] = pose
+        # The world bounding box of the turned envelope is larger than the
+        # envelope; in the part's frame it is the envelope itself.
+        boxes = bounds()
+        boxes[envelope_path("screen-led")] = ((-4.0, 1.0, 8.0), (4.0, 15.0, 20.0))
+        requests = tool.posed_requests(envelopes(), boxes, placements)
+        self.assertEqual(requests, {"screen-led": (envelope_path("screen-led"), {
+            "axis": [1.0, 0.0, 0.0], "angle_deg": 30.0, "centre": [0.0, 8.0, 14.0]})})
+        local = {"screen-led": ((-4.0, 3.0, 10.0), (4.0, 13.0, 18.0))}
+        planned = tool.plan(self.electrical, self.parts, envelopes(), boxes, placements, local)
+        led = next(body for body in planned["bodies"] if body["part"] == "screen-led")
+        unposed = next(body for body in self.plan()["bodies"] if body["part"] == "screen-led")
+        self.assertEqual(led["pose"], requests["screen-led"][1])
+        self.assertEqual({k: v for k, v in led.items() if k != "pose"}, unposed)
+        # The frame turns +y (the LED's facing) by 30 degrees about +x.
+        facing = tool.to_world(led["pose"], (0.0, 1.0, 0.0), point=False)
+        self.assertAlmostEqual(facing[1], math.cos(math.radians(30)))
+        self.assertAlmostEqual(facing[2], math.sin(math.radians(30)))
+        corner = (1.0, 2.0, 3.0)
+        self.assertTrue(all(abs(a - b) < 1e-9 for a, b in zip(
+            tool.to_local(led["pose"], tool.to_world(led["pose"], corner)), corner)))
+
+    def test_a_route_end_reaches_a_posed_body_in_its_frame(self):
+        placements = copy.deepcopy(PLACEMENTS)
+        placements["parts"]["s-half"]["pose"] = {"axis": [0, 0, 1], "angle_deg": 90}
+        local = {"s-half": ENVELOPES["s-half"]}
+        lever = next(body for body in self.plan()["bodies"] if body["part"] == "s-half")
+        # The body's +x end, in its own frame, turns about the centre
+        # (17, 3.5, 4) by 90 degrees about +z: to +y in the world.
+        end = (lever["bounds"][1][0], 3.5, 4.0)
+        frame = {"axis": [0.0, 0.0, 1.0], "angle_deg": 90.0, "centre": [17.0, 3.5, 4.0]}
+        world = [round(v, 6) for v in tool.to_world(frame, end)]
+        self.assertAlmostEqual(world[0], 17.0)
+        self.assertAlmostEqual(world[1], 3.5 + end[0] - 17.0)
+        placements["routes"] = [{"wire": "wire", "from": "s-half", "to": "pcba",
+                                 "points": [world, [world[0], world[1], 20.0], [11.5, 1.0, 20.0]]}]
+        planned = tool.plan(self.electrical, self.parts, envelopes(), bounds(), placements, local)
+        self.assertEqual(planned["routes"][0]["from"], "s-half")
+        # The same end unturned is no longer on the body.
+        placements["routes"][0]["points"][0] = list(end)
+        with self.assertRaises(tool.Refused) as caught:
+            tool.plan(self.electrical, self.parts, envelopes(), bounds(), placements, local)
+        self.assertIn("from s-half", "; ".join(caught.exception.reasons))
+
+    def test_a_malformed_pose_is_refused_before_planning(self):
+        for pose in ({"axis": [1, 0, 0]}, {"angle_deg": 30}, {"axis": [1, 0], "angle_deg": 30},
+                     {"axis": [0, 0, 0], "angle_deg": 30}, {"axis": [1, 0, 0], "angle_deg": 0},
+                     {"axis": [1, 0, 0], "angle_deg": 181}, {"axis": [1, 0, 0], "angle_deg": True},
+                     {"axis": ["x", 0, 0], "angle_deg": 30}, {"axis": [1, 0, float("nan")], "angle_deg": 30},
+                     {"axis": [1, 0, 0], "angle_deg": 30, "centre": [0, 0, 0]}, [1, 0, 0, 30], "+x30"):
+            placements = copy.deepcopy(PLACEMENTS)
+            placements["parts"]["usb-c"]["pose"] = pose
+            problems = tool.check_placements(placements)
+            self.assertEqual(len(problems), 1, pose)
+            self.assertIn("parts.usb-c.pose must be {axis: [x, y, z], angle_deg}", problems[0])
+        for pose in ({"axis": [1, 0, 0], "angle_deg": 30}, {"axis": [0.0, 1.0, 1.0], "angle_deg": -180}):
+            placements = copy.deepcopy(PLACEMENTS)
+            placements["parts"]["usb-c"]["pose"] = pose
+            self.assertEqual(tool.check_placements(placements), [], pose)
+
+    def test_a_pose_without_its_envelope_read_in_its_frame_or_on_a_wire_is_refused(self):
+        placements = copy.deepcopy(PLACEMENTS)
+        placements["parts"]["usb-c"]["pose"] = {"axis": [1, 0, 0], "angle_deg": 30}
+        placements["parts"]["wire"] = {"pose": {"axis": [1, 0, 0], "angle_deg": 30}}
+        message = self.refused(placements=placements)
+        self.assertIn("usb-c: its envelope was not read in the pose's frame", message)
+        self.assertIn("wire: a wire is drawn along its routes and takes no pose", message)
 
 
 class AssemblyTextTest(unittest.TestCase):
@@ -485,6 +571,58 @@ class BuildAndFinalTest(unittest.TestCase):
         with self.assertRaises(tool.Refused) as caught:
             tool.final(project)
         self.assertIn("placements_sha256", "; ".join(caught.exception.reasons))
+
+    def test_a_posed_part_is_drawn_turned_inside_its_turned_envelope(self):
+        """Issue #225: an LED seated square to a face tilted 30 degrees."""
+
+        from build123d import Axis, Box, Pos, export_step, import_step
+
+        root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, root)
+        contract, catalogue = sealed(small_circuit())
+        (root / "WISH.json").write_text(json.dumps({"context": {"design_contract": contract,
+                                                                "kit_catalogue": catalogue}}))
+        project = root / "cad"
+        components = []
+        for part, (lo, hi) in ENVELOPES.items():
+            size = [hi[i] - lo[i] for i in range(3)]
+            centre = [(hi[i] + lo[i]) / 2 for i in range(3)]
+            shape = Pos(*centre) * Box(*size)
+            if part == "screen-led":
+                shape = shape.rotate(Axis(tuple(centre), (1, 0, 0)), 30)
+            path = project / envelope_path(part)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            export_step(shape, str(path))
+            components.append({"id": part, "cad": {"mode": "validation_envelope", "source": envelope_path(part)}})
+        (project / "measure").mkdir()
+        (project / "measure/power.json").write_text(json.dumps({"components": components}))
+        envelope = import_step(str(project / envelope_path("screen-led")))
+
+        def outside(placements):
+            (project / "measure/bought-placements.json").write_text(json.dumps(placements))
+            document = tool.build(project)
+            led = next(body for body in document["bodies"] if body["part"] == "screen-led")
+            drawn = import_step(str(project / led["step"]))
+            return led, drawn, drawn.volume - (drawn & envelope).volume
+
+        led, drawn, poking = outside(PLACEMENTS)
+        self.assertNotIn("pose", led)
+        self.assertGreater(poking, 1.0, "drawn square to the world, the LED pokes out of its tilted seat")
+
+        posed = copy.deepcopy(PLACEMENTS)
+        posed["parts"]["screen-led"]["pose"] = {"axis": [1, 0, 0], "angle_deg": 30}
+        led, drawn, poking = outside(posed)
+        self.assertLess(poking, 1e-3, "the posed LED stays inside its envelope")
+        self.assertEqual(led["pose"], {"axis": [1.0, 0.0, 0.0], "angle_deg": 30.0, "centre": [0.0, 8.0, 14.0]})
+        # Turned back, it sits where an unposed LED sits in the untilted seat.
+        lo, hi = tool._step_bounds(project / led["step"], led["pose"])
+        for i in range(3):
+            self.assertAlmostEqual(lo[i], led["bounds"][0][i], delta=tool.BOUND_TOLERANCE_MM)
+            self.assertAlmostEqual(hi[i], led["bounds"][1][i], delta=tool.BOUND_TOLERANCE_MM)
+        box = drawn.bounding_box()
+        self.assertGreater(box.max.Z - box.min.Z, hi[2] - lo[2] + 1.0, "the drawn LED is turned")
+        report = tool.final(project)
+        self.assertIn("bought_screen_led", report["bodies"])
 
 
 if __name__ == "__main__":

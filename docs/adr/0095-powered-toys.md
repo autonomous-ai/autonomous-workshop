@@ -297,7 +297,9 @@ prose.
    runs the run-local `make-round/scripts/bought_model.py --build`. From the
    power report's mount envelopes and a Make-authored
    `measure/bought-placements.json` (each directional part's `facing`, a
-   lever's `hinge`, optional wire routes), it draws:
+   lever's `hinge`, optional wire routes, and since issue #225 an optional
+   `pose`, a rotation about the envelope's centre for a seat not square to
+   the world axes, in whose frame `facing` and `hinge` are read), it draws:
    - one body per carried part instance, seated against its envelope's back
      face and centred across it, refusing a body larger than its envelope;
    - `bought_pcba` exactly when the contract names a `pcba`, exactly at its
