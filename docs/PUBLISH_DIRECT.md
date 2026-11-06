@@ -39,6 +39,9 @@ PYTHONPATH=src uv run python tools/publish_direct.py --cad-dir <staged project> 
 | `--cad-dir DIR` or `--archive DIR` | The source. `--cad-dir` is a CAD project in its own layout (`*.step.py`, `*.step`, `snap/`, `measure/`). `--archive` is a schema 4 public toy archive packed by `toy_archive pack`. Its `MANIFEST.json` is re-hashed with Workshop's `build_public_archive_manifest` before use. |
 | `--inventor ID` | Required. It must be a roster Inventor under `inventors/`, and `--live` needs that Inventor's own credential file. |
 | `--primary-step NAME` | The top-level STEP that crosses as `assembled.step`. Default: the one top-level entry that declares `PRINTABLE = True`. |
+| `--display-only BODY` | Repeatable. A body of the primary STEP that the buyer does not get, such as a prop placed for the renders. It is removed from `assembled.step` and is not billed. See [Printed bodies only](#printed-bodies-only). |
+| `--bought BODY=PART` | Repeatable. A body of the primary STEP that is bought hardware the buyer gets (a rod, a nut, ballast). It is removed from `assembled.step` and billed as a Factory extra material under PART, a Bought Part catalogue id or a plain name. Bodies naming the same PART are counted together. |
+| `--part-price PART=CENTS` | Repeatable. What one PART costs, in whole US cents. Required for every `--bought` part the catalogue does not price; refused when it differs from a catalogue price or names no `--bought` part. |
 | `--product-id ID` | The ledger key and the unknown-import discovery slug. Default: the directory name, without the `<inventor>-` prefix for an archive. |
 | `--title`, `--summary` | Default: the README's first heading and first paragraph. The title follows [TOY_NAMING.md](TOY_NAMING.md). |
 | `--what-arrives`, `--limitation` | Optional and repeatable. These become Made facts, and Factory's copy auditor reads them. |
@@ -66,6 +69,46 @@ lists each reason. `--live` checks these before it reads a credential:
 - the Inventor has no credential file of its own;
 - the archive already records a publication;
 - the archive was packed for another Inventor.
+
+## Printed bodies only
+
+Factory weighs exactly one file of the handoff: the root `assembled.step`.
+It splits that STEP into its solids and slices each one, with no name filter
+(`internal/slicer/tree.go` `PrintableSources`, `fetch.go` `splitSolids`).
+The weight sets the floor price: `0.052 × grams + $15 + extras`. A
+combined review entry places props and bought hardware beside the printed
+parts, so publishing it unchanged billed a pair of headphones and a steel
+rod as filament (the lamp-post stand, 2026-11-05: 494.7 g weighed, 225.5 g
+printed).
+
+So the staged `assembled.step` holds printed bodies only:
+
+- A primary body counts as printed when every solid it holds has the volume
+  and surface area of a solid that some top-level `PRINTABLE = True` entry's
+  STEP builds. Labels may differ between the scene and the part entry;
+  moving, turning or mirroring a part changes neither measure.
+- Every other body must be declared, with `--display-only` or `--bought`.
+  An undeclared body refuses the publication and is named in the error. So
+  does a declaration that names a printed body, or names no body. Nothing is
+  dropped without a declaration.
+- Declared bodies are removed, and the rest are written with their names
+  and colours. When nothing is removed, the primary's bytes cross unchanged.
+  A primary that is itself a `PRINTABLE = True` entry is not re-read.
+- The dry run lists the removed bodies, and the publication record's
+  `primary_model` carries `printed_bodies_of` and `removed_bodies`. Its
+  SHA-256 is then that of the printed-only file, not the archive's STEP.
+- The handoff carries exactly one STEP, the primary, and no mesh. Factory
+  weighs any mesh in preference to the STEP, so the adapter refuses one.
+  The full scene stays in Made under `cad/` and does not cross.
+
+`--bought` parts are recorded in Made's `product.json` as `bought_hardware`.
+The adapter sends them as Factory `extra_materials` on import, one line per
+part priced at unit price × count, for example `M6 nut (x2)`. Factory has no
+quantity field. A unit price comes from the Bought Part catalogue's optional
+`unit_price_cents` or from `--part-price`; nothing is estimated, and a part
+with neither refuses. On 2026-11-06 no catalogue entry carries a price, and
+the lamp's rod, nuts and ballast are not catalogued, so each needs
+`--part-price`.
 
 ## Gate evidence
 
@@ -142,7 +185,8 @@ shaped like a Workshop archive's `PUBLICATION.json`. It contains:
   Pack hashes, the publication anchor path, and the anchor's sent and
   read-back hashes. Unlike a Workshop archive, it has no
   `native_release_sha256`, because no NativeRelease exists.
-- `primary_model`: path, bytes and SHA-256.
+- `primary_model`: path, bytes and SHA-256, plus `printed_bodies_of` and
+  `removed_bodies` when bodies were removed.
 - `publication`: slug, page URL, observed time, listing, mode and anchor URL.
 - `direct_publish`: `workshop_lifecycle: not-run` and the evidence summary.
 
@@ -245,7 +289,10 @@ Factory reads them as passing evidence.
 2. Gate evidence (`--verify` on the project), and a `--known-gate-failure`
    with a reason for each failure they accept.
 3. The decision to publish, given by running `--live`.
-4. Optionally, a product id, a title and summary other than the README's,
+4. A `--display-only` or `--bought` declaration for every body of the
+   primary STEP that is not printed, and a `--part-price` for each bought
+   part the catalogue does not price.
+5. Optionally, a product id, a title and summary other than the README's,
    and the `what_arrives`/`limitations` lines.
 
 ## Planned

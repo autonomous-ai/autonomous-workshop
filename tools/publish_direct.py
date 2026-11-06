@@ -116,6 +116,16 @@ def _parser() -> argparse.ArgumentParser:
                         help="what the buyer receives; repeatable; read by Factory's copy auditor")
     parser.add_argument("--limitation", action="append", default=[], metavar="TEXT",
                         help="a known limitation; repeatable")
+    parser.add_argument("--display-only", action="append", default=[], metavar="BODY",
+                        help="a primary-STEP body the buyer does not get (a prop); removed from "
+                             "what Factory weighs; repeatable")
+    parser.add_argument("--bought", action="append", default=[], metavar="BODY=PART",
+                        help="a primary-STEP body that is bought hardware the buyer gets; removed "
+                             "from what Factory weighs and billed as an extra material; PART is a "
+                             "catalogue id or a plain name; repeatable")
+    parser.add_argument("--part-price", action="append", default=[], metavar="PART=CENTS",
+                        help="what one PART costs in US cents, for a part the catalogue does not "
+                             "price; repeatable")
     parser.add_argument("--known-gate-failure", action="append", default=[], metavar="GATE:REASON",
                         help="a gate failure the owner accepts, recorded with the publication; repeatable")
     parser.add_argument("--verify", action="store_true",
@@ -130,6 +140,28 @@ def _parser() -> argparse.ArgumentParser:
                         help=argparse.SUPPRESS)
     parser.add_argument("--live", action="store_true", help="publish; default is an offline dry run")
     return parser
+
+
+def _pairs(values: Sequence[str], flag: str) -> dict[str, str]:
+    result: dict[str, str] = {}
+    for value in values:
+        key, separator, item = value.partition("=")
+        key, item = key.strip(), item.strip()
+        if not separator or not key or not item:
+            raise ContractError("%s takes KEY=VALUE, not %r" % (flag, value))
+        if key in result:
+            raise ContractError("%s names %s twice" % (flag, key))
+        result[key] = item
+    return result
+
+
+def _part_prices(values: Sequence[str]) -> dict[str, int]:
+    prices = {}
+    for part, cents in _pairs(values, "--part-price").items():
+        if not cents.isdigit():
+            raise ContractError("--part-price %s must be whole US cents, not %r" % (part, cents))
+        prices[part] = int(cents)
+    return prices
 
 
 def _source(args: argparse.Namespace) -> DirectSource:
@@ -268,7 +300,21 @@ def _describe(
     write("playtest:      %s" % page["playtest_status"])
     _describe_evidence(write, evidence)
     primary = handoff["primary_model"]
-    write("primary model: %s <- %s  sha256 %s" % (primary["path"], staged.primary_source, primary["sha256"]))
+    if staged.stripped_bodies:
+        write("primary model: %s <- printed bodies of %s  sha256 %s" % (
+            primary["path"], staged.primary_source, primary["sha256"]))
+        write("               removed, not weighed by Factory: %s" % ", ".join(staged.stripped_bodies))
+    else:
+        write("primary model: %s <- %s  sha256 %s" % (primary["path"], staged.primary_source, primary["sha256"]))
+    hardware = staged.context.made.product.get("bought_hardware") or []
+    if hardware:
+        write("extra materials (billed on top of the print):")
+        for item in hardware:
+            write("  %s x%d at %d cents (%s price) = %d cents" % (
+                item["name"], item["count"], item["unit_price_cents"], item["price_source"],
+                item["count"] * item["unit_price_cents"]))
+    else:
+        write("extra materials: (none)")
     write("cover:         %s <- %s  sha256 %s" % (
         FACTORY_COVER_RENDER_PATH, staged.cover_path, handoff["cover_render_sha256"]))
     write("anchor:        workshop-release-page.json sha256 %s" % handoff["product_page_sha256"])
@@ -409,6 +455,9 @@ def publication_record(receipt: Any, staged: Any, evidence: EvidenceStatus) -> d
             "path": "make/models/cad/" + staged.primary_source,
             "bytes": primary.stat().st_size,
             "sha256": details["primary_model_sha256"],
+            **({"printed_bodies_of": "make/models/cad/" + staged.primary_source,
+                "removed_bodies": list(staged.stripped_bodies)}
+               if staged.stripped_bodies else {}),
         },
         "publication": {
             "adapter": "factory",
@@ -479,6 +528,9 @@ def main(
                 what_arrives=args.what_arrives,
                 limitations=args.limitation,
                 evidence=evidence.summary(),
+                display_only=args.display_only,
+                bought=_pairs(args.bought, "--bought"),
+                part_prices=_part_prices(args.part_price),
             )
             handoff = build_release_handoff(
                 staged.context, staged.release_root, staged.release_manifest

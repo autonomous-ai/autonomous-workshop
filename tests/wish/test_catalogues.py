@@ -55,6 +55,22 @@ class CatalogueTest(unittest.TestCase):
         bought["parts"][0]["source"] = None
         self.assertIn("is confirmed, so it needs its pack size and source", self._refused(_filaments(), bought))
 
+    def test_a_unit_price_is_optional_and_stays_out_of_the_snapshot(self):
+        bought = _bought()
+        bought["parts"][0]["unit_price_cents"] = 15
+        catalogues = parse_catalogues(_filaments(), bought)
+        self.assertEqual(catalogues.parts["steel-pin-1.5x29.5"].unit_price_cents, 15)
+        self.assertIsNone(catalogues.parts["tweezers"].unit_price_cents)
+        self.assertNotIn("unit_price_cents", catalogues.parts["steel-pin-1.5x29.5"].snapshot())
+
+    def test_a_unit_price_must_be_whole_positive_cents(self):
+        for price in (0, -1, 1.5, "15", True, 1_000_001):
+            with self.subTest(price=price):
+                bought = _bought()
+                bought["parts"][0]["unit_price_cents"] = price
+                self.assertIn("unit_price_cents must be what one piece costs",
+                              self._refused(_filaments(), bought))
+
     def test_malformed_entries_are_all_named(self):
         filaments, bought = _filaments(), _bought()
         filaments["filaments"][0]["hex"] = "navy"
