@@ -68,6 +68,9 @@ lists each reason. `--live` checks these before it reads a credential:
 - the gate evidence is not `pass`;
 - the Inventor has no credential file of its own;
 - the archive already records a publication;
+- another product id's local ledger records a Factory import, succeeded or of
+  unknown outcome, under the slug this title gets (see
+  [A toy published under another product id](#a-toy-published-under-another-product-id)).
 - the archive was packed for another Inventor.
 
 ## Printed bodies only
@@ -264,6 +267,7 @@ The table covers what Factory or Release needs, whether a toy archive (or a
 | `release-effect.json`, `workshop status`, `toys/` projection with identity hashes | No | `workshop status` never sees a direct publication. The `publication-record` line carries the receipt's identity hashes, and the toy-archive wrapper merges them into `PUBLICATION.json`. |
 | Re-import of an existing design | No | **Refused for now** (see [Planned](#planned)). The adapter never appends a version to a public design, and `workshop fix` publishes corrections as new designs ([ADR 0065](adr/0065-published-toy-correction-runs.md)). |
 | An archive that already records a publication | `publication/PUBLICATION.json` | `--live` is refused, because a second create would duplicate the listing. |
+| A CAD project for a toy already published under another product id | No | `--live` is refused when another product id's ledger records an import under the slug the title gets. See below. |
 
 ## What a direct publication skips
 
@@ -294,6 +298,48 @@ Factory reads them as passing evidence.
    part the catalogue does not price.
 5. Optionally, a product id, a title and summary other than the README's,
    and the `what_arrives`/`limitations` lines.
+
+## A toy published under another product id
+
+A `--cad-dir` source carries no `PUBLICATION.json`. Its product id is
+derived from the project's directory name, while an earlier publication may
+have used another one. The R24 palm vase is an example: its project is
+`r24-synthwave-palm-vase-taper`, but it was published as
+`synthwave-palm-bud-vase`. The ledger keyed by the new id is empty, so
+before this check, `--live` would have created a second design.
+
+For every source, `--live` and the dry run therefore read every local ledger
+under `$WORKSHOP_HOME/direct-publish/`, without writing to them. A ledger
+refuses the publication when all of these hold:
+
+- it belongs to another product id;
+- it records a `factory-import` that succeeded or whose outcome is unknown;
+- its receipt slug, or its requested title, slugifies to the slug of this
+  publication's title.
+
+The refusal names the earlier product id, its slug, its page and the
+import's state. An import whose outcome is unknown counts, because it may
+have created a design. A rejected one created nothing, so it does not count.
+The product id's own ledger is not part of this check. It still reconciles a
+rerun of the same bytes and refuses different bytes.
+
+The match is on the slug because the slug is what Factory and the public URL
+share. A product id is only Workshop's local key, and Factory never sees the
+CAD project's name.
+
+The receipt slug comes from authenticated readback, so it is the strongest
+local evidence. The toy archive's `PUBLICATION.json` is copied from that
+receipt. The toy-archive wrapper checks it as well, because `toys/` travels
+to other checkouts while the ledger is machine-local.
+
+Limits:
+
+- A toy re-titled with `--title` gets another slug, so this check does not
+  catch it.
+- A toy published only from another machine, with no archive record here, is
+  not caught either.
+
+Factory itself is not asked, so the dry run stays offline.
 
 ## Planned
 

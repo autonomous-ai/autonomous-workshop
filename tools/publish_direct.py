@@ -64,6 +64,7 @@ from workshop.release.direct_publish import (
     EvidenceStatus,
     KnownGateFailure,
     build_evidence,
+    earlier_publications,
     evaluate_evidence,
     inventor_name,
     load_cad_project,
@@ -350,10 +351,23 @@ def _blockers(
     packed: Optional[str],
     evidence: EvidenceStatus,
     environment: Optional[Mapping[str, str]],
+    *,
+    product_id: str,
+    title: str,
 ) -> list[str]:
     """Everything that stops ``--live`` before any credential is read."""
 
     blockers = []
+    for earlier in earlier_publications(
+        default_workshop_home(environment) / "direct-publish", product_id=product_id, title=title
+    ):
+        blockers.append(
+            "product id %s already published this toy as %s (%s, import %s); publishing "
+            "it under product id %s would create a second design. Updating a published "
+            "listing in place is not supported yet (see docs/PUBLISH_DIRECT.md)"
+            % (earlier.product_id, earlier.slug, earlier.page_url or "no page recorded",
+               earlier.state, product_id)
+        )
     if source.publication is not None:
         page = (source.publication.get("publication") or {}).get("page_url")
         blockers.append("archive already records a publication (%s); publishing again "
@@ -540,7 +554,8 @@ def main(
                 inventor=args.inventor, display_name=display_name, staged=staged,
                 handoff=handoff, evidence=evidence, environment=environment,
             )
-            blockers = _blockers(args, source, packed, evidence, environment)
+            blockers = _blockers(args, source, packed, evidence, environment,
+                                 product_id=product_id, title=title)
             if blockers:
                 write("live:          refused")
                 for blocker in blockers:

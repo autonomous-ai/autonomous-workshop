@@ -15,6 +15,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import sqlite3
 import stat
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
@@ -106,6 +107,84 @@ def cover_neutral_fraction(content: bytes) -> float:
 
 def slugify(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+
+
+@dataclass(frozen=True)
+class EarlierPublication:
+    """A Factory import another product id's local ledger records."""
+
+    product_id: str
+    slug: str
+    state: str
+    page_url: Optional[str]
+
+
+def earlier_publications(
+    ledgers: Path, *, product_id: str, title: str
+) -> tuple[EarlierPublication, ...]:
+    """Every factory import under another product id that took, or may have
+    taken, the slug ``title`` gets.
+
+    Factory names a design's URL after its title, and the product id is only
+    Workshop's local key, so the slug is what two publications of one toy
+    share. ``ledgers`` is the ``direct-publish`` directory; each ledger is
+    read without writing. A rejected import created nothing and is skipped;
+    one whose outcome is unknown may have created a design, so it counts.
+    The ledger for ``product_id`` itself is left to the effect ledger, which
+    reconciles a rerun of the same bytes and refuses different ones.
+    """
+
+    wanted = slugify(title)
+    found: list[EarlierPublication] = []
+    if not wanted or not ledgers.is_dir():
+        return ()
+    for path in sorted(ledgers.glob("*/factory-effects.sqlite3")):
+        owner = path.parent.name
+        if owner == product_id:
+            continue
+        try:
+            connection = sqlite3.connect("file:%s?mode=ro" % path, uri=True)
+            try:
+                rows = connection.execute(
+                    "SELECT state, request_json, receipt_json FROM effect_intents"
+                    " WHERE kind = 'factory-import' AND state != 'rejected'"
+                ).fetchall()
+            finally:
+                connection.close()
+        except sqlite3.Error as exc:
+            raise ContractError(
+                "cannot read the direct-publish ledger of %s to check for an earlier "
+                "publication: %s" % (owner, exc)
+            ) from exc
+        for state, request_json, receipt_json in rows:
+            receipt = _json_object(receipt_json)
+            request = _json_object(request_json)
+            metadata = request.get("metadata") if isinstance(request.get("metadata"), Mapping) else {}
+            slugs = {
+                slugify(str(value))
+                for value in (receipt.get("slug"), metadata.get("title"))
+                if isinstance(value, str) and value
+            }
+            if wanted in slugs:
+                details = receipt.get("details") if isinstance(receipt.get("details"), Mapping) else {}
+                page = details.get("page_url")
+                found.append(EarlierPublication(
+                    product_id=owner,
+                    slug=str(receipt.get("slug") or wanted),
+                    state=str(state),
+                    page_url=page if isinstance(page, str) else None,
+                ))
+    return tuple(found)
+
+
+def _json_object(text: Optional[str]) -> Mapping[str, Any]:
+    if not text:
+        return {}
+    try:
+        value = json.loads(text)
+    except ValueError:
+        return {}
+    return value if isinstance(value, Mapping) else {}
 
 
 def readme_summary(content: bytes) -> tuple[Optional[str], Optional[str]]:
@@ -842,6 +921,8 @@ def _bought_hardware(
 
 __all__ = [
     "DIRECT_PUBLISH_KIND",
+    "EarlierPublication",
+    "earlier_publications",
     "EVIDENCE_PATH",
     "EvidenceStatus",
     "KnownGateFailure",
