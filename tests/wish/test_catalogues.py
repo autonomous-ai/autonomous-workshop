@@ -201,6 +201,23 @@ class CatalogueTest(unittest.TestCase):
         self.assertIn("https://twdtradewinds.com/product/dptt25x150/", tube.source)
         self.assertIsNone(tube.lead_diameter_mm)
 
+    def test_every_packaged_entry_has_an_estimated_unit_price(self):
+        # Owner, 2026-11-06: Vietnamese retail estimates, sourced in
+        # docs/research/bought-part-prices-2026-11-06.md.
+        parts = load_catalogues().parts
+        unpriced = sorted(pid for pid, part in parts.items() if part.unit_price_cents is None)
+        self.assertEqual(unpriced, [])
+
+    def test_the_packaged_seed_holds_the_live_archives_hardware_unconfirmed(self):
+        # The bodies the lamp, palm vase and otter primaries carry that are
+        # bought, not printed, each name an entry for --bought.
+        parts = load_catalogues().parts
+        for pid in ("threaded-rod-m6x250", "nut-m6-iso4032", "washer-m16-iso7093-50x3",
+                    "washer-m12-iso7089", "test-tube-pp-25x150"):
+            self.assertFalse(parts[pid].confirmed, pid)
+            self.assertGreater(parts[pid].unit_price_cents, 0, pid)
+        self.assertEqual(parts["nut-m6-iso4032"].category, "fastener")
+
     def test_the_lead_diameter_is_the_largest_one_given(self):
         bought = _bought()
         bought["parts"][1]["sizes"].append({"what": "lead diameter", "max_mm": [0.45, 0.5]})
