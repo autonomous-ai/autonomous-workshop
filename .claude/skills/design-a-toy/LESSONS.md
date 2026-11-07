@@ -164,6 +164,19 @@ rules as this file.
   and compare with the nearest ceiling in the assembly; cap the part's
   stated maximum so it clears by 0.5.
 
+### Never mark a backlashed gear mover `driven` in a pose table
+- **Why:** a Coupled Interface's pose table marked a spur pinion
+  `"driven": true`, which the motion gate proves by flank contact within
+  1e-6 mm at a nominal pose. Printed gears carry 0.2 to 0.3 mm of backlash
+  (Make wiki, gears), so the flank gap measured a constant 0.199 mm at every
+  sample and the claim could never pass. The design's own motion manifest
+  checked the same pair without the flag and passed, so nothing caught the
+  drift; the run stopped, and an in-run amendment cannot edit a pose table.
+- **How to apply:** in a pose table, leave `driven` off any mover joined by
+  backlashed teeth (gears, racks, worms); its motion is proved by the mesh
+  sweep and free play, not contact. Keep each Interface's pose table and the
+  motion manifest's condition for the same pair identical, flags included.
+
 ## Stage 4 - Visual review
 
 ### Offer two variants for a taste question
