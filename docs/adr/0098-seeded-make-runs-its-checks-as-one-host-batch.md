@@ -441,6 +441,15 @@ seeded build has run with the batch yet.
 
   Only the assembly round, the carried reviews, `product`, `parts` and
   the finalizer wait for the run.
+
+  It was tried with the real tools on /tmp copies of the Sunset Slider's
+  files:
+  - On the Proof, four of its five Coupled Interfaces pass. `crank-slot`
+    is refused because its pose table moves Components the Interface does
+    not join; the seal would now surface that before a build.
+  - On the finished run's CAD project, with its signature review removed,
+    `verify_project --design` passes every final gate in 12 minutes, and
+    `seeded_package check` resolves all 40 parts.
 - **Batch engine** (`workshop.make.seeded_batch`).
   - Layers: seed, project, shared-helpers, components, interfaces, power,
     motion, assembly, final, product, parts and finalize.
