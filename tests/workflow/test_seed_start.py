@@ -23,6 +23,7 @@ import tempfile
 from pathlib import Path
 
 from workshop.errors import StateConflict
+from workshop.make import seeded_batch
 from workshop.workflow.native_run import _sealed_seed, _sealed_seed_components, _seed_start_inputs
 
 
@@ -56,7 +57,9 @@ class SeedStartTest(unittest.TestCase):
     def test_a_recorded_seed_starts_with_its_files(self):
         seed, files = self._start(self._wish())
         approval = (self.proof / "APPROVAL.json").read_bytes()
-        self.assertEqual(seed, {key: self.recorded[key] for key in ("approval_sha256", "manifest_sha256")})
+        # ADR 0098: a new launch freezes the seeded batch tool with the seed.
+        self.assertEqual(seed, {**{key: self.recorded[key] for key in ("approval_sha256", "manifest_sha256")},
+                                "batch": {"tool_sha256": seeded_batch.module_sha256()}})
         self.assertEqual(files["APPROVAL.json"], approval)
         self.assertEqual(set(files) - {"APPROVAL.json"}, set(json.loads(approval)["manifest"]))
         # No effort given means the default, spark.
@@ -71,6 +74,19 @@ class SeedStartTest(unittest.TestCase):
         self._refused("seals only with --seed-source", self._wish(seed=None), source=None)
         self._refused("does not record the seed", self._wish(seed=None))
         self._refused("does not record the seed", self._wish(seed=dict(self.recorded, extra="x")))
+
+    def test_a_new_launch_refuses_a_seed_sealed_before_adr_0098(self):
+        approval = json.loads((self.proof / "APPROVAL.json").read_text())
+        approval["schema_version"] = 1
+        del approval["check_inputs"], approval["batch"]
+        (self.proof / "APPROVAL.json").write_text(json.dumps(approval))
+        self._refused("sealed before ADR 0098", self._wish())
+        self._refused("Re-seal it through design-a-toy", self._wish())
+
+    def test_a_new_launch_reads_the_sealed_contract_for_its_inputs(self):
+        moving = dict(self.design, interfaces=[{"id": "lid", "kind": "coupled"}])
+        self._refused("does not record the check inputs its contract needs: measure/motion.json",
+                      self._wish(design_contract=moving))
 
     def test_spark_only(self):
         self._refused("only the spark workflow", self._wish(), effort="forge")

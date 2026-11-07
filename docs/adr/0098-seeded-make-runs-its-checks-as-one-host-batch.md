@@ -81,10 +81,11 @@ the spec and the three audits.
 | Input | Required when | Written and gated in design by |
 |---|---|---|
 | `measure/motion.json` | the contract has a motion plan, or the run will freeze `check_motion: true` | the Proof, passing `check_motion` (design already runs it; today it is left in `/tmp`) |
-| `measure/power.json`, `measure/mounts.json`, `measure/electrical/`, `ref/validation/*.step` | schema 10 `electrical` | the Proof, passing `check_power` and `check_mount` |
+| `measure/power.json`, `measure/mounts.json`, `ref/validation/*.step` | schema 10 `electrical` | the Proof, passing `check_power` and `check_mount` (`measure/electrical/` is written by final verification, an output, not an input) |
 | `measure/bought-placements.json` | a Bought Part with a `model` or a `pose` | the Proof, passing `bought_model.py` (issue #227) |
-| production occurrences in `proof.step.py` (colour-named, as the finalizer reads them) | always | the Proof, passing the finalizer's occurrence check, run read-only by `seal_proof` |
-| `product.json` `title` and `summary` | always | the Proof, from the Wish's name line and the contract; the owner sees the summary at Stage 4 (owner decision 3) |
+| production occurrences in `proof.step.py` (colour-named, as the finalizer reads them) | always | the Proof; checked in the run by the finalizer, which design cannot run (see "Implementation status") |
+| `SEED-PRODUCT.json`: `title`, `summary`, `concept` and `research` | always | the Proof; the owner sees the summary at Stage 4 (owner decision 3). The run's `product.json` and Spark source are composed from it |
+| `snap/iso.png`, `snap/signature.png` | always | the Proof, the renders the owner approves |
 | the motion review (`snap/MOTION-REVIEW.json`, `snap/MOTION-EVIDENCE.json`, `snap/motion.gif`) | a moving toy | the Proof Critic, on the Proof's motion presentation (owner decision 1) |
 
 - **The manifest covers them.** The seed manifest and `APPROVAL.json` list
@@ -345,7 +346,12 @@ turn.
    in-run motion critic. The sealed review must name the same concept hash
    the run's carried signature review binds, so design seals the product
    source (concept and research) the run's `spark-source.json` is composed
-   from.
+   from. The run's carried assembly review names its reviewer `the owner
+   (Approved Proof)`, and `motion_presentation`'s carried rule needs the
+   motion review to name a different one, so the Proof Critic writes it
+   under its own name. `seal_proof` refuses a motion review the run could
+   not carry: the owner's reviewer name, rounds outside 1 to 4, another
+   concept hash or stale evidence.
 2. **Seeds sealed before this ADR are refused for new launches** (option
    b). `validate_seed`, which only `workshop wish` and `workshop fix
    --seed-source` call, refuses an approval that does not record every
@@ -393,5 +399,68 @@ turn.
 
 ## Implementation status
 
-See the stacked PR. Until it merges, nothing here is implemented, and
-seeded runs use ADR 0096's model-driven Make.
+Built on branch `seeded-batch-impl` (stacked on this ADR's PR), with
+deterministic-fake tests. Nothing here has run on a live seeded build yet.
+
+**Built:**
+
+- **Seal (decisions 1 and 5, owner decision 2).** `APPROVAL.json` schema 2
+  records `check_inputs` {path: sha256} and the design batch's `batch`
+  record. `seal_proof.py inputs DIR --contract FILE` lists each required
+  input, present or missing, and who writes it. `seal` refuses a missing
+  input, an invalid `SEED-PRODUCT.json`, a motion review the run could not
+  carry, or a failing design batch. `validate_seed` refuses schema 1 for
+  new launches with the re-seal path; resume never calls it.
+- **Batch engine** (`workshop.make.seeded_batch`). Layers are seed,
+  project, shared-helpers, components, interfaces, power, motion,
+  assembly, final, product and finalize. Every independent failure in a
+  layer is reported, and later layers are skipped and named (owner
+  decision 4). Exit 0 is a pass and exit 1 without a traceback is a check
+  failure. Anything else is a harness failure: a signal, another exit
+  code, a timeout, a traceback or a tool that cannot start. A pass is
+  reused only for identical argv, tool bytes and input bytes, and a
+  failure is never reused.
+- **Mechanical steps** (`workshop.make.seeded_package`). `prepare` copies
+  the seed's project and installs the run's print-details library.
+  `product` writes `product.json`, the Spark source, the root assembled
+  copies and a powered toy's README.
+- **Host** (`workshop.workflow.seeded_batch_host`). New seeded launches
+  freeze `MAKE-OPTIONS` schema 4 with `seed.batch.tool_sha256`; resume can
+  neither add nor drop it. Before a Make turn the host runs the batch in a
+  credential-free minimal environment, in the same way as the native gate
+  and release renders. A pass proceeds to the finalizer's proposal with no
+  native turn. A check failure starts the native turn with
+  `STAGE.json` `inputs.seeded_batch_failure`. A harness failure stops the
+  run with `last-harness-failure.json`. At Make evaluation the host reruns
+  the check layers as the gate, unless the passing attempt bound the same
+  proposal bytes. Seed component nonces are issued by the host
+  (`issuer: host-batch`).
+- **Product-run card.** `make-seeded.md` "When the host ran the batch".
+
+**Still a target or a known gap:**
+
+- **The design dry run is narrower than the run batch.** It runs
+  `verify_project --dry-run`, the shared-helper samples, the print gates,
+  `bought_model --build`, `check_power`, `check_mount` and `check_motion`.
+  It does not run the component rounds, which need run nonces, the
+  interface checks or the carried reviews. It also does not run final
+  verification, which needs the run's signature review, or the
+  finalizer. Those run first in the build.
+- **Final verification is called directly.** The final layer calls
+  `verify_project` with `make_round --full`'s argv rather than
+  `make_round --full --record-visual`, because no Manager visual feedback
+  exists in a batch.
+- **No sandbox.** The batch uses the minimal tool environment. The Claude
+  adapter has no bwrap sandbox to reuse, and the batch reads no
+  credentials.
+- **There is no `parts/` exporter.** No deterministic per-occurrence
+  exporter exists yet; the Sunset Slider Manager wrote one inside its run.
+  A multi-part seeded run's finalizer will refuse until one exists. That
+  run then takes one native packaging turn, which reuses every passing
+  check.
+- **`executor: host-batch` appears only in host state.** The Make receipt
+  does not show it yet.
+- **The loop is tested in parts, not end to end.**
+  `_seeded_batch_before_turn` and the gate are unit-tested with fakes. A
+  full `workshop wish --seed-source` through Release has not run with the
+  batch.

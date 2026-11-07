@@ -42,19 +42,27 @@ def _payload(root: Path) -> dict | None:
     if not isinstance(payload, dict):
         raise ValueError("invalid frozen Make options")
     version = payload.get("schema_version")
-    if type(version) is not int or version not in (1, 2, 3):
+    if type(version) is not int or version not in (1, 2, 3, 4):
         raise ValueError("invalid frozen Make options")
     base = {"schema_version", "check_motion"}
     if version == 1:
         if set(payload) != base:
             raise ValueError("invalid frozen Make options")
-    elif version == 3:
+    elif version in (3, 4):
         # Workshop ADR 0096: the Approved Proof a seeded run starts from, and
-        # a correction's carry policy when it is one.
+        # a correction's carry policy when it is one. Schema 4 (ADR 0098)
+        # adds the seeded batch tool the host runs the checks with.
         seed = payload.get("seed")
-        if (not isinstance(seed, dict) or set(seed) != {"approval_sha256", "manifest_sha256"}
-                or not all(isinstance(v, str) and len(v) == 64 for v in seed.values())):
+        hashes = ("approval_sha256", "manifest_sha256")
+        if (not isinstance(seed, dict)
+                or set(seed) != set(hashes) | ({"batch"} if version == 4 else set())
+                or not all(isinstance(seed[k], str) and len(seed[k]) == 64 for k in hashes)):
             raise ValueError("invalid frozen Make options")
+        if version == 4:
+            batch = seed["batch"]
+            if (not isinstance(batch, dict) or set(batch) != {"tool_sha256"}
+                    or not isinstance(batch["tool_sha256"], str) or len(batch["tool_sha256"]) != 64):
+                raise ValueError("invalid frozen Make options")
         if not set(payload) <= base | {"seed", "carry_unchanged"} or not base | {"seed"} <= set(payload):
             raise ValueError("invalid frozen Make options")
         if "carry_unchanged" in payload and payload["carry_unchanged"] is not True:
@@ -123,6 +131,6 @@ def seed() -> dict | None:
     if root is None:
         return None
     payload = _payload(root)
-    if payload is None or payload.get("schema_version") != 3:
+    if payload is None or payload.get("schema_version") not in (3, 4):
         return None
     return dict(payload["seed"])

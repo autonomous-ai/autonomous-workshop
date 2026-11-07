@@ -61,8 +61,8 @@ class SeedValidationTest(unittest.TestCase):
         with self.assertRaises(ContractError) as caught:
             validate_seed(self.proof, ("body",), "0" * 64)
         self.assertIn("sealed for another contract", str(caught.exception))
-        self._edit(lambda a: a.update(schema_version=2))
-        self._refused("schema_version 2 is not 1")
+        self._edit(lambda a: a.update(schema_version=3))
+        self._refused("schema_version 3 is not 2")
         self.approval_path.write_text("{")
         self._refused("does not parse")
         self.approval_path.unlink()
@@ -136,6 +136,78 @@ class SeedValidationTest(unittest.TestCase):
         self.assertEqual(validate_seed(target, ("body",), self.digest), seed)
         with self.assertRaises(ContractError):
             copy_seed(seed, self.proof, target)
+
+
+class CheckInputsRefusalTest(unittest.TestCase):
+    """ADR 0098 owner decision 2 (option b): a new launch refuses an Approved
+    Proof without the check inputs its contract needs, naming each and the
+    re-seal path."""
+
+    _record = seal_tests.SealProofTest._record
+    _seal = seal_tests.SealProofTest._seal
+    MOVING = {"interfaces": [{"id": "lid", "kind": "coupled"}]}
+
+    def setUp(self):
+        seal_tests.SealProofTest.setUp(self)
+        self.assertEqual(self._seal(), 0, self.stderr)
+        self.approval_path = self.proof / "APPROVAL.json"
+        self.digest = sha(self.contract)
+
+    def _refusal(self, contract=None):
+        with self.assertRaises(ContractError) as caught:
+            validate_seed(self.proof, ("body",), self.digest, contract)
+        return str(caught.exception)
+
+    def _legacy(self):
+        """What seal_proof wrote before ADR 0098: schema 1, no check inputs."""
+        approval = json.loads(self.approval_path.read_text())
+        approval["schema_version"] = 1
+        del approval["check_inputs"], approval["batch"]
+        self.approval_path.write_text(json.dumps(approval))
+
+    def test_an_approval_sealed_before_adr_0098_is_refused_naming_inputs_and_reseal(self):
+        self._legacy()
+        (self.proof / "SEED-PRODUCT.json").unlink()
+        message = self._refusal(self.MOVING)
+        self.assertIn("sealed before ADR 0098", message)
+        for name in ("SEED-PRODUCT.json", "measure/motion.json", "snap/MOTION-REVIEW.json"):
+            with self.subTest(name=name):
+                self.assertIn(name, message)
+        self.assertNotIn("snap/iso.png", message, "a present input is not named missing")
+        self.assertIn("Re-seal it through design-a-toy", message)
+        self.assertIn("seal_proof.py inputs %s" % self.proof, message)
+        self.assertIn("continue it with `workshop resume`", message)
+
+    def test_a_legacy_approval_with_every_file_present_still_names_what_it_lacks(self):
+        self._legacy()
+        message = self._refusal()
+        self.assertIn("SEED-PRODUCT.json", message)
+        self.assertIn("Re-seal it through design-a-toy", message)
+
+    def test_a_current_approval_must_record_every_input_its_contract_needs(self):
+        validate_seed(self.proof, ("body",), self.digest, {})
+        message = self._refusal(self.MOVING)
+        self.assertIn("does not record the check inputs its contract needs: measure/motion.json", message)
+        self.assertIn("Re-seal it through design-a-toy", message)
+
+    def test_a_check_input_must_be_sealed_in_the_manifest(self):
+        approval = json.loads(self.approval_path.read_text())
+        approval["check_inputs"]["SEED-PRODUCT.json"] = "0" * 64
+        self.approval_path.write_text(json.dumps(approval))
+        self.assertIn("check input SEED-PRODUCT.json is not in the manifest as sealed", self._refusal())
+
+    def test_an_approval_without_a_passing_batch_is_refused(self):
+        approval = json.loads(self.approval_path.read_text())
+        approval["batch"]["ok"] = False
+        self.approval_path.write_text(json.dumps(approval))
+        self.assertIn("no passing seeded batch dry run", self._refusal())
+
+    def test_the_check_inputs_are_part_of_the_seed_tree(self):
+        (self.proof / "measure/motion.json").write_text("{}")
+        (self.proof / "measure/round-notes.json").write_text("{}")
+        files = seed_manifest(self.proof)
+        self.assertIn("measure/motion.json", files)
+        self.assertNotIn("measure/round-notes.json", files)
 
 
 if __name__ == "__main__":

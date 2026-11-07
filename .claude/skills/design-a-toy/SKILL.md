@@ -1340,7 +1340,14 @@ Then seal what the owner approved (ADR 0096): run the Proof's print gates
 in its Display Pose and on the bed) and `make_round <proof> --shared-helpers
 --contract CONTRACT.md` once more on the final contract. Check that the
 Proof wrote its `*_spec.md` and its three `measure/` audits (proof-prompt.md,
-"Final verification inputs"). Then
+"Final verification inputs") and every check input its contract needs
+(proof-prompt.md, "Seed inputs"; ADR 0098): `seal_proof.py inputs
+<contract-dir>/proof --contract CONTRACT.md` exits 0 only when none is
+missing. For a moving toy the Proof Critic also reviews the motion
+presentation and writes `snap/MOTION-REVIEW.json` under its own reviewer
+name (proof-prompt.md, "Seed inputs"); the build carries that review and
+runs no motion critic of its own, and the seal refuses a review the build
+could not carry. Then
 
 ```sh
 uv run python .claude/skills/design-a-toy/scripts/seal_proof.py seal <contract-dir>/proof \
@@ -1349,7 +1356,18 @@ uv run python .claude/skills/design-a-toy/scripts/seal_proof.py seal <contract-d
 ```
 
 It writes `proof/APPROVAL.json` and `proof/approved/` (the docstring lists
-what it binds and refuses). Add `--open-lines-approved` only when the owner
+what it binds and refuses). Before it seals, it runs the seeded batch's
+design plan on the Proof (`measure/seeded-batch.json`): every check that
+needs no run, so a defect costs a Proof round here, not a build. It refuses
+on any failure, quoting each check.
+
+**Re-sealing a Proof sealed before ADR 0098.** `workshop wish|fix
+--seed-source` refuses an approval without check inputs (schema 1), naming
+what is missing. Have the Proof write those inputs (proof-prompt.md, "Seed
+inputs"), get the Proof Critic's motion review for a moving toy, confirm
+with `seal_proof.py inputs`, then seal again. Show the owner anything
+visible that changed. A run already started from the old seal is not
+affected: it continues with `workshop resume`. Add `--open-lines-approved` only when the owner
 approved the Proof Critic's open lines at Stage 4. Any later change to the
 proof directory needs a new Stage 4 approval and a new seal;
 `seal_proof.py verify <contract-dir>/proof` says whether the tree still

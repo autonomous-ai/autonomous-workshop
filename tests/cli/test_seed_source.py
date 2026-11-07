@@ -67,6 +67,22 @@ class SeedSourceTest(unittest.TestCase):
         with self.assertRaisesRegex(WorkshopError, "only the spark workflow"):
             _load_seed(self._args(workflow="forge"), self.design)
 
+    def test_a_proof_sealed_before_adr_0098_is_refused_for_a_new_launch(self):
+        # Owner decision 2 (option b): wish and fix share _load_seed.
+        import json
+
+        approval = json.loads((self.proof / "APPROVAL.json").read_text())
+        approval["schema_version"] = 1
+        del approval["check_inputs"], approval["batch"]
+        (self.proof / "APPROVAL.json").write_text(json.dumps(approval))
+        moving = dict(self.design, interfaces=[{"id": "lid", "kind": "coupled"}])
+        with self.assertRaises(ContractError) as caught:
+            _load_seed(self._args(), moving)
+        message = str(caught.exception)
+        self.assertIn("sealed before ADR 0098", message)
+        self.assertIn("measure/motion.json (written by the Proof's motion manifest", message)
+        self.assertIn("seal_proof.py inputs", message)
+
     def test_a_crlf_contract_is_refused(self):
         self.contract.write_bytes(self.contract.read_bytes().replace(b"\n", b"\r\n"))
         with self.assertRaisesRegex(WorkshopError, "LF line endings"):

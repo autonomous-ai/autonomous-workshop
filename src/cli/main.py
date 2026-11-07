@@ -1080,7 +1080,9 @@ def _load_seed(args: argparse.Namespace, sealed_contract: Optional[Mapping]) -> 
         # of its bytes. Only one encoding keeps the two the same.
         raise WorkshopError("--seed-source needs a UTF-8 contract file with LF line endings")
     digest = seed_contract_sha256(contract_bytes.decode("utf-8"))
-    seed = validate_seed(source, contract_geometry_ids(sealed_contract), digest)
+    # ADR 0098 (owner decision 2): a new launch refuses an Approved Proof
+    # sealed without its check inputs, naming them and the re-seal path.
+    seed = validate_seed(source, contract_geometry_ids(sealed_contract), digest, sealed_contract)
     return seed_context(seed, digest)
 
 

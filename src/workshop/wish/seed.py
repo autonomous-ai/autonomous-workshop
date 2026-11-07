@@ -9,6 +9,13 @@ exact bytes against what the approval recorded.
 `seed_manifest` is the one definition of which files make up a seed tree;
 `seal_proof.py` imports it, so the tree sealed in design and the tree checked
 by the host are the same files.
+
+ADR 0098: an approval records every check input its contract needs
+(`check_inputs`, approval schema 2), so a seeded run's checks run as one
+host batch. `validate_seed` is called only for a new launch (`workshop wish`
+or `workshop fix --seed-source`); it refuses an approval sealed before ADR
+0098, naming the missing inputs and the re-seal path. `workshop resume`
+never calls it, so a run already started keeps its frozen protocol.
 """
 
 from __future__ import annotations
@@ -25,7 +32,10 @@ from typing import Any, Dict, Mapping
 from workshop.errors import ContractError
 
 APPROVAL_NAME = "APPROVAL.json"
-APPROVAL_SCHEMA_VERSION = 1
+APPROVAL_SCHEMA_VERSION = 2
+# Approvals sealed before ADR 0098: refused for a new launch, never read again
+# for a run already started from one.
+LEGACY_APPROVAL_SCHEMA_VERSION = 1
 CRITIC_NAME = "CRITIC.json"
 CHECKLIST_NAME = "CONCEPT-CHECKLIST.md"
 APPROVED_DIR = "approved"
@@ -36,6 +46,111 @@ EXCLUDED_TOP_SUFFIXES = frozenset({".step", ".log"})
 # The project audits final verification runs (ADR 0096 pilot, B5): source
 # the Proof writes under measure/, so the seed carries them.
 SEED_AUDITS = ("measure/check_fit.py", "measure/check_spec.py", "measure/check_landmarks.py")
+# The product the Proof writes (ADR 0098 owner decisions 1 and 3): the title
+# and summary the owner sees at Stage 4, and the concept and research the
+# run's Spark source is composed from.
+SEED_PRODUCT = "SEED-PRODUCT.json"
+SEED_PRODUCT_FIELDS = frozenset({"schema_version", "kind", "title", "summary", "concept", "research"})
+SEED_PRODUCT_KIND = "workshop-seed-product"
+CONCEPT_FIELDS = ("title", "summary", "interaction", "envelope_mm", "mechanisms", "components")
+RESEAL_HINT = (
+    "Re-seal it through design-a-toy: run `seal_proof.py inputs %s --contract CONTRACT.md` to list "
+    "what is missing and which design step writes each, produce them in the Proof, then run "
+    "`seal_proof.py seal` again. A run already started from this seed is not affected: continue it "
+    "with `workshop resume`."
+)
+
+
+@dataclass(frozen=True)
+class CheckInput:
+    """One file a seeded batch reads that only design can write (ADR 0098
+    decision 1)."""
+
+    path: str
+    when: str  # "always", "moving" or "powered"
+    written_by: str
+
+
+CHECK_INPUTS = (
+    CheckInput(SEED_PRODUCT, "always",
+               "the Proof: the product title and summary shown at Stage 4, and the concept and research "
+               "(design-a-toy proof-prompt, \"Seed inputs\")"),
+    CheckInput("snap/iso.png", "always",
+               "the Proof's product render the owner approved at Stage 4"),
+    CheckInput("snap/signature.png", "always",
+               "the Proof's signature render the owner approved at Stage 4"),
+    CheckInput("measure/motion.json", "moving",
+               "the Proof's motion manifest, after it passes check_motion"),
+    CheckInput("snap/MOTION-EVIDENCE.json", "moving",
+               "motion_presentation.py on the Proof"),
+    CheckInput("snap/motion.gif", "moving",
+               "motion_presentation.py on the Proof"),
+    CheckInput("snap/MOTION-REVIEW.json", "moving",
+               "the Proof Critic's motion review of that presentation (motion-review-v1)"),
+    CheckInput("measure/power.json", "powered",
+               "the Proof's power report, after it passes check_power"),
+    CheckInput("measure/mounts.json", "powered",
+               "the Proof's mount rows, after they pass check_mount"),
+    CheckInput("measure/bought-placements.json", "powered",
+               "the Proof's Bought Part placements, after bought_model.py --build passes"),
+)
+# Check inputs under measure/ belong to the seed tree like the audits.
+SEED_MEASURE_INPUTS = frozenset(item.path for item in CHECK_INPUTS if item.path.startswith("measure/"))
+
+
+def contract_is_moving(design_contract: Mapping[str, Any]) -> bool:
+    """A contract with a Coupled Interface moves: its motion is checked."""
+
+    return any(isinstance(item, Mapping) and item.get("kind") == "coupled"
+               for item in design_contract.get("interfaces") or ())
+
+
+def contract_is_powered(design_contract: Mapping[str, Any]) -> bool:
+    """A schema 10 contract that states its circuit (ADR 0095)."""
+
+    return isinstance(design_contract.get("electrical"), Mapping)
+
+
+def required_check_inputs(design_contract: Mapping[str, Any]) -> tuple:
+    """The check inputs a seed for ``design_contract`` must carry."""
+
+    applies = {"always": True, "moving": contract_is_moving(design_contract),
+               "powered": contract_is_powered(design_contract)}
+    return tuple(item for item in CHECK_INPUTS if applies[item.when])
+
+
+def missing_check_inputs(directory: Path, design_contract: Mapping[str, Any]) -> tuple:
+    """The required check inputs absent from the Proof at ``directory``."""
+
+    directory = Path(directory)
+    return tuple(item for item in required_check_inputs(design_contract)
+                 if not (directory / item.path).is_file() or (directory / item.path).is_symlink())
+
+
+def describe_check_inputs(items) -> str:
+    return "; ".join("%s (written by %s)" % (item.path, item.written_by) for item in items)
+
+
+def check_seed_product(content: bytes) -> Dict[str, Any]:
+    """The Proof's SEED-PRODUCT.json, or ContractError naming what is wrong."""
+
+    try:
+        document = json.loads(content)
+    except ValueError as exc:
+        raise ContractError("seed: %s does not parse: %s" % (SEED_PRODUCT, exc)) from exc
+    if not isinstance(document, dict) or set(document) != SEED_PRODUCT_FIELDS:
+        raise ContractError("seed: %s must have exactly %s" % (SEED_PRODUCT, ", ".join(sorted(SEED_PRODUCT_FIELDS))))
+    if document["schema_version"] != 1 or document["kind"] != SEED_PRODUCT_KIND:
+        raise ContractError("seed: %s is not a schema 1 %s" % (SEED_PRODUCT, SEED_PRODUCT_KIND))
+    for key in ("title", "summary"):
+        if not isinstance(document[key], str) or not document[key].strip():
+            raise ContractError("seed: %s needs a nonempty %s" % (SEED_PRODUCT, key))
+    concept = document["concept"]
+    if not isinstance(concept, dict) or set(concept) != set(CONCEPT_FIELDS):
+        raise ContractError("seed: %s concept must have exactly %s" % (SEED_PRODUCT, ", ".join(CONCEPT_FIELDS)))
+    if not isinstance(document["research"], dict) or not document["research"]:
+        raise ContractError("seed: %s needs its research object" % SEED_PRODUCT)
+    return document
 MAX_APPROVAL_BYTES = 4 * 1024 * 1024
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 
@@ -51,6 +166,7 @@ class SeedApproval:
     files: Mapping[str, str]
     components: Mapping[str, Mapping[str, Any]]
     assembly_identity: str
+    check_inputs: Mapping[str, str]
 
     def frozen(self) -> Dict[str, str]:
         """What `MAKE-OPTIONS.json` schema 3 freezes."""
@@ -74,7 +190,8 @@ def seed_manifest(root: Path) -> Dict[str, str]:
             raise ContractError("seed: %s is a symlink; the seed tree holds only plain files"
                                 % relative.as_posix())
         if not path.is_file() or (any(part in EXCLUDED_DIRS for part in relative.parts[:-1])
-                                  and relative.as_posix() not in SEED_AUDITS):
+                                  and relative.as_posix() not in SEED_AUDITS
+                                  and relative.as_posix() not in SEED_MEASURE_INPUTS):
             continue
         if relative.as_posix() == APPROVAL_NAME:
             continue
@@ -95,10 +212,13 @@ def _safe_relative(name: Any) -> bool:
     return not path.is_absolute() and ".." not in path.parts and path.as_posix() == name
 
 
-def validate_seed(directory: Path, geometry_ids, contract_sha256: str) -> SeedApproval:
+def validate_seed(directory: Path, geometry_ids, contract_sha256: str,
+                  design_contract: Mapping[str, Any] = None) -> SeedApproval:
     """The Approved Proof at ``directory``, or ContractError naming the first
-    reason it cannot seed a run whose sealed contract hashes to
-    ``contract_sha256`` and declares ``geometry_ids``."""
+    reason it cannot seed a new run whose sealed contract hashes to
+    ``contract_sha256`` and declares ``geometry_ids``. ``design_contract``,
+    the sealed contract dict, decides which check inputs it must carry
+    (ADR 0098); without it only the inputs every toy needs are required."""
 
     directory = Path(directory)
     if directory.is_symlink() or not directory.is_dir():
@@ -116,6 +236,13 @@ def validate_seed(directory: Path, geometry_ids, contract_sha256: str) -> SeedAp
         raise ContractError("seed: %s does not parse: %s" % (APPROVAL_NAME, exc)) from exc
     if not isinstance(approval, dict):
         raise ContractError("seed: %s must be a JSON object" % APPROVAL_NAME)
+    required = required_check_inputs(design_contract or {})
+    if approval.get("schema_version") == LEGACY_APPROVAL_SCHEMA_VERSION:
+        missing = missing_check_inputs(directory, design_contract or {}) or required
+        raise ContractError(
+            "seed: this Approved Proof was sealed before ADR 0098 (%s schema_version 1) and does not "
+            "record the check inputs a new seeded run needs: %s. %s"
+            % (APPROVAL_NAME, describe_check_inputs(missing), RESEAL_HINT % directory))
     if approval.get("schema_version") != APPROVAL_SCHEMA_VERSION:
         raise ContractError("seed: %s schema_version %r is not %d"
                             % (APPROVAL_NAME, approval.get("schema_version"), APPROVAL_SCHEMA_VERSION))
@@ -149,6 +276,22 @@ def validate_seed(directory: Path, geometry_ids, contract_sha256: str) -> SeedAp
             raise ContractError("seed: the Approved Proof has no %s" % name)
         if sealed[name] != digest:
             raise ContractError("seed: %s is not the one the owner approved" % name)
+
+    recorded = approval.get("check_inputs")
+    if not isinstance(recorded, dict):
+        raise ContractError("seed: %s records no check_inputs" % APPROVAL_NAME)
+    absent = tuple(item for item in required if item.path not in recorded)
+    if absent:
+        raise ContractError("seed: the Approved Proof does not record the check inputs its contract needs: %s. %s"
+                            % (describe_check_inputs(absent), RESEAL_HINT % directory))
+    for name, digest in sorted(recorded.items()):
+        if name not in sealed or sealed[name] != digest:
+            raise ContractError("seed: check input %s is not in the manifest as sealed" % name)
+    check_seed_product((directory / SEED_PRODUCT).read_bytes())
+    batch = approval.get("batch")
+    if not isinstance(batch, dict) or batch.get("ok") is not True or not isinstance(batch.get("record_sha256"), str):
+        raise ContractError("seed: %s records no passing seeded batch dry run; %s"
+                            % (APPROVAL_NAME, RESEAL_HINT % directory))
 
     components = approval.get("components")
     if not isinstance(components, dict) or not components:
@@ -189,6 +332,7 @@ def validate_seed(directory: Path, geometry_ids, contract_sha256: str) -> SeedAp
         files=dict(sealed),
         components={role: dict(item) for role, item in components.items()},
         assembly_identity=approval["assembly_identity"],
+        check_inputs=dict(recorded),
     )
 
 
