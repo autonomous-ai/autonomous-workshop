@@ -301,8 +301,12 @@ def _make_options_bytes(*, check_motion: bool, carry_unchanged: bool,
         raise ContractError("Make options must be boolean")
     if seed is not None:
         # Schema 3 (ADR 0096): the Approved Proof this run was seeded from.
-        payload = {"schema_version": 3, "check_motion": check_motion,
-                   "seed": _checked_seed(seed)}
+        # Schema 4 (ADR 0098): with the seeded batch tool the host runs its
+        # checks with. A resume rewrites the seed as it froze, so no resume
+        # adds or drops the batch.
+        checked = _checked_seed(seed)
+        payload = {"schema_version": 4 if "batch" in checked else 3, "check_motion": check_motion,
+                   "seed": checked}
         if carry_unchanged:
             payload["carry_unchanged"] = True
         return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -314,12 +318,27 @@ def _make_options_bytes(*, check_motion: bool, carry_unchanged: bool,
     return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
-def _checked_seed(seed: Any) -> dict[str, str]:
-    if not isinstance(seed, Mapping) or set(seed) != {"approval_sha256", "manifest_sha256"}:
-        raise ContractError("a seed freezes exactly approval_sha256 and manifest_sha256")
-    for value in seed.values():
-        require_sha256(value, "seed sha256")
-    return {key: seed[key] for key in sorted(seed)}
+def _checked_seed(seed: Any) -> dict[str, Any]:
+    if not isinstance(seed, Mapping) or set(seed) - {"batch"} != {"approval_sha256", "manifest_sha256"}:
+        raise ContractError("a seed freezes exactly approval_sha256 and manifest_sha256, and optionally batch")
+    for key in ("approval_sha256", "manifest_sha256"):
+        require_sha256(seed[key], "seed sha256")
+    checked: dict[str, Any] = {key: seed[key] for key in ("approval_sha256", "manifest_sha256")}
+    if "batch" in seed:
+        batch = seed["batch"]
+        if not isinstance(batch, Mapping) or set(batch) != {"tool_sha256"}:
+            raise ContractError("a seed's batch freezes exactly tool_sha256")
+        require_sha256(batch["tool_sha256"], "seed batch tool sha256")
+        checked["batch"] = {"tool_sha256": batch["tool_sha256"]}
+    return {key: checked[key] for key in sorted(checked)}
+
+
+def frozen_seed_batch(run_root: Path) -> Optional[dict[str, str]]:
+    """The seeded batch a run froze (ADR 0098), or None: an unseeded run, a
+    run seeded before ADR 0098, or one whose options cannot be read."""
+
+    seed = _frozen_seed(Path(run_root))
+    return dict(seed["batch"]) if seed is not None and "batch" in seed else None
 
 
 def _frozen_seed(run_root: Path) -> Optional[dict[str, str]]:

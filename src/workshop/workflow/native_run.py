@@ -98,6 +98,8 @@ from workshop.make.blocked_reports import (
 )
 from workshop.make.make_round_guard import LEDGER_READ_LOG_NAME
 from workshop.runtime.make_round_hook import MAKE_ROUND_GUARD_DIRECTORY
+from workshop.make.seeded_batch import module_sha256 as seeded_batch_module_sha256
+from workshop.workflow import seeded_batch_host
 from workshop.make.contract_amendments import (
     AMENDMENT_LEDGER_NAME,
     OWNER_AMENDMENT_KIND,
@@ -250,6 +252,7 @@ from workshop.workflow.agent_run import (
     AgentRunCheckpoint,
     DeterministicGateReceipt,
     MIN_AGENT_TURN_SECONDS,
+    frozen_seed_batch,
 )
 from workshop.workflow.budgets import (
     BUDGETS_CAPABILITY_PATH,
@@ -4968,6 +4971,15 @@ def _prepare_effort_stage_input(
             subject_inputs["host_make_proposal_rejection_sha256"] = (
                 make_proposal_rejection["rejection_sha256"]
             )
+        # ADR 0098: a seeded batch's check failure, for the repair turn.
+        # Absent in every other run, so their subjects keep their bytes.
+        seeded_failure = seeded_batch_host.current_failure(
+            run.run_root, run.host_state_root, checkpoint.checkpoint_sha256
+        )
+        if seeded_failure is not None:
+            subject_inputs["seeded_batch_failure_sha256"] = _sha256(
+                _canonical_json_bytes(seeded_failure)
+            )
         subject = _stage_subject("make", subject_inputs)
         score_history = _playtest_score_history(run.host_state_root)
         inputs = {
@@ -5010,6 +5022,8 @@ def _prepare_effort_stage_input(
             context["make_invent_revision_allowed"] = True
         if make_proposal_rejection is not None:
             inputs["host_make_proposal_rejection"] = make_proposal_rejection
+        if seeded_failure is not None:
+            inputs["seeded_batch_failure"] = seeded_failure
 
     else:
         (
@@ -8199,6 +8213,16 @@ def _evaluate_make_stage(
             context=context,
         )
     contract_path = "artifacts/make/r%04d/made.json" % checkpoint.round_index
+    if frozen_seed_batch(run.run_root) is not None:
+        # ADR 0098: the batch is the gate on a seeded Make proposal. A
+        # failure is a ContractError, rejected through the existing path,
+        # with a fresh failure packet for the next STAGE.json.
+        seeded_batch_host.gate_proposal(
+            run.run_root,
+            run.host_state_root,
+            checkpoint.checkpoint_sha256,
+            checkpoint.round_index,
+        )
     transition = context.get("make_transition")
     if transition not in ("playtest", "release"):
         raise StateConflict("Make transition is not bound to the run protocol")
@@ -10493,6 +10517,30 @@ def _current_native_session_stop(
     return record["cause"]
 
 
+def _seeded_batch_before_turn(run: AgentRun, checkpoint: AgentRunCheckpoint, *, runner: Any = None) -> bool:
+    """ADR 0098: run a seeded run's checks as one host batch before the first
+    native Make turn of a checkpoint. True when the batch ran (the caller
+    loops again): on a pass the finalizer's proposal is waiting for the
+    ordinary gate, and no native turn starts; on a check failure the next
+    STAGE.json carries the packet and the native repair turn starts. False
+    for every run without a frozen batch and once the batch ran for this
+    checkpoint. A harness failure raises, stopping the run."""
+
+    if checkpoint.stage != "make" or checkpoint.effort != "spark":
+        return False
+    if not seeded_batch_host.batch_due(run.run_root, run.host_state_root, checkpoint.checkpoint_sha256):
+        return False
+    _remove_agent_outcome(run.run_root)
+    seeded_batch_host.run_for_checkpoint(
+        run.run_root,
+        run.host_state_root,
+        checkpoint.checkpoint_sha256,
+        checkpoint.round_index,
+        runner=runner,
+    )
+    return True
+
+
 def _run_native_session(
     run: AgentRun,
     paths: NativeRunPaths,
@@ -10653,6 +10701,8 @@ def _run_native_session_turns(
                     return updated, last_session, turns, action
                 continue
 
+        if _seeded_batch_before_turn(run, checkpoint):
+            continue
         _remove_agent_outcome(run.run_root)
         method = (
             "resume"
@@ -11626,12 +11676,18 @@ def _seed_start_inputs(
         raise ContractError("the Wish does not record the seed it is started from")
     if revision_snapshot is None and seed_contract_sha256(wish.objective) != recorded["contract_sha256"]:
         raise ContractError("the seed was approved for another contract than the sealed objective")
-    seed = validate_seed(Path(seed_source), contract_geometry_ids(contract), recorded["contract_sha256"])
+    # ADR 0098 (owner decision 2): only a new launch reaches here. A seed
+    # sealed without its check inputs is refused, naming them and the
+    # re-seal path; a resume never revalidates the seed directory.
+    seed = validate_seed(Path(seed_source), contract_geometry_ids(contract), recorded["contract_sha256"],
+                         contract)
     if seed.frozen() != {key: recorded[key] for key in ("approval_sha256", "manifest_sha256")}:
         raise ContractError("the seed directory is not the one the Wish records")
     if (seed.approved_by, seed.date) != (recorded["approved_by"], recorded["date"]):
         raise ContractError("the seed directory is not the one the Wish records")
-    return seed.frozen(), seed_files(seed, Path(seed_source))
+    # The seeded batch tool this run's checks run with, frozen with the seed.
+    frozen = {**seed.frozen(), "batch": {"tool_sha256": seeded_batch_module_sha256()}}
+    return frozen, seed_files(seed, Path(seed_source))
 
 
 def start_native_run(

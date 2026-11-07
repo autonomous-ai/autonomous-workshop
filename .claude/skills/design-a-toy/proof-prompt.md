@@ -193,6 +193,35 @@ Run each audit with `uv run python` and the CAD skill's `check_spec_format`
 and `check_spec_numbers` on `<OUT>`; each must exit 0. `seal_proof.py`
 refuses a Proof without them, and the seed carries them into the build.
 
+## Seed inputs
+
+A seeded build runs every check as one host batch (ADR 0098) and authors
+nothing, so the Proof writes every input those checks read. `seal_proof.py
+inputs <OUT> --contract CONTRACT.md` lists the ones this contract needs and
+which are missing:
+
+- `<OUT>/SEED-PRODUCT.json`, always: `{"schema_version": 1, "kind":
+  "workshop-seed-product", "title", "summary", "concept", "research"}`. The
+  title is the toy's name; the summary is shop copy the owner reads at
+  Stage 4, with no Workshop vocabulary (make.md's `product.json` rule). The
+  `concept` has exactly `title`, `summary`, `interaction`, `envelope_mm`,
+  `mechanisms` and `components`, describing this Proof; `research` is the
+  design's research notes. The build's Spark source is composed from them,
+  so the motion review's concept hash is this concept's;
+- `<OUT>/snap/iso.png` and `<OUT>/snap/signature.png`, the renders the
+  owner approves;
+- for a contract with a Coupled Interface: `<OUT>/measure/motion.json`
+  passing `check_motion`, then `motion_presentation.py <OUT>`'s
+  `snap/motion.gif` and `snap/MOTION-EVIDENCE.json`; the Proof Critic
+  writes `snap/MOTION-REVIEW.json` from them (motion-review-v1), naming
+  itself as `reviewer` (never `the owner (Approved Proof)`, the carried
+  assembly review's name), 1 to 4 `review_rounds`, the concept hash of
+  `SEED-PRODUCT.json`'s `concept` and the evidence file's sha256;
+- for a schema 10 contract with an `electrical` section:
+  `<OUT>/measure/power.json` passing `check_power`, `<OUT>/measure/mounts.json`
+  passing `check_mount` (with its STEPs under `ref/`), and
+  `<OUT>/measure/bought-placements.json` passing `bought_model.py --build`.
+
 Change nothing outside `<OUT>`, and never edit the contract or an image.
 Reply with the number of guesses, contradictions, print-gate failures,
 refused details, wiki citations and shape repairs, and the path of every

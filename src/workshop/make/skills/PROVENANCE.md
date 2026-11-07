@@ -34,6 +34,14 @@
   gains `seed()`; `cad/SKILL.md` says so. Schemas 1 and 2 read as before.
   Only `cad`'s lock moves; `source_commit` values are unchanged.
 
+## Workshop-local: MAKE-OPTIONS schema 4 freezes the seeded batch (2026-11-07, ADR 0098)
+
+- **Local change to upstream `cad` (upstream does not need it: seeding is
+  Workshop's).** `cad/scripts/motion_policy.py` also reads schema 4, schema
+  3 whose `seed` adds `batch: {tool_sha256}`, and `seed()` returns it as it
+  returns schema 3's. Schemas 1 to 3 read as before. Only `cad`'s lock
+  moves; `source_commit` values are unchanged.
+
 ## Workshop-local: a fix run starts with no Blocked Report ledger (2026-11-02, issue #181)
 
 - `make-round`: `SKILL.md` and `references/fix-runs.md` say a `workshop fix`

@@ -28,7 +28,9 @@ skips nothing about the assembly.
 (Workshop ADR 0096) freezes `seed: {approval_sha256, manifest_sha256}` under
 `schema_version: 3`, beside `check_motion` and, for a correction,
 `carry_unchanged: true`; `motion_policy.seed()` reads it and is None for every
-other run. It changes no gate.
+other run. A run seeded after Workshop ADR 0098 writes `schema_version: 4`,
+whose `seed` adds `batch: {tool_sha256}`, the host batch that runs its
+checks; `seed()` returns that too. It changes no gate.
 
 What it permits, and only after the changed-part set is established by
 building and exporting EVERY part and hashing each against the source

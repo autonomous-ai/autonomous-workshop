@@ -14,6 +14,23 @@ Approved Proof:
 
 Make certifies that build. It does not model the toy again.
 
+## When the host ran the batch (ADR 0098)
+
+When `MAKE-OPTIONS.json` `seed` has `batch`, the host has already run
+every seeded check as one batch before your turn, and you were started
+only because a check failed:
+
+- `STAGE.json` `inputs.seeded_batch_failure` lists every failing step:
+  its id, its command, its layer and the tool's own output. Steps not
+  listed passed; never rerun them.
+- Repair only what the failing steps name, under this file's rules, and
+  rerun only those steps to see them pass.
+- Propose with the finalizer as usual. The host reruns the whole batch as
+  Make's gate (unchanged inputs reuse their passing result); a failure
+  comes back as a new `seeded_batch_failure`.
+
+Without `batch`, follow the order below.
+
 ## Order
 
 1. Copy the seed's project files into your CAD project. Leave out

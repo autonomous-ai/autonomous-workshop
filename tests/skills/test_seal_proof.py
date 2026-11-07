@@ -41,6 +41,14 @@ def load():
     return module
 
 
+SEED_PRODUCT = {
+    "schema_version": 1, "kind": "workshop-seed-product", "title": "Toy Box", "summary": "A box.",
+    "concept": {"title": "Toy Box", "summary": "A box.", "interaction": "Lift the lid.",
+                "envelope_mm": [20, 10, 5], "mechanisms": [], "components": []},
+    "research": {"notes": "none"},
+}
+
+
 def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -72,6 +80,25 @@ class SealProofTest(unittest.TestCase):
         self.checklist.write_text("| id | trait |\n| T1 | round |\n")
         self.imported = {"params.py": self.helpers["params.py"]}
         SealProofTest._final_inputs(self)
+        SealProofTest._check_inputs(self)
+        self.design_contract = {}
+        self.batch_calls = []
+        self.batch_exit = {}
+
+    def _check_inputs(self):
+        """ADR 0098: what every seed carries for its checks."""
+        (self.proof / "snap").mkdir(exist_ok=True)
+        (self.proof / "snap/iso.png").write_bytes(b"iso")
+        (self.proof / "snap/signature.png").write_bytes(b"signature")
+        (self.proof / "SEED-PRODUCT.json").write_text(json.dumps(SEED_PRODUCT))
+
+    def _batch_runner(self, argv, cwd, timeout):
+        from workshop.make.seeded_batch import RunResult
+        self.batch_calls.append(list(argv))
+        for fragment, result in getattr(self, "batch_exit", {}).items():
+            if any(fragment in item for item in argv):
+                return result
+        return RunResult(0, "ok")
 
     def _final_inputs(self, **changes):
         """What final verification needs (B2-B5): a passing print-gate
@@ -96,6 +123,9 @@ class SealProofTest(unittest.TestCase):
         argv = ["seal", str(self.proof), "--contract", str(self.contract), "--checklist", str(self.checklist),
                 "--nozzle", "0.4", "--approved-by", "owner", "--date", "2026-11-02", "--cost", "3.5", *extra]
         with mock.patch.object(self.module, "identities", side_effect=self._record), \
+                mock.patch.object(self.module, "read_contract",
+                                  side_effect=lambda path: getattr(self, "design_contract", {})), \
+                mock.patch.object(self.module, "batch_runner", return_value=lambda *a: SealProofTest._batch_runner(self, *a)), \
                 mock.patch.object(self.module, "run_spec_tool",
                                   side_effect=lambda proof, tool: SealProofTest._spec_tool(self, proof, tool)), \
                 contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as err:
@@ -132,9 +162,15 @@ class SealProofTest(unittest.TestCase):
         self.assertEqual((approval["nozzle_mm"], approval["approved_by"], approval["date"],
                           approval["design_cost_units"]), (0.4, "owner", "2026-11-02", 3.5))
         self.assertEqual(sorted(approval["manifest"]), [
-            "CONCEPT-CHECKLIST.md", "CRITIC.json", "approved/part_body.step", "features/print_details.py",
-            "measure/check_fit.py", "measure/check_landmarks.py", "measure/check_spec.py",
-            "params.py", "part_body.step.py", "toy_spec.md"])
+            "CONCEPT-CHECKLIST.md", "CRITIC.json", "SEED-PRODUCT.json", "approved/part_body.step",
+            "features/print_details.py", "measure/check_fit.py", "measure/check_landmarks.py",
+            "measure/check_spec.py", "params.py", "part_body.step.py", "snap/iso.png", "snap/signature.png",
+            "toy_spec.md"])
+        self.assertEqual(approval["schema_version"], 2)
+        self.assertEqual(approval["check_inputs"], {name: approval["manifest"][name] for name in
+                                                    ("SEED-PRODUCT.json", "snap/iso.png", "snap/signature.png")})
+        self.assertEqual(approval["batch"]["ok"], True)
+        self.assertEqual(approval["batch"]["record_sha256"], sha(self.proof / "measure/seeded-batch.json"))
         self.assertEqual(approval["critic"]["verdict"], "agree")
         self.assertEqual(self._verify("--contract", str(self.contract)), 0, self.stderr)
         # Evidence under measure/ is not part of the seed.
@@ -258,6 +294,107 @@ class SealProofTest(unittest.TestCase):
         self.assertEqual(command[1:], [str(self.module.MAKE_ROUND), str(self.proof), "--identities-only",
                                        "--contract", str(self.contract)])
         self.assertIn("does not build", str(caught.exception))
+
+
+class SealCheckInputsTest(unittest.TestCase):
+    """ADR 0098: the seal carries every check input and runs the batch."""
+
+    _record = SealProofTest._record
+    _seal = SealProofTest._seal
+    _spec_tool = SealProofTest._spec_tool
+    _final_inputs = SealProofTest._final_inputs
+
+    def setUp(self):
+        SealProofTest.setUp(self)
+
+    def _inputs(self):
+        with mock.patch.object(self.module, "read_contract", return_value=self.design_contract), \
+                contextlib.redirect_stdout(io.StringIO()) as out:
+            code = self.module.main(["inputs", str(self.proof), "--contract", str(self.contract)])
+        self.stdout = out.getvalue()
+        return code
+
+    def _motion_review(self, **changes):
+        from workshop.make.seeded_batch import concept_sha256
+
+        evidence = hashlib.sha256((self.proof / "snap/MOTION-EVIDENCE.json").read_bytes()).hexdigest()
+        review = {"schema_version": 1, "evidence_sha256": evidence,
+                  "concept_sha256": concept_sha256(SEED_PRODUCT["concept"]), "reviewer": "proof-critic-1",
+                  "review_rounds": 1, "blind_motion_read": "The lid swings open.", "motion_matches_wish": True,
+                  "simulation_not_physical_test": True, **changes}
+        (self.proof / "snap/MOTION-REVIEW.json").write_text(json.dumps(review))
+
+    def test_seal_refuses_a_missing_check_input_and_names_who_writes_it(self):
+        (self.proof / "SEED-PRODUCT.json").unlink()
+        self.assertEqual(self._seal(), 1)
+        self.assertIn("lacks check inputs a seeded run needs: SEED-PRODUCT.json (written by the Proof", self.stderr)
+        self.assertIn("seal_proof.py inputs", self.stderr)
+        self.assertFalse((self.proof / "APPROVAL.json").exists())
+
+    def test_a_moving_powered_contract_needs_its_motion_and_power_inputs(self):
+        self.design_contract = {"interfaces": [{"id": "lid", "kind": "coupled"}], "electrical": {"paths": []}}
+        self.assertEqual(self._seal(), 1)
+        for name in ("measure/motion.json", "snap/MOTION-REVIEW.json", "snap/MOTION-EVIDENCE.json",
+                     "snap/motion.gif", "measure/power.json", "measure/mounts.json",
+                     "measure/bought-placements.json"):
+            with self.subTest(name=name):
+                self.assertIn(name, self.stderr)
+        self.assertEqual(self._inputs(), 1)
+        self.assertIn("ok      SEED-PRODUCT.json", self.stdout)
+        self.assertIn("MISSING measure/motion.json  (moving; written by the Proof's motion manifest", self.stdout)
+        for name in ("measure/motion.json", "measure/power.json", "measure/mounts.json",
+                     "measure/bought-placements.json", "snap/MOTION-REVIEW.json", "snap/MOTION-EVIDENCE.json",
+                     "snap/motion.gif"):
+            (self.proof / name).write_text("{}")
+        self.assertEqual(self._inputs(), 0, self.stdout)
+        self._motion_review(reviewer="the owner (Approved Proof)")
+        self.assertEqual(self._seal(), 1)
+        self.assertIn("MOTION-REVIEW.json cannot be carried into a seeded run: reviewer must name the Proof Critic",
+                      self.stderr)
+        self._motion_review(concept_sha256="0" * 64)
+        self.assertEqual(self._seal(), 1)
+        self.assertIn("concept_sha256 is not SEED-PRODUCT.json's concept hash", self.stderr)
+        self._motion_review()
+        self.assertEqual(self._seal(), 0, self.stderr)
+        approval = json.loads((self.proof / "APPROVAL.json").read_text())
+        self.assertIn("measure/motion.json", approval["manifest"])
+        self.assertIn("measure/power.json", approval["check_inputs"])
+        ran = [" ".join(argv) for argv in self.batch_calls]
+        for tool in ("check_motion", "check_power", "check_mount", "bought_model.py", "--build",
+                     "--print-gates-only", "--shared-helpers"):
+            with self.subTest(tool=tool):
+                self.assertTrue(any(tool in line for line in ran), ran)
+        self.assertFalse(any("--component" in line or "--interface" in line or "stage_proposal" in line
+                             for line in ran), "the design plan needs no run state")
+
+    def test_seal_refuses_a_malformed_seed_product(self):
+        product = dict(SEED_PRODUCT, summary=" ")
+        (self.proof / "SEED-PRODUCT.json").write_text(json.dumps(product))
+        self.assertEqual(self._seal(), 1)
+        self.assertIn("needs a nonempty summary", self.stderr)
+
+    def test_seal_refuses_a_failing_batch_with_every_failure_in_its_words(self):
+        from workshop.make.seeded_batch import RunResult
+
+        self.design_contract = {"electrical": {"paths": []}}
+        for name in ("measure/power.json", "measure/mounts.json", "measure/bought-placements.json"):
+            (self.proof / name).write_text("{}")
+        self.batch_exit = {"check_power": RunResult(1, "check_power: path led draws 40 mA over 20"),
+                           "check_mount": RunResult(1, "check_mount: lead hole clashes with switch wire")}
+        self.assertEqual(self._seal(), 1)
+        self.assertIn("seeded batch fails on the Proof (check-failure)", self.stderr)
+        self.assertIn("draws 40 mA over 20", self.stderr)
+        self.assertIn("lead hole clashes with switch wire", self.stderr)
+        self.assertFalse((self.proof / "APPROVAL.json").exists())
+
+    def test_verify_names_the_reseal_path_for_an_old_approval(self):
+        self.assertEqual(self._seal(), 0, self.stderr)
+        approval = json.loads((self.proof / "APPROVAL.json").read_text())
+        approval["schema_version"] = 1
+        (self.proof / "APPROVAL.json").write_text(json.dumps(approval))
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as err:
+            self.assertEqual(self.module.main(["verify", str(self.proof)]), 1)
+        self.assertIn("sealed before ADR 0098 is re-sealed", err.getvalue())
 
 
 if __name__ == "__main__":

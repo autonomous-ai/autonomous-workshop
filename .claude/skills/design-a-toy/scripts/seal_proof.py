@@ -5,6 +5,7 @@
         --contract CONTRACT.md --checklist CONCEPT-CHECKLIST.md --nozzle 0.4 \\
         --approved-by NAME [--date YYYY-MM-DD] [--cost UNITS] [--open-lines-approved]
     uv run python .claude/skills/design-a-toy/scripts/seal_proof.py verify PROOF [--contract CONTRACT.md]
+    uv run python .claude/skills/design-a-toy/scripts/seal_proof.py inputs PROOF --contract CONTRACT.md
 
 `seal` records what the owner approved in `PROOF/APPROVAL.json`, the input
 `workshop wish|fix --seed-source PROOF` will check:
@@ -35,6 +36,17 @@ over the current sources; and no `*_spec.md` (exactly one, passing
 `check_spec_format` and `check_spec_numbers`) or no `measure/check_fit.py`,
 `measure/check_spec.py` and `measure/check_landmarks.py`.
 
+ADR 0098: it refuses a Proof without every check input its contract needs
+(`workshop.wish.seed.required_check_inputs`: `SEED-PRODUCT.json` and the
+Stage 4 renders always, the motion manifest, presentation and the Proof
+Critic's motion review for a moving toy, and the power, mount and Bought
+Part placement inputs for a powered one), and it runs the seeded batch's
+design plan on the Proof (`workshop.make.seeded_batch`) and refuses on any
+failure. The approval (schema 2) records the inputs by sha256 and the
+passing batch record. `inputs` lists what a Proof lacks and which design
+step writes each: the re-seal path for a Proof sealed before ADR 0098,
+which a new `workshop wish|fix --seed-source` refuses.
+
 `verify` recomputes the manifest and exits 1 on a missing, extra or changed
 file, or a contract whose sha256 is not the sealed one.
 
@@ -56,7 +68,7 @@ MAKE_SKILLS = ROOT / "src/workshop/make/skills"
 MAKE_ROUND = MAKE_SKILLS / "make-round/scripts/make_round"
 PRINT_DETAILS = MAKE_SKILLS / "print-details/scripts/print_details.py"
 LOCK = MAKE_SKILLS / "LOCK.json"
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 APPROVAL = "APPROVAL.json"
 APPROVED_DIR = "approved"
 CHECKLIST = "CONCEPT-CHECKLIST.md"
@@ -211,6 +223,125 @@ def run_spec_tool(proof: Path, tool: str) -> tuple[int, str]:
     return done.returncode, done.stdout or done.stderr
 
 
+def read_contract(contract: Path) -> dict:
+    """The Design Contract as the host seals it (``to_dict``)."""
+
+    from workshop.errors import ContractError
+    from workshop.wish.design_contract import parse_design_contract
+
+    try:
+        return parse_design_contract(contract.read_text(encoding="utf-8")).to_dict()
+    except (OSError, UnicodeError, ContractError) as exc:
+        raise Refusal("the contract does not parse: %s" % exc) from exc
+
+
+MOTION_REVIEW = "snap/MOTION-REVIEW.json"
+MOTION_EVIDENCE = "snap/MOTION-EVIDENCE.json"
+# make_round's carried assembly review names this reviewer; the carried
+# motion review must name another (motion_presentation's carried rule).
+CARRIED_SIGNATURE_REVIEWER = "the owner (Approved Proof)"
+
+
+def check_carried_motion_review(proof: Path, product: dict) -> None:
+    """Owner decision 1: the Proof Critic's motion review must pass the run's
+    carried-review rule as sealed - its own reviewer, 1 to 4 rounds, the
+    sealed concept's hash and the sealed motion evidence."""
+
+    from workshop.make.seeded_batch import concept_sha256
+
+    try:
+        review = json.loads((proof / MOTION_REVIEW).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise Refusal("%s is not JSON: %s" % (MOTION_REVIEW, exc)) from exc
+    if not isinstance(review, dict):
+        raise Refusal("%s must be a JSON object" % MOTION_REVIEW)
+    problems = []
+    reviewer = review.get("reviewer")
+    if not isinstance(reviewer, str) or not reviewer.strip() or reviewer == CARRIED_SIGNATURE_REVIEWER:
+        problems.append("reviewer must name the Proof Critic, not %r" % (reviewer,))
+    rounds = review.get("review_rounds")
+    if type(rounds) is not int or rounds not in (1, 2, 3, 4):
+        problems.append("review_rounds must be 1 to 4")
+    if review.get("concept_sha256") != concept_sha256(product["concept"]):
+        problems.append("concept_sha256 is not SEED-PRODUCT.json's concept hash")
+    if review.get("evidence_sha256") != sha256(proof / MOTION_EVIDENCE):
+        problems.append("evidence_sha256 is not %s's sha256" % MOTION_EVIDENCE)
+    if review.get("motion_matches_wish") is not True or review.get("simulation_not_physical_test") is not True:
+        problems.append("the review must affirm motion_matches_wish and simulation_not_physical_test")
+    if problems:
+        raise Refusal("%s cannot be carried into a seeded run: %s" % (MOTION_REVIEW, "; ".join(problems)))
+
+
+def check_seed_inputs(proof: Path, design_contract: dict) -> dict:
+    """ADR 0098 decision 1: every check input the contract needs, present
+    and well formed; returns path -> sha256."""
+
+    from workshop.errors import ContractError
+    from workshop.wish.seed import (SEED_PRODUCT, check_seed_product, describe_check_inputs,
+                                    missing_check_inputs, required_check_inputs)
+
+    missing = missing_check_inputs(proof, design_contract)
+    if missing:
+        raise Refusal("the Proof lacks check inputs a seeded run needs: %s; run seal_proof.py inputs %s "
+                      "--contract CONTRACT.md for the list" % (describe_check_inputs(missing), proof))
+    try:
+        product = check_seed_product((proof / SEED_PRODUCT).read_bytes())
+    except ContractError as exc:
+        raise Refusal(str(exc)) from exc
+    if any(item.path == MOTION_REVIEW for item in required_check_inputs(design_contract)):
+        check_carried_motion_review(proof, product)
+    return {item.path: sha256(proof / item.path) for item in required_check_inputs(design_contract)}
+
+
+def dry_run_batch(proof: Path, contract: Path, design_contract: dict, nozzle: float) -> dict:
+    """Owner decision 5: the seeded batch's design plan on the Proof. Refuses
+    on any failing step, quoting each in its own words."""
+
+    from workshop.make import seeded_batch
+    from workshop.wish.seed import contract_geometry_ids, contract_is_moving, contract_is_powered
+
+    inputs = seeded_batch.PlanInputs(
+        project=proof, python=sys.executable, skills_root=MAKE_SKILLS, contract_path=contract,
+        roles=contract_geometry_ids(design_contract), nozzle=nozzle,
+        powered=contract_is_powered(design_contract), moving=contract_is_moving(design_contract))
+    path = proof / seeded_batch.RECORD
+    record = seeded_batch.run_batch(seeded_batch.design_plan(inputs), proof, runner=batch_runner(),
+                                    record_path=path, plan_name="design")
+    if record["status"] != seeded_batch.PASS:
+        failing = ["%s (%s): %s" % (item["id"], item.get("reason") or "exit %s" % item.get("exit_code"),
+                                    (item.get("excerpt") or "").strip()[-400:])
+                   for item in record["steps"]
+                   if item["status"] in (seeded_batch.CHECK_FAILURE, seeded_batch.HARNESS_FAILURE)]
+        raise Refusal("the seeded batch fails on the Proof (%s); see %s:\n%s"
+                      % (record["status"], seeded_batch.RECORD, "\n".join(failing)))
+    return {"ok": True, "plan": "design", "record_sha256": sha256(path),
+            "tool_sha256": seeded_batch.module_sha256()}
+
+
+def batch_runner():
+    """How the batch runs its steps: real processes (a test passes a fake)."""
+
+    from workshop.make import seeded_batch
+
+    return seeded_batch.subprocess_runner
+
+
+def inputs_report(args) -> list[str]:
+    """The re-seal path: each check input the contract needs, present or not,
+    and which design step writes it."""
+
+    from workshop.wish.seed import required_check_inputs
+
+    proof = Path(args.proof).resolve()
+    design_contract = read_contract(Path(args.contract).resolve())
+    lines = []
+    for item in required_check_inputs(design_contract):
+        present = (proof / item.path).is_file()
+        lines.append("%s %s  (%s; written by %s)" % ("ok     " if present else "MISSING", item.path, item.when,
+                                                    item.written_by))
+    return lines
+
+
 def seal(args) -> dict:
     proof = Path(args.proof).resolve()
     contract = Path(args.contract).resolve()
@@ -226,11 +357,14 @@ def seal(args) -> dict:
     if verdict != "agree" and not args.open_lines_approved:
         raise Refusal("the Proof Critic's verdict is %r; seal only after it agrees, or pass "
                       "--open-lines-approved when the owner approved its open lines at Stage 4" % verdict)
+    design_contract = read_contract(contract)
+    check_inputs = check_seed_inputs(proof, design_contract)
     record = identities(proof, contract)
     if record.get("contract_sha256") != sha256(contract):
         raise Refusal("make_round read another contract than %s" % contract)
     check_rules(proof, record)
     check_final_inputs(proof, record["components"], args.nozzle)
+    batch = dry_run_batch(proof, contract, design_contract, args.nozzle)
 
     copied = proof / CHECKLIST
     if checklist != copied:
@@ -267,6 +401,8 @@ def seal(args) -> dict:
         "approved_by": args.approved_by,
         "date": args.date or datetime.date.today().isoformat(),
         "design_cost_units": args.cost,
+        "check_inputs": check_inputs,
+        "batch": batch,
         "manifest": files,
         "manifest_sha256": manifest_sha256(files),
     }
@@ -284,7 +420,9 @@ def verify(args) -> list[str]:
     except (OSError, ValueError, KeyError, TypeError) as exc:
         raise Refusal("no readable %s: %s" % (APPROVAL, exc)) from exc
     if document.get("schema_version") != SCHEMA_VERSION:
-        raise Refusal("%s schema_version %r is not %d" % (APPROVAL, document.get("schema_version"), SCHEMA_VERSION))
+        raise Refusal("%s schema_version %r is not %d; a Proof sealed before ADR 0098 is re-sealed: run "
+                      "seal_proof.py inputs %s --contract CONTRACT.md, then seal again"
+                      % (APPROVAL, document.get("schema_version"), SCHEMA_VERSION, proof))
     problems = []
     if manifest_sha256(sealed) != document.get("manifest_sha256"):
         problems.append("the manifest does not hash to manifest_sha256")
@@ -312,8 +450,16 @@ def main(argv=None) -> int:
     p = sub.add_parser("verify")
     p.add_argument("proof")
     p.add_argument("--contract")
+    p = sub.add_parser("inputs")
+    p.add_argument("proof")
+    p.add_argument("--contract", required=True)
     args = parser.parse_args(argv)
     try:
+        if args.command == "inputs":
+            lines = inputs_report(args)
+            for line in lines:
+                print("seal_proof: %s" % line)
+            return 1 if any(line.startswith("MISSING") for line in lines) else 0
         if args.command == "seal":
             document = seal(args)
             print("seal_proof: sealed %d Component(s), manifest %s" % (len(document["components"]),
