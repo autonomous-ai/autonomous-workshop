@@ -372,6 +372,14 @@ verification writes deterministic exploded, cut-away and wiring pictures and
 the contract's Electrical assembly text, which the README carries verbatim.
 An optional `pcba` names the factory-assembled board, and the host checks
 all of it on sealed bytes. Kits and runs sealed without models are unchanged.
+Its 2026-11-07 amendment has `bought_model.py --final` seal a printed-only
+`measure/electrical/printed.step`, the scene without its `bought` group,
+which the host checks against the sealed `assembled.step` by solid volume
+and area. The Factory adapter ships it as the only STEP, the root
+`assembled.step`. An optional `bought-parts` contract block, which the
+Proof seed hash leaves out, lists pins, springs and glue and prices the
+`pcba`. Release bills every sealed Bought Part as Factory `extra_materials`
+at the sealed unit price, refuses an unpriced one, and reads the extras back.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 
