@@ -927,24 +927,32 @@ class ClaudeNativeSessionLauncher:
         token_usage: Optional[NativeTokenUsage] = None
         budget_observer = self.token_budget_observer
         requests: dict[str, dict[str, int]] = {}
-        observed_counters: Optional[dict[str, int]] = None
+        observed_counters: Optional[tuple[dict[str, int], dict[str, int]]] = None
         budget_stopped = False
         stream_finished = False
 
         def _observe_budget(*, final: bool) -> None:
             nonlocal observed_counters
             counters = _invocation_counters(requests, token_usage)
-            if not final and counters == observed_counters:
-                return
-            observed_counters = counters
             # A resumed session's result totals the whole session, so the
             # host needs the session and this invocation's streamed requests
             # apart from that result to charge the session once (#84).
+            streamed = _invocation_counters(requests, None)
+            # A report repeats only when neither changed. An early result on
+            # a resume (a queued task notification answered before the
+            # prompt) raises ``counters`` to the session's whole history,
+            # so later requests leave ``counters`` unchanged while
+            # ``streamed`` grows: keying on ``counters`` alone metered
+            # nothing until the turn ended (#235).
+            key = (counters, streamed)
+            if not final and key == observed_counters:
+                return
+            observed_counters = key
             budget_observer(
                 counters,
                 final=final,
                 session_id=observed or resumed_session_id,
-                streamed=_invocation_counters(requests, None),
+                streamed=streamed,
             )
 
         stdout = process.stdout

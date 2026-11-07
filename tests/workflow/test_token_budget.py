@@ -652,6 +652,58 @@ def test_a_resumed_claude_session_is_charged_once(tmp_path):
     )
 
 
+def test_a_resume_that_first_answers_a_task_notification_stays_metered(tmp_path):
+    """Issue #235: a resumed session with a queued task notification emits a
+    session-wide result before the prompt's requests. The ledger still grows
+    with each request, and a raised cap stops the turn mid-stream instead of
+    letting it spend until its final result."""
+    from tests.runtime.test_claude_native_session import (
+        OPUS_TOTALS, PER_BLOCK_USAGE, SESSION, _assistant_line, _init_line, _result_line,
+    )
+    from workshop.runtime.claude import CLAUDE_TOKEN_BUDGET_STOP_MESSAGE, ClaudeInvocationError
+    for directory in ("run", "claude", "state"):
+        (tmp_path / directory).mkdir(mode=0o700)
+    paths, checkpoint = claude_context(tmp_path / "state")
+    request = 2 + 13_227 + 10_010 + 168  # one request's input and output
+    history = {**OPUS_TOTALS, "inputTokens": 100, "cacheReadInputTokens": 16_000_000,
+               "cacheCreationInputTokens": 300_000, "outputTokens": 9_000, "thinkingTokens": 0}
+    n = 100 + 16_000_000 + 300_000 + 9_000
+    launcher = _claude_stream_launcher([
+        [_init_line(), _result_line({"claude-opus-5": history})],
+        [_init_line(), _result_line({"claude-opus-5": history}), _init_line(),
+         *(_assistant_line("msg_%d" % index, PER_BLOCK_USAGE) for index in range(6)),
+         _result_line({"claude-opus-5": {**history, "outputTokens": 9_000 + 6 * 168}})],
+    ])
+    budget = _load_lifetime_budget(paths, checkpoint, initialize=True)
+    budget.limit = n
+    _meter_claude_turn(paths, checkpoint, launcher, budget)
+    with pytest.raises(ClaudeInvocationError, match=CLAUDE_TOKEN_BUDGET_STOP_MESSAGE):
+        _claude_turn(launcher, "start", tmp_path)
+    budget = _load_lifetime_budget(paths, checkpoint)
+    budget.limit = n + 3 * request  # the owner raises the cap and resumes
+    _save_lifetime_budget(paths, checkpoint, budget)
+    seen = []
+    _meter_claude_turn(paths, checkpoint, launcher, budget)
+    observer = launcher.token_budget_observer
+
+    def recording(counters, **kwargs):
+        try:
+            observer(counters, **kwargs)
+        finally:
+            seen.append(_load_lifetime_budget(paths, checkpoint).to_dict()["used_tokens"])
+
+    launcher.token_budget_observer = recording
+    with pytest.raises(ClaudeInvocationError, match=CLAUDE_TOKEN_BUDGET_STOP_MESSAGE):
+        _claude_turn(launcher, "resume", tmp_path)
+    # Charged per request after the early result, and stopped at the crossing
+    # request (the third), not after all six.
+    assert seen == [n, n + request, n + 2 * request, n + 3 * request]
+    value = _load_lifetime_budget(paths, checkpoint).to_dict()
+    (thread,) = value["observation"]["threads"]
+    assert (thread["session_id"], thread["invocations"]) == (SESSION, 2)
+    assert (paths.host_state / "token-budget-stop.json").is_file()
+
+
 def test_a_resumed_session_charges_streamed_requests_before_its_result(tmp_path):
     paths, checkpoint = claude_context(tmp_path)
     budget = _load_lifetime_budget(paths, checkpoint, initialize=True)
