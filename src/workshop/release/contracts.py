@@ -92,6 +92,12 @@ class ReleaseContext:
     # sealed Release title exactly", which is the byte-for-byte-unchanged
     # default path.
     public_title: Optional[str] = field(default=None, compare=False)
+    # The printed-only primary the host checked when Make was accepted (ADR
+    # 0095 amendment, 2026-11-07): the sealed Made STEP that is the review
+    # scene without its bought bodies, which the Factory adapter ships as
+    # the primary. ``None`` for every run that sealed none, which keeps
+    # shipping its scene exactly as before.
+    printed_primary: Optional[Mapping[str, Any]] = field(default=None, compare=False)
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
@@ -136,6 +142,10 @@ class ReleaseContext:
             stripped = self.public_title.strip()
             unreleased_public_slug(stripped)
             object.__setattr__(self, "public_title", stripped)
+        if self.printed_primary is not None:
+            if not isinstance(self.printed_primary, Mapping):
+                raise ContractError("ReleaseContext printed-only primary must be the Make record's")
+            object.__setattr__(self, "printed_primary", _plain_json(self.printed_primary))
         object.__setattr__(self, "workspace", root)
         self.assert_current()
 
