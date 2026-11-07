@@ -87,6 +87,20 @@ class SeedCheckTest(unittest.TestCase):
                 with self.assertRaisesRegex(ContractError, fragment):
                     self._verify(**compare)
 
+    def test_a_comparison_that_could_not_run_is_named(self):
+        """Issue #231: the approved Component's STEP compared in a host that
+        cannot import the CAD kernel; the refusal names that, not a shape."""
+        self._round(review=self._seed("exact"))
+        error = ImportError("pyexpat: undefined symbol XML_SetAllocTrackerActivationThreshold")
+        with self.assertRaisesRegex(ContractError, r"could not compare them \(ImportError: pyexpat"):
+            self._verify(error=error)
+        self._round(identity="B", review=self._seed("within-tolerance"))
+        with self.assertRaisesRegex(ContractError, r"Component Review; the host could not compare"):
+            self._verify(error=error)
+        with self.assertRaises(ContractError) as refused:
+            self._verify(passed=False)
+        self.assertNotIn("could not compare", str(refused.exception))
+
     def test_an_unmade_or_unrounded_component_is_refused(self):
         with self.assertRaisesRegex(ContractError, "no readable latest component round"):
             self._verify()

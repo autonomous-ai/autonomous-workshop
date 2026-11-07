@@ -367,6 +367,12 @@ class NativeMakeProposalRecoveryTest(unittest.TestCase):
             )
             self.assertIn("title", rejection["feedback"])
             self.assertIn("summary", rejection["feedback"])
+            # Issue #231: the record names the host check that refused it and
+            # its own bounded message, which names the field.
+            diagnostic = rejection["diagnostic"]
+            self.assertEqual(set(diagnostic), {"check", "message", "cause"})
+            self.assertRegex(diagnostic["check"], r"^workshop\.[a-z_.]+:[a-z_]+$")
+            self.assertTrue(diagnostic["message"].startswith("Made product "))
             self.assertEqual(rejection["rejection_number"], 1)
             self.assertIsNone(rejection["previous_rejection_sha256"])
             self.assertEqual(
