@@ -52,3 +52,4 @@ ADR. Small factual corrections that do not change the decision are allowed.
 - [0095: Powered toys state their circuit, and Make proves it with check_power](0095-powered-toys.md)
 - [0096: The approved Contract Proof is the build, and Workshop certifies it](0096-the-approved-proof-is-the-build.md) (proposed)
 - [0097: A Listing Update appends a version to a public Factory design](0097-listing-updates-append-a-version-to-a-public-design.md)
+- [0098: A seeded Make runs its checks as one host batch, and the model works only on a failure](0098-seeded-make-runs-its-checks-as-one-host-batch.md) (proposed)
