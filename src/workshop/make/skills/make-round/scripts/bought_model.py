@@ -25,6 +25,19 @@ envelope, oriented by the Make-authored placements file
 
 ``facing`` is the side a part works through: a receptacle's mouth, an LED's
 light, a lever switch's lever. ``hinge`` is the end a lever is hinged at.
+An optional ``pose`` seats a part whose mount is not square to the world
+axes, such as a switch square to a tilted deck::
+
+    "sw": {"facing": "+z", "pose": {"axis": [1, 0, 0], "angle_deg": 30}}
+
+It is the right-handed rotation, about the centre of the envelope's world
+bounding box, that turns the world axes into the part's own. The envelope is
+read in that rotated frame and the body is planned there exactly as an
+unrotated one (``facing`` and ``hinge`` name the part's own axes), then
+turned into place. In the body list a posed body's ``seat`` and ``bounds``
+are in the part's frame, beside its ``pose`` and that ``centre``; a route
+end is measured to it in that frame. A part with no ``pose`` is drawn
+exactly as before.
 A body seats against its envelope's face opposite ``facing``, centred across
 it; a body larger than its envelope on any axis fails, because the catalogue
 part would not fit the mount Make sealed. The factory-assembled board, when
@@ -105,6 +118,7 @@ BOUND_TOLERANCE_MM = 0.02
 ROUTE_REACH_MM = 1.0
 MAX_ROUTES = 32
 MAX_ROUTE_POINTS = 32
+POSE_KEYS = {"axis", "angle_deg"}
 # Forms whose working side must be stated: guessing it would draw a socket
 # facing into the toy or an LED shining at its board.
 DIRECTIONAL = ("receptacle", "lever-switch", "radial-led", "smd-led")
@@ -233,6 +247,19 @@ def read_placements(project: Path) -> tuple[dict, bytes]:
     return document, raw
 
 
+def _number(value) -> bool:
+    return not isinstance(value, bool) and isinstance(value, (int, float)) and math.isfinite(value)
+
+
+def _pose_ok(pose) -> bool:
+    if not isinstance(pose, dict) or set(pose) != POSE_KEYS:
+        return False
+    axis, angle = pose["axis"], pose["angle_deg"]
+    return (isinstance(axis, list) and len(axis) == 3 and all(_number(v) for v in axis)
+            and math.sqrt(sum(float(v) ** 2 for v in axis)) > 1e-9
+            and _number(angle) and 0.0 < abs(angle) <= 180.0)
+
+
 def check_placements(document) -> list[str]:
     problems = []
     if (not isinstance(document, dict) or document.get("kind") != PLACEMENTS_KIND
@@ -242,14 +269,19 @@ def check_placements(document) -> list[str]:
                 "contract's pcba.bounds_mm, never placed here" % (PLACEMENTS_PATH, PLACEMENTS_KIND)]
     parts = document.get("parts", {})
     if not isinstance(parts, dict):
-        return ["%s.parts must map part ids to {facing, hinge?}" % PLACEMENTS_PATH]
+        return ["%s.parts must map part ids to {facing, hinge?, pose?}" % PLACEMENTS_PATH]
     for key, item in sorted(parts.items()):
-        if not isinstance(item, dict) or not set(item) <= {"facing", "hinge"}:
-            problems.append("%s.parts.%s must be {facing?, hinge?}" % (PLACEMENTS_PATH, key))
+        if not isinstance(item, dict) or not set(item) <= {"facing", "hinge", "pose"}:
+            problems.append("%s.parts.%s must be {facing?, hinge?, pose?}" % (PLACEMENTS_PATH, key))
             continue
         for field in ("facing", "hinge"):
             if field in item and item[field] not in AXES:
                 problems.append("%s.parts.%s.%s must be one of %s" % (PLACEMENTS_PATH, key, field, ", ".join(AXES)))
+        if "pose" in item and not _pose_ok(item["pose"]):
+            problems.append("%s.parts.%s.pose must be {axis: [x, y, z], angle_deg}: a nonzero axis and a "
+                            "nonzero angle of at most 180 degrees either way, the right-handed rotation about "
+                            "the envelope's centre that turns the world axes into the part's own; a seat "
+                            "square to the world axes takes no pose" % (PLACEMENTS_PATH, key))
     routes = document.get("routes", [])
     if not isinstance(routes, list) or len(routes) > MAX_ROUTES:
         problems.append("%s.routes must list at most %d wire routes" % (PLACEMENTS_PATH, MAX_ROUTES))
@@ -295,6 +327,45 @@ def _unit(axis: str):
     vector = [0.0, 0.0, 0.0]
     vector[index] = float(sign)
     return tuple(vector)
+
+
+def pose_frame(pose: dict, lo, hi) -> dict:
+    """A placements ``pose`` with its pivot: the centre of the envelope's
+    world bounding box ``(lo, hi)``, which the turn leaves in place."""
+
+    return {"axis": [float(v) for v in pose["axis"]], "angle_deg": float(pose["angle_deg"]),
+            "centre": [round((lo[i] + hi[i]) / 2.0, 4) for i in range(3)]}
+
+
+def _matrix(frame) -> list:
+    """The right-handed rotation of ``frame`` (Rodrigues), rows of a 3x3."""
+
+    norm = math.sqrt(sum(v * v for v in frame["axis"]))
+    x, y, z = (v / norm for v in frame["axis"])
+    angle = math.radians(frame["angle_deg"])
+    c, s = math.cos(angle), math.sin(angle)
+    t = 1.0 - c
+    return [[c + x * x * t, x * y * t - z * s, x * z * t + y * s],
+            [y * x * t + z * s, c + y * y * t, y * z * t - x * s],
+            [z * x * t - y * s, z * y * t + x * s, c + z * z * t]]
+
+
+def to_world(frame, vector, point: bool = True):
+    """A point (or, with ``point=False``, a direction) of the part's frame in
+    the world."""
+
+    m, centre = _matrix(frame), frame["centre"]
+    v = [vector[i] - centre[i] for i in range(3)] if point else list(vector)
+    out = [sum(m[r][k] * v[k] for k in range(3)) for r in range(3)]
+    return tuple(out[i] + centre[i] for i in range(3)) if point else tuple(out)
+
+
+def to_local(frame, point):
+    """A world point in the part's frame: the inverse turn about the pivot."""
+
+    m, centre = _matrix(frame), frame["centre"]
+    v = [point[i] - centre[i] for i in range(3)]
+    return tuple(sum(m[k][r] * v[k] for k in range(3)) + centre[r] for r in range(3))
 
 
 def _cells(lo, hi, count: int, skip: int | None):
@@ -407,18 +478,36 @@ def plan_body(form: str, entry: dict, lo, hi, place: dict) -> tuple[dict | None,
     return body, []
 
 
-def _reach(point, bounds) -> float:
+def _reach(point, bounds, frame=None) -> float:
     lo, hi = bounds
+    if frame is not None:
+        point = to_local(frame, point)
     return math.sqrt(sum(max(lo[i] - point[i], 0.0, point[i] - hi[i]) ** 2 for i in range(3)))
 
 
-def plan(electrical: dict, catalogue: dict, envelopes: dict, bounds: dict, placements: dict) -> dict:
+def posed_requests(envelopes: dict, bounds: dict, placements: dict) -> dict:
+    """``{part: (envelope path, frame)}`` for every posed part whose
+    envelope was read: what ``posed`` bounds ``plan`` needs."""
+
+    found = {}
+    for part, place in sorted((placements.get("parts") or {}).items()):
+        envelope = envelopes.get(part)
+        if isinstance(place, dict) and "pose" in place and envelope in bounds:
+            found[part] = (envelope, pose_frame(place["pose"], *bounds[envelope]))
+    return found
+
+
+def plan(electrical: dict, catalogue: dict, envelopes: dict, bounds: dict, placements: dict,
+         posed: dict | None = None) -> dict:
     """Every bought body of the circuit, seated in its envelope.
 
     ``envelopes`` maps a part id to its envelope path, and
-    ``bounds`` maps each envelope path to ``(lo, hi)``. Raises Refused naming
-    every problem; the plan is deterministic in its inputs."""
+    ``bounds`` maps each envelope path to ``(lo, hi)``. ``posed`` maps each
+    part with a ``pose`` to its envelope's ``(lo, hi)`` in the part's own
+    frame (``posed_requests`` says which). Raises Refused naming every
+    problem; the plan is deterministic in its inputs."""
 
+    posed = posed or {}
     problems = []
     places = placements.get("parts", {}) if isinstance(placements, dict) else {}
     board_members = list((electrical.get("pcba") or {}).get("parts") or ())
@@ -436,16 +525,25 @@ def plan(electrical: dict, catalogue: dict, envelopes: dict, bounds: dict, place
         form = model.get("form") or ("envelope" if not _largest_three(entry) else "box")
         if not model and entry.get("category") == "wire":
             form = "wire"
+        place = places.get(part, {})
         if form == "wire":
             wires[part] = (_size(entry, "lead diameter") or [DEFAULT_LEAD_MM])[0]
+            if "pose" in place:
+                problems.append("%s: a wire is drawn along its routes and takes no pose" % part)
             continue
         envelope = envelopes.get(part)
         if envelope is None or envelope not in bounds:
             problems.append("%s: the power report seats it in no mount envelope (cad.source), so nothing "
                             "says where it goes" % part)
             continue
-        place = places.get(part, {})
         lo, hi = bounds[envelope]
+        frame = None
+        if "pose" in place:
+            frame = pose_frame(place["pose"], lo, hi)
+            if part not in posed:
+                problems.append("%s: its envelope was not read in the pose's frame" % part)
+                continue
+            lo, hi = posed[part]
         count = int(item.get("count", 1))
         skip = AXES[place["facing"]][0] if place.get("facing") in AXES else None
         for instance, (c_lo, c_hi) in enumerate(_cells(lo, hi, count, skip), start=1):
@@ -458,6 +556,8 @@ def plan(electrical: dict, catalogue: dict, envelopes: dict, bounds: dict, place
                         envelope=envelope, on_board=part in board_members,
                         source="vendor" if step else ("envelope" if form == "envelope" else "generated"),
                         licence=step["licence"] if step else None, url=step["url"] if step else None)
+            if frame is not None:
+                body["pose"] = frame
             bodies.append(body)
     for part in sorted(set(places) - {item["id"] for item in electrical.get("parts") or ()}):
         problems.append("%s places %s, which is no electrical part" % (PLACEMENTS_PATH, part))
@@ -471,7 +571,7 @@ def plan(electrical: dict, catalogue: dict, envelopes: dict, bounds: dict, place
         bodies.append(body)
     where = {}
     for body in bodies:
-        where.setdefault(body["part"], []).append(body["bounds"])
+        where.setdefault(body["part"], []).append((body["bounds"], body.get("pose")))
     routes = []
     for index, route in enumerate(placements.get("routes") or () if isinstance(placements, dict) else ()):
         label = "%s.routes[%d]" % (PLACEMENTS_PATH, index)
@@ -482,9 +582,9 @@ def plan(electrical: dict, catalogue: dict, envelopes: dict, bounds: dict, place
             targets = where.get(route[end])
             if not targets:
                 problems.append("%s.%s names %r, which has no body" % (label, end, route[end]))
-            elif min(_reach(point, b) for b in targets) > ROUTE_REACH_MM:
+            elif min(_reach(point, *b) for b in targets) > ROUTE_REACH_MM:
                 problems.append("%s starts or ends %.2f from %s; a wire end lies within %.1f of the body it joins"
-                                % (label, min(_reach(point, b) for b in targets), route[end], ROUTE_REACH_MM))
+                                % (label, min(_reach(point, *b) for b in targets), route[end], ROUTE_REACH_MM))
         points = [[round(float(v), 4) for v in p] for p in route["points"]]
         lo = [min(p[i] for p in points) - wires[route["wire"]] / 2 for i in range(3)]
         hi = [max(p[i] for p in points) + wires[route["wire"]] / 2 for i in range(3)]
@@ -727,6 +827,27 @@ def envelope_bounds(project: Path, paths) -> dict:
     return found
 
 
+def _unposed(shape, frame):
+    """``shape`` turned back from ``frame``'s pose into the part's frame."""
+
+    from build123d import Axis
+
+    return shape.rotate(Axis(tuple(frame["centre"]), tuple(frame["axis"])), -frame["angle_deg"])
+
+
+def envelope_posed_bounds(project: Path, requests: dict) -> dict:
+    """``{part: (lo, hi)}``: each posed part's envelope bounds in its own
+    frame, for ``requests`` as ``posed_requests`` gives them."""
+
+    from build123d import import_step
+
+    found = {}
+    for part, (relative, frame) in sorted(requests.items()):
+        box = _unposed(import_step(str(project / relative)), frame).bounding_box()
+        found[part] = ((box.min.X, box.min.Y, box.min.Z), (box.max.X, box.max.Y, box.max.Z))
+    return found
+
+
 def _frame(body):
     """``(origin, x_dir, z_dir)`` of a body's local frame: Z along its
     facing (or the world Z), X along its hinge or long axis."""
@@ -822,7 +943,13 @@ def build_shape(body, catalogue_models: Path | None = None):
         shape = Box(lx, ly, lz, align=bottom if body.get("facing") else (Align.CENTER,) * 3)
     origin, x, z = _frame(body)
     plane = Plane(origin=origin, x_dir=x, z_dir=z)
-    return plane.location * shape
+    shape = plane.location * shape
+    frame = body.get("pose")
+    if frame is not None:
+        from build123d import Axis
+
+        shape = shape.rotate(Axis(tuple(frame["centre"]), tuple(frame["axis"])), frame["angle_deg"])
+    return shape
 
 
 def _wire_shape(body):
@@ -911,8 +1038,10 @@ def _inputs(project: Path, electrical: dict, catalogue: dict, power_raw: bytes, 
     }
 
 
-def prepare(project: Path, bounds_reader=envelope_bounds) -> tuple[dict, dict, dict, dict]:
-    """``(electrical, catalogue, plan, inputs)`` for the project."""
+def prepare(project: Path, bounds_reader=envelope_bounds,
+            posed_reader=envelope_posed_bounds) -> tuple[dict, dict, dict, dict]:
+    """``(electrical, catalogue, plan, inputs)`` for the project. A pose is
+    part of the placements file's bytes, so ``placements_sha256`` binds it."""
 
     electrical, catalogue = sealed_inputs(project)
     placements, placements_raw = read_placements(project)
@@ -922,7 +1051,9 @@ def prepare(project: Path, bounds_reader=envelope_bounds) -> tuple[dict, dict, d
     envelopes, power_raw = power_envelopes(project)
     paths = list(envelopes.values())
     bounds = bounds_reader(project, paths)
-    planned = plan(electrical, catalogue, envelopes, bounds, placements)
+    requests = posed_requests(envelopes, bounds, placements)
+    posed = posed_reader(project, requests) if requests else {}
+    planned = plan(electrical, catalogue, envelopes, bounds, placements, posed)
     for body in planned["bodies"]:
         step = (catalogue.get(body["bought"]) or {}).get("model", {}).get("step") if body["bought"] else None
         if step:
@@ -982,7 +1113,9 @@ def check_built(project: Path, document: dict, planned: dict, inputs: dict, meas
         if not path.is_file() or _sha(path.read_bytes()) != body.get("step_sha256"):
             problems.append("%s changed since --build" % body.get("step"))
         elif measure is not None:
-            lo, hi = measure(path)
+            # A posed body is measured turned back into its own frame,
+            # where its plan's bounds are.
+            lo, hi = measure(path) if body.get("pose") is None else measure(path, body["pose"])
             want_lo, want_hi = body["bounds"]
             if any(abs(lo[i] - want_lo[i]) > BOUND_TOLERANCE_MM + 1e-9 or abs(hi[i] - want_hi[i]) > BOUND_TOLERANCE_MM + 1e-9
                    for i in range(3)) and body["form"] != "wire":
@@ -990,10 +1123,11 @@ def check_built(project: Path, document: dict, planned: dict, inputs: dict, meas
     return problems
 
 
-def _step_bounds(path: Path):
+def _step_bounds(path: Path, frame=None):
     from build123d import import_step
 
-    box = import_step(str(path)).bounding_box()
+    shape = import_step(str(path))
+    box = (shape if frame is None else _unposed(shape, frame)).bounding_box()
     return (box.min.X, box.min.Y, box.min.Z), (box.max.X, box.max.Y, box.max.Z)
 
 
@@ -1110,7 +1244,10 @@ def pictures(document: dict, printed: list, bodies: dict) -> dict:
         if body["form"] == "board":
             shift = np.zeros(3)
         elif body.get("facing"):
-            shift = np.asarray(_unit(body["facing"])) * EXPLODE_FRACTION * span
+            direction = _unit(body["facing"])
+            if body.get("pose") is not None:
+                direction = to_world(body["pose"], direction, point=False)
+            shift = np.asarray(direction) * EXPLODE_FRACTION * span
         else:
             middle = (mesh.points.min(axis=0) + mesh.points.max(axis=0)) / 2.0
             away = middle - centre

@@ -30,6 +30,20 @@ they get no `parts/` production STEP.
    - `facing` is the side the part works through: a receptacle's mouth, an
      LED's light, a lever switch's lever. It is required for those forms.
    - `hinge` is the end of a lever switch's lever that is hinged.
+   - `pose` is for a seat that is not square to the world axes, such as a
+     switch square to a 30 degree deck or an LED in a sloped wall. Without
+     it the body is drawn square to the world, and in a tilted envelope it
+     clashes with its own pocket. Give the rotation that turns the world
+     axes into the part's own, right-handed about the centre of the
+     envelope's world bounding box:
+     `"sw": {"facing": "+z", "pose": {"axis": [1, 0, 0], "angle_deg": 30}}`.
+     `axis` is a nonzero `[x, y, z]`; `angle_deg` is nonzero and at most
+     180 either way. Use the same rotation that tilted the envelope in
+     `measure/power.json`'s `cad.source`. The envelope is then read in the
+     part's frame, `facing` and `hinge` name the part's own axes, and the
+     body list records the body's `seat` and `bounds` in that frame beside
+     its `pose`. Route ends are still world points. A seat square to the
+     world takes no `pose`; a wire never does.
    - `routes` are optional wire polylines in the assembly frame; each end
      lies within 1 mm of the body it joins.
    - The board (`bought_pcba`) is never placed here. It is drawn exactly at
