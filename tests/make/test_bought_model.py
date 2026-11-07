@@ -27,7 +27,12 @@ from workshop.make.assembly_package import (
     occurrences_missing_colour_names,
     read_assembly_package,
 )
-from workshop.make.bought_model import draws_bought_parts, expected_bodies, verify_made_bought
+from workshop.make.bought_model import (
+    draws_bought_parts,
+    expected_bodies,
+    verify_made_bought,
+    verify_printed_primary,
+)
 from workshop.runtime.package_data import product_run_domain_skill_roots
 from workshop.wish.catalogues import load_catalogues
 from workshop.wish.design_contract import parse_design_contract
@@ -403,6 +408,54 @@ class BoughtOccurrenceTest(unittest.TestCase):
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 16
 
 
+def printed_box(label, size=(40.0, 30.0, 4.0), at=(0.0, 0.0, -30.0)):
+    from build123d import Box, Color, Compound, Pos
+
+    body = Pos(*at) * Box(*size)
+    body.label = "%s_white" % label
+    body.color = Color(1.0, 1.0, 1.0)
+    return Compound(children=[body], label=label)
+
+
+def bought_box(name, at):
+    from build123d import Box, Color, Pos
+
+    body = Pos(*at) * Box(4.0, 4.0, 2.0)
+    body.label = name
+    body.color = Color(1.0, 0.0, 1.0)
+    return body
+
+
+def write_scene(path, printed, bought=None):
+    """An assembly STEP as final verification writes it: the printed
+    Components and, when given, the ``bought`` group beside them."""
+
+    from build123d import Compound, export_step
+
+    children = list(printed)
+    if bought is not None:
+        children.append(bought)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    export_step(Compound(children=children, label="toy"), str(path))
+    return path.read_bytes()
+
+
+def bought_group_of(project):
+    spec = importlib.util.spec_from_file_location("bought_group_under_test", project / "bought" / "__init__.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.bought_group()
+
+
+def write_entry_scene(project):
+    """The assembly entry and the STEP it generated, with the bought group
+    the project's own ``bought/__init__.py`` builds."""
+
+    (project / "toy.step.py").write_text("def gen_step():\n    return None\n")
+    return write_scene(project / "toy.step", [printed_box("base"), printed_box("lid", at=(0.0, 0.0, 40.0))],
+                       bought_group_of(project))
+
+
 class MadeFixture:
     """A sealed Made product with its bought bodies, pictures and README."""
 
@@ -540,6 +593,130 @@ class MadeBoughtTest(MadeFixture, unittest.TestCase):
         self.assertIn("differs from the Made manifest", str(caught.exception))
 
 
+class PrintedPrimaryTest(unittest.TestCase):
+    """ADR 0095 (2026-11-07): the printed-only primary is the scene minus its
+    bought bodies, checked on the sealed bytes by solid volume and area."""
+
+    def setUp(self):
+        from build123d import Compound
+
+        self.root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.root)
+        group = Compound(children=[bought_box("bought_usb_c", (0, 0, 0)), bought_box("bought_led", (8, 0, 0))],
+                         label="bought")
+        self.parts = [printed_box("base"), printed_box("lid", at=(0.0, 0.0, 40.0))]
+        self.scene = write_scene(self.root / "scene.step", self.parts, group)
+        project = self.root / "project"
+        project.mkdir()
+        shutil.copyfile(self.root / "scene.step", project / "toy.step")
+        self.removed = tool.write_printed_only(project / "toy.step", project / "printed.step")
+        self.printed = (project / "printed.step").read_bytes()
+
+    def refused(self, scene, printed, removed=None):
+        with self.assertRaises(ContractError) as caught:
+            verify_printed_primary(scene, printed, self.removed if removed is None else removed)
+        return str(caught.exception)
+
+    def test_the_tool_removes_exactly_the_bought_group(self):
+        self.assertEqual(sorted(self.removed), ["bought_led", "bought_usb_c"])
+        self.assertEqual(verify_printed_primary(self.scene, self.printed, self.removed),
+                         {"printed_bodies": 2, "removed_bodies": 2})
+
+    def test_the_scene_itself_is_no_printed_primary(self):
+        self.assertIn("still holds bought bodies: bought_led, bought_usb_c", self.refused(self.scene, self.scene))
+
+    def test_a_primary_missing_a_printed_body_is_refused(self):
+        alone = write_scene(self.root / "alone.step", [self.parts[0]])
+        self.assertIn("missing lid_white", self.refused(self.scene, alone))
+
+    def test_a_primary_with_a_changed_printed_body_is_refused(self):
+        changed = write_scene(self.root / "changed.step",
+                              [printed_box("base", size=(40.0, 30.0, 5.0)), self.parts[1]])
+        self.assertIn("base_white is not the scene's", self.refused(self.scene, changed))
+
+    def test_a_primary_that_records_other_removals_is_refused(self):
+        self.assertIn("records removing bought_usb_c", self.refused(self.scene, self.printed, ["bought_usb_c"]))
+
+    def test_a_scene_without_a_bought_group_has_no_printed_primary(self):
+        plain = self.root / "plain.step"
+        write_scene(plain, self.parts)
+        with self.assertRaises(tool.Refused) as caught:
+            tool.write_printed_only(plain, self.root / "out.step")
+        self.assertIn("holds no bought body", "; ".join(caught.exception.reasons))
+
+
+class MadePrintedPrimaryTest(MadeFixture, unittest.TestCase):
+    """The host check of a sealed printed-only primary before Make is accepted."""
+
+    def setUp(self):
+        from build123d import Compound
+
+        super().setUp()
+        names = [item["name"] for item in self.bodies["bodies"]]
+        group = Compound(children=[bought_box(name, (8.0 * n, 0, 0)) for n, name in enumerate(names)],
+                         label="bought")
+        scene = write_scene(self.product / "assembled.step", [printed_box("base")], group)
+        self.write("cad/toy.step", scene)
+        self.removed = tool.write_printed_only(self.cad / "toy.step", self.cad / "measure/electrical/printed.step")
+        self.printed = (self.cad / "measure/electrical/printed.step").read_bytes()
+        self.record = {"step": "measure/electrical/printed.step",
+                       "sha256": hashlib.sha256(self.printed).hexdigest(),
+                       "scene": "toy.step", "scene_sha256": hashlib.sha256(scene).hexdigest(),
+                       "removed": self.removed}
+        self.seal()
+
+    def seal(self, pictures=None):
+        super().seal(pictures)
+        record = getattr(self, "record", None)
+        if record is not None:
+            path = self.cad / "measure/electrical/electrical.json"
+            report = json.loads(path.read_text())
+            report["printed"] = record
+            path.write_text(json.dumps(report))
+
+    def test_a_printed_primary_that_is_the_scene_minus_its_bodies_is_sealed_in_the_receipt(self):
+        account = self.verify()
+        self.assertEqual(account["printed_primary"], {
+            "path": "cad/measure/electrical/printed.step",
+            "sha256": hashlib.sha256(self.printed).hexdigest(),
+            "scene_path": "assembled.step",
+            "scene_sha256": self.record["scene_sha256"],
+            "removed": self.removed,
+            "printed_bodies": 1,
+            "removed_bodies": 5,
+        })
+
+    def test_a_run_whose_final_wrote_no_printed_primary_keeps_its_account(self):
+        self.record = None
+        self.seal()
+        self.assertNotIn("printed_primary", self.verify())
+
+    def test_a_printed_primary_that_is_not_the_named_bytes_is_refused(self):
+        self.write("cad/measure/electrical/printed.step", self.printed + b"\n")
+        self.assertIn("is not the printed-only primary", self.refused())
+
+    def test_a_printed_primary_drawn_from_another_scene_is_refused(self):
+        self.record["scene_sha256"] = "0" * 64
+        self.seal()
+        self.assertIn("drawn from another scene", self.refused())
+
+    def test_a_printed_primary_that_keeps_a_bought_body_is_refused(self):
+        self.write("cad/measure/electrical/printed.step", (self.product / "assembled.step").read_bytes())
+        self.record["sha256"] = hashlib.sha256((self.product / "assembled.step").read_bytes()).hexdigest()
+        self.seal()
+        self.assertIn("still holds bought bodies", self.refused())
+
+    def test_a_printed_primary_that_removes_other_bodies_is_refused(self):
+        self.record["removed"] = self.removed[:-1]
+        self.seal()
+        self.assertIn("does not remove exactly the drawn Bought Parts", self.refused())
+
+    def test_a_malformed_printed_record_is_refused(self):
+        self.record["removed"] = "bought_usb_c"
+        self.seal()
+        self.assertIn("names its printed-only primary malformed", self.refused())
+
+
 class PublishedModelTest(MadeFixture, unittest.TestCase):
     """The toy projection ships the bodies beside the models and the toy
     README shows the pictures and the contract's assembly text."""
@@ -610,8 +787,21 @@ class BuildAndFinalTest(unittest.TestCase):
                          expected_bodies(contract["electrical"], catalogue["bought_parts"]))
         module = (project / "bought/__init__.py").read_text()
         self.assertIn("def bought_group(", module)
+        scene = write_entry_scene(project)
         report = tool.final(project)
         self.assertEqual(sorted(report["files"]), ["assembly.md", "cutaway.png", "exploded.png", "wiring.png"])
+        # ADR 0095 (2026-11-07): the scene without its bought group, beside it.
+        printed = report["printed"]
+        drawn = [body["name"] for body in document["bodies"] + document["routes"]]
+        self.assertEqual(printed["step"], "measure/electrical/printed.step")
+        self.assertEqual(sorted(printed["removed"]), sorted(drawn))
+        self.assertEqual((printed["scene"], printed["scene_sha256"]), ("toy.step", hashlib.sha256(scene).hexdigest()))
+        printed_bytes = (project / printed["step"]).read_bytes()
+        self.assertEqual(printed["sha256"], hashlib.sha256(printed_bytes).hexdigest())
+        self.assertEqual(verify_printed_primary(scene, printed_bytes, printed["removed"]),
+                         {"printed_bodies": 2, "removed_bodies": len(drawn)})
+        self.assertNotIn(b"bought_", printed_bytes)
+        self.assertNotIn(b"magenta", printed_bytes.lower())
         self.assertEqual((project / "measure/electrical/assembly.md").read_text(),
                          tool.assembly_text(contract["electrical"], catalogue["bought_parts"]))
         self.assertFalse(any(path.name.startswith("part_") for path in (project / "bought").iterdir()))
@@ -676,6 +866,7 @@ class BuildAndFinalTest(unittest.TestCase):
             self.assertAlmostEqual(hi[i], led["bounds"][1][i], delta=tool.BOUND_TOLERANCE_MM)
         box = drawn.bounding_box()
         self.assertGreater(box.max.Z - box.min.Z, hi[2] - lo[2] + 1.0, "the drawn LED is turned")
+        write_entry_scene(project)
         report = tool.final(project)
         self.assertIn("bought_screen_led", report["bodies"])
 
@@ -727,6 +918,7 @@ class BuildAndFinalTest(unittest.TestCase):
         # Coincident faces leave boolean noise far below the 1.0 mm3 interference tolerance.
         self.assertLess(drawn.volume - (drawn & envelope).volume, 0.01, "inside its stepped envelope")
         self.assertLess((drawn & cap.rotate(tilt, 30)).volume, 0.01, "the nose clears the cap's socket")
+        write_entry_scene(project)
         report = tool.final(project)
         self.assertIn("bought_s_half", report["bodies"])
 
