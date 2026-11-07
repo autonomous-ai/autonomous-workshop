@@ -2,9 +2,11 @@
 
 - **Status:** Proposed on 2026-11-07. The owner answered all six open
   questions the same day; the answers are folded into the decisions below
-  and listed under "Owner decisions". Implementation is on the stacked
-  branch `seeded-batch-impl`; its section "Implementation status" says
-  what is built and what is still a target.
+  and listed under "Owner decisions". The first implementation merged in
+  PR #234; the whole-batch seal, the `parts/` exporter and the Make
+  record's batch summary are on branch `seeded-batch-complete`. The
+  section "Implementation status" says what is built and what is still a
+  target.
 - **Amends:**
   - [ADR 0096](0096-the-approved-proof-is-the-build.md), for seeded runs:
     - decision 2, "What the run still does": who runs those checks;
@@ -399,53 +401,107 @@ turn.
 
 ## Implementation status
 
-Built on branch `seeded-batch-impl` (stacked on this ADR's PR), with
-deterministic-fake tests. Nothing here has run on a live seeded build yet.
+The batch engine, seal and host merged in PR #234. The rest is on branch
+`seeded-batch-complete`. All of it has deterministic-fake tests. No live
+seeded build has run with the batch yet.
 
 **Built:**
 
-- **Seal (decisions 1 and 5, owner decision 2).** `APPROVAL.json` schema 2
-  records `check_inputs` {path: sha256} and the design batch's `batch`
-  record. `seal_proof.py inputs DIR --contract FILE` lists each required
-  input, present or missing, and who writes it. `seal` refuses a missing
-  input, an invalid `SEED-PRODUCT.json`, a motion review the run could not
-  carry, or a failing design batch. `validate_seed` refuses schema 1 for
-  new launches with the re-seal path; resume never calls it.
-- **Batch engine** (`workshop.make.seeded_batch`). Layers are seed,
-  project, shared-helpers, components, interfaces, power, motion,
-  assembly, final, product and finalize. Every independent failure in a
-  layer is reported, and later layers are skipped and named (owner
-  decision 4). Exit 0 is a pass and exit 1 without a traceback is a check
-  failure. Anything else is a harness failure: a signal, another exit
-  code, a timeout, a traceback or a tool that cannot start. A pass is
-  reused only for identical argv, tool bytes and input bytes, and a
-  failure is never reused.
-- **Mechanical steps** (`workshop.make.seeded_package`). `prepare` copies
-  the seed's project and installs the run's print-details library.
-  `product` writes `product.json`, the Spark source, the root assembled
-  copies and a powered toy's README.
-- **Host** (`workshop.workflow.seeded_batch_host`). New seeded launches
-  freeze `MAKE-OPTIONS` schema 4 with `seed.batch.tool_sha256`; resume can
-  neither add nor drop it. Before a Make turn the host runs the batch in a
-  credential-free minimal environment, in the same way as the native gate
-  and release renders. A pass proceeds to the finalizer's proposal with no
-  native turn. A check failure starts the native turn with
-  `STAGE.json` `inputs.seeded_batch_failure`. A harness failure stops the
-  run with `last-harness-failure.json`. At Make evaluation the host reruns
-  the check layers as the gate, unless the passing attempt bound the same
-  proposal bytes. Seed component nonces are issued by the host
-  (`issuer: host-batch`).
+- **Seal (decisions 1 and 5, owner decisions 2 and 5).**
+  - `APPROVAL.json` schema 2 records `check_inputs` {path: sha256} and
+    the design batch's `batch` record.
+  - `seal_proof.py inputs DIR --contract FILE` lists each required input,
+    present or missing, and who writes it.
+  - `seal` refuses any of these: a missing input, an invalid
+    `SEED-PRODUCT.json`, a motion review the run could not carry, or a
+    failing design batch.
+  - `validate_seed` refuses schema 1 for new launches and names the
+    re-seal path. Resume never calls it.
+- **The design batch covers the run's whole batch** (`seeded_batch.design_plan`).
+  Each step uses the run's own tool:
+  - the project dry run;
+  - the shared-helper samples (`--contract`);
+  - each Component's print gates. A component round's review and seed
+    nonce belong to the run.
+  - each Coupled Interface's interference and motion check, run on the
+    Proof's Components as they stand. This is
+    `make_round --interface ID --contract FILE`: nothing is locked, so
+    nothing unlocks and no round state is written. It is refused inside a
+    run.
+  - `bought_model --build`, `check_power` and `check_mount`;
+  - `check_motion`;
+  - final verification with the run's argv plus `--design`. This runs
+    every final gate except the signature review the run carries.
+    `--design` is refused inside a run (a `WISH.json` above the project),
+    so the run's gate keeps that requirement.
+  - a packaging check, `seeded_package check`. Every printed occurrence of
+    a multi-part package must be named for a stocked colour and resolve to
+    exactly one Component STEP solid, as `parts` will export it. It writes
+    nothing.
+
+  Only the assembly round, the carried reviews, `product`, `parts` and
+  the finalizer wait for the run.
+- **Batch engine** (`workshop.make.seeded_batch`).
+  - Layers: seed, project, shared-helpers, components, interfaces, power,
+    motion, assembly, final, product, parts and finalize.
+  - Every independent failure in a layer is reported, and later layers
+    are skipped and named (owner decision 4).
+  - Exit 0 is a pass. Exit 1 without a traceback is a check failure.
+    Anything else is a harness failure: a signal, another exit code, a
+    timeout, a traceback, or a tool that cannot start.
+  - A pass is reused only for identical argv, tool bytes and input bytes.
+    A failure is never reused.
+  - The `product` step is bound to final verification's report, so a
+    repair that reruns final verification is repackaged.
+- **Mechanical steps** (`workshop.make.seeded_package`).
+  - `prepare` copies the seed's project and installs the run's
+    print-details library.
+  - `product` writes `product.json`, the Spark source, the root assembled
+    copies and a powered toy's README. It copies the assembly package
+    from cadgen's `__cadgen__/models/<entry>.step.py/assembly.json`; the
+    Sunset Slider run's Manager copied the same file by hand.
+  - `parts` writes `parts/<occurrence>.step` for every printed occurrence
+    of a multi-part package, so a passing multi-part build needs no model
+    turn:
+    - a one-solid Component STEP that passed the print gates is copied
+      byte for byte, with instances sharing its bytes;
+    - a labelled solid inside a multi-solid Component STEP is exported
+      on its own;
+    - a Bought Part is skipped;
+    - an occurrence no Component holds, or more than one holds, is named
+      as a check failure, and nothing is written.
+
+    On a copy of the Sunset Slider product, it wrote all 40 parts, and
+    each matches the Manager's file in volume and bounding box.
+- **Host** (`workshop.workflow.seeded_batch_host`).
+  - New seeded launches freeze `MAKE-OPTIONS` schema 4 with
+    `seed.batch.tool_sha256`. Resume can neither add nor drop it.
+  - Before a Make turn, the host runs the batch in a credential-free
+    minimal environment, the same way as the native gate and release
+    renders.
+  - On a pass, the finalizer proposes with no native turn. A check
+    failure starts the native turn with `STAGE.json`
+    `inputs.seeded_batch_failure`. A harness failure stops the run with
+    `last-harness-failure.json`.
+  - At Make evaluation the host reruns the check layers as the gate,
+    unless the passing attempt bound the same proposal bytes.
+  - Seed component nonces are issued by the host (`issuer: host-batch`).
+- **The Make record shows who ran the batch.**
+  - The Make gate's `evidence.checks.seeded_batch` holds:
+    - `executor: host-batch`;
+    - `proposed_by`: `host-batch` when the batch finalized Make with no
+      native turn, or `native-turn` when a repair turn proposed and the
+      host reran the checks;
+    - the gate (`batch-finalized` or `batch-gated`);
+    - the record path and sha256;
+    - the batch tool's sha256.
+  - The Make receipt carries the same summary as `seeded_batch`.
+  - Every printed receipt (`workshop status`, `wish`, `resume`) shows it
+    in one line.
 - **Product-run card.** `make-seeded.md` "When the host ran the batch".
 
 **Still a target or a known gap:**
 
-- **The design dry run is narrower than the run batch.** It runs
-  `verify_project --dry-run`, the shared-helper samples, the print gates,
-  `bought_model --build`, `check_power`, `check_mount` and `check_motion`.
-  It does not run the component rounds, which need run nonces, the
-  interface checks or the carried reviews. It also does not run final
-  verification, which needs the run's signature review, or the
-  finalizer. Those run first in the build.
 - **Final verification is called directly.** The final layer calls
   `verify_project` with `make_round --full`'s argv rather than
   `make_round --full --record-visual`, because no Manager visual feedback
@@ -453,14 +509,11 @@ deterministic-fake tests. Nothing here has run on a live seeded build yet.
 - **No sandbox.** The batch uses the minimal tool environment. The Claude
   adapter has no bwrap sandbox to reuse, and the batch reads no
   credentials.
-- **There is no `parts/` exporter.** No deterministic per-occurrence
-  exporter exists yet; the Sunset Slider Manager wrote one inside its run.
-  A multi-part seeded run's finalizer will refuse until one exists. That
-  run then takes one native packaging turn, which reuses every passing
-  check.
-- **`executor: host-batch` appears only in host state.** The Make receipt
-  does not show it yet.
+- **Proofs sealed before this change need a re-seal.** A schema 1
+  approval, such as the Sunset Slider's, lacks the power, mount and
+  placement inputs, so its design batch fails at the power layer.
+  `seal_proof.py inputs` lists each missing input.
 - **The loop is tested in parts, not end to end.**
   `_seeded_batch_before_turn` and the gate are unit-tested with fakes. A
   full `workshop wish --seed-source` through Release has not run with the
-  batch.
+  batch. It needs the owner's OK for a pilot toy.

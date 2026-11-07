@@ -25,6 +25,10 @@ only because a check failed:
   listed passed; never rerun them.
 - Repair only what the failing steps name, under this file's rules, and
   rerun only those steps to see them pass.
+- The host writes `parts/<occurrence>.step` itself (the `parts` step). If
+  it fails, it names each occurrence no Component STEP holds, or that more
+  than one holds; fix that assembly label in the CAD source, never by
+  writing a part file by hand.
 - Propose with the finalizer as usual. The host reruns the whole batch as
   Make's gate (unchanged inputs reuse their passing result); a failure
   comes back as a new `seeded_batch_failure`.

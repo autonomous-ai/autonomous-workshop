@@ -507,6 +507,15 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                    "within tolerance of" if item.get("within_tolerance") else "over tolerance against",
                    "the approval" if item.get("locked_by") == "seed-approval" else "its Component Review")
             )
+        batch = receipt.get("seeded_batch")
+        if isinstance(batch, Mapping):
+            # ADR 0098: who ran the seeded Make's checks.
+            print(
+                "Seeded batch: the host ran every check (record %s); %s"
+                % (str(batch.get("record_sha256", "?"))[:12],
+                   "it finalized Make with no native turn" if batch.get("gate") == "batch-finalized"
+                   else "a native repair turn proposed Make and the host reran the checks as the gate")
+            )
     boundary = receipt.get("boundary_refusals")
     if isinstance(boundary, Mapping) and boundary.get("count"):
         # ADR 0096 pilot (B7, B8): attempts the guard refused at the run boundary.

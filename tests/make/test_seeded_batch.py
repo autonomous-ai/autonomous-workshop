@@ -217,8 +217,18 @@ class PlanTest(unittest.TestCase):
         ids = [step.id for step in steps]
         for expected in ("prepare", "project", "shared-helpers", "component:body", "component:lid",
                          "interface:hinge", "bought-model", "check-power", "check-mount", "check-motion",
-                         "assembly-round", "carry-assembly-review", "final-verification", "product", "finalizer"):
+                         "assembly-round", "carry-assembly-review", "final-verification", "product", "parts",
+                         "finalizer"):
             self.assertIn(expected, ids)
+        self.assertLess(ids.index("product"), ids.index("parts"))
+        parts = next(step for step in steps if step.id == "parts")
+        self.assertEqual(parts.layer, "parts")
+        self.assertIn("/run/artifacts/make/r0001/product/assembled.step.json", parts.inputs)
+        # A repair that reruns final verification rewrites its report, so the
+        # product step is never reused over a stale package.
+        product = next(step for step in steps if step.id == "product")
+        self.assertIn("measure/verification-pipeline.md", product.inputs)
+        self.assertIn("/run/seed", product.inputs)
         self.assertEqual(ids[-1], "finalizer")
         rounds = [step for step in steps if step.layer == "components"]
         self.assertEqual([step.nonce_component for step in rounds], ["body", "lid"])
@@ -247,13 +257,53 @@ class PlanTest(unittest.TestCase):
     def test_the_design_plan_needs_no_run_state(self):
         steps = sb.design_plan(self._inputs())
         text = [" ".join(step.argv) for step in steps]
-        for absent in ("--component", "--interface", "--seed-nonce", "--carry-assembly-review", "stage_proposal",
-                       "seeded_package", "--require-component-passes"):
+        for absent in ("--component", "--seed-nonce", "--carry-assembly-review", "stage_proposal",
+                       "seeded_package product", "seeded_package parts", "--require-component-passes",
+                       "SIGNATURE-REVIEW"):
             self.assertFalse(any(absent in line for line in text), absent)
         self.assertTrue(any("--print-gates-only" in line for line in text))
         shared = next(step for step in steps if step.id == "shared-helpers")
         self.assertIn("--contract", shared.argv, "outside a run make_round reads --contract")
         self.assertFalse(any(step.nonce_component for step in steps))
+
+    def test_the_design_plan_covers_the_runs_whole_batch(self):
+        """ADR 0098: interfaces, final verification and packaging run at the
+        seal with the run's own tools, in the run's layer order."""
+        steps = sb.design_plan(self._inputs())
+        ids = [step.id for step in steps]
+        self.assertEqual(ids, ["project", "shared-helpers", "print-gates", "interface:hinge", "bought-model",
+                               "check-power", "check-mount", "check-motion", "final-verification",
+                               "package-check"])
+        interface = steps[ids.index("interface:hinge")]
+        self.assertEqual(interface.argv[2:], ("/run/artifacts/make/r0001/product/cad", "--interface", "hinge",
+                                              "--contract", "/run/WISH.json"))
+        final = steps[ids.index("final-verification")]
+        run_final = next(step for step in self._run_plan() if step.id == "final-verification")
+        self.assertEqual([item for item in final.argv if item != "--design"
+                          and not item.endswith("design-verification.md")],
+                         [item for item in run_final.argv if not item.endswith("verification-pipeline.md")],
+                         "the same gates as the run's final verification")
+        self.assertIn("--design", final.argv)
+        self.assertEqual(final.reports, (sb.DESIGN_REPORT,))
+        self.assertNotIn("snap/SIGNATURE-REVIEW.json", final.inputs)
+        package = steps[ids.index("package-check")]
+        self.assertEqual(package.argv[1:], ("-m", "workshop.make.seeded_package", "check", "--project",
+                                            "/run/artifacts/make/r0001/product/cad"))
+        self.assertIn(sb.DESIGN_REPORT, package.inputs)
+
+    def test_an_unpowered_final_names_unpowered_only_when_image_derived(self):
+        for image_derived, flags in ((True, ["--image-derived", "--unpowered"]), (False, [])):
+            with self.subTest(image_derived=image_derived):
+                final = next(step for step in self._run_plan(powered=False, image_derived=image_derived)
+                             if step.id == "final-verification")
+                self.assertEqual([item for item in final.argv if item in
+                                  ("--image-derived", "--unpowered", "--powered")], flags)
+
+    def test_the_contracts_coupled_interfaces_in_order(self):
+        contract = {"interfaces": [{"id": "a", "kind": "coupled"}, {"id": "b", "kind": "static"},
+                                   {"id": "c", "kind": "coupled"}, "junk"]}
+        self.assertEqual(sb.coupled_interface_ids(contract), ("a", "c"))
+        self.assertEqual(sb.coupled_interface_ids({}), ())
 
     def test_deadlines_override_by_layer(self):
         steps = sb.design_plan(self._inputs(deadlines={"motion": 42.0}))

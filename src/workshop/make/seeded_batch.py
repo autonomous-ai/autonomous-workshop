@@ -53,6 +53,7 @@ LAYERS = (
     "assembly",
     "final",
     "product",
+    "parts",
     "finalize",
 )
 RECORD = "measure/seeded-batch.json"
@@ -80,6 +81,7 @@ DEFAULT_DEADLINES = {
     "assembly": 1800.0,
     "final": 3600.0,
     "product": 300.0,
+    "parts": 600.0,
     "finalize": 900.0,
 }
 # What a repair turn may still do; carried in the failure packet so the turn
@@ -449,36 +451,83 @@ def run_plan(inputs: PlanInputs, *, run_root: Path, product_root: Path, source: 
         Step("carry-assembly-review", "assembly", (py, make_round, project, "--carry-assembly-review",
                                                    "--concept-sha256", inputs.concept_sha256),
              reports=("snap/SIGNATURE-REVIEW.json",)),
-        Step("final-verification", "final",
-             (py, _tool(inputs, "cad", "scripts", "verify_project"), project, "--strict-fit", "--print-gates",
-              "--nozzle", "%g" % inputs.nozzle, "--report", str(inputs.project / "measure/verification-pipeline.md"),
-              "--check-motion", "true" if inputs.moving else "false",
-              *(("--image-derived",) if inputs.image_derived else ()),
-              "--powered" if inputs.powered else "--unpowered"),
-             inputs=(*_source_inputs(inputs.roles), "snap/SIGNATURE-REVIEW.json", "snap/MOTION-REVIEW.json",
-                     "measure/motion.json", "measure/power.json", "measure/mounts.json"),
-             reports=("measure/verification-pipeline.md",)),
+        _final_step(inputs, "measure/verification-pipeline.md", design=False),
+        # Final verification rewrites its report whenever it reruns, with the
+        # combined STEP and its package, so a repaired build is repackaged.
         Step("product", "product", (*package, "product", str(run_root), "--project", project,
-                                    "--product-root", str(product_root), "--source", str(source))),
+                                    "--product-root", str(product_root), "--source", str(source)),
+             inputs=("measure/verification-pipeline.md", "measure/electrical/assembly.md", str(run_root / "seed"),
+                     str(Path(__file__).with_name("seeded_package.py")))),
+        # The production solid of every printed occurrence, from the
+        # Component STEPs the print gates passed, so a multi-part build's
+        # finalizer needs no model turn.
+        Step("parts", "parts", (*package, "parts", "--project", project, "--product-root", str(product_root)),
+             # Final verification rewrites the combined STEP and its package
+             # whenever a Component STEP changes, so these bind the parts.
+             inputs=(str(product_root / "assembled.step"), str(product_root / "assembled.step.json"),
+                     str(Path(__file__).with_name("seeded_package.py"))),
+             reports=(str(product_root / "parts"),)),
         Step("finalizer", "finalize", tuple(inputs.finalizer)),
     ]
     return _with_deadlines(steps, inputs.deadlines)
 
 
+DESIGN_REPORT = "measure/design-verification.md"
+
+
+def _final_step(inputs: PlanInputs, report: str, *, design: bool) -> Step:
+    """Final verification, the same gates in the run and on the Proof. In
+    the run it binds the carried signature review; on the Proof
+    (``--design``, refused inside a run) that review does not exist yet."""
+
+    flags = ["--powered"] if inputs.powered else ["--unpowered"] if inputs.image_derived else []
+    reviews = () if design else ("snap/SIGNATURE-REVIEW.json", "snap/MOTION-REVIEW.json")
+    return Step("final-verification", "final",
+                (inputs.python, _tool(inputs, "cad", "scripts", "verify_project"), str(inputs.project),
+                 *(("--design",) if design else ()), "--strict-fit", "--print-gates",
+                 "--nozzle", "%g" % inputs.nozzle, "--report", str(inputs.project / report),
+                 "--check-motion", "true" if inputs.moving else "false",
+                 *(("--image-derived",) if inputs.image_derived else ()), *flags),
+                inputs=(*_source_inputs(inputs.roles), *reviews, "measure/motion.json", "measure/power.json",
+                        "measure/mounts.json"),
+                reports=(report,))
+
+
+def coupled_interface_ids(contract: Mapping[str, Any]) -> tuple:
+    """The contract's Coupled Interfaces, in contract order."""
+
+    return tuple(item["id"] for item in contract.get("interfaces") or ()
+                 if isinstance(item, Mapping) and item.get("kind") == "coupled")
+
+
 def design_plan(inputs: PlanInputs) -> list:
     """The batch ``seal_proof.py seal`` runs on the Proof (owner decision 5):
-    every layer that needs no run state. Component rounds with nonces, the
-    Coupled Interface rounds on locked Components, the carried reviews, the
-    final verifier (which requires the carried signature review) and the
-    finalizer run first in the run."""
+    the run's whole batch, each check with the same tool, as far as it needs
+    no run state. Component rounds become their print gates (a round's
+    review and seed nonce are the run's); each Coupled Interface is checked
+    on the Proof's Components as they stand (nothing is locked yet);
+    final verification runs every gate with ``--design`` (the signature
+    review it binds in the run is carried there); and the packaging check
+    resolves every production part the run will export. The assembly round,
+    the carried reviews, product, parts and the finalizer need the run."""
 
     py, project = inputs.python, str(inputs.project)
     make_round = _tool(inputs, "make-round", "scripts", "make_round")
+    contract = str(inputs.contract_path)
     steps = _common_layers(inputs, design=True)
     steps.append(Step("print-gates", "components",
                       (py, make_round, project, "--print-gates-only", "--nozzle", "%g" % inputs.nozzle,
-                       "--overhang-angle", "45", "--contract", str(inputs.contract_path)),
+                       "--overhang-angle", "45", "--contract", contract),
                       inputs=_source_inputs(inputs.roles), reports=("measure/print-gates/summary.json",)))
+    for interface in inputs.coupled_interfaces:
+        steps.append(Step("interface:%s" % interface, "interfaces",
+                          (py, make_round, project, "--interface", interface, "--contract", contract),
+                          inputs=_source_inputs(inputs.roles),
+                          reports=("measure/interface-rounds/%s/design" % interface,)))
+    steps.append(_final_step(inputs, DESIGN_REPORT, design=True))
+    steps.append(Step("package-check", "product",
+                      (py, "-m", "workshop.make.seeded_package", "check", "--project", project),
+                      inputs=(DESIGN_REPORT, str(Path(__file__).with_name("seeded_package.py")))))
     return _with_deadlines(steps, inputs.deadlines)
 
 
@@ -532,7 +581,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     project = args.project.resolve()
     inputs = PlanInputs(project=project, python=sys.executable, skills_root=args.skills_root.resolve(),
                         contract_path=args.contract.resolve(), roles=contract_geometry_ids(contract),
-                        nozzle=args.nozzle, powered=contract_is_powered(contract), moving=contract_is_moving(contract))
+                        nozzle=args.nozzle, coupled_interfaces=coupled_interface_ids(contract),
+                        powered=contract_is_powered(contract), moving=contract_is_moving(contract),
+                        image_derived=bool(contract.get("references")))
     record = run_batch(design_plan(inputs), project, record_path=args.record or project / RECORD, plan_name="design")
     for item in record["steps"]:
         print("seeded_batch: %-14s %-24s %s%s" % (item["layer"], item["id"], item["status"],

@@ -1357,9 +1357,14 @@ uv run python .claude/skills/design-a-toy/scripts/seal_proof.py seal <contract-d
 
 It writes `proof/APPROVAL.json` and `proof/approved/` (the docstring lists
 what it binds and refuses). Before it seals, it runs the seeded batch's
-design plan on the Proof (`measure/seeded-batch.json`): every check that
-needs no run, so a defect costs a Proof round here, not a build. It refuses
-on any failure, quoting each check.
+design plan on the Proof (`measure/seeded-batch.json`). That plan is the
+build's whole batch with the build's own tools, as far as no run is needed:
+each Component's print gates, each Coupled Interface on the Proof's
+Components, final verification (`verify_project --design`, without the
+signature review the build carries) and the packaging check that every
+printed part is colour-named and resolves to one Component solid. A defect
+then costs a Proof round here, not a build. It refuses on any failure,
+quoting each check.
 
 **Re-sealing a Proof sealed before ADR 0098.** `workshop wish|fix
 --seed-source` refuses an approval without check inputs (schema 1), naming

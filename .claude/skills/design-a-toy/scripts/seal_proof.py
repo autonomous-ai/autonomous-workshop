@@ -303,7 +303,9 @@ def dry_run_batch(proof: Path, contract: Path, design_contract: dict, nozzle: fl
     inputs = seeded_batch.PlanInputs(
         project=proof, python=sys.executable, skills_root=MAKE_SKILLS, contract_path=contract,
         roles=contract_geometry_ids(design_contract), nozzle=nozzle,
-        powered=contract_is_powered(design_contract), moving=contract_is_moving(design_contract))
+        coupled_interfaces=seeded_batch.coupled_interface_ids(design_contract),
+        powered=contract_is_powered(design_contract), moving=contract_is_moving(design_contract),
+        image_derived=bool(design_contract.get("references")))
     path = proof / seeded_batch.RECORD
     record = seeded_batch.run_batch(seeded_batch.design_plan(inputs), proof, runner=batch_runner(),
                                     record_path=path, plan_name="design")

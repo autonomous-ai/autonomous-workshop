@@ -107,6 +107,26 @@ class SeedSourceTest(unittest.TestCase):
         self.assertIn("Seed: the Approved Proof approved by owner on 2026-11-02 (approval aaaaaaaaaaaa)",
                       stdout.getvalue())
 
+    def test_the_receipt_prints_who_ran_the_seeded_batch(self):
+        """ADR 0098: the Make record shows that the host ran the batch."""
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        from cli.main import _print_native_receipt
+        from tests.cli.test_cli import native_receipt
+
+        seed = {"approval_sha256": "a" * 64, "approved_by": "owner", "date": "2026-11-02"}
+        for gate, words in (("batch-finalized", "it finalized Make with no native turn"),
+                            ("batch-gated", "a native repair turn proposed Make and the host reran the checks")):
+            stdout = StringIO()
+            with redirect_stdout(stdout):
+                _print_native_receipt({**native_receipt(status="complete", stage="release"), "seed": seed,
+                                       "seed_deviations": [],
+                                       "seeded_batch": {"executor": "host-batch", "gate": gate,
+                                                        "record_sha256": "b" * 64}}, verb="Run")
+            self.assertIn("Seeded batch: the host ran every check (record bbbbbbbbbbbb); " + words,
+                          stdout.getvalue())
+
     def test_the_receipt_prints_run_boundary_refusals(self):
         from contextlib import redirect_stdout
         from io import StringIO

@@ -43,7 +43,8 @@ from workshop.workflow.agent_run import frozen_seed_batch
 
 ATTEMPTS = "seeded-batch"
 NONCE_ISSUER = "host-batch"
-CHECK_LAYERS = tuple(layer for layer in seeded_batch.LAYERS if layer not in ("seed", "product", "finalize"))
+CHECK_LAYERS = tuple(layer for layer in seeded_batch.LAYERS
+                     if layer not in ("seed", "product", "parts", "finalize"))
 FINALIZER = ".agents/skills/autonomous-workshop/scripts/stage_proposal.py"
 SOURCE = "work/seeded/spark-source.json"
 CAD = "cad"
@@ -168,8 +169,7 @@ def plan(run_root: Path, round_index: int, *, python: str = sys.executable) -> t
         project=project, python=python, skills_root=run_root / ".agents/skills",
         contract_path=run_root / "WISH.json", roles=contract_geometry_ids(contract),
         nozzle=float(approval["nozzle_mm"]),
-        coupled_interfaces=tuple(item["id"] for item in contract.get("interfaces") or ()
-                                 if isinstance(item, dict) and item.get("kind") == "coupled"),
+        coupled_interfaces=seeded_batch.coupled_interface_ids(contract),
         powered=contract_is_powered(contract), moving=contract_is_moving(contract),
         image_derived=bool(wish.get("references")),
         concept_sha256=seeded_batch.concept_sha256(product["concept"]), finalizer=finalizer)
@@ -237,20 +237,34 @@ def run_for_checkpoint(run_root: Path, host_state_root: Path, checkpoint_sha256:
     return attempt
 
 
+# How the accepted Make's checks ran, for the Make record (ADR 0098): the
+# batch passed and finalized with no native turn, or a native repair turn
+# proposed Make and the host reran the batch's check layers as the gate.
+FINALIZED_BY_BATCH = "batch-finalized"
+GATED_BY_BATCH = "batch-gated"
+
+
+def _gate_summary(how: str, record_sha256: str) -> dict:
+    return {"executor": NONCE_ISSUER, "proposed_by": "host-batch" if how == FINALIZED_BY_BATCH else "native-turn",
+            "gate": how, "record": seeded_batch.RECORD, "record_sha256": record_sha256,
+            "tool_sha256": seeded_batch.module_sha256()}
+
+
 def gate_proposal(run_root: Path, host_state_root: Path, checkpoint_sha256: str, round_index: int, *,
-                  runner: Optional[seeded_batch.Runner] = None) -> None:
+                  runner: Optional[seeded_batch.Runner] = None) -> dict:
     """The host gate on a native repair turn's Make proposal: the check
     layers again on the proposed bytes, reusing unchanged passes. A proposal
     the batch itself finalized on a pass is not rerun.
 
-    ContractError on a check failure (the next STAGE.json carries the fresh
-    packet); SeededBatchHarnessFailure on a harness failure."""
+    Returns what the Make record shows of it; ContractError on a check
+    failure (the next STAGE.json carries the fresh packet);
+    SeededBatchHarnessFailure on a harness failure."""
 
     attempt = read_attempt(host_state_root, checkpoint_sha256)
     outcome = Path(run_root) / AGENT_OUTCOME
     if (attempt is not None and attempt.get("status") == seeded_batch.PASS and outcome.is_file()
             and attempt.get("proposal_sha256") == _sha256(outcome.read_bytes())):
-        return
+        return _gate_summary(FINALIZED_BY_BATCH, attempt["record_sha256"])
     check_tool(run_root)
     steps, project = plan(run_root, round_index)
     record_path = project / seeded_batch.RECORD
@@ -260,9 +274,9 @@ def gate_proposal(run_root: Path, host_state_root: Path, checkpoint_sha256: str,
         record_path=record_path, layers=CHECK_LAYERS)
     if record["status"] == seeded_batch.HARNESS_FAILURE:
         raise _stop(record)
-    if record["status"] == seeded_batch.PASS:
-        return
     record_sha256 = _sha256(record_path.read_bytes())
+    if record["status"] == seeded_batch.PASS:
+        return _gate_summary(GATED_BY_BATCH, record_sha256)
     packet = seeded_batch.failure_packet(record, record_sha256)
     _write(_attempt_path(host_state_root, checkpoint_sha256),
            {"schema_version": 1, "checkpoint_sha256": checkpoint_sha256, "status": record["status"],
