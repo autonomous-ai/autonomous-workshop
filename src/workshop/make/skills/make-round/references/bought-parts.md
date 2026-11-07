@@ -28,7 +28,13 @@ they get no `parts/` production STEP.
    ```
 
    - `facing` is the side the part works through: a receptacle's mouth, an
-     LED's light, a lever switch's lever. It is required for those forms.
+     LED's light, a lever switch's lever. It is required for those forms,
+     and for a `box` whose catalogue entry states both a `body` and a
+     `plunger` size (a push switch): that box is drawn as its `body` with
+     the plunger as a nose of the plunger's cross-section centred on the
+     `facing` side, as long as the `body with plunger out` height above the
+     body's (else the plunger's own length). Point `facing` at what the
+     plunger drives, such as a button cap's socket.
    - `hinge` is the end of a lever switch's lever that is hinged.
    - `pose` is for a seat that is not square to the world axes, such as a
      switch square to a 30 degree deck or an LED in a sloped wall. Without
