@@ -1,7 +1,10 @@
 # ADR 0098: A seeded Make runs its checks as one host batch, and the model works only on a failure
 
-- **Status:** Proposed on 2026-11-07. Nothing is implemented. The owner's
-  open questions are at the end.
+- **Status:** Proposed on 2026-11-07. The owner answered all six open
+  questions the same day; the answers are folded into the decisions below
+  and listed under "Owner decisions". Implementation is on the stacked
+  branch `seeded-batch-impl`; its section "Implementation status" says
+  what is built and what is still a target.
 - **Amends:**
   - [ADR 0096](0096-the-approved-proof-is-the-build.md), for seeded runs:
     - decision 2, "What the run still does": who runs those checks;
@@ -81,14 +84,15 @@ the spec and the three audits.
 | `measure/power.json`, `measure/mounts.json`, `measure/electrical/`, `ref/validation/*.step` | schema 10 `electrical` | the Proof, passing `check_power` and `check_mount` |
 | `measure/bought-placements.json` | a Bought Part with a `model` or a `pose` | the Proof, passing `bought_model.py` (issue #227) |
 | production occurrences in `proof.step.py` (colour-named, as the finalizer reads them) | always | the Proof, passing the finalizer's occurrence check, run read-only by `seal_proof` |
-| `product.json` `title` and `summary` | always | the Proof, from the Wish's name line and the contract; the owner sees the summary at Stage 4 |
-| the motion review (motion-review-v1) | a moving toy | the Proof Critic, on the Proof's motion presentation, recorded in `CRITIC.json` (open question 1) |
+| `product.json` `title` and `summary` | always | the Proof, from the Wish's name line and the contract; the owner sees the summary at Stage 4 (owner decision 3) |
+| the motion review (`snap/MOTION-REVIEW.json`, `snap/MOTION-EVIDENCE.json`, `snap/motion.gif`) | a moving toy | the Proof Critic, on the Proof's motion presentation (owner decision 1) |
 
 - **The manifest covers them.** The seed manifest and `APPROVAL.json` list
   these files by sha256, as they list the three audits today. A seed whose
   inputs are missing or stale is refused at seal time, not discovered in
   the run.
-- **`seal_proof` runs the batch once in design.** It uses `--dry-run`
+- **`seal_proof` runs the whole batch once in design (owner decision 5).**
+  It uses `--dry-run`
   against the Proof project, with the same script and tool bytes that
   `APPROVAL.json` binds. A Proof that fails it cannot be sealed. That is
   where the drive-frame lead hole should have been found, at design cost and
@@ -129,8 +133,8 @@ make-round tools. It is frozen with them, and its sha256 is recorded in
   9. **Package.** It writes `product.json` from the sealed fields, writes
      the receipts' inputs, and runs the Make finalizer
      (`stage_proposal.py make`).
-- **Every failure in a layer is reported at once.** Within a layer, every
-  check runs even when one fails. A layer whose inputs failed does not run.
+- **Every failure in a layer is reported at once (owner decision 4).**
+  Within a layer, every check runs even when one fails. A layer whose inputs failed does not run.
   The model then sees every independent failure in one report.
 - **What it records.** For each step it records in
   `measure/seeded-batch.json`:
@@ -240,7 +244,7 @@ turn.
 - **The model never judges acceptance.**
   - The assembly review is carried from the owner-approved `CRITIC.json`,
     as today.
-  - The motion review is carried from design (open question 1).
+  - The motion review is carried from design (owner decision 1).
   - The batch decides nothing.
   - Acceptance is the host's, on exact bytes.
 - **Frozen-run compatibility.**
@@ -249,8 +253,13 @@ turn.
   - Unseeded runs, runs sealed before this ADR, and resumed runs keep the
     protocol they materialized. That includes the Sunset Slider's current
     attempt.
-  - A seed sealed before decision 1 lacks the inputs. It runs today's
-    seeded Make (open question 2).
+  - A seed sealed before decision 1 lacks the inputs. It is refused for
+    every new launch, `workshop wish` and `workshop fix --seed-source`
+    alike, with a message that names the missing inputs and the re-seal
+    path (owner decision 2). A run already started from such a seed is
+    not a new launch: `workshop resume` never revalidates the seed
+    directory and keeps the frozen seeded Make it materialized. That
+    includes the Sunset Slider's run `wish-20261107-084342-533c8a5b`.
 - **Lifecycles and runtimes.** Spark only, as ADR 0096 decides. The batch
   needs nothing from the runtime, so Codex and Claude Code behave the same.
 
@@ -329,27 +338,60 @@ turn.
 
   Deterministic fakes are needed for CI.
 
-## Open questions for the owner
+## Owner decisions (2026-11-07)
 
-1. **The motion review.** Should the Proof Critic judge the motion
-   presentation in design so that it carries, or should a seeded run keep
-   one in-run motion critic? Attempt 2's three critic rounds cost 0.73
-   units, plus the root's work around them. Recommended: judge it in
-   design.
-2. **Seeds sealed before this ADR.** Should they run today's model-driven
-   seeded Make, or be refused until resealed with their inputs?
-   Recommended: run today's path, and refuse only new seals without the
-   inputs.
-3. **`product.json` summary.** Should the Proof write it and the owner see
-   it at Stage 4, or should the host compose it from the contract?
-   Recommended: the Proof writes it, because it is shop copy.
-4. **Failures per report.** Should a report carry every independent
-   failure in a layer, or stop at the first? Recommended: every failure in
-   the layer.
-5. **Batching in design.** Should `seal_proof` run the whole batch in
-   `--dry-run` before sealing, adding tens of minutes of compute to every
-   seal? Recommended: yes.
-6. **Subagent tokens on Claude Code.** The status observation lists one
-   thread. Are the 0.83 units of subagent usage in attempt 2 counted
-   against the budget? This should be checked separately, whatever is
-   decided here.
+1. **The motion review is judged by the Proof Critic in design** and
+   carries into the run like the assembly review. A seeded batch runs no
+   in-run motion critic. The sealed review must name the same concept hash
+   the run's carried signature review binds, so design seals the product
+   source (concept and research) the run's `spark-source.json` is composed
+   from.
+2. **Seeds sealed before this ADR are refused for new launches** (option
+   b). `validate_seed`, which only `workshop wish` and `workshop fix
+   --seed-source` call, refuses an approval that does not record every
+   check input its contract needs. The message names each missing input,
+   says to re-seal through design-a-toy, and gives the re-seal path:
+   `seal_proof.py inputs DIR --contract FILE` lists what is missing and
+   which design step writes each, and `seal_proof.py seal` then writes an
+   approval that records them. Runs already in progress keep their frozen
+   rules on `workshop resume`.
+
+   *Why (b) and not today's model-driven path.* A launch that has not
+   started has spent nothing. Refusing it costs one re-seal in design,
+   where the Proof's context already holds the numbers the inputs need.
+   Running it would rebuild those inputs inside the run, the 4-8 units per
+   attempt this ADR removes, and keep two seeded Make protocols alive for
+   new runs. A run in progress has already spent its tokens and froze its
+   protocol, so changing it on resume would break ADR 0096's
+   frozen-run rule for no saving.
+3. **The Proof writes the `product.json` title and summary**, and the
+   owner sees the summary at Stage 4. The batch copies them; it composes
+   no shop copy.
+4. **A report carries every independent failure in its layer.** Dependent
+   layers are skipped and named as skipped.
+5. **`seal_proof` runs the whole batch in `--dry-run` before sealing.** The
+   compute is spent in design, once per seal.
+6. **Subagent tokens are counted.** Checked against the Sunset Slider run
+   on 2026-11-07, read-only. The Claude adapter reads each request's usage
+   from the stream, and subagent requests arrive on the same stream
+   (`--forward-subagent-text`). The budget records them under the root
+   invocation's one thread:
+   - invocation 1 was recorded at 78.99M tokens. The transcripts give the
+     root 76.94M and the subagents 1.01M by then, with the rest in
+     compaction requests, which are counted through `modelUsage`;
+   - the budget stop at 12:57 recorded 100.02M against 98.76M of root and
+     subagent transcript usage at that time.
+
+   "One thread" in the status is the session, not the root alone. One
+   anomaly was found and is reported separately: since the operator's
+   resume at 14:50 (`--max-tokens 200000000`), `native-budget.json` has
+   stayed at 100,022,292 tokens and 3 invocations. Over the same time the
+   transcripts show about 4.97M more root tokens and 0.29M more subagent
+   tokens, and `native-progress.json` keeps updating. Usage of a resumed
+   invocation may not be recorded, which would let a resumed run spend
+   past its cap. Its cause is not yet known.
+
+## Implementation status
+
+See the stacked PR. Until it merges, nothing here is implemented, and
+seeded runs use ADR 0096's model-driven Make.

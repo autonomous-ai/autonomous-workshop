@@ -68,8 +68,13 @@ from its native transcripts. It is the evidence for
 
 The four subagents add 0.83 units: the drive-frame Component Worker (9 calls,
 37K context, 0.10), and three motion critic rounds (7, 11 and 27 calls, 32-49K
-context, 0.73 together). The host's status observation lists one thread, so
-these may not be in its 100M; this is not verified.
+context, 0.73 together). The host's status observation lists one thread, but
+that thread is the session: subagent requests arrive on the root's stream and
+are counted in it. Checked later the same day (ADR 0098, owner decision 6):
+invocation 1 was recorded at 78.99M against 77.95M of root and subagent
+transcript usage, and the 12:57 cap stop at 100.02M against 98.76M. A separate
+anomaly: after the 14:50 resume the recorded total stayed at 100.02M while
+the transcripts grew by about 5.3M.
 
 ### What the money is
 
