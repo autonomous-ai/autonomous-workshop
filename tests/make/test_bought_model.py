@@ -272,6 +272,61 @@ class PlanTest(unittest.TestCase):
         self.assertIn("usb-c: its envelope was not read in the pose's frame", message)
         self.assertIn("wire: a wire is drawn along its routes and takes no pose", message)
 
+    # Issue #228: a push switch is its body and a plunger nose.
+
+    def push_switch(self):
+        """The circuit with s-half bought as the latching push switch, whose
+        catalogue entry states a body and a plunger."""
+
+        electrical = small_circuit()
+        next(item for item in electrical["parts"] if item["id"] == "s-half")["bought"] = "switch-push-latching-8x8"
+        contract, catalogue = sealed(electrical)
+        self.electrical, self.parts = contract["electrical"], catalogue["bought_parts"]
+        boxes = bounds()
+        boxes[envelope_path("s-half")] = PUSH_ENVELOPE
+        return boxes
+
+    def test_a_box_with_a_plunger_is_its_body_and_a_nose_on_its_facing_side(self):
+        boxes = self.push_switch()
+        placements = copy.deepcopy(PLACEMENTS)
+        placements["parts"]["s-half"] = {"facing": "+z"}
+        switch = next(body for body in self.plan(placements=placements, boxes=boxes)["bodies"]
+                      if body["part"] == "s-half")
+        self.assertEqual((switch["form"], switch["size_mm"]), ("box", [8.5, 8.5, 7.5]))
+        self.assertEqual(switch["detail"], {"nose_mm": [3.0, 3.0, 5.5]})
+        # Seated on the envelope's floor, the nose's tip at 7.5 + 5.5.
+        self.assertEqual(switch["bounds"], [[12.25, -0.75, 0.0], [20.75, 7.75, 13.0]])
+        placements["parts"]["s-half"] = {"facing": "-z"}
+        down = next(body for body in self.plan(placements=placements, boxes=boxes)["bodies"]
+                    if body["part"] == "s-half")
+        self.assertEqual(down["bounds"], [[12.25, -0.75, 0.0], [20.75, 7.75, 13.0]])
+        self.assertEqual(down["seat"][2], 13.0)
+
+    def test_a_box_with_a_plunger_needs_a_facing_and_room_for_its_nose(self):
+        boxes = self.push_switch()
+        placements = copy.deepcopy(PLACEMENTS)
+        placements["parts"]["s-half"] = {}
+        self.assertIn("s-half: no facing in measure/bought-placements.json: a box with a plunger",
+                      self.refused(placements=placements, boxes=boxes))
+        placements["parts"]["s-half"] = {"facing": "+z"}
+        boxes[envelope_path("s-half")] = ((12.0, -1.0, 0.0), (21.0, 8.0, 10.0))
+        self.assertIn("s-half: the box body and its plunger are 13.00 along z, its sealed mount envelope "
+                      "only 10.00", self.refused(placements=placements, boxes=boxes))
+
+    def test_without_a_body_with_plunger_out_size_the_nose_is_the_plunger_s_length(self):
+        entry = {"sizes": [{"what": "body", "max_mm": [8.5, 8.5, 7.5]},
+                           {"what": "plunger", "max_mm": [3.0, 3.0, 4.0]}]}
+        self.assertEqual(tool._plunger(entry), ([8.5, 8.5, 7.5], [3.0, 3.0, 4.0], 4.0))
+        self.assertIsNone(tool._plunger({"sizes": [{"what": "body", "max_mm": [8.5, 8.5, 7.5]}]}))
+        # A box without a plunger keeps its one block.
+        body, _ = tool.plan_body("box", {"sizes": [{"what": "body", "max_mm": [8.5, 8.5, 7.5]}]},
+                                 (0.0, 0.0, 0.0), (9.0, 9.0, 9.0), {})
+        self.assertNotIn("detail", body)
+        self.assertEqual(sorted(body["size_mm"]), [7.5, 8.5, 8.5])
+
+
+PUSH_ENVELOPE = ((12.0, -1.0, 0.0), (21.0, 8.0, 13.0))
+
 
 class AssemblyTextTest(unittest.TestCase):
     """The README's wording follows the contract's who-assembles fields."""
@@ -623,6 +678,57 @@ class BuildAndFinalTest(unittest.TestCase):
         self.assertGreater(box.max.Z - box.min.Z, hi[2] - lo[2] + 1.0, "the drawn LED is turned")
         report = tool.final(project)
         self.assertIn("bought_screen_led", report["bodies"])
+
+    def test_a_posed_push_switch_is_drawn_as_body_and_nose_inside_its_stepped_envelope(self):
+        """Issue #228: the switch square to a 30 degree deck, its plunger in
+        a cap's socket, as the Sunset Slider seats it."""
+
+        from build123d import Align, Axis, Box, Pos, export_step, import_step
+
+        root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, root)
+        electrical = small_circuit()
+        next(item for item in electrical["parts"] if item["id"] == "s-half")["bought"] = "switch-push-latching-8x8"
+        contract, catalogue = sealed(electrical)
+        (root / "WISH.json").write_text(json.dumps({"context": {"design_contract": contract,
+                                                                "kit_catalogue": catalogue}}))
+        project = root / "cad"
+        boxes = dict(ENVELOPES, **{"s-half": PUSH_ENVELOPE})
+        centre = (16.5, 3.5, 6.5)
+        bottom = (Align.CENTER, Align.CENTER, Align.MIN)
+        stepped = Pos(16.5, 3.5, 0.0) * (Box(8.5, 8.5, 7.5, align=bottom)
+                                         + Pos(0, 0, 7.5) * Box(3.0, 3.0, 5.5, align=bottom))
+        # A cap above the body whose 3.4 square socket the plunger enters.
+        cap = Pos(16.5, 3.5, 10.0) * (Box(12.0, 12.0, 4.0, align=bottom)
+                                      - Box(3.4, 3.4, 3.0, align=bottom))
+        tilt = Axis(centre, (1, 0, 0))
+        components = []
+        for part, (lo, hi) in boxes.items():
+            size = [hi[i] - lo[i] for i in range(3)]
+            middle = [(hi[i] + lo[i]) / 2 for i in range(3)]
+            shape = stepped.rotate(tilt, 30) if part == "s-half" else Pos(*middle) * Box(*size)
+            path = project / envelope_path(part)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            export_step(shape, str(path))
+            components.append({"id": part, "cad": {"mode": "validation_envelope", "source": envelope_path(part)}})
+        (project / "measure").mkdir()
+        (project / "measure/power.json").write_text(json.dumps({"components": components}))
+        placements = copy.deepcopy(PLACEMENTS)
+        placements["parts"]["s-half"] = {"facing": "+z", "pose": {"axis": [1, 0, 0], "angle_deg": 30}}
+        (project / "measure/bought-placements.json").write_text(json.dumps(placements))
+
+        document = tool.build(project)
+        switch = next(body for body in document["bodies"] if body["part"] == "s-half")
+        self.assertEqual(switch["detail"], {"nose_mm": [3.0, 3.0, 5.5]})
+        drawn = import_step(str(project / switch["step"]))
+        self.assertEqual(len(drawn.solids()), 1, "body and nose are one leaf")
+        self.assertAlmostEqual(drawn.volume, 8.5 * 8.5 * 7.5 + 3.0 * 3.0 * 5.5, places=3)
+        envelope = import_step(str(project / envelope_path("s-half")))
+        # Coincident faces leave boolean noise far below the 1.0 mm3 interference tolerance.
+        self.assertLess(drawn.volume - (drawn & envelope).volume, 0.01, "inside its stepped envelope")
+        self.assertLess((drawn & cap.rotate(tilt, 30)).volume, 0.01, "the nose clears the cap's socket")
+        report = tool.final(project)
+        self.assertIn("bought_s_half", report["bodies"])
 
 
 if __name__ == "__main__":

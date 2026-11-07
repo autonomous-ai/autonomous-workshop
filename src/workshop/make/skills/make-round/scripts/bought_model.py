@@ -38,6 +38,11 @@ turned into place. In the body list a posed body's ``seat`` and ``bounds``
 are in the part's frame, beside its ``pose`` and that ``centre``; a route
 end is measured to it in that frame. A part with no ``pose`` is drawn
 exactly as before.
+A ``box`` whose catalogue entry states both a ``body`` and a ``plunger``
+size, a push switch, is drawn as the ``body`` with the plunger as a nose of
+the plunger's cross-section centred on its ``facing`` side, which it needs:
+the nose is as long as the ``body with plunger out`` height above the body's,
+or the plunger's own length. Every other ``box`` is one block.
 A body seats against its envelope's face opposite ``facing``, centred across
 it; a body larger than its envelope on any axis fails, because the catalogue
 part would not fit the mount Make sealed. The factory-assembled board, when
@@ -235,6 +240,20 @@ def _largest_three(entry: dict):
     return max(found, key=lambda n: n[0] * n[1] * n[2]) if found else None
 
 
+def _plunger(entry: dict):
+    """``(body, plunger, nose length)`` of a catalogue entry that states
+    both a ``body`` and a ``plunger`` size, else None. The nose is the
+    ``body with plunger out`` height above the body's, or the plunger's own
+    length when the entry states no such height."""
+
+    body, plunger = _size(entry, "body"), _size(entry, "plunger")
+    if not body or not plunger or len(body) != 3 or len(plunger) != 3:
+        return None
+    out = _size(entry, "body with plunger out")
+    length = out[2] - body[2] if out and len(out) == 3 else plunger[2]
+    return body, plunger, round(length, 4)
+
+
 def read_placements(project: Path) -> tuple[dict, bytes]:
     path = project / PLACEMENTS_PATH
     if not path.is_file():
@@ -430,6 +449,24 @@ def plan_body(form: str, entry: dict, lo, hi, place: dict) -> tuple[dict | None,
             sizes = {f_index: dims[0], **_assign(dims[1:], cross, lo, hi)}
         else:
             sizes = _assign(dims, range(3), lo, hi)
+    elif form == "box" and _plunger(entry) is not None:
+        # A push switch: its body, and the plunger as a nose centred on the
+        # facing side (issue #228), never one block as tall as both.
+        body_dims, plunger, length = _plunger(entry)
+        if facing is None:
+            return None, ["no facing in %s: a box with a plunger is drawn with its plunger on the side it "
+                          "works through" % PLACEMENTS_PATH]
+        if length <= 0:
+            return None, ["the catalogue's body with plunger out is no taller than its body: the plunger "
+                          "has no length to draw"]
+        sizes = {f_index: body_dims[2], **_assign(body_dims[:2], cross, lo, hi)}
+        order = sorted(cross, key=lambda i: (-sizes[i], i))
+        nose = {f_index: length, **dict(zip(order, sorted(plunger[:2], reverse=True)))}
+        lever = {"nose_mm": [round(nose[i], 4) for i in range(3)]}
+        if sizes[f_index] + length > hi[f_index] - lo[f_index] + FIT_TOLERANCE_MM:
+            problems.append("the box body and its plunger are %.2f along %s, its sealed mount envelope only "
+                            "%.2f: the catalogue part does not fit the mount"
+                            % (sizes[f_index] + length, "xyz"[f_index], hi[f_index] - lo[f_index]))
     elif form == "box":
         dims = sorted(_largest_three(entry))
         if facing:
@@ -470,6 +507,9 @@ def plan_body(form: str, entry: dict, lo, hi, place: dict) -> tuple[dict | None,
     if lever is not None and form == "lever-switch":
         b_lo[f_index] = min(b_lo[f_index], seat[f_index] + f_sign * (sizes[f_index] + LEVER_RISE_MM))
         b_hi[f_index] = max(b_hi[f_index], seat[f_index] + f_sign * (sizes[f_index] + LEVER_RISE_MM))
+    if lever is not None and "nose_mm" in lever:
+        tip = seat[f_index] + f_sign * (sizes[f_index] + lever["nose_mm"][f_index])
+        b_lo[f_index], b_hi[f_index] = min(b_lo[f_index], tip), max(b_hi[f_index], tip)
     body = {"form": form, "size_mm": [round(sizes[i], 4) for i in range(3)], "facing": facing,
             "seat": [round(v, 4) for v in seat],
             "bounds": [[round(v, 4) for v in b_lo], [round(v, 4) for v in b_hi]]}
@@ -939,6 +979,15 @@ def build_shape(body, catalogue_models: Path | None = None):
         shape = lead + Cylinder(ly / 2.0, detail["body_mm"], rotation=(0, 90, 0))
     elif form == "cylinder":
         shape = Cylinder(ly / 2.0, lx, rotation=(0, 90, 0))
+    elif form == "box" and "nose_mm" in (body.get("detail") or {}):
+        # The plunger stands on the body's top (local +Z is the facing),
+        # centred across it.
+        _origin, x, z = _frame(body)
+        nose = body["detail"]["nose_mm"]
+        xi = next(i for i in range(3) if x[i])
+        zi = next(i for i in range(3) if z[i])
+        yi = next(i for i in range(3) if i not in (xi, zi))
+        shape = Box(lx, ly, lz, align=bottom) + Pos(0, 0, lz) * Box(nose[xi], nose[yi], nose[zi], align=bottom)
     else:                                      # box, chip, plate, envelope, board
         shape = Box(lx, ly, lz, align=bottom if body.get("facing") else (Align.CENTER,) * 3)
     origin, x, z = _frame(body)
