@@ -30,6 +30,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Dict, Mapping
 
 from workshop.errors import ContractError
+from workshop.wish.bought_list import strip_bought_block
 
 APPROVAL_NAME = "APPROVAL.json"
 APPROVAL_SCHEMA_VERSION = 2
@@ -368,6 +369,9 @@ def seed_contract_sha256(text: str) -> str:
     first, _, rest = text.partition("\n")
     if NAME_LINE.fullmatch(first):
         text = rest.lstrip("\n")
+    # The Bought Parts block prices the design and changes no shape (ADR
+    # 0095, 2026-11-07), so an owner may add it without re-sealing the Proof.
+    text = strip_bought_block(text)
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
