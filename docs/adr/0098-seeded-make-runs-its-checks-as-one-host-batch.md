@@ -495,6 +495,12 @@ seeded build has run with the batch yet.
   - At Make evaluation the host reruns the check layers as the gate,
     unless the passing attempt bound the same proposal bytes.
   - Seed component nonces are issued by the host (`issuer: host-batch`).
+- **A powered toy's printed-only primary** (ADR 0095, 2026-11-07
+  amendment) needs no extra step. For a powered toy whose sealed catalogue
+  records models, the final layer's `verify_project` runs
+  `bought_model.py --final`, which writes `measure/electrical/printed.step`
+  and its record. A batch-finalized build therefore seals it with no
+  native turn. `--design` writes the same file on the Proof.
 - **The Make record shows who ran the batch.**
   - The Make gate's `evidence.checks.seeded_batch` holds:
     - `executor: host-batch`;
