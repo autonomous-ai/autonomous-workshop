@@ -428,12 +428,18 @@ seeded build has run with the batch yet.
     `make_round --interface ID --contract FILE`: nothing is locked, so
     nothing unlocks and no round state is written. It is refused inside a
     run.
-  - `bought_model --build`, `check_power` and `check_mount`;
+  - `bought_model --build --contract FILE`, `check_power` and
+    `check_mount`. Outside a run `bought_model` reads the circuit and
+    catalogue snapshot from the contract file with the parser a Wish seals
+    it with, so they are the ones the run will seal (issue #241). Inside a
+    run `--contract` is refused and only `WISH.json` gives them.
   - `check_motion`;
-  - final verification with the run's argv plus `--design`. This runs
-    every final gate except the signature review the run carries.
+  - final verification with the run's argv plus `--design --contract
+    FILE`. This runs every final gate except the signature review the run
+    carries, and passes the contract file to `bought_model --final`.
     `--design` is refused inside a run (a `WISH.json` above the project),
-    so the run's gate keeps that requirement.
+    so the run's gate keeps that requirement, and `--design` and
+    `--contract` are each refused without the other.
   - a packaging check, `seeded_package check`. Every printed occurrence of
     a multi-part package must be named for a stocked colour and resolve to
     exactly one Component STEP solid, as `parts` will export it. It writes
@@ -460,6 +466,14 @@ seeded build has run with the batch yet.
     timeout, a traceback, or a tool that cannot start.
   - A pass is reused only for identical argv, tool bytes and input bytes.
     A failure is never reused.
+  - Final verification is judged by its report as well as its exit
+    (issue #241). `verify_project` gives every geometry analysis one
+    shared allowance, 600 s by default; once it is spent the analyses
+    left are recorded UNVERIFIED and the command still exits 0. So the
+    final step passes `--geometry-seconds`, the final layer's deadline
+    less 300 s for the report (3300 s by default), and an exit 0 whose
+    report's Result is not PASS (UNVERIFIED, FAIL or no Result line) is
+    a harness failure in both the run's batch and the seal's.
   - The `product` step is bound to final verification's report, so a
     repair that reruns final verification is repackaged.
 - **Mechanical steps** (`workshop.make.seeded_package`).
@@ -500,7 +514,15 @@ seeded build has run with the batch yet.
   records models, the final layer's `verify_project` runs
   `bought_model.py --final`, which writes `measure/electrical/printed.step`
   and its record. A batch-finalized build therefore seals it with no
-  native turn. `--design` writes the same file on the Proof.
+  native turn. `--design --contract FILE` writes the same file on the
+  Proof; before issue #241 `--design` skipped `bought_model` silently,
+  because outside a run it found no sealed circuit.
+- **A re-seal sets the old `approved/` aside** (issue #241). Its copies
+  are STEP files no Component builds, which the batch's project check
+  refuses. `seal_proof.py seal` moves `approved/` into a hidden directory
+  beside the Proof before the batch, and puts it back if the seal
+  refuses, so a failed re-seal leaves the previous `APPROVAL.json` and
+  `approved/` whole.
 - **The Make record shows who ran the batch.**
   - The Make gate's `evidence.checks.seeded_batch` holds:
     - `executor: host-batch`;

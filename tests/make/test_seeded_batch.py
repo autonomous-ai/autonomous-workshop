@@ -146,6 +146,37 @@ class BatchEngineTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             sb.run_batch(steps, self.project, runner=runner)
 
+    def test_an_exit_0_final_counts_only_its_reports_pass(self):
+        """Issue #241: verify_project exits 0 when its shared geometry
+        allowance is spent and records the unfinished analyses UNVERIFIED; the
+        batch reads the report's Result and never counts that as a pass."""
+        report = "measure/verification-pipeline.md"
+        for written, status, reason in (
+            ("- Result: **PASS** (exit 0)\n", sb.PASS, None),
+            ("- Result: **UNVERIFIED** (exit 0)\n", sb.HARNESS_FAILURE, "records UNVERIFIED: a geometry check"),
+            ("- Result: **FAIL** (exit 0)\n", sb.HARNESS_FAILURE, "records FAIL"),
+            ("no verdict here\n", sb.HARNESS_FAILURE, "records no Result line"),
+            (None, sb.HARNESS_FAILURE, "records no Result line"),
+        ):
+            with self.subTest(written):
+                path = self.project / report
+                path.unlink(missing_ok=True)
+                if written is not None:
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text("# Verification\n" + written)
+                record = sb.run_batch([Step("final-verification", "final", ("verify",), verdict_report=report)],
+                                      self.project, runner=FakeRunner())
+                step = record["steps"][0]
+                self.assertEqual((record["status"], step["status"]), (status, status))
+                if reason is None:
+                    self.assertIsNone(step.get("reason"))
+                else:
+                    self.assertIn(reason, step["reason"])
+
+    def test_a_step_without_a_verdict_report_is_judged_by_its_exit(self):
+        record = sb.run_batch([Step("check-power", "power", ("power",))], self.project, runner=FakeRunner())
+        self.assertEqual(record["status"], sb.PASS)
+
     def test_each_layer_keeps_its_own_deadline(self):
         runner = FakeRunner()
         sb.run_batch([Step("m", "motion", ("m",)), Step("f", "final", ("f",), deadline_s=12.0)], self.project,
@@ -279,11 +310,23 @@ class PlanTest(unittest.TestCase):
                                               "--contract", "/run/WISH.json"))
         final = steps[ids.index("final-verification")]
         run_final = next(step for step in self._run_plan() if step.id == "final-verification")
-        self.assertEqual([item for item in final.argv if item != "--design"
+        design_only = {"--design", "--contract", "/run/WISH.json"}
+        self.assertEqual([item for item in final.argv if item not in design_only
                           and not item.endswith("design-verification.md")],
                          [item for item in run_final.argv if not item.endswith("verification-pipeline.md")],
                          "the same gates as the run's final verification")
         self.assertIn("--design", final.argv)
+        self.assertEqual(final.argv[final.argv.index("--contract") + 1], "/run/WISH.json",
+                         "issue #241: the Bought Parts model reads the contract outside a run")
+        self.assertEqual(final.argv[final.argv.index("--geometry-seconds") + 1], "3300",
+                         "the analyses get the final layer's deadline less the report margin")
+        self.assertEqual(final.verdict_report, sb.DESIGN_REPORT)
+        self.assertEqual(run_final.verdict_report, "measure/verification-pipeline.md")
+        bought = steps[ids.index("bought-model")]
+        self.assertEqual(bought.argv[2:], ("/run/artifacts/make/r0001/product/cad", "--build",
+                                           "--contract", "/run/WISH.json"))
+        run_bought = next(step for step in self._run_plan() if step.id == "bought-model")
+        self.assertNotIn("--contract", run_bought.argv, "in a run WISH.json gives the circuit")
         self.assertEqual(final.reports, (sb.DESIGN_REPORT,))
         self.assertNotIn("snap/SIGNATURE-REVIEW.json", final.inputs)
         package = steps[ids.index("package-check")]

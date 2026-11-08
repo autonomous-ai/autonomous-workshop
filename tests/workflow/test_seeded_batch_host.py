@@ -45,9 +45,10 @@ class FakeRunner:
     """Deterministic steps: a named fragment fails as given; the finalizer
     writes the run's proposal as the real one does."""
 
-    def __init__(self, run_root, results=None):
+    def __init__(self, run_root, results=None, verdict="PASS"):
         self.run_root = run_root
         self.results = results or {}
+        self.verdict = verdict
         self.calls = []
 
     def __call__(self, argv, cwd, timeout):
@@ -57,6 +58,11 @@ class FakeRunner:
                 return result
         if any(item.endswith("stage_proposal.py") for item in argv):
             (self.run_root / host.AGENT_OUTCOME).write_text('{"proposal": 1}\n')
+        if "--report" in argv:
+            # verify_project writes its record, whose Result is the verdict.
+            report = Path(argv[argv.index("--report") + 1])
+            report.parent.mkdir(parents=True, exist_ok=True)
+            report.write_text("- Result: **%s** (exit 0)\n" % self.verdict)
         return RunResult(0, "ok")
 
 
@@ -81,8 +87,8 @@ class SeededBatchHostTest(unittest.TestCase):
         (self.run_root / "MAKE-OPTIONS.json").write_text(json.dumps(
             {"schema_version": 4 if batch else 3, "check_motion": True, "seed": seed}))
 
-    def _run(self, results=None):
-        runner = FakeRunner(self.run_root, results)
+    def _run(self, results=None, verdict="PASS"):
+        runner = FakeRunner(self.run_root, results, verdict)
         attempt = host.run_for_checkpoint(self.run_root, self.host_state, CHECKPOINT, 1, runner=runner)
         return attempt, runner
 
@@ -136,6 +142,21 @@ class SeededBatchHostTest(unittest.TestCase):
         self.assertEqual(attempt["status"], sb.PASS)
         record = json.loads((self.run_root / "artifacts/make/r0001/product/cad" / sb.RECORD).read_text())
         self.assertIn(sb.REUSED, {item["status"] for item in record["steps"]}, "passed steps are reused")
+
+    def test_an_unverified_final_verification_stops_the_run(self):
+        """Issue #241: an exit 0 whose report records UNVERIFIED (the shared
+        geometry allowance spent) is a harness failure, never a pass, and
+        the final step gives its analyses the layer's whole deadline."""
+        with self.assertRaises(host.SeededBatchHarnessFailure) as caught:
+            self._run(verdict="UNVERIFIED")
+        self.assertIn("final-verification", str(caught.exception))
+        self.assertTrue(host.batch_due(self.run_root, self.host_state, CHECKPOINT))
+        attempt, runner = self._run()
+        self.assertEqual(attempt["status"], sb.PASS)
+        final = next(argv for argv in runner.calls if "--report" in argv)
+        self.assertEqual(final[final.index("--geometry-seconds") + 1], "3300")
+        self.assertNotIn("--design", final)
+        self.assertNotIn("--contract", final, "in a run WISH.json gives the contract")
 
     def test_seed_nonces_are_host_state_the_role_guard_accepts(self):
         self._run()

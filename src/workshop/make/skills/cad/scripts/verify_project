@@ -1583,10 +1583,14 @@ def _run_bought_model(runner: Runner, project: Path) -> int:
     if not BOUGHT_MODEL_SCRIPT.is_file():
         return 0
     tool = runpy.run_path(str(BOUGHT_MODEL_SCRIPT))
-    if not tool["applies"](project):
+    # --design: the Proof's contract file gives the circuit and catalogue a
+    # run would seal (ADR 0098); in a run, WISH.json does.
+    contract = getattr(runner, "design_contract", None)
+    if not tool["applies"](project, contract):
         return 0
     return 1 if runner.command(
-        [sys.executable, BOUGHT_MODEL_SCRIPT, _path_arg(project, runner.cwd), "--final"],
+        [sys.executable, BOUGHT_MODEL_SCRIPT, _path_arg(project, runner.cwd), "--final",
+         *(["--contract", str(contract)] if contract is not None else [])],
         replay_success_stdout=True,
     ) != 0 else 0
 
@@ -3034,7 +3038,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--report", help="final pipeline record path inside project (default: measure/verification-pipeline.md)")
     parser.add_argument("--no-report", action="store_true", help="do not persist the final pipeline record")
     parser.add_argument("--dry-run", action="store_true", help="print the sequential plan without changing files")
-    parser.add_argument("--design", action="store_true", help="final mode on a Contract Proof outside a Workshop run (the seal's design batch, ADR 0098): every final gate runs; the blind signature review is the run's and is not required. Refused inside a run")
+    parser.add_argument("--design", action="store_true", help="final mode on a Contract Proof outside a Workshop run (the seal's design batch, ADR 0098): every final gate runs; the blind signature review is the run's and is not required. Needs --contract; refused inside a run")
+    parser.add_argument("--contract", metavar="CONTRACT.md", help="with --design: the Design Contract file whose circuit and catalogue snapshot a run would seal, for the Bought Parts model")
+    parser.add_argument("--geometry-seconds", type=float, help="total seconds for every geometry analysis of this run (check_mesh, check_overhang, check_thickness, check_motion); default WORKSHOP_GEOMETRY_TIMEOUT or 600. An analysis left when it is spent is recorded UNVERIFIED")
     parser.add_argument("--verbose", action="store_true", help="print complete successful inspect JSON responses")
     parser.add_argument("--self-check", action="store_true", help="run the built-in validation fixtures and exit")
     return parser
@@ -3135,6 +3141,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--report and --no-report are mutually exclusive")
     if args.design and args.quick:
         parser.error("--design is a final-mode option and cannot be combined with --quick")
+    if args.design != bool(args.contract):
+        parser.error("--design needs --contract CONTRACT.md, and --contract belongs to --design")
+    design_contract = None
+    if args.contract:
+        design_contract = (cwd / args.contract).resolve() if not Path(args.contract).is_absolute() \
+            else Path(args.contract).resolve()
+        if not design_contract.is_file():
+            parser.error(f"--contract is not a file: {design_contract}")
+    if args.geometry_seconds is not None:
+        if not 0 < args.geometry_seconds <= 86400:
+            parser.error("--geometry-seconds must be in (0, 86400]")
+        # The Runner and the analyses it starts read the one shared allowance
+        # from here, so the flag is part of the command a batch reuse binds.
+        os.environ["WORKSHOP_GEOMETRY_TIMEOUT"] = f"{args.geometry_seconds:g}"
     design_run = _run_root_above(project) if args.design else None
     if design_run is not None:
         # In a run the integrated gate binds the carried signature review;
@@ -3297,6 +3317,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             refuse(f"image-derived tool not found: {render_views}")
     bed = args.bed or _declared_bed(project) or DEFAULT_BED
     runner = Runner(cwd=cwd, dry_run=bool(args.dry_run), verbose=bool(args.verbose))
+    runner.design_contract = design_contract
     if signature_review_sha256 is not None:
         runner.note(
             "signature review",

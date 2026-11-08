@@ -82,6 +82,13 @@ electrical pictures and text into ``measure/electrical/``:
 - ``electrical.json``: what was drawn and every file's hash, which the host
   checks before Make is accepted.
 
+Outside a run, ``--contract CONTRACT.md`` (with ``--build``, ``--final`` or
+``--applies``) reads the circuit and the catalogue snapshot from that
+Design Contract file instead of WISH.json: the Workshop parser's own
+``to_dict()`` and ``kit_catalogue()``, the same two values a run seals for
+it. This is the Contract Proof's seal batch (ADR 0098); it is refused
+inside a run, whose sealed Wish alone gives them.
+
 Nothing here judges anything: every picture and sentence follows from the
 sealed contract, the catalogue snapshot, the power report's envelopes and the
 placements file. Exit status: 0 written, 1 refused (every reason printed),
@@ -184,25 +191,55 @@ def run_root(project: Path) -> Path | None:
     return None
 
 
-def sealed_inputs(project: Path) -> tuple[dict, dict]:
-    """``(electrical, catalogue)``: the sealed contract's circuit and its
-    catalogue snapshot's Bought Parts, from WISH.json above the project."""
+def contract_file_context(project: Path, contract_path: Path) -> dict:
+    """What a run would seal for a Design Contract file, as WISH.json's
+    ``context``: the Workshop parser's ``to_dict()`` as ``design_contract``
+    and its ``kit_catalogue()``. Only outside a run (ADR 0098)."""
 
     root = run_root(project)
+    if root is not None:
+        raise Refused(["--contract is for a CAD project outside a Workshop run; inside the run at %s "
+                       "the sealed Wish gives the circuit and catalogue" % root])
+    from workshop.errors import WorkshopError  # the Workshop package
+    from workshop.wish.design_contract import parse_design_contract
+
+    try:
+        parsed = parse_design_contract(Path(contract_path).read_text(encoding="utf-8"))
+    except (OSError, UnicodeError) as exc:
+        raise Refused(["cannot read the Design Contract %s: %s" % (contract_path, exc)]) from None
+    except WorkshopError as exc:
+        raise Refused(["the Design Contract %s does not parse: %s" % (contract_path, exc)]) from None
+    return {"design_contract": parsed.to_dict(), "kit_catalogue": parsed.kit_catalogue() or {}}
+
+
+def _context(project: Path, contract_path: Path | None) -> dict:
+    if contract_path is not None:
+        return contract_file_context(project, contract_path)
+    root = run_root(project)
     if root is None:
-        raise Refused(["no WISH.json above the CAD project: this tool runs inside a Workshop run"])
+        raise Refused(["no WISH.json above the CAD project: this tool runs inside a Workshop run "
+                       "(outside one, give the Design Contract with --contract)"])
     wish = json.loads((root / "WISH.json").read_text(encoding="utf-8"))
     context = wish.get("context") if isinstance(wish, dict) else None
-    contract = (context or {}).get("design_contract")
+    return context if isinstance(context, dict) else {}
+
+
+def sealed_inputs(project: Path, contract_path: Path | None = None) -> tuple[dict, dict]:
+    """``(electrical, catalogue)``: the sealed contract's circuit and its
+    catalogue snapshot's Bought Parts, from WISH.json above the project, or
+    outside a run from the ``contract_path`` file."""
+
+    context = _context(project, contract_path)
+    contract = context.get("design_contract")
     if (not isinstance(contract, dict) or type(contract.get("schema_version")) is not int
             or contract["schema_version"] < ELECTRICAL_SCHEMA_VERSION
             or not isinstance(contract.get("electrical"), dict)):
         raise Refused(["the sealed contract states no circuit (a schema 10 electrical section)"])
-    catalogue = ((context or {}).get("kit_catalogue") or {}).get("bought_parts") or {}
+    catalogue = (context.get("kit_catalogue") or {}).get("bought_parts") or {}
     return contract["electrical"], catalogue
 
 
-def applies(project: Path) -> bool:
+def applies(project: Path, contract_path: Path | None = None) -> bool:
     """Whether final verification draws this run's Bought Parts: a sealed
     schema 10 circuit that is no kit (a kit's Assembly Tree already models
     its Bought Parts, ADR 0092) whose catalogue snapshot records a model for
@@ -210,11 +247,10 @@ def applies(project: Path) -> bool:
     none and keeps what it sealed."""
 
     try:
-        electrical, catalogue = sealed_inputs(project)
+        electrical, catalogue = sealed_inputs(project, contract_path)
+        contract = _context(project, contract_path)["design_contract"]
     except (Refused, OSError, ValueError):
         return False
-    root = run_root(project)
-    contract = json.loads((root / "WISH.json").read_text(encoding="utf-8"))["context"]["design_contract"]
     if contract.get("assembly_tree") is not None:
         return False
     return any(isinstance((catalogue.get(item.get("bought")) or {}).get("model"), dict)
@@ -1095,11 +1131,11 @@ def _inputs(project: Path, electrical: dict, catalogue: dict, power_raw: bytes, 
 
 
 def prepare(project: Path, bounds_reader=envelope_bounds,
-            posed_reader=envelope_posed_bounds) -> tuple[dict, dict, dict, dict]:
+            posed_reader=envelope_posed_bounds, contract_path: Path | None = None) -> tuple[dict, dict, dict, dict]:
     """``(electrical, catalogue, plan, inputs)`` for the project. A pose is
     part of the placements file's bytes, so ``placements_sha256`` binds it."""
 
-    electrical, catalogue = sealed_inputs(project)
+    electrical, catalogue = sealed_inputs(project, contract_path)
     placements, placements_raw = read_placements(project)
     problems = check_placements(placements)
     if problems:
@@ -1118,10 +1154,10 @@ def prepare(project: Path, bounds_reader=envelope_bounds,
     return electrical, catalogue, planned, _inputs(project, electrical, catalogue, power_raw, placements_raw, paths)
 
 
-def build(project: Path, catalogue_models: Path | None = None) -> dict:
+def build(project: Path, catalogue_models: Path | None = None, contract_path: Path | None = None) -> dict:
     """Write every body, the group module and the body list."""
 
-    _electrical, _catalogue, planned, inputs = prepare(project)
+    _electrical, _catalogue, planned, inputs = prepare(project, contract_path=contract_path)
     render_review()._runtime_paths()
     directory = project / BOUGHT_DIR
     directory.mkdir(exist_ok=True)
@@ -1495,10 +1531,10 @@ def _entry_scene(project: Path) -> Path:
     return entries[0].with_suffix("")
 
 
-def final(project: Path, meshes=None) -> dict:
+def final(project: Path, meshes=None, contract_path: Path | None = None) -> dict:
     """Check the written bodies, then write the pictures and the text."""
 
-    electrical, catalogue, planned, inputs = prepare(project)
+    electrical, catalogue, planned, inputs = prepare(project, contract_path=contract_path)
     path = project / BODIES_PATH
     if not path.is_file():
         raise Refused(["no %s: run bought_model.py --build and add bought_group() to the assembly" % BODIES_PATH])
@@ -1542,12 +1578,20 @@ def main(argv=None) -> int:
     mode.add_argument("--final", action="store_true", help="check the bodies and write the electrical pictures")
     mode.add_argument("--applies", action="store_true", help="exit 0 when this run draws its Bought Parts, else 3")
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--contract", type=Path, metavar="CONTRACT.md",
+                        help="outside a run: the Design Contract whose circuit and catalogue snapshot a run "
+                             "would seal (the Contract Proof's seal batch, ADR 0098); refused inside a run")
     args = parser.parse_args(argv)
     project = args.project.resolve()
+    contract = args.contract.resolve() if args.contract else None
     if args.applies:
-        return 0 if applies(project) else 3
+        if contract is not None and run_root(project) is not None:
+            print("bought_model: --contract is for a CAD project outside a Workshop run", file=sys.stderr)
+            return 2
+        return 0 if applies(project, contract) else 3
     try:
-        result = build(project) if args.build else final(project)
+        result = (build(project, contract_path=contract) if args.build
+                  else final(project, contract_path=contract))
     except Refused as refused:
         for reason in refused.reasons:
             print("bought_model: %s" % reason, file=sys.stderr)
