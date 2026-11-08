@@ -477,6 +477,13 @@ entry or price.
    estimated. The ledger intent binds the extras and records each line's
    price, source, and the board's `estimate` and `source`. The readback must
    carry the same extras, or the import is not accepted.
+   A priced board includes the parts mounted on it (owner, 2026-11-08). The
+   electrical parts whose ids the sealed `pcba.parts` lists are not billed
+   again; only the board is, and its ledger line lists them as `includes`.
+   Parts off the board are still billed, even when they share a catalogue
+   entry with a mounted part. On the arcade lamp these are the latching
+   switch and the wire. A board without a price bills its parts as before
+   and refuses for its own missing price.
 6. **Unchanged.** A frozen run, a run with no bought models, and a contract
    without the block keep their bytes and behaviour. A direct publication
    still bills its Made's `bought_hardware`.
@@ -487,11 +494,6 @@ entry or price.
 
 ### Not decided here
 
-- The board's members (its LEDs, resistors and receptacle) are billed one
-  by one, and the board is also billed at its own price. If the board's
-  price already includes them, the extras count them twice: about $0.40 on
-  the arcade lamp. The owner decides whether a board price includes its
-  members.
 - The owner's $4.00 board estimate for the arcade lamp (2026-11-07) is an
   estimate, not a quote.
 

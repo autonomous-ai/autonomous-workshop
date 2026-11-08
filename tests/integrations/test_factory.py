@@ -2437,6 +2437,7 @@ class FactoryReleaseTest(unittest.TestCase):
                     {"id": "usb-c", "bought": "usb-c-receptacle-power", "role": "inlet"},
                     {"id": "led-1", "bought": "led-2835-warm-2200k", "role": "load"},
                     {"id": "led-2", "bought": "led-2835-warm-2200k", "role": "load"},
+                    {"id": "switch", "bought": "switch-push-latching-8x8", "role": "switch"},
                 ],
                 "pcba": {"parts": ["usb-c", "led-1", "led-2"], "bounds_mm": [[0, 0, 0], [1, 1, 1]]},
             },
@@ -2445,13 +2446,15 @@ class FactoryReleaseTest(unittest.TestCase):
                 "pcba": {"unit_price_cents": board_price, "estimate": True, "source": "owner, 2026-11-07"},
             },
         }
-        prices = {"usb-c-receptacle-power": 6, "led-2835-warm-2200k": 2, "steel-pin-1.5x29.5": 6}
+        prices = {"usb-c-receptacle-power": 6, "led-2835-warm-2200k": 2, "steel-pin-1.5x29.5": 6,
+                  "switch-push-latching-8x8": 10}
         if glue_price is not None:
             prices["glue"] = glue_price
         catalogue = {
             "bought_parts": {
                 "usb-c-receptacle-power": {"name": "USB-C receptacle"},
                 "led-2835-warm-2200k": {"name": "Warm LED 2835"},
+                "switch-push-latching-8x8": {"name": "Latching push switch 8 x 8"},
                 "steel-pin-1.5x29.5": {"name": "Steel pin 1.5 x 29.5"},
                 "glue": {"name": "Glue"},
             },
@@ -2467,9 +2470,10 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertTrue(receipt.is_verified_draft)
         call = next(call for call in transport.calls if call[1].endswith("/designs/import"))
         sent = json.loads(multipart_parts(call[2], call[3])["extra_materials"][0])
+        # The board's price includes its receptacle and LEDs (owner,
+        # 2026-11-08); the off-board switch is billed.
         expected = [
-            {"name": "USB-C receptacle", "price_cents": 6},
-            {"name": "Warm LED 2835 (x2)", "price_cents": 4},
+            {"name": "Latching push switch 8 x 8", "price_cents": 10},
             {"name": "Steel pin 1.5 x 29.5 (x10)", "price_cents": 60},
             {"name": "Glue", "price_cents": 32},
             {"name": "Factory-assembled circuit board (PCBA)", "price_cents": 400},
