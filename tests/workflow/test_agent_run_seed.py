@@ -64,6 +64,43 @@ class SeededAgentRunTest(unittest.TestCase):
         reopened = AgentRun.open(self.run_root, host_state_root=self.host_state_root)
         self.assertIn("seed/APPROVAL.json", reopened.snapshot().input_sha256s)
 
+    def test_a_tool_refresh_rebinds_a_frozen_batch_and_keeps_check_motion(self):
+        """Issue #244: a run froze its seeded batch tool, so a harness fix
+        to it could never reach the run; the operator's refresh rebinds it
+        with the other host tools. check_motion and the seed stay."""
+        batched = {**frozen(), "batch": {"tool_sha256": "b" * 64}}
+        run = self.create(seed=batched, seed_files=FILES, check_motion=True)
+        changes = run.refresh_domain_skill_tools({}, reason="workshop resume --refresh-tools",
+                                                 seed_batch_tool_sha256="c" * 64, dry_run=True)
+        self.assertEqual([item["path"] for item in changes], ["MAKE-OPTIONS.json"])
+        self.assertEqual(json.loads((self.run_root / "MAKE-OPTIONS.json").read_bytes())["seed"], batched)
+        run.refresh_domain_skill_tools({}, reason="workshop resume --refresh-tools",
+                                       seed_batch_tool_sha256="c" * 64)
+        options = json.loads((self.run_root / "MAKE-OPTIONS.json").read_bytes())
+        self.assertEqual(options, {"schema_version": 4, "check_motion": True,
+                                   "seed": {**frozen(), "batch": {"tool_sha256": "c" * 64}}})
+        reopened = AgentRun.open(self.run_root, host_state_root=self.host_state_root)
+        self.assertIn("MAKE-OPTIONS.json", reopened.snapshot().input_sha256s)
+        # The same tool again changes nothing.
+        self.assertEqual(run.refresh_domain_skill_tools({}, reason="workshop resume --refresh-tools",
+                                                        seed_batch_tool_sha256="c" * 64), ())
+
+    def test_a_tool_refresh_never_adds_a_batch(self):
+        for seed in (frozen(), None):
+            with self.subTest(seeded=seed is not None):
+                self.setUp()
+                run = self.create(**({"seed": seed, "seed_files": FILES} if seed else {}))
+                before = (self.run_root / "MAKE-OPTIONS.json").read_bytes()
+                self.assertEqual(run.refresh_domain_skill_tools(
+                    {}, reason="workshop resume --refresh-tools", seed_batch_tool_sha256="c" * 64), ())
+                self.assertEqual((self.run_root / "MAKE-OPTIONS.json").read_bytes(), before)
+
+    def test_a_malformed_batch_tool_hash_is_refused(self):
+        run = self.create(seed={**frozen(), "batch": {"tool_sha256": "b" * 64}}, seed_files=FILES)
+        with self.assertRaises(ContractError):
+            run.refresh_domain_skill_tools({}, reason="workshop resume --refresh-tools",
+                                           seed_batch_tool_sha256="not-a-hash")
+
     def test_a_changed_seed_file_is_refused(self):
         run = self.create(seed=frozen(), seed_files=FILES)
         path = self.run_root / "seed/part_body.step.py"

@@ -112,7 +112,8 @@ the tool and library hashes it was read with.
   `schema_version: 2`; an unknown schema, or a schema-2 document missing its
   selection, is refused rather than guessed.
 - **Resume preserves the selection, unlike ADR 0066's motion boolean.** ADR
-  0066 reselects `check_motion` on every operator resume, defaulting to false.
+  0066 reselects `check_motion` on every operator resume, defaulting to false
+  (since its 2026-11-08 amendment an omitted flag keeps the frozen value).
   `quick_fix` does not: it is a property of the correction's scope, chosen once
   at creation together with the source, and a half-finished run that has
   already carried parts forward must not have that permission revoked under it.

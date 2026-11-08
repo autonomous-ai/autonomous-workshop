@@ -544,6 +544,28 @@ seeded build has run with the batch yet.
   - Every printed receipt (`workshop status`, `wish`, `resume`) shows it
     in one line.
 - **Product-run card.** `make-seeded.md` "When the host ran the batch".
+- **The assembly round finishes in the batch** (issue #244).
+  - In the pilot fix run `wish-20261108-145350-d5d2fcd8`, the batch's
+    assembly round kept its look `pending`, waiting for a Manager, so it
+    exited 1 and the host started a model turn for no defect. Its
+    check_motion also ran under make_round's 600 s geometry allowance
+    and needed about 773 s.
+  - When every Component carries, the round itself now accepts the
+    approval's assembly review (ADR 0096's 2026-11-08 amendment):
+    `visual.status: carried`, exit 0 on passing checks. A rerun by the
+    gate carries a look recorded on a round of the same sources and
+    references the same way.
+  - The batch passes the round `--geometry-seconds`: the assembly layer's
+    deadline, now 3600 s, less the 300 s report margin. That is above
+    the motion step's own 1800 s.
+  - When the round's summary records motion or geometry `unverified`,
+    the batch reads it as a harness failure, whatever the exit code. An
+    earlier round's summary is ignored. A timeout is never a pass and
+    never a model turn.
+  - `workshop resume --refresh-tools` rebinds `seed.batch.tool_sha256`
+    to the installed batch tool, as it rebinds every other host tool.
+    Without that, no fix to the batch could reach a run that froze it.
+    A run that froze no batch never gains one.
 
 **Still a target or a known gap:**
 

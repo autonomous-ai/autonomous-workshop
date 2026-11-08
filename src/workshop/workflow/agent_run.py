@@ -396,6 +396,19 @@ def _is_seed_path(path: str) -> bool:
     return path.startswith(SEED_DIRECTORY + "/")
 
 
+def _frozen_check_motion(run_root: Path) -> bool:
+    """The check_motion a run's Make options froze; a rewrite that is not a
+    motion reselection keeps it (issue #244)."""
+
+    path = run_root / MAKE_OPTIONS_NAME
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > 1024:
+        raise StateConflict("invalid frozen Make options")
+    payload = json.loads(path.read_bytes())
+    if not isinstance(payload, dict) or type(payload.get("check_motion")) is not bool:
+        raise StateConflict("invalid frozen Make options")
+    return payload["check_motion"]
+
+
 def _frozen_carry_unchanged(run_root: Path) -> bool:
     """Read the carry policy already frozen into a run, if any.
 
@@ -2060,6 +2073,7 @@ class AgentRun:
         motion_skill_root: Optional[Path] = None,
         finalizer_skill_root: Optional[Path] = None,
         check_motion: Optional[bool] = None,
+        seed_batch_tool_sha256: Optional[str] = None,
         dry_run: bool = False,
     ) -> tuple[dict[str, Any], ...]:
         """Bring the run's host-owned domain skills up to the installed source.
@@ -2080,6 +2094,11 @@ class AgentRun:
         A motion migration may refresh only the carried Make finalizer, even
         for a pre-token-budget run. check_motion rebinds the root option through
         this same verified input writer; it does not alter skills by itself.
+
+        ``seed_batch_tool_sha256`` is the installed seeded batch tool (ADR
+        0098). A run that froze a batch rebinds it to that tool, as the
+        operator's refresh rebinds every other host tool (issue #244); a run
+        that froze none never gains one, and the run's check_motion is kept.
         """
 
         if not isinstance(reason, str) or not 1 <= len(reason.strip()) <= 512:
@@ -2091,6 +2110,8 @@ class AgentRun:
         payload = self._load()
         if check_motion is not None and payload["status"] == "complete":
             raise TransitionError("a completed agent run has no motion policy to rebind")
+        if seed_batch_tool_sha256 is not None:
+            require_sha256(seed_batch_tool_sha256, "seed batch tool sha256")
         by_path: dict[str, dict[str, Any]] = {
             item["path"]: dict(item) for item in payload["inputs"]
         }
@@ -2182,12 +2203,19 @@ class AgentRun:
                         "mode": mode,
                     }
                 )
-        if check_motion is not None:
+        seed = _frozen_seed(self.run_root)
+        rebatch = (seed_batch_tool_sha256 is not None and payload["status"] != "complete"
+                   and seed is not None and "batch" in seed
+                   and seed["batch"]["tool_sha256"] != seed_batch_tool_sha256)
+        if rebatch:
+            seed = {**seed, "batch": {"tool_sha256": seed_batch_tool_sha256}}
+        if check_motion is not None or rebatch:
             path = MAKE_OPTIONS_NAME
             content = _make_options_bytes(
-                check_motion=check_motion,
+                check_motion=(check_motion if check_motion is not None
+                              else _frozen_check_motion(self.run_root)),
                 carry_unchanged=_frozen_carry_unchanged(self.run_root),
-                seed=_frozen_seed(self.run_root),
+                seed=seed,
             )
             digest = _sha256(content)
             previous = by_path.get(path)

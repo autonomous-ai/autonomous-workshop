@@ -69,16 +69,25 @@ class ResumeMotionTest(unittest.TestCase):
     def selected(self):
         return json.loads((self.paths.workspace / "MAKE-OPTIONS.json").read_bytes())["check_motion"]
 
-    def test_resume_omission_disables_previously_enabled_run_and_opt_in_reenables(self):
+    def test_resume_omission_keeps_the_frozen_choice_and_explicit_choice_rebinds(self):
+        """Issue #244: a plain resume switched a frozen true to false."""
         self.start(check_motion=True)
-        for options, expected in (({}, False), ({"check_motion": True}, True), ({}, False)):
+        options_path = self.paths.workspace / "MAKE-OPTIONS.json"
+        frozen = options_path.read_bytes()
+        ledger = self.paths.host_state / "host-corrections.jsonl"
+        corrections = ledger.read_bytes() if ledger.exists() else b""
+        host.resume_native_run(self.product_id)
+        self.assertEqual(options_path.read_bytes(), frozen)
+        self.assertEqual(ledger.read_bytes() if ledger.exists() else b"", corrections)
+        for options, expected in (({"check_motion": False}, False), ({}, False),
+                                  ({"check_motion": True}, True), ({}, True)):
             receipt = host.resume_native_run(self.product_id, **options)
             self.assertIs(self.selected(), expected)
             self.assertEqual(receipt["status"], "waiting")
             self.assertIn("Host motion policy", self.launcher.resumes[-1]["prompt"])
             self.assertIn("reread", self.launcher.resumes[-1]["prompt"])
         self.assertEqual(len(self.launcher.starts), 1)
-        self.assertEqual(len(self.launcher.resumes), 3)
+        self.assertEqual(len(self.launcher.resumes), 5)
         self.assertEqual(self.launcher.rebindings, [])
 
     def test_legacy_resume_migrates_tools_and_keeps_session_and_budget(self):
@@ -133,7 +142,7 @@ class ResumeMotionTest(unittest.TestCase):
 
     def test_invalid_motion_never_opens_or_mutates_run(self):
         with mock.patch.object(host, "native_run_paths") as paths:
-            for invalid in (None, 0, "false"):
+            for invalid in (0, 1, "false"):
                 with self.subTest(invalid=invalid), self.assertRaises(ContractError):
                     host.resume_native_run(self.product_id, check_motion=invalid)
             paths.assert_not_called()
@@ -143,7 +152,7 @@ class ResumeMotionTest(unittest.TestCase):
             with self.assertRaises(KeyboardInterrupt):
                 self.start(check_motion=True)
         self.paths = host.native_run_paths(self.product_id)
-        host.resume_native_run(self.product_id)
+        host.resume_native_run(self.product_id, check_motion=False)
         self.assertFalse(self.selected())
         self.assertEqual(len(self.launcher.resumes), 1)
         self.assertIn("current invent stage", self.launcher.resumes[0]["prompt"])

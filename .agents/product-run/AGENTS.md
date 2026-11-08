@@ -4,9 +4,9 @@
 
 Read the immutable run-root `MAKE-OPTIONS.json` before Make. Its
 `check_motion` is false by default; `workshop wish`, `start`, or `fix`
-with `--check-motion true` enables it for that run. Every operator resume
-reselects this option, defaulting to false; reread it even if this session
-previously enabled motion. The host migrates older runs before resuming them.
+with `--check-motion true` enables it for that run. An operator resume may
+reselect it with `--check-motion`, and one that does not keeps it; reread it
+even if this session previously enabled or disabled motion. The host migrates older runs before resuming them.
 If the file is absent in an unmigrated run, retain its original motion policy.
 
 When false, skip the Python motion sweeps, motion-manifest authoring solely

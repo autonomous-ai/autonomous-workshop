@@ -579,14 +579,15 @@ class NativeCommandTest(unittest.TestCase):
             for key, value in expected.items():
                 self.assertEqual(resume.call_args.kwargs[key], value)
 
-    def test_resume_without_turn_flag_keeps_boundary_and_defaults_motion_off(self):
+    def test_resume_without_turn_or_motion_flag_keeps_both_frozen(self):
         with mock.patch(
             "cli.main.resume_native_run", return_value=native_receipt()
         ) as resume, redirect_stdout(StringIO()), redirect_stderr(StringIO()):
             main(("resume", "wish-one"))
         self.assertNotIn("turn_seconds", resume.call_args.kwargs)
         self.assertNotIn("turn_untimed", resume.call_args.kwargs)
-        self.assertIs(resume.call_args.kwargs["check_motion"], False)
+        # Issue #244: an omitted --check-motion keeps the run's frozen choice.
+        self.assertIsNone(resume.call_args.kwargs["check_motion"])
 
     def test_resume_motion_accepts_boolean_and_rejects_invalid_values(self):
         for value, expected in (("true", True), ("false", False)):
