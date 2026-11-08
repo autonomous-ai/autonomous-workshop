@@ -1065,6 +1065,49 @@ class ClaudeNativeSessionTest(unittest.TestCase):
             (SESSION, OPUS_GROSS_INPUT, request_input),
         ])
 
+    def test_requests_after_an_early_session_wide_result_are_still_reported(self):
+        """#235: a resume that first answers a queued task notification emits
+        a result totalling the whole session before the prompt's requests.
+        Each later request still reaches the budget, though it leaves the
+        session-wide counters unchanged; the stop kills the turn mid-stream."""
+
+        reports = []
+
+        def observer(counters, *, final, session_id, streamed):
+            reports.append((counters["input_tokens"], streamed["input_tokens"], final))
+            if streamed["input_tokens"] > 50_000:
+                raise RuntimeError("limit")
+
+        launcher, processes = self._budgeted_launcher(
+            [_init_line(), _result_line({"claude-opus-5": OPUS_TOTALS})],
+            lambda counters, **_: None,
+        )
+        self._turn(launcher, "start")
+        launcher.token_budget_observer = observer
+        resumed = _FakeProcess([
+            _init_line(),
+            _result_line({"claude-opus-5": OPUS_TOTALS}),
+            _init_line(),
+            _assistant_line("msg_01A", PER_BLOCK_USAGE),
+            _assistant_line("msg_01B", PER_BLOCK_USAGE),
+            _assistant_line("msg_01C", PER_BLOCK_USAGE),
+            _assistant_line("msg_01D", PER_BLOCK_USAGE),
+            _result_line({"claude-opus-5": OPUS_TOTALS}),
+        ])
+        launcher._popen_factory = lambda command, **kwargs: resumed
+        with self.assertRaisesRegex(
+            ClaudeInvocationError, CLAUDE_TOKEN_BUDGET_STOP_MESSAGE
+        ):
+            self._turn(launcher, "resume")
+        request_input = 2 + 13_227 + 10_010
+        self.assertEqual(reports, [
+            (OPUS_GROSS_INPUT, 0, False),
+            (OPUS_GROSS_INPUT, request_input, False),
+            (OPUS_GROSS_INPUT, 2 * request_input, False),
+            (OPUS_GROSS_INPUT, 3 * request_input, False),
+        ])
+        self.assertEqual(resumed.returncode, -9)
+
     def test_an_unbudgeted_turn_forwards_no_subagent_text(self):
         commands = []
         launcher, unused = self._budgeted_launcher(
