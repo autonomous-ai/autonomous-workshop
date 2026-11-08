@@ -14,7 +14,10 @@ import importlib.util
 import json
 import math
 import shutil
+import subprocess
+import sys
 import tempfile
+import time
 import types
 import unittest
 from pathlib import Path
@@ -921,6 +924,128 @@ class BuildAndFinalTest(unittest.TestCase):
         write_entry_scene(project)
         report = tool.final(project)
         self.assertIn("bought_s_half", report["bodies"])
+
+
+class ContractFileModeTest(unittest.TestCase):
+    """Issue #241: outside a run (the seal's design batch, ADR 0098) the tool
+    reads the Proof's Design Contract file with the parser a Wish seals it
+    with, so the circuit and catalogue snapshot are the ones the run will
+    seal; inside a run only the sealed WISH.json gives them."""
+
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.root)
+        self.text = _contract_text(_schema10(small_circuit()), prose=_PROSE)
+        self.contract_file = self.root / "CONTRACT.md"
+        self.contract_file.write_text(self.text)
+        self.contract, self.catalogue = sealed(small_circuit())
+
+    def project(self, base):
+        from build123d import Box, Pos, export_step
+
+        project = base / "cad"
+        components = []
+        for part, (lo, hi) in ENVELOPES.items():
+            path = project / envelope_path(part)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            export_step(Pos(*[(hi[i] + lo[i]) / 2 for i in range(3)])
+                        * Box(*[hi[i] - lo[i] for i in range(3)]), str(path))
+            components.append({"id": part, "cad": {"mode": "validation_envelope",
+                                                   "source": envelope_path(part)}})
+        (project / "measure").mkdir()
+        (project / "measure/power.json").write_text(json.dumps({"components": components}))
+        (project / "measure/bought-placements.json").write_text(json.dumps(PLACEMENTS))
+        return project
+
+    def test_the_contract_file_gives_what_a_run_seals(self):
+        project = self.root / "proof"
+        project.mkdir()
+        electrical, catalogue = tool.sealed_inputs(project, self.contract_file)
+        self.assertEqual(electrical, self.contract["electrical"])
+        self.assertEqual(catalogue, self.catalogue["bought_parts"])
+        self.assertTrue(tool.applies(project, self.contract_file))
+        self.assertFalse(tool.applies(project), "outside a run with no contract nothing is drawn")
+
+    def test_a_design_build_is_the_run_build(self):
+        design = self.project(self.root / "design")
+        run = self.root / "run"
+        run.mkdir()
+        (run / "WISH.json").write_text(json.dumps({"context": {"design_contract": self.contract,
+                                                               "kit_catalogue": self.catalogue}}))
+        in_run = run / "cad"
+        shutil.copytree(design, in_run)  # the same envelope bytes
+        self.build(design, "--contract", str(self.contract_file))
+        self.build(in_run)
+        for relative in ["measure/bought-bodies.json", "bought/__init__.py",
+                         *("bought/%s" % path.name for path in sorted((design / "bought").glob("*.step")))]:
+            self.assertEqual((design / relative).read_bytes(), (in_run / relative).read_bytes(), relative)
+
+    def test_a_rebuild_from_the_same_inputs_writes_the_same_bytes(self):
+        """Issue #241: bought/__init__.py lists every body's sha256 and is a
+        Geometry Source the print-gate summary binds, so a rebuild that
+        changed bytes (a STEP header's clock) left the Proof's print gates
+        stale on every re-seal."""
+        project = self.project(self.root / "design")
+
+        def written():
+            return {str(path.relative_to(project)): hashlib.sha256(path.read_bytes()).hexdigest()
+                    for path in [project / "measure/bought-bodies.json", *(project / "bought").iterdir()]}
+
+        self.build(project, "--contract", str(self.contract_file))
+        first = written()
+        time.sleep(1.1)  # past the STEP header clock's one-second resolution
+        self.build(project, "--contract", str(self.contract_file))
+        self.assertEqual(written(), first)
+
+    @staticmethod
+    def build(project, *extra):
+        """As a batch step runs it: one process per build."""
+        result = subprocess.run([sys.executable, str(TOOL), str(project), "--build", *extra],
+                                capture_output=True, text=True, timeout=600)
+        if result.returncode != 0:
+            raise AssertionError(result.stdout + result.stderr)
+
+    def test_without_a_run_or_a_contract_it_is_refused_and_says_how(self):
+        project = self.project(self.root / "design")
+        with self.assertRaises(tool.Refused) as caught:
+            tool.build(project)
+        self.assertIn("give the Design Contract with --contract", "; ".join(caught.exception.reasons))
+        self.assertEqual(tool.main([str(project), "--build"]), 1)
+
+    def test_inside_a_run_the_contract_file_is_refused(self):
+        run = self.root / "run"
+        run.mkdir()
+        (run / "WISH.json").write_text(json.dumps({"context": {"design_contract": self.contract,
+                                                               "kit_catalogue": self.catalogue}}))
+        project = self.project(run)
+        with self.assertRaises(tool.Refused) as caught:
+            tool.build(project, contract_path=self.contract_file)
+        self.assertIn("--contract is for a CAD project outside a Workshop run", caught.exception.reasons[0])
+        for flag, code in (("--build", 1), ("--final", 1), ("--applies", 2)):
+            with self.subTest(flag):
+                self.assertEqual(tool.main([str(project), flag, "--contract", str(self.contract_file)]), code)
+        self.assertFalse((project / "bought").exists())
+
+    def test_an_unreadable_or_invalid_contract_file_is_refused(self):
+        project = self.project(self.root / "design")
+        bad = self.root / "BAD.md"
+        bad.write_text("# Toy\n\n```design-contract\n{not json\n```\n")
+        for path, reason in ((bad, "does not parse"), (self.root / "MISSING.md", "cannot read")):
+            with self.subTest(path.name):
+                with self.assertRaises(tool.Refused) as caught:
+                    tool.build(project, contract_path=path)
+                self.assertIn(reason, caught.exception.reasons[0])
+                self.assertFalse(tool.applies(project, path))
+
+    def test_an_unpowered_contract_file_states_no_circuit(self):
+        project = self.root / "proof"
+        project.mkdir()
+        plain = self.root / "PLAIN.md"
+        plain.write_text(_contract_text(prose=_PROSE))
+        self.assertFalse(tool.applies(project, plain))
+        with self.assertRaises(tool.Refused) as caught:
+            tool.sealed_inputs(project, plain)
+        self.assertIn("states no circuit", caught.exception.reasons[0])
 
 
 if __name__ == "__main__":

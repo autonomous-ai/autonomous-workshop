@@ -1364,7 +1364,9 @@ Components, final verification (`verify_project --design`, without the
 signature review the build carries) and the packaging check that every
 printed part is colour-named and resolves to one Component solid. A defect
 then costs a Proof round here, not a build. It refuses on any failure,
-quoting each check.
+quoting each check, and on a final verification that left any check
+UNVERIFIED. A re-seal sets the old `approved/` aside while the batch runs
+and puts it back if the seal refuses.
 
 **Re-sealing a Proof sealed before ADR 0098.** `workshop wish|fix
 --seed-source` refuses an approval without check inputs (schema 1), naming

@@ -77,6 +77,9 @@ they get no `parts/` production STEP.
    render; that colour is reserved for them. The round's interference check
    sees them too: a clash with a printed part means an envelope, a facing or
    a route is wrong, and you fix that input, not the printed part.
+   Outside a run, on a Contract Proof, there is no `WISH.json` to read:
+   add `--contract CONTRACT.md` and the tool parses that contract as a
+   Wish would seal it. Inside a run `--contract` is refused.
 5. Final verification runs `bought_model.py --final`. It refuses a body list
    that is not the plan of the current inputs, then writes
    `measure/electrical/`: `exploded.png`, `cutaway.png`, `wiring.png`,

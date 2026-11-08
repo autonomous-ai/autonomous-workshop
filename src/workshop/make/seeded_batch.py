@@ -34,11 +34,12 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import signal
 import subprocess
 import sys
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Optional, Sequence
 
@@ -110,6 +111,9 @@ class Step:
     # A component round in a run takes a fresh seed nonce, issued by the host
     # when the step runs; it is never part of the step's reuse key.
     nonce_component: Optional[str] = None
+    # Final verification exits 0 with geometry checks it could not finish
+    # recorded UNVERIFIED; this report's Result line is the step's verdict.
+    verdict_report: Optional[str] = None
 
     def __post_init__(self) -> None:
         if self.layer not in LAYERS:
@@ -292,6 +296,16 @@ def run_batch(
             deadline = step.deadline_s if step.deadline_s is not None else DEFAULT_DEADLINES[layer]
             result = runner(argv, project, deadline)
             status, reason = classify(result)
+            if status == PASS and step.verdict_report is not None:
+                verdict = report_verdict(project, step.verdict_report)
+                if verdict != "PASS":
+                    # Never a pass: a gate the tool could not finish is not
+                    # a gate that passed (issue #241). It is no defect a
+                    # model could repair, so it is the harness's.
+                    status, reason = HARNESS_FAILURE, (
+                        "exit 0 but %s records %s: a geometry check was not finished in its time allowance"
+                        % (step.verdict_report, verdict) if verdict == "UNVERIFIED"
+                        else "exit 0 but %s records %s" % (step.verdict_report, verdict or "no Result line"))
             entry.update(status=status, exit_code=result.returncode, duration_s=round(result.duration_s, 3),
                          reports=_report_hashes(project, step.reports), excerpt=_excerpt(result.output))
             if reason is not None:
@@ -404,8 +418,10 @@ def _common_layers(inputs: PlanInputs, *, design: bool) -> list:
     ]
     if inputs.powered:
         steps += [
+            # Outside a run the circuit and catalogue a run would seal come
+            # from the contract file (ADR 0098); in a run, from WISH.json.
             Step("bought-model", "power", (py, _tool(inputs, "make-round", "scripts", "bought_model.py"), project,
-                                           "--build"),
+                                           "--build", *(("--contract", str(inputs.contract_path)) if design else ())),
                  inputs=("measure/power.json", "measure/bought-placements.json"),
                  reports=("measure/bought-bodies.json",)),
             Step("check-power", "power", (py, _tool(inputs, "electromechanical-integration", "scripts", "check_power"),
@@ -482,15 +498,36 @@ def _final_step(inputs: PlanInputs, report: str, *, design: bool) -> Step:
 
     flags = ["--powered"] if inputs.powered else ["--unpowered"] if inputs.image_derived else []
     reviews = () if design else ("snap/SIGNATURE-REVIEW.json", "snap/MOTION-REVIEW.json")
+    # verify_project shares one allowance across every geometry analysis and
+    # records what it could not finish UNVERIFIED (issue #241): the batch
+    # gives them the layer's deadline, less time to build and report.
+    deadline = inputs.deadlines.get("final", DEFAULT_DEADLINES["final"])
+    geometry = max(60.0, deadline - FINAL_REPORT_MARGIN_S)
     return Step("final-verification", "final",
                 (inputs.python, _tool(inputs, "cad", "scripts", "verify_project"), str(inputs.project),
-                 *(("--design",) if design else ()), "--strict-fit", "--print-gates",
+                 *(("--design", "--contract", str(inputs.contract_path)) if design else ()),
+                 "--geometry-seconds", "%g" % geometry, "--strict-fit", "--print-gates",
                  "--nozzle", "%g" % inputs.nozzle, "--report", str(inputs.project / report),
                  "--check-motion", "true" if inputs.moving else "false",
                  *(("--image-derived",) if inputs.image_derived else ()), *flags),
                 inputs=(*_source_inputs(inputs.roles), *reviews, "measure/motion.json", "measure/power.json",
                         "measure/mounts.json"),
-                reports=(report,))
+                reports=(report,), verdict_report=report)
+
+
+FINAL_REPORT_MARGIN_S = 300.0
+_RESULT_LINE = re.compile(r"^- Result: \*\*(PASS|FAIL|UNVERIFIED)\b", re.MULTILINE)
+
+
+def report_verdict(project: Path, report: str) -> Optional[str]:
+    """``PASS``, ``FAIL`` or ``UNVERIFIED`` from a verification record, or
+    None when it is missing or holds no Result line."""
+
+    try:
+        match = _RESULT_LINE.search((Path(project) / report).read_text(encoding="utf-8"))
+    except (OSError, UnicodeError):
+        return None
+    return match.group(1) if match else None
 
 
 def coupled_interface_ids(contract: Mapping[str, Any]) -> tuple:
@@ -536,8 +573,7 @@ def _with_deadlines(steps: list, deadlines: Mapping[str, float]) -> list:
     layer's deadline override."""
 
     ordered = sorted(steps, key=lambda step: LAYERS.index(step.layer))
-    return [Step(step.id, step.layer, step.argv, step.inputs, step.reports,
-                 deadlines.get(step.layer, step.deadline_s), step.nonce_component) for step in ordered]
+    return [replace(step, deadline_s=deadlines.get(step.layer, step.deadline_s)) for step in ordered]
 
 
 def module_sha256() -> str:

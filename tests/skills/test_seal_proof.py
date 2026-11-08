@@ -98,6 +98,11 @@ class SealProofTest(unittest.TestCase):
         for fragment, result in getattr(self, "batch_exit", {}).items():
             if any(fragment in item for item in argv):
                 return result
+        if "--report" in argv:
+            # verify_project writes its record, whose Result is the verdict.
+            report = Path(argv[argv.index("--report") + 1])
+            report.parent.mkdir(parents=True, exist_ok=True)
+            report.write_text("- Result: **%s** (exit 0)\n" % getattr(self, "final_verdict", "PASS"))
         return RunResult(0, "ok")
 
     def _final_inputs(self, **changes):
@@ -303,6 +308,7 @@ class SealCheckInputsTest(unittest.TestCase):
     _seal = SealProofTest._seal
     _spec_tool = SealProofTest._spec_tool
     _final_inputs = SealProofTest._final_inputs
+    _verify = SealProofTest._verify
 
     def setUp(self):
         SealProofTest.setUp(self)
@@ -361,7 +367,7 @@ class SealCheckInputsTest(unittest.TestCase):
         self.assertIn("measure/power.json", approval["check_inputs"])
         ran = [" ".join(argv) for argv in self.batch_calls]
         for tool in ("check_motion", "check_power", "check_mount", "bought_model.py", "--build",
-                     "--print-gates-only", "--shared-helpers", "--design --strict-fit",
+                     "--print-gates-only", "--shared-helpers", "--design --contract",
                      "seeded_package check"):
             with self.subTest(tool=tool):
                 self.assertTrue(any(tool in line for line in ran), ran)
@@ -369,6 +375,8 @@ class SealCheckInputsTest(unittest.TestCase):
                              for line in ran), "the design plan needs no run state")
         # Every Interface check on the Proof reads the contract file.
         self.assertTrue(all("--contract" in line for line in ran if "--interface" in line))
+        # Issue #241: so does the Bought Parts model, which in a run reads WISH.json.
+        self.assertTrue(all("--contract" in line for line in ran if "bought_model.py" in line))
 
     def test_seal_refuses_a_malformed_seed_product(self):
         product = dict(SEED_PRODUCT, summary=" ")
@@ -389,6 +397,68 @@ class SealCheckInputsTest(unittest.TestCase):
         self.assertIn("draws 40 mA over 20", self.stderr)
         self.assertIn("lead hole clashes with switch wire", self.stderr)
         self.assertFalse((self.proof / "APPROVAL.json").exists())
+
+    def _strays_fail_the_project_step(self):
+        """The batch's first step refuses STEP files no Component builds, as
+        verify_project's project check does (issue #241's re-seal)."""
+        from workshop.make.seeded_batch import RunResult
+
+        original = SealProofTest._batch_runner
+
+        def runner(test, argv, cwd, timeout):
+            if "--dry-run" in argv and (test.proof / "approved").exists():
+                test.batch_calls.append(list(argv))
+                return RunResult(1, "stray STEP approved/part_body.step: no Component builds it")
+            return original(test, argv, cwd, timeout)
+
+        patch = mock.patch.object(SealProofTest, "_batch_runner", runner)
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def _beside(self):
+        return sorted(path.name for path in self.proof.parent.iterdir() if path.name.startswith(".seal-proof"))
+
+    def test_a_reseal_passes_the_batch_over_its_old_approved_copies(self):
+        self._strays_fail_the_project_step()
+        self.assertEqual(self._seal(), 0, self.stderr)
+        first = json.loads((self.proof / "APPROVAL.json").read_text())
+        self.assertEqual(self._seal(), 0, self.stderr)
+        second = json.loads((self.proof / "APPROVAL.json").read_text())
+        self.assertEqual(second["components"]["body"]["approved_step"], "approved/part_body.step")
+        self.assertEqual((self.proof / "approved/part_body.step").read_bytes(),
+                         (self.proof / "part_body.step").read_bytes())
+        self.assertEqual(second["manifest"], first["manifest"])
+        self.assertEqual(self._beside(), [], "nothing is left beside the Proof")
+        self.assertEqual(self._verify(), 0, self.stderr)
+
+    def test_a_failed_reseal_leaves_the_previous_seal_whole(self):
+        from workshop.make.seeded_batch import RunResult
+
+        self.assertEqual(self._seal(), 0, self.stderr)
+        approval = (self.proof / "APPROVAL.json").read_bytes()
+        copies = {path.name: path.read_bytes() for path in (self.proof / "approved").iterdir()}
+        self.batch_exit = {"--print-gates-only": RunResult(1, "print gates: body overhang 52 deg over 45")}
+        self.assertEqual(self._seal(), 1)
+        self.assertIn("body overhang 52 deg over 45", self.stderr)
+        self.assertEqual((self.proof / "APPROVAL.json").read_bytes(), approval)
+        self.assertEqual({path.name: path.read_bytes() for path in (self.proof / "approved").iterdir()}, copies)
+        self.assertEqual(self._beside(), [])
+        self.assertEqual(self._verify(), 0, self.stderr)
+
+    def test_an_unverified_final_verification_is_no_pass(self):
+        """Issue #241: verify_project exits 0 with analyses UNVERIFIED when
+        its geometry allowance is spent; the seal refuses that batch."""
+        for verdict in ("UNVERIFIED", "FAIL"):
+            with self.subTest(verdict):
+                self.final_verdict = verdict
+                self.assertEqual(self._seal(), 1)
+                self.assertIn("harness-failure", self.stderr)
+                self.assertIn("records %s" % verdict, self.stderr)
+                self.assertFalse((self.proof / "APPROVAL.json").exists())
+        self.final_verdict = "PASS"
+        self.assertEqual(self._seal(), 0, self.stderr)
+        final = [argv for argv in self.batch_calls if "--design" in argv][-1]
+        self.assertIn("--geometry-seconds", final)
 
     def test_verify_names_the_reseal_path_for_an_old_approval(self):
         self.assertEqual(self._seal(), 0, self.stderr)

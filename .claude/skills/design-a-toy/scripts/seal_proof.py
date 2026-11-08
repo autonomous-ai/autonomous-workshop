@@ -61,6 +61,7 @@ import json
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -366,6 +367,48 @@ def seal(args) -> dict:
         raise Refusal("make_round read another contract than %s" % contract)
     check_rules(proof, record)
     check_final_inputs(proof, record["components"], args.nozzle)
+    # Issue #241: a re-seal's old approved/ copies are STEP files no
+    # Component builds, which the batch's project check refuses as strays.
+    # They wait outside the Proof and come back if this seal refuses, so a
+    # failed re-seal leaves the previous seal whole.
+    held = set_aside(proof / APPROVED_DIR)
+    try:
+        document = _seal_after_set_aside(args, proof, contract, checklist, verdict, design_contract,
+                                         check_inputs, record)
+    except BaseException:
+        restore(held, proof / APPROVED_DIR)
+        raise
+    if held is not None:
+        shutil.rmtree(held.parent)
+    return document
+
+
+def set_aside(directory: Path):
+    """Move ``directory`` into a fresh hidden directory beside the Proof,
+    outside it but on its filesystem, so the move is a rename and a seal
+    killed midway leaves the copies where the owner can find them; return
+    its new path, or None when it does not exist."""
+
+    if not directory.exists():
+        return None
+    holder = Path(tempfile.mkdtemp(prefix=".seal-proof-approved-", dir=directory.parent.parent))
+    return Path(shutil.move(str(directory), str(holder / directory.name)))
+
+
+def restore(held, directory: Path) -> None:
+    """Put a set-aside directory back, replacing whatever the failed seal
+    left in its place."""
+
+    if held is None:
+        return
+    if directory.exists():
+        shutil.rmtree(directory)
+    shutil.move(str(held), str(directory))
+    shutil.rmtree(held.parent, ignore_errors=True)
+
+
+def _seal_after_set_aside(args, proof, contract, checklist, verdict, design_contract, check_inputs,
+                          record) -> dict:
     batch = dry_run_batch(proof, contract, design_contract, args.nozzle)
 
     copied = proof / CHECKLIST
