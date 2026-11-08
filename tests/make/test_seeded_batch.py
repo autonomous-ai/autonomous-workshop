@@ -225,6 +225,14 @@ class BatchEngineTest(unittest.TestCase):
             self.project, 30)
         self.assertEqual(env.output.strip(), "['ONLY']", "a host step sees only the environment it is given")
 
+    def test_the_first_step_starts_in_a_project_that_does_not_exist_yet(self):
+        project = self.project / "artifacts" / "make" / "r0001" / "product" / "cad"
+        steps = [Step("prepare", "project", (sys.executable, "-c",
+                                             "import os; open('made', 'w').write(os.getcwd())"))]
+        record = sb.run_batch(steps, project)
+        self.assertEqual(record["status"], sb.PASS, record["steps"][0].get("reason"))
+        self.assertEqual(Path((project / "made").read_text()).resolve(), project.resolve())
+
 
 class PlanTest(unittest.TestCase):
     def _inputs(self, **changes):
