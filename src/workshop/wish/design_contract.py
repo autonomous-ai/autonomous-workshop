@@ -13,11 +13,12 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from workshop.errors import ContractError
 from workshop.wish.assembly_tree import ContractAssemblyTree, parse_assembly_tree
+from workshop.wish.bought_list import BOUGHT_FENCE_OPEN, ContractBought, bought_list_ids, parse_bought_block
 from workshop.wish.catalogues import Catalogues, load_catalogues
 from workshop.wish.electrical import ContractElectrical, parse_electrical
 from workshop.wish.print_sheets import ContractPrint, parse_print_section
@@ -254,6 +255,13 @@ class DesignContract:
     # Schema 11 (ADR 0096): ``"approved-proof"``, the shape's source of
     # truth. None before schema 11.
     shape: Optional[str] = None
+    # The optional Bought Parts block (ADR 0095 amendment, 2026-11-07): the
+    # bought hardware the electrical section does not name, and the price of
+    # its factory-assembled board.
+    bought: Optional[ContractBought] = None
+    # The catalogues the block was checked against, read by kit_catalogue();
+    # no part of the contract's identity.
+    _catalogue: Optional[Catalogues] = field(default=None, repr=False, compare=False)
 
     def check_sealable(self) -> None:
         """Refuse a contract no run can seal yet (schema 7: see
@@ -279,7 +287,7 @@ class DesignContract:
         of the Electrical section (ADR 0095), so a powered toy that is no
         kit still seals its Bought Parts. None when the contract has neither."""
 
-        if self.assembly_tree is None and self.electrical is None:
+        if self.assembly_tree is None and self.electrical is None and self.bought is None:
             return None
         snapshot: Dict[str, Any] = {"filaments": {}, "bought_parts": {}}
         for section in (self.assembly_tree, self.electrical):
@@ -288,6 +296,21 @@ class DesignContract:
             extra = section.catalogue_snapshot()
             snapshot["filaments"].update(extra.get("filaments") or {})
             snapshot["bought_parts"].update(extra.get("bought_parts") or {})
+        if self.bought is not None:
+            # ADR 0095 (2026-11-07): the block's parts and every billed part's
+            # price are sealed, so Release bills what the Wish sealed. The
+            # prices sit apart from the entries, whose bytes Make's tools
+            # hash, so a priced snapshot leaves every entry as it was.
+            snapshot["bought_parts"].update(
+                {part_id: self._catalogue.parts[part_id].snapshot()
+                 for part_id in bought_list_ids(self.bought.section)}
+            )
+            snapshot["unit_prices"] = {
+                part_id: self._catalogue.parts[part_id].unit_price_cents
+                for part_id in snapshot["bought_parts"]
+                if part_id in self._catalogue.parts
+                and self._catalogue.parts[part_id].unit_price_cents is not None
+            }
         return {key: dict(sorted(value.items())) for key, value in snapshot.items()}
 
     def reference_labels(self) -> Dict[str, str]:
@@ -412,6 +435,7 @@ class DesignContract:
                 else {}
             ),
             **({"shape": self.shape} if self.shape is not None else {}),
+            **({"bought_parts": self.bought.to_dict()} if self.bought is not None else {}),
         }
 
 
@@ -551,7 +575,9 @@ def prose_sections(text: str) -> List[Tuple[int, str, str]]:
             continue
         if marker is not None:
             fence = marker.group(1)
-            if _CONTRACT_FENCE_OPEN.match(line):
+            # The Bought Parts block (ADR 0095, 2026-11-07) belongs to no
+            # section either: pricing a design changes none of its prose.
+            if _CONTRACT_FENCE_OPEN.match(line) or BOUGHT_FENCE_OPEN.match(line):
                 in_contract = True
             elif found:
                 found[-1][2].append(line)
@@ -1143,6 +1169,18 @@ def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) ->
             electrical = parse_electrical(block.get("electrical"), catalogues, errors, tree_bought)
     elif "electrical" in block:
         errors.append("electrical needs schema_version 10 or later")
+    bought: Optional[ContractBought] = None
+    if "```bought-parts" in text:
+        if catalogues is None:
+            try:
+                catalogues = load_catalogues()
+            except ContractError as exc:
+                errors.append(str(exc))
+        bought = parse_bought_block(
+            text, version=version, has_tree=assembly_tree is not None,
+            electrical=electrical.to_dict() if electrical is not None else None,
+            catalogues=catalogues, errors=errors,
+        )
 
     if errors:
         raise ContractError("design contract: " + "; ".join(errors))
@@ -1162,4 +1200,6 @@ def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) ->
         prose=prose,
         electrical=electrical,
         shape=shape,
+        bought=bought,
+        _catalogue=catalogues if bought is not None else None,
     )

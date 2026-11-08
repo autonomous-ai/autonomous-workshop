@@ -384,11 +384,15 @@ def seal(args) -> dict:
         shutil.copyfile(built, target)
         components[role] = {**component, "approved_step": "%s/%s" % (APPROVED_DIR, built.name),
                             "parts": part_measures(target)}
+    from workshop.wish.seed import seed_contract_sha256
+
     files = manifest(proof)
     document = {
         "schema_version": SCHEMA_VERSION,
         "tool": "design-a-toy seal_proof",
-        "contract_sha256": record["contract_sha256"],
+        # The hash a seeded run binds: without a Bought Parts block, which
+        # prices the design and shapes nothing (ADR 0095, 2026-11-07).
+        "contract_sha256": seed_contract_sha256(contract.read_text(encoding="utf-8")),
         "components": components,
         "assembly_identity": record["assembly_identity"],
         "critic": {"sha256": sha256(proof / CRITIC), "verdict": verdict,

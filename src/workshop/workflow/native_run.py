@@ -9627,7 +9627,18 @@ def _publication_release_context(
         ),
         token_usage=_publication_token_usage(run),
         public_title=public_title,
+        printed_primary=_accepted_printed_primary(run),
     )
+
+
+def _accepted_printed_primary(run: AgentRun) -> Optional[Mapping[str, Any]]:
+    """The printed-only primary the latest Make acceptance sealed (ADR 0095,
+    2026-11-07), or None for a run that sealed none."""
+
+    for check in _latest_make_check(run.host_state_root, "bought_model"):
+        if isinstance(check, Mapping) and check.get("printed_primary") is not None:
+            return check["printed_primary"]
+    return None
 
 
 def _publication_token_usage(run: AgentRun) -> Optional[Mapping[str, Any]]:

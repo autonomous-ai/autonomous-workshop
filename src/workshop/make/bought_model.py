@@ -18,7 +18,13 @@ any geometry (ADR 0061), that
 - the three electrical pictures and the Electrical Assembly text are the
   ones ``measure/electrical/electrical.json`` names; and
 - the product README carries that text verbatim, so what it says about who
-  assembles and solders follows the contract, not the Manager's prose.
+  assembles and solders follows the contract, not the Manager's prose; and
+- when ``electrical.json`` names a printed-only primary (ADR 0095 amendment,
+  2026-11-07), that STEP is the sealed scene ``assembled.step`` without its
+  bought bodies: the same printed leaves, each with the same solids by volume
+  and surface area, no ``bought_`` leaf, and exactly the drawn bodies
+  removed. The receipt seals its hash, and Release ships it as Factory's
+  primary in place of the scene.
 
 Nothing here judges a picture. A run sealed before catalogue models existed
 records none and keeps what it sealed.
@@ -53,6 +59,69 @@ ELECTRICAL_KIND = "electrical-pictures"
 REPORT_SCHEMA = 1
 BOARD_ID = "pcba"
 README_PATH = "README.md"
+PRINTED_PATH = "measure/electrical/printed.step"
+PRINTED_FIELDS = {"step", "sha256", "scene", "scene_sha256", "removed"}
+SCENE_PATH = "assembled.step"
+# Relative tolerance on a solid's volume and area: a STEP round trip keeps
+# both to about 1e-9, and another solid differs by far more.
+_TOLERANCE = 1e-6
+
+
+def _is_bought(name: str) -> bool:
+    return name == "bought" or name.startswith(BOUGHT_OCCURRENCE_PREFIX)
+
+
+def _close(a: float, b: float) -> bool:
+    return abs(a - b) <= max(1e-6, _TOLERANCE * max(abs(a), abs(b)))
+
+
+def verify_printed_primary(scene: bytes, printed: bytes, removed) -> dict[str, Any]:
+    """Refuse unless ``printed`` is ``scene`` without exactly its bought
+    bodies: the same printed leaves by name, each with the same solids by
+    volume and surface area, and no bought leaf. ``removed`` is the list of
+    bought leaves the writer says it took out."""
+
+    from workshop.release.printed_primary import scene_bodies
+
+    scene_bodies_ = scene_bodies(scene)
+    printed_bodies = scene_bodies(printed)
+    bought = sorted(body.name for body in scene_bodies_ if _is_bought(body.name))
+    if not isinstance(removed, list) or sorted(removed) != bought:
+        raise ContractError(
+            "the printed-only primary records removing %s, but the scene's bought bodies are %s"
+            % (", ".join(sorted(map(str, removed or [])))[:200] or "none", ", ".join(bought)[:200] or "none")
+        )
+    left = sorted(body.name for body in printed_bodies if _is_bought(body.name))
+    if left:
+        raise ContractError("the printed-only primary still holds bought bodies: %s" % ", ".join(left[:6]))
+    expected = sorted(
+        ((body.name, body.solids, body.total) for body in scene_bodies_ if not _is_bought(body.name)),
+        key=lambda item: (item[0], item[1], item[2]),
+    )
+    found = sorted(
+        ((body.name, body.solids, body.total) for body in printed_bodies),
+        key=lambda item: (item[0], item[1], item[2]),
+    )
+    if not expected:
+        raise ContractError("the scene holds no printed body")
+    if [item[0] for item in found] != [item[0] for item in expected]:
+        missing = sorted((Counter(i[0] for i in expected) - Counter(i[0] for i in found)).elements())
+        extra = sorted((Counter(i[0] for i in found) - Counter(i[0] for i in expected)).elements())
+        raise ContractError(
+            "the printed-only primary does not hold the scene's printed bodies: missing %s; extra %s"
+            % (", ".join(missing[:6]) or "none", ", ".join(extra[:6]) or "none")
+        )
+    for (name, solids, total), (_name, want_solids, want_total) in zip(found, expected):
+        if (
+            len(solids) != len(want_solids)
+            or not all(_close(a[0], b[0]) and _close(a[1], b[1]) for a, b in zip(solids, want_solids))
+            or not (_close(total[0], want_total[0]) and _close(total[1], want_total[1]))
+        ):
+            raise ContractError(
+                "the printed-only primary's %s is not the scene's: its solids differ in volume or area"
+                % name
+            )
+    return {"printed_bodies": len(found), "removed_bodies": len(bought)}
 
 
 def draws_bought_parts(contract: Any, catalogue: Any) -> bool:
@@ -215,6 +284,39 @@ def verify_made_bought(
         if name == ASSEMBLY_TEXT:
             text = data
 
+    printed_record = None
+    printed = report.get("printed")
+    if printed is not None:
+        # ADR 0095 (2026-11-07): the primary Factory weighs holds printed
+        # bodies only, and is the scene minus the bought bodies.
+        if (
+            not isinstance(printed, Mapping) or set(printed) != PRINTED_FIELDS
+            or printed.get("step") != PRINTED_PATH
+            or not isinstance(printed.get("removed"), list)
+            or not all(isinstance(name, str) for name in printed["removed"])
+        ):
+            raise ContractError("%s names its printed-only primary malformed" % ELECTRICAL_PATH)
+        printed_bytes = cad(PRINTED_PATH)
+        if hashlib.sha256(printed_bytes).hexdigest() != printed.get("sha256"):
+            raise ContractError("%s is not the printed-only primary %s names" % (PRINTED_PATH, ELECTRICAL_PATH))
+        scene_bytes = sealed(SCENE_PATH, "the Made product lacks %s" % SCENE_PATH)
+        scene_sha256 = hashlib.sha256(scene_bytes).hexdigest()
+        if scene_sha256 != printed.get("scene_sha256"):
+            raise ContractError(
+                "the printed-only primary was drawn from another scene than the sealed %s" % SCENE_PATH
+            )
+        if sorted(printed["removed"] or []) != sorted(drawn):
+            raise ContractError("the printed-only primary does not remove exactly the drawn Bought Parts")
+        counts = verify_printed_primary(scene_bytes, printed_bytes, printed["removed"])
+        printed_record = {
+            "path": (prefix / PRINTED_PATH).as_posix(),
+            "sha256": printed["sha256"],
+            "scene_path": SCENE_PATH,
+            "scene_sha256": scene_sha256,
+            "removed": list(printed["removed"]),
+            **counts,
+        }
+
     readme = sealed(README_PATH, "the Made product lacks its README.md, which carries the "
                                  "Electrical Assembly text")
     if text.strip() not in readme:
@@ -222,7 +324,7 @@ def verify_made_bought(
             "the product README does not carry %s/%s verbatim: who assembles and solders the "
             "circuit is the contract's, not the README's own prose" % (ELECTRICAL_DIRECTORY, ASSEMBLY_TEXT)
         )
-    return {
+    result = {
         "bodies": (prefix / BODIES_PATH).as_posix(),
         "bodies_sha256": hashlib.sha256(bodies_raw).hexdigest(),
         "bought_bodies": len(listed),
@@ -232,6 +334,17 @@ def verify_made_bought(
         "pictures": {name: (prefix / ELECTRICAL_DIRECTORY / name).as_posix() for name in PICTURES},
         "files_sha256": shas,
     }
+    if printed_record is not None:
+        result["printed_primary"] = printed_record
+    return result
 
 
-__all__ = ["BODIES_PATH", "ELECTRICAL_PATH", "draws_bought_parts", "expected_bodies", "verify_made_bought"]
+__all__ = [
+    "BODIES_PATH",
+    "ELECTRICAL_PATH",
+    "PRINTED_PATH",
+    "draws_bought_parts",
+    "expected_bodies",
+    "verify_made_bought",
+    "verify_printed_primary",
+]

@@ -1,6 +1,7 @@
 import hashlib
 import io
 import json
+import shutil
 import tempfile
 import unittest
 import zipfile
@@ -211,9 +212,11 @@ class FactorySessionTest(unittest.TestCase):
 
 
 class ReleaseContext:
-    def __init__(self, made, product_id="verified-toy", token_usage=None):
+    def __init__(self, made, product_id="verified-toy", token_usage=None,
+                 printed_primary=None, wish_context=None):
         self.made = made
-        self.wish = Wish.create(product_id, "A toy with a verified Factory page")
+        self.wish = Wish.create(product_id, "A toy with a verified Factory page", context=wish_context)
+        self.printed_primary = printed_primary
         self.taste = type("TasteName", (), {"name": "Alice"})()
         self.token_usage = token_usage
 
@@ -255,6 +258,10 @@ class FactoryTransport:
         )
         self.part_colors_status = part_colors_status
         self.part_color_writes = []
+        # What the import carried as extra materials; Factory's design
+        # readback returns them, and None when it has none.
+        self.extra_materials = None
+        self.drop_extra_materials = False
 
     def design(self):
         design = {
@@ -293,6 +300,8 @@ class FactoryTransport:
             design["thumbnail_urls"] = ["https://cdn.example/cover.png"]
         if self.assembly_parts is not None:
             design["assembly_parts"] = [dict(part) for part in self.assembly_parts]
+        if self.extra_materials is not None and not self.drop_extra_materials:
+            design["extra_materials"] = [dict(item) for item in self.extra_materials]
         return design
 
     def __call__(self, method, url, headers, body, timeout):
@@ -301,6 +310,9 @@ class FactoryTransport:
             return login_response()
         if url.endswith("/designs/import"):
             self.imports += 1
+            extras = multipart_parts(headers, body).get("extra_materials")
+            if extras:
+                self.extra_materials = json.loads(extras[0])
             if self.import_status != 201:
                 return HttpResponse(
                     self.import_status, {}, b'{"error":"request rejected"}'
@@ -2367,6 +2379,130 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertNotIn("extra_materials", multipart_parts(call[2], call[3]))
         intent = self.ledger.latest("verified-toy", "factory-import")
         self.assertNotIn("extra_materials", intent.request)
+
+    # ADR 0095 (2026-11-07): the printed-only primary and the sealed extras.
+
+    PRINTED = "cad/measure/electrical/printed.step"
+
+    def seal_printed_primary(self, **changes):
+        scene = step_solid_document([("workshop", "#4c859e"), ("bought_led", "#ff00ff")])
+        self.reseal_made({"assembled.step": scene, self.PRINTED: TETRA_STEP})
+        record = {
+            "path": self.PRINTED, "sha256": hashlib.sha256(TETRA_STEP).hexdigest(),
+            "scene_path": "assembled.step", "scene_sha256": hashlib.sha256(scene).hexdigest(),
+            "removed": ["bought_led"], "printed_bodies": 1, "removed_bodies": 1,
+        }
+        record.update(changes)
+        self.context = ReleaseContext(self.made, printed_primary=record)
+        return scene
+
+    def test_the_printed_only_primary_is_the_one_step_that_crosses(self):
+        scene = self.seal_printed_primary()
+        transport = FactoryTransport()
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertTrue(receipt.is_verified_draft)
+        call = next(call for call in transport.calls if call[1].endswith("/designs/import"))
+        with zipfile.ZipFile(io.BytesIO(multipart_parts(call[2], call[3])["file"][0])) as archive:
+            steps = sorted(name for name in archive.namelist()
+                           if PurePosixPath(name).suffix.casefold() in {".step", ".stp"})
+            self.assertEqual(steps, ["assembled.step"])
+            self.assertEqual(archive.read("assembled.step"), TETRA_STEP)
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+        self.assertEqual(facts["primary_model"]["sha256"], hashlib.sha256(TETRA_STEP).hexdigest())
+        self.assertEqual(facts["printed_primary"], {
+            "source_path": self.PRINTED, "scene_path": "assembled.step",
+            "scene_sha256": hashlib.sha256(scene).hexdigest(), "removed": ["bought_led"]})
+
+    def test_a_scene_with_bought_bodies_and_no_printed_record_is_still_refused(self):
+        self.seal_printed_primary()
+        self.context = ReleaseContext(self.made)
+        self.assert_refused_before_any_effect("bought_led")
+
+    def test_a_printed_record_that_is_not_the_sealed_bytes_is_refused(self):
+        for changes, message in (
+            ({"sha256": "0" * 64}, "is not sealed in Made"),
+            ({"path": "cad/measure/electrical/missing.step"}, "is not sealed in Made"),
+            ({"scene_sha256": "0" * 64}, "checked against another scene"),
+            ({"extra": True}, "malformed"),
+        ):
+            self.seal_printed_primary(**changes)
+            self.assert_refused_before_any_effect(message)
+            shutil.rmtree(self.root / "resealed-product")
+
+    def sealed_lamp_context(self, board_price=400, glue_price=32):
+        contract = {
+            "electrical": {
+                "parts": [
+                    {"id": "usb", "role": "source", "external": True},
+                    {"id": "usb-c", "bought": "usb-c-receptacle-power", "role": "inlet"},
+                    {"id": "led-1", "bought": "led-2835-warm-2200k", "role": "load"},
+                    {"id": "led-2", "bought": "led-2835-warm-2200k", "role": "load"},
+                ],
+                "pcba": {"parts": ["usb-c", "led-1", "led-2"], "bounds_mm": [[0, 0, 0], [1, 1, 1]]},
+            },
+            "bought_parts": {
+                "parts": [{"bought": "steel-pin-1.5x29.5", "count": 10}, {"bought": "glue", "count": 1}],
+                "pcba": {"unit_price_cents": board_price, "estimate": True, "source": "owner, 2026-11-07"},
+            },
+        }
+        prices = {"usb-c-receptacle-power": 6, "led-2835-warm-2200k": 2, "steel-pin-1.5x29.5": 6}
+        if glue_price is not None:
+            prices["glue"] = glue_price
+        catalogue = {
+            "bought_parts": {
+                "usb-c-receptacle-power": {"name": "USB-C receptacle"},
+                "led-2835-warm-2200k": {"name": "Warm LED 2835"},
+                "steel-pin-1.5x29.5": {"name": "Steel pin 1.5 x 29.5"},
+                "glue": {"name": "Glue"},
+            },
+            "unit_prices": prices,
+        }
+        self.context = ReleaseContext(
+            self.made, wish_context={"design_contract": contract, "kit_catalogue": catalogue})
+
+    def test_every_sealed_bought_part_and_the_board_are_billed_and_recorded(self):
+        self.sealed_lamp_context()
+        transport = FactoryTransport()
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertTrue(receipt.is_verified_draft)
+        call = next(call for call in transport.calls if call[1].endswith("/designs/import"))
+        sent = json.loads(multipart_parts(call[2], call[3])["extra_materials"][0])
+        expected = [
+            {"name": "USB-C receptacle", "price_cents": 6},
+            {"name": "Warm LED 2835 (x2)", "price_cents": 4},
+            {"name": "Steel pin 1.5 x 29.5 (x10)", "price_cents": 60},
+            {"name": "Glue", "price_cents": 32},
+            {"name": "Factory-assembled circuit board (PCBA)", "price_cents": 400},
+        ]
+        self.assertEqual(sent, expected)
+        intent = self.ledger.latest("verified-toy", "factory-import")
+        self.assertEqual(intent.request["extra_materials"], expected)
+        board = intent.request["bought_parts"][-1]
+        self.assertEqual((board["part"], board["unit_price_cents"], board["estimate"], board["source"]),
+                         ("pcba", 400, True, "owner, 2026-11-07"))
+        self.assertEqual({line["price_source"] for line in intent.request["bought_parts"][:-1]}, {"catalogue"})
+
+    def test_an_unpriced_sealed_part_or_board_refuses_before_any_effect(self):
+        self.sealed_lamp_context(glue_price=None)
+        self.assert_refused_before_any_effect("no sealed price.*: glue")
+        self.sealed_lamp_context()
+        del self.context.wish.context["design_contract"]["bought_parts"]["pcba"]
+        self.assert_refused_before_any_effect("no sealed price.*: pcba")
+
+    def test_a_readback_without_the_requested_extras_is_not_accepted(self):
+        self.sealed_lamp_context()
+        transport = FactoryTransport()
+        transport.drop_extra_materials = True
+        # The import landed, so the effect is ambiguous rather than refused,
+        # and its readback check names no price.
+        with self.assertRaisesRegex(AmbiguousEffectError, "exact readback is not proven"):
+            self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertEqual(transport.imports, 1)
+        # The same import with its extras read back is accepted.
+        transport.drop_extra_materials = False
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(transport.imports, 1, "the retry reconciles, never re-imports")
 
 def draft_factory_content():
     return {

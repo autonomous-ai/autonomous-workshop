@@ -62,6 +62,7 @@ from workshop.release.native import (
     validate_release_product,
 )
 from workshop.runtime import EffectIntent, EffectLedger, Receipt
+from workshop.release.bought_extras import factory_extra_materials, sealed_bought_lines
 
 
 DEFAULT_FACTORY_API = "https://panda-social-api.autonomous.ai/api/v1"
@@ -418,6 +419,39 @@ def _sealed_primary(context: Any) -> Mapping[str, str]:
         "path": path.name,
         "sha256": hashlib.sha256(content).hexdigest(),
     }
+
+
+#: Where the printed-only primary crosses: Factory's one roll-up name, so its
+#: flat-folder rule measures exactly this file once and splits it into its
+#: solids (internal/slicer/tree.go), and the shop's viewer ranks it first.
+FACTORY_PRINTED_PRIMARY_PATH = "assembled.step"
+_PRINTED_PRIMARY_FIELDS = frozenset(
+    {"path", "sha256", "scene_path", "scene_sha256", "removed", "printed_bodies", "removed_bodies"}
+)
+
+
+def _printed_primary(context: Any, manifest: ArtifactManifest) -> Optional[Mapping[str, Any]]:
+    """The printed-only primary the host checked at Make acceptance (ADR
+    0095, 2026-11-07), bound to the sealed Made bytes, or None for a run
+    that sealed none."""
+
+    record = getattr(context, "printed_primary", None)
+    if record is None:
+        return None
+    if not isinstance(record, Mapping) or set(record) != _PRINTED_PRIMARY_FIELDS:
+        raise ContractError("the Make record's printed-only primary is malformed")
+    path = record.get("path")
+    entry = _manifest_entry(manifest, path) if isinstance(path, str) else None
+    if (
+        entry is None
+        or PurePosixPath(path).suffix.casefold() != ".step"
+        or entry.sha256 != require_sha256(record.get("sha256"), "printed-only primary sha256")
+    ):
+        raise ContractError("the printed-only primary the Make record names is not sealed in Made")
+    scene = _manifest_entry(manifest, record.get("scene_path"))
+    if scene is None or scene.sha256 != record.get("scene_sha256"):
+        raise ContractError("the printed-only primary was checked against another scene than Made seals")
+    return record
 
 
 def _manifest_entry(manifest: ArtifactManifest, path: str):
@@ -1018,6 +1052,39 @@ def _assert_printed_bodies_only(
         )
 
 
+def _sealed_bought_lines(context: Any) -> Optional[list]:
+    """The Bought Parts a Workshop Wish sealed, or None for a context whose
+    Wish seals none (a direct publication, or a run that bills none)."""
+
+    wish_context = getattr(getattr(context, "wish", None), "context", None)
+    if not isinstance(wish_context, Mapping):
+        return None
+    return sealed_bought_lines(
+        wish_context.get("design_contract"), wish_context.get("kit_catalogue")
+    )
+
+
+def _same_extras(requested: Any, observed: Any) -> bool:
+    """Whether Factory's design carries exactly the extras requested."""
+
+    def normal(value: Any):
+        if not isinstance(value, (list, tuple)):
+            return None
+        items = []
+        for item in value:
+            if (
+                not isinstance(item, Mapping)
+                or not isinstance(item.get("name"), str)
+                or type(item.get("price_cents")) is not int
+            ):
+                return None
+            items.append((item["name"], item["price_cents"]))
+        return sorted(items)
+
+    want = normal(requested)
+    return want is not None and want == normal(observed)
+
+
 def _extra_materials(product: Mapping[str, Any]) -> list:
     """The bought hardware Made records, as Factory ``extra_materials``.
 
@@ -1088,16 +1155,27 @@ def _build_model_handoff(
     primary_entry = _manifest_entry(manifest, primary_source)
     if primary_entry is None or primary_entry.sha256 != primary_sha256:
         raise ContractError("Factory primary model is not sealed")
+    # ADR 0095 (2026-11-07): a run that draws its Bought Parts ships its
+    # printed-only primary in place of the review scene, under the scene's
+    # root name, and no other STEP; the scene stays in Made.
+    printed = _printed_primary(context, manifest) if sealed_primary["kind"] == "solid" else None
+    printed_content = None
+    if printed is not None:
+        primary_source = printed["path"]
+        primary_sha256 = printed["sha256"]
+        printed_content = _read_bound_file(root, manifest, primary_source)
     if sealed_primary["kind"] == "solid":
         _assert_printed_bodies_only(
-            _read_bound_file(root, manifest, primary_source), root, manifest
+            printed_content if printed_content is not None
+            else _read_bound_file(root, manifest, primary_source),
+            root, manifest,
         )
 
     # Keep assembled.step at the root when Make provides it. Factory's importer
     # ranks that conventional name above all part solids for the product viewer.
     # Release publishes only this primary assembly STEP, which already holds
     # every part; per-part production STEPs never cross, so it is one mesh.
-    transport_primary = primary_source
+    transport_primary = FACTORY_PRINTED_PRIMARY_PATH if printed is not None else primary_source
     make_output = facts.get("release", {}).get("schema_version") == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION
     conflict_paths = set(FACTORY_HANDOFF_RESERVED_PATHS)
     if preserve_import_root:
@@ -1118,7 +1196,7 @@ def _build_model_handoff(
     make_artifacts = _make_artifact_entries(
         manifest,
         conflict_paths=frozenset(conflict_paths),
-        kept_step=primary_source if sealed_primary["kind"] == "solid" else None,
+        kept_step=primary_source if sealed_primary["kind"] == "solid" and printed is None else None,
     )
 
     primary_model = {
@@ -1134,6 +1212,13 @@ def _build_model_handoff(
             "sha256": hashlib.sha256(FACTORY_IMPORT_ROOT_CONTENT).hexdigest(),
         }
     transport_facts["primary_model"] = primary_model
+    if printed is not None:
+        transport_facts["printed_primary"] = {
+            "source_path": printed["path"],
+            "scene_path": printed["scene_path"],
+            "scene_sha256": printed["scene_sha256"],
+            "removed": list(printed["removed"]),
+        }
     if make_artifacts:
         transport_facts["make_artifacts"] = {
             "schema_version": 1,
@@ -1197,6 +1282,12 @@ def _build_model_handoff(
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(content)
             target.chmod(0o755 if entry.executable else 0o644)
+        if printed_content is not None:
+            target = staging / FACTORY_PRINTED_PRIMARY_PATH
+            if target.exists():
+                raise ContractError("Made contains another file at the printed-only primary's path")
+            target.write_bytes(printed_content)
+            target.chmod(0o644)
         if any(
             staging.joinpath(*PurePosixPath(path).parts).exists()
             for path in FACTORY_HOST_HANDOFF_PATHS
@@ -2751,6 +2842,11 @@ class FactoryReleaseWriter:
             or author.get("id") != intent.request.get("owner_id")
         ):
             raise ReceiptError("Factory readback does not preserve the exact import")
+        requested_extras = intent.request.get("extra_materials")
+        if requested_extras and not _same_extras(requested_extras, observed_design.get("extra_materials")):
+            # The ledger bound these costs; a draft without them would list
+            # the toy without its bought hardware.
+            raise ReceiptError("Factory readback does not carry the requested extra materials")
         details = dict(observed.details)
         details["page_url"] = _factory_product_page_url(observed.slug)
         requested_category = metadata.get("category")
@@ -3616,10 +3712,22 @@ class FactoryReleaseWriter:
             "manual_sha256": handoff["manual_sha256"],
             "metadata": dict(metadata),
         }
-        extra_materials = _extra_materials(context.made.product)
+        # ADR 0095 (2026-11-07): a Workshop run bills every Bought Part its
+        # Wish sealed; a direct publication bills what its Made records.
+        bought_lines = _sealed_bought_lines(context)
+        if bought_lines is not None:
+            extra_materials = _extra_materials(
+                {"bought_hardware": factory_extra_materials(bought_lines)}
+            ) if bought_lines else []
+        else:
+            extra_materials = _extra_materials(context.made.product)
         if extra_materials:
             # Bound into the ledger intent, so a retry sends the same costs.
             request["extra_materials"] = extra_materials
+        if bought_lines:
+            # What each line bills and where its price came from, the board's
+            # estimate and its source among them.
+            request["bought_parts"] = bought_lines
         if make_output:
             request.pop("manual_sha256")
             request.update(publication_mode=MAKE_OUTPUT_PUBLICATION_MODE,

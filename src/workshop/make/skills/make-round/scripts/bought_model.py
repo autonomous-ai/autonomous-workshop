@@ -74,6 +74,11 @@ electrical pictures and text into ``measure/electrical/``:
 - ``assembly.md``: the Electrical Assembly text, written from the contract's
   ``electrical`` fields and the sealed catalogue names alone, which the
   product README carries verbatim;
+- ``printed.step``: the assembly STEP without its ``bought`` group, every
+  printed body exactly as the scene holds it and no bought body (ADR 0095
+  amendment, 2026-11-07). Factory weighs every solid of the one STEP it
+  receives, so Release ships this file as Factory's primary and the review
+  scene, bought bodies and all, stays in Made;
 - ``electrical.json``: what was drawn and every file's hash, which the host
   checks before Make is accepted.
 
@@ -97,6 +102,8 @@ from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent
 RENDER_REVIEW_SCRIPT = SCRIPTS.parents[1] / "cad" / "scripts" / "render_review"
+CADGEN_SRC = SCRIPTS.parents[1] / "cad" / "scripts" / "packages" / "cadgen" / "src"
+PRINTED_STEP = "printed.step"
 
 BODIES_PATH = "measure/bought-bodies.json"
 PLACEMENTS_PATH = "measure/bought-placements.json"
@@ -1327,6 +1334,167 @@ def pictures(document: dict, printed: list, bodies: dict) -> dict:
     return images
 
 
+# ---------------------------------------------------------------------------
+# the printed-only primary
+
+
+def _xcaf():
+    from OCP.IFSelect import IFSelect_RetDone
+    from OCP.STEPCAFControl import STEPCAFControl_Reader, STEPCAFControl_Writer
+    from OCP.STEPControl import STEPControl_AsIs
+    from OCP.TCollection import TCollection_ExtendedString
+    from OCP.TDataStd import TDataStd_Name
+    from OCP.TDF import TDF_Label, TDF_LabelSequence
+    from OCP.TDocStd import TDocStd_Document
+    from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ShapeTool
+
+    return locals()
+
+
+def _read_xcaf(path: Path):
+    x = _xcaf()
+    document = x["TDocStd_Document"](x["TCollection_ExtendedString"]("XmlXCAF"))
+    reader = x["STEPCAFControl_Reader"]()
+    reader.SetNameMode(True)
+    reader.SetColorMode(True)
+    reader.SetLayerMode(True)
+    if reader.ReadFile(str(path)) != x["IFSelect_RetDone"] or not reader.Transfer(document):
+        raise Refused(["%s cannot be read as STEP" % path.name])
+    return document
+
+
+def _label_name(label):
+    x = _xcaf()
+    attribute = x["TDataStd_Name"]()
+    if label.FindAttribute(x["TDataStd_Name"].GetID_s(), attribute):
+        return attribute.Get().ToExtString() or None
+    return None
+
+
+def _walk(document):
+    """``(component label or free label, parent, referred label, name,
+    is_assembly, depth)`` for every node, depth first."""
+
+    x = _xcaf()
+    tool = x["XCAFDoc_DocumentTool"].ShapeTool_s(document.Main())
+    shape_tool = x["XCAFDoc_ShapeTool"]
+    found = []
+
+    def visit(label, parent, depth):
+        referred = label
+        if shape_tool.IsReference_s(label):
+            referred = x["TDF_Label"]()
+            shape_tool.GetReferredShape_s(label, referred)
+        name = _label_name(referred) or _label_name(label) or ""
+        assembly = shape_tool.IsAssembly_s(referred)
+        found.append((label, parent, referred, name, assembly, depth))
+        if assembly:
+            components = x["TDF_LabelSequence"]()
+            shape_tool.GetComponents_s(referred, components, False)
+            for index in range(1, components.Length() + 1):
+                visit(components.Value(index), referred, depth + 1)
+
+    free = x["TDF_LabelSequence"]()
+    tool.GetFreeShapes(free)
+    for index in range(1, free.Length() + 1):
+        visit(free.Value(index), None, 0)
+    return tool, found
+
+
+def _is_bought(name: str) -> bool:
+    return name == GROUP_LABEL or name.startswith(OCCURRENCE_PREFIX)
+
+
+def _write_xcaf(document, path: Path) -> None:
+    if CADGEN_SRC.is_dir() and str(CADGEN_SRC) not in sys.path:
+        sys.path.insert(0, str(CADGEN_SRC))
+    try:
+        from cadgen.step_export import write_xcaf_doc_step_file
+    except ImportError:
+        write_xcaf_doc_step_file = None
+    if write_xcaf_doc_step_file is not None:
+        write_xcaf_doc_step_file(document, path, originating_system="workshop printed-only primary")
+        return
+    x = _xcaf()  # pragma: no cover - the CAD skill always ships cadgen
+    writer = x["STEPCAFControl_Writer"]()
+    writer.SetNameMode(True)
+    writer.SetColorMode(True)
+    if not writer.Transfer(document, x["STEPControl_AsIs"]) or writer.Write(str(path)) != x["IFSelect_RetDone"]:
+        raise Refused(["the printed-only STEP could not be written"])
+
+
+def _leaf_names(nodes, start: int) -> list[str]:
+    """The leaf names of the node at ``start`` and every node below it."""
+
+    depth = nodes[start][5]
+    names = []
+    for node in nodes[start:start + 1] + [n for n in _below(nodes, start, depth)]:
+        if not node[4]:
+            names.append(node[3])
+    return names
+
+
+def _below(nodes, start: int, depth: int):
+    for node in nodes[start + 1:]:
+        if node[5] <= depth:
+            return
+        yield node
+
+
+def write_printed_only(scene: Path, out: Path) -> list[str]:
+    """Write ``scene`` without its bought group and bought leaves to ``out``;
+    return the bought leaf names it removed, in file order."""
+
+    x = _xcaf()
+    shape_tool = x["XCAFDoc_ShapeTool"]
+    document = _read_xcaf(scene)
+    tool, nodes = _walk(document)
+    removed, cut, orphans, kept = [], [], [], 0
+    index = 0
+    while index < len(nodes):
+        label, parent, referred, name, assembly, depth = nodes[index]
+        if _is_bought(name):
+            removed += _leaf_names(nodes, index)
+            cut.append((label, parent, referred))
+            below = list(_below(nodes, index, depth))
+            orphans.extend(node[2] for node in below)
+            index += 1 + len(below)
+            continue
+        if not assembly:
+            kept += 1
+        index += 1
+    if not removed:
+        raise Refused(["the assembly STEP holds no bought body: add bought_group() to the assembly entry"])
+    if not kept:
+        raise Refused(["the assembly STEP holds no printed body"])
+    for label, parent, referred in cut:
+        if parent is None:
+            tool.RemoveShape(label, True)
+            continue
+        tool.RemoveComponent(label)
+        orphans.insert(0, referred)
+    # A part no component refers to any more becomes a free shape, which the
+    # writer would still export: the group first, then what it held.
+    for referred in orphans:
+        if not referred.IsNull() and shape_tool.IsFree_s(referred):
+            tool.RemoveShape(referred, True)
+    tool.UpdateAssemblies()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    _write_xcaf(document, out)
+    _tool, after = _walk(_read_xcaf(out))
+    left = [node[3] for node in after if not node[4]]
+    if any(_is_bought(node[3]) for node in after) or len(left) != kept:
+        raise Refused(["the printed-only STEP does not hold exactly the printed bodies of %s" % scene.name])
+    return removed
+
+
+def _entry_scene(project: Path) -> Path:
+    entries = [p for p in sorted(project.glob("*.step.py")) if not p.name.startswith("part_")]
+    if len(entries) != 1 or not entries[0].with_suffix("").is_file():
+        raise Refused(["final verification wrote no assembly STEP to draw the printed-only primary from"])
+    return entries[0].with_suffix("")
+
+
 def final(project: Path, meshes=None) -> dict:
     """Check the written bodies, then write the pictures and the text."""
 
@@ -1351,10 +1519,17 @@ def final(project: Path, meshes=None) -> dict:
     text = assembly_text(electrical, catalogue)
     (out / "assembly.md").write_text(text, encoding="utf-8")
     files["assembly.md"] = _sha(text.encode("utf-8"))
+    scene = _entry_scene(project)
+    printed_path = out / PRINTED_STEP
+    removed = write_printed_only(scene, printed_path)
     report = {"kind": ELECTRICAL_KIND, "schema_version": SCHEMA_VERSION,
               "bodies_sha256": _sha(path.read_bytes()), "files": files,
               "bodies": [b["name"] for b in document["bodies"] + document["routes"]],
-              "layout": wiring_layout(electrical)}
+              "layout": wiring_layout(electrical),
+              "printed": {"step": "%s/%s" % (ELECTRICAL_DIR, PRINTED_STEP),
+                          "sha256": _sha(printed_path.read_bytes()),
+                          "scene": scene.name, "scene_sha256": _sha(scene.read_bytes()),
+                          "removed": removed}}
     (out / "electrical.json").write_text(json.dumps(report, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return report
 

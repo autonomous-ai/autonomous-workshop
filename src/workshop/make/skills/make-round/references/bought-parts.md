@@ -80,7 +80,10 @@ they get no `parts/` production STEP.
 5. Final verification runs `bought_model.py --final`. It refuses a body list
    that is not the plan of the current inputs, then writes
    `measure/electrical/`: `exploded.png`, `cutaway.png`, `wiring.png`,
-   `assembly.md` and `electrical.json`.
+   `assembly.md`, `electrical.json` and `printed.step`. `printed.step` is
+   the entry's assembly STEP without its `bought` group: what Factory
+   weighs and prints. Do not edit it or write your own; the product root's
+   `assembled.step` stays the full scene with its bodies.
 6. Copy `measure/electrical/assembly.md` into the product `README.md`
    verbatim, as its Electrical assembly section. Write nothing else in the
    README about who assembles, fits or solders the circuit, or about a PCBA:
@@ -96,6 +99,9 @@ that:
 - there is one body per carried part instance, and the board exactly when
   the contract lists a `pcba`, at its `bounds_mm`;
 - every body STEP is the one the list records;
+- `printed.step` was drawn from the sealed `assembled.step`, removes exactly
+  the drawn bodies, and holds every other solid of the scene by volume and
+  area, and nothing bought;
 - the assembly-package's `bought_` occurrences are exactly those bodies, in
   magenta;
 - the pictures and text are the ones `electrical.json` names;

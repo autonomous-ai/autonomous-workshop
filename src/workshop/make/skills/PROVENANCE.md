@@ -1,5 +1,21 @@
 # Shared skill provenance
 
+## Workshop-local: a printed-only primary beside the review scene (2026-11-07, ADR 0095 amendment)
+
+- `make-round`'s `bought_model.py --final` also writes
+  `measure/electrical/printed.step`: the entry's assembly STEP with its
+  `bought` group and every `bought_` leaf removed, re-read and checked to
+  hold no bought name and every printed leaf. `electrical.json` gains
+  `printed` (its sha256, the scene's name and sha256, and the removed
+  names). Release ships that file as Factory's primary. `--final` refuses
+  a scene with no bought body.
+- **Local patch to upstream `cad`.** `verify_project`'s component preflight
+  skips the printed-only STEP when `electrical.json` names it with its
+  current sha256 (`_printed_step`), as it skips the listed bought bodies; an
+  edited copy is a stray again. The `--self-check` fixtures gain two cases.
+  Upstream has no bought group, so a resync must keep this. Only `cad`'s and
+  `make-round`'s locks move; `source_commit` values are unchanged.
+
 ## Workshop-local: a motion plan before the sweep, and a deadline that follows the rounds (2026-11-04)
 
 - **Local patch to upstream `cad`.** `motion_states.presentation_plan` and

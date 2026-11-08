@@ -406,10 +406,92 @@ handoff whose primary STEP holds a `bought_` leaf, a not-printed magenta
 colour, or whose Made lists bodies in `measure/not-printed.json`. It says
 that Make must seal a printed-only primary.
 
-Implemented: the refusal, and tests for it. Not implemented: Make sealing
-a printed-only `assembled.step` beside its review scene. Until that lands,
-a powered toy whose snapshot records a `model` builds and is accepted, and
-then its publication is refused. Bought hardware a Made records as
-`bought_hardware`, with a unit price, crosses as Factory `extra_materials`
-(see docs/PUBLISH_DIRECT.md). A Workshop run writes no such record yet.
+Implemented: the refusal, and tests for it. Bought hardware a Made records
+as `bought_hardware`, with a unit price, crosses as Factory
+`extra_materials` (see docs/PUBLISH_DIRECT.md). The printed-only primary
+and a Workshop run's extras are built by the 2026-11-07 amendment below; a
+run sealed before it still has its publication refused.
+
+## Amendment: the printed-only primary and the sealed extras (2026-11-07)
+
+### Context
+
+The Sunset Slider Night Light and the arcade lamp were built, accepted and
+then refused at publication, as the 2026-11-06 amendment said they would
+be: their `assembled.step` holds the magenta bodies. Their bought hardware
+was also unpriced: the extras a Made records come from a direct
+publication's operator, not from a Workshop Wish. On the arcade lamp, 30
+electrical bodies are in the scene, while its steel pins, springs and glue
+have no body at all, and its factory-assembled board has no catalogue
+entry or price.
+
+### Decision
+
+1. **A printed-only primary, sealed beside the scene.** `bought_model.py
+   --final` writes `measure/electrical/printed.step`: the entry's assembly
+   STEP with its `bought` group cut out. It re-reads the file and refuses
+   one that still names a `bought_` leaf or lost a printed leaf.
+   `electrical.json` records its sha256, the scene it was drawn from, with
+   that scene's sha256, and the names removed. The product root's
+   `assembled.step` stays the full review scene. `verify_project` treats
+   the named file as model output, not a stray component.
+2. **The host checks it on sealed bytes.** Before Make is accepted, beside
+   the other bought checks, the host checks that the recorded scene is the
+   sealed product-root `assembled.step`. The names removed must be exactly
+   the drawn bodies. The printed-only file must hold every remaining solid
+   of the scene, by name, solid count, volume and area at 1e-6 relative, and
+   no bought leaf or magenta body. The result, with both hashes, is sealed
+   as `printed_primary` in the Make gate receipt's `bought_model` check.
+3. **Release ships it, alone.** Release reads the record from the Make
+   receipt. The Factory adapter binds it to the Made manifest and ships the
+   printed-only bytes as the root `assembled.step`. No other STEP crosses:
+   not the scene, not a body. Factory's flat-folder rule
+   (`internal/slicer/tree.go`, `fetch.go splitSolids`) therefore measures
+   exactly that file once, and the shop viewer ranks it first. The
+   handoff's facts record the source path, the scene and its hash, and the
+   names removed. The refusal of the 2026-11-06 amendment still runs on the
+   bytes that cross. The scene stays in Made and in the toy archive.
+4. **The contract lists every Bought Part a buyer gets.** A schema 10
+   contract that is no kit may carry one fenced `bought-parts` block beside
+   its design-contract block. `parts` lists the catalogue entries its
+   electrical section does not name, such as pins, springs and glue, each
+   with a count per toy. `pcba` prices the electrical section's board as
+   `{unit_price_cents, estimate, source}`. The board is priced in the
+   contract, not in a catalogue entry. ADR 0095's board is no catalogue
+   part: its members are, and its outline is the contract's own, so its
+   price is the contract's too. A board is specific to one toy, so a
+   catalogue entry would hold one toy's price under a general id.
+   The block describes no shape. It is no prose section, and the hash an
+   Approved Proof binds (`seed_contract_sha256`) leaves it out, so an owner
+   may price a sealed design without re-sealing its Proof. When a contract
+   has the block, its catalogue snapshot also seals `unit_prices`, the
+   catalogue's price for every snapshot part. The prices sit beside the
+   entries, so the entry bytes Make hashes do not change.
+5. **Release bills what the Wish sealed.** The Factory adapter bills a
+   Workshop run's Wish, not the model's bodies. It sends one line per
+   catalogue entry for every carried electrical part, by count. The
+   buyer's own external source is not billed. It adds every block part and
+   the board, at the sealed unit price × count, as Factory
+   `extra_materials`. A part or a board with no sealed price refuses the
+   publication before any effect, naming every unpriced part; nothing is
+   estimated. The ledger intent binds the extras and records each line's
+   price, source, and the board's `estimate` and `source`. The readback must
+   carry the same extras, or the import is not accepted.
+6. **Unchanged.** A frozen run, a run with no bought models, and a contract
+   without the block keep their bytes and behaviour. A direct publication
+   still bills its Made's `bought_hardware`.
+   `publish_direct` still refuses a Workshop-projected archive; `workshop
+   publish` is the path for a Workshop run. A run that draws bodies but
+   was sealed without the block has no sealed prices, so its publication
+   is refused by name until the Wish is re-sealed with one.
+
+### Not decided here
+
+- The board's members (its LEDs, resistors and receptacle) are billed one
+  by one, and the board is also billed at its own price. If the board's
+  price already includes them, the extras count them twice: about $0.40 on
+  the arcade lamp. The owner decides whether a board price includes its
+  members.
+- The owner's $4.00 board estimate for the arcade lamp (2026-11-07) is an
+  estimate, not a quote.
 
