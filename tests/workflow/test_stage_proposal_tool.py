@@ -986,6 +986,81 @@ class StageProposalToolTest(unittest.TestCase):
         )
         self.assertEqual(proposal.outcome.proposed_transition, "playtest")
 
+    # ADR 0098: a seeded batch's Spark source is the Approved Proof's own
+    # concept, sealed without a build_plan, and seals as Invented schema 4;
+    # any other source still needs its build_plan.
+    def _seeded_spark_make(self, *, batch=True, concept_change=None):
+        product_root, _, _, _ = self.create_product()
+        invented_source = self.invented.to_dict()
+        concept = {key: value for key, value in invented_source["concept"].items() if key != "build_plan"}
+        # The design's reviews name the hash of exactly the sealed fields.
+        review_path = product_root / "cad/project/snap/SIGNATURE-REVIEW.json"
+        review = json.loads(review_path.read_bytes())
+        review["concept_sha256"] = sha256(canonical_json(concept))
+        review_path.write_bytes(canonical_json(review))
+        product = {"schema_version": 1, "kind": "workshop-seed-product", "title": "t", "summary": "s",
+                   "concept": concept, "research": invented_source["research"]}
+        seed_dir = self.run_root / "seed"
+        seed_dir.mkdir(parents=True, exist_ok=True)
+        product_bytes = json.dumps(product).encode()
+        (seed_dir / "SEED-PRODUCT.json").write_bytes(product_bytes)
+        approval_bytes = json.dumps({"manifest": {"SEED-PRODUCT.json": sha256(product_bytes)}}).encode()
+        (seed_dir / "APPROVAL.json").write_bytes(approval_bytes)
+        seed = {"approval_sha256": sha256(approval_bytes), "manifest_sha256": "b" * 64}
+        if batch:
+            seed["batch"] = {"tool_sha256": "d" * 64}
+        (self.run_root / "MAKE-OPTIONS.json").write_text(json.dumps(
+            {"schema_version": 4 if batch else 3, "check_motion": False, "seed": seed}))
+        helper = self.run_root / ".agents/skills/cad/scripts/motion_policy.py"
+        helper.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(REPOSITORY / "src/workshop/make/skills/cad/scripts/motion_policy.py", helper)
+        self.write_stage("make", {
+            **self.match_inputs(), "creative_source_required": True,
+            "assignment_contract_path": "artifacts/make/r0001/assignment.json",
+            "invented_contract_path": "artifacts/make/r0001/invented.json",
+        }, round_index=1)
+        authored = dict(concept)
+        if concept_change:
+            authored.update(concept_change)
+        self.write_json("work/seeded/spark-source.json", {
+            "selected_inventor_id": "eve",
+            "ranking": [item.to_dict() for item in self.assignment.ranking],
+            "concept": authored, "research": invented_source["research"],
+        })
+        return concept
+
+    def _run_seeded_finalizer(self, expected):
+        return self.run_tool(
+            "make", "--source", "work/seeded/spark-source.json",
+            "--product-root", "artifacts/make/r0001/product",
+            "--cad-project-path", "cad/project",
+            "--cad-verification-path", "cad/project/validation/cad-build.json",
+            expected=expected,
+        )
+
+    def test_a_seeded_batch_seals_the_sealed_concept_without_a_build_plan(self):
+        concept = self._seeded_spark_make()
+        self._run_seeded_finalizer(0)
+        invented_document, _ = self.assert_canonical_file("artifacts/make/r0001/invented.json")
+        invented = NativeInvented.from_mapping(invented_document)
+        self.assertEqual(invented.schema_version, 4)
+        self.assertNotIn("build_plan", invented_document["concept"])
+        self.assertEqual(invented_document["concept"], concept)
+        self.assertEqual(invented.concept_sha256, sha256(json.dumps(
+            concept, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()))
+
+    def test_a_seeded_source_that_is_not_the_sealed_concept_is_refused(self):
+        self._seeded_spark_make(concept_change={"title": "Another toy"})
+        rejected = self._run_seeded_finalizer(2)
+        self.assertIn("not the concept the seed sealed", rejected.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
+    def test_a_seed_without_a_frozen_batch_still_needs_a_build_plan(self):
+        self._seeded_spark_make(batch=False)
+        rejected = self._run_seeded_finalizer(2)
+        self.assertIn("build_plan must be an array", rejected.stderr)
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
+
     def test_spark_make_requires_creative_source_before_sealing(self):
         self.create_product()
         self.write_stage(
