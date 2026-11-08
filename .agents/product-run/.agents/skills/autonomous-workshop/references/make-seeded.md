@@ -52,7 +52,13 @@ Without `batch`, follow the order below.
    A worker's round within `proof_diff` tolerance (`seed-diff.json`) locks
    by the approval. One over tolerance waits for its Component Review.
 5. Run the Interfaces and the assembly round, and render `snap/iso.png` and
-   `snap/signature.png` as in any Spark Make.
+   `snap/signature.png` as in any Spark Make. When every Component carries,
+   the assembly round's `visual.status` is `carried` (from
+   `seed-approval`): the approval's review stands for this assembly, so it
+   waits for no look and record no `--record-visual`. A round of the same
+   sources and references as one you already recorded a visual pass on
+   carries that pass the same way. Otherwise the look is `pending` as in
+   any run, and its `detail` says why the approval's review did not carry.
 6. Carry the assembly review instead of the blind review: `make_round
    <cad-project> --carry-assembly-review --concept-sha256 <Invented concept
    hash>`. It writes `snap/SIGNATURE-REVIEW.json` from the sealed
@@ -63,7 +69,8 @@ Without `batch`, follow the order below.
    with its basis. It exits 1 when a Component has none of these (an open
    round, a Component Acceptance): then run the blind review as in make.md.
    A moving toy still needs its motion review, from a critic of its own.
-7. Run `--full` as in any Spark Make.
+7. Run `--full` as in any Spark Make. On a round whose look is carried,
+   run `--full` alone, with no `--record-visual`.
 
 ## A locked Component a check fails
 
