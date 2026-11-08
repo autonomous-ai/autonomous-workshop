@@ -20,7 +20,7 @@ import json
 import tempfile
 import types
 import unittest
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from tests.skills.test_seal_proof import SEED_PRODUCT
 from workshop.errors import ContractError, StateConflict
@@ -115,6 +115,20 @@ class SeededBatchHostTest(unittest.TestCase):
         self.assertFalse(any("--interface seat" in line for line in ran), "only Coupled Interfaces are checked")
         expected = sb.concept_sha256(SEED_PRODUCT["concept"])
         self.assertTrue(any("--concept-sha256 %s" % expected in line for line in ran))
+
+    def test_the_finalizer_gets_run_relative_paths(self):
+        # stage_proposal.py refuses any path argument that is not a safe
+        # relative POSIX path, so an absolute --source stopped a passing
+        # batch at its last step (Sunset Slider, 2026-11-08).
+        _, runner = self._run()
+        finalizer = next(argv for argv in runner.calls if any(item.endswith("stage_proposal.py") for item in argv))
+        for flag in ("--product-root", "--cad-project-path", "--cad-verification-path", "--source"):
+            value = finalizer[finalizer.index(flag) + 1]
+            path = PurePosixPath(value)
+            self.assertFalse(path.is_absolute(), flag)
+            self.assertNotIn("..", path.parts, flag)
+            self.assertEqual(path.as_posix(), value, flag)
+        self.assertEqual(finalizer[finalizer.index("--source") + 1], host.SOURCE)
 
     def test_a_check_failure_records_the_packet_stage_carries(self):
         attempt, runner = self._run({"part_lid.step.py": RunResult(1, "lid: wall 0.5 mm under the 0.8 mm limit")})
