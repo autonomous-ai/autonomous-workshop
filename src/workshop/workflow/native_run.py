@@ -390,6 +390,12 @@ _MAX_CAD_GATE_REJECTIONS = 8
 _MAX_CAD_GATE_DIAGNOSTIC_JSON_BYTES = 8 * 1024
 _MAX_MAKE_PROPOSAL_REJECTION_BYTES = 256 * 1024
 _MAX_MAKE_PROPOSAL_REJECTION_FEEDBACK_CHARS = 2_000
+# Issue #231: a rejection names the host check that refused the proposal,
+# its own message (which names the field and file) and the exception that
+# caused it, each bounded host text, never model or provider prose.
+_MAKE_REJECTION_DIAGNOSTIC_KEYS = frozenset({"check", "message", "cause"})
+_MAX_MAKE_REJECTION_CHECK_CHARS = 160
+_MAX_MAKE_REJECTION_DETAIL_CHARS = 600
 _MAX_MAKE_PROPOSAL_REJECTIONS = 32
 _MAX_PLAYTEST_PROPOSAL_REJECTION_BYTES = 256 * 1024
 _MAX_PLAYTEST_PROPOSAL_REJECTIONS = 32
@@ -566,9 +572,15 @@ class _NativeUsageLimitStop(WorkshopError):
 class _MakeProposalRejected(Exception):
     """A valid Make envelope whose agent-authored candidate failed its contract."""
 
-    def __init__(self, failure_code: str, feedback: str) -> None:
+    def __init__(
+        self,
+        failure_code: str,
+        feedback: str,
+        diagnostic: Optional[Mapping[str, Any]] = None,
+    ) -> None:
         self.failure_code = failure_code
         self.feedback = feedback
+        self.diagnostic = diagnostic
         super().__init__(failure_code)
 
 
@@ -1350,6 +1362,11 @@ def _validate_make_proposal_rejection_entry(
         "feedback",
         "rejection_sha256",
     }
+    if "diagnostic" in record:
+        # Records written before issue #231 carry no diagnostic and stay valid.
+        expected = expected | {"diagnostic"}
+        if not _valid_make_rejection_diagnostic(record["diagnostic"]):
+            raise StateConflict("Make proposal rejection diagnostic is invalid")
     digest_fields = (
         "checkpoint_sha256",
         "subject_sha256",
@@ -1505,15 +1522,80 @@ def _read_make_proposal_rejection(
     return validated
 
 
-def _make_rejection_for_error(error: ContractError) -> _MakeProposalRejected:
+def _bounded_host_text(text: str, limit: int, run_root: Optional[Path]) -> str:
+    """One line of host text: run paths relative, controls spaced, bounded."""
+
+    if run_root is not None:
+        text = text.replace(str(run_root).rstrip("/") + "/", "")
+    text = " ".join(
+        "".join(" " if ord(character) < 32 or ord(character) == 127 else character
+                for character in text).split()
+    )
+    return text if len(text) <= limit else text[: limit - 3] + "..."
+
+
+def _rejection_check_name(error: BaseException) -> str:
+    """The innermost Workshop function the error was raised in, as
+    ``module:function``: the validator that refused the proposal."""
+
+    check = "unknown"
+    traceback_entry = error.__traceback__
+    while traceback_entry is not None:
+        frame = traceback_entry.tb_frame
+        module = frame.f_globals.get("__name__")
+        if isinstance(module, str) and module.split(".", 1)[0] == "workshop":
+            check = "%s:%s" % (module, frame.f_code.co_name)
+        traceback_entry = traceback_entry.tb_next
+    return check
+
+
+def _make_rejection_diagnostic(
+    error: BaseException, run_root: Optional[Path] = None
+) -> dict[str, Any]:
+    cause = error.__cause__ if error.__cause__ is not None else error.__context__
+    return {
+        "check": _bounded_host_text(
+            _rejection_check_name(error), _MAX_MAKE_REJECTION_CHECK_CHARS, None
+        ),
+        "message": _bounded_host_text(
+            str(error) or type(error).__name__, _MAX_MAKE_REJECTION_DETAIL_CHARS, run_root
+        ),
+        "cause": None if cause is None else _bounded_host_text(
+            "%s: %s" % (type(cause).__name__, cause), _MAX_MAKE_REJECTION_DETAIL_CHARS, run_root
+        ),
+    }
+
+
+def _valid_make_rejection_diagnostic(value: Any) -> bool:
+    if not isinstance(value, Mapping) or set(value) != _MAKE_REJECTION_DIAGNOSTIC_KEYS:
+        return False
+    for key, limit in (("check", _MAX_MAKE_REJECTION_CHECK_CHARS),
+                       ("message", _MAX_MAKE_REJECTION_DETAIL_CHARS),
+                       ("cause", _MAX_MAKE_REJECTION_DETAIL_CHARS)):
+        text = value[key]
+        if key == "cause" and text is None:
+            continue
+        if (
+            not isinstance(text, str) or not text or len(text) > limit
+            or any(ord(character) < 32 or ord(character) == 127 for character in text)
+        ):
+            return False
+    return True
+
+
+def _make_rejection_for_error(
+    error: ContractError, run_root: Optional[Path] = None
+) -> _MakeProposalRejected:
     if isinstance(error, StateConflict) or not isinstance(error, ContractError):
         raise StateConflict("Make proposal rejection classification is invalid")
+    diagnostic = _make_rejection_diagnostic(error, run_root)
     message = str(error)
     if message == "Make must use Workshop's accepted inventor selection":
         failure_code = "make-inventor-selection-mismatch"
         return _MakeProposalRejected(
             failure_code=failure_code,
             feedback=_MAKE_PROPOSAL_REJECTION_FEEDBACK[failure_code],
+            diagnostic=diagnostic,
         )
     if message.startswith("Made product title ") or message.startswith(
         "Made product summary "
@@ -1522,17 +1604,20 @@ def _make_rejection_for_error(error: ContractError) -> _MakeProposalRejected:
         return _MakeProposalRejected(
             failure_code=failure_code,
             feedback=_MAKE_PROPOSAL_REJECTION_FEEDBACK[failure_code],
+            diagnostic=diagnostic,
         )
     if isinstance(error, ArtifactError):
         failure_code = "make-artifact-invalid"
         return _MakeProposalRejected(
             failure_code=failure_code,
             feedback=_MAKE_PROPOSAL_REJECTION_FEEDBACK[failure_code],
+            diagnostic=diagnostic,
         )
     failure_code = "make-contract-invalid"
     return _MakeProposalRejected(
         failure_code=failure_code,
         feedback=_MAKE_PROPOSAL_REJECTION_FEEDBACK[failure_code],
+        diagnostic=diagnostic,
     )
 
 
@@ -1619,6 +1704,10 @@ def _persist_make_proposal_rejection(
         "failure_code": rejection.failure_code,
         "feedback": rejection.feedback,
     }
+    if rejection.diagnostic is not None:
+        if not _valid_make_rejection_diagnostic(rejection.diagnostic):
+            raise StateConflict("Make proposal rejection diagnostic is invalid")
+        identity["diagnostic"] = dict(rejection.diagnostic)
     record = {
         **identity,
         "rejection_sha256": _sha256(_canonical_json_bytes(identity)),
@@ -8407,7 +8496,7 @@ def _evaluate_make_stage(
         # This boundary covers only bytes and bindings authored by the Make
         # proposal. StateConflict is a separate hierarchy and the trusted CAD
         # verifier is deliberately invoked below, outside this recovery path.
-        raise _make_rejection_for_error(error) from error
+        raise _make_rejection_for_error(error, run.run_root) from error
     try:
         cad_evidence = None
         if checkpoint.effort != "spark":
@@ -8427,7 +8516,7 @@ def _evaluate_make_stage(
         # finalizer inventories the tree but before the host reopens it. Keep
         # the exactness gate fail-closed, quarantine the stale proposal, and
         # return bounded repair feedback to this same Make checkpoint.
-        raise _make_rejection_for_error(error) from error
+        raise _make_rejection_for_error(error, run.run_root) from error
     # Host renders are enrichment of a Make that already passed: the sealed
     # bytes are rendered by the trusted host so Release and the shop can show
     # the exact product. A missing or failing renderer records "unavailable"

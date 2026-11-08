@@ -19,7 +19,12 @@ exact cited defect, rerun the relevant checks, and verify that the rejected
 product or evidence bytes changed before invoking the finalizer again. A
 completed Goal for the earlier subject is not completion for this new
 rejection-bound attempt. Do not merely regenerate and resubmit the same Made
-contract.
+contract. A Make rejection's `diagnostic` names the host check that refused
+it (`module:function`), its message, which names the field and file, and the
+exception that caused it; start the repair there instead of reading host
+source to rediscover the cause. A host check that could not run (its
+message or `cause` names an `ImportError`, say) is the host's environment,
+which no product change repairs: stop with a need that names it.
 
 `inputs.vault_leads` lists what the design vault records against the sealed
 concept's mechanisms: `risk` entries with the anti-pattern, the recorded

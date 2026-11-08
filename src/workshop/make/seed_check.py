@@ -82,6 +82,13 @@ def verify_made_seed(
         except Exception as exc:  # noqa: BLE001 - an unmeasured Component is over tolerance
             report = {"passed": None, "error": "%s: %s" % (type(exc).__name__, exc)}
         within = report.get("passed") is True
+        # Issue #231: a comparison that could not run (a host environment
+        # that cannot import the CAD kernel, say) is named, not reported as
+        # a shape over tolerance.
+        unmeasured = (
+            "; the host could not compare them (%s)" % str(report["error"])[:300]
+            if report.get("passed") is None and report.get("error") else ""
+        )
         if by_seed and review.get("seed") == "exact" and not exact:
             raise ContractError(
                 "seed: %s's round claims the Approved Proof's Component, but its B-rep "
@@ -90,12 +97,12 @@ def verify_made_seed(
         if exact and not within:
             raise ContractError(
                 "seed: part_%s.step is not within tolerance of the approved STEP, though its "
-                "round reports the approved B-rep" % role
+                "round reports the approved B-rep%s" % (role, unmeasured)
             )
         if by_seed and not within:
             raise ContractError(
                 "seed: %s deviates from the Approved Proof over tolerance and was locked "
-                "without its Component Review" % role
+                "without its Component Review%s" % (role, unmeasured)
             )
         if exact:
             continue
