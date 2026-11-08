@@ -10,7 +10,12 @@ Issue #241: --design needs the Proof's Design Contract file (--contract), which
 gives the Bought Parts model the circuit and catalogue a run would seal, and
 --contract belongs to --design. --geometry-seconds sets the one shared
 geometry allowance, so a batch can give its analyses the layer's whole
-deadline instead of the 600 s default that leaves them UNVERIFIED."""
+deadline instead of the 600 s default that leaves them UNVERIFIED.
+
+Issue #244 follow-up: with motion checked, --design validates the Proof's
+motion presentation as the run's final verification will: evidence made
+against other CAD sources than the Proof seals, or a motion review of other
+evidence, is refused before any tool runs."""
 
 from __future__ import annotations
 
@@ -115,6 +120,42 @@ class DesignFinalVerificationTest(unittest.TestCase):
         runner.design_contract = self.root / "CONTRACT.md"
         self.assertEqual(run_bought_model(runner, self.project), 1)  # the stub's failing tool
         self.assertEqual(self.commands, ["bought_model_stub.py"])
+
+    def _moving_proof(self):
+        import shutil
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+        from tests.make.test_motion_presentation import fixture
+        shutil.rmtree(self.project)
+        self.project.mkdir()
+        fixture(self.project)
+
+    def test_design_refuses_motion_evidence_of_other_sources(self):
+        self._moving_proof()
+        (self.project / "model.step.py").write_text((self.project / "model.step.py").read_text() + "# rebuilt\n")
+        self.assertEqual(self._run("--design", "--contract", "CONTRACT.md", "--check-motion", "true"), 2)
+        self.assertIn("motion presentation is not current: motion animation has stale CAD sources", self.stderr)
+        self.assertEqual(self.commands, [])
+
+    def test_design_refuses_a_motion_review_of_other_evidence(self):
+        self._moving_proof()
+        review = self.project / "snap/MOTION-REVIEW.json"
+        review.write_text(review.read_text().replace('"evidence_sha256":"', '"evidence_sha256":"0', 1)[:-1])
+        self.assertEqual(self._run("--design", "--contract", "CONTRACT.md", "--check-motion", "true"), 2)
+        self.assertIn("motion presentation is not current", self.stderr)
+        self.assertEqual(self.commands, [])
+
+    def test_design_passes_a_current_motion_presentation_to_the_gates(self):
+        self._moving_proof()
+        self.assertEqual(self._run("--design", "--contract", "CONTRACT.md", "--check-motion", "true"), 1)
+        self.assertNotIn("motion presentation", self.stderr)
+        self.assertEqual(self.commands, ["check_layout"])  # the stub's first, failing gate
+
+    def test_design_without_motion_checks_does_not_read_the_presentation(self):
+        self._moving_proof()
+        (self.project / "model.step.py").write_text((self.project / "model.step.py").read_text() + "# rebuilt\n")
+        self.assertEqual(self._run("--design", "--contract", "CONTRACT.md", "--check-motion", "false"), 1)
+        self.assertNotIn("motion presentation", self.stderr)
 
     def test_design_is_final_mode_only(self):
         self.assertEqual(self._run("--design", "--quick"), 2)

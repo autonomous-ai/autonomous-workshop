@@ -135,12 +135,17 @@ def _check_review(project, signature, evidence_raw):
     # An assembly review carried from a seeded run's Approved Proof (Workshop
     # ADR 0096) judged the still shape, never the motion: the motion review
     # keeps its own independent critic and rounds and binds only the concept.
-    carried = signature.get("carried_from") == "seed-approval"
-    for key in ("concept_sha256",) if carried else ("concept_sha256", "reviewer", "review_rounds"):
-        if review[key] != signature[key]:
-            raise ValueError("motion review differs from the signature review")
+    # On the Proof itself (signature None, the seal's --design) no signature
+    # review exists yet; the Proof Critic's motion review is that critic.
+    carried = signature is None or signature.get("carried_from") == "seed-approval"
+    if signature is not None:
+        for key in ("concept_sha256",) if carried else ("concept_sha256", "reviewer", "review_rounds"):
+            if review[key] != signature[key]:
+                raise ValueError("motion review differs from the signature review")
+    elif not isinstance(review["concept_sha256"], str) or len(review["concept_sha256"]) != 64:
+        raise ValueError("invalid independent motion review")
     if carried and (not isinstance(review["reviewer"], str) or not review["reviewer"].strip()
-                    or review["reviewer"] == signature["reviewer"]
+                    or (signature is not None and review["reviewer"] == signature["reviewer"])
                     or type(review["review_rounds"]) is not int or review["review_rounds"] not in (1, 2, 3, 4)):
         raise ValueError("a carried signature review needs the motion reviewed by an independent critic")
     if review["evidence_sha256"] != hashlib.sha256(evidence_raw).hexdigest():
@@ -200,6 +205,12 @@ def describe_states(project):
 
 
 def validate(project, signature_review):
+    """The motion presentation is current: its evidence binds the project's
+    Geometry Sources, motion conditions, states and animation as they stand
+    now, and the independent motion review binds that evidence. With
+    ``signature_review`` None (a Proof's seal, before any run) the review is
+    not compared with a signature review, which does not exist yet; every
+    other check is the run's."""
     if not requires_motion_presentation(project) and not (project / REVIEW).exists():
         return
     raw, evidence = _bound_state_evidence(project)

@@ -566,6 +566,18 @@ seeded build has run with the batch yet.
     to the installed batch tool, as it rebinds every other host tool.
     Without that, no fix to the batch could reach a run that froze it.
     A run that froze no batch never gains one.
+- **The seal checks the motion presentation is current** (issue #244
+  follow-up). `verify_project --design` with motion checked now runs the
+  run's own `motion_presentation.validate` on the Proof before any gate.
+  It refuses, with exit 2, a `snap/MOTION-EVIDENCE.json` made against
+  other CAD sources than the Proof seals, and a motion review of other
+  evidence. Every other review check stays as well: the independent
+  critic, the round count, the affirmations, the state reconstruction and
+  the frames. Only the comparison with a signature review is left out,
+  because design has none. The Sunset Slider's sealed evidence bound an
+  older `bought/__init__.py` than the one its approval seals, so every
+  run failed final verification. Its seal now refuses it; the Proof needs
+  its motion presentation regenerated and re-reviewed, then a re-seal.
 
 **Still a target or a known gap:**
 

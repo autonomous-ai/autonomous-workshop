@@ -3193,6 +3193,17 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
         except (ValueError, OSError, TypeError, KeyError) as exc:
             refuse(str(exc))
+    elif args.design and check_motion and not args.dry_run and not args.quick:
+        # The seal seals snap/MOTION-EVIDENCE.json and the Proof Critic's
+        # motion review, and the run's final verification checks them: a
+        # Proof whose motion evidence or review was made against other CAD
+        # sources than it seals would pass design and fail every run.
+        try:
+            motion_presentation = runpy.run_path(str(SCRIPTS_DIR / "motion_presentation.py"))
+            motion_presentation["validate"](project, None)
+        except (ValueError, OSError, TypeError, KeyError) as exc:
+            refuse("the Proof's motion presentation is not current: %s; regenerate it with "
+                   "motion_presentation.py and have the motion reviewed again" % exc)
 
     if args.print_gates and not printables:
         refuse(
