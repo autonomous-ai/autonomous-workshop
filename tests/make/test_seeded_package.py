@@ -1,7 +1,8 @@
 """ADR 0098: the seeded batch's mechanical project and package steps.
 
 Contract: `prepare` copies the seed's CAD project without the approval, its
-review, checklist, product source or approved STEPs, and installs the run's
+review, checklist, product source, approved STEPs or Bought Part bodies
+(bought/, which the run's bought-model step rebuilds), and installs the run's
 own print-details library; `product` writes product.json (the title from the
 Wish's name line when it has one, else the Proof's), the Spark source from
 the host assignment and the sealed concept, the root assembled copies of the
@@ -60,6 +61,17 @@ class SeededPackageTest(unittest.TestCase):
                                  "snap/iso.png"])
         self.assertEqual((self.project / "features/print_details.py").read_text(), "run library\n")
         self.assertEqual(package.prepare(self.run_root, self.project), [], "a second prepare changes nothing")
+
+    def test_prepare_leaves_the_bought_bodies_to_the_runs_bought_model(self):
+        # The seed carries the Proof's bought/ but not its listing
+        # measure/bought-bodies.json, so copied bodies are stray STEPs the
+        # run plan's project step refuses before bought-model can list them.
+        for name in ("bought/bought_cy1.step", "bought/__init__.py"):
+            (self.run_root / "seed" / name).parent.mkdir(parents=True, exist_ok=True)
+            (self.run_root / "seed" / name).write_text("body\n")
+        package.prepare(self.run_root, self.project)
+        self.assertFalse((self.project / "bought").exists())
+        self.assertTrue((self.project / "part_body.step.py").is_file())
 
     def test_product_writes_what_the_finalizer_reads(self):
         package.prepare(self.run_root, self.project)

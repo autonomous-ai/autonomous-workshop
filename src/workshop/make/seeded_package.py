@@ -44,9 +44,13 @@ from workshop.make.seeded_batch import compose_spark_source
 
 SEED = "seed"
 # Not part of the CAD project: the approval, its review and checklist, the
-# approved STEP copies the host diffs against, and the product source.
+# approved STEP copies the host diffs against, and the product source. Nor
+# are the Bought Part bodies under bought/: they are bought_model.py
+# --build's output, and the seed never carries their listing
+# (measure/bought-bodies.json), so copied they are stray STEPs the project
+# step refuses. The run's own bought-model step builds them again.
 NOT_PROJECT = ("APPROVAL.json", "CRITIC.json", "CONCEPT-CHECKLIST.md", "SEED-PRODUCT.json")
-NOT_PROJECT_DIRS = ("approved",)
+NOT_PROJECT_DIRS = ("approved", "bought")
 PRINT_DETAILS = ".agents/skills/print-details/scripts/print_details.py"
 NAME_LINE = re.compile(r"Name this (?:toy|revision) exactly: (.+?)\.?\s*$")
 ELECTRICAL_ASSEMBLY = "measure/electrical/assembly.md"
