@@ -271,6 +271,10 @@ def run_batch(
     ids = [step.id for step in steps]
     if len(ids) != len(set(ids)):
         raise ValueError("seeded batch step ids must be unique")
+    # Every step runs with the project as its cwd, and on a fresh run the
+    # first step (prepare) is the one that fills it: the directory must
+    # exist before any step can start.
+    project.mkdir(parents=True, exist_ok=True)
     reusable = _previous_passes(previous)
     recorded = []
     failed_layer = None
