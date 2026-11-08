@@ -14,7 +14,10 @@ import importlib.util
 import json
 import math
 import shutil
+import subprocess
+import sys
 import tempfile
+import time
 import types
 import unittest
 from pathlib import Path
@@ -971,17 +974,36 @@ class ContractFileModeTest(unittest.TestCase):
                                                                "kit_catalogue": self.catalogue}}))
         in_run = run / "cad"
         shutil.copytree(design, in_run)  # the same envelope bytes
-        self.assertEqual(tool.main([str(design), "--build", "--contract", str(self.contract_file)]), 0)
-        self.assertEqual(tool.main([str(in_run), "--build"]), 0)
-        def drawn(project):
-            # A STEP export carries its time, so a body's bytes are not compared.
-            document = json.loads((project / "measure/bought-bodies.json").read_text())
-            document.pop("module_sha256")
-            for body in document["bodies"] + document["routes"]:
-                body.pop("step_sha256")
-            return document
+        self.build(design, "--contract", str(self.contract_file))
+        self.build(in_run)
+        for relative in ["measure/bought-bodies.json", "bought/__init__.py",
+                         *("bought/%s" % path.name for path in sorted((design / "bought").glob("*.step")))]:
+            self.assertEqual((design / relative).read_bytes(), (in_run / relative).read_bytes(), relative)
 
-        self.assertEqual(drawn(design), drawn(in_run), "the same inputs, bodies and placements")
+    def test_a_rebuild_from_the_same_inputs_writes_the_same_bytes(self):
+        """Issue #241: bought/__init__.py lists every body's sha256 and is a
+        Geometry Source the print-gate summary binds, so a rebuild that
+        changed bytes (a STEP header's clock) left the Proof's print gates
+        stale on every re-seal."""
+        project = self.project(self.root / "design")
+
+        def written():
+            return {str(path.relative_to(project)): hashlib.sha256(path.read_bytes()).hexdigest()
+                    for path in [project / "measure/bought-bodies.json", *(project / "bought").iterdir()]}
+
+        self.build(project, "--contract", str(self.contract_file))
+        first = written()
+        time.sleep(1.1)  # past the STEP header clock's one-second resolution
+        self.build(project, "--contract", str(self.contract_file))
+        self.assertEqual(written(), first)
+
+    @staticmethod
+    def build(project, *extra):
+        """As a batch step runs it: one process per build."""
+        result = subprocess.run([sys.executable, str(TOOL), str(project), "--build", *extra],
+                                capture_output=True, text=True, timeout=600)
+        if result.returncode != 0:
+            raise AssertionError(result.stdout + result.stderr)
 
     def test_without_a_run_or_a_contract_it_is_refused_and_says_how(self):
         project = self.project(self.root / "design")

@@ -1073,12 +1073,25 @@ def _wire_shape(body):
 
 
 def _export(shape, name: str, path: Path) -> bytes:
+    """Write one body. cadgen's writer gives the STEP header a fixed
+    timestamp, so the same inputs write the same bytes (issue #241): the
+    hashes ``bought/__init__.py`` lists, a Geometry Source the print-gate
+    summary binds, then change only when a body does, and a rebuild leaves a
+    Proof's print gates current."""
+
     from build123d import Color, export_step
 
     shape.label = name
     shape.color = Color(1.0, 0.0, 1.0)
     path.parent.mkdir(parents=True, exist_ok=True)
-    export_step(shape, str(path))
+    if CADGEN_SRC.is_dir() and str(CADGEN_SRC) not in sys.path:
+        sys.path.insert(0, str(CADGEN_SRC))
+    try:
+        from cadgen.step_export import export_build123d_step_file
+    except ImportError:  # pragma: no cover - the CAD skill always ships cadgen
+        export_step(shape, str(path))
+    else:
+        export_build123d_step_file(shape, path)
     return path.read_bytes()
 
 

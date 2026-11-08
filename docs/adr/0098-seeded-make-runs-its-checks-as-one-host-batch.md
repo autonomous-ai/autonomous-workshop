@@ -523,6 +523,14 @@ seeded build has run with the batch yet.
   beside the Proof before the batch, and puts it back if the seal
   refuses, so a failed re-seal leaves the previous `APPROVAL.json` and
   `approved/` whole.
+- **`bought_model --build` is reproducible** (issue #241). It writes each
+  body with cadgen's STEP writer, whose header carries a fixed timestamp,
+  so the same inputs write the same bytes in a fresh process.
+  `bought/__init__.py` lists every body's sha256 and is a Geometry
+  Source the print-gate summary binds. Before this, each build stamped
+  the clock into every body, so the build left the Proof's print gates
+  stale and every re-seal of a powered Proof was refused until they were
+  rerun.
 - **The Make record shows who ran the batch.**
   - The Make gate's `evidence.checks.seeded_batch` holds:
     - `executor: host-batch`;
