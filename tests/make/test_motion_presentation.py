@@ -399,3 +399,51 @@ def test_plan_cli_treats_a_malformed_manifest_as_a_usage_error(tmp_path):
     (tmp_path / "measure").mkdir()
     (tmp_path / "measure/motion.json").write_text("{}")
     assert _plan_cli(tmp_path).returncode == 2
+
+
+# The seal's design mode (signature None): a Proof's motion evidence and its
+# Proof Critic's review must be current for the CAD sources it seals.
+
+def test_design_mode_accepts_a_current_proof(tmp_path):
+    fixture(tmp_path)
+    HELPER["validate"](tmp_path, None)
+
+
+def test_design_mode_refuses_evidence_made_against_other_sources(tmp_path):
+    """The Sunset Slider's sealed evidence bound an older bought/__init__.py
+    than the one the same approval sealed; every run then failed."""
+    fixture(tmp_path)
+    (tmp_path / "model.step.py").write_text((tmp_path / "model.step.py").read_text() + "# rebuilt\n")
+    with pytest.raises(ValueError, match="stale CAD sources"):
+        HELPER["validate"](tmp_path, None)
+
+
+def test_design_mode_refuses_a_review_of_other_evidence(tmp_path):
+    fixture(tmp_path)
+    path = tmp_path / HELPER["REVIEW"]
+    review = json.loads(path.read_bytes()); review["evidence_sha256"] = "0" * 64
+    path.write_bytes(HELPER["canonical"](review))
+    with pytest.raises(ValueError, match="stale evidence"):
+        HELPER["validate"](tmp_path, None)
+
+
+@pytest.mark.parametrize("field,value", [("motion_matches_wish", False), ("simulation_not_physical_test", False),
+                                         ("reviewer", " "), ("review_rounds", 9), ("concept_sha256", "short"),
+                                         ("blind_motion_read", "")])
+def test_design_mode_keeps_every_review_check_but_the_signature_comparison(tmp_path, field, value):
+    fixture(tmp_path)
+    path = tmp_path / HELPER["REVIEW"]
+    review = json.loads(path.read_bytes()); review[field] = value
+    path.write_bytes(HELPER["canonical"](review))
+    with pytest.raises(ValueError):
+        HELPER["validate"](tmp_path, None)
+
+
+def test_design_mode_still_reconciles_the_states(tmp_path):
+    fixture(tmp_path)
+    evidence = json.loads((tmp_path / HELPER["EVIDENCE"]).read_bytes())
+    original, target = evidence["states"][:2]
+    target["sha256"] = original["sha256"]
+    rebind_test_evidence(tmp_path, evidence)
+    with pytest.raises(ValueError, match="differs from the checked poses"):
+        HELPER["validate"](tmp_path, None)
