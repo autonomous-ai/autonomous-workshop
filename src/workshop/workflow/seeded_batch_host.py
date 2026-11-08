@@ -47,6 +47,11 @@ CHECK_LAYERS = tuple(layer for layer in seeded_batch.LAYERS
                      if layer not in ("seed", "product", "parts", "finalize"))
 FINALIZER = ".agents/skills/autonomous-workshop/scripts/stage_proposal.py"
 SOURCE = "work/seeded/spark-source.json"
+# The run's batch record sits beside the source, outside the product tree:
+# the finalizer seals that tree's manifest as the batch's last step, and the
+# gate's rerun of the check layers follows a native finalizer, so a record
+# written into the tree would always differ from the manifest it sealed.
+RUN_RECORD = "work/seeded/seeded-batch.json"
 CAD = "cad"
 AGENT_OUTCOME = "agent-outcome.json"
 
@@ -185,12 +190,17 @@ def environment(run_root: Path) -> dict:
             "PYTHONNOUSERSITE": "1"}
 
 
-def _previous(project: Path) -> Optional[dict]:
-    path = project / seeded_batch.RECORD
-    try:
-        return json.loads(path.read_bytes())
-    except (OSError, ValueError):
-        return None
+def _previous(run_root: Path, project: Path) -> Optional[dict]:
+    """The run's last record, whose unchanged passes are reused; a run that
+    recorded inside its product tree before RUN_RECORD existed is read
+    there."""
+
+    for path in (Path(run_root) / RUN_RECORD, project / seeded_batch.RECORD):
+        try:
+            return json.loads(path.read_bytes())
+        except (OSError, ValueError):
+            continue
+    return None
 
 
 def _stop(record: Mapping[str, Any]) -> SeededBatchHarnessFailure:
@@ -199,7 +209,7 @@ def _stop(record: Mapping[str, Any]) -> SeededBatchHarnessFailure:
     return SeededBatchHarnessFailure(
         "seeded batch harness failure; no model is asked to repair a tool. Fix the harness, refresh the run's "
         "tools if needed, and run workshop resume (passed steps are reused). Failed: %s. Each step's output is "
-        "in %s" % ("; ".join(lines), seeded_batch.RECORD))
+        "in %s" % ("; ".join(lines), RUN_RECORD))
 
 
 def run_for_checkpoint(run_root: Path, host_state_root: Path, checkpoint_sha256: str, round_index: int, *,
@@ -211,16 +221,16 @@ def run_for_checkpoint(run_root: Path, host_state_root: Path, checkpoint_sha256:
 
     check_tool(run_root)
     steps, project = plan(run_root, round_index)
-    record_path = project / seeded_batch.RECORD
+    record_path = Path(run_root) / RUN_RECORD
     record = seeded_batch.run_batch(
         steps, project, runner=runner or seeded_batch.environment_runner(environment(run_root)),
-        previous=_previous(project), issue_nonce=lambda component: issue_seed_nonce(host_state_root, component),
+        previous=_previous(run_root, project), issue_nonce=lambda component: issue_seed_nonce(host_state_root, component),
         record_path=record_path)
     record_sha256 = _sha256(record_path.read_bytes())
     attempt = {"schema_version": 1, "checkpoint_sha256": checkpoint_sha256, "status": record["status"],
                "record_sha256": record_sha256, "executor": "host-batch"}
     if record["status"] == seeded_batch.CHECK_FAILURE:
-        attempt["packet"] = seeded_batch.failure_packet(record, record_sha256)
+        attempt["packet"] = seeded_batch.failure_packet(record, record_sha256, record_path=RUN_RECORD)
     if record["status"] == seeded_batch.PASS:
         # The proposal the finalizer wrote on this pass, which alone the gate
         # need not rerun the batch for.
@@ -246,7 +256,7 @@ GATED_BY_BATCH = "batch-gated"
 
 def _gate_summary(how: str, record_sha256: str) -> dict:
     return {"executor": NONCE_ISSUER, "proposed_by": "host-batch" if how == FINALIZED_BY_BATCH else "native-turn",
-            "gate": how, "record": seeded_batch.RECORD, "record_sha256": record_sha256,
+            "gate": how, "record": RUN_RECORD, "record_sha256": record_sha256,
             "tool_sha256": seeded_batch.module_sha256()}
 
 
@@ -267,17 +277,17 @@ def gate_proposal(run_root: Path, host_state_root: Path, checkpoint_sha256: str,
         return _gate_summary(FINALIZED_BY_BATCH, attempt["record_sha256"])
     check_tool(run_root)
     steps, project = plan(run_root, round_index)
-    record_path = project / seeded_batch.RECORD
+    record_path = Path(run_root) / RUN_RECORD
     record = seeded_batch.run_batch(
         steps, project, runner=runner or seeded_batch.environment_runner(environment(run_root)),
-        previous=_previous(project), issue_nonce=lambda component: issue_seed_nonce(host_state_root, component),
+        previous=_previous(run_root, project), issue_nonce=lambda component: issue_seed_nonce(host_state_root, component),
         record_path=record_path, layers=CHECK_LAYERS)
     if record["status"] == seeded_batch.HARNESS_FAILURE:
         raise _stop(record)
     record_sha256 = _sha256(record_path.read_bytes())
     if record["status"] == seeded_batch.PASS:
         return _gate_summary(GATED_BY_BATCH, record_sha256)
-    packet = seeded_batch.failure_packet(record, record_sha256)
+    packet = seeded_batch.failure_packet(record, record_sha256, record_path=RUN_RECORD)
     _write(_attempt_path(host_state_root, checkpoint_sha256),
            {"schema_version": 1, "checkpoint_sha256": checkpoint_sha256, "status": record["status"],
             "record_sha256": record_sha256, "executor": "host-batch", "packet": packet})

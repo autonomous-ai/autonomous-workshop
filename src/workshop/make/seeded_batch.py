@@ -358,7 +358,7 @@ def write_record(path: Path, record: Mapping[str, Any]) -> str:
     return _sha256_bytes(content)
 
 
-def failure_packet(record: Mapping[str, Any], record_sha256: str) -> dict:
+def failure_packet(record: Mapping[str, Any], record_sha256: str, *, record_path: str = RECORD) -> dict:
     """What ``STAGE.json`` carries as ``seeded_batch_failure`` for a native
     repair turn: every failing step in its own words, bounded; the steps that
     passed, by key, which the turn must not rerun; and the rules that hold."""
@@ -372,7 +372,7 @@ def failure_packet(record: Mapping[str, Any], record_sha256: str) -> dict:
     ][:MAX_PACKET_FAILURES]
     return {
         "schema_version": 1,
-        "record": RECORD,
+        "record": record_path,
         "record_sha256": record_sha256,
         "failed_layer": record.get("failed_layer"),
         "failing": failing,

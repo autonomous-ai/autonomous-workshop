@@ -139,8 +139,12 @@ make-round tools. It is frozen with them, and its sha256 is recorded in
 - **Every failure in a layer is reported at once (owner decision 4).**
   Within a layer, every check runs even when one fails. A layer whose inputs failed does not run.
   The model then sees every independent failure in one report.
-- **What it records.** For each step it records in
-  `measure/seeded-batch.json`:
+- **What it records.** For each step it records in the run's
+  `work/seeded/seeded-batch.json`, beside the Spark source and outside the
+  product tree, because the finalizer seals that tree's manifest as the last
+  step and the gate's rerun follows a native finalizer (the design plan
+  still writes `measure/seeded-batch.json` in the Proof; amended
+  2026-11-08, PR #250):
   - the argv and the sha256 of the tool;
   - the exit code or signal, and the duration;
   - the paths and sha256 of every report the step wrote.

@@ -41,6 +41,15 @@ CONTRACT = {
 }
 
 
+def product_tree(run_root):
+    """Every file of the round's product tree, by path and sha256: what the
+    finalizer seals as the Made manifest."""
+
+    root = run_root / "artifacts/make/r0001/product"
+    return {path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in sorted(root.rglob("*")) if path.is_file()}
+
+
 class FakeRunner:
     """Deterministic steps: a named fragment fails as given; the finalizer
     writes the run's proposal as the real one does."""
@@ -58,6 +67,7 @@ class FakeRunner:
                 return result
         if any(item.endswith("stage_proposal.py") for item in argv):
             (self.run_root / host.AGENT_OUTCOME).write_text('{"proposal": 1}\n')
+            self.sealed_tree = product_tree(self.run_root)
         if "--report" in argv:
             # verify_project writes its record, whose Result is the verdict.
             report = Path(argv[argv.index("--report") + 1])
@@ -130,6 +140,39 @@ class SeededBatchHostTest(unittest.TestCase):
             self.assertEqual(path.as_posix(), value, flag)
         self.assertEqual(finalizer[finalizer.index("--source") + 1], host.SOURCE)
 
+    def test_nothing_writes_the_product_tree_after_the_finalizer_seals_it(self):
+        # The finalizer seals the product tree's manifest as the batch's last
+        # step; a record written into the tree afterwards made the host
+        # refuse every proposal (Sunset Slider, 2026-11-08).
+        _, runner = self._run()
+        self.assertEqual(product_tree(self.run_root), runner.sealed_tree)
+        self.assertTrue((self.run_root / host.RUN_RECORD).is_file())
+        self.assertFalse((self.run_root / "artifacts/make/r0001/product/cad" / sb.RECORD).exists())
+
+    def test_the_gate_on_a_native_proposal_leaves_the_product_tree_alone(self):
+        # A native turn re-finalized the passed bytes: the gate reuses every
+        # unchanged check and writes only its record, outside the tree.
+        self._run()
+        (self.run_root / host.AGENT_OUTCOME).write_text('{"proposal": "repaired"}\n')
+        before = product_tree(self.run_root)
+        runner = FakeRunner(self.run_root)
+        summary = host.gate_proposal(self.run_root, self.host_state, CHECKPOINT, 1, runner=runner)
+        self.assertEqual(runner.calls, [], "every unchanged check is reused")
+        self.assertEqual(summary["record"], host.RUN_RECORD)
+        self.assertEqual(summary["record_sha256"], host._sha256((self.run_root / host.RUN_RECORD).read_bytes()))
+        self.assertEqual(product_tree(self.run_root), before)
+
+    def test_a_record_inside_an_older_product_tree_is_still_reused(self):
+        self._run()
+        legacy = self.run_root / "artifacts/make/r0001/product/cad" / sb.RECORD
+        (self.run_root / host.RUN_RECORD).replace(legacy)
+        host_attempts = self.host_state / host.ATTEMPTS
+        for path in host_attempts.glob("*.json"):
+            path.unlink()
+        _, runner = self._run()
+        record = json.loads((self.run_root / host.RUN_RECORD).read_text())
+        self.assertIn(sb.REUSED, {item["status"] for item in record["steps"]})
+
     def test_a_check_failure_records_the_packet_stage_carries(self):
         attempt, runner = self._run({"part_lid.step.py": RunResult(1, "lid: wall 0.5 mm under the 0.8 mm limit")})
         self.assertEqual(attempt["status"], sb.CHECK_FAILURE)
@@ -154,7 +197,7 @@ class SeededBatchHostTest(unittest.TestCase):
         self.assertIsNone(host.current_failure(self.run_root, self.host_state, CHECKPOINT))
         attempt, runner = self._run()
         self.assertEqual(attempt["status"], sb.PASS)
-        record = json.loads((self.run_root / "artifacts/make/r0001/product/cad" / sb.RECORD).read_text())
+        record = json.loads((self.run_root / host.RUN_RECORD).read_text())
         self.assertIn(sb.REUSED, {item["status"] for item in record["steps"]}, "passed steps are reused")
 
     def test_an_unverified_final_verification_stops_the_run(self):
@@ -247,7 +290,7 @@ class SeededBatchHostTest(unittest.TestCase):
         summary = host.gate_proposal(self.run_root, self.host_state, CHECKPOINT, 1, runner=runner)
         self.assertEqual((summary["executor"], summary["proposed_by"], summary["gate"]),
                          ("host-batch", "native-turn", host.GATED_BY_BATCH))
-        record = self.run_root / "artifacts/make/r0001/product/cad" / sb.RECORD
+        record = self.run_root / host.RUN_RECORD
         self.assertEqual(summary["record_sha256"], host._sha256(record.read_bytes()))
         ran = [" ".join(argv) for argv in runner.calls]
         self.assertTrue(any("part_lid.step.py" in line for line in ran))
