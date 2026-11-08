@@ -2794,8 +2794,8 @@ def parser() -> argparse.ArgumentParser:
     resume.add_argument("product_id", help="saved product id")
     resume.add_argument("--effort", choices=SUPPORTED_REASONING_EFFORTS, default=None,
                         help="explicit reasoning effort for this and later resumes; omitted keeps the saved selection")
-    resume.add_argument("--check-motion", type=_check_motion, default=False, metavar="true|false",
-                        help="enable Make motion checks and animation review on resume, including older runs (default: false)")
+    resume.add_argument("--check-motion", type=_check_motion, default=None, metavar="true|false",
+                        help="turn Make motion checks and animation review on or off from this resume, including older runs; omitted keeps the run's frozen choice (off for a run that froze none)")
     resume.add_argument("--max-tokens", type=_token_budget, default=None, metavar="N",
                         help="explicit total Codex or Claude Code token cap; prior usage remains charged; omitted keeps the saved budget")
     resume.add_argument(

@@ -79,7 +79,9 @@ DEFAULT_DEADLINES = {
     "interfaces": 900.0,
     "power": 900.0,
     "motion": 1800.0,
-    "assembly": 1800.0,
+    # The assembly round runs check_motion and the print gates on the whole
+    # build (issue #244): the motion step's allowance plus the print gates.
+    "assembly": 3600.0,
     "final": 3600.0,
     "product": 300.0,
     "parts": 600.0,
@@ -114,6 +116,9 @@ class Step:
     # Final verification exits 0 with geometry checks it could not finish
     # recorded UNVERIFIED; this report's Result line is the step's verdict.
     verdict_report: Optional[str] = None
+    # An assembly round records an analysis it could not finish as
+    # geometry_status "unverified" in its summary (issue #244).
+    round_summary: bool = False
 
     def __post_init__(self) -> None:
         if self.layer not in LAYERS:
@@ -298,6 +303,7 @@ def run_batch(
                     raise ValueError("step %s needs a seed nonce and no issuer was given" % step.id)
                 argv += ["--seed-nonce", issue_nonce(step.nonce_component)]
             deadline = step.deadline_s if step.deadline_s is not None else DEFAULT_DEADLINES[layer]
+            started = time.time()
             result = runner(argv, project, deadline)
             status, reason = classify(result)
             if status == PASS and step.verdict_report is not None:
@@ -310,6 +316,12 @@ def run_batch(
                         "exit 0 but %s records %s: a geometry check was not finished in its time allowance"
                         % (step.verdict_report, verdict) if verdict == "UNVERIFIED"
                         else "exit 0 but %s records %s" % (step.verdict_report, verdict or "no Result line"))
+            if step.round_summary and status in (PASS, CHECK_FAILURE):
+                unverified = round_unverified(project, since=started)
+                if unverified is not None:
+                    # A timeout is never a pass, and no model repair finishes
+                    # an analysis that ran out of time: the harness's.
+                    status, reason = HARNESS_FAILURE, unverified
             entry.update(status=status, exit_code=result.returncode, duration_s=round(result.duration_s, 3),
                          reports=_report_hashes(project, step.reports), excerpt=_excerpt(result.output))
             if reason is not None:
@@ -464,10 +476,18 @@ def run_plan(inputs: PlanInputs, *, run_root: Path, product_root: Path, source: 
         steps.append(Step("interface:%s" % interface, "interfaces",
                           (py, make_round, project, "--interface", interface),
                           inputs=_source_inputs(inputs.roles), reports=("measure/interface-rounds/%s" % interface,)))
+    # The round's check_motion and print gates share one geometry allowance;
+    # give them the layer's deadline less time to build and report, never
+    # less than the batch's own motion step (issue #244).
+    assembly = inputs.deadlines.get("assembly", DEFAULT_DEADLINES["assembly"])
+    geometry = max(60.0, assembly - FINAL_REPORT_MARGIN_S)
     steps += [
+        # A seeded round carries the approval's assembly review (ADR 0096),
+        # so it needs no Manager look.
         Step("assembly-round", "assembly", (py, make_round, project, "--require-component-passes",
-                                            "--nozzle", "%g" % inputs.nozzle, "--json"),
-             inputs=_source_inputs(inputs.roles)),
+                                            "--nozzle", "%g" % inputs.nozzle, "--geometry-seconds", "%g" % geometry,
+                                            "--json"),
+             inputs=_source_inputs(inputs.roles), round_summary=True),
         Step("carry-assembly-review", "assembly", (py, make_round, project, "--carry-assembly-review",
                                                    "--concept-sha256", inputs.concept_sha256),
              reports=("snap/SIGNATURE-REVIEW.json",)),
@@ -532,6 +552,29 @@ def report_verdict(project: Path, report: str) -> Optional[str]:
     except (OSError, UnicodeError):
         return None
     return match.group(1) if match else None
+
+
+def round_unverified(project: Path, *, since: Optional[float] = None) -> Optional[str]:
+    """Why the assembly round's last summary is unverified, or None. The
+    round's state names its output folder; its summary records an analysis
+    left unfinished as ``geometry_status`` or ``motion_status`` unverified.
+    A summary written before ``since`` is an earlier round's and is ignored."""
+
+    try:
+        state = json.loads((Path(project) / "measure/make-round-state.json").read_text(encoding="utf-8"))
+        path = Path(state["last_out"]) / "summary.json"
+        if since is not None and path.stat().st_mtime < since - 1.0:
+            return None
+        summary = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError, KeyError, TypeError):
+        return None
+    if not isinstance(summary, Mapping):
+        return None
+    if summary.get("motion_status") == "unverified":
+        return "the assembly round's check_motion did not finish in its time allowance (motion unverified)"
+    if summary.get("geometry_status") == "unverified":
+        return "the assembly round left a geometry check unfinished in its time allowance (geometry unverified)"
+    return None
 
 
 def coupled_interface_ids(contract: Mapping[str, Any]) -> tuple:

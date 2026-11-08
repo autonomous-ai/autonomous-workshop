@@ -173,6 +173,48 @@ class BatchEngineTest(unittest.TestCase):
                 else:
                     self.assertIn(reason, step["reason"])
 
+    def _round_summary(self, summary, *, age_s=0.0):
+        import os
+        out = self.project / "measure/rounds/r0001"
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "summary.json").write_text(json.dumps(summary))
+        (self.project / "measure/make-round-state.json").write_text(json.dumps({"round": 1, "last_out": str(out)}))
+        if age_s:
+            stamp = (out / "summary.json").stat().st_mtime - age_s
+            os.utime(out / "summary.json", (stamp, stamp))
+
+    def test_an_assembly_round_that_ran_out_of_time_is_a_harness_failure(self):
+        """Issue #244: the round's check_motion took 773 s against 600 s and
+        reported motion unverified. Whatever its exit, that is never a pass,
+        and no model repair finishes an analysis that ran out of time."""
+        step = Step("assembly-round", "assembly", ("round",), round_summary=True)
+        for summary, code, status, reason in (
+            ({"ok": True, "motion_status": "pass"}, 0, sb.PASS, None),
+            ({"ok": False, "motion_status": "unverified", "geometry_status": "unverified"}, 1, sb.HARNESS_FAILURE,
+             "check_motion did not finish"),
+            ({"ok": True, "motion_status": "unverified", "geometry_status": "unverified"}, 0, sb.HARNESS_FAILURE,
+             "check_motion did not finish"),
+            ({"ok": False, "motion_status": "pass", "geometry_status": "unverified"}, 1, sb.HARNESS_FAILURE,
+             "geometry check unfinished"),
+            ({"ok": False, "motion_status": "fail"}, 1, sb.CHECK_FAILURE, None),
+        ):
+            with self.subTest(summary=summary):
+                self._round_summary(summary)
+                record = sb.run_batch([step], self.project,
+                                      runner=FakeRunner({"round": RunResult(code, "out", duration_s=1.0)}))
+                entry = record["steps"][0]
+                self.assertEqual(entry["status"], status)
+                if reason is not None:
+                    self.assertIn(reason, entry["reason"])
+
+    def test_an_earlier_rounds_summary_does_not_judge_this_one(self):
+        """A round that failed before writing its summary leaves the last
+        one in place; an unverified earlier round is not this round's."""
+        self._round_summary({"ok": False, "motion_status": "unverified"}, age_s=600)
+        record = sb.run_batch([Step("assembly-round", "assembly", ("round",), round_summary=True)], self.project,
+                              runner=FakeRunner({"round": RunResult(1, "refused", duration_s=1.0)}))
+        self.assertEqual(record["steps"][0]["status"], sb.CHECK_FAILURE)
+
     def test_a_step_without_a_verdict_report_is_judged_by_its_exit(self):
         record = sb.run_batch([Step("check-power", "power", ("power",))], self.project, runner=FakeRunner())
         self.assertEqual(record["status"], sb.PASS)
@@ -278,6 +320,21 @@ class PlanTest(unittest.TestCase):
         self.assertEqual(carry.argv[-2:], ("--concept-sha256", "c" * 64))
         shared = next(step for step in steps if step.id == "shared-helpers")
         self.assertNotIn("--contract", shared.argv, "inside a run make_round reads the sealed contract")
+
+    def test_the_assembly_round_has_at_least_the_motion_steps_allowance(self):
+        """Issue #244: the round's check_motion and print gates share one
+        geometry allowance, which make_round otherwise sets at 600 s."""
+        for deadlines in ({}, {"assembly": 2400.0}):
+            with self.subTest(deadlines=deadlines):
+                steps = self._run_plan(deadlines=deadlines)
+                round_step = next(step for step in steps if step.id == "assembly-round")
+                self.assertTrue(round_step.round_summary)
+                geometry = float(round_step.argv[round_step.argv.index("--geometry-seconds") + 1])
+                deadline = round_step.deadline_s or sb.DEFAULT_DEADLINES["assembly"]
+                self.assertEqual(geometry, deadline - sb.FINAL_REPORT_MARGIN_S)
+        default = next(step for step in self._run_plan() if step.id == "assembly-round")
+        geometry = float(default.argv[default.argv.index("--geometry-seconds") + 1])
+        self.assertGreaterEqual(geometry, sb.DEFAULT_DEADLINES["motion"])
 
     def test_a_static_unpowered_toy_has_no_power_or_motion_steps(self):
         steps = self._run_plan(powered=False, moving=False, coupled_interfaces=())

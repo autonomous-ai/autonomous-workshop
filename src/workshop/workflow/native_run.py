@@ -7713,7 +7713,7 @@ def _launcher_call(
     if "MAKE-OPTIONS.json" in checkpoint.input_sha256s:
         prompt += (
             "\n\nHost motion policy: reread the immutable run-root MAKE-OPTIONS.json. "
-            "The operator can reselect check_motion on each resume (default false). "
+            "The operator can reselect check_motion on any resume; a resume that does not name it keeps it. "
             "This choice supersedes older mandatory-motion instructions and any "
             "previous choice remembered in this session. When false, skip motion "
             "sweeps, motion-only manifest authoring, animation generation/reconstruction "
@@ -12383,7 +12383,7 @@ def resume_native_run(
     reasoning_effort: Optional[str] = None,
     turn_seconds: Optional[int] = None,
     turn_untimed: bool = False,
-    check_motion: bool = False,
+    check_motion: Optional[bool] = None,
     reference_cameras: Optional[Mapping[str, Sequence[float]]] = None,
     amended_contract: Optional[str] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
@@ -12404,8 +12404,11 @@ def resume_native_run(
     The ignored keyword preserves source compatibility with the former
     optional-publication API; every resumed Release now requires publication.
 
-    check_motion is reselected on every operator resume and defaults to false.
-    Older unfinished runs adopt the motion-aware tools through host refresh.
+    check_motion is the run's frozen Make option: an omitted check_motion
+    keeps it, and an explicit one rebinds it (issue #244, as ADR 0049 and
+    0064 keep every other frozen option an omitted flag does not name). An
+    older unfinished run without Make options adopts the motion-aware tools
+    through host refresh, with motion checks off unless asked.
 
     Both observers receive only bounded, content-free progress. They are
     optional presentation telemetry and cannot change the run result.
@@ -12413,7 +12416,7 @@ def resume_native_run(
 
     if publish_requested is not None and type(publish_requested) is not bool:
         raise ContractError("legacy publication option must be boolean")
-    if type(check_motion) is not bool:
+    if check_motion is not None and type(check_motion) is not bool:
         raise ContractError("motion check option must be boolean")
     if type(adopt_turn_budget) is not bool:
         raise ContractError("turn-budget adoption option must be boolean")
@@ -12583,10 +12586,18 @@ def _adopt_resume_inspection_tools(paths, run, checkpoint):
 
 
 def _adopt_resume_motion_policy(paths, run, checkpoint, check_motion):
-    """Adopt the operator's choice before continuing an old or current run."""
+    """Adopt the operator's choice before continuing an old or current run.
+
+    None keeps the frozen choice (issue #244); a run that froze none yet
+    migrates with motion checks off, the choice it ran under."""
     _reconcile_motion_resume_outputs(run, checkpoint)
+    has_options = "MAKE-OPTIONS.json" in checkpoint.input_sha256s
+    if check_motion is None:
+        if has_options:
+            return checkpoint
+        check_motion = False
     reason = "workshop resume --check-motion %s" % str(check_motion).lower()
-    if "MAKE-OPTIONS.json" not in checkpoint.input_sha256s:
+    if not has_options:
         # Older private workspaces carry mandatory-motion tools. Upgrade the
         # CAD/round tools and Make finalizer through the existing host refresh
         # boundary, without importing the current lifecycle or token policy.
@@ -12732,6 +12743,9 @@ def refresh_native_run_tools(
         return _refresh_native_run_tools_locked(
             product_id, paths, run, reason=reason,
             domain_skill_roots=product_run_domain_skill_roots(),
+            # The operator's refresh rebinds a frozen seeded batch tool with
+            # the rest (issue #244); a run that froze none gains none.
+            seed_batch_tool_sha256=seeded_batch_module_sha256(),
             dry_run=dry_run,
         )
 
@@ -12739,7 +12753,7 @@ def refresh_native_run_tools(
 def _refresh_native_run_tools_locked(
     product_id, paths, run, *, reason, domain_skill_roots,
     refresh_review=True, motion_skill_root=None, finalizer_skill_root=None,
-    dry_run=False,
+    seed_batch_tool_sha256=None, dry_run=False,
 ):
     """Refresh and rebind the same session while the caller holds its run lock."""
     before = run.snapshot()
@@ -12753,6 +12767,7 @@ def _refresh_native_run_tools_locked(
             motion_skill_root=motion_skill_root,
             finalizer_skill_root=finalizer_skill_root,
             token_budget_skill_root=token_budget_skill_root,
+            seed_batch_tool_sha256=seed_batch_tool_sha256,
             dry_run=True,
         )
         return {
@@ -12773,6 +12788,7 @@ def _refresh_native_run_tools_locked(
         motion_skill_root=motion_skill_root,
         finalizer_skill_root=finalizer_skill_root,
         token_budget_skill_root=token_budget_skill_root,
+        seed_batch_tool_sha256=seed_batch_tool_sha256,
     )
     after = run.snapshot()
     _reconcile_refreshed_token_budget(paths, run, after)

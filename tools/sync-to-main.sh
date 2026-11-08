@@ -6,8 +6,11 @@
 #
 # Only adds and updates (a newer file wins); never deletes.  Private run
 # workspaces (toys/wish-*/, toys/.public-example-*/) stay where they are.
-# Each toy directory that received files gets a .synced-from line naming the
-# source worktree.  Run from any directory inside a worktree; in the main
+# Each directory that received files gets a line naming the source worktree
+# in its top directory's ledger, toys/.synced-from (and toys-spec/, inbox/):
+# a toy directory is an exact-bytes archive `workshop fix` and publication
+# check against its manifest, so no marker is written inside one (issue
+# #244). A marker an older version left inside one is moved to the ledger.  Run from any directory inside a worktree; in the main
 # checkout itself it does nothing.  Also the Claude Code Stop hook, so it
 # always exits 0 and stays quiet unless it copied something.
 set -uo pipefail
@@ -21,6 +24,18 @@ common=$(git -C "$top" rev-parse --path-format=absolute --git-common-dir 2>/dev/
 main=$(dirname "$common")
 [ "$(cd "$top" && pwd -P)" = "$(cd "$main" && pwd -P)" ] && exit 0
 [ -d "$main" ] || exit 0
+
+# Move markers an older version wrote inside a toy directory to the ledger
+# of its top directory, before anything else, even when nothing is copied.
+for d in "${DIRS[@]}"; do
+  [ -d "$main/$d" ] || continue
+  for marker in "$main/$d"/*/.synced-from; do
+    [ -f "$marker" ] && [ ! -L "$marker" ] || continue
+    name=$(basename "$(dirname "$marker")")
+    awk -v dir="$d/$name" 'NF { print $1, $2, dir }' "$marker" >> "$main/$d/.synced-from" \
+      && rm -f "$marker"
+  done
+done
 
 existing=()
 for d in "${DIRS[@]}"; do [ -d "$top/$d" ] && existing+=("$d"); done
@@ -46,7 +61,7 @@ source=$(basename "$top")
 stamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 printf '%s\n' "$changed" | awk -F/ 'NF > 2 {print $1 "/" $2} NF == 2 {print $1}' | sort -u \
   | while read -r dir; do
-      [ -d "$main/$dir" ] && printf '%s %s\n' "$stamp" "$source" >> "$main/$dir/.synced-from"
+      [ -d "$main/$dir" ] && printf '%s %s %s\n' "$stamp" "$source" "$dir" >> "$main/${dir%%/*}/.synced-from"
     done
 echo "sync-to-main: copied $(printf '%s\n' "$changed" | wc -l) file(s) from $source into $main" >&2
 exit 0

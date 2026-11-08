@@ -653,6 +653,35 @@ def run_full(project: Path, out: Path, summary: dict, check_motion=None) -> None
         summary["full"]["status"] = "unverified"
 
 
+def full_on_carried_round(project: Path, check_motion=None) -> dict | None:
+    """``--full`` alone (issue #244): final verification on the last
+    assembly round when that round carried its review instead of waiting for
+    a Manager look, and passed every check. None when the last assembly
+    round's look is not carried, so ``--full`` still needs
+    ``--record-visual``. The final verifier still requires the blind or
+    carried signature review."""
+
+    state_path, _ = state_and_round_root(project, None)
+    if not state_path.is_file():
+        return None
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    out = Path(state["last_out"])
+    summary_path = out / "summary.json"
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    visual = summary.get("visual") or {}
+    if summary.get("scope") != "assembly" or visual.get("status") != "carried":
+        return None
+    stale = packet_error(visual, project)
+    if stale is not None:
+        raise ValueError("the last assembly round no longer shows the current build (%s); run a new assembly round"
+                         % stale)
+    if not summary.get("ok"):
+        raise ValueError("final verification requires a clean assembly round")
+    run_full(project, out, summary, check_motion)
+    summary_path.write_text(json.dumps(summary, sort_keys=True, indent=1) + "\n")
+    return summary
+
+
 def rerun_killed_full(project: Path, out: Path, summary: dict, summary_path: Path, visual: dict,
                       feedback_path, check_motion=None) -> dict:
     """Run the final verifier again on the same assembly round when its last
@@ -1928,6 +1957,8 @@ def render_summary(summary: dict) -> str:
             lines.append("    worker: report this round and wait; only a rerun that leaves the geometry unchanged may run before the review")
         elif visual["status"] == "pending":
             lines.append("    inspect %s then use --record-visual <feedback.json>" % visual.get("sheet", visual["packet"]))
+        elif visual["status"] == "carried" and summary.get("scope") == "assembly":
+            lines.append("    no look needed; final verification is --full alone on this round")
     review = summary.get("review")
     if review is not None:
         carried_from = review.get("carried_from")
@@ -3317,22 +3348,17 @@ def canonical_bytes(value) -> bytes:
                       allow_nan=False).encode("utf-8")
 
 
-def assembly_carry_review(project: Path, approval: dict, approval_sha256: str, critic_content: bytes,
-                          concept_sha256: str) -> dict:
-    """The carried assembly review of a seeded run, or ValueError naming why
-    the blind review must run instead.
+def seed_assembly_carry(project: Path, approval: dict, critic_content: bytes) -> dict:
+    """Whether the sealed critic's assembly verdict carries to this build
+    (ADR 0096), as a dict, or ValueError naming why not: the sealed
+    ``CRITIC.json`` agreed or the owner approved its open lines, every
+    ``part_<id>.step.py`` is an approved Component whose latest round has a
+    carry basis, and when every basis is exact the assembly identity is the
+    approved one. ``--carry-assembly-review`` adds the concept hash, the
+    images and the print gate reports; a seeded assembly round needs only
+    this to accept the carried review in place of a Manager look
+    (issue #244)."""
 
-    It carries only when every ``part_<id>.step.py`` is a Component of the
-    approval and the sealed ``CRITIC.json`` agreed or the owner approved its
-    open lines, and each Component's latest round has a basis
-    (``carry_basis``): the approved B-rep locked as exact, a change within
-    ``proof_diff`` tolerance locked by the approval, or a change an in-run
-    Component Review agreed with. When every basis is exact the assembly
-    identity must be the approved one. It binds the current snap images and
-    print gate reports as the blind review does."""
-
-    if not re.fullmatch(r"[0-9a-f]{64}", concept_sha256 or ""):
-        raise ValueError("--concept-sha256 must be the canonical Invented concept hash")
     critic_record = approval.get("critic") if isinstance(approval.get("critic"), dict) else {}
     critic_sha256 = hashlib.sha256(critic_content).hexdigest()
     if critic_sha256 != critic_record.get("sha256"):
@@ -3381,6 +3407,30 @@ def assembly_carry_review(project: Path, approval: dict, approval_sha256: str, c
     assembly = hashlib.sha256(json.dumps(identities, sort_keys=True).encode()).hexdigest()
     if all(item["basis"] == "exact" for item in bases.values()) and assembly != approval.get("assembly_identity"):
         raise ValueError("the assembly identity is not the approved one")
+    return {"critic": critic, "critic_sha256": critic_sha256, "verdict": verdict, "open_lines": open_lines,
+            "requirements": requirements, "assembly_identity": assembly, "components": bases}
+
+
+def assembly_carry_review(project: Path, approval: dict, approval_sha256: str, critic_content: bytes,
+                          concept_sha256: str) -> dict:
+    """The carried assembly review of a seeded run, or ValueError naming why
+    the blind review must run instead.
+
+    It carries only when every ``part_<id>.step.py`` is a Component of the
+    approval and the sealed ``CRITIC.json`` agreed or the owner approved its
+    open lines, and each Component's latest round has a basis
+    (``carry_basis``): the approved B-rep locked as exact, a change within
+    ``proof_diff`` tolerance locked by the approval, or a change an in-run
+    Component Review agreed with. When every basis is exact the assembly
+    identity must be the approved one. It binds the current snap images and
+    print gate reports as the blind review does."""
+
+    if not re.fullmatch(r"[0-9a-f]{64}", concept_sha256 or ""):
+        raise ValueError("--concept-sha256 must be the canonical Invented concept hash")
+    carried = seed_assembly_carry(project, approval, critic_content)
+    critic, critic_sha256 = carried["critic"], carried["critic_sha256"]
+    verdict, open_lines, requirements = carried["verdict"], carried["open_lines"], carried["requirements"]
+    assembly, bases = carried["assembly_identity"], carried["components"]
     images = {}
     for name in ("iso", "signature"):
         path = project / "snap" / ("%s.png" % name)
@@ -3424,6 +3474,72 @@ def carry_basis(summary: dict, approved: dict) -> str | None:
     if review.get("agrees") is True and not summary.get("accepted") and summary.get("checks_ok", True) is not False:
         return "component-review"
     return None
+
+
+def seed_round_carry(project: Path, approval: dict) -> dict:
+    """``seed_assembly_carry`` on the run's sealed ``seed/CRITIC.json``."""
+
+    root = run_root(project)
+    if root is None:
+        raise ValueError("the project is not inside a run")
+    return seed_assembly_carry(project, approval, (root / "seed" / CRITIC_NAME).read_bytes())
+
+
+def carried_assembly_visual(project: Path, out: Path, visual: dict, approval: dict | None) -> dict:
+    """The visual record of an assembly round that passed its checks
+    (issue #244): ``visual`` itself, pending a Manager look, unless a review
+    already covers this assembly in a seeded run (ADR 0096). That is the
+    sealed critic's verdict when it carries (``seed_assembly_carry``);
+    otherwise a visual pass the Manager recorded on the latest earlier
+    assembly round whose packet bound the same sources and references, as
+    an unchanged B-rep carries its Component Review (ADR 0081), so the host
+    batch's gate rerun of a repaired build finishes. An unseeded run
+    inspects every round afresh (ADR 0075). Either way the round's own
+    packet and renders stay for anyone who looks."""
+
+    if visual.get("status") != "pending" or approval is None:
+        return visual
+    reasons = []
+    try:
+        carried = seed_round_carry(project, approval)
+    except (OSError, ValueError) as exc:
+        reasons.append("the Approved Proof's review does not carry: %s" % exc)
+    else:
+        return {**visual, "status": "carried", "carried_from": SEED_APPROVAL,
+                "critic_sha256": carried["critic_sha256"], "critic_verdict": carried["verdict"],
+                "assembly_identity": carried["assembly_identity"],
+                "components": {role: item["basis"] for role, item in sorted(carried["components"].items())},
+                "detail": "the Approved Proof's assembly review carries: every Component is the approved one "
+                          "or locked by its review, so no Manager look is needed"}
+    try:
+        current = json.loads(Path(visual["packet"]).read_text(encoding="utf-8"))
+    except (OSError, ValueError, KeyError):
+        return visual
+    rounds = project / "measure" / ROUNDS_DIR
+    for earlier in sorted(rounds.glob("r[0-9][0-9][0-9][0-9]"), reverse=True):
+        if earlier.resolve() == out.resolve():
+            continue
+        try:
+            summary = json.loads((earlier / "summary.json").read_text(encoding="utf-8"))
+            feedback_bytes = (earlier / "visual-feedback.json").read_bytes()
+            feedback = json.loads(feedback_bytes)
+            packet = json.loads(Path(summary["visual"]["packet"]).read_text(encoding="utf-8"))
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+        if (summary.get("checks_ok") is not True or (summary.get("visual") or {}).get("status") != "pass"
+                or feedback.get("status") != "pass" or feedback.get("packet_sha256") != summary["visual"].get(
+                    "packet_sha256")):
+            continue
+        if packet.get("sources") == current.get("sources") and packet.get("references") == current.get("references"):
+            return {**visual, "status": "carried", "carried_from": earlier.name,
+                    "visual_feedback_sha256": hashlib.sha256(feedback_bytes).hexdigest(),
+                    "observation": feedback.get("observation"),
+                    "detail": "the visual pass recorded on %s carries: its packet bound these same sources and "
+                              "references" % earlier.name}
+        break  # only the latest recorded look can carry; a changed assembly needs a new one
+    if reasons:
+        visual = {**visual, "detail": "%s. %s" % ("; ".join(reasons), visual["detail"])}
+    return visual
 
 
 def carry_assembly_review(args) -> int:
@@ -6467,8 +6583,19 @@ def make_round(args) -> int:
               "make_round: %s unlocked by assembly r%04d: %s" % (args.component, unlock["assembly_round"], unlock["reason"]))
         return 0
     if args.full:
-        print("make_round: --full requires --record-visual after inspection and independent blind review", file=sys.stderr)
-        return 2
+        if args.component:
+            print("make_round: --full runs on the assembly round, not with --component", file=sys.stderr)
+            return 2
+        try:
+            summary = full_on_carried_round(project, check_motion)
+        except (ValueError, KeyError, OSError, TypeError) as exc:
+            print("make_round: %s" % exc, file=sys.stderr)
+            return 2
+        if summary is None:
+            print("make_round: --full requires --record-visual after inspection and independent blind review", file=sys.stderr)
+            return 2
+        print(json.dumps(summary, sort_keys=True) if args.json else render_summary(summary))
+        return 0 if summary["ok"] else 1
     # ADR 0092 decision 10: after a tree defect no round runs; nothing
     # repairs the tree in the run.
     refusal = tree_refusal(project)
@@ -6555,7 +6682,9 @@ def make_round(args) -> int:
     previous_state = state
     policy = component_policy(state, round_root) if component is not None else None
     try:
-        approval = seed_approval(project) if component is not None else None
+        # A seeded assembly round reads it too: the carried assembly review
+        # stands in for the Manager's look (issue #244).
+        approval = seed_approval(project)
     except ValueError as exc:
         print("make_round: %s" % exc, file=sys.stderr)
         return 2
@@ -6933,6 +7062,8 @@ def make_round(args) -> int:
                                 display_pose=component is not None and display_pose, contract=delivered,
                                 rulings=rulings, extra_env=check_env(entry_role))
         brep_logs["render"] = out / "visual-render.log"
+        if component is None and ok:
+            visual = carried_assembly_visual(project, out, visual, approval)
         if component is not None and display_pose and refs:
             brep_logs["display-pose"] = out / "display-pose-render.log"
     if interference_pending is not None:
@@ -7039,6 +7170,10 @@ def make_round(args) -> int:
             or (interference and interference["verdict"] == "unverified")):
         summary["geometry_status"] = "unverified"
         summary["print_ready_claim"] = False
+    if component is None and visual.get("status") == "carried":
+        # Issue #244: a carried assembly review is the look this round needs;
+        # an analysis it could not finish is never a pass.
+        summary["ok"] = ok and summary.get("geometry_status") != "unverified"
     (out / "summary.json").write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     state = {
         "round": round_index,
@@ -7383,7 +7518,8 @@ def main(argv=None) -> int:
     parser.add_argument("--propose-amendment", metavar="PROPOSAL.json", help="Workshop Manager: propose a Contract Amendment, {rows, changes: [{from, to}], reason[, report]}, for a fresh contract-reviewer to confirm; builds nothing (ADR 0085)")
     parser.add_argument("--record-amendment-review", metavar="REVIEW.json", help="Workshop Manager: record the contract-reviewer's verdict on the pending amendment; it applies only if the reviewer confirmed all three")
     parser.add_argument("--contract-amendments", action="store_true", help="list every Contract Amendment and its review; exit 1 while one awaits review")
-    parser.add_argument("--full", action="store_true", help="with --record-visual: run final verifier after the independent blind review")
+    parser.add_argument("--full", action="store_true", help="with --record-visual: run final verifier after the independent blind review; alone, on an assembly round whose review was carried (issue #244)")
+    parser.add_argument("--geometry-seconds", type=float, metavar="S", help="total seconds for this run's geometry analyses (check_motion, check_thickness, check_overhang, check_mesh, check_envelope), and the most one may take; default WORKSHOP_GEOMETRY_TIMEOUT or 600. An analysis left when it is spent is recorded unverified, never a pass")
     parser.add_argument("--out", help="round directory (default measure/rounds/rNNNN)")
     parser.add_argument("--json", action="store_true", help="print the summary as one JSON line")
     parser.add_argument("--print-gates-only", action="store_true", help="build every part (or --component) and run Make's print gates on it exactly as a round does, with no run, nonce, freeze or round history; writes only under the directory (measure/print-gates/, __cadgen__/); exit 1 on any failure. The Contract Proof runs this")
@@ -7395,6 +7531,14 @@ def main(argv=None) -> int:
     parser.add_argument("--seed-nonce", help=argparse.SUPPRESS)  # issued to the root of a seeded run only
     parser.add_argument("--self-check", action="store_true")
     args = parser.parse_args(argv)
+    if args.geometry_seconds is not None:
+        if not 0 < args.geometry_seconds <= 86400:
+            parser.error("--geometry-seconds must be in (0, 86400]")
+        # run() reads the one shared allowance from here, and the flag is part
+        # of the command a batch reuse binds (issue #244). One analysis may
+        # use all of it, as the batch's own motion step may.
+        os.environ["WORKSHOP_GEOMETRY_TIMEOUT"] = os.environ["WORKSHOP_GEOMETRY_OPERATION_TIMEOUT"] = \
+            "%g" % args.geometry_seconds
     if args.self_check:
         return self_check()
     if not args.project:

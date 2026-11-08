@@ -666,3 +666,36 @@ whatever `APPROVAL.json` the run was seeded from. Design-side amendments in
 `design-a-toy` still go to the owner at Stage 4, and a visible seed
 deviation is still shown to the owner before publication, which needs their
 OK anyway.
+
+## Amendment: the assembly round accepts the carried review (2026-11-08, issue #244)
+
+Decision 2 carries the assembly review from the approval when every
+Component carries. Until now only `--carry-assembly-review` applied that
+rule. The assembly round still waited for a Manager look first, so a
+seeded build with no defect could not finish without a model turn.
+
+- **The round accepts the carry.** In a seeded run, a round whose checks
+  pass applies the same rule as `--carry-assembly-review`: the critic,
+  each Component's carry basis, and the assembly identity when every
+  basis is exact. When the rule holds, the round records
+  `visual.status: carried` from `seed-approval` and exits 0, with no
+  `--record-visual`. When it does not, the look stays `pending` and its
+  `detail` gives the reason.
+- **A recorded look carries to the same build, in a seeded run.** When
+  the seed does not carry, a visual pass the Manager recorded on the
+  latest earlier assembly round carries to a new round whose packet binds
+  the same sources and references, just as an unchanged B-rep carries its
+  Component Review (ADR 0081). The seed may not carry because a repair
+  turn changed the build. This is what lets the host batch's gate rerun
+  finish. A changed build still needs a new look. An unseeded run still
+  inspects every assembly round afresh (ADR 0075).
+- **`--full` alone** runs final verification on a carried round. On a
+  pending round, `--full` still needs `--record-visual`.
+- **Unchanged:**
+  - A carried round whose motion or print analysis ran out of time is
+    not ok.
+  - The signature review is still written only by
+    `--carry-assembly-review` or the blind review.
+  - Final verification and the host's `verify_made_seed` gate are
+    unchanged.
+

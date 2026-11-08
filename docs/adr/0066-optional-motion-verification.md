@@ -12,6 +12,8 @@ false as the default. The host freezes the boolean in read-only root
 `MAKE-OPTIONS.json`, covered by the ordinary immutable-input hash manifest.
 Each operator resume reselects the boolean with default false, including
 previously enabled runs. Explicit domain-tool refresh alone preserves it.
+(Superseded for resume by the 2026-11-08 amendment below: an omitted
+`--check-motion` now keeps the frozen value.)
 
 Make rounds and the final CAD verifier skip motion sweeps when disabled,
 including when a manifest or documented assembly action exists. Coupled-motion
@@ -56,3 +58,21 @@ Deterministic tests cover default skipping with existing manifests, explicit
 opt-in, missing required evidence, failed/inconclusive checks, malformed options,
 immutable-input tampering, resume reselection, legacy migration/interruption,
 session and budget preservation, and plain tool-refresh preservation.
+
+## Amendment 2026-11-08: resume keeps the frozen choice (issue #244)
+
+A plain `workshop resume` of the Sunset Slider fix run switched its frozen
+`check_motion` from true to false, so a Make that needed its motion gate
+lost it without anyone asking. That broke the rule ADR 0049 and ADR 0064
+keep for every other frozen option: a flag the operator omits keeps what
+the run froze.
+
+`resume --check-motion` now defaults to unset. Unset keeps the run's
+`MAKE-OPTIONS.json` byte for byte, with no host correction. An explicit
+`true` or `false` rebinds it as before. An older run without
+`MAKE-OPTIONS.json` still migrates on any resume, with false unless asked,
+which is the policy it ran under. `wish`, `start` and `fix` are unchanged:
+a new run still defaults to false.
+
+Tests cover a plain resume keeping a frozen true, an explicit false
+rebinding it, and an unset resume migrating an older run to false.

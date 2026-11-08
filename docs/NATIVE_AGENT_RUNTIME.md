@@ -57,8 +57,9 @@ verification (including isolated host replay), and proposal finalization read
 that same choice. Disabled motion is recorded as skipped/unverified, never a
 pass. Build, fit, print and still-image signature review are unchanged.
 
-Every operator `resume` reselects the motion option, defaulting to false even
-for previously enabled and older runs. `resume --check-motion true` enables it.
+An operator `resume --check-motion true|false` reselects the motion option;
+a resume that omits it keeps the run's frozen choice (ADR 0066's 2026-11-08
+amendment, issue #244). An older run that froze none migrates with false.
 For an older run without `MAKE-OPTIONS.json`, the host first refreshes its
 carried CAD/Make-round tools and Make finalizer from the installed version,
 rebinds the same native session, then creates the selected root option. The

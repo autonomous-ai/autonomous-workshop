@@ -158,6 +158,45 @@ class SeededBatchHostTest(unittest.TestCase):
         self.assertNotIn("--design", final)
         self.assertNotIn("--contract", final, "in a run WISH.json gives the contract")
 
+    def test_an_assembly_round_that_ran_out_of_time_stops_the_run(self):
+        """Issue #244: the round's check_motion took 773 s against make_round's
+        600 s. The round now gets the layer's allowance, and a round that
+        still runs out records motion unverified: a harness failure, never a
+        pass and never a model turn."""
+        project = self.run_root / "artifacts/make/r0001/product/cad"
+
+        class TimedOut(FakeRunner):
+            def __call__(self, argv, cwd, timeout):
+                if "--require-component-passes" in argv:
+                    self.calls.append(list(argv))
+                    out = project / "measure/rounds/r0001"
+                    out.mkdir(parents=True, exist_ok=True)
+                    (out / "summary.json").write_text(json.dumps(
+                        {"ok": False, "motion_status": "unverified", "geometry_status": "unverified"}))
+                    (project / "measure/make-round-state.json").write_text(json.dumps({"last_out": str(out)}))
+                    return RunResult(1, "motion unverified")
+                return super().__call__(argv, cwd, timeout)
+
+        runner = TimedOut(self.run_root)
+        with self.assertRaises(host.SeededBatchHarnessFailure) as caught:
+            host.run_for_checkpoint(self.run_root, self.host_state, CHECKPOINT, 1, runner=runner)
+        self.assertIn("assembly-round", str(caught.exception))
+        self.assertIn("check_motion did not finish", str(caught.exception))
+        self.assertIsNone(host.current_failure(self.run_root, self.host_state, CHECKPOINT), "no model turn")
+        assembly = next(argv for argv in runner.calls if "--require-component-passes" in argv)
+        self.assertEqual(assembly[assembly.index("--geometry-seconds") + 1], "3300")
+
+    def test_the_operators_refresh_rebinds_the_frozen_batch_tool(self):
+        """Issue #244: a harness fix to the batch reaches a run only through
+        ``workshop resume --refresh-tools``, which rebinds its tool hash."""
+        from unittest import mock
+        with mock.patch.object(native_run, "native_run_paths"), \
+                mock.patch.object(native_run, "_native_run_mutation_lock"), \
+                mock.patch.object(native_run, "_open_budgeted_agent_run"), \
+                mock.patch.object(native_run, "_refresh_native_run_tools_locked", return_value={}) as locked:
+            native_run.refresh_native_run_tools("wish-x", reason="workshop resume --refresh-tools", dry_run=True)
+        self.assertEqual(locked.call_args.kwargs["seed_batch_tool_sha256"], sb.module_sha256())
+
     def test_seed_nonces_are_host_state_the_role_guard_accepts(self):
         self._run()
         table = self.host_state / MAKE_ROUND_GUARD_DIRECTORY / NONCE_TABLE_NAME
