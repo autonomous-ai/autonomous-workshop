@@ -1684,17 +1684,28 @@ def _invent_contract(
 
 
 def _invent_contract_for_assignment(
-    run_root: Path, assignment: Mapping[str, Any], source: Mapping[str, Any]
+    run_root: Path,
+    assignment: Mapping[str, Any],
+    source: Mapping[str, Any],
+    *,
+    sealed_seed_concept: bool = False,
 ) -> dict[str, Any]:
+    """Seal an authored concept as Invented schema 5, which needs its
+    build_plan. ``sealed_seed_concept`` (ADR 0098) seals the Approved Proof's
+    own concept, checked byte for byte against the frozen seed, as schema 4:
+    the host batch builds it without build groups, and its reviews are bound
+    to the hash of exactly the sealed fields."""
+
     assignment = _validate_assignment(assignment)
     authored = _fields(source, {"concept", "research"}, "Invent authored source")
     concept = _mapping(authored["concept"], "Invent concept", nonempty=True)
     research = _mapping(authored["research"], "Invent research", nonempty=True)
     _validate_concept_contract(concept)
-    _validate_build_plan(concept)
+    if not sealed_seed_concept:
+        _validate_build_plan(concept)
     _assert_concept_vault_compatible(run_root, concept)
     identity = {
-        "schema_version": 5,
+        "schema_version": 4 if sealed_seed_concept else 5,
         "kind": INVENTED_KIND,
         "wish_sha256": assignment["wish_sha256"],
         "assignment_sha256": assignment["assignment_sha256"],
@@ -1791,8 +1802,40 @@ def _spark_creative_contracts(
         run_root,
         assignment,
         {"concept": authored["concept"], "research": authored["research"]},
+        sealed_seed_concept=_is_sealed_seed_concept(run_root, authored),
     )
     return assignment, invented
+
+
+def _is_sealed_seed_concept(run_root: Path, authored: Mapping[str, Any]) -> bool:
+    """True only in a run whose frozen seed has an ADR 0098 batch, when the
+    source carries no build_plan and its concept and research are exactly
+    the ones SEED-PRODUCT.json sealed, that file being the one the approval
+    MAKE-OPTIONS.json froze lists. Any other source stays an authored
+    concept that needs its build_plan."""
+
+    concept = authored.get("concept")
+    if not isinstance(concept, Mapping) or "build_plan" in concept:
+        return False
+    seed = _frozen_seed(run_root)
+    if not isinstance(seed, Mapping) or not isinstance(seed.get("batch"), Mapping):
+        return False
+    approval_sha256, _, _ = _hash_regular(run_root, "seed/APPROVAL.json", "Make seed approval")
+    if approval_sha256 != seed.get("approval_sha256"):
+        raise ProposalError("Make seed approval is not the one MAKE-OPTIONS.json froze")
+    approval, _, _ = _read_json(run_root, "seed/APPROVAL.json", "Make seed approval")
+    manifest = approval.get("manifest") if isinstance(approval.get("manifest"), Mapping) else {}
+    product_sha256, _, _ = _hash_regular(run_root, "seed/SEED-PRODUCT.json", "Make seed product")
+    if product_sha256 != manifest.get("SEED-PRODUCT.json"):
+        raise ProposalError("Make seed product is not the one the seed approval sealed")
+    product, _, _ = _read_json(run_root, "seed/SEED-PRODUCT.json", "Make seed product")
+    if canonical_json(dict(concept)) != canonical_json(product.get("concept") or {}) or canonical_json(
+        dict(authored.get("research") or {})
+    ) != canonical_json(product.get("research") or {}):
+        raise ProposalError(
+            "Spark Make source has no build_plan but is not the concept the seed sealed"
+        )
+    return True
 
 
 def _make_group(
