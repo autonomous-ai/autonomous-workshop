@@ -3500,6 +3500,12 @@ def _seed_deviation_history(host_state_root: Path) -> list[dict[str, Any]]:
     return _latest_make_check(host_state_root, "seed_deviations")
 
 
+def _seeded_batch_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """How the current Make's seeded batch ran (ADR 0098)."""
+
+    return _latest_make_check(host_state_root, "seeded_batch")
+
+
 def _bought_model_history(host_state_root: Path) -> list[dict[str, Any]]:
     """The Bought Part model the current Make's acceptance checked (ADR 0095,
     2026-11-01)."""
@@ -8302,11 +8308,12 @@ def _evaluate_make_stage(
             context=context,
         )
     contract_path = "artifacts/make/r%04d/made.json" % checkpoint.round_index
+    seeded_batch_gate = None
     if frozen_seed_batch(run.run_root) is not None:
         # ADR 0098: the batch is the gate on a seeded Make proposal. A
         # failure is a ContractError, rejected through the existing path,
         # with a fresh failure packet for the next STAGE.json.
-        seeded_batch_host.gate_proposal(
+        seeded_batch_gate = seeded_batch_host.gate_proposal(
             run.run_root,
             run.host_state_root,
             checkpoint.checkpoint_sha256,
@@ -8485,6 +8492,10 @@ def _evaluate_make_stage(
             product_checks["seed_deviations"] = verify_made_seed(
                 cad_project, run.run_root, seed_components
             )
+        if seeded_batch_gate is not None:
+            # ADR 0098: the Make record shows that the host ran the batch,
+            # and whether a native turn proposed this Make at all.
+            product_checks["seeded_batch"] = [seeded_batch_gate]
         if blocked_reports:
             product_checks["blocked_reports"] = blocked_reports
         if contract_amendments:
@@ -11642,6 +11653,10 @@ def _native_receipt(
         # Component the accepted Make delivered other than the approved one.
         receipt["seed"] = seed
         receipt["seed_deviations"] = _seed_deviation_history(paths.host_state)
+        seeded_batch_runs = _seeded_batch_history(paths.host_state)
+        if seeded_batch_runs:
+            # ADR 0098: the host ran this seeded Make's checks as one batch.
+            receipt["seeded_batch"] = seeded_batch_runs[0]
     if paths is not None:
         refusals = _boundary_refusals(paths.host_state)
         if refusals:

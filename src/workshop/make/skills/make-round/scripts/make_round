@@ -5619,9 +5619,15 @@ def parse_interference(stdout: str, returncode: int) -> dict:
 def interface_check(project: Path, interface_id: str, args, cad: Path) -> int:
     """``--interface ID``: the coupled motion check of one Coupled Interface on
     its locked Components (ADR 0082). A failure unlocks the yielding
-    Component with the check's evidence as its repair input."""
+    Component with the check's evidence as its repair input.
 
-    interfaces, error = contract_interfaces(project)
+    With ``--contract`` outside a run (the Contract Proof's seal, ADR 0098)
+    the same interference and motion checks run on the Proof's Components
+    as they stand: there is no lock to require, no round state to advance
+    and no worker to unlock, and the reports go to ``design/``."""
+
+    design = getattr(args, "contract", None) is not None
+    interfaces, error = contract_interfaces(project, Path(args.contract).resolve() if design else None)
     if error is not None or interfaces is None:
         print("make_round: %s" % (error or "the sealed Design Contract has no Interfaces section"), file=sys.stderr)
         return 2
@@ -5638,9 +5644,9 @@ def interface_check(project: Path, interface_id: str, args, cad: Path) -> int:
     root = project / "measure" / INTERFACE_ROUNDS_DIR / interface_id
     root.mkdir(parents=True, exist_ok=True)
     state_path = root / STATE_NAME
-    state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.is_file() else {}
-    number = int(state.get("round", 0)) + 1
-    out = root / ("r%04d" % number)
+    state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.is_file() and not design else {}
+    number = 0 if design else int(state.get("round", 0)) + 1
+    out = root / ("design" if design else "r%04d" % number)
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
@@ -5661,7 +5667,8 @@ def interface_check(project: Path, interface_id: str, args, cad: Path) -> int:
     # Issue #101: the Components are built at the same time.
     with ThreadPoolExecutor(max_workers=max(1, min(round_jobs(), len(roles)))) as pool:
         identities = dict(zip(roles, pool.map(lambda role: component_identity(project, role, out, cad), roles)))
-    refusals = [reason for role in roles for reason in [locked_at(project, role, identities[role])] if reason]
+    refusals = [] if design else [reason for role in roles
+                                  for reason in [locked_at(project, role, identities[role])] if reason]
     if refusals:
         shutil.rmtree(out)
         print("make_round: interface %s judges locked geometry only: %s" % (interface_id, "; ".join(refusals)),
@@ -5700,7 +5707,13 @@ def interface_check(project: Path, interface_id: str, args, cad: Path) -> int:
                "interface": interface_id, "kind": COUPLED, "components": components,
                "yielding": interface.get("yielding"), "identities": identities, "interference": interference,
                "insertion": [item.get("id") for item in insertion], "motion": motion,
-               "ok": passed, "unlocked": None, "out": str(out)}
+               "ok": passed, "unlocked": None, "out": str(out), "design": design}
+    if design:
+        # Nothing is locked at design, so nothing unlocks and no round
+        # state is written; the summary is the whole record.
+        (out / "summary.json").write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+        print(json.dumps(summary, sort_keys=True) if args.json else render_interface_summary(summary))
+        return 0 if passed else 1
     if interference["verdict"] == "fail":
         summary["unlocked"] = interface_unlock(project, interface, number, out, interference, "interference")
     elif motion["verdict"] == "fail":
@@ -5751,8 +5764,8 @@ def interface_unlock(project: Path, interface: dict, number: int, out: Path, res
 
 def render_interface_summary(summary: dict) -> str:
     motion = summary["motion"]
-    lines = ["make_round r%04d  %s  %s  %s" % (summary["round"], summary["scope"], summary["project"],
-                                               " + ".join(summary["components"]))]
+    lines = ["make_round %s  %s  %s  %s" % ("design" if summary.get("design") else "r%04d" % summary["round"],
+                                            summary["scope"], summary["project"], " + ".join(summary["components"]))]
     interference = summary.get("interference")
     if interference is not None:
         lines.append("  clash %-4s %s" % (interference["verdict"].upper()[:4], interference["detail"][:160]))
@@ -7374,7 +7387,7 @@ def main(argv=None) -> int:
     parser.add_argument("--out", help="round directory (default measure/rounds/rNNNN)")
     parser.add_argument("--json", action="store_true", help="print the summary as one JSON line")
     parser.add_argument("--print-gates-only", action="store_true", help="build every part (or --component) and run Make's print gates on it exactly as a round does, with no run, nonce, freeze or round history; writes only under the directory (measure/print-gates/, __cadgen__/); exit 1 on any failure. The Contract Proof runs this")
-    parser.add_argument("--contract", metavar="CONTRACT.md", help="with --print-gates-only: the Design Contract whose Assembly Tree says which Parts each kit Component prints (default: the project's installed tree/kit.json); with --shared-helpers outside a run: the Design Contract whose Interfaces the samples must cover (the Contract Proof, ADR 0096)")
+    parser.add_argument("--contract", metavar="CONTRACT.md", help="with --print-gates-only: the Design Contract whose Assembly Tree says which Parts each kit Component prints (default: the project's installed tree/kit.json); with --shared-helpers outside a run: the Design Contract whose Interfaces the samples must cover (the Contract Proof, ADR 0096); with --interface outside a run: the contract whose Coupled Interface the Proof's Components are checked against as they stand (the seal's design batch, ADR 0098)")
     parser.add_argument("--identities-only", action="store_true", help="outside a run, with --contract: print each Component's B-rep identity, STEP sha256, Shared Helpers, contract rows hash and carry key, and the assembly identity, as a component round would compute them; --out also writes the JSON there. seal_proof records an Approved Proof with this (ADR 0096)")
     parser.add_argument("--carry-assembly-review", action="store_true", help="Workshop Manager, seeded run: when every Component is the approved one, write snap/SIGNATURE-REVIEW.json carried from the Approved Proof's CRITIC.json instead of the blind review; exit 1 means run the blind review (ADR 0096)")
     parser.add_argument("--concept-sha256", metavar="HEX", help="with --carry-assembly-review: the canonical Invented concept hash")
@@ -7413,13 +7426,15 @@ def main(argv=None) -> int:
         return carry_assembly_review(args)
     if args.concept_sha256:
         parser.error("--concept-sha256 belongs to --carry-assembly-review")
-    if args.contract and not (args.print_gates_only or args.shared_helpers):
-        parser.error("--contract belongs to --print-gates-only, --shared-helpers or --identities-only")
-    if args.contract and args.shared_helpers and run_root(Path(args.project).resolve()) is not None:
-        # In a run the Interfaces are the sealed contract's, never a file's.
-        print("make_round: --shared-helpers --contract is for a CAD directory outside a Workshop run; "
+    if args.contract and not (args.print_gates_only or args.shared_helpers or args.interface):
+        parser.error("--contract belongs to --print-gates-only, --shared-helpers, --interface or --identities-only")
+    if args.contract and (args.shared_helpers or args.interface) and run_root(Path(args.project).resolve()) is not None:
+        # In a run the Interfaces are the sealed contract's, never a file's,
+        # and an interface check judges locked Components only.
+        print("make_round: %s --contract is for a CAD directory outside a Workshop run; "
               "inside the run at %s the sealed contract gives the Interfaces"
-              % run_root(Path(args.project).resolve()), file=sys.stderr)
+              % ("--shared-helpers" if args.shared_helpers else "--interface",
+                 run_root(Path(args.project).resolve())), file=sys.stderr)
         return 2
     if args.print_gates_only:
         others = [flag for flag, value in (

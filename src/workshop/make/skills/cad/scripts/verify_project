@@ -316,6 +316,15 @@ def _resolve_inside_project(raw: str | None, project: Path, cwd: Path) -> Path |
     return candidate
 
 
+def _run_root_above(project: Path) -> Path | None:
+    """The Workshop run workspace (WISH.json) holding ``project``, or None."""
+
+    for parent in (project, *project.parents):
+        if (parent / "WISH.json").is_file():
+            return parent
+    return None
+
+
 def _required_signature_review(project: Path) -> str:
     """Bind the expensive final workflow to an already completed blind review."""
 
@@ -3025,6 +3034,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--report", help="final pipeline record path inside project (default: measure/verification-pipeline.md)")
     parser.add_argument("--no-report", action="store_true", help="do not persist the final pipeline record")
     parser.add_argument("--dry-run", action="store_true", help="print the sequential plan without changing files")
+    parser.add_argument("--design", action="store_true", help="final mode on a Contract Proof outside a Workshop run (the seal's design batch, ADR 0098): every final gate runs; the blind signature review is the run's and is not required. Refused inside a run")
     parser.add_argument("--verbose", action="store_true", help="print complete successful inspect JSON responses")
     parser.add_argument("--self-check", action="store_true", help="run the built-in validation fixtures and exit")
     return parser
@@ -3123,6 +3133,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--unpowered is only needed with --image-derived")
     if args.report and args.no_report:
         parser.error("--report and --no-report are mutually exclusive")
+    if args.design and args.quick:
+        parser.error("--design is a final-mode option and cannot be combined with --quick")
+    design_run = _run_root_above(project) if args.design else None
+    if design_run is not None:
+        # In a run the integrated gate binds the carried signature review;
+        # --design never lifts that requirement there (ADR 0098).
+        parser.error(f"--design is for a Contract Proof outside a Workshop run; {project} is inside the run "
+                     f"at {design_run}")
     try:
         check_motion = runpy.run_path(str(SCRIPTS_DIR / "motion_policy.py"))["enabled"](args.check_motion)
     except (OSError, ValueError) as exc:
@@ -3145,7 +3163,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "entry, because a documented rebuild command fails on a missing file"
         )
 
-    if not args.quick and not args.dry_run:
+    if not args.quick and not args.dry_run and not args.design:
         try:
             signature_review_sha256 = _required_signature_review(project)
             if check_motion:
@@ -3284,6 +3302,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             "signature review",
             f"schema=6 sha256={signature_review_sha256}",
         )
+    if args.design:
+        runner.note("design", "Contract Proof outside a run; the run's final verification binds the signature review")
     workflow_started = time.perf_counter()
     result = runner.command([sys.executable, SCRIPTS_DIR / "check_layout", _path_arg(project, cwd)])
 

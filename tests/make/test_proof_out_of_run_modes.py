@@ -120,6 +120,62 @@ class SharedHelpersOutsideRunTest(unittest.TestCase):
             self.module.main([str(project), "--component", "part_body.step.py", "--contract", str(contract)])
 
 
+class InterfaceOutsideRunTest(unittest.TestCase):
+    """ADR 0098: the seal's design batch checks every Coupled Interface on
+    the Proof's Components as they stand, with the run's own interference
+    and motion tools; nothing is locked, so nothing unlocks."""
+
+    _fake = make_round_tests.InterfaceTest._fake
+    _run_root = make_round_tests.SealedReferenceTest._run_root
+    setUp = SharedHelpersOutsideRunTest.setUp
+    _proof = SharedHelpersOutsideRunTest._proof
+    _main = SharedHelpersOutsideRunTest._main
+
+    def _coupled(self):
+        project = self.root / "proof"
+        contract = self._proof(project)
+        (project / "part_arm.step.py").write_text("from features.joints import PEG_D\ndef gen_step(): return 'a'\n")
+        return project, contract
+
+    def test_a_coupled_interface_is_checked_without_locks_or_round_state(self):
+        project, contract = self._coupled()
+        self.assertEqual(self._main(project, ["--interface", "gear-mesh", "--contract", str(contract)]), 0,
+                         self.stderr)
+        self.assertEqual([Path(command[1]).name for command, _ in self.calls], ["gen", "gen", "inspect", "check_motion"])
+        root = project / "measure/interface-rounds/gear-mesh"
+        summary = json.loads((root / "design/summary.json").read_text())
+        self.assertTrue(summary["ok"] and summary["design"])
+        self.assertIsNone(summary["unlocked"])
+        self.assertFalse((root / "make-round-state.json").exists(), "a design check advances no round")
+        self.assertFalse((project / "measure/component-rounds").exists())
+        self.assertIn("make_round design  interface:gear-mesh", self.stdout)
+
+    def test_a_clash_fails_the_design_check_and_unlocks_nothing(self):
+        project, contract = self._coupled()
+        self.faults["interfere"] = True
+        self.assertEqual(self._main(project, ["--interface", "gear-mesh", "--contract", str(contract)]), 1)
+        summary = json.loads((project / "measure/interface-rounds/gear-mesh/design/summary.json").read_text())
+        self.assertEqual(summary["interference"]["verdict"], "fail")
+        self.assertIsNone(summary["unlocked"])
+        self.assertFalse((project / "measure/component-rounds").exists())
+
+    def test_only_a_coupled_interface_of_the_file_is_checked(self):
+        project, contract = self._coupled()
+        for interface_id, why in (("arm-swing", "Keep-out Envelope"), ("tail", "no Interface")):
+            self.assertEqual(self._main(project, ["--interface", interface_id, "--contract", str(contract)]), 2)
+            self.assertIn(why, self.stderr)
+
+    def test_interface_contract_inside_a_run_refuses(self):
+        project = self._run_root(str(self.root), {"ref-01-whole.png": b"w"}, context={"design_contract": {
+            "schema_version": 2, "title": "Run", "references": [{"file": "ref-01-whole.png", "shows": "assembly"}],
+            "interfaces": make_round_tests.InterfaceTest.INTERFACES}})
+        contract = self.root / "CONTRACT.md"
+        contract.write_text(_contract_text({"schema_version": 2, "title": "Run"}))
+        self.assertEqual(self._main(project, ["--interface", "gear-mesh", "--contract", str(contract)]), 2)
+        self.assertIn("--interface --contract is for a CAD directory outside a Workshop run", self.stderr)
+        self.assertEqual(self.calls, [])
+
+
 class PrintInstallOutsideRunTest(unittest.TestCase):
     SECTION = {"stocks": [], "pieces": [{"id": "cover", "kind": "flat"}],
                "art": [{"file": "print-01-cover.png", "pieces": ["cover"]}]}

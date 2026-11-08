@@ -157,20 +157,40 @@ class SeededBatchHostTest(unittest.TestCase):
     def test_the_gate_does_not_rerun_the_proposal_a_pass_finalized(self):
         self._run()
         runner = FakeRunner(self.run_root)
-        host.gate_proposal(self.run_root, self.host_state, CHECKPOINT, 1, runner=runner)
+        summary = host.gate_proposal(self.run_root, self.host_state, CHECKPOINT, 1, runner=runner)
         self.assertEqual(runner.calls, [])
+        # The Make record shows the host ran the batch and no native turn
+        # proposed this Make (ADR 0098).
+        attempt = host.read_attempt(self.host_state, CHECKPOINT)
+        self.assertEqual((summary["executor"], summary["proposed_by"], summary["gate"]),
+                         ("host-batch", "host-batch", host.FINALIZED_BY_BATCH))
+        self.assertEqual(summary["record_sha256"], attempt["record_sha256"])
 
     def test_the_gate_reruns_the_check_layers_on_a_native_proposal(self):
         self._run({"part_lid.step.py": RunResult(1, "lid fails")})
         (self.run_root / host.AGENT_OUTCOME).write_text('{"proposal": "repaired"}\n')
         runner = FakeRunner(self.run_root)
-        host.gate_proposal(self.run_root, self.host_state, CHECKPOINT, 1, runner=runner)
+        summary = host.gate_proposal(self.run_root, self.host_state, CHECKPOINT, 1, runner=runner)
+        self.assertEqual((summary["executor"], summary["proposed_by"], summary["gate"]),
+                         ("host-batch", "native-turn", host.GATED_BY_BATCH))
+        record = self.run_root / "artifacts/make/r0001/product/cad" / sb.RECORD
+        self.assertEqual(summary["record_sha256"], host._sha256(record.read_bytes()))
         ran = [" ".join(argv) for argv in runner.calls]
         self.assertTrue(any("part_lid.step.py" in line for line in ran))
         self.assertFalse(any("part_body.step.py" in line for line in ran), "an unchanged pass is reused")
         for absent in ("seeded_package", "stage_proposal.py"):
             self.assertFalse(any(absent in line for line in ran), "the gate never re-copies the seed or "
                                                                    "re-finalizes: %s" % absent)
+
+    def test_the_make_receipt_reads_how_the_batch_ran(self):
+        """The accepted Make's gate seals the summary among its checks; the
+        receipt reads it back, and a Make without one shows none."""
+        gates = self.host_state / "gates"
+        gates.mkdir(parents=True, exist_ok=True)
+        self.assertEqual(native_run._seeded_batch_history(self.host_state), [])
+        summary = {"executor": "host-batch", "gate": host.GATED_BY_BATCH, "record_sha256": "a" * 64}
+        (gates / "0001-make.json").write_text(json.dumps({"evidence": {"checks": {"seeded_batch": [summary]}}}))
+        self.assertEqual(native_run._seeded_batch_history(self.host_state), [summary])
 
     def test_a_gate_failure_rejects_with_a_fresh_packet(self):
         self._run({"part_lid.step.py": RunResult(1, "lid fails")})

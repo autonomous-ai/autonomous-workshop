@@ -361,11 +361,14 @@ class SealCheckInputsTest(unittest.TestCase):
         self.assertIn("measure/power.json", approval["check_inputs"])
         ran = [" ".join(argv) for argv in self.batch_calls]
         for tool in ("check_motion", "check_power", "check_mount", "bought_model.py", "--build",
-                     "--print-gates-only", "--shared-helpers"):
+                     "--print-gates-only", "--shared-helpers", "--design --strict-fit",
+                     "seeded_package check"):
             with self.subTest(tool=tool):
                 self.assertTrue(any(tool in line for line in ran), ran)
-        self.assertFalse(any("--component" in line or "--interface" in line or "stage_proposal" in line
+        self.assertFalse(any("--component" in line or "stage_proposal" in line or "--seed-nonce" in line
                              for line in ran), "the design plan needs no run state")
+        # Every Interface check on the Proof reads the contract file.
+        self.assertTrue(all("--contract" in line for line in ran if "--interface" in line))
 
     def test_seal_refuses_a_malformed_seed_product(self):
         product = dict(SEED_PRODUCT, summary=" ")
