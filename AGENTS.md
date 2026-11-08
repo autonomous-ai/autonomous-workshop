@@ -380,6 +380,7 @@ and area. The Factory adapter ships it as the only STEP, the root
 Proof seed hash leaves out, lists pins, springs and glue and prices the
 `pcba`. Release bills every sealed Bought Part as Factory `extra_materials`
 at the sealed unit price, refuses an unpriced one, and reads the extras back.
+A priced board includes the parts `pcba.parts` mounts, which are not billed again.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

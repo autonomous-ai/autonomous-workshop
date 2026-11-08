@@ -8,7 +8,9 @@ never from the model's bodies: the contract's electrical section (every
 carried part, by count), its optional Bought Parts block (pins, springs,
 glue and anything else the circuit does not name), and the
 factory-assembled board, priced by that block. The prices are the sealed
-catalogue snapshot's ``unit_prices``; the board's is the contract's.
+catalogue snapshot's ``unit_prices``; the board's is the contract's. A
+priced board includes the parts mounted on it (``electrical.pcba.parts``),
+so those are not billed again; only the board is.
 
 A part without a price refuses the publication; nothing is estimated here.
 A run whose Wish sealed no Bought Parts block and draws no bought models
@@ -48,8 +50,18 @@ def sealed_bought_lines(
     prices = catalogue.get("unit_prices") if isinstance(catalogue.get("unit_prices"), Mapping) else {}
     counts: "OrderedDict[str, int]" = OrderedDict()
     electrical = contract.get("electrical") if isinstance(contract.get("electrical"), Mapping) else None
+    board = (block or {}).get("pcba") if isinstance((block or {}).get("pcba"), Mapping) else {}
+    board_price = board.get("unit_price_cents")
+    board_priced = type(board_price) is int and board_price > 0
+    # A priced board arrives assembled, its parts included (owner,
+    # 2026-11-08): the parts the electrical section places on it, by their
+    # part ids in pcba.parts, are not billed again. An unpriced board bills
+    # them as before and refuses for its own missing price.
+    on_board = set(pcba_parts(electrical)) if electrical is not None and board_priced else set()
     for item in (electrical or {}).get("parts") or ():
         if not isinstance(item, Mapping) or item.get("external") is True or "bought" not in item:
+            continue
+        if item.get("id") in on_board:
             continue
         counts[item["bought"]] = counts.get(item["bought"], 0) + int(item.get("count", 1))
     for item in (block or {}).get("parts") or ():
@@ -66,18 +78,18 @@ def sealed_bought_lines(
             "price_source": "catalogue",
         })
     if electrical is not None and pcba_parts(electrical):
-        board = (block or {}).get("pcba") if isinstance((block or {}).get("pcba"), Mapping) else {}
-        price = board.get("unit_price_cents")
         line = {
             "part": PCBA_PART,
             "name": PCBA_NAME,
             "count": 1,
-            "unit_price_cents": price if type(price) is int and price > 0 else None,
+            "unit_price_cents": board_price if board_priced else None,
             "price_source": "contract",
         }
         if board:
             line["estimate"] = board.get("estimate") is True
             line["source"] = board.get("source")
+        if on_board:
+            line["includes"] = sorted(on_board)
         lines.append(line)
     return lines
 

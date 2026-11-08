@@ -35,8 +35,7 @@ class SealedBoughtLinesTest(unittest.TestCase):
     def test_every_listed_part_is_billed_including_those_with_no_body(self):
         lines = sealed_bought_lines(CONTRACT, CATALOGUE)
         self.assertEqual([(line["part"], line["count"], line["unit_price_cents"]) for line in lines], [
-            ("usb-c-receptacle-power", 1, 6),
-            ("led-2835-warm-2200k", 3, 2),
+            ("led-2835-warm-2200k", 2, 2),
             ("steel-pin-1.5x29.5", 10, 6),
             ("spring-compression-6x0.5x20-stainless", 4, 12),
             ("glue", 1, 32),
@@ -45,11 +44,30 @@ class SealedBoughtLinesTest(unittest.TestCase):
         self.assertNotIn("usb", [line["part"] for line in lines], "the buyer's charger is not bought")
         self.assertEqual(lines[-1]["price_source"], "contract")
         self.assertEqual((lines[-1]["estimate"], lines[-1]["source"]), (True, "owner, 2026-11-07"))
-        self.assertEqual(lines[0]["name"], "USB-C receptacle")
-        self.assertEqual(lines[1]["name"], "led-2835-warm-2200k", "an entry without a name bills its id")
+        self.assertEqual(lines[0]["name"], "led-2835-warm-2200k", "an entry without a name bills its id")
         billed = factory_extra_materials(lines)
         self.assertEqual(sum(line["unit_price_cents"] * line["count"] for line in billed),
-                         6 + 6 + 60 + 48 + 32 + 400)
+                         4 + 60 + 48 + 32 + 400)
+
+    def test_a_priced_board_includes_the_parts_the_section_places_on_it(self):
+        # Owner, 2026-11-08: usb-c and led-1 are in pcba.parts, so the board's
+        # price covers them. led-2 shares led-1's catalogue entry but is off
+        # the board, so it alone is billed under that entry.
+        lines = sealed_bought_lines(CONTRACT, CATALOGUE)
+        parts = {line["part"]: line for line in lines}
+        self.assertNotIn("usb-c-receptacle-power", parts)
+        self.assertEqual(parts["led-2835-warm-2200k"]["count"], 2)
+        self.assertEqual(parts["pcba"]["includes"], ["led-1", "usb-c"])
+
+    def test_an_unpriced_board_bills_its_parts_and_refuses_for_itself(self):
+        contract = copy.deepcopy(CONTRACT)
+        del contract["bought_parts"]["pcba"]
+        lines = sealed_bought_lines(contract, CATALOGUE)
+        self.assertEqual([(line["part"], line["count"]) for line in lines][:2],
+                         [("usb-c-receptacle-power", 1), ("led-2835-warm-2200k", 3)])
+        self.assertNotIn("includes", lines[-1])
+        with self.assertRaisesRegex(ContractError, "no sealed price.*: pcba"):
+            factory_extra_materials(lines)
 
     def test_a_part_or_board_without_a_sealed_price_is_refused_by_name(self):
         contract = copy.deepcopy(CONTRACT)
