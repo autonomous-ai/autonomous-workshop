@@ -158,8 +158,12 @@ Wait for the owner's explicit OK before any of these:
   OK per toy for its unattended `build-a-toy` loop covers every launch in
   that loop;
 - a publish, or any change to a live listing, including a rename;
-- merging a PR. Harness fixes, including those made during a build loop, go
-  through a PR; never push to `main` and never force-push.
+
+Harness fixes, including those made during a build loop, go through a PR;
+never push to `main` and never force-push. **Merge a PR without asking**
+(owner, 2026-11-08) once it adds no test failure that `main` does not already
+have and weakens no production gate; report what was merged afterwards. Why:
+waiting for an OK on every PR kept stalling builds.
 
 ## Repository and reports
 
