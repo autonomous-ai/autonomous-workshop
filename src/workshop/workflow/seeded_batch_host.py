@@ -164,7 +164,7 @@ def plan(run_root: Path, round_index: int, *, python: str = sys.executable) -> t
     finalizer = (python, str(run_root / FINALIZER), "--run-root", str(run_root), "make",
                  "--product-root", product_root.relative_to(run_root).as_posix(),
                  "--cad-project-path", CAD, "--cad-verification-path", "%s/measure/verification-pipeline.md" % CAD,
-                 "--source", str(source))
+                 "--source", SOURCE)
     inputs = seeded_batch.PlanInputs(
         project=project, python=python, skills_root=run_root / ".agents/skills",
         contract_path=run_root / "WISH.json", roles=contract_geometry_ids(contract),
