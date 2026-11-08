@@ -681,12 +681,14 @@ seeded build with no defect could not finish without a model turn.
   `visual.status: carried` from `seed-approval` and exits 0, with no
   `--record-visual`. When it does not, the look stays `pending` and its
   `detail` gives the reason.
-- **A recorded look carries to the same build.** A visual pass the Manager
-  recorded on the latest earlier assembly round carries to a new round
-  whose packet binds the same sources and references, just as an
-  unchanged B-rep carries its Component Review (ADR 0081). This is what
-  lets the host gate's rerun finish. A changed build still needs a new
-  look.
+- **A recorded look carries to the same build, in a seeded run.** When
+  the seed does not carry, a visual pass the Manager recorded on the
+  latest earlier assembly round carries to a new round whose packet binds
+  the same sources and references, just as an unchanged B-rep carries its
+  Component Review (ADR 0081). The seed may not carry because a repair
+  turn changed the build. This is what lets the host batch's gate rerun
+  finish. A changed build still needs a new look. An unseeded run still
+  inspects every assembly round afresh (ADR 0075).
 - **`--full` alone** runs final verification on a carried round. On a
   pending round, `--full` still needs `--record-visual`.
 - **Unchanged:**

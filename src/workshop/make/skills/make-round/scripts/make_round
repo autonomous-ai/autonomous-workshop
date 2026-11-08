@@ -3476,32 +3476,41 @@ def carry_basis(summary: dict, approved: dict) -> str | None:
     return None
 
 
+def seed_round_carry(project: Path, approval: dict) -> dict:
+    """``seed_assembly_carry`` on the run's sealed ``seed/CRITIC.json``."""
+
+    root = run_root(project)
+    if root is None:
+        raise ValueError("the project is not inside a run")
+    return seed_assembly_carry(project, approval, (root / "seed" / CRITIC_NAME).read_bytes())
+
+
 def carried_assembly_visual(project: Path, out: Path, visual: dict, approval: dict | None) -> dict:
     """The visual record of an assembly round that passed its checks
     (issue #244): ``visual`` itself, pending a Manager look, unless a review
-    already covers this assembly. In a seeded run that is the sealed
-    critic's verdict when it carries (``seed_assembly_carry``, ADR 0096);
-    otherwise a visual pass the Manager recorded on an earlier assembly
-    round whose packet bound the same sources and references, as an
-    unchanged B-rep carries its Component Review (ADR 0081). Either way the
-    round's own packet and renders stay for anyone who looks."""
+    already covers this assembly in a seeded run (ADR 0096). That is the
+    sealed critic's verdict when it carries (``seed_assembly_carry``);
+    otherwise a visual pass the Manager recorded on the latest earlier
+    assembly round whose packet bound the same sources and references, as
+    an unchanged B-rep carries its Component Review (ADR 0081), so the host
+    batch's gate rerun of a repaired build finishes. An unseeded run
+    inspects every round afresh (ADR 0075). Either way the round's own
+    packet and renders stay for anyone who looks."""
 
-    if visual.get("status") != "pending":
+    if visual.get("status") != "pending" or approval is None:
         return visual
     reasons = []
-    if approval is not None:
-        try:
-            critic = (run_root(project) / "seed" / CRITIC_NAME).read_bytes()
-            carried = seed_assembly_carry(project, approval, critic)
-        except (OSError, ValueError) as exc:
-            reasons.append("the Approved Proof's review does not carry: %s" % exc)
-        else:
-            return {**visual, "status": "carried", "carried_from": SEED_APPROVAL,
-                    "critic_sha256": carried["critic_sha256"], "critic_verdict": carried["verdict"],
-                    "assembly_identity": carried["assembly_identity"],
-                    "components": {role: item["basis"] for role, item in sorted(carried["components"].items())},
-                    "detail": "the Approved Proof's assembly review carries: every Component is the approved one "
-                              "or locked by its review, so no Manager look is needed"}
+    try:
+        carried = seed_round_carry(project, approval)
+    except (OSError, ValueError) as exc:
+        reasons.append("the Approved Proof's review does not carry: %s" % exc)
+    else:
+        return {**visual, "status": "carried", "carried_from": SEED_APPROVAL,
+                "critic_sha256": carried["critic_sha256"], "critic_verdict": carried["verdict"],
+                "assembly_identity": carried["assembly_identity"],
+                "components": {role: item["basis"] for role, item in sorted(carried["components"].items())},
+                "detail": "the Approved Proof's assembly review carries: every Component is the approved one "
+                          "or locked by its review, so no Manager look is needed"}
     try:
         current = json.loads(Path(visual["packet"]).read_text(encoding="utf-8"))
     except (OSError, ValueError, KeyError):

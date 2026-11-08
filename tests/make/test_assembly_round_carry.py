@@ -5,9 +5,12 @@ Contract:
   round's visual is ``carried`` from the Approved Proof: no Manager look is
   pending, and a round whose checks pass exits 0. A seed that does not carry
   leaves the look pending and names why.
-- Outside that, a visual pass the Manager recorded on the latest earlier
-  assembly round carries only when that round's packet bound the same
-  sources and references; a changed build waits for a new look.
+- When the seed does not carry, a visual pass the Manager recorded on the
+  latest earlier assembly round of the seeded run carries only when that
+  round's packet bound the same sources and references (the host batch's
+  gate rerun of a repaired build); a changed build waits for a new look.
+- An unseeded run inspects every assembly round afresh (ADR 0075): no look
+  carries there.
 - A carried round whose motion or print analysis ran out of time is not ok:
   a timeout is never a pass.
 - ``--full`` alone verifies a carried round; on a pending one it still asks
@@ -39,6 +42,14 @@ def _seeded(base: Path) -> _SeededProject:
     return seeded
 
 
+# A seeded run whose Approved Proof review does not carry (a repaired build).
+NOT_CARRYING = {"components": {}}
+
+
+def _no_seed_carry(project, approval):
+    raise ValueError("body's latest round is neither the approved Component nor locked by a review")
+
+
 def _pending(packet: Path) -> dict:
     return {"status": "pending", "packet": str(packet), "packet_sha256": "p" * 64, "detail": "look at it"}
 
@@ -49,6 +60,10 @@ class CarriedVisualTest(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         self.base = Path(temporary.name)
         self.m = load_module()
+
+    def _recorded_visual(self, project, out, pending):
+        with patch.object(self.m, "seed_round_carry", _no_seed_carry):
+            return self.m.carried_assembly_visual(project, out, pending, NOT_CARRYING)
 
     def _packet(self, path: Path, sources: dict, references=None) -> Path:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -96,11 +111,19 @@ class CarriedVisualTest(unittest.TestCase):
         project = self.base / "cad"
         self._recorded(project, 1, {"part_a.step.py": "x"})
         out = project / "measure/rounds/r0002"
-        visual = self.m.carried_assembly_visual(
-            project, out, _pending(self._packet(out / "visual-packet.json", {"part_a.step.py": "x"})), None)
+        visual = self._recorded_visual(
+            project, out, _pending(self._packet(out / "visual-packet.json", {"part_a.step.py": "x"})))
         self.assertEqual((visual["status"], visual["carried_from"], visual["observation"]),
                          ("carried", "r0001", "fine"))
         self.assertEqual(len(visual["visual_feedback_sha256"]), 64)
+
+    def test_an_unseeded_run_inspects_every_round_afresh(self):
+        """ADR 0075: outside a seeded run no recorded look carries."""
+        project = self.base / "cad"
+        self._recorded(project, 1, {"part_a.step.py": "x"})
+        out = project / "measure/rounds/r0002"
+        pending = _pending(self._packet(out / "visual-packet.json", {"part_a.step.py": "x"}))
+        self.assertIs(self.m.carried_assembly_visual(project, out, pending, None), pending)
 
     def test_a_changed_or_unrecorded_build_waits_for_a_new_look(self):
         cases = {
@@ -117,7 +140,9 @@ class CarriedVisualTest(unittest.TestCase):
                 self._recorded(project, 1, sources, **options)
                 out = project / "measure/rounds/r0002"
                 pending = _pending(self._packet(out / "visual-packet.json", {"part_a.step.py": "x"}))
-                self.assertEqual(self.m.carried_assembly_visual(project, out, pending, None), pending)
+                visual = self._recorded_visual(project, out, pending)
+                self.assertEqual(visual["status"], "pending")
+                self.assertIn("does not carry", visual["detail"])
 
     def test_only_the_latest_recorded_look_can_carry(self):
         project = self.base / "cad"
@@ -125,7 +150,7 @@ class CarriedVisualTest(unittest.TestCase):
         self._recorded(project, 2, {"part_a.step.py": "changed"})
         out = project / "measure/rounds/r0003"
         pending = _pending(self._packet(out / "visual-packet.json", {"part_a.step.py": "x"}))
-        self.assertEqual(self.m.carried_assembly_visual(project, out, pending, None)["status"], "pending")
+        self.assertEqual(self._recorded_visual(project, out, pending)["status"], "pending")
 
     def test_a_visual_that_is_not_pending_is_left_alone(self):
         seeded = _seeded(self.base)
@@ -138,7 +163,7 @@ class CarriedVisualTest(unittest.TestCase):
 class AssemblyRoundCarryTest(unittest.TestCase):
     """The round itself, on fake tools: no CAD, no real analysis."""
 
-    def round(self, module, root: Path, *, motion_code=0):
+    def round(self, module, root: Path, *, motion_code=0, seeded=True):
         project = root / "product"
         measure = project / "measure"
         if not project.is_dir():
@@ -179,14 +204,17 @@ class AssemblyRoundCarryTest(unittest.TestCase):
             overhang_angle=45.0, no_motion=False, check_motion=True, full=False, json=True,
             record_visual=None, component=None, require_component_passes=False)
         output = io.StringIO()
+        # A seeded run whose Approved Proof review does not carry: the
+        # rerun is the host gate's, after a repair turn recorded a look.
         with patch.object(module, "skills_root", return_value=root / "skills"), patch.object(module, "run", run), \
-                redirect_stdout(output):
+                patch.object(module, "seed_approval", return_value=NOT_CARRYING if seeded else None), \
+                patch.object(module, "seed_round_carry", _no_seed_carry), redirect_stdout(output):
             code = module.make_round(args)
         return code, json.loads(output.getvalue()), project
 
     def test_a_second_round_of_the_same_build_carries_the_recorded_look(self):
-        """The host gate's rerun of the assembly round (issue #244): a new
-        round of unchanged bytes needs no second look."""
+        """The host gate's rerun of a repaired seeded build (issue #244): a
+        new round of unchanged bytes needs no second look."""
         module = load_module()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -202,6 +230,15 @@ class AssemblyRoundCarryTest(unittest.TestCase):
             (project / "part_body.step.py").write_text("# fake, changed\n")
             code, third, _ = self.round(module, root)
             self.assertEqual((code, third["visual"]["status"]), (1, "pending"))
+
+    def test_an_unseeded_rerun_of_the_same_build_still_waits_for_a_look(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            code, first, project = self.round(module, root, seeded=False)
+            record_fixture_visual_pass(module, project, first)
+            code, second, _ = self.round(module, root, seeded=False)
+            self.assertEqual((code, second["visual"]["status"]), (1, "pending"))
 
     def test_a_carried_round_whose_motion_ran_out_of_time_is_not_ok(self):
         module = load_module()
