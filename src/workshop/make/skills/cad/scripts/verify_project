@@ -1806,7 +1806,7 @@ def _run_preflight_audits(
             "no printable entry is declared; geometry-only final workflow",
         )
 
-    for audit_name in ("check_fit.py", "check_spec.py", "check_landmarks.py"):
+    for audit_name in PROJECT_AUDITS:
         local_audit = project / "measure" / audit_name
         if local_audit.is_file():
             failures += runner.command(
@@ -1944,6 +1944,14 @@ def _sweep_closure_sha256(
             for path in (project / "README.md", *sorted(project.glob("*_spec.md")))
             if path.is_file()
         }
+        # The project-local audits the sweep runs are part of its verdict: a
+        # repaired check_landmarks.py must rerun, never replay the FAIL its
+        # old bytes recorded. Other measurements still never force a sweep.
+        audit_bytes = {
+            name: _sha256_file(project / "measure" / name)
+            for name in PROJECT_AUDITS
+            if (project / "measure" / name).is_file()
+        }
         # The project's Geometry Sources (issue #110): a measurement, audit,
         # note or render beside them never forces a new sweep.
         geometry = runpy.run_path(str(SCRIPTS_DIR / "geometry_sources.py"))
@@ -1962,6 +1970,7 @@ def _sweep_closure_sha256(
         "steps": step_bytes,
         "sources": sources,
         "docs": doc_bytes,
+        "audits": audit_bytes,
         "tools": tool_hash,
         "argv": list(raw_argv),
         "signature_review": signature_review_sha256,
@@ -2060,6 +2069,8 @@ def _write_report(
 
 HARNESS_WORKSPACE_ENV = "HARNESS_WORKSPACE"
 HARNESS_VERDICT_RELATIVE = Path(".harness/verdict.json")
+# The project's own audits under measure/, run by every final sweep.
+PROJECT_AUDITS = ("check_fit.py", "check_spec.py", "check_landmarks.py")
 
 
 def _harness_workspace() -> Path | None:
