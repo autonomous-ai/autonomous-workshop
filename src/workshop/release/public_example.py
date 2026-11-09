@@ -1466,6 +1466,7 @@ def materialize_public_example(
     stage_timing_record: Optional[Mapping[str, Any]] = None,
     public_title: Optional[str] = None,
     assembly_text: Optional[str] = None,
+    printed_primary: Optional[Mapping[str, Any]] = None,
 ) -> Path:
     """Create ``toys/<inventor>-<slug>`` from exact public Release bytes.
 
@@ -1696,16 +1697,38 @@ def materialize_public_example(
             isinstance(primary_path, str)
             and PurePosixPath(primary_path).suffix.casefold() == ".step"
         ):
+            source_path = primary_path
             entry = product_entries.get(primary_path)
             if entry is None or entry.sha256 != primary_sha256:
-                raise StateConflict(
-                    "public Factory primary model differs from sealed Made bytes"
+                # A powered toy with bought models gives Factory its
+                # printed-only STEP under the primary's name (ADR 0095,
+                # 2026-11-07): accept exactly the sealed file the host's Make
+                # acceptance checked, and archive the bytes Factory received.
+                printed_path = (
+                    printed_primary.get("path")
+                    if isinstance(printed_primary, Mapping)
+                    else None
                 )
+                printed_entry = (
+                    product_entries.get(printed_path)
+                    if isinstance(printed_path, str)
+                    else None
+                )
+                if (
+                    printed_entry is None
+                    or PurePosixPath(printed_path).suffix.casefold() != ".step"
+                    or printed_primary.get("sha256") != primary_sha256
+                    or printed_entry.sha256 != primary_sha256
+                ):
+                    raise StateConflict(
+                        "public Factory primary model differs from sealed Made bytes"
+                    )
+                source_path = printed_path
             destination = "make/models/assembled.step"
             primary_model = _copy_model(
                 product_root=product_root,
                 product_entries=product_entries,
-                source=primary_path,
+                source=source_path,
                 destination=destination,
                 staging=staging,
             )
@@ -2110,6 +2133,7 @@ def materialize_public_example_if_source_checkout(
     stage_timing_record: Optional[Mapping[str, Any]] = None,
     public_title: Optional[str] = None,
     assembly_text: Optional[str] = None,
+    printed_primary: Optional[Mapping[str, Any]] = None,
 ) -> Optional[Path]:
     """Materialize a public example when the host is running from a checkout."""
 
@@ -2133,6 +2157,7 @@ def materialize_public_example_if_source_checkout(
         stage_timing_record=stage_timing_record,
         public_title=public_title,
         assembly_text=assembly_text,
+        printed_primary=printed_primary,
     )
 
 

@@ -4076,6 +4076,7 @@ def _record_public_example_projection(
                     checkpoint.wish_sha256,
                     _verified_owner_contract_amendments(run),
                 ),
+                printed_primary=_accepted_printed_primary(run),
             )
             target_relative = (
                 target.relative_to(repository).as_posix()
