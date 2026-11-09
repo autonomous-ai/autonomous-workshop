@@ -72,6 +72,7 @@ from workshop.integrations.factory_listing import (
     ListingUpdatePlan,
     append_publication_version,
     listing_update_version,
+    read_only_transport,
 )
 from workshop.release.direct_publish import (
     EVIDENCE_PATH,
@@ -353,6 +354,9 @@ def _describe(
     else:
         write("publish_direct: %s" % ("LIVE" if live else "dry run, nothing is read from the credential store or sent"))
     write("source:        %s %s" % (source.kind, source.root))
+    if updating and "measure/make-round-state.json" in source.files:
+        write("note:          this CAD came from a Workshop run; `workshop publish <wish-id> "
+              "--update-listing` ships that run's sealed bytes without a rebuild")
     if source.archive_sha256:
         write("               MANIFEST.json verified, artifact %s" % source.archive_sha256)
     write("product id:    %s" % product_id)
@@ -581,13 +585,7 @@ def _session(
     options = dict(transports)
     if read_only:
         inner = options.get("transport", urllib_transport)
-
-        def guarded(method, url, headers, body, timeout):  # type: ignore[no-untyped-def]
-            if method != "GET" and not (method == "POST" and url.endswith("/auth/agent/login")):
-                raise AssertionError("a read-only Factory session refused %s %s" % (method, url))
-            return inner(method, url, headers, body, timeout)
-
-        options["transport"] = guarded
+        options["transport"] = read_only_transport(inner)
         if "project_file_transport" not in options and inner is urllib_transport:
             options["project_file_transport"] = urllib_project_file_transport
     return FactoryAgentSession(credentials, **options)

@@ -467,12 +467,39 @@ Proposed and accepted on 2026-11-06.
 - On `EffectLedger`: `prepare(supersede_settled=True)` and `note_unknown`.
 - Fake-transport tests for the § 9 cases.
 
+**Built on 2026-11-09:** `workshop publish <wish-id> --update-listing SLUG
+--reason fix|reprice --published-archive toys/<inventor>-<slug>
+[--predicted-grams G --predicted-grams-source TEXT] [--confirm CODE]`
+(`update_native_run_listing`). The run must be complete at Release and
+Unreleased (`--no-publish`; `workshop fix --update-listing`, which would freeze
+the target slug, is still not built, so `--published-archive` names the
+listing). It sends the handoff the run's own Release would have sent: the
+bytes Make sealed and the host accepted, revalidated as `workshop publish`
+revalidates them, with the run's Bought Part billing. Nothing is rebuilt or
+re-verified, so no CAD verifier, toolchain or geometry timeout is involved;
+the fix's gate evidence is the run's own Make acceptance, as for a create.
+The plan's source primary is the primary that crosses (the printed-only
+primary when the run sealed one), so the confirmation code a preview prints
+is the code the confirmed run recomputes. The run's checkpoint and its
+Unreleased restriction never change. The 2026-11-09 dry runs had needed two
+overrides (Workshop's vendored `skills/cad` instead of product-to-cad's, and
+`WORKSHOP_GEOMETRY_TIMEOUT=3300`, the seeded batch's final-verification
+`--geometry-seconds`, 3600 s less its 300 s report margin) only because
+`tools/publish_direct.py --verify` rebuilt the run's CAD; that rebuild also
+wrote new STEP bytes, so a live run that rebuilt again would have refused its
+own code.
+
+Every Factory handoff, a create or an update, now applies Release's path
+hygiene (`workshop.release.local_paths`, the redaction the public archive
+uses) to each Make file that crosses; STEP bytes are never rewritten.
+
 **Not built yet:**
 
-- `workshop fix --update-listing` and `workshop publish --update-listing`.
-  Until they exist, a correction run's output is published with
-  `tools/publish_direct.py --cad-dir … --published-archive …
-  --update-listing … --reason fix`. For a toy a Workshop run published,
+- `workshop fix --update-listing`. Until it exists, the correction run is
+  started with `--no-publish` and published with `workshop publish <wish-id>
+  --update-listing` as above. `tools/publish_direct.py --cad-dir …
+  --published-archive … --update-listing … --reason fix` remains for toys
+  built outside Workshop. For a toy a Workshop run published,
   `--published-archive` may be that run's projected archive (only its
   `PUBLICATION.json` is read, checked against its manifest), and the
   receipt and the update's intent are the run's own

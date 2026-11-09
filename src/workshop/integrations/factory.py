@@ -1098,6 +1098,22 @@ def _same_extras(requested: Any, observed: Any) -> bool:
     return want is not None and want == normal(observed)
 
 
+def release_extra_materials(context: Any) -> list:
+    """The ``extra_materials`` a Release of ``context`` bills.
+
+    ADR 0095 (2026-11-07): a Workshop run bills every Bought Part its Wish
+    sealed; a direct publication bills what its Made records. A Listing
+    Update of a sealed run bills exactly what that run's own Release would.
+    """
+
+    bought_lines = _sealed_bought_lines(context)
+    if bought_lines is not None:
+        return _extra_materials(
+            {"bought_hardware": factory_extra_materials(bought_lines)}
+        ) if bought_lines else []
+    return _extra_materials(context.made.product)
+
+
 def _extra_materials(product: Mapping[str, Any]) -> list:
     """The bought hardware Made records, as Factory ``extra_materials``.
 
@@ -3780,15 +3796,8 @@ class FactoryReleaseWriter:
             "manual_sha256": handoff["manual_sha256"],
             "metadata": dict(metadata),
         }
-        # ADR 0095 (2026-11-07): a Workshop run bills every Bought Part its
-        # Wish sealed; a direct publication bills what its Made records.
         bought_lines = _sealed_bought_lines(context)
-        if bought_lines is not None:
-            extra_materials = _extra_materials(
-                {"bought_hardware": factory_extra_materials(bought_lines)}
-            ) if bought_lines else []
-        else:
-            extra_materials = _extra_materials(context.made.product)
+        extra_materials = release_extra_materials(context)
         if extra_materials:
             # Bound into the ledger intent, so a retry sends the same costs.
             request["extra_materials"] = extra_materials

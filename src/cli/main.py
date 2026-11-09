@@ -42,7 +42,14 @@ from workshop.daydream import (
     run_daydream,
     wish_from_daydream,
 )
-from workshop.errors import WorkshopError
+from workshop.errors import (
+    AmbiguousEffectError,
+    ContractError,
+    EffectError,
+    ReceiptError,
+    WorkshopError,
+)
+from workshop.integrations.factory import FactoryCredentialRejected
 from workshop.invent.gamevault import default_client as default_gamevault_client
 from workshop.invent.vault import Vault, VaultError
 from workshop.make.skill_registry import (
@@ -91,6 +98,7 @@ from workshop.wish.contracts import MAX_WISH_REFERENCES, WISH_REFERENCES_DIRECTO
 from workshop.workflow import (
     native_run_status,
     publish_native_run,
+    update_native_run_listing,
     refresh_native_run_tools,
     resume_native_run,
     start_native_run,
@@ -1773,7 +1781,129 @@ def _reference_camera_options(values) -> dict:
     return {"reference_cameras": cameras}
 
 
+def _money(cents: Optional[int]) -> str:
+    return "unknown" if cents is None else "$%d.%02d" % (cents // 100, cents % 100)
+
+
+def _extras_text(items: Sequence[Mapping[str, Any]]) -> str:
+    if not items:
+        return "(none)"
+    return "; ".join("%s %s" % (item["name"], _money(item["price_cents"])) for item in items)
+
+
+def _print_listing_update(result: Mapping[str, Any]) -> None:
+    write = print
+    write("listing update: %s (design %s), reason %s, from %s"
+          % (result["slug"], result["design_id"], result["reason"], result["product_id"]))
+    write("  ledger:      %s" % result["ledger"])
+    write("  evidence:    %s" % result["evidence"])
+    primary = result["primary_model"]
+    source = primary.get("source_path") or primary["path"]
+    write("  ships:       %s%s sha256 %s (%d-byte handoff)" % (
+        primary["path"], "" if source == primary["path"] else " <- sealed " + source,
+        primary["sha256"], result["handoff_bytes"]))
+    if result["stripped_bodies"]:
+        write("               not weighed by Factory: %s" % ", ".join(result["stripped_bodies"]))
+    if result["action"] == "listing-updated":
+        version = result["version"]
+        write("slug: %s" % result["slug"])
+        write("public: %s" % result["page_url"])
+        write("version: %s (was %s)" % (version["history_id"], version["base_history_id"]))
+        write("price: %s -> %s (predicted %s)%s" % (
+            _money(version["price_before_cents"]), _money(version["price_after_cents"]),
+            _money(version["predicted_price_cents"]),
+            "" if version["price_follows_formula"] else
+            "; price not repriced (possibly set by hand)"))
+        write("measured: %s g -> %s g (predicted %s g)" % (
+            version["weight_before_g"], version["weight_after_g"], version["predicted_weight_g"]))
+        if result["archive_error"]:
+            write("archive: not updated (%s); write the publication-record below into "
+                  "publication/PUBLICATION.json and reseal it" % result["archive_error"])
+        else:
+            write("archive: %s publication/PUBLICATION.json"
+                  % ("updated" if result["archive_updated"] else "already records"))
+        write("publication-record: %s" % json.dumps(
+            result["publication_record"], sort_keys=True, separators=(",", ":")))
+        return
+    current = result["current"]
+    write("  current:     %s, listing %s, version %s" % (
+        _money(current["price_cents"]),
+        {True: "active", False: "paused", None: "absent"}[current["listing_active"]],
+        current["history_id"]))
+    write("               measured %s, extras %s" % (
+        "%.2f g" % current["weight_g"] if current["weight_g"] is not None else
+        "not yet (%s)" % (current["slice_status"] or "no slice"),
+        _extras_text(current["extra_materials"])))
+    follows = current["price_follows_formula"]
+    write("               Factory's formula for that gives %s: %s" % (
+        _money(current["formula_price_cents"]),
+        "the price follows the formula" if follows else
+        "unknown" if follows is None else
+        "the price does NOT follow it; it may have been set by hand, in which case the "
+        "update will not move it and new extras may pause it"))
+    write("  geometry:    live version made from %s (%s)" % (
+        current["live_primary_sha256"] or "an unrecorded primary",
+        "same" if current["live_primary_sha256"] == primary["sha256"] else "different"))
+    write("  new extras:  %s = %s" % (_extras_text(result["extra_materials"]),
+                                      _money(result["extras_cents"])))
+    if result["predicted_weight_g"] is not None:
+        write("  predicted:   %.2f g (%s) -> %s" % (
+            result["predicted_weight_g"], result["predicted_weight_source"],
+            _money(result["predicted_price_cents"])))
+    else:
+        write("  predicted:   unknown (no --predicted-grams)")
+    for problem in result["problems"]:
+        write("  refused:     %s" % problem)
+    if result["pending"]:
+        write("  pending:     an earlier update (code %s) is %s: %s" % (
+            result["pending"]["confirmation_code"], result["pending"]["state"],
+            result["pending"]["error"]))
+    code = result["confirmation_code"]
+    write("  confirmation: %s" % (code or "none (the update cannot run)"))
+    write("preview complete; nothing was sent")
+    if code:
+        write("to run it: the same command with --confirm %s" % code)
+
+
+def _publish_listing_update(args: argparse.Namespace) -> int:
+    if args.reason is None or args.published_archive is None:
+        raise ContractError("--update-listing needs --reason fix|reprice and --published-archive")
+    if args.title:
+        raise ContractError("--update-listing keeps the listing's title; drop --title")
+    try:
+        result = update_native_run_listing(
+            args.product_id,
+            slug=args.update_listing,
+            reason=args.reason,
+            published_archive=args.published_archive,
+            predicted_grams=args.predicted_grams,
+            predicted_grams_source=args.predicted_grams_source,
+            confirm=args.confirm,
+        )
+    except FactoryCredentialRejected:
+        print("workshop: Factory rejected the publishing credential; run `workshop login`",
+              file=sys.stderr)
+        return 3
+    except (AmbiguousEffectError, EffectError, ReceiptError) as exc:
+        print("workshop: %s: %s. Nothing is retried blindly; rerun the same command to "
+              "reconcile through the ledger." % (type(exc).__name__, exc), file=sys.stderr)
+        return 3
+    if args.json:
+        _print_json(result)
+    else:
+        _print_listing_update(result)
+    return 0
+
+
 def _publish(args: argparse.Namespace) -> int:
+    if args.update_listing is not None:
+        return _publish_listing_update(args)
+    if (args.reason or args.published_archive or args.confirm
+            or args.predicted_grams is not None or args.predicted_grams_source):
+        raise ContractError(
+            "--reason, --published-archive, --predicted-grams and --confirm go with "
+            "--update-listing"
+        )
     progress = sys.stderr if args.json else sys.stdout
     live_progress = _LiveWishProgress(progress, "Publication")
     renamed = " under the public title %r" % args.title if args.title else ""
@@ -2893,6 +3023,36 @@ def parser() -> argparse.ArgumentParser:
             "title that cannot produce a safe public slug before any effect. "
             "Name it by docs/TOY_NAMING.md."
         ),
+    )
+    publish.add_argument(
+        "--update-listing",
+        metavar="SLUG",
+        help=(
+            "append this Unreleased run's sealed Release as a new version of the "
+            "public design SLUG (ADR 0097) instead of creating one. Ships the exact "
+            "bytes the run sealed; nothing is rebuilt. Without --confirm it is a "
+            "preview with authenticated Factory reads only"
+        ),
+    )
+    publish.add_argument(
+        "--reason", choices=("fix", "reprice"),
+        help="--update-listing: fix (changed geometry or print settings) or reprice",
+    )
+    publish.add_argument(
+        "--published-archive", type=Path,
+        help="--update-listing: the toy's archive whose PUBLICATION.json names SLUG",
+    )
+    publish.add_argument(
+        "--predicted-grams", type=float, metavar="G",
+        help="--update-listing: the printed primary's mass, measured with Factory's slicer",
+    )
+    publish.add_argument(
+        "--predicted-grams-source", metavar="TEXT",
+        help="--update-listing: how --predicted-grams was measured",
+    )
+    publish.add_argument(
+        "--confirm", metavar="CODE",
+        help="--update-listing: run the update the preview's confirmation code names",
     )
     publish.set_defaults(handler=_publish)
 
