@@ -31,6 +31,7 @@ _NATIVE_HOST_EXPORTS = (
     "refresh_native_run_tools",
     "resume_native_run",
     "start_native_run",
+    "update_native_run_listing",
 )
 
 

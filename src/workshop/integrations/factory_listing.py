@@ -685,6 +685,21 @@ class FactoryListingUpdate:
             self.sleeper(self.poll_seconds)
 
 
+def read_only_transport(inner: Callable[..., Any]) -> Callable[..., Any]:
+    """Wrap a Factory transport so it can only read (and log in).
+
+    A Listing Update preview reads Factory with the Inventor's credential;
+    this guard makes any send from it an error rather than an effect.
+    """
+
+    def guarded(method, url, headers, body, timeout):  # type: ignore[no-untyped-def]
+        if method != "GET" and not (method == "POST" and url.endswith("/auth/agent/login")):
+            raise AssertionError("a read-only Factory session refused %s %s" % (method, url))
+        return inner(method, url, headers, body, timeout)
+
+    return guarded
+
+
 def listing_update_version(receipt: Receipt) -> dict[str, Any]:
     """One ``versions[]`` entry for a schema 2 PUBLICATION.json."""
 
@@ -743,4 +758,5 @@ __all__ = [
     "factory_sale_price_cents",
     "listing_update_version",
     "read_listing_state",
+    "read_only_transport",
 ]

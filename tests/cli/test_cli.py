@@ -131,6 +131,48 @@ class NativeCommandTest(unittest.TestCase):
             with self.subTest(arguments=arguments), redirect_stderr(StringIO()), self.assertRaises(SystemExit):
                 command.parse_args(arguments)
 
+    def test_publish_update_listing_reaches_the_host_and_its_options_go_together(self):
+        preview = {
+            "action": "listing-update-preview", "product_id": "wish-one", "slug": "toy-v1",
+            "design_id": "d1", "listing_product_id": "wish-zero", "ledger": "/l.sqlite3",
+            "reason": "fix", "inventor_id": "alice", "evidence": "sealed",
+            "primary_model": {"path": "assembled.step", "sha256": "a" * 64},
+            "stripped_bodies": [], "extra_materials": [], "extras_cents": 0,
+            "predicted_weight_g": 100.0, "predicted_weight_source": "orca",
+            "predicted_price_cents": 2100, "pack_sha256": "b" * 64, "handoff_bytes": 10,
+            "current": {"history_id": "h1", "price_cents": 2000, "listing_active": True,
+                        "weight_g": 90.0, "slice_status": "done", "extra_materials": [],
+                        "formula_price_cents": 2000, "price_follows_formula": True,
+                        "infill_percent": None, "live_primary_sha256": "c" * 64},
+            "problems": [], "confirmation_code": "lu-0123456789ab", "pending": None,
+        }
+        with mock.patch("cli.main.update_native_run_listing", return_value=preview) as host, \
+                mock.patch("cli.main.publish_native_run") as publish, \
+                redirect_stdout(StringIO()) as out, redirect_stderr(StringIO()):
+            code = main(["publish", "wish-one", "--update-listing", "toy-v1", "--reason", "fix",
+                         "--published-archive", "/toys/x", "--predicted-grams", "100",
+                         "--predicted-grams-source", "orca"])
+        self.assertEqual(code, 0)
+        publish.assert_not_called()
+        self.assertEqual(host.call_args.kwargs["slug"], "toy-v1")
+        self.assertIsNone(host.call_args.kwargs["confirm"])
+        self.assertIn("confirmation: lu-0123456789ab", out.getvalue())
+        self.assertIn("--confirm lu-0123456789ab", out.getvalue())
+        for arguments in (
+            ("publish", "wish-one", "--reason", "fix"),
+            ("publish", "wish-one", "--confirm", "lu-0123456789ab"),
+            ("publish", "wish-one", "--update-listing", "toy-v1", "--reason", "fix"),
+            ("publish", "wish-one", "--update-listing", "toy-v1",
+             "--published-archive", "/toys/x"),
+        ):
+            with self.subTest(arguments=arguments), \
+                    mock.patch("cli.main.update_native_run_listing") as host, \
+                    mock.patch("cli.main.publish_native_run") as publish, \
+                    redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                self.assertEqual(main(list(arguments)), 2)
+                host.assert_not_called()
+                publish.assert_not_called()
+
     def test_main_has_no_legacy_orchestration_entrypoints(self):
         for name in (
             "CodexSemanticManager",

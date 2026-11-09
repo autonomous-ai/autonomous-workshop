@@ -356,6 +356,28 @@ Workshop published. The listing, slug, URL and SKU stay. It is how a toy
 published before #219 is repriced, now that props and bought hardware are
 no longer weighed.
 
+**A correction a Workshop run built** is published with `workshop
+publish`, not this tool. Start the correction with `--no-publish`; once it
+is complete at Release:
+
+```sh
+# preview: authenticated Factory reads only, nothing is sent or rebuilt
+workshop publish <wish-id> --update-listing beaver-coaster-holder-v2 --reason fix \
+    --published-archive toys/rowan-vale-beaver-coaster-holder-v2 \
+    --predicted-grams 657 --predicted-grams-source "Orca, Factory preset, …"
+# the owner reads the prices, then runs exactly that update
+... the same command ... --confirm lu-0123456789ab
+```
+
+It ships the exact bytes the run sealed and the host accepted, the same
+handoff its own Release would send, so nothing is rebuilt, no verifier,
+toolchain or geometry timeout is needed, and the preview's code is the code
+the confirmed run recomputes. The run stays Unreleased. A `--cad-dir` copy
+of a run's CAD with `--verify` rebuilds it instead, with this tool's
+verifier and default timeout, and writes new STEP bytes.
+
+For a toy built outside Workshop:
+
 ```sh
 # preview: authenticated Factory reads only, nothing is sent
 PYTHONPATH=src .venv/bin/python tools/publish_direct.py \

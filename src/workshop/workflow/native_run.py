@@ -40,6 +40,8 @@ from workshop.contributors import (
 )
 from workshop.integrations.factory import (
     FACTORY_CONTENT_MAPPING,
+    build_release_handoff,
+    release_extra_materials,
     FactoryReleaseWriter,
     FactoryAgentSession,
     FactoryAuthenticationError,
@@ -49,6 +51,14 @@ from workshop.integrations.factory import (
     factory_credentials_from_environment,
     urllib_project_file_transport,
     urllib_transport,
+)
+from workshop.integrations.factory_listing import (
+    FactoryListingUpdate,
+    ListingUpdateBindings,
+    ListingUpdatePlan,
+    append_publication_version,
+    listing_update_version,
+    read_only_transport,
 )
 from workshop.integrations.git import (
     GitPushError,
@@ -165,6 +175,11 @@ from workshop.make.vault_lessons import (
 from workshop.product import ToyBlueprint
 from workshop.product.blueprints import SCORE_AMBIGUOUS_SPREAD
 from workshop.release.contracts import ProductRelease, ReleaseContext
+from workshop.release.direct_publish import (
+    load_published_record,
+    published_design,
+    record_archive_publication,
+)
 from workshop.release.manual_design import (
     MANUAL_DESIGN_EVIDENCE_PATH,
     validate_bound_manual_design_evidence,
@@ -12373,6 +12388,205 @@ def publish_native_run(
                     override_local_release_only=True,
                 )
         return _native_receipt(checkpoint, paths=paths, action=action)
+
+
+def update_native_run_listing(
+    product_id: str,
+    *,
+    slug: str,
+    reason: str,
+    published_archive: Path,
+    predicted_grams: Optional[float] = None,
+    predicted_grams_source: Optional[str] = None,
+    confirm: Optional[str] = None,
+    sleeper: Callable[[float], None] = time.sleep,
+    clock: Callable[[], float] = time.monotonic,
+) -> Mapping[str, Any]:
+    """Append this kept-local run's sealed Release to a public listing (ADR 0097).
+
+    The Listing Update ships the exact handoff the run's own Release would
+    have sent: the bytes Make sealed and the host accepted, with Release's
+    path hygiene and Bought Part billing. Nothing is rebuilt, so no CAD
+    verifier, toolchain or geometry timeout runs here, and a preview and its
+    confirmed update bind the same primary bytes into the same code.
+
+    Without ``confirm`` it is a preview: authenticated Factory reads only.
+    With it, the one update that code confirms runs through the ledger of the
+    product id that first published ``slug``. The run itself never changes:
+    it stays Unreleased, and its checkpoint and sealed bytes are untouched.
+    """
+
+    if not isinstance(slug, str) or not slug:
+        raise ContractError("--update-listing needs the listing's slug")
+    record = load_published_record(Path(published_archive))
+    if record is None:
+        raise ContractError(
+            "the published archive records no publication; there is no listing to update"
+        )
+    recorded_slug = (record.get("publication") or {}).get("slug")
+    if recorded_slug != slug:
+        raise ContractError(
+            "--update-listing %s does not match the archive's listing %s"
+            % (slug, recorded_slug)
+        )
+    home = Path(default_workshop_home()).expanduser()
+    published = published_design((home / "direct-publish", home / "state"), slug)
+    if published.product_id == product_id:
+        raise StateConflict(
+            "%s is this run's own listing; a Listing Update appends another run's "
+            "sealed Release to it" % slug
+        )
+    paths = native_run_paths(product_id)
+    with _native_run_mutation_lock(paths):
+        run = _open_budgeted_agent_run(paths)
+        checkpoint = run.snapshot()
+        if checkpoint.stage != "release" or checkpoint.status != "complete":
+            raise StateConflict(
+                "a Listing Update requires a run already completed at Release"
+            )
+        if not _local_release_only(run):
+            raise StateConflict(
+                "a Listing Update ships an Unreleased run's sealed Release; this run "
+                "publishes its own design"
+            )
+        verified = _existing_release_for_promotion(run, checkpoint)
+        context = _publication_release_context(run, verified)
+        handoff = build_release_handoff(
+            context, verified.package.root, verified.package.manifest
+        )
+        primary = handoff["primary_model"]
+        printed = handoff["product_facts"].get("printed_primary") or {}
+        versions = record.get("versions") or []
+        latest = versions[-1] if versions and isinstance(versions[-1], Mapping) else {}
+        plan = ListingUpdatePlan(
+            reason=reason,
+            slug=slug,
+            source_primary_path=primary["path"],
+            source_primary_sha256=primary["sha256"],
+            kept_bodies=(),
+            stripped_bodies=tuple(printed.get("removed") or ()),
+            extra_materials=tuple(release_extra_materials(context)),
+            predicted_weight_g=predicted_grams,
+            predicted_weight_source=predicted_grams_source,
+            recorded_source_primary_sha256=latest.get("source_primary_sha256"),
+            recorded_history_id=latest.get("history_id"),
+        )
+        try:
+            credentials = _factory_credentials(verified.inventor_id)
+        except ContractError:
+            raise ContractError(
+                "no Factory credential for Inventor %s; run `workshop login %s`"
+                % (verified.inventor_id, verified.inventor_id)
+            ) from None
+        transports = _factory_transport_overrides()
+        if confirm is None:
+            inner = transports.get("transport", urllib_transport)
+            transports["transport"] = read_only_transport(inner)
+            if inner is urllib_transport:
+                # The guard hides the real transport from the session's own
+                # default; public project files are still read directly.
+                transports.setdefault(
+                    "project_file_transport", urllib_project_file_transport
+                )
+        updater = FactoryListingUpdate(
+            EffectLedger(published.ledger),
+            FactoryAgentSession(credentials, **transports),
+            sleeper=sleeper,
+            clock=clock,
+        )
+        result: dict[str, Any] = {
+            "product_id": product_id,
+            "slug": slug,
+            "design_id": published.design_id,
+            "listing_product_id": published.product_id,
+            "ledger": str(published.ledger),
+            "reason": reason,
+            "inventor_id": verified.inventor_id,
+            "evidence": "the run's sealed Make acceptance and Release (nothing rebuilt)",
+            "primary_model": {
+                "path": primary["path"],
+                "sha256": primary["sha256"],
+                "source_path": printed.get("source_path") or primary["path"],
+            },
+            "stripped_bodies": list(plan.stripped_bodies),
+            "extra_materials": list(plan.extra_materials),
+            "extras_cents": plan.extras_cents,
+            "predicted_weight_g": plan.predicted_weight_g,
+            "predicted_weight_source": plan.predicted_weight_source,
+            "predicted_price_cents": plan.predicted_price_cents,
+            "pack_sha256": handoff["pack_sha256"],
+            "handoff_bytes": len(handoff["content"]),
+        }
+        if confirm is None:
+            state, problems, code = updater.preview(plan)
+            pending = updater.pending(published.product_id)
+            result.update(
+                action="listing-update-preview",
+                current={
+                    "history_id": state.current_history_id,
+                    "price_cents": state.price_cents,
+                    "listing_active": state.listing_active,
+                    "weight_g": state.weight_g,
+                    "slice_status": state.slice.status,
+                    "extra_materials": list(state.extra_materials),
+                    "formula_price_cents": state.formula_price_cents,
+                    "price_follows_formula": state.price_follows_formula,
+                    "infill_percent": state.infill_percent,
+                    "live_primary_sha256": state.live_primary_sha256,
+                },
+                problems=list(problems),
+                confirmation_code=code if code and not problems else None,
+                pending=(
+                    {
+                        "state": pending.state,
+                        "confirmation_code": pending.request["listing_update"].get(
+                            "confirmation_code"
+                        ),
+                        "error": pending.error,
+                    }
+                    if pending is not None and pending.state in ("sending", "unknown")
+                    else None
+                ),
+            )
+            return result
+        receipt = updater.run(
+            product_id=published.product_id,
+            plan=plan,
+            bindings=ListingUpdateBindings(
+                content=handoff["content"],
+                pack_sha256=handoff["pack_sha256"],
+                handoff_artifact_sha256=handoff["artifact_sha256"],
+                product_artifact_sha256=context.made.artifact_sha256,
+                release_sha256=verified.package.manifest.artifact_sha256,
+                playtest_evidence_sha256=handoff["page"][
+                    "playtest_evidence_artifact_sha256"
+                ],
+                product_page_sha256=handoff["product_page_sha256"],
+                primary_model_sha256=primary["sha256"],
+                product_facts_sha256=handoff["product_facts_sha256"],
+            ),
+            confirm=confirm,
+        )
+    version = listing_update_version(receipt)
+    if reason == "fix":
+        version["wish_id"] = product_id
+    updated = append_publication_version(record, version)
+    try:
+        archive_changed: Optional[bool] = record_archive_publication(
+            Path(published_archive), updated
+        )
+        archive_error = None
+    except (ContractError, OSError) as exc:
+        archive_changed, archive_error = None, str(exc)
+    result.update(
+        action="listing-updated",
+        page_url=receipt.details.get("page_url"),
+        version=version,
+        publication_record=updated,
+        archive_updated=archive_changed,
+        archive_error=archive_error,
+    )
+    return result
 
 
 def resume_native_run(

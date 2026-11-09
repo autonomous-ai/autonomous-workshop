@@ -3589,6 +3589,223 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertEqual(again["action"], "publication-already-public")
             self.assertEqual(len(effects.publish_calls), 1)
 
+    def test_listing_update_ships_the_sealed_release_and_its_code_holds(self):
+        """`workshop publish RUN --update-listing` (ADR 0097) sends sealed bytes.
+
+        A correction run kept local appends its exact sealed Release to a
+        listing this Workshop already published. Nothing is rebuilt or
+        re-verified, so a preview and its confirmed update bind the same
+        primary bytes into the same confirmation code, and the run itself
+        stays Unreleased and unchanged.
+        """
+
+        from tests.release.test_direct_publish import (
+            INVENTOR as DIRECT_INVENTOR,
+            PRODUCT_ID as LISTED_PRODUCT_ID,
+            TOOL,
+            pack_archive,
+            reseal,
+            write_evidence,
+            write_project,
+        )
+        from tests.release.test_listing_update import (
+            OLD_EXTRAS, SLUG, Clock, ListingFactoryTransport,
+        )
+        from workshop.errors import ContractError
+        from workshop.integrations.factory import FactoryAgentCredentials
+        from workshop.workflow.native_run import (
+            _local_release_only_at,
+            update_native_run_listing,
+        )
+
+        launcher = _OneSessionProductAgent()
+        cad_calls = []
+
+        def verify_cad(made, **arguments):
+            cad_calls.append(made)
+            return SimpleNamespace(
+                passed=True,
+                receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
+                verifier_sha256=arguments["expected_verifier_sha256"],
+                verifier_mode=NATIVE_CAD_PRINT_GATES_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
+            )
+
+        def no_session(*arguments, **keywords):
+            raise AssertionError("a Listing Update must not start a native session")
+
+        def no_rebuild(*arguments, **keywords):
+            raise AssertionError("a Listing Update must not rebuild or re-verify")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            home = root / "workshop-home"
+            repository = root / "repository"
+            (repository / "toys").mkdir(parents=True)
+            environment = {"WORKSHOP_HOME": str(home)}
+
+            # The listing: a design this Workshop already published.
+            transport = ListingFactoryTransport()
+            folder = home / "credentials" / "inventors"
+            folder.mkdir(parents=True)
+            os.chmod(folder, 0o700)
+            credential = folder / (DIRECT_INVENTOR + ".env")
+            credential.write_text(
+                "FACTORY_USERNAME=alice\nFACTORY_PASSWORD=test-secret\n"
+                "FACTORY_INVENTOR_ID=%s\n" % DIRECT_INVENTOR
+            )
+            os.chmod(credential, 0o600)
+            project = write_project(root / "widget")
+            write_evidence(project)
+            clock = Clock()
+            out, err = io.StringIO(), io.StringIO()
+            code = TOOL.main(
+                ["--cad-dir", str(project), "--product-id", LISTED_PRODUCT_ID,
+                 "--inventor", DIRECT_INVENTOR, "--live"],
+                environment=environment,
+                transports={"transport": transport, "sleeper": clock.sleep},
+                out=out, err=err, sleeper=clock.sleep, clock=clock,
+            )
+            self.assertEqual(code, 0, out.getvalue() + err.getvalue())
+            archive = root / ("%s-%s" % (DIRECT_INVENTOR, SLUG))
+            archive.mkdir()
+            pack_archive(project, archive)
+            (archive / "publication").mkdir()
+            (archive / "publication" / "PUBLICATION.json").write_text(json.dumps({
+                "schema_version": 1,
+                "publication": {"adapter": "factory", "status": "public", "slug": SLUG,
+                                "page_url": "https://www.autonomous.ai/toys/product/" + SLUG,
+                                "listing": {"price_cents": 2400, "currency": "USD"}},
+            }))
+            reseal(archive)
+            transport.extras = [dict(item) for item in OLD_EXTRAS]
+            transport.calls.clear()
+
+            wish = Wish.create(
+                "orbit-dog-listing-update",
+                "Build a pocket draughts set inspired by my orbit-loving dog.",
+                constraints={"audience": "14+", "manufacture": "not-authorized"},
+                context={"source": "native-listing-update-test"},
+            )
+
+            def host():
+                return mock.patch.dict(os.environ, environment, clear=True)
+
+            def checkout():
+                return mock.patch(
+                    "workshop.workflow.native_run._source_checkout_root",
+                    return_value=repository,
+                )
+
+            with host(), checkout(), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run.verify_native_made_cad",
+                side_effect=verify_cad,
+            ):
+                start_native_run(wish, effort="spark", local_release_only=True)
+                paths = native_run_paths(wish.product_id)
+                sealed = AgentRun.open(
+                    paths.workspace, host_state_root=paths.host_state
+                ).snapshot()
+            sealed_step = next(
+                (paths.workspace / artifact.path).parent / "product" / "assembled.step"
+                for artifact in sealed.stage_artifacts["make"]
+                if artifact.path.endswith("made.json")
+            ).read_bytes()
+
+            def update(**options):
+                with host(), checkout(), mock.patch(
+                    "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                    side_effect=no_session,
+                ), mock.patch(
+                    "workshop.workflow.native_run.verify_native_made_cad",
+                    side_effect=no_rebuild,
+                ), mock.patch(
+                    "workshop.workflow.native_run._factory_credentials",
+                    return_value=FactoryAgentCredentials("alice", "test-secret"),
+                ), mock.patch(
+                    "workshop.workflow.native_run._FACTORY_TRANSPORT", transport,
+                ), mock.patch(
+                    "subprocess.run", side_effect=no_rebuild,
+                ):
+                    return update_native_run_listing(
+                        wish.product_id,
+                        slug=SLUG,
+                        reason="fix",
+                        published_archive=archive,
+                        predicted_grams=180.0,
+                        predicted_grams_source="orca test weigh",
+                        sleeper=clock.sleep,
+                        clock=clock,
+                        **options,
+                    )
+
+            first = update()
+            second = update()
+            self.assertEqual(first["action"], "listing-update-preview")
+            self.assertEqual(first["problems"], [])
+            self.assertRegex(first["confirmation_code"], r"^lu-[0-9a-f]{12}$")
+            # Sealed bytes, not a rebuild: the code holds across previews.
+            self.assertEqual(second["confirmation_code"], first["confirmation_code"])
+            self.assertEqual(first["primary_model"]["sha256"], _sha256(sealed_step))
+            self.assertEqual(first["listing_product_id"], LISTED_PRODUCT_ID)
+            self.assertEqual(transport.sends(), [])
+            self.assertEqual(transport.versions, 0)
+
+            with self.assertRaisesRegex(ContractError, "does not match this update now"):
+                update(confirm="lu-000000000000")
+            self.assertEqual(transport.sends(), [])
+
+            done = update(confirm=first["confirmation_code"])
+            self.assertEqual(done["action"], "listing-updated")
+            self.assertEqual(transport.versions, 1)
+            self.assertEqual(
+                transport.sends(), [("POST", "import"), ("PUT", "extra-materials")]
+            )
+            # What reached Factory is the exact sealed primary.
+            self.assertEqual(transport.snapshots["history-2"]["assembled.step"], sealed_step)
+            self.assertEqual(done["version"]["history_id"], "history-2")
+            self.assertEqual(done["version"]["wish_id"], wish.product_id)
+            self.assertEqual(done["version"]["confirmation_code"], first["confirmation_code"])
+            self.assertTrue(done["archive_updated"])
+            recorded = json.loads((archive / "publication" / "PUBLICATION.json").read_bytes())
+            self.assertEqual([entry["history_id"] for entry in recorded["versions"]],
+                             ["history-2"])
+
+            # The run is untouched: still Unreleased, same checkpoint.
+            self.assertTrue(_local_release_only_at(paths, wish.product_id))
+            after = AgentRun.open(paths.workspace, host_state_root=paths.host_state).snapshot()
+            self.assertEqual(after.checkpoint_sha256, sealed.checkpoint_sha256)
+
+            # The same command again reconciles through the ledger; nothing is sent.
+            transport.calls.clear()
+            again = update(confirm=first["confirmation_code"])
+            self.assertEqual(again["action"], "listing-updated")
+            self.assertEqual(transport.sends(), [])
+            self.assertEqual(transport.versions, 1)
+
+            # Another slug, or a changed sealed byte, is refused before any send.
+            with self.assertRaisesRegex(ContractError, "does not match the archive's listing"):
+                with host():
+                    update_native_run_listing(
+                        wish.product_id, slug="another-toy", reason="fix",
+                        published_archive=archive,
+                    )
+            sealed_path = next(
+                (paths.workspace / artifact.path).parent / "product" / "assembled.step"
+                for artifact in sealed.stage_artifacts["make"]
+                if artifact.path.endswith("made.json")
+            )
+            sealed_path.write_bytes(sealed_step + b"changed")
+            transport.calls.clear()
+            with self.assertRaises((ContractError, StateConflict, ArtifactError)):
+                update()
+            self.assertEqual(transport.sends(), [])
+
     def test_publish_with_title_renames_only_the_release(self):
         """`workshop publish --title` re-seals only the Release, not Make.
 
