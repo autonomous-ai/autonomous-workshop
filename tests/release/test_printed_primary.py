@@ -92,6 +92,32 @@ class PrintedPrimaryTest(unittest.TestCase):
         colours = {name: colour.hex for name, colour in read_step_part_colors(result.content).items()}
         self.assertEqual(colours, {"base": "#5a3a22", "post": "#1a1a1a"})
 
+    def test_a_group_emptied_by_stripping_leaves_no_empty_body(self):
+        # A powered Workshop toy keeps its bought bodies in one `bought` group
+        # (ADR 0095); stripping them all must not leave the group behind.
+        from build123d import Color, Compound, export_step
+
+        def labelled(label, colour, shape):
+            shape.label = label
+            shape.color = Color(*(int(colour[i:i + 2], 16) / 255.0 for i in (1, 3, 5)))
+            return shape
+
+        scene = Compound(label="scene", children=[
+            labelled("base", "#5a3a22", placed(base(), 0)),
+            labelled("post", "#1a1a1a", placed(post(), 50)),
+            Compound(label="bought", children=[
+                labelled("bought_rod", "#ff00ff", placed(rod(), 100)),
+                labelled("bought_nut", "#ff00ff", placed(nut(), 150)),
+            ]),
+        ])
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "scene.step"
+            export_step(scene, str(path))
+            primary = path.read_bytes()
+        result = printed_only_primary(primary, self.printed, declared=["bought_rod", "bought_nut"])
+        self.assertEqual(sorted(body.name for body in scene_bodies(result.content)), ["base", "post"])
+        self.assertEqual(sorted(result.stripped), ["bought_nut", "bought_rod"])
+
     def test_a_fully_printed_primary_keeps_its_exact_bytes(self):
         scene = step([("base", None, placed(base(), 0)), ("post", None, placed(post(), 50))])
         result = printed_only_primary(scene, self.printed)
