@@ -68,6 +68,19 @@ stay as they were.
 | washer-m12-iso7089 (new) | piece | 1,300 | 6 | anhduongvina.com/san-pham/long-den-phang-thep-ma-kem-m12-din-125/ (2,300); mecsu.vn/chi-tiet/long-den-phang-thep-ma-kem-m12-24x25.ZJQd (364); thegioiic.com/long-den-kin-m12-x-24mm-day-2-2mm-304 (2,736, stainless) | low-medium |
 | switch-push-latching-8x8 (new) | piece | 2,500 | 10 | dientunguyenhien.vn/show/626 (2,800, 8 × 8 self-locking, 6-pin); robocon.vn/detail/sw9-nut-nhan-6-chan-8x8mm.html (2,500 for 1–19); banlinhkien.com/nut-nhan-6-chan-8x8mm-nhan-giu-5-chiec-p23175903.html (8,000 per 5); nshopvn.com/product/nut-nhan-6-chan-8x8 (1,500, out of stock); caka.vn/nut-nhan-6-chan-8x8 (1,000) | medium-high: 8 × 8 listings; no Vietnamese 8.5 × 8.5 listing found |
 
+## 2026-11-09: R34 Bat Branch Coat Rack hardware
+
+Three Bought Parts added for the R34 Bat Branch Coat Rack: 5 dowel pins (4 bat
+pins and 1 seam pin), 2 wall screws and 2 wall plugs per rack. Same method as
+above. The rate is unchanged: Vietcombank's USD sell rate was 25,780 at
+09:30 on 2026-11-09 (https://webgia.com/ty-gia/vietcombank/).
+
+| Entry | Unit | Est. VND | Cents | Listings (2026-11-09) | Confidence |
+|---|---|---:|---:|---|---|
+| dowel-pin-4x20-iso2338-stainless (new) | piece | 3,000 | 12 | moddingstation.vn "Chốt định vị đặc inox 304 size D4x20 dung sai âm (h7)" (2,760, seen in a related-products list; the site did not load); cokhihth.com.vn/chot-dinh-vi-tron-ms4 (3,700 for 4 × 20, SUJ2 steel); mecsu.vn/san-pham/chot-dinh-vi.PW4 (steel D4x20 at 68,580, pack unclear) | medium-low: no Vietnamese stainless h8/m6 ISO 2338 listing |
+| screw-wood-4x40-countersunk (new) | piece | 700 | 3 | ketnoitieudung.vn/bo-150-vit-bat-go-dau-bang-total-wjbs4004011-st-40x40mm_63541.html (82,000 per 150, about 550 each); ketnoitieudung.vn/hop-500-vit-go-dau-bang-40x40mm-tolsen-54074_63597.html (107,000 per 500, about 215 each). Both zinc-plated; estimate raised to cover stainless | medium |
+| wall-plug-6x30 (new) | piece | 110 | 1 | diennuocanhuy.vn/tac-ke-nhua-9mm (6 mm drill, 30 long, "vít 4"; 110 each, 11,232 per 100); mecsu.vn/chi-tiet/tac-ke-gai-6-khia-hung-thinh-mau-trang-o6-x-30mm-100pcs.pWx2x (10,990 per 100, from a search snippet: the page returned 403); chiaki.vn/tac-ke-rau-tac-ke-mau-tac-ke-nhua-xanh-la-6li-bich-100c (8,899 per 100) | high |
+
 ## Caveats
 
 - **Shopee and Lazada:** these pages render prices with JavaScript, so their
