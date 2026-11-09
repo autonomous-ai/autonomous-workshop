@@ -56,6 +56,12 @@
     {"id": "washer-m16-iso7093-50x3", "name": "M16 large flat washer, ISO 7093, 50 across and 3 thick, steel, used as ballast", "category": "fastener", "unit_price_cents": 16,
      "sizes": [{"what": "outside diameter", "mm": [50]}, {"what": "thickness", "mm": [3]}], "pack": null, "source": null, "confirmed": false},
     {"id": "washer-m12-iso7089", "name": "M12 flat washer, ISO 7089, 24 across and 2.5 thick, steel", "category": "fastener", "unit_price_cents": 6,
-     "sizes": [{"what": "outside diameter", "mm": [24]}, {"what": "thickness", "mm": [2.5]}], "pack": null, "source": null, "confirmed": false}
+     "sizes": [{"what": "outside diameter", "mm": [24]}, {"what": "thickness", "mm": [2.5]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "dowel-pin-4x20-iso2338-stainless", "name": "Stainless steel dowel pin 4 x 20, ISO 2338 (DIN 7), h8 or m6", "category": "fastener", "unit_price_cents": 12,
+     "sizes": [{"what": "diameter", "mm": [4]}, {"what": "length", "mm": [20]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "screw-wood-4x40-countersunk", "name": "Countersunk wood screw 4 x 40, stainless or zinc-plated steel, for wall mounting", "category": "fastener", "unit_price_cents": 3,
+     "sizes": [{"what": "thread", "mm": [4]}, {"what": "length", "mm": [40]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "wall-plug-6x30", "name": "Plastic wall plug 6 x 30 for a 4 mm screw, 6 mm drill", "category": "fastener", "unit_price_cents": 1,
+     "sizes": [{"what": "diameter", "mm": [6]}, {"what": "length", "mm": [30]}], "pack": null, "source": null, "confirmed": false}
   ]
 }
