@@ -24,17 +24,17 @@ rule, this file only points to it; that source stays the authority.
   near-identical design. If it is already sold, drop it. Why: buyers get it
   cheaper there.
 - **Open the real pages in the Paseo browser.** For marketplace and 3D-file
-  licence checks (Amazon, Etsy, AliExpress, Temu, Shopee, MakerWorld,
-  Printables), open the search and product pages with the Paseo browser
-  tools (`mcp__paseo__browser_*`) and read them, instead of WebFetch or
-  search snippets. Use WebSearch only to find links. Shopee needs the
-  owner's logged-in session and sometimes a captcha the owner solves; never
-  solve a captcha or evade bot protection yourself, and never use proxies.
-  For Shopee, navigate the owner's already-verified Shopee tab (find it with
-  `browser_list_tabs`) instead of opening a new one, which gets a captcha;
-  leave that tab open. Close your other tabs when done. Why: sites block server fetches, so checks
-  that relied on snippets missed real listings, prices and licences
-  (owner, 2026-11-09).
+  licence checks (Amazon, Etsy, AliExpress, Temu, MakerWorld, Printables),
+  open the search and product pages with the Paseo browser tools
+  (`mcp__paseo__browser_*`) and read them, instead of WebFetch or search
+  snippets. Use WebSearch only to find links. Close your tabs when done.
+  **Shopee is checked by hand:** its bot check returns a captcha after a few
+  automated searches even in the owner's session, so list 2-3 Vietnamese
+  search terms in the report for the owner or ops to search, and mark
+  Shopee "not checked" until they send links. Never solve a captcha, evade
+  bot protection (including typing into a site's search box to look human)
+  or use proxies. Why: sites block server fetches, so checks that relied on
+  snippets missed real listings, prices and licences (owner, 2026-11-09).
 - **Sell like the bestsellers.** Compare each idea with Moonlit Atlas, Trotter,
   Windup Warrior and Flexi Axolotl: a beloved, recognisable subject, dense
   detail, many colours, with the mechanism serving a reveal. Why: basic or
