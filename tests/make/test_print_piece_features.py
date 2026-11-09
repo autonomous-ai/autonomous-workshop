@@ -129,6 +129,35 @@ class PrintPieceFeatureTest(unittest.TestCase):
         self.assertEqual(check_print_pieces.read_tag(tag), ("print-recess", "sky", "000000000000"))
         self.assertIsNone(check_print_pieces.read_tag({"kind": "print-recess", "name": "print-recess-1"}))
 
+    def test_a_recess_over_a_parts_openings_is_not_read_as_an_overhang(self):
+        # A recess laid over through openings (a lit film behind a plate's
+        # windows): its mouth has holes where some of the mouth's parameter
+        # points fall. The mouth is still the host's own surface, not new
+        # surface looking down.
+        holes = [(dx, dy) for a, b in ((6.06, 9.06), (9.06, 6.06)) for dx in (-a, a) for dy in (-b, b)]
+        cuts = "".join(f"    body = body.cut(Pos({-30 + dx}, {dy}, 10) * Cylinder(1.0, 30))\n"
+                       for dx, dy in holes)
+        source = ("from build123d import *\nfrom features import print_details\n"
+                  "pd = print_details.Details(nozzle=0.4)\n\ndef gen_step():\n"
+                  "    body = Pos(0, 0, 10) * Box(100, 60, 20)\n" + cuts +
+                  '    return pd.print_recess(body, "sky", (-30, 0, 20))\n')
+        (self.project / "part_panel.step.py").write_text(source)
+        done = subprocess.run([sys.executable, str(GATE), "part_panel.step.py"], cwd=self.project,
+                              capture_output=True, text=True, check=False, timeout=600)
+        self.assertNotIn("would look down", done.stdout + done.stderr)
+        self.assertIn("PASS sky:", done.stdout)
+
+    def test_a_recess_cut_into_an_underside_is_still_refused(self):
+        source = ("from build123d import *\nfrom features import print_details\n"
+                  "pd = print_details.Details(nozzle=0.4)\n\ndef gen_step():\n"
+                  "    body = Pos(0, 0, 10) * Box(100, 60, 20)\n"
+                  '    return pd.print_recess(body, "sky", (-30, 0, 0))\n')
+        (self.project / "part_panel.step.py").write_text(source)
+        done = subprocess.run([sys.executable, str(GATE), "part_panel.step.py"], cwd=self.project,
+                              capture_output=True, text=True, check=False, timeout=600)
+        self.assertNotEqual(done.returncode, 0)
+        self.assertIn("print-recess: this face looks 90 deg down", done.stdout + done.stderr)
+
     def test_a_piece_the_contract_does_not_have_is_refused_by_the_call(self):
         done = self.gate(extra='body = pd.print_recess(body, "poster", (30, 0, 20))')
         self.assertNotEqual(done.returncode, 0)

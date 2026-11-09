@@ -542,6 +542,23 @@ class _Spot:
 
 # ----------------------------------------------------------------- details ---
 
+def _on_surface(surface, face, vertices, triangles) -> bool:
+    """Whether `face` lies on the host's own `surface` (a raised feature's
+    contact or a cut's mouth). It is read at points that are on the face:
+    a mouth with holes in it (a recess over a part's openings) has parameter
+    points that fall in a hole, off the face, which must not make it new
+    surface. Triangle centroids stand in when no parameter point is on it."""
+    import numpy as np
+
+    points = [face.position_at(u, v) for u, v in ((0.5, 0.5), (0.2, 0.2), (0.8, 0.8), (0.2, 0.8), (0.8, 0.2))]
+    points = [point for point in points if face.is_inside(point, 1e-4)]
+    if not points:
+        centroids = vertices[triangles].mean(axis=1)
+        step = max(1, len(centroids) // 5)
+        points = [tuple(c) for c in centroids[::step][:5]]
+    return all(surface.distance_to(point) < 1e-4 for point in points)
+
+
 class Details:
     """The feature library bound to one nozzle and one print direction."""
 
@@ -1358,14 +1375,13 @@ class Details:
         for shape in shapes:
             region = (shape & host) if cut else (shape - host)
             for face in region.faces():
-                if all(surface.distance_to(face.position_at(u, v)) < 1e-4
-                       for u, v in ((0.5, 0.5), (0.2, 0.2), (0.8, 0.8), (0.2, 0.8), (0.8, 0.2))):
-                    continue
                 vertices, triangles = face.tessellate(*_TESSELLATION)
                 if not triangles:
                     continue
                 v = np.array([tuple(p) for p in vertices])
                 t = np.array(triangles)
+                if _on_surface(surface, face, v, t):
+                    continue
                 normals = np.cross(v[t[:, 1]] - v[t[:, 0]], v[t[:, 2]] - v[t[:, 0]])
                 lengths = np.linalg.norm(normals, axis=1)
                 keep = lengths > 1e-12
