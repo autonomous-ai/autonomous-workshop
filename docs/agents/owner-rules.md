@@ -23,6 +23,16 @@ rule, this file only points to it; that source stays the authority.
   check Amazon, Etsy, AliExpress, Temu and Shopee for the same type and a
   near-identical design. If it is already sold, drop it. Why: buyers get it
   cheaper there.
+- **Open the real pages in the Paseo browser.** For marketplace and 3D-file
+  licence checks (Amazon, Etsy, AliExpress, Temu, Shopee, MakerWorld,
+  Printables), open the search and product pages with the Paseo browser
+  tools (`mcp__paseo__browser_*`) and read them, instead of WebFetch or
+  search snippets. Use WebSearch only to find links. Shopee needs the
+  owner's logged-in session and sometimes a captcha the owner solves; never
+  solve a captcha or evade bot protection yourself, and never use proxies.
+  Close your tabs when done. Why: sites block server fetches, so checks
+  that relied on snippets missed real listings, prices and licences
+  (owner, 2026-11-09).
 - **Sell like the bestsellers.** Compare each idea with Moonlit Atlas, Trotter,
   Windup Warrior and Flexi Axolotl: a beloved, recognisable subject, dense
   detail, many colours, with the mechanism serving a reveal. Why: basic or
