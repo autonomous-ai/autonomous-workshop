@@ -27,6 +27,7 @@ from typing import Any, Callable, Dict, Mapping, MutableMapping, Optional, Seque
 
 from workshop._validation import require_sha256
 from workshop.artifacts import (
+    ArtifactEntry,
     ArtifactManifest,
     assert_packable_content,
     build_artifact_manifest,
@@ -63,6 +64,7 @@ from workshop.release.native import (
 )
 from workshop.runtime import EffectIntent, EffectLedger, Receipt
 from workshop.release.bought_extras import factory_extra_materials, sealed_bought_lines
+from workshop.release.local_paths import redact_local_paths
 
 
 DEFAULT_FACTORY_API = "https://panda-social-api.autonomous.ai/api/v1"
@@ -525,6 +527,9 @@ def _make_artifact_entries(
     return tuple(sorted(result, key=lambda item: item[0].path))
 
 
+_MAKE_ARTIFACT_FACT_KEYS = frozenset(("source_path", "archive_path", "bytes", "sha256"))
+
+
 def _declared_make_artifacts(
     facts: Mapping[str, Any],
 ) -> Mapping[str, Mapping[str, Any]]:
@@ -553,13 +558,21 @@ def _declared_make_artifacts(
     result: Dict[str, Mapping[str, Any]] = {}
     source_paths = []
     for item in files:
-        if not isinstance(item, Mapping) or set(item) != {
-            "source_path",
-            "archive_path",
-            "bytes",
-            "sha256",
-        }:
+        if not isinstance(item, Mapping) or set(item) not in (
+            _MAKE_ARTIFACT_FACT_KEYS,
+            _MAKE_ARTIFACT_FACT_KEYS | {"source_sha256", "redactions"},
+        ):
             raise ContractError("Factory Make artifact declaration is malformed")
+        if "redactions" in item and (
+            not isinstance(item["redactions"], list)
+            or not item["redactions"]
+            or not all(isinstance(label, str) and label for label in item["redactions"])
+            or PurePosixPath(str(item.get("source_path"))).suffix.casefold()
+            in FACTORY_STEP_SUFFIXES
+        ):
+            raise ContractError("Factory Make artifact declaration is malformed")
+        if "source_sha256" in item:
+            require_sha256(item["source_sha256"], "Factory Make artifact source sha256")
         source_path = item.get("source_path")
         archive_path = item.get("archive_path")
         byte_count = item.get("bytes")
@@ -1128,6 +1141,54 @@ def _extra_materials(product: Mapping[str, Any]) -> list:
     return result
 
 
+def _public_make_artifacts(
+    root: Path,
+    manifest: ArtifactManifest,
+    make_artifacts: Sequence[Tuple[ArtifactEntry, str]],
+    *,
+    run_root: Optional[Path],
+) -> Dict[str, Tuple[bytes, Tuple[str, ...]]]:
+    """The Make files whose public bytes differ from their sealed bytes."""
+
+    if run_root is not None and not Path(run_root).is_dir():
+        run_root = None
+    result: Dict[str, Tuple[bytes, Tuple[str, ...]]] = {}
+    for entry, _archive_path in make_artifacts:
+        if PurePosixPath(entry.path).suffix.casefold() in FACTORY_STEP_SUFFIXES:
+            continue
+        content = _read_bound_file(root, manifest, entry.path)
+        public, redactions = redact_local_paths(content, run_root=run_root)
+        if public != content:
+            result[entry.path] = (public, redactions)
+    return result
+
+
+def _make_artifact_fact(
+    entry: ArtifactEntry,
+    archive_path: str,
+    redacted: Optional[Tuple[bytes, Tuple[str, ...]]],
+) -> Dict[str, Any]:
+    """One Make file as it crosses: its archive bytes, and its sealed hash
+    beside them when Release's path redaction changed it."""
+
+    if redacted is None:
+        return {
+            "source_path": entry.path,
+            "archive_path": archive_path,
+            "bytes": entry.bytes,
+            "sha256": entry.sha256,
+        }
+    public, redactions = redacted
+    return {
+        "source_path": entry.path,
+        "archive_path": archive_path,
+        "bytes": len(public),
+        "sha256": hashlib.sha256(public).hexdigest(),
+        "source_sha256": entry.sha256,
+        "redactions": list(redactions),
+    }
+
+
 def _build_model_handoff(
     context: Any,
     destination: Path,
@@ -1199,6 +1260,14 @@ def _build_model_handoff(
         kept_step=primary_source if sealed_primary["kind"] == "solid" and printed is None else None,
     )
 
+    # Release's publication hygiene (the same redaction its public archive
+    # applies): Make's round records and logs name the run workspace and the
+    # builder's home directory, and none of that may leave the machine. A
+    # STEP is never rewritten; its bytes are the sealed geometry.
+    public_artifacts = _public_make_artifacts(
+        root, manifest, make_artifacts, run_root=getattr(context, "workspace", None)
+    )
+
     primary_model = {
         "kind": sealed_primary["kind"],
         "path": transport_primary,
@@ -1225,12 +1294,7 @@ def _build_model_handoff(
             "kind": FACTORY_MAKE_ARTIFACTS_KIND,
             "excluded_directories": sorted(FACTORY_MAKE_EXCLUDED_DIRECTORIES),
             "files": [
-                {
-                    "source_path": entry.path,
-                    "archive_path": archive_path,
-                    "bytes": entry.bytes,
-                    "sha256": entry.sha256,
-                }
+                _make_artifact_fact(entry, archive_path, public_artifacts.get(entry.path))
                 for entry, archive_path in make_artifacts
             ],
         }
@@ -1276,7 +1340,11 @@ def _build_model_handoff(
     with tempfile.TemporaryDirectory(prefix="workshop-factory-handoff-") as temporary:
         staging = Path(temporary)
         for entry, archive_path in make_artifacts:
-            content = _read_bound_file(root, manifest, entry.path)
+            redacted = public_artifacts.get(entry.path)
+            content = (
+                redacted[0] if redacted is not None
+                else _read_bound_file(root, manifest, entry.path)
+            )
             relative = PurePosixPath(archive_path)
             target = staging.joinpath(*relative.parts)
             target.parent.mkdir(parents=True, exist_ok=True)

@@ -505,6 +505,17 @@ class NativeReleaseTest(unittest.TestCase):
             ("workshop-run-root", "home-directory"),
         )
 
+    def test_redaction_covers_any_home_but_leaves_binary_bytes(self):
+        from workshop.release.local_paths import names_host_path, redact_local_paths
+
+        text = b'{"a": "/home/builder-two/runs/x.json", "b": "/Users/kim/cad/p.py"}'
+        public, redactions = redact_local_paths(text)
+        self.assertFalse(names_host_path(public))
+        self.assertEqual(public, b'{"a": "<HOME>/runs/x.json", "b": "<HOME>/cad/p.py"}')
+        self.assertEqual(redactions, ("home-directory",))
+        binary = b"\x89PNG\xff\xfe/home/builder-two/x"
+        self.assertEqual(redact_local_paths(binary), (binary, ()))
+
     def _make_product(self):
         root = self.run_root / "artifacts/make/r0001/product"
         (root / "cad/project").mkdir(parents=True)

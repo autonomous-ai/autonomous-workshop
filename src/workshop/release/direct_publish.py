@@ -75,8 +75,6 @@ _MESH_SUFFIXES = frozenset(
 _PRODUCT_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _PRINTABLE = re.compile(r"^PRINTABLE\s*=\s*True\s*$", re.MULTILINE)
 _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
-_HOST_PATH = re.compile(rb"(?:/Users|/home)/[^/\s\"'<>`)]+/")
-_TEXT_SUFFIXES = frozenset((".py", ".md", ".txt", ".json", ".csv", ".toml", ".yaml", ".yml"))
 _STEP_SIGNATURE = b"ISO-10303-21"
 # A likeness mask from an image-derived verify_project measures 1.0 here and
 # a shaded render 0.00-0.18; the toy-archive publish wrapper uses the same line.
@@ -293,15 +291,6 @@ class DirectSource:
     # Every project file the build reads, including ones that stay local
     # (``ref/``); derived caches and working material are left out.
     inputs: Mapping[str, Path] = field(default_factory=dict)
-
-    def host_path_files(self) -> list[str]:
-        """Text files that still name a machine's home directory."""
-
-        return [
-            path for path, source in sorted(self.files.items())
-            if PurePosixPath(path).suffix.casefold() in _TEXT_SUFFIXES
-            and _HOST_PATH.search(source.read_bytes())
-        ]
 
     def printed_entry_steps(self) -> dict[str, bytes]:
         """Each top-level ``PRINTABLE = True`` entry's STEP bytes, or refuse."""

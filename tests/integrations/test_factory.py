@@ -1,6 +1,7 @@
 import hashlib
 import io
 import json
+import re
 import shutil
 import tempfile
 import unittest
@@ -1091,6 +1092,53 @@ class FactoryReleaseTest(unittest.TestCase):
         facts = json.loads(files["workshop-product-facts.json"])
         for entry in facts["make_artifacts"]["files"]:
             self.assertEqual(files[entry["archive_path"]], (self.made.artifact_root / entry["source_path"]).read_bytes())
+
+    def test_the_handoff_names_no_host_path(self):
+        """Release's path hygiene covers what crosses to Factory, too.
+
+        Make's round records name the run workspace and home directories;
+        the handoff redacts them as the public archive does, declares the
+        sealed hash beside the public one, and never rewrites a STEP.
+        """
+
+        self.use_nested_make_output()
+        product = self.made.artifact_root
+        record = product / "cad/measure/make-round-state.json"
+        record.parent.mkdir(parents=True)
+        record.write_bytes(json.dumps({
+            "project": "%s/cad" % product,
+            "home": "%s/harnesses/workshop/.venv/bin/python" % Path.home(),
+            "other": "/home/builder-two/runs/x/summary.json",
+            "mac": "/Users/someone/cad/part.step.py",
+        }).encode())
+        log = product / "cad/measure/gen.log"
+        log.write_bytes(b"built %s/cad/part.step\n" % str(product).encode())
+        sealed = {path: path.read_bytes() for path in (record, log)}
+        step = (product / "assembled.step").read_bytes()
+        self._reseal_product()
+        # A Workshop ReleaseContext names its run root; Made lives inside it.
+        self.context.workspace = product.parent
+        transport = RootSelectingFactoryTransport()
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertTrue(receipt.is_verified_draft)
+        files = transport.snapshots["history-1"]
+        host = re.compile(rb"(?:/Users|/home)/[^/\s\"'<>`)]+/")
+        for name, content in files.items():
+            self.assertIsNone(host.search(content), name)
+            self.assertNotIn(str(Path.home()).encode(), content, name)
+            self.assertNotIn(str(product).encode(), content, name)
+        self.assertEqual(files["assembled.step"], step)
+        facts = json.loads(files["workshop-product-facts.json"])
+        declared = {entry["source_path"]: entry for entry in facts["make_artifacts"]["files"]}
+        for path, content in sealed.items():
+            entry = declared[path.relative_to(product).as_posix()]
+            self.assertEqual(entry["source_sha256"], hashlib.sha256(content).hexdigest())
+            self.assertEqual(entry["sha256"], hashlib.sha256(files[entry["archive_path"]]).hexdigest())
+            self.assertTrue(entry["redactions"])
+        self.assertIn(b"<HOME>/", files[declared["cad/measure/make-round-state.json"]["archive_path"]])
+        # Sealed Made bytes are untouched; only what crosses is redacted.
+        for path, content in sealed.items():
+            self.assertEqual(path.read_bytes(), content)
 
     def test_root_marker_collision_rehomes_earlier_make_sources_without_byte_changes(self):
         self.use_nested_make_output()
