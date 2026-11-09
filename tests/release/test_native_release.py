@@ -2125,6 +2125,41 @@ class NativeReleaseTest(unittest.TestCase):
             target,
         )
 
+    # ADR 0095 (2026-11-07): a powered toy with bought models gives Factory
+    # its printed-only STEP under the primary's name; the archive accepts
+    # exactly the sealed file the host's Make acceptance checked.
+    def _printed_primary_inputs(self):
+        release, repository, receipt = self._make_output_archive_inputs()
+        printed = next(
+            entry for entry in self.made.product_manifest.entries
+            if entry.path.endswith(".step") and entry.path != "assembled.step"
+        )
+        receipt = replace(receipt, details={**receipt.details, "primary_model_sha256": printed.sha256})
+        record = {"path": printed.path, "sha256": printed.sha256}
+        return release, repository, receipt, printed, record
+
+    def test_public_archive_takes_the_sealed_printed_only_primary(self):
+        release, repository, receipt, printed, record = self._printed_primary_inputs()
+        target = materialize_public_example(
+            repository, self.run_root, release=release, made=self.made,
+            inventor_id="eve", receipt=receipt, printed_primary=record,
+        )
+        source = self.run_root / self.made.product_root / printed.path
+        self.assertEqual((target / "make/models/assembled.step").read_bytes(), source.read_bytes())
+        publication = json.loads((target / "publication/PUBLICATION.json").read_bytes())
+        self.assertEqual(publication["primary_model"]["sha256"], printed.sha256)
+
+    def test_public_archive_refuses_a_primary_no_sealed_record_names(self):
+        release, repository, receipt, printed, record = self._printed_primary_inputs()
+        for printed_primary in (None, {**record, "sha256": "f" * 64}, {**record, "path": "missing.step"}):
+            with self.subTest(printed_primary=printed_primary):
+                with self.assertRaisesRegex(StateConflict, "differs from sealed Made bytes"):
+                    materialize_public_example(
+                        repository, self.run_root, release=release, made=self.made,
+                        inventor_id="eve", receipt=receipt, printed_primary=printed_primary,
+                    )
+                self.assertEqual(list((repository / "toys").iterdir()), [])
+
     def test_public_archive_make_output_needs_no_readme_or_pdf(self):
         release, repository, receipt = self._make_output_archive_inputs(with_readme=False)
         target = materialize_public_example(
