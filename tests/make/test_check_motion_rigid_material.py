@@ -61,6 +61,7 @@ class RigidMaterialTests(unittest.TestCase):
         self.assertAlmostEqual(sum(s.volume for s in fused.solids()), 4 * 2 * 2 + 1 * 2 * 2)
 
     def test_each_sweep_fuses_its_group_once_however_many_poses(self):
+        motion._RIGID.clear()
         for name, condition in (('rotation', rotation_condition), ('coupled', coupled_condition)):
             fuses = []
             for steps in (4, 12):
@@ -73,6 +74,25 @@ class RigidMaterialTests(unittest.TestCase):
                                      if len(list(call.args[0].solids())) > 1))
             with self.subTest(check=name):
                 self.assertEqual(fuses, [1, 1])
+
+    def test_conditions_of_one_run_share_the_fused_mover(self):
+        motion._RIGID.clear()
+        parts = assembly(30)
+        with patch.object(motion, '_material', wraps=motion._material) as prepare:
+            for condition in (rotation_condition(4), coupled_condition(4), rotation_condition(6)):
+                motion.run_condition(condition, parts, 0)
+            fused = [call for call in prepare.call_args_list if len(list(call.args[0].solids())) > 1]
+            self.assertEqual(len(fused), 1)
+        moved = parts['figure'].translate((1, 0, 0))
+        self.assertIsNot(motion.rigid_material(moved), motion.rigid_material(parts['figure']))
+        self.assertAlmostEqual(motion.rigid_material(moved).bounding_box().min.X,
+                               motion.rigid_material(parts['figure']).bounding_box().min.X + 1)
+
+    def test_the_memo_is_bounded(self):
+        motion._RIGID.clear()
+        for x in range(motion.RIGID_ENTRIES + 3):
+            motion.rigid_material(figure().translate((10 * x, 0, 0)))
+        self.assertLessEqual(sum(len(v) for v in motion._RIGID.values()), motion.RIGID_ENTRIES)
 
     def test_verdicts_are_those_of_the_unfused_group(self):
         # The arm reaches x = 3; a wall at x = -3.5 is met only when the arm swings round.
