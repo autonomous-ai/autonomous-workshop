@@ -156,6 +156,20 @@ class RedundantFinalSweepReuseTest(unittest.TestCase):
         self.assertEqual(code, 0, err)
         self.assertNotIn("| reused |", self._report())
 
+    def test_a_repaired_landmark_audit_reruns_instead_of_replaying_its_fail(self):
+        audit = self.project / "measure" / "check_landmarks.py"
+        audit.write_text("raise SystemExit(1)\n", encoding="utf-8")
+        self.failing_labels = {"check_landmarks"}
+        first_code, _ = self._run()
+        self.assertNotEqual(first_code, 0)
+
+        audit.write_text("raise SystemExit(0)\n", encoding="utf-8")
+        self.failing_labels = set()
+        code, err = self._run()
+
+        self.assertEqual(code, 0, err)
+        self.assertNotIn("| reused |", self._report().split("Previous pipeline record")[0])
+
     def test_changed_signature_review_forces_a_full_sweep(self):
         self._run()
         review_path = self.project / self.verifier["SIGNATURE_REVIEW_RELATIVE"]
@@ -230,6 +244,22 @@ class SweepClosureHashTest(unittest.TestCase):
         original = self._closure()
         (self.project / "README.md").write_text("# Widget\n", encoding="utf-8")
         self.assertNotEqual(original, self._closure())
+
+    def test_changed_project_audit_script_changes_the_hash(self):
+        # The sweep runs measure/check_fit.py, check_spec.py and
+        # check_landmarks.py; a repaired audit must not replay the FAIL
+        # its old bytes recorded.
+        for name in ("check_fit.py", "check_spec.py", "check_landmarks.py"):
+            audit = self.project / "measure" / name
+            audit.write_text("raise SystemExit(1)\n", encoding="utf-8")
+            original = self._closure()
+            audit.write_text("raise SystemExit(0)\n", encoding="utf-8")
+            self.assertNotEqual(original, self._closure(), name)
+
+    def test_other_measurements_do_not_change_the_hash(self):
+        original = self._closure()
+        (self.project / "measure" / "notes.md").write_text("a note\n", encoding="utf-8")
+        self.assertEqual(original, self._closure())
 
     def test_missing_built_step_is_an_uncomputable_closure(self):
         self.built_step.unlink()

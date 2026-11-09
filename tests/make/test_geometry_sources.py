@@ -162,9 +162,22 @@ class SweepReuseFollowsGeometrySourcesTest(unittest.TestCase):
             tool_paths=[self.tool])
 
     def test_files_beside_the_geometry_leave_the_reuse_key_unchanged(self):
+        # The sweep runs the project's measure/ audits itself, so their bytes
+        # are inputs to its verdict (a repaired audit must not replay its old
+        # FAIL); every other file beside the geometry still leaves it unchanged.
+        audits = set(self.verifier["PROJECT_AUDITS"])
+        add_files(self.project, {k: v for k, v in NOT_GEOMETRY.items()
+                                 if k.startswith("measure/") and k.split("/", 1)[1] in audits})
         before = self._closure()
-        add_files(self.project, NOT_GEOMETRY)
+        add_files(self.project, {k: v for k, v in NOT_GEOMETRY.items()
+                                 if not (k.startswith("measure/") and k.split("/", 1)[1] in audits)})
         self.assertEqual(self._closure(), before)
+
+    def test_an_edited_project_audit_changes_the_reuse_key(self):
+        add_files(self.project, NOT_GEOMETRY)
+        before = self._closure()
+        (self.project / "measure/check_landmarks.py").write_text("raise SystemExit(1)\n")
+        self.assertNotEqual(self._closure(), before)
 
     def test_an_edited_imported_helper_changes_the_reuse_key(self):
         before = self._closure()
