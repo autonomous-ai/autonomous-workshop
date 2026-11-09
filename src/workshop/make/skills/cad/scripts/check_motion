@@ -498,7 +498,24 @@ def rigid_material(shape):
     solids = getattr(shape, "solids", None)
     if solids is None or len(list(solids())) < 2:
         return shape
-    return _material(shape)[0]
+    wrapped = shape.wrapped
+    bucket = _RIGID.setdefault(hash(wrapped), [])
+    for previous, fused in bucket:
+        if previous.IsEqual(wrapped):
+            return fused
+    fused = _material(shape)[0]
+    if sum(len(entries) for entries in _RIGID.values()) >= RIGID_ENTRIES:
+        _RIGID.clear()
+        bucket = _RIGID.setdefault(hash(wrapped), [])
+    bucket.append((wrapped, fused))
+    return fused
+
+
+# The same occurrence moves in several conditions of one manifest; its fused
+# material is the same each time, so a run fuses it once. Keys are complete
+# OCCT identities (IsEqual, location included) held by strong references.
+_RIGID: dict = {}
+RIGID_ENTRIES = 32
 
 
 def overlap_volume(a, b):
