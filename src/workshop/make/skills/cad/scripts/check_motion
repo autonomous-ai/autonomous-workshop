@@ -485,6 +485,22 @@ def _material(shape):
     return normalized, measured
 
 
+def rigid_material(shape):
+    """A rigid mover's material, fused once in its home pose.
+
+    Every sample of a rigid mover is a rigid motion of the same solids, and a
+    rigid motion commutes with their union, so placing the fused material is
+    the same geometry as fusing the placed solids. Fusing per sample cost an
+    accepted ten-body figure 50 s at every pose; fused once it costs that once
+    per condition. A single solid, or an operand that is no B-rep (a test's
+    numeric stand-in), is returned as it is.
+    """
+    solids = getattr(shape, "solids", None)
+    if solids is None or len(list(solids())) < 2:
+        return shape
+    return _material(shape)[0]
+
+
 def overlap_volume(a, b):
     """Measure intersection only when both Boolean measurements are consistent."""
     from OCP.BRepAlgoAPI import BRepAlgoAPI_Common, BRepAlgoAPI_Cut, BRepAlgoAPI_Fuse
@@ -655,6 +671,7 @@ def sweep(moving, obstacles, place, steps: int, tol: float, allow_seated: bool) 
     not the path -- that is what `interfere` is for.
     """
     first = 1 if allow_seated else 0
+    moving = rigid_material(moving)
     poses = [(step, place(moving, step / steps)) for step in range(first, steps + 1)]
     boxes = [moved.bounding_box() for _, moved in poses]
     obstacles = [(name, crop_to_sweep(obstacle, boxes)) for name, obstacle in obstacles]
@@ -1031,7 +1048,8 @@ def check_coupled(inputs: dict, thresholds: dict, parts: dict) -> dict:
         if name in selected_names:
             raise ManifestError(
                 f"movers repeat {name}; name each assembly occurrence only once")
-        shape = resolve_parts(name, parts, f"movers[{index}].part")[0][1]
+        # Each mover is one rigid body through the cycle: fuse it once.
+        shape = rigid_material(resolve_parts(name, parts, f"movers[{index}].part")[0][1])
         key = node_keys.get(name)
         if key is not None:
             # Aliases share one node key; a group also owns its descendant
