@@ -86,6 +86,7 @@ from workshop.release.direct_publish import (
     inventor_name,
     load_cad_project,
     load_public_toy_archive,
+    load_published_record,
     published_design,
     readme_summary,
     record_archive_publication,
@@ -322,6 +323,7 @@ def _describe(
     evidence: EvidenceStatus,
     environment: Optional[Mapping[str, str]],
     updating: bool = False,
+    ledger_file: Optional[Path] = None,
 ) -> None:
     metadata = handoff["metadata"]
     content = handoff["content"]
@@ -385,7 +387,7 @@ def _describe(
               % ", ".join(unsanitized))
     credential = inventor_credential_file(inventor, environment)
     write("credential:    %s (%s)" % (credential, "present" if credential.exists() else "absent"))
-    write("ledger:        %s" % ledger_path(product_id, environment))
+    write("ledger:        %s" % (ledger_file or ledger_path(product_id, environment)))
     write("gates not run by Workshop: %s" % "; ".join(GATES_NOT_RUN))
 
 
@@ -585,7 +587,7 @@ def _update_record(
     if args.archive is not None:
         record = source.publication
     elif args.published_archive is not None:
-        record = load_public_toy_archive(args.published_archive).publication
+        record = load_published_record(args.published_archive)
     else:
         raise ContractError("--update-listing with --cad-dir needs --published-archive")
     if record is None:
@@ -759,8 +761,10 @@ def main(
         published = None
         if updating:
             record = _update_record(args, source)
+            home = default_workshop_home(environment)
+            # A Workshop run's Release keeps its receipt in state/<wish-id>/.
             published = published_design(
-                default_workshop_home(environment) / "direct-publish", args.update_listing
+                (home / "direct-publish", home / "state"), args.update_listing
             )
             if args.product_id and args.product_id != published.product_id:
                 raise ContractError(
@@ -799,7 +803,7 @@ def main(
                 write, live=args.live, source=source, product_id=product_id,
                 inventor=args.inventor, display_name=display_name, staged=staged,
                 handoff=handoff, evidence=evidence, environment=environment,
-                updating=updating,
+                updating=updating, ledger_file=published.ledger if published is not None else None,
             )
             if updating:
                 assert record is not None and published is not None
@@ -808,6 +812,7 @@ def main(
                     environment=environment, transports=transports or {},
                     product_id=product_id, record=record, primary_step=primary_step,
                     staged=staged, handoff=handoff, sleeper=sleeper, clock=clock,
+                    ledger_file=published.ledger or ledger_path(product_id, environment),
                 )
             blockers = _blockers(args, source, packed, evidence, environment,
                                  product_id=product_id, title=title)
@@ -886,6 +891,7 @@ def _run_update(
     handoff: Mapping[str, Any],
     sleeper: Callable[[float], None],
     clock: Callable[[], float],
+    ledger_file: Path,
 ) -> int:
     blockers = _update_blockers(args, packed, evidence, environment)
     if blockers:
@@ -897,7 +903,7 @@ def _run_update(
         write("preview stopped before any Factory read")
         return 0
     plan = _update_plan(args, source, record, primary_step, staged)
-    ledger = EffectLedger(ledger_path(product_id, environment))
+    ledger = EffectLedger(ledger_file)
     updater = FactoryListingUpdate(
         ledger,
         _session(args.inventor, environment, transports, read_only=not args.live),
