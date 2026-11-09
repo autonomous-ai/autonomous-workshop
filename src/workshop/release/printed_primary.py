@@ -65,9 +65,9 @@ def _ocp():
         from OCP.GProp import GProp_GProps
         from OCP.IFSelect import IFSelect_RetDone
         from OCP.STEPCAFControl import STEPCAFControl_Reader
-        from OCP.TCollection import TCollection_ExtendedString
+        from OCP.TCollection import TCollection_AsciiString, TCollection_ExtendedString
         from OCP.TDataStd import TDataStd_Name
-        from OCP.TDF import TDF_Label, TDF_LabelSequence
+        from OCP.TDF import TDF_Label, TDF_LabelSequence, TDF_Tool
         from OCP.TDocStd import TDocStd_Document
         from OCP.TopAbs import TopAbs_SOLID
         from OCP.TopExp import TopExp_Explorer
@@ -159,6 +159,65 @@ def _leaves(document) -> List[Tuple[object, Optional[object], SceneBody]]:
     for index in range(1, free.Length() + 1):
         visit(free.Value(index), None, None)
     return found
+
+
+def _groups(document) -> List[Tuple[Optional[object], object, str, int]]:
+    """Every assembly as (its component label or None when free, the
+    assembly label, its entry, its component count)."""
+
+    ocp = _ocp()
+    shape_tool = ocp["XCAFDoc_ShapeTool"]
+    tool = ocp["XCAFDoc_DocumentTool"].ShapeTool_s(document.Main())
+    found: List[Tuple[Optional[object], object, str, int]] = []
+
+    def entry(label) -> str:
+        text = ocp["TCollection_AsciiString"]()
+        ocp["TDF_Tool"].Entry_s(label, text)
+        return text.ToCString()
+
+    def visit(label, component) -> None:
+        referred = label
+        if shape_tool.IsReference_s(label):
+            referred = ocp["TDF_Label"]()
+            shape_tool.GetReferredShape_s(label, referred)
+        if not shape_tool.IsAssembly_s(referred):
+            return
+        components = ocp["TDF_LabelSequence"]()
+        shape_tool.GetComponents_s(referred, components, False)
+        found.append((component, referred, entry(referred), components.Length()))
+        for index in range(1, components.Length() + 1):
+            visit(components.Value(index), components.Value(index))
+
+    free = ocp["TDF_LabelSequence"]()
+    tool.GetFreeShapes(free)
+    for index in range(1, free.Length() + 1):
+        visit(free.Value(index), None)
+    return found
+
+
+def _drop_emptied_groups(document, had_components: set) -> None:
+    """Remove every group the stripping left with no components (a powered
+    toy's ``bought`` group, ADR 0095), then any group that left empty, so
+    no empty group is written as a body. A group that was empty before is
+    left alone."""
+
+    ocp = _ocp()
+    shape_tool = ocp["XCAFDoc_ShapeTool"]
+    tool = ocp["XCAFDoc_DocumentTool"].ShapeTool_s(document.Main())
+    while True:
+        emptied = [
+            (component, referred)
+            for component, referred, key, count in _groups(document)
+            if count == 0 and key in had_components
+        ]
+        if not emptied:
+            return
+        for component, referred in emptied:
+            if component is not None:
+                tool.RemoveComponent(component)
+            if shape_tool.IsFree_s(referred):
+                tool.RemoveShape(referred, True)
+        tool.UpdateAssemblies()
 
 
 def scene_bodies(content: bytes) -> Tuple[SceneBody, ...]:
@@ -264,6 +323,7 @@ def printed_only_primary(
     ocp = _ocp()
     shape_tool = ocp["XCAFDoc_ShapeTool"]
     tool = ocp["XCAFDoc_DocumentTool"].ShapeTool_s(document.Main())
+    had_components = {key for _, _, key, count in _groups(document) if count > 0}
     orphans = []
     for label, parent, body in leaves:
         if body.name not in wanted:
@@ -281,6 +341,7 @@ def printed_only_primary(
         if not referred.IsNull() and shape_tool.IsFree_s(referred):
             tool.RemoveShape(referred, True)
     tool.UpdateAssemblies()
+    _drop_emptied_groups(document, had_components)
     content = _write_document(document)
 
     after = scene_bodies(content)
