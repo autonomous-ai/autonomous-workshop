@@ -850,5 +850,72 @@ class PrintedBodiesOnlyTest(unittest.TestCase):
             stage_direct_publication(
                 source, workspace, part_prices={"rod": 150, "m6-nut": 12}, **arguments)
 
+class SealedWishBoughtPartsTest(unittest.TestCase):
+    """A Workshop run's output bills the Bought Parts its Wish sealed, as its
+    own Release does, and leaves its bought_ bodies out of the weighing."""
+
+    store_credential = DirectPublishTest.store_credential
+    ready = DirectPublishTest.ready
+    run_tool = DirectPublishTest.run_tool
+    uploaded = DirectPublishTest.uploaded
+
+    def setUp(self):
+        PrintedBodiesOnlyTest.setUp(self)
+        from tests.release.test_printed_primary import base, nut, placed, post, rod, step
+
+        (self.project / "widget.step").write_bytes(step([
+            ("base", "#5a3a22", placed(base(), 0)),
+            ("post", "#1a1a1a", placed(post(), 50)),
+            ("bought_rod", "#ff00ff", placed(rod(), 100)),
+            ("bought_nut", "#ff00ff", placed(nut(), 150)),
+            ("bought_wire_1", "#ff00ff", placed(nut(), 200)),
+        ]))
+        (self.project / "measure" / "bought-bodies.json").write_text(json.dumps(
+            {"bodies": [{"name": "bought_rod"}, {"name": "bought_nut"}]}))
+        (self.project / "bought").mkdir()
+        (self.project / "bought" / "bought_wire_1.step").write_bytes(
+            step([("bought_wire_1", "#ff00ff", nut())], single=True))
+        self.wish = self.root / "wish.json"
+        self.wish.write_text(json.dumps({"context": {
+            "design_contract": {"bought_parts": {"parts": [
+                {"bought": "rod", "count": 1}, {"bought": "glue", "count": 1}]}},
+            "kit_catalogue": {"bought_parts": {"rod": {"name": "Steel rod"}, "glue": {"name": "Glue"}},
+                              "unit_prices": {"rod": 150, "glue": 32}},
+        }}))
+
+    def test_the_sealed_parts_are_billed_and_the_bought_bodies_removed(self):
+        from workshop.release.printed_primary import scene_bodies
+
+        self.ready()
+        arguments = ("--primary-step", "widget.step", "--sealed-wish", str(self.wish))
+        code, dry, err = self.run_tool(*arguments)
+        self.assertEqual(code, 0, err)
+        transport = RootSelectingFactoryTransport()
+        code, out, err = self.run_tool(*arguments, "--live", transport=transport)
+        self.assertEqual((code, err), (0, ""), out)
+        with zipfile.ZipFile(io.BytesIO(self.uploaded(transport))) as archive:
+            primary = archive.read("assembled.step")
+            product = json.loads(archive.read("product.json"))
+        self.assertEqual([body.name for body in scene_bodies(primary)], ["base", "post"])
+        self.assertEqual(
+            [(item["name"], item["count"], item["unit_price_cents"]) for item in product["bought_hardware"]],
+            [("Steel rod", 1, 150), ("Glue", 1, 32)],
+        )
+
+    def test_bought_flags_do_not_go_with_a_sealed_wish(self):
+        code, _, err = self.run_tool("--primary-step", "widget.step", "--sealed-wish", str(self.wish),
+                                     "--bought", "bought_rod=rod")
+        self.assertEqual(code, TOOL.EXIT_INPUT)
+        self.assertIn("do not go with a sealed Wish", err)
+
+    def test_an_unpriced_sealed_part_is_refused(self):
+        wish = json.loads(self.wish.read_text())
+        del wish["context"]["kit_catalogue"]["unit_prices"]["glue"]
+        self.wish.write_text(json.dumps(wish))
+        code, _, err = self.run_tool("--primary-step", "widget.step", "--sealed-wish", str(self.wish))
+        self.assertEqual(code, TOOL.EXIT_INPUT)
+        self.assertIn("have no sealed price", err)
+
+
 if __name__ == "__main__":
     unittest.main()

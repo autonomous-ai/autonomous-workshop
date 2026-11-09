@@ -476,7 +476,10 @@ Proposed and accepted on 2026-11-06.
   `--published-archive` may be that run's projected archive (only its
   `PUBLICATION.json` is read, checked against its manifest), and the
   receipt and the update's intent are the run's own
-  `state/<wish-id>/factory-effects.sqlite3`.
+  `state/<wish-id>/factory-effects.sqlite3`. `--sealed-wish
+  <run>/artifacts/wish/wish.json` bills the Bought Parts the run's Wish
+  sealed, exactly as its own Release would (ADR 0095, 2026-11-07), and
+  leaves its `bought_` bodies out of what Factory weighs.
 - Carrying a live print override into a new version. An update of a design
   with a non-default infill is refused.
 - The product-to-cad wrapper's `--update-listing` passthrough and schema 2

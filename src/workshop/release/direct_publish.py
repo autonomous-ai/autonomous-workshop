@@ -864,6 +864,46 @@ def _text_list(values: Sequence[str], label: str) -> list[str]:
     return result
 
 
+@dataclass(frozen=True)
+class SealedBought:
+    """A Workshop run's sealed Bought Parts: the lines its Release bills and
+    the bought model bodies its primary STEP carries."""
+
+    hardware: tuple
+    bodies: tuple
+
+
+def sealed_bought(wish: Mapping[str, Any], project: Path) -> Optional[SealedBought]:
+    """What a Workshop run's Release would bill for ``project``, read from
+    its sealed ``wish.json`` and ``measure/bought-bodies.json``; None when
+    the Wish seals no Bought Parts."""
+
+    from workshop.release.bought_extras import factory_extra_materials, sealed_bought_lines
+
+    context = wish.get("context") if isinstance(wish, Mapping) else None
+    if not isinstance(context, Mapping):
+        raise ContractError("the sealed Wish has no context")
+    lines = sealed_bought_lines(context.get("design_contract"), context.get("kit_catalogue"))
+    if lines is None:
+        return None
+    hardware = factory_extra_materials(lines) if lines else []
+    bodies: list[str] = []
+    manifest = Path(project) / "measure" / "bought-bodies.json"
+    if manifest.is_file():
+        try:
+            document = json.loads(manifest.read_bytes())
+        except ValueError as exc:
+            raise ContractError("measure/bought-bodies.json is malformed") from exc
+        for body in document.get("bodies") or ():
+            name = body.get("name") if isinstance(body, Mapping) else None
+            if not isinstance(name, str) or not name.startswith("bought_"):
+                raise ContractError("measure/bought-bodies.json names a body that is no bought_ body")
+            bodies.append(name)
+    # The bought group's other bodies (wires) are sealed as bought/bought_*.step.
+    bodies.extend(path.name[: -len(".step")] for path in (Path(project) / "bought").glob("bought_*.step"))
+    return SealedBought(hardware=tuple(hardware), bodies=tuple(sorted(set(bodies))))
+
+
 def stage_direct_publication(
     source: DirectSource,
     workspace: Path,
@@ -880,6 +920,7 @@ def stage_direct_publication(
     bought: Mapping[str, str] | None = None,
     part_prices: Mapping[str, int] | None = None,
     catalogues: Optional[Catalogues] = None,
+    sealed_bought: Optional[SealedBought] = None,
 ) -> DirectPublication:
     """Write ``made/`` and ``release/`` under an empty private ``workspace``.
 
@@ -929,10 +970,19 @@ def stage_direct_publication(
         raise ContractError("exactly one snap/iso.png may ship; found %s" % ", ".join(covers))
 
     bought = dict(bought or {})
-    hardware = _bought_hardware(
-        bought, dict(part_prices or {}),
-        catalogues if catalogues is not None else load_catalogues(),
-    )
+    if sealed_bought is not None:
+        # A Workshop run's output bills what its Wish sealed, exactly as its
+        # own Release does (ADR 0095, 2026-11-07), and its bought models
+        # leave what Factory weighs.
+        if bought or part_prices:
+            raise ContractError("--bought and --part-price do not go with a sealed Wish's Bought Parts")
+        hardware = [dict(line) for line in sealed_bought.hardware]
+        bought = {body: "sealed" for body in sealed_bought.bodies}
+    else:
+        hardware = _bought_hardware(
+            bought, dict(part_prices or {}),
+            catalogues if catalogues is not None else load_catalogues(),
+        )
     both = sorted(set(display_only) & set(bought))
     if both:
         raise ContractError("a body is either display-only or bought, not both: %s" % ", ".join(both))
@@ -1067,6 +1117,8 @@ def _bought_hardware(
 
 
 __all__ = [
+    "SealedBought",
+    "sealed_bought",
     "DIRECT_PUBLISH_KIND",
     "EarlierPublication",
     "earlier_publications",
