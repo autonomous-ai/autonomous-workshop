@@ -640,6 +640,18 @@ class DirectPublishTest(unittest.TestCase):
         self.assertEqual(refused[0]["gate"], "preflight")
         self.assertEqual(refused[0]["result"], "fail")
 
+    def test_a_validated_signature_review_note_is_a_pass_and_other_notes_fail(self):
+        # verify_project writes this note only after it validated the run's
+        # signature review; every other note (a component acceptance, a
+        # reference conflict, a guide conflict) still counts as a failure.
+        sha = "a" * 64
+        rows = parse_pipeline_record(
+            "| 1 | `signature review  # NOTE: schema=6 sha256=%s` | note | 0.00 |\n"
+            "| 2 | `component acceptance  # NOTE: bezel accepted by the Workshop Manager` | note | 0.00 |\n"
+            "| 3 | `signature review  # NOTE: something else` | note | 0.00 |\n" % sha)
+        self.assertEqual([(row["gate"], row["result"]) for row in rows],
+                         [("signature", "pass"), ("component", "fail"), ("signature", "fail")])
+
     def test_verify_runs_the_verifier_in_place_and_binds_its_output(self):
         repository = self.root / "product-to-cad"
         script = repository / "skills" / "cad" / "scripts" / "verify_project"
