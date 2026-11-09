@@ -579,6 +579,9 @@ PRINT_GATES = ("check_mesh", "check_overhang", "check_thickness")
 _SUBJECT_SUFFIXES = frozenset((".py", ".step", ".stp"))
 _RECORD_ROW = re.compile(r"^\|\s*\d+\s*\|\s*`(?P<command>.*)`\s*\|\s*(?P<status>[^|]+?)\s*\|")
 _GATE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_./-]{0,127}$")
+# verify_project writes this note only after it validated the run's signature
+# review, so it records a pass. Every other note stays a failure.
+_SIGNATURE_REVIEW_NOTE = re.compile(r"^signature review  # NOTE: schema=\d+ sha256=[0-9a-f]{64}$")
 
 
 def evidence_subject(source: DirectSource) -> dict[str, Any]:
@@ -609,7 +612,9 @@ def parse_pipeline_record(text: str) -> list[dict[str, Any]]:
     Each row becomes its gate (the script's name, or ``measure/<audit>`` for a
     local audit), the entry it measured, and ``pass``, ``fail`` or
     ``skipped``. Anything but ``rc=0`` or ``skipped`` is a failure: a refusal,
-    an interrupted gate, or an ``accepted-fail`` the verifier let through.
+    an interrupted gate, an ``accepted-fail`` the verifier let through, or a
+    note. The one exception is the note recording a validated signature
+    review's hash, which is a pass.
     """
 
     newest = text.split("\n---\n", 1)[0]
@@ -637,7 +642,10 @@ def parse_pipeline_record(text: str) -> list[dict[str, Any]]:
                     None,
                 )
                 break
-        result = "pass" if status == "rc=0" else "skipped" if status == "skipped" else "fail"
+        if status == "rc=0" or (status == "note" and _SIGNATURE_REVIEW_NOTE.match(command)):
+            result = "pass"
+        else:
+            result = "skipped" if status == "skipped" else "fail"
         rows.append({"gate": gate or "unknown", "target": target, "status": status, "result": result})
     if not rows:
         raise ContractError("the verification record has no gate rows")
