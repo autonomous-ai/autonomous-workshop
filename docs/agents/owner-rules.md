@@ -30,7 +30,9 @@ rule, this file only points to it; that source stays the authority.
   search snippets. Use WebSearch only to find links. Shopee needs the
   owner's logged-in session and sometimes a captcha the owner solves; never
   solve a captcha or evade bot protection yourself, and never use proxies.
-  Close your tabs when done. Why: sites block server fetches, so checks
+  For Shopee, navigate the owner's already-verified Shopee tab (find it with
+  `browser_list_tabs`) instead of opening a new one, which gets a captcha;
+  leave that tab open. Close your other tabs when done. Why: sites block server fetches, so checks
   that relied on snippets missed real listings, prices and licences
   (owner, 2026-11-09).
 - **Sell like the bestsellers.** Compare each idea with Moonlit Atlas, Trotter,
