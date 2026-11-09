@@ -88,6 +88,8 @@ from workshop.release.direct_publish import (
     load_public_toy_archive,
     load_published_record,
     published_design,
+    SealedBought,
+    sealed_bought,
     readme_summary,
     record_archive_publication,
     slugify,
@@ -144,6 +146,10 @@ def _parser() -> argparse.ArgumentParser:
                         help="a primary-STEP body that is bought hardware the buyer gets; removed "
                              "from what Factory weighs and billed as an extra material; PART is a "
                              "catalogue id or a plain name; repeatable")
+    parser.add_argument("--sealed-wish", type=Path,
+                        help="a Workshop run's artifacts/wish/wish.json: bill the Bought Parts it "
+                             "sealed, as its Release would, and leave its bought_ bodies out "
+                             "of what Factory weighs")
     parser.add_argument("--part-price", action="append", default=[], metavar="PART=CENTS",
                         help="what one PART costs in US cents, for a part the catalogue does not "
                              "price; repeatable")
@@ -180,6 +186,18 @@ def _parser() -> argparse.ArgumentParser:
                         help=argparse.SUPPRESS)
     parser.add_argument("--live", action="store_true", help="publish; default is an offline dry run")
     return parser
+
+
+def _sealed_bought(args: argparse.Namespace, source: DirectSource) -> Optional[SealedBought]:
+    if args.sealed_wish is None:
+        return None
+    if args.cad_dir is None:
+        raise ContractError("--sealed-wish goes with --cad-dir, the run's own CAD project")
+    try:
+        wish = json.loads(Path(args.sealed_wish).read_bytes())
+    except (OSError, ValueError) as exc:
+        raise ContractError("--sealed-wish %s is unreadable: %s" % (args.sealed_wish, exc)) from exc
+    return sealed_bought(wish, source.root)
 
 
 def _pairs(values: Sequence[str], flag: str) -> dict[str, str]:
@@ -795,6 +813,7 @@ def main(
                 display_only=args.display_only,
                 bought=_pairs(args.bought, "--bought"),
                 part_prices=_part_prices(args.part_price),
+                sealed_bought=_sealed_bought(args, source),
             )
             handoff = build_release_handoff(
                 staged.context, staged.release_root, staged.release_manifest
