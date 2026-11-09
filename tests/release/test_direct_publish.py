@@ -382,11 +382,28 @@ class DirectPublishTest(unittest.TestCase):
         self.assertEqual(transport.imports, 1)
         self.assertTrue(transport.public)
 
-    def test_dry_run_warns_about_unsanitized_home_paths(self):
-        (self.project / "measure" / "check.md").write_text("ran in /home/someone/work/x\n")
+    def test_the_upload_names_no_host_path(self):
+        """Release's path hygiene redacts every Make file that crosses."""
+
+        (self.project / "measure" / "check.md").write_text(
+            "ran in /home/someone/work/x and %s/cad\n" % Path.home())
+        (self.project / "measure" / "make-round-state.json").write_text(
+            json.dumps({"python": "/Users/kim/.venv/bin/python"}))
+        self.ready()
         code, out, _ = self.run_tool()
         self.assertEqual(code, 0)
-        self.assertIn("would publish it: measure/check.md", out)
+        self.assertNotIn("would publish it", out)
+        transport = RootSelectingFactoryTransport()
+        code, out, err = self.run_tool("--live", transport=transport)
+        self.assertEqual((code, err), (0, ""), out)
+        host = re.compile(rb"(?:/Users|/home)/[^/\s\"'<>`)]+/")
+        with zipfile.ZipFile(io.BytesIO(self.uploaded(transport))) as archive:
+            for name in archive.namelist():
+                content = archive.read(name)
+                self.assertIsNone(host.search(content), name)
+                self.assertNotIn(str(Path.home()).encode(), content, name)
+            check = next(name for name in archive.namelist() if name.endswith("measure/check.md"))
+            self.assertIn(b"<HOME>/work/x", archive.read(check))
 
     def test_a_late_listing_is_awaited_without_publishing_twice(self):
         self.ready()

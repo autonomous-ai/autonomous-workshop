@@ -22,6 +22,7 @@ from workshop.make.native import NativeMade
 from workshop.make.revision import NativeMakeInventRevision
 from workshop.match.native import NativeMatchAssignment
 from workshop.playtest.native import NativePlaytested
+from workshop.release.local_paths import redact_local_paths
 from workshop.release.native import NativeRelease
 from workshop.wish.contracts import Wish
 
@@ -279,25 +280,7 @@ def _redact_public_local_paths(
 ) -> tuple[bytes, tuple[str, ...]]:
     """Replace host-local absolute prefixes without interpreting artifact prose."""
 
-    replacements = []
-    candidates = (
-        (
-            str(Path(run_root).resolve(strict=True)).encode("utf-8"),
-            b"<WORKSHOP_RUN>",
-            "workshop-run-root",
-        ),
-        (
-            str(Path.home().resolve()).encode("utf-8"),
-            b"<HOME>",
-            "home-directory",
-        ),
-    )
-    public = content
-    for private, placeholder, label in candidates:
-        if private and private in public:
-            public = public.replace(private, placeholder)
-            replacements.append(label)
-    return public, tuple(replacements)
+    return redact_local_paths(content, run_root=run_root)
 
 
 def _assert_bound_entries(

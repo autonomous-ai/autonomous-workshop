@@ -95,6 +95,7 @@ from workshop.release.direct_publish import (
     slugify,
     stage_direct_publication,
 )
+from workshop.release.local_paths import names_host_path
 from workshop.runtime import EffectLedger
 from workshop.runtime.credentials import (
     factory_credential_environment,
@@ -399,9 +400,14 @@ def _describe(
             write("  %s (one STEP crosses: the primary)" % path)
         for path, reason in source.dropped:
             write("  %s (%s)" % (path, reason))
-    unsanitized = source.host_path_files()
+    # Release's path hygiene has already redacted the handoff; anything left
+    # here is a binary file that names a home directory.
+    with zipfile.ZipFile(io.BytesIO(content)) as archive:
+        unsanitized = sorted(
+            name for name in archive.namelist() if names_host_path(archive.read(name))
+        )
     if unsanitized:
-        write("warning: these files name a home directory and would publish it: %s"
+        write("warning: these handoff files name a home directory and would publish it: %s"
               % ", ".join(unsanitized))
     credential = inventor_credential_file(inventor, environment)
     write("credential:    %s (%s)" % (credential, "present" if credential.exists() else "absent"))
