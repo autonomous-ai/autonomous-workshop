@@ -62,6 +62,8 @@
     {"id": "screw-wood-4x40-countersunk", "name": "Countersunk wood screw 4 x 40, stainless or zinc-plated steel, for wall mounting", "category": "fastener", "unit_price_cents": 3,
      "sizes": [{"what": "thread", "mm": [4]}, {"what": "length", "mm": [40]}], "pack": null, "source": null, "confirmed": false},
     {"id": "wall-plug-6x30", "name": "Plastic wall plug 6 x 30 for a 4 mm screw, 6 mm drill", "category": "fastener", "unit_price_cents": 1,
-     "sizes": [{"what": "diameter", "mm": [6]}, {"what": "length", "mm": [30]}], "pack": null, "source": null, "confirmed": false}
+     "sizes": [{"what": "diameter", "mm": [6]}, {"what": "length", "mm": [30]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "red-gel-strip-26.6x5.0", "name": "Red lighting gel strip 26.6 x 5.0, deep red polyester filter film (such as LEE 106 Primary Red), cut from a sheet", "category": "other", "unit_price_cents": 5,
+     "sizes": [{"what": "width", "mm": [26.6]}, {"what": "height", "mm": [5.0]}], "pack": null, "source": null, "confirmed": false}
   ]
 }
