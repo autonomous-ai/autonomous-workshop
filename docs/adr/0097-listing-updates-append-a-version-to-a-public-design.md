@@ -472,7 +472,11 @@ Proposed and accepted on 2026-11-06.
 - `workshop fix --update-listing` and `workshop publish --update-listing`.
   Until they exist, a correction run's output is published with
   `tools/publish_direct.py --cad-dir … --published-archive …
-  --update-listing … --reason fix`.
+  --update-listing … --reason fix`. For a toy a Workshop run published,
+  `--published-archive` may be that run's projected archive (only its
+  `PUBLICATION.json` is read, checked against its manifest), and the
+  receipt and the update's intent are the run's own
+  `state/<wish-id>/factory-effects.sqlite3`.
 - Carrying a live print override into a new version. An update of a design
   with a non-default infill is refused.
 - The product-to-cad wrapper's `--update-listing` passthrough and schema 2

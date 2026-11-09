@@ -427,6 +427,50 @@ class ListingUpdateTest(unittest.TestCase):
         self.assertEqual((code, err), (0, ""), out)
         self.assertEqual(self.transport.versions, 2)
 
+    def workshop_published(self):
+        """The toy as a Workshop run published it: the receipt in the run's
+        state/<wish-id>/ ledger and an archive carrying the run's wish/."""
+        state = self.home / "state" / "wish-20261108-000000-abcdef12"
+        state.parent.mkdir(parents=True)
+        shutil.move(str(self.home / "direct-publish" / PRODUCT_ID), str(state))
+        (self.archive / "wish").mkdir()
+        (self.archive / "wish" / "wish.json").write_text("{}")
+        reseal(self.archive)
+        return state / "factory-effects.sqlite3"
+
+    def run_update(self, *arguments):
+        return self.tool("--cad-dir", str(self.project), "--published-archive", str(self.archive),
+                         "--update-listing", SLUG, "--reason", "reprice", *self.predicted(),
+                         *arguments)
+
+    def test_a_workshop_published_toy_is_updated_in_its_runs_ledger(self):
+        ledger_file = self.workshop_published()
+        code, out, err = self.run_update()
+        self.assertEqual((code, err), (0, ""), out)
+        self.assertIn("ledger:        %s" % ledger_file, out)
+        confirm = re.search(r"(?m)^  confirmation: (lu-[0-9a-f]{12})$", out).group(1)
+        code, out, err = self.run_update("--live", "--confirm", confirm)
+        self.assertEqual((code, err), (0, ""), out)
+        self.assertEqual(self.transport.versions, 1)
+        latest = EffectLedger(ledger_file).latest(
+            "wish-20261108-000000-abcdef12", "factory-import-version")
+        self.assertEqual(latest.state, "succeeded")
+        self.assertFalse((self.home / "direct-publish" / PRODUCT_ID).exists())
+
+    def test_a_workshop_projected_archive_is_still_no_publish_source(self):
+        self.workshop_published()
+        code, _, err = self.tool("--archive", str(self.archive), "--update-listing", SLUG,
+                                 "--reason", "reprice", transport=NoNetwork())
+        self.assertEqual(code, TOOL.EXIT_INPUT)
+        self.assertIn("projected from a Workshop run", err)
+
+    def test_a_changed_published_archive_is_refused(self):
+        self.workshop_published()
+        (self.archive / "wish" / "wish.json").write_text('{"changed": true}')
+        code, _, err = self.run_update()
+        self.assertEqual(code, TOOL.EXIT_INPUT)
+        self.assertIn("archive differs from its MANIFEST.json", err)
+
     def test_without_update_listing_the_archive_is_still_refused(self):
         code, out, _ = self.tool("--archive", str(self.archive))
         self.assertEqual(code, 0)

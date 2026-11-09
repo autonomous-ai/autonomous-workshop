@@ -186,18 +186,27 @@ class PublishedDesign:
     slug: str
     design_id: str
     page_url: Optional[str]
+    ledger: Optional[Path] = None
 
 
-def published_design(ledgers: Path, slug: str) -> PublishedDesign:
+def published_design(ledgers: "Path | Sequence[Path]", slug: str) -> PublishedDesign:
     """Find the one succeeded factory import whose receipt is ``slug``.
 
-    A Listing Update writes into that product id's ledger, so a toy keeps one
-    ledger however many versions it gets. No receipt, or two, refuses: a
-    record copied from another machine is not proof the design is ours.
+    ``ledgers`` is one folder of per-product ledgers or several: the direct
+    publications' and the Workshop runs' (``state/<wish-id>/``), whose
+    Release writes the same ``factory-import`` receipt. A Listing Update
+    writes into the ledger holding that receipt, so a toy keeps one ledger
+    however many versions it gets. No receipt, or two, refuses: a record
+    copied from another machine is not proof the design is ours.
     """
 
     found: list[PublishedDesign] = []
-    paths = sorted(Path(ledgers).glob("*/factory-effects.sqlite3")) if Path(ledgers).is_dir() else []
+    folders = [Path(ledgers)] if isinstance(ledgers, (str, Path)) else [Path(item) for item in ledgers]
+    paths = [
+        path
+        for folder in folders if folder.is_dir()
+        for path in sorted(folder.glob("*/factory-effects.sqlite3"))
+    ]
     for path in paths:
         try:
             connection = sqlite3.connect("file:%s?mode=ro" % path, uri=True)
@@ -223,6 +232,7 @@ def published_design(ledgers: Path, slug: str) -> PublishedDesign:
                 slug=slug,
                 design_id=receipt["design_id"],
                 page_url=page if isinstance(page, str) else None,
+                ledger=path,
             ))
     if not found:
         raise ContractError(
@@ -441,6 +451,40 @@ def record_archive_publication(root: Path, record: Mapping[str, Any]) -> bool:
         temporary.write_bytes(data)
         temporary.replace(path)
     return True
+
+
+def load_published_record(root: Path) -> Optional[Mapping[str, Any]]:
+    """The ``publication/PUBLICATION.json`` of a toy archive, checked against
+    its manifest.
+
+    A Listing Update's ``--published-archive`` only names the listing the
+    update targets; its bytes are not published. So, unlike
+    ``load_public_toy_archive``, an archive a Workshop run projected (ADR
+    0097's correction runs) is accepted here.
+    """
+
+    root = Path(root).resolve(strict=True)
+    try:
+        document = json.loads((root / "MANIFEST.json").read_bytes())
+    except (OSError, ValueError) as exc:
+        raise ContractError("archive MANIFEST.json is unreadable") from exc
+    if (
+        not isinstance(document, Mapping)
+        or document.get("kind") != PUBLIC_TOY_ARCHIVE_KIND
+        or document.get("schema_version") != PUBLIC_ARCHIVE_SCHEMA_VERSION
+        or document.get("scope") != PUBLIC_TOY_ARCHIVE_SCOPE
+    ):
+        raise ContractError("not a schema 4 public toy archive")
+    observed = build_public_archive_manifest(root).to_dict()
+    if observed != document.get("artifact_manifest"):
+        raise ContractError("archive differs from its MANIFEST.json")
+    if not any(entry["path"] == "publication/PUBLICATION.json" for entry in observed["entries"]):
+        return None
+    try:
+        record = json.loads((root / "publication" / "PUBLICATION.json").read_bytes())
+    except ValueError as exc:
+        raise ContractError("archive publication record is malformed") from exc
+    return record if isinstance(record, Mapping) else None
 
 
 def load_public_toy_archive(root: Path) -> DirectSource:
