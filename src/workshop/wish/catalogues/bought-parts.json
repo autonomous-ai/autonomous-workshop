@@ -16,6 +16,8 @@
      "sizes": [{"what": "diameter", "mm": [95.0]}, {"what": "thickness", "mm": [3.0]}], "pack": null, "source": null, "confirmed": false},
     {"id": "screw-m2x8-pan-self-tapping", "name": "M2 x 8 self-tapping pan-head screw", "category": "fastener", "unit_price_cents": 1,
      "sizes": [{"what": "thread", "mm": [2]}, {"what": "length", "mm": [8]}], "pack": null, "source": null, "confirmed": false},
+    {"id": "screw-m2x8-pan-self-tapping-black", "name": "M2 x 8 self-tapping pan-head screw, Phillips, black oxide", "category": "fastener", "unit_price_cents": 1,
+     "sizes": [{"what": "thread", "mm": [2]}, {"what": "length", "mm": [8]}], "pack": null, "source": null, "confirmed": false},
     {"id": "clear-jar-6x7", "name": "Clear jar 6 across and 7 tall", "category": "container", "unit_price_cents": 16,
      "sizes": [{"what": "diameter", "max_mm": [6]}, {"what": "height", "max_mm": [7]}], "pack": null, "source": null, "confirmed": false},
     {"id": "foam-tape", "name": "Double-sided foam tape", "category": "consumable", "unit_price_cents": 59,
