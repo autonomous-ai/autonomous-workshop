@@ -1,5 +1,19 @@
 # Shared skill provenance
 
+## Workshop-local: `check_motion` fuses a rigid mover once (2026-11-09, PR #265)
+
+- **Local patch to upstream `cad`.** `check_motion` fuses a multi-body
+  rigid mover once in its home pose and places the fused material at each
+  sample, instead of fusing it once per pose (7848685c). A bounded memo keyed
+  by the complete OCCT identity, location included, reuses that material
+  across the conditions of one run (0032c6f8). A rigid motion commutes with
+  the union, so every verdict and consistency check is unchanged; on a
+  ten-body figure this removes about 50 s per pose and 41 s per condition.
+  `tests/make/test_check_motion_rigid_material.py` covers both.
+- PR #265 landed without refreshing the lock; this entry and `cad`'s
+  `sha256` record it afterwards. Only `cad`'s lock moves; `source_commit`
+  is unchanged. A resync must keep this patch until upstream has it.
+
 ## Workshop-local: a printed-only primary beside the review scene (2026-11-07, ADR 0095 amendment)
 
 - `make-round`'s `bought_model.py --final` also writes
