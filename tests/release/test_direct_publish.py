@@ -17,7 +17,11 @@ from unittest import mock
 from PIL import Image, ImageDraw
 
 from tests.integrations.test_factory import RootSelectingFactoryTransport, multipart_parts
-from workshop.integrations.factory import HttpResponse
+from workshop.integrations.factory import (
+    PUBLICATION_SETTLE_INTERVAL_SECONDS,
+    PUBLICATION_SETTLE_POLLS,
+    HttpResponse,
+)
 from workshop.errors import ContractError
 from workshop.release.direct_publish import (
     EVIDENCE_PATH,
@@ -140,11 +144,12 @@ def reseal(archive):
 class LateListingTransport(RootSelectingFactoryTransport):
     """Factory makes the design public at once and lists it a few reads later."""
 
-    def __init__(self, unlisted_reads, publish_status=200):
+    def __init__(self, unlisted_reads, publish_status=200, lose_publish_response=False):
         super().__init__()
         self.unlisted_reads = unlisted_reads
         self.public_reads = 0
         self.publish_status = publish_status
+        self.lose_publish_response = lose_publish_response
         self.publishes = 0
 
     def design(self):
@@ -160,6 +165,8 @@ class LateListingTransport(RootSelectingFactoryTransport):
             if self.publish_status != 200:
                 return HttpResponse(self.publish_status, {}, b'{"error":"refused"}')
             self.public = True
+            if self.lose_publish_response:
+                raise TimeoutError("connection reset after publish")
             return HttpResponse(200, {}, b"{}")
         if self.public and method == "GET" and "/designs/" in url:
             self.public_reads += 1
@@ -413,8 +420,23 @@ class DirectPublishTest(unittest.TestCase):
         self.assertIn("public: https://www.autonomous.ai/toys/product/verified-toy", out)
         self.assertEqual(transport.publishes, 1)
         self.assertEqual(transport.imports, 1)
+        # An accepted publish settles inside the transition, on the tool's
+        # injected sleeper rather than real time.
+        self.assertEqual(clock.sleeps, [PUBLICATION_SETTLE_INTERVAL_SECONDS] * 3)
+        ledger = EffectLedger(TOOL.ledger_path(PRODUCT_ID, self.environment))
+        self.assertEqual(ledger.latest(PRODUCT_ID, "factory-publish").state, "succeeded")
+
+    def test_a_lost_publish_response_is_awaited_by_readback_without_publishing_twice(self):
+        self.ready()
+        transport = LateListingTransport(unlisted_reads=3, lose_publish_response=True)
+        clock = FakeClock()
+        code, out, err = self.run_tool("--live", transport=transport, clock=clock)
+        self.assertEqual((code, err), (0, ""), out)
+        self.assertIn("public: https://www.autonomous.ai/toys/product/verified-toy", out)
+        self.assertEqual((transport.publishes, transport.imports), (1, 1))
         self.assertTrue(clock.sleeps)
         self.assertTrue(all(seconds == TOOL.LISTING_POLL_SECONDS for seconds in clock.sleeps))
+        self.assertLessEqual(sum(clock.sleeps), TOOL.LISTING_WAIT_SECONDS)
         ledger = EffectLedger(TOOL.ledger_path(PRODUCT_ID, self.environment))
         self.assertEqual(ledger.latest(PRODUCT_ID, "factory-publish").state, "succeeded")
 
@@ -423,10 +445,11 @@ class DirectPublishTest(unittest.TestCase):
         transport, clock = LateListingTransport(unlisted_reads=10_000), FakeClock()
         code, _, err = self.run_tool("--live", transport=transport, clock=clock)
         self.assertEqual(code, TOOL.EXIT_EFFECT)
-        self.assertIn("AmbiguousEffectError", err)
-        self.assertLessEqual(sum(clock.sleeps), TOOL.LISTING_WAIT_SECONDS)
-        self.assertGreaterEqual(sum(clock.sleeps) + TOOL.LISTING_POLL_SECONDS,
-                                TOOL.LISTING_WAIT_SECONDS)
+        self.assertIn("FactoryPublicationPending", err)
+        # The transition's settle window outlasts the tool's listing wait, so
+        # nothing waits after it and the whole wait stays bounded.
+        self.assertEqual(clock.sleeps,
+                         [PUBLICATION_SETTLE_INTERVAL_SECONDS] * PUBLICATION_SETTLE_POLLS)
         self.assertEqual(transport.publishes, 1)
         ledger = EffectLedger(TOOL.ledger_path(PRODUCT_ID, self.environment))
         self.assertEqual(ledger.latest(PRODUCT_ID, "factory-publish").state, "unknown")

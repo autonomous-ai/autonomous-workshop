@@ -113,8 +113,10 @@ EXIT_EFFECT = 3
 VERIFIER = Path("skills") / "cad" / "scripts" / "verify_project"
 # Factory makes a design public at once but creates its shop listing a little
 # later (20-90 s observed), and Workshop counts a listing as part of public
-# readback. The publish call is never repeated: each retry below only re-reads
-# a publication whose ledger intent is already "unknown".
+# readback. After an accepted (2xx) publish, FactoryPublicTransition itself
+# re-reads for a bounded time. This wait covers the rest: a publish whose
+# response was lost or ambiguous. The publish call is never repeated: each
+# retry below only re-reads a publication whose ledger intent is "unknown".
 LISTING_WAIT_SECONDS = 120
 LISTING_POLL_SECONDS = 10
 GATES_NOT_RUN = (
@@ -480,12 +482,16 @@ def _publish_live(
         factory_service_credential_environment(values)
     )
     ledger = EffectLedger(ledger_path(product_id, environment))
-    receipt = FactoryReleaseWriter(ledger, inventor, credentials, **transports)(
+    # Every wait goes through the injected sleeper: the writer's rate retries,
+    # the transition's settle wait and the listing wait below. A sleeper the
+    # caller placed in ``transports`` keeps precedence.
+    session_options = {"sleeper": sleeper, **transports}
+    receipt = FactoryReleaseWriter(ledger, inventor, credentials, **session_options)(
         staged.context, staged.release_root, staged.release_manifest
     )
     if receipt.is_verified_draft:
         transition = FactoryPublicTransition(
-            ledger, FactoryAgentSession(credentials, **transports)
+            ledger, FactoryAgentSession(credentials, **session_options)
         )
         receipt = _await_listing(
             transition, receipt, ledger, product_id, sleeper=sleeper, clock=clock
