@@ -1,8 +1,8 @@
 # What designing toys has taught
 
 Rules of design judgment that earlier designs and builds paid for. Read the
-section for a stage before working it. A rule never overrides `SKILL.md`, the
-Inventor's Taste or the human's answer; it tells you what tends to go wrong.
+section for a stage before working it. A rule never overrides `SKILL.md` or the
+human's answer; it tells you what tends to go wrong.
 
 ## What belongs here
 

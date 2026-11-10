@@ -59,6 +59,11 @@ rule, this file only points to it; that source stays the authority.
 
 ## Design
 
+- **No Inventor choice in design.** `design-a-toy` does not ask which
+  Inventor designs and reads no `TASTE.md`; the contract names `rowan-vale`
+  unless the owner names another. Trade-offs follow the owner's answers, the
+  chosen concept, readability and printability (owner, 2026-11-10; ADR
+  0099). Why: the Inventor only names the listing's author now.
 - **Reference images agree with the contract**, in proportions and landmark
   positions as well as counts. When they disagree and the image looks better,
   amend the contract to match the image. See `design-a-toy` Stage 3b. Why:

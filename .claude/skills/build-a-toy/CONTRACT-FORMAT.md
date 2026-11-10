@@ -66,7 +66,7 @@ Two more numbers belong to the libraries, not the prose:
 {
   "schema_version": 4,
   "title": "Antisol",
-  "inventor": "ad-astra",
+  "inventor": "rowan-vale",
   "envelope_mm": [200, 200, 60],
   "references": [
     {"file": "ref-01-antisol.png", "shows": "assembly", "camera": [-60, 30]},
@@ -121,7 +121,9 @@ instances.)
   standard library.
 - `title`: the toy's name, without a revision suffix. The loop adds
   suffixes such as `v01`.
-- `inventor`: an id from `inventors/`, passed to `--inventor`.
+- `inventor`: an id from `inventors/`, passed to `--inventor`. It is the
+  toy's author and the Factory account it is published under; it decides no
+  design. `design-a-toy` writes `rowan-vale` unless the owner names another.
 - `envelope_mm` and `extents_mm`: three positive numbers in millimetres, in any
   order. They are compared sorted, because Make chooses the axes. The
   tolerance is fixed at ±0.05 mm and is not a field: it describes the

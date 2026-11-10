@@ -1,6 +1,6 @@
 ---
 name: design-a-toy
-description: Design any physical Workshop toy - a vehicle, a jointed robot, a bone dragon, a puzzle, a game - with an Inventor before any run starts - grill the idea into a frozen spec, draft the Design Contract, generate one reference image per unique geometry plus the assembly, reconcile them with the contract feature by feature and with the Contract Proof, the CAD build the owner approves and Workshop ships, check that everything they show can be printed and that any mechanism can move, then get the human's one visual review before handing off to `build-a-toy`. Use when starting a new toy, or when a previous run drifted from what you wanted.
+description: Design any physical Workshop toy - a vehicle, a jointed robot, a bone dragon, a puzzle, a game - before any run starts - grill the idea into a frozen spec, draft the Design Contract, generate one reference image per unique geometry plus the assembly, reconcile them with the contract feature by feature and with the Contract Proof, the CAD build the owner approves and Workshop ships, check that everything they show can be printed and that any mechanism can move, then get the human's one visual review before handing off to `build-a-toy`. Use when starting a new toy, or when a previous run drifted from what you wanted.
 ---
 
 # Design a toy before the run
@@ -9,10 +9,8 @@ This skill does the creative work **outside** Workshop, where the human watches
 every step, and hands Workshop a finished design.
 
 Workshop's Spark route is `("make", "release")`: the Wish goes in, Make builds,
-Release publishes. Nothing in the run verifies that the Manager consulted the
-Inventor or passed it the Wish verbatim — the Inventor subagent's instructions
-carry only its Taste. The answer is not to police the run. It is to leave
-nothing for the run to invent.
+Release publishes. The answer to what a run might get wrong is not to police
+the run. It is to leave nothing for the run to invent.
 
 The output of this skill is one `CONTRACT.md`, handed to `build-a-toy`.
 
@@ -28,21 +26,30 @@ contract.
 [LESSONS.md](LESSONS.md) holds what earlier designs and builds taught, with
 its Stage 3 entries in [LESSONS-REFERENCE-IMAGES.md](LESSONS-REFERENCE-IMAGES.md). Read
 its section for each stage before working that stage. It never overrides this
-file, the Taste or the human's answer.
+file or the human's answer.
 
 ## Who designs
 
-Read the Inventor's `TASTE.md` from `inventors/<id>/TASTE.md` and work as that
-Inventor throughout. The Taste is the constitution: it decides what is in scope,
-what wins a trade-off, and what gets rejected. Do not paraphrase it into
-something more agreeable. If the idea the human wants is outside the Taste, say
-so plainly and name which clause it fails — do not quietly widen the Taste to
-fit.
+You design, judged by four plain criteria, in this order:
 
-There is no default Inventor. Read the `description` line of every
-`inventors/*/TASTE.md`, propose the one or two whose scope fits the idea, name
-the clause that makes each fit, and let the human choose. A board-game
-Inventor is not a safe fallback for a vehicle, a creature or a mechanism.
+1. **The owner's answers** in Stage 1 and at Stage 4.
+2. **The chosen concept**: the Concept Image or idea the owner picked, and
+   its Concept Checklist.
+3. **Readability**: the subject and its signature feature read at a glance
+   and at thumbnail size, with one focal point.
+4. **Printability**: every part prints on the floor this skill checks, and
+   any mechanism can move.
+
+Every trade-off below is decided by these criteria. No Inventor's `TASTE.md`
+is read, and the owner is not asked to choose an Inventor (owner decision
+2026-11-10, ADR 0099).
+
+The Inventor is only the toy's author: the contract's `inventor` field,
+which `build-a-toy` passes to `workshop wish --inventor` and which names the
+Factory account the toy is published under. Write `"inventor": "rowan-vale"`
+unless the owner names another roster Inventor under `inventors/`; then use
+that one. A calling skill that sets the Inventor and its own judge, as
+`brainstorm-trend` does with `trend-lab` and its personalities, keeps both.
 
 ## Stage 1 - Grill the idea into a spec
 
@@ -54,8 +61,8 @@ Ask the human only about what the toy looks like and does: which parts it
 has, which one dominates, what moves, how many of each, the pose. Keep each
 question short and in plain words about the toy. Do not ask for millimetres,
 wall thicknesses, clearances, pin diameters or print stance. Decide
-those yourself as the Inventor, from the Taste and the feasibility checks, and
-write them into the spec without asking.
+those yourself, by the criteria in "Who designs" and the feasibility checks,
+and write them into the spec without asking.
 
 Drive to a written spec containing:
 
@@ -535,7 +542,7 @@ Web imagery may be used as material to edit while composing an image. Judge
 whether a source is safe to build from, and **record the source URL of every web
 image you edit from** in the working notes beside the images. Never pass a found
 image through as the reference itself: the reference is sealed into the toy's
-public archive beside the build, and what it shows must be the Inventor's own
+public archive beside the build, and what it shows must be this toy's own
 expression.
 
 ## Stage 3a - Contract Proof
@@ -576,7 +583,7 @@ decision 1c).
 2. **Guesses to zero, for contract fields only.** `GUESSES.md` lists only
    numbers that fall in a contract field: a fit, a critical dimension, an
    Interface pose, a colour, a bought part. Close each in the contract,
-   prose and row together, decided as the Inventor. Send the amended
+   prose and row together, decided by the criteria in "Who designs". Send the amended
    contract to the kept Proof subagent and repeat until its list is empty.
    A shape number stays in the Proof; it never becomes a contract row.
 3. **Contradictions.** Fix each one in `FINDINGS.md` as Stage 3b resolves a
@@ -761,7 +768,8 @@ the working notes: image, what differs, contract value, image value,
 resolution.
 
 **Resolve each disagreement by judging which one is right.** Do not assume the
-contract wins. Look at the image as the Inventor would, against the Taste:
+contract wins. Judge by the criteria in "Who designs": the owner's answers,
+the chosen concept, readability and printability.
 
 - **The image is better,** meaning it reads more clearly, has better
   proportions or is more sensible as an object. Then amend the contract to
@@ -1220,7 +1228,7 @@ and record the conversion; if the claim's truth depends on the reading, the
 words are ambiguous and must change too.
 
 A claim that fails changes before the images are approved: the camera, the
-pose or the words, whichever the Inventor's Taste can best spare. Prefer
+pose or the words, whichever the chosen concept can best spare. Prefer
 deleting or narrowing the words when the images already show the pose; a new
 camera or pose changes what the images show, so redo Stage 3b for them.
 
@@ -1413,5 +1421,6 @@ say so and change nothing.
 - It does not run Workshop, publish, or touch a live run.
 - It does not add a checkpoint inside Make. Once the Wish is sealed, Make's
   gates and reviews are the enforcement.
-- It does not widen the Inventor's Taste to accommodate an idea. That is a
-  human edit to `inventors/<id>/TASTE.md`, made deliberately and separately.
+- It does not read or edit an Inventor's `TASTE.md`, and it does not ask the
+  owner to choose an Inventor. The contract names `rowan-vale` unless the
+  owner names another.
