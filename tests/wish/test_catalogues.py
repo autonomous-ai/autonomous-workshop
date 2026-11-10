@@ -143,6 +143,18 @@ class CatalogueTest(unittest.TestCase):
             (filaments["scarlet-red"].hex, filaments["scarlet-red"].kind), ("#de4343", "opaque")
         )
 
+    def test_the_packaged_seed_holds_the_black_m2_pin_screw_unconfirmed(self):
+        # Owner, 2026-11-10: a black-oxide M2 x 8 self-tapping screw pins the R28
+        # lantern ring; the plain entry names no finish and stays as it is.
+        parts = load_catalogues().parts
+        black = parts["screw-m2x8-pan-self-tapping-black"]
+        plain = parts["screw-m2x8-pan-self-tapping"]
+        self.assertEqual((black.category, black.unit_price_cents), ("fastener", 1))
+        self.assertIn("black oxide", black.name)
+        self.assertEqual(black.sizes, plain.sizes)
+        self.assertFalse(black.confirmed)
+        self.assertIsNone(black.source)
+
 
     def test_the_packaged_seed_holds_the_mac_fidget_circuit_unconfirmed(self):
         # ADR 0095: cells, contacts and a switch are categories of their own,
