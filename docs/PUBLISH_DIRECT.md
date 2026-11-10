@@ -62,11 +62,13 @@ earlier attempt and never uploads blindly.
 
 Factory makes a design public at once but creates its shop listing a little
 later; 20-90 s was observed on 2026-10-29. Workshop's public readback requires
-that listing. After the publish call, `--live` therefore re-reads every 10 s
-for up to 2 minutes. It does so only while the ledger records the publication
-as `unknown`, and it never sends the publish request again. A design whose
+that listing. After Factory accepts the publish call (HTTP 2xx), `--live`
+re-reads every 15 s for up to 5 minutes, the same settle wait as a Workshop
+Release. If the publish response was lost or ambiguous, it instead re-reads
+every 10 s for up to 2 minutes while the ledger records the publication as
+`unknown`. Neither wait sends the publish request again. A design whose
 listing never appears (Factory computed no `print_specs`) still ends with
-exit `3`.
+exit `3` (`FactoryPublicationPending`).
 
 Every run, including a dry run, ends with `live: ready` or `live: refused` and
 lists each reason. `--live` checks these before it reads a credential:
