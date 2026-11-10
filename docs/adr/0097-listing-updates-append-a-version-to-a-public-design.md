@@ -493,6 +493,17 @@ Every Factory handoff, a create or an update, now applies Release's path
 hygiene (`workshop.release.local_paths`, the redaction the public archive
 uses) to each Make file that crosses; STEP bytes are never rewritten.
 
+**Amended on 2026-11-10:** `RepriceOnMeasurement` runs after the slice is
+`done`, not in the same request. The first live update (the beaver, version
+6af26eb6…) read the listing back immediately and recorded the old $47
+although Factory showed $50 minutes later. The final readback now rereads the
+listing, every 15 s for at most 600 s, until its price equals the formula for
+the measured weight and the sent extras. The update never fails on that
+wait: the version and extras have landed, and a hand-set price never moves.
+If the wait runs out, the version records the price it last read,
+`price_follows_formula: false` and `reprice_wait_timed_out: true`, and the
+command says the price may not have been repriced yet and should be reread.
+
 **Not built yet:**
 
 - `workshop fix --update-listing`. Until it exists, the correction run is

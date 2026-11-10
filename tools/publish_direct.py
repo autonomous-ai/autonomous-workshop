@@ -71,6 +71,7 @@ from workshop.integrations.factory_listing import (
     ListingUpdateBindings,
     ListingUpdatePlan,
     append_publication_version,
+    listing_price_note,
     listing_update_version,
     read_only_transport,
 )
@@ -957,8 +958,7 @@ def _run_update(
     write("price: %s -> %s (predicted %s)%s" % (
         _money(version["price_before_cents"]), _money(version["price_after_cents"]),
         _money(version["predicted_price_cents"]),
-        "" if version["price_follows_formula"] else
-        "; price not repriced (possibly set by hand)"))
+        listing_price_note(version)))
     write("measured: %s g -> %s g (predicted %s g)" % (
         version["weight_before_g"], version["weight_after_g"], version["predicted_weight_g"]))
     write("listing-update-record: %s" % json.dumps(version, sort_keys=True, separators=(",", ":")))
