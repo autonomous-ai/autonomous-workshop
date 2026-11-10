@@ -60,6 +60,11 @@ class ListingFactoryTransport(RootSelectingFactoryTransport):
         self.extra_puts = []
         self.drop_extras_write = False
         self.extras_status = 200
+        # Factory reprices after the slice, not in the same read: the listing
+        # keeps its shown price for this many design reads after it changes.
+        self.reprice_lag = 0
+        self.shown_price = None
+        self.lag_left = None
 
     # --- Factory's own state -------------------------------------------------
     def price(self):
@@ -76,7 +81,17 @@ class ListingFactoryTransport(RootSelectingFactoryTransport):
         design["author"] = {"id": self.author}
         design["owner_id"] = self.author
         if design.get("listing"):
-            design["listing"]["price_cents"] = self.price()
+            target = self.price()
+            if self.shown_price is not None and target != self.shown_price:
+                if self.lag_left is None:
+                    self.lag_left = self.reprice_lag
+                if self.lag_left > 0:
+                    self.lag_left -= 1
+                    target = self.shown_price
+                else:
+                    self.lag_left = None
+            self.shown_price = target
+            design["listing"]["price_cents"] = target
         return design
 
     def slice_job(self):
@@ -290,7 +305,47 @@ class ListingUpdateTest(unittest.TestCase):
         confirm, _ = self.preview_code()
         code, out, err = self.update(*self.predicted(), "--live", "--confirm", confirm)
         self.assertEqual((code, err), (0, ""), out)
-        self.assertIn("price: $99.00 -> $99.00 (predicted $25.00); price not repriced (possibly set by hand)", out)
+        self.assertIn(
+            "price: $99.00 -> $99.00 (predicted $25.00); price still off Factory's formula when "
+            "the reprice wait ran out (Factory may not have repriced yet, or the price was set "
+            "by hand): re-read the listing before relying on this price", out)
+        record = json.loads(re.search(r"(?m)^publication-record: (.*)$", out).group(1))
+        self.assertEqual(record["versions"][0]["price_after_cents"], 9900)
+        self.assertIs(record["versions"][0]["price_follows_formula"], False)
+        self.assertIs(record["versions"][0]["reprice_wait_timed_out"], True)
+        self.assertEqual(self.intents().state, "succeeded")
+        self.assertEqual(self.transport.versions, 1)
+
+    def test_the_final_readback_waits_for_factorys_reprice(self):
+        confirm, _ = self.preview_code()
+        self.transport.reprice_lag = 3
+        clock = Clock()
+        code, out, err = self.update(*self.predicted(), "--live", "--confirm", confirm, clock=clock)
+        self.assertEqual((code, err), (0, ""), out)
+        self.assertIn("price: $39.00 -> $25.00 (predicted $25.00)", out)
+        self.assertNotIn("price still off", out)
+        record = json.loads(re.search(r"(?m)^publication-record: (.*)$", out).group(1))
+        self.assertEqual(record["publication"]["listing"]["price_cents"], 2500)
+        self.assertEqual(record["versions"][0]["price_after_cents"], 2500)
+        self.assertIs(record["versions"][0]["price_follows_formula"], True)
+        self.assertIs(record["versions"][0]["reprice_wait_timed_out"], False)
+        self.assertEqual(self.transport.versions, 1)
+        self.assertEqual(self.transport.sends(), [("POST", "import"), ("PUT", "extra-materials")])
+
+    def test_a_reprice_that_never_comes_is_bounded_and_recorded_as_such(self):
+        confirm, _ = self.preview_code()
+        self.transport.reprice_lag = 10_000
+        clock = Clock()
+        code, out, err = self.update(*self.predicted(), "--live", "--confirm", confirm, clock=clock)
+        self.assertEqual((code, err), (0, ""), out)
+        self.assertLessEqual(clock.now, 1800 + 600 + 60)
+        self.assertIn("price still off Factory's formula when the reprice wait ran out", out)
+        record = json.loads(re.search(r"(?m)^publication-record: (.*)$", out).group(1))
+        self.assertEqual(record["versions"][0]["price_after_cents"], 3900)
+        self.assertIs(record["versions"][0]["price_follows_formula"], False)
+        self.assertIs(record["versions"][0]["reprice_wait_timed_out"], True)
+        self.assertEqual(self.intents().state, "succeeded")
+        self.assertEqual(self.transport.versions, 1)
 
     def test_a_lost_response_is_reconciled_by_a_rerun_without_a_second_version(self):
         confirm, _ = self.preview_code()

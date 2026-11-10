@@ -50,6 +50,7 @@ from workshop.errors import (
     WorkshopError,
 )
 from workshop.integrations.factory import FactoryCredentialRejected
+from workshop.integrations.factory_listing import listing_price_note
 from workshop.invent.gamevault import default_client as default_gamevault_client
 from workshop.invent.vault import Vault, VaultError
 from workshop.make.skill_registry import (
@@ -1812,8 +1813,7 @@ def _print_listing_update(result: Mapping[str, Any]) -> None:
         write("price: %s -> %s (predicted %s)%s" % (
             _money(version["price_before_cents"]), _money(version["price_after_cents"]),
             _money(version["predicted_price_cents"]),
-            "" if version["price_follows_formula"] else
-            "; price not repriced (possibly set by hand)"))
+            listing_price_note(version)))
         write("measured: %s g -> %s g (predicted %s g)" % (
             version["weight_before_g"], version["weight_after_g"], version["predicted_weight_g"]))
         if result["archive_error"]:

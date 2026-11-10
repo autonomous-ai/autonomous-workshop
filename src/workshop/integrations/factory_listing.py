@@ -59,6 +59,11 @@ LISTING_UPDATE_REASONS = ("fix", "reprice")
 FACTORY_DEFAULT_INFILL_PERCENT = 15
 SLICE_WAIT_SECONDS = 1800
 SLICE_POLL_SECONDS = 20
+# Factory reprices a platform-priced listing shortly after the slice is done
+# (and after an extras write), not in the same request. The final readback
+# waits this long for the price to reach the formula before recording it.
+REPRICE_WAIT_SECONDS = 600
+REPRICE_POLL_SECONDS = 15
 
 # Factory's price, per unit (panda-social-backend aea8c67,
 # models/slice_job.go:135-217 and services/listing_pricing.go:200-225).
@@ -385,6 +390,8 @@ class FactoryListingUpdate:
         clock: Callable[[], float] = time.monotonic,
         slice_wait_seconds: float = SLICE_WAIT_SECONDS,
         poll_seconds: float = SLICE_POLL_SECONDS,
+        reprice_wait_seconds: float = REPRICE_WAIT_SECONDS,
+        reprice_poll_seconds: float = REPRICE_POLL_SECONDS,
     ) -> None:
         if not isinstance(ledger, EffectLedger):
             raise ContractError("Listing Update requires an EffectLedger")
@@ -396,6 +403,8 @@ class FactoryListingUpdate:
         self.clock = clock
         self.slice_wait_seconds = slice_wait_seconds
         self.poll_seconds = poll_seconds
+        self.reprice_wait_seconds = reprice_wait_seconds
+        self.reprice_poll_seconds = reprice_poll_seconds
 
     def preview(self, plan: ListingUpdatePlan) -> tuple[ListingState, list[str], Optional[str]]:
         identity = self.session.login()
@@ -619,8 +628,7 @@ class FactoryListingUpdate:
             )
         extras_cents = _extras_cents(extras)
         formula = factory_sale_price_cents(measured, extras_cents)
-        listing = design.get("listing") if isinstance(design.get("listing"), Mapping) else {}
-        price = listing.get("price_cents") if type(listing.get("price_cents")) is int else None
+        design, price, reprice_timed_out = self._await_reprice(client, slug, design, formula)
         details = {
             "kind": "factory-listing-update",
             "reason": update["reason"],
@@ -641,6 +649,7 @@ class FactoryListingUpdate:
             "predicted_price_cents": update["predicted_price_cents"],
             "formula_price_cents": formula,
             "price_follows_formula": price is not None and price == formula,
+            "reprice_wait_timed_out": reprice_timed_out,
             "weight_before_g": update["base_weight_g"],
             "weight_after_g": measured,
             "predicted_weight_g": update["predicted_weight_g"],
@@ -657,6 +666,32 @@ class FactoryListingUpdate:
         completed = self.ledger.resolve_succeeded(intent.intent_id, receipt, design)
         assert completed.receipt is not None
         return completed.receipt
+
+    def _await_reprice(
+        self,
+        client: FactoryClient,
+        slug: str,
+        design: Mapping[str, Any],
+        formula: Optional[int],
+    ) -> tuple[Mapping[str, Any], Optional[int], bool]:
+        """Read the listing until its price reaches ``formula``, within a bound.
+
+        Returns the last design read, its price, and whether the bound ran
+        out first. Running out is not a failure: the version and extras have
+        landed, and a hand-set price never follows the formula. The caller
+        records the price it last read and that the wait timed out.
+        """
+
+        deadline = self.clock() + self.reprice_wait_seconds
+        while True:
+            listing = design.get("listing") if isinstance(design.get("listing"), Mapping) else {}
+            price = listing.get("price_cents") if type(listing.get("price_cents")) is int else None
+            if formula is None or price == formula:
+                return design, price, False
+            if self.clock() >= deadline:
+                return design, price, True
+            self.sleeper(self.reprice_poll_seconds)
+            design = _design(client, slug)
 
     def _await_slice(
         self, client: FactoryClient, intent: EffectIntent, slug: str, history_id: str
@@ -718,10 +753,23 @@ def listing_update_version(receipt: Receipt) -> dict[str, Any]:
         "price_after_cents": details["price_after_cents"],
         "predicted_price_cents": details["predicted_price_cents"],
         "price_follows_formula": details["price_follows_formula"],
+        "reprice_wait_timed_out": bool(details.get("reprice_wait_timed_out", False)),
         "weight_before_g": details["weight_before_g"],
         "weight_after_g": details["weight_after_g"],
         "predicted_weight_g": details["predicted_weight_g"],
     }
+
+
+def listing_price_note(version: Mapping[str, Any]) -> str:
+    """The truthful suffix for a recorded price that is off Factory's formula."""
+
+    if version.get("price_follows_formula"):
+        return ""
+    if version.get("reprice_wait_timed_out"):
+        return ("; price still off Factory's formula when the reprice wait ran out "
+                "(Factory may not have repriced yet, or the price was set by hand): "
+                "re-read the listing before relying on this price")
+    return "; price not repriced (possibly set by hand)"
 
 
 def append_publication_version(record: Mapping[str, Any], version: Mapping[str, Any]) -> dict[str, Any]:
@@ -756,6 +804,7 @@ __all__ = [
     "ListingUpdatePlan",
     "append_publication_version",
     "factory_sale_price_cents",
+    "listing_price_note",
     "listing_update_version",
     "read_listing_state",
     "read_only_transport",
