@@ -1,3 +1,4 @@
+import ast
 import json
 import shutil
 import tempfile
@@ -55,6 +56,25 @@ class PackageDataTest(unittest.TestCase):
         )
 
         self.assertEqual(BUNDLED_INVENTOR_IDS, source_ids)
+
+    def test_the_wheel_build_copies_exactly_the_bundled_inventors(self):
+        """setup.py builds the snapshot the runtime accepts (it refuses any other)."""
+
+        source = (REPOSITORY / "setup.py").read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        function = next(
+            node for node in tree.body
+            if isinstance(node, ast.FunctionDef) and node.name == "bundled_inventor_ids"
+        )
+        namespace = {"ast": ast, "Path": Path, "__file__": str(REPOSITORY / "setup.py")}
+        exec(compile(ast.Module(body=[function], type_ignores=[]), "setup.py", "exec"), namespace)
+        self.assertEqual(namespace["bundled_inventor_ids"](), BUNDLED_INVENTOR_IDS)
+        loops = [
+            node for node in ast.walk(tree)
+            if isinstance(node, ast.For) and getattr(node.target, "id", None) == "inventor_id"
+        ]
+        self.assertEqual(len(loops), 1)
+        self.assertEqual(ast.unparse(loops[0].iter), "bundled_inventor_ids()")
 
     def test_product_run_domain_skills_resolve_from_owning_components(self):
         roots = product_run_domain_skill_roots()

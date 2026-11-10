@@ -1,5 +1,6 @@
 """Build the installed snapshot of the repository's bundled Inventors."""
 
+import ast
 import json
 from pathlib import Path
 import shutil
@@ -7,6 +8,24 @@ import shutil
 from setuptools import setup
 from setuptools.command.build_py import build_py as _build_py
 from setuptools.command.egg_info import egg_info as _egg_info
+
+
+def bundled_inventor_ids():
+    """The runtime's own BUNDLED_INVENTOR_IDS, read without importing it.
+
+    The installed package refuses any Inventor snapshot that differs from
+    that tuple, so the wheel copies exactly it.
+    """
+
+    source = Path(__file__).resolve().parent / "src/workshop/runtime/package_data.py"
+    for node in ast.parse(source.read_text(encoding="utf-8")).body:
+        if (
+            isinstance(node, ast.Assign)
+            and [getattr(target, "id", None) for target in node.targets]
+            == ["BUNDLED_INVENTOR_IDS"]
+        ):
+            return ast.literal_eval(node.value)
+    raise ValueError("package_data.py defines no BUNDLED_INVENTOR_IDS")
 
 
 class egg_info(_egg_info):
@@ -111,27 +130,7 @@ class build_py(_build_py):
         if destination.exists():
             shutil.rmtree(destination)
         destination.mkdir(parents=True)
-        for inventor_id in (
-            "abo",
-            "alice",
-            "axel-rake",
-            "bob",
-            "eve",
-            "ferro-line",
-            "halden-detent",
-            "ivy",
-            "kestrel-knot",
-            "leo",
-            "luma-vale",
-            "mara-masque",
-            "mira-fold",
-            "orin-shadow",
-            "pico-press",
-            "sonora-reed",
-            "soren-voss",
-            "tess-loop",
-            "vela-bloom",
-        ):
+        for inventor_id in bundled_inventor_ids():
             source = project / "inventors" / inventor_id
             target = destination / inventor_id
             target.mkdir()

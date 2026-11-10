@@ -22,6 +22,7 @@ from workshop.contributors.manifest import load_manifest
 from workshop.errors import ManifestError, WorkshopError
 
 
+# setup.py reads this literal tuple to build the wheel's Inventor snapshot.
 BUNDLED_INVENTOR_IDS = (
     "abo",
     "ad-astra",
@@ -33,6 +34,7 @@ BUNDLED_INVENTOR_IDS = (
     "ferro-line",
     "halden-detent",
     "ivy",
+    "juno-defy",
     "kestrel-knot",
     "leo",
     "luma-vale",
