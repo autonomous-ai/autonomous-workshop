@@ -61,7 +61,8 @@ takes a suffixed name. A local, unpublished projection can never overwrite a
 different `toys/<slug>`, so reusing a name strands the run at its last step.
 Choose `<title>`, the toy's public name, by
 [docs/TOY_NAMING.md](../../../docs/TOY_NAMING.md).
-Build the command:
+Build the command. `<inventor>` is the contract's `inventor` field,
+`rowan-vale` unless the owner named another:
 
 ```bash
 uv run workshop wish --agent claude --contract build-a-toy/r00/CONTRACT.md --inventor <inventor> \
