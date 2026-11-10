@@ -120,6 +120,18 @@ def permission_arguments(root, binary=TEST_CODEX_BINARY):
         "%s=\"deny\"" % json.dumps(str(root.parent)),
         "%s=\"write\"" % json.dumps(str(root)),
     ]
+    # Any ancestor holding a .git marker is a containing checkout the run must
+    # not read. Hosts differ (a stray /tmp/.git is enough), so the expectation
+    # follows the host instead of assuming none.
+    checkout = next(
+        (
+            parent for parent in root.parents
+            if (parent / ".git").exists() or (parent / ".git").is_symlink()
+        ),
+        None,
+    )
+    if checkout is not None:
+        entries.append("%s=\"deny\"" % json.dumps(str(checkout)))
     entries.extend(
         "%s=\"read\"" % json.dumps(str(path))
         for path in sorted(runtime_paths, key=lambda path: str(path))
@@ -611,6 +623,19 @@ class CodexNativeSessionTest(unittest.TestCase):
                     host_state_root=self.host_state(root),
                     constitution_sha256="e" * 64,
                 )
+
+    def test_a_containing_checkout_is_denied_to_the_run(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            checkout = Path(temporary).resolve() / "checkout"
+            root = checkout / "toys" / "run"
+            root.mkdir(parents=True)
+            (checkout / ".git").mkdir()
+            nested = checkout / "toys"
+            arguments = codex_runtime._permission_config_arguments(root, (), ())
+            profile = next(value for value in arguments if value.startswith("permissions.workshop-product-run.filesystem="))
+            self.assertIn(json.dumps(str(checkout)) + '="deny"', profile)
+            self.assertNotIn(json.dumps(str(nested)) + '="write"', profile)
+            self.assertIn(json.dumps(str(root)) + '="write"', profile)
 
     def test_start_streams_exact_native_command_and_checkpoints_before_completion(self):
         with tempfile.TemporaryDirectory() as temporary:
