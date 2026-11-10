@@ -17,16 +17,18 @@ from unittest import mock
 TOOLS = Path(__file__).resolve().parents[2] / "src/workshop/make/skills/cad/scripts"
 OLD_LIMIT = 20 * 1024 * 1024
 
-# 56 round rivets: a sphere tessellates to about 8,000 triangles at any size,
-# so this frame alone is about 448k triangles, above the ~419k the old 20 MiB
-# state limit allowed.
+# 256 round rivets: a sphere tessellates to about 8,000 triangles and 4,000
+# vertices at any size. Since schema 3 (#121) a state encodes each occurrence's
+# unique vertices on a 1 um grid, 24 bytes each, so this frame's state is about
+# 24.6 MB, above the old 20 MiB limit. (The 56 rivets that passed under the
+# per-triangle schema 2 encode to only 5.4 MB.)
 MODEL = '''from build123d import Box, Compound, Sphere
 def gen_step():
     driver = Box(2, 1, 1).translate((4, 0, 0))
     driver.label = "driver"
     driver.color = (0.8, 0.05, 0.01)
     rivets = Compound([Sphere(0.5).translate((i * 1.2, j * 1.2, -3))
-                       for i in range(8) for j in range(7)])
+                       for i in range(16) for j in range(16)])
     rivets.label = "frame"
     rivets.color = (0.01, 0.1, 0.8)
     return Compound(children=[driver, rivets], label="root")
