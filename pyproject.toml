@@ -74,3 +74,14 @@ workshop = [
 # A plain pip install of the wheel still resolves the PyPI release by the pin.
 [tool.uv.sources]
 cadgen = { path = "src/workshop/make/skills/cad/scripts/packages/cadgen", editable = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8,<10",
+]
+
+[tool.pytest.ini_options]
+# pytest runs both the unittest.TestCase suites and the pytest-style test
+# functions; `unittest discover` silently skips the latter.
+testpaths = ["tests"]
+pythonpath = ["src", "."]

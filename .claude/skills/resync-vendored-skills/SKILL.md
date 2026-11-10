@@ -67,7 +67,7 @@ Workshop tree and the other is upstream at `<head>`.
 - Run `uv run python tools/verify_skill_locks.py`, the self-checks of any
   changed script that has one, `python3 src/workshop/make/skills/wiki/scripts/wiki lint`,
   and the full suite:
-  `PYTHONPATH=src uv run python -m unittest discover -s tests -t . -p 'test_*.py'`.
+  `uv run pytest`.
 
 ## 5. Land it
 
