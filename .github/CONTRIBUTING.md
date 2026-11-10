@@ -141,7 +141,7 @@ uv run workshop check inventors/ada-deduction-games
 Run repository gates from the root:
 
 ```bash
-PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py' -v
+uv run pytest  # the dev group installs pytest; it also runs every unittest suite
 PYTHONPATH=src python -m cli skills list
 PYTHONPATH=src python -m cli schemas list
 python .agents/product-run/.agents/skills/autonomous-workshop/scripts/stage_proposal.py --help

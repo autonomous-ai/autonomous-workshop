@@ -501,7 +501,7 @@ the images do not show) is applied the same way with `approved` set to
 2. Implement it in a subagent, in a fresh worktree from `origin/main`
    (`status: implementing`), following the repository's `AGENTS.md`.
 3. Run the full test suite:
-   `PYTHONPATH=src uv run python -m unittest discover -s tests -t . -p 'test_*.py'`.
+   `uv run pytest`.
 4. `git fetch origin && git rebase origin/main`, run the suite again, push
    the branch, and open a PR with `gh pr create`. Never push to `main` and
    never force-push. Record `status: pr-open` and the `pr`; `ledger.py next`

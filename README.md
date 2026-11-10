@@ -495,7 +495,7 @@ This is the shop floor for Workshop code and Inventor sources. To change the CLI
 
 ```bash
 uv run workshop doctor
-PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py'
+uv run pytest
 ```
 
 Never commit credentials, runtime databases, private keys, generated backups, or someone else's source without written permission and a record of where it came from.
