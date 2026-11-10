@@ -275,12 +275,26 @@ def test_fixed_framing_preserves_translation():
 
 
 def test_final_verifier_refuses_missing_motion_review_before_geometry(tmp_path):
+    # Motion verification is opt-in (ADR 0066); once enabled, its evidence and
+    # review are refused before any geometry step runs.
+    verifier = runpy.run_path(str(TOOLS / "verify_project"))
+    project = verifier["_sc_project"](tmp_path)
+    (project / "measure/motion.json").write_text('{"conditions":[{"check":"coupled_motion_collision"}]}')
+    result = subprocess.run([sys.executable, str(TOOLS / "verify_project"), str(project), "--check-motion", "true"],
+                            cwd=project, capture_output=True, text=True)
+    assert result.returncode == 2 and "MOTION-EVIDENCE.json" in result.stderr
+    assert "check_layout" not in result.stdout
+
+
+def test_final_verifier_without_motion_does_not_ask_for_motion_evidence(tmp_path):
+    # ADR 0066: standalone tools default off, so missing motion evidence is
+    # not a refusal; the verifier goes on to the geometry steps.
     verifier = runpy.run_path(str(TOOLS / "verify_project"))
     project = verifier["_sc_project"](tmp_path)
     (project / "measure/motion.json").write_text('{"conditions":[{"check":"coupled_motion_collision"}]}')
     result = subprocess.run([sys.executable, str(TOOLS / "verify_project"), str(project)], cwd=project, capture_output=True, text=True)
-    assert result.returncode == 2 and "MOTION-EVIDENCE.json" in result.stderr
-    assert "check_layout" not in result.stdout
+    assert "MOTION-EVIDENCE.json" not in result.stderr
+    assert "check_layout" in result.stdout
 
 
 def test_cli_constructs_states_without_an_extra_generator(tmp_path):
