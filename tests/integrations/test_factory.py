@@ -237,8 +237,13 @@ class FactoryTransport:
         category_slug=FACTORY_TOY_CATEGORY_SLUG,
         assembly_parts=None,
         part_colors_status=200,
+        echo_title=True,
     ):
         self.product_id = product_id
+        # Factory reads back the title the import carried; a fake that
+        # ignores it stands for a Factory that dropped a title override.
+        self.title = "Verified Toy"
+        self.echo_title = echo_title
         self.fail_get = fail_get
         self.import_status = import_status
         self.include_thumbnails = include_thumbnails
@@ -275,7 +280,7 @@ class FactoryTransport:
             "status": "public" if self.public else "draft",
             "project_url": "https://cdn.autonomous.ai/projects/history-1/",
             "origin": "import",
-            "title": "Verified Toy",
+            "title": self.title,
             "description": "An exact toy page authored before Factory import.",
             "tags": ["toy"],
             "category": (
@@ -311,7 +316,10 @@ class FactoryTransport:
             return login_response()
         if url.endswith("/designs/import"):
             self.imports += 1
-            extras = multipart_parts(headers, body).get("extra_materials")
+            fields = multipart_parts(headers, body)
+            if self.echo_title and fields.get("title"):
+                self.title = fields["title"][0].decode("utf-8")
+            extras = fields.get("extra_materials")
             if extras:
                 self.extra_materials = json.loads(extras[0])
             if self.import_status != 201:
@@ -793,11 +801,24 @@ class FactoryReleaseTest(unittest.TestCase):
             self.assertEqual(facts["release"]["title"], "Verified Toy")
             self.assertEqual(facts["release"]["public_title"], "Renamed Toy")
 
+    def test_a_factory_that_drops_the_public_title_is_not_a_verified_draft(self):
+        self.context.public_title = "Renamed Toy"
+        transport = FactoryTransport(echo_title=False)
+        with self.assertRaisesRegex(AmbiguousEffectError, "exact readback is not proven"):
+            self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertEqual(transport.imports, 1)
+        self.assertEqual(self.ledger.latest("verified-toy", "factory-import").state, "unknown")
+
     def test_without_public_title_the_listing_is_byte_for_byte_unchanged(self):
         transport = FactoryTransport()
-        baseline_receipt = self.writer(FactoryTransport())(
-            self.context, self.release, self.manifest
-        )
+        # The baseline writes its own ledger: sharing self.ledger would replay
+        # its receipt and the second writer would never import.
+        baseline_receipt = FactoryReleaseWriter(
+            EffectLedger(self.root / "state" / "baseline-effects.sqlite3"),
+            "alice",
+            FactoryAgentCredentials("alice", "test-secret"),
+            transport=FactoryTransport(),
+        )(self.context, self.release, self.manifest)
         receipt = self.writer(transport)(self.context, self.release, self.manifest)
         self.assertEqual(receipt.details, baseline_receipt.details)
         import_call = next(
