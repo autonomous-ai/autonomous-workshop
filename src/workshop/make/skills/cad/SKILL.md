@@ -30,7 +30,11 @@ skips nothing about the assembly.
 `carry_unchanged: true`; `motion_policy.seed()` reads it and is None for every
 other run. A run seeded after Workshop ADR 0098 writes `schema_version: 4`,
 whose `seed` adds `batch: {tool_sha256}`, the host batch that runs its
-checks; `seed()` returns that too. It changes no gate.
+checks; `seed()` returns that too. It changes no gate. A run seeded after
+Workshop ADR 0102 writes `schema_version: 5`, whose `seed` adds `review:
+"approved-proof"`: `motion_policy.seed_review()` returns it, and make-round
+then reviews a visible seed deviation against the Approved Proof's render
+instead of a reference image.
 
 What it permits, and only after the changed-part set is established by
 building and exporting EVERY part and hashing each against the source

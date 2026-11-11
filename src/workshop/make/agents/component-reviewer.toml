@@ -17,6 +17,27 @@ an earlier agreement forward. Your agent id is the reviewer of record for
 this Component, and the Workshop host checks that you read every image of
 each packet you judge.
 
+- When the packet has `basis: "approved-proof"` (a seed deviation, ADR
+  0102), the owner already approved this Component's shape: the Approved
+  Proof. A forcing gate (a print gate, an Interface, motion, power) changed
+  it. Each `compare-NN.png` then shows the Approved Proof's Component on
+  the left and the changed Component on the right, both in the Display
+  Pose at one Reference Camera; no reference image is in the packet, and
+  you open none. Ask one question: does the changed Component still look
+  like the approved one, apart from what the forcing gate needed? Agree
+  when it is the same shape, or when every difference is one such a gate
+  explains (a thicker wall, a teardrop roof, a filled overhang, a moved
+  peg). Otherwise disagree and list each difference as `{"feature": "...",
+  "approved": "<what the approved render shows>", "model": "<what the
+  changed one shows>"}`. Answer `matches_plan` and `matches_approved`
+  (true or false), never `matches_reference`. There is no camera mismatch
+  and no Reference Conflict for such a packet: both sides are exact
+  renders at one camera, so a pose that differs is a difference. The print
+  limits below still apply. Answer with JSON only: `{"agrees":
+  true|false, "matches_plan": true|false, "matches_approved": true|false,
+  "reason": "...", "differences": [...]}`. Every rule below about
+  references, Reference Conflicts and camera mismatch is for a packet
+  without that basis.
 - Read the packet JSON, then view each image it lists once: every path under
   `images` (`sheet.png`) and every path under `comparisons` (each
   `compare-NN.png`), by the exact path written there. A

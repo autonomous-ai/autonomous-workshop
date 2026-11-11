@@ -57,9 +57,11 @@ class SeedStartTest(unittest.TestCase):
     def test_a_recorded_seed_starts_with_its_files(self):
         seed, files = self._start(self._wish())
         approval = (self.proof / "APPROVAL.json").read_bytes()
-        # ADR 0098: a new launch freezes the seeded batch tool with the seed.
+        # ADR 0098: a new launch freezes the seeded batch tool with the seed,
+        # and ADR 0102 its review of a visible deviation against the Proof.
         self.assertEqual(seed, {**{key: self.recorded[key] for key in ("approval_sha256", "manifest_sha256")},
-                                "batch": {"tool_sha256": seeded_batch.module_sha256()}})
+                                "batch": {"tool_sha256": seeded_batch.module_sha256()},
+                                "review": "approved-proof"})
         self.assertEqual(files["APPROVAL.json"], approval)
         self.assertEqual(set(files) - {"APPROVAL.json"}, set(json.loads(approval)["manifest"]))
         # No effort given means the default, spark.

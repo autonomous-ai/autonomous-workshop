@@ -321,9 +321,11 @@ def _make_options_bytes(*, check_motion: bool, carry_unchanged: bool,
         # Schema 4 (ADR 0098): with the seeded batch tool the host runs its
         # checks with. A resume rewrites the seed as it froze, so no resume
         # adds or drops the batch.
+        # Schema 5 (ADR 0102): with ``review: "approved-proof"``, a visible
+        # seed deviation is reviewed against the Approved Proof's render.
         checked = _checked_seed(seed)
-        payload = {"schema_version": 4 if "batch" in checked else 3, "check_motion": check_motion,
-                   "seed": checked}
+        version = 5 if "review" in checked else 4 if "batch" in checked else 3
+        payload = {"schema_version": version, "check_motion": check_motion, "seed": checked}
         if carry_unchanged:
             payload["carry_unchanged"] = True
         return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -335,9 +337,16 @@ def _make_options_bytes(*, check_motion: bool, carry_unchanged: bool,
     return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
+#: ADR 0102: a seeded run that froze this reviews a visible seed deviation
+#: against the Approved Proof's render, never against a Reference Image.
+SEED_REVIEW_APPROVED_PROOF = "approved-proof"
+
+
 def _checked_seed(seed: Any) -> dict[str, Any]:
-    if not isinstance(seed, Mapping) or set(seed) - {"batch"} != {"approval_sha256", "manifest_sha256"}:
-        raise ContractError("a seed freezes exactly approval_sha256 and manifest_sha256, and optionally batch")
+    if (not isinstance(seed, Mapping)
+            or set(seed) - {"batch", "review"} != {"approval_sha256", "manifest_sha256"}):
+        raise ContractError("a seed freezes exactly approval_sha256 and manifest_sha256, and optionally "
+                            "batch and review")
     for key in ("approval_sha256", "manifest_sha256"):
         require_sha256(seed[key], "seed sha256")
     checked: dict[str, Any] = {key: seed[key] for key in ("approval_sha256", "manifest_sha256")}
@@ -347,7 +356,22 @@ def _checked_seed(seed: Any) -> dict[str, Any]:
             raise ContractError("a seed's batch freezes exactly tool_sha256")
         require_sha256(batch["tool_sha256"], "seed batch tool sha256")
         checked["batch"] = {"tool_sha256": batch["tool_sha256"]}
+    if "review" in seed:
+        # ADR 0102: only with the batch (ADR 0098), and only this value.
+        if seed["review"] != SEED_REVIEW_APPROVED_PROOF or "batch" not in seed:
+            raise ContractError("a seed's review is %r and needs its batch" % SEED_REVIEW_APPROVED_PROOF)
+        checked["review"] = SEED_REVIEW_APPROVED_PROOF
     return {key: checked[key] for key in sorted(checked)}
+
+
+def frozen_seed_review(run_root: Path) -> Optional[str]:
+    """What a seeded run reviews a visible seed deviation against (ADR
+    0102): ``"approved-proof"`` for a run that froze it, else None (an
+    unseeded run, or one seeded before ADR 0102, which keeps its review
+    against the Reference Images)."""
+
+    seed = _frozen_seed(Path(run_root))
+    return seed.get("review") if seed is not None else None
 
 
 def frozen_seed_batch(run_root: Path) -> Optional[dict[str, str]]:

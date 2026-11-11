@@ -2859,3 +2859,18 @@ convention, so sealed STEPs and frozen runs keep their colours.
 `cad/references/build123d-modeling.md` and the wiki's
 `product-design/colour-matching.md` say so. The `cad`, `image-to-cad` and
 `wiki` locks move; a resync must keep these lines.
+
+## Workshop-local: MAKE-OPTIONS schema 5 reviews a seed deviation against the Approved Proof (2026-11-11, ADR 0102)
+
+- **Local change to upstream `cad` (upstream does not need it: seeding is
+  Workshop's).** `cad/scripts/motion_policy.py` also reads schema 5, schema
+  4 whose `seed` adds `review: "approved-proof"`, and gains
+  `seed_review()`. Schemas 1 to 4 read as before.
+- `make-round`: in a run that froze it, a component round the approval does
+  not lock composes the sealed approved STEP, posed by the approved
+  source's `assembly_pose`, beside the changed Component at each Reference
+  Camera, with no reference image (`basis: "approved-proof"`), and
+  `--record-review` takes `matches_approved` and `{feature, approved,
+  model}` differences and refuses a camera mismatch or a Reference
+  Conflict. `SKILL.md` says so. The `cad` and `make-round` locks move;
+  `source_commit` values are unchanged.

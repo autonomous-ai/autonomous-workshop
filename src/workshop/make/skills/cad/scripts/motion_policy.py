@@ -42,23 +42,28 @@ def _payload(root: Path) -> dict | None:
     if not isinstance(payload, dict):
         raise ValueError("invalid frozen Make options")
     version = payload.get("schema_version")
-    if type(version) is not int or version not in (1, 2, 3, 4):
+    if type(version) is not int or version not in (1, 2, 3, 4, 5):
         raise ValueError("invalid frozen Make options")
     base = {"schema_version", "check_motion"}
     if version == 1:
         if set(payload) != base:
             raise ValueError("invalid frozen Make options")
-    elif version in (3, 4):
+    elif version in (3, 4, 5):
         # Workshop ADR 0096: the Approved Proof a seeded run starts from, and
         # a correction's carry policy when it is one. Schema 4 (ADR 0098)
-        # adds the seeded batch tool the host runs the checks with.
+        # adds the seeded batch tool the host runs the checks with. Schema 5
+        # (ADR 0102) adds review "approved-proof": a visible seed deviation
+        # is reviewed against the Approved Proof's render.
         seed = payload.get("seed")
         hashes = ("approval_sha256", "manifest_sha256")
+        extra = {4: {"batch"}, 5: {"batch", "review"}}.get(version, set())
         if (not isinstance(seed, dict)
-                or set(seed) != set(hashes) | ({"batch"} if version == 4 else set())
+                or set(seed) != set(hashes) | extra
                 or not all(isinstance(seed[k], str) and len(seed[k]) == 64 for k in hashes)):
             raise ValueError("invalid frozen Make options")
-        if version == 4:
+        if version == 5 and seed["review"] != "approved-proof":
+            raise ValueError("invalid frozen Make options")
+        if version in (4, 5):
             batch = seed["batch"]
             if (not isinstance(batch, dict) or set(batch) != {"tool_sha256"}
                     or not isinstance(batch["tool_sha256"], str) or len(batch["tool_sha256"]) != 64):
@@ -131,6 +136,14 @@ def seed() -> dict | None:
     if root is None:
         return None
     payload = _payload(root)
-    if payload is None or payload.get("schema_version") not in (3, 4):
+    if payload is None or payload.get("schema_version") not in (3, 4, 5):
         return None
     return dict(payload["seed"])
+
+
+def seed_review() -> str | None:
+    """What a visible seed deviation is reviewed against (Workshop ADR
+    0102): "approved-proof" in a run that froze schema 5, else None, which
+    keeps the review against the Reference Images."""
+    frozen = seed()
+    return frozen.get("review") if frozen is not None else None

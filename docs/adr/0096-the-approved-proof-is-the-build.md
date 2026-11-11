@@ -287,6 +287,9 @@ toolchain as Make. Partly.
     through today's path: one Component Worker and one Component
     Reviewer (ADRs 0077/0080/0081), with Shape Rounds counted. The
     worker reads the approved part source and STEP as its shape.
+    *Amended by ADR 0102 (2026-11-11) for new seeded runs: the reviewer
+    compares the changed Component with the Approved Proof's render, not
+    the Reference Image.*
   - **Either way,** the receipt and `workshop status --json` list every
     deviation with the gate that forced it and its diff, and
     `build-a-toy` shows each visible one to the owner before
@@ -375,7 +378,7 @@ Component acceptance. Under this ADR:
 | It prints, moves, is powered, fits | host-run deterministic gates | the same gates as today, rerun in the run on the sealed bytes |
 | It looks like the references and the concept | the Proof Critic (fresh, never wrote Proof code), then the owner | only that `CRITIC.json` and `APPROVAL.json` bind the exact Proof hash the run built; not the judgement itself |
 | The build, a fix or an amendment keeps the approved shape | `proof_diff` | the host runs the diff itself on sealed bytes, with the fixed tolerance |
-| A changed Component still looks right | the Component Reviewer, as today | as today (ADR 0081 and its #77 extension) |
+| A changed Component still looks right | the Component Reviewer, against the Approved Proof's render in a new seeded run (ADR 0102) | as today (ADR 0081 and its #77 extension), plus the host check that the review judged the approved-proof packet |
 
 - **The second reader is stronger, not weaker.** Before, the second
   reader was one low-effort model per Component. Now it is a fresh critic

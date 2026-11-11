@@ -19,12 +19,21 @@ comparison of exact bytes, not a gate rerun (ADR 0061). It refuses:
   as ``component-review``. A Component the review calls ``exact`` must be
   the approved B-rep.
 
+In a run that froze ADR 0102's review (``review_basis="approved-proof"``,
+MAKE-OPTIONS schema 5) it also refuses a deviation locked by a Component
+Review whose review was not taken against the Approved Proof: the review
+must name ``basis: "approved-proof"`` and bind, by sha256, its round's
+visual packet, which must compare with this Component's sealed approved
+STEP and show no Reference Image. A run seeded before keeps its review
+against the references.
+
 Every Component whose identity is not the approved one is returned as a
 seed deviation, for the receipt and ``workshop status --json``.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any, Callable, Mapping
@@ -32,6 +41,7 @@ from typing import Any, Callable, Mapping
 from workshop.errors import ContractError
 
 SEED_APPROVAL = "seed-approval"
+APPROVED_PROOF = "approved-proof"
 _ROUNDS = ("measure", "component-rounds")
 _PART_KEYS = ("part", "passed", "volume_delta", "bbox_side_delta_mm", "two_way", "surface_deviation_mm")
 
@@ -63,8 +73,14 @@ def verify_made_seed(
     components: Mapping[str, Any],
     *,
     compare: Callable[[Path, Path], Mapping[str, Any]] = _default_compare,
+    review_basis: str | None = None,
 ) -> list[dict[str, Any]]:
-    """Every seed deviation of the made Components, or ContractError."""
+    """Every seed deviation of the made Components, or ContractError.
+    ``review_basis`` is what the run froze a deviation's review against:
+    ``"approved-proof"`` (ADR 0102) or None (the Reference Images)."""
+
+    if review_basis not in (None, APPROVED_PROOF):
+        raise ContractError("seed: unknown review basis %r" % (review_basis,))
 
     deviations: list[dict[str, Any]] = []
     for role, approved in sorted(components.items()):
@@ -106,6 +122,8 @@ def verify_made_seed(
             )
         if exact:
             continue
+        if review_basis == APPROVED_PROOF and not by_seed:
+            _check_approved_proof_review(Path(project), role, review, approved)
         deviation = {
             "component": role,
             "within_tolerance": within,
@@ -123,6 +141,40 @@ def verify_made_seed(
         _check_carried_bases(carried, deviations)
     return deviations
 
+
+def _check_approved_proof_review(project: Path, role: str, review: Mapping[str, Any],
+                                 approved: Mapping[str, Any]) -> None:
+    """Refuse a deviation's Component Review that was not taken against the
+    Approved Proof (ADR 0102): the review names the basis and the packet it
+    judged, and that packet, read from its round, compares with this
+    Component's sealed approved STEP and binds no Reference Image."""
+
+    where = "seed: %s deviates from the Approved Proof, and " % role
+    if review.get("basis") != APPROVED_PROOF:
+        raise ContractError(where + "its Component Review was not taken against the Approved Proof's render; "
+                            "a seeded run reviews a visible deviation against the approved Component, never a "
+                            "Reference Image")
+    round_index = review.get("round")
+    digest = review.get("packet_sha256")
+    if type(round_index) is not int or round_index < 1 or not isinstance(digest, str):
+        raise ContractError(where + "its Component Review names no round and packet")
+    packet_path = project.joinpath(*_ROUNDS, role, "r%04d" % round_index, "visual-packet.json")
+    try:
+        content = packet_path.read_bytes()
+        packet = json.loads(content)
+    except (OSError, ValueError) as exc:
+        raise ContractError(where + "the packet its Component Review judged is missing") from exc
+    if hashlib.sha256(content).hexdigest() != digest:
+        raise ContractError(where + "the packet its Component Review judged changed")
+    shown = packet.get("approved") if isinstance(packet, dict) else None
+    if (packet.get("basis") != APPROVED_PROOF or not isinstance(shown, dict)
+            or not packet.get("comparisons")):
+        raise ContractError(where + "the packet its Component Review judged does not compare it with the "
+                            "Approved Proof's render")
+    if packet.get("references"):
+        raise ContractError(where + "the packet its Component Review judged shows a Reference Image")
+    if not isinstance(approved.get("step_sha256"), str) or shown.get("step_sha256") != approved["step_sha256"]:
+        raise ContractError(where + "the packet its Component Review judged is not of the sealed approved STEP")
 
 def _check_carried_bases(review: Mapping[str, Any], deviations: list[dict[str, Any]]) -> None:
     """Refuse a carried assembly review whose bases do not cover the
@@ -154,4 +206,4 @@ def _carried_assembly_review(project: Path) -> Mapping[str, Any] | None:
     return review if isinstance(review, dict) and review.get("carried_from") == SEED_APPROVAL else None
 
 
-__all__ = ["SEED_APPROVAL", "latest_component_summary", "verify_made_seed"]
+__all__ = ["APPROVED_PROOF", "SEED_APPROVAL", "latest_component_summary", "verify_made_seed"]

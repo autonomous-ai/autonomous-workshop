@@ -267,7 +267,9 @@ from workshop.workflow.agent_run import (
     AgentRunCheckpoint,
     DeterministicGateReceipt,
     MIN_AGENT_TURN_SECONDS,
+    SEED_REVIEW_APPROVED_PROOF,
     frozen_seed_batch,
+    frozen_seed_review,
 )
 from workshop.workflow.budgets import (
     BUDGETS_CAPABILITY_PATH,
@@ -8506,7 +8508,8 @@ def _evaluate_make_stage(
         seed_components = _sealed_seed_components(run.run_root)
         if seed_components is not None:
             product_checks["seed_deviations"] = verify_made_seed(
-                cad_project, run.run_root, seed_components
+                cad_project, run.run_root, seed_components,
+                review_basis=frozen_seed_review(run.run_root),
             )
         if seeded_batch_gate is not None:
             # ADR 0098: the Make record shows that the host ran the batch,
@@ -11817,7 +11820,10 @@ def _seed_start_inputs(
     if (seed.approved_by, seed.date) != (recorded["approved_by"], recorded["date"]):
         raise ContractError("the seed directory is not the one the Wish records")
     # The seeded batch tool this run's checks run with, frozen with the seed.
-    frozen = {**seed.frozen(), "batch": {"tool_sha256": seeded_batch_module_sha256()}}
+    # ADR 0102: and a visible seed deviation is reviewed against the
+    # Approved Proof's render, never against a Reference Image.
+    frozen = {**seed.frozen(), "batch": {"tool_sha256": seeded_batch_module_sha256()},
+              "review": SEED_REVIEW_APPROVED_PROOF}
     return frozen, seed_files(seed, Path(seed_source))
 
 

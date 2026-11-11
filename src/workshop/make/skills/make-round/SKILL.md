@@ -67,7 +67,20 @@ calls were reassembling by hand.
   with nothing to review. A root round that deviates is refused and leaves
   nothing: spawn a Component Worker for that Component. A worker's round
   within `proof_diff` tolerance (`seed-diff.json`) is locked the same way;
-  one over tolerance awaits its Component Review as usual.
+  one over tolerance awaits its Component Review as usual. When `seed`
+  has `review: "approved-proof"` (MAKE-OPTIONS schema 5, Workshop ADR
+  0102), that review is against the Approved Proof: each `compare-NN.png`
+  shows the sealed `seed/approved/part_<id>.step`, posed by the approved
+  source's `assembly_pose`, beside the changed Component in its Display
+  Pose at a Reference Camera. The print-stance sheet is unchanged. The
+  packet has `basis: "approved-proof"`, binds the approved STEP, source and
+  renders, and binds no reference image. The review answers
+  `matches_plan` and `matches_approved` (no `matches_reference`), lists
+  differences as `{"feature", "approved", "model"}`, and has no camera
+  mismatch or Reference Conflict, which `--record-review` refuses. Shape
+  Rounds and the acceptance at the limit are unchanged. The recorded
+  review carries `basis` and `packet_sha256`, which the host checks before
+  Make is accepted.
 - A round can take minutes. Wait for it in as few requests as possible: on
   Codex start it with `yield_time_ms: 300000` and continue with an empty
   `write_stdin` poll at the same yield. On Claude Code run it in the

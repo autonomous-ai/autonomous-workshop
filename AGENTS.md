@@ -147,7 +147,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0085-in-run-contract-amendments-for-invisible-fixes.md`, and
 `docs/adr/0093-contract-proof-and-three-view-concepts.md`, and
 `docs/adr/0094-one-gate-one-proof-reader-and-no-duplicate-reads.md`, and
-`docs/adr/0095-powered-toys.md` before changing the CLI, runtime,
+`docs/adr/0095-powered-toys.md`, and
+`docs/adr/0102-seed-deviations-are-reviewed-against-the-approved-proof.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -381,6 +382,14 @@ Proof seed hash leaves out, lists pins, springs and glue and prices the
 `pcba`. Release bills every sealed Bought Part as Factory `extra_materials`
 at the sealed unit price, refuses an unpriced one, and reads the extras back.
 A priced board includes the parts `pcba.parts` mounts, which are not billed again.
+ADR 0102 amends ADR 0096 for new seeded runs (MAKE-OPTIONS schema 5,
+`seed.review: "approved-proof"`): a visible seed deviation's Component
+Review compares the Approved Proof's Component, rendered from the sealed
+approved STEP at each Reference Camera, beside the changed one, and the
+packet binds no Reference Image. The review answers `matches_approved`,
+lists `{feature, approved, model}` differences, and has no camera mismatch
+or Reference Conflict. `verify_made_seed` refuses a deviation whose review
+did not judge such a packet. Older seeded runs keep their reference review.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 
