@@ -30,8 +30,11 @@ Work in a fresh worktree from Workshop `origin/main`, never in the owner's
 checkout:
 
 ```bash
-git fetch origin && git worktree add -b vendor-sync/<head8> <dir> origin/main
+git fetch origin && uv run python tools/build_worktree.py <dir> --at origin/main -b vendor-sync/<head8>
 ```
+
+It checks out everything but the toy archives under `toys/`, `toys-spec/`
+and `inbox/`, which a resync never reads.
 
 ## 3. Merge each changed tree
 
