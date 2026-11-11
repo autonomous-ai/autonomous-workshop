@@ -503,7 +503,7 @@ for inventor_id in inventor_ids:
                 "agents": (run_root / "AGENTS.md").is_file(),
                 "cad": (run_root / ".agents" / "skills" / "cad" / "SKILL.md").is_file(),
                 "codex_agents": agent_root.is_dir(),
-                "design_reference": (run_root / ".agents" / "skills" / "design-reference" / "SKILL.md").is_file(),
+                "no_design_reference": not (run_root / ".agents" / "skills" / "design-reference").exists(),  # Spark, ADR 0101
                 "inventors": all(
                     (
                         run_root
@@ -523,7 +523,7 @@ for inventor_id in inventor_ids:
                 ),
                 "root_marker": (run_root / ".workshop-product-run-root").is_file(),
                 "image_to_cad": (run_root / ".agents" / "skills" / "image-to-cad" / "SKILL.md").is_file(),
-                "manual_design": (run_root / ".agents" / "skills" / "manual-design" / "SKILL.md").is_file(),
+                "no_manual_design": not (run_root / ".agents" / "skills" / "manual-design").exists(),  # Spark, ADR 0101
                 "stage": (run_root / "STAGE.json").is_file(),
                 "step_parts": (run_root / ".agents" / "skills" / "step-parts" / "SKILL.md").is_file(),
                 "workflow": (run_root / ".agents" / "skills" / "autonomous-workshop" / "SKILL.md").is_file(),

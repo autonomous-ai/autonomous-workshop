@@ -2757,6 +2757,37 @@ class NativeHostTest(unittest.TestCase):
             )
             self.assertFalse((home / "runs" / product_id).exists())
 
+    def test_only_an_invent_route_run_receives_the_invent_route_skills(self):
+        for workflow, expected in (("spark", False), ("forge", True), ("quest", True)):
+            launcher = _FakeLauncher()
+            with self.subTest(workflow=workflow), tempfile.TemporaryDirectory() as temporary:
+                home = Path(temporary).resolve() / "workshop-home"
+                with mock.patch.dict(
+                    os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+                ), mock.patch(
+                    "workshop.workflow.native_run._source_checkout_root",
+                    return_value=None,
+                ), mock.patch(
+                    "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                    return_value=launcher,
+                ), redirect_stdout(StringIO()) as stdout, redirect_stderr(StringIO()):
+                    result = main((
+                        "wish", "a", "wind-up", "dog", "--inventor", "soren-voss",
+                        "--workflow", workflow, "--json",
+                    ))
+                self.assertEqual(result, 0)
+                product_id = json.loads(stdout.getvalue())["product_id"]
+                skills = home / "runs" / product_id / "workspace" / ".agents" / "skills"
+                for name in ("design-reference", "manual-design", "product-design"):
+                    self.assertEqual((skills / name / "SKILL.md").is_file(), expected, name)
+                self.assertTrue((skills / "design-vault" / "SKILL.md").is_file())
+                checkpoint = json.loads(
+                    (home / "state" / product_id / "agent-run.json").read_bytes()
+                )
+                self.assertEqual(
+                    "manual-design" in checkpoint["domain_skills"], expected
+                )
+
     def test_wish_starts_native_session_before_any_effect_path(self):
         launcher = _FakeLauncher()
         with tempfile.TemporaryDirectory() as temporary:
@@ -2823,15 +2854,15 @@ class NativeHostTest(unittest.TestCase):
                     / "SKILL.md"
                 ).is_file()
             )
+            # The default Spark route reads no Invent-route skill (ADR 0101);
+            # design-vault stays because Make reads the vault snapshot.
             for skill_name in (
                 "cad",
-                "design-reference",
                 "design-vault",
                 "electromechanical-integration",
                 "image-to-cad",
-                "manual-design",
+                "make-round",
                 "print-details",
-                "product-design",
                 "step-parts",
                 "wiki",
             ):
@@ -2844,15 +2875,19 @@ class NativeHostTest(unittest.TestCase):
                         / "SKILL.md"
                     ).is_file()
                 )
+            for skill_name in ("design-reference", "manual-design", "product-design"):
+                self.assertFalse((workspace / ".agents" / "skills" / skill_name).exists())
+            self.assertFalse(
+                (workspace / ".agents/skills/cad/scripts/packages/cadgen/tests").exists()
+            )
             self.assertTrue(
-                (
-                    workspace
-                    / ".agents"
-                    / "skills"
-                    / "manual-design"
-                    / "references"
-                    / "product-manual-visual-system.md"
-                ).is_file()
+                (workspace / ".agents/skills/cad/scripts/packages/cadgen/src").is_dir()
+            )
+            checkpoint = json.loads((host_state / "agent-run.json").read_bytes())
+            self.assertEqual(
+                checkpoint["domain_skills"],
+                ["cad", "design-vault", "electromechanical-integration", "image-to-cad",
+                 "make-round", "print-details", "step-parts", "wiki"],
             )
             # Pin selection: this fixture tests the Make/effect boundary.
             # Automatic roster selection has its own host integration suite.

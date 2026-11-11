@@ -81,12 +81,13 @@ While pursuing the Goal:
    round's repair from that sealed `product_root` and `made_sha256`, not from
    the last revision.
 2. **Act:** Use native editing and the materialized `cad`, `image-to-cad`,
-   `product-design`, `design-reference`, `electromechanical-integration`,
-   `print-details`, `step-parts`, and `wiki` skills under `.agents/skills/` to
-   create or repair the actual product artifact. `print-details` builds
-   decorative surface detail that passes the print gates.
-   `product-design` designs a prose Wish whose design is still open, never a
-   sealed concept or Design Contract. `wiki` is read-only reference knowledge:
+   `electromechanical-integration`, `print-details`, `step-parts`, and `wiki`
+   skills under `.agents/skills/` to create or repair the actual product
+   artifact. `print-details` builds decorative surface detail that passes the
+   print gates. A Forge or Quest run also carries `product-design` and
+   `design-reference`; a Spark run, which builds from a sealed Design Contract,
+   does not. `product-design` designs a prose Wish whose design is still open,
+   never a sealed concept or Design Contract. `wiki` is read-only reference knowledge:
    search it before a part that turns, slides, swings, indexes, latches or
    carries load, and whenever a kernel operation fails. Use native subagents
    for bounded mechanism, CAD, or review tasks when useful.

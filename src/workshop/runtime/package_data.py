@@ -66,6 +66,11 @@ _PRODUCT_RUN_DOMAIN_SKILL_PATHS = (
 PRODUCT_RUN_DOMAIN_SKILLS = tuple(
     name for name, _relative in _PRODUCT_RUN_DOMAIN_SKILL_PATHS
 )
+# ADR 0101: skills only a route with an Invent stage (Forge, Quest) reads.
+# A Spark run starts from a sealed Design Contract and a host-only Release,
+# so it is created without them. design-vault stays: the host writes the
+# vault snapshot before every Make phase, Spark included.
+INVENT_ROUTE_DOMAIN_SKILLS = ("design-reference", "manual-design", "product-design")
 _MAX_BUNDLED_FILE_BYTES = 512 * 1024
 
 
@@ -108,14 +113,22 @@ def packaged_data_root(group: str, package_file: Path) -> Optional[Path]:
 
 def product_run_domain_skill_roots(
     package_file: Optional[Path] = None,
+    *,
+    invent_route: bool = True,
 ) -> Mapping[str, Path]:
-    """Return the exact component-owned skills exposed to a product run."""
+    """Return the exact component-owned skills exposed to a product run.
+
+    ``invent_route=False`` is a new run without an Invent stage (Spark); it
+    leaves out ``INVENT_ROUTE_DOMAIN_SKILLS`` (ADR 0101).
+    """
 
     package_root = _workshop_package_root(
         Path(__file__) if package_file is None else Path(package_file)
     )
     selected: dict[str, Path] = {}
     for name, relative in _PRODUCT_RUN_DOMAIN_SKILL_PATHS:
+        if not invent_route and name in INVENT_ROUTE_DOMAIN_SKILLS:
+            continue
         candidate = package_root / relative
         if candidate.is_symlink() or not candidate.is_dir():
             raise PackageDataError("missing product-run domain skill: %s" % name)

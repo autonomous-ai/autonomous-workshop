@@ -76,6 +76,16 @@ class PackageDataTest(unittest.TestCase):
         self.assertEqual(len(loops), 1)
         self.assertEqual(ast.unparse(loops[0].iter), "bundled_inventor_ids()")
 
+    def test_a_run_without_invent_leaves_out_the_invent_route_skills(self):
+        everything = product_run_domain_skill_roots()
+        spark = product_run_domain_skill_roots(invent_route=False)
+        self.assertEqual(
+            set(everything) - set(spark),
+            {"design-reference", "manual-design", "product-design"},
+        )
+        self.assertIn("design-vault", spark)
+        self.assertEqual({name: everything[name] for name in spark}, dict(spark))
+
     def test_product_run_domain_skills_resolve_from_owning_components(self):
         roots = product_run_domain_skill_roots()
 
