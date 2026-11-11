@@ -61,8 +61,8 @@ class SeedValidationTest(unittest.TestCase):
         with self.assertRaises(ContractError) as caught:
             validate_seed(self.proof, ("body",), "0" * 64)
         self.assertIn("sealed for another contract", str(caught.exception))
-        self._edit(lambda a: a.update(schema_version=3))
-        self._refused("schema_version 3 is not 2")
+        self._edit(lambda a: a.update(schema_version=4))
+        self._refused("schema_version 4 is not 2 or 3")
         self.approval_path.write_text("{")
         self._refused("does not parse")
         self.approval_path.unlink()
@@ -115,6 +115,41 @@ class SeedValidationTest(unittest.TestCase):
         self.assertEqual(self._seal(), 0, self.stderr)
         self._edit(lambda a: a["components"]["body"].pop("carry_key"))
         self._refused("component body has no carry_key")
+
+    def test_a_schema_2_seal_without_assembly_renders_still_validates(self):
+        """ADR 0102's 2026-11-11 amendment: existing seals keep the reference look."""
+        def older(approval):
+            approval["schema_version"] = 2
+            approval.pop("assembly_renders")
+        self._edit(older)
+        self.assertIsNone(self._validate().assembly_renders)
+
+    def test_assembly_render_refusals(self):
+        render = "approved/assembly/az90_el15.png"
+        (self.proof / "approved/assembly").mkdir()
+        (self.proof / render).write_bytes(b"render")
+
+        def with_render(**item):
+            def change(approval):
+                approval["manifest"][render] = sha(self.proof / render)
+                self._remanifest(approval)
+                approval["assembly_renders"] = [{"file": render, "camera": [90, 15],
+                                                 "sha256": sha(self.proof / render), **item}]
+            return change
+        self._edit(with_render())
+        self.assertEqual(self._validate().assembly_renders[0]["camera"], [90.0, 15.0])
+        contract = {"references": [{"file": "ref-01-assembly.png", "shows": "assembly", "camera": [0, 0]}]}
+        with self.assertRaisesRegex(ContractError, "not at the contract's assembly Reference Cameras"):
+            validate_seed(self.proof, ("body",), self.digest, contract)
+        for fragment, change in (
+            ("not named for its camera", with_render(camera=[0, 0])),
+            ("not in the manifest as sealed", with_render(sha256="3" * 64)),
+            ("invalid assembly render", with_render(extra=1)),
+            ("records no assembly_renders", lambda a: a.pop("assembly_renders")),
+        ):
+            with self.subTest(fragment):
+                self._edit(change)
+                self._refused(fragment)
 
     def test_approver_and_date_are_required(self):
         self._edit(lambda a: a.update(approved_by=" "))

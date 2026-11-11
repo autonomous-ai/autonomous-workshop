@@ -74,7 +74,8 @@ assembled toy. Make builds toward it, and the Component Reviewer judges the
 build against it. Only an approved, reconciled image becomes one. For a toy
 with an Approved Proof it is a design input only: the Contract Proof, the
 Proof Critic and the owner's Stage 4 review read it, and a new seeded build
-reads none (ADR 0102).
+reads none (ADR 0102): its Component Reviews and, for a seal with assembly
+renders, its assembly look compare with the Approved Proof's renders.
 _Avoid_: Concept Image, render, picture
 
 **Guide Image**:

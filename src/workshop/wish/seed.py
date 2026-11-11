@@ -33,7 +33,11 @@ from workshop.errors import ContractError
 from workshop.wish.bought_list import strip_bought_block
 
 APPROVAL_NAME = "APPROVAL.json"
-APPROVAL_SCHEMA_VERSION = 2
+APPROVAL_SCHEMA_VERSION = 3
+# Approvals sealed before ADR 0102's 2026-11-11 amendment: no Approved Proof
+# assembly renders; a run seeded from one keeps the reference-image look.
+UNRENDERED_APPROVAL_SCHEMA_VERSION = 2
+APPROVED_ASSEMBLY_DIR = "approved/assembly"
 # Approvals sealed before ADR 0098: refused for a new launch, never read again
 # for a run already started from one.
 LEGACY_APPROVAL_SCHEMA_VERSION = 1
@@ -168,6 +172,9 @@ class SeedApproval:
     components: Mapping[str, Mapping[str, Any]]
     assembly_identity: str
     check_inputs: Mapping[str, str]
+    # APPROVAL schema 3 (ADR 0102, 2026-11-11 amendment): the Approved Proof's
+    # assembly at each assembly Reference Camera; None for a schema 2 seal.
+    assembly_renders: Any = None
 
     def frozen(self) -> Dict[str, str]:
         """What `MAKE-OPTIONS.json` schema 3 freezes."""
@@ -244,9 +251,10 @@ def validate_seed(directory: Path, geometry_ids, contract_sha256: str,
             "seed: this Approved Proof was sealed before ADR 0098 (%s schema_version 1) and does not "
             "record the check inputs a new seeded run needs: %s. %s"
             % (APPROVAL_NAME, describe_check_inputs(missing), RESEAL_HINT % directory))
-    if approval.get("schema_version") != APPROVAL_SCHEMA_VERSION:
-        raise ContractError("seed: %s schema_version %r is not %d"
-                            % (APPROVAL_NAME, approval.get("schema_version"), APPROVAL_SCHEMA_VERSION))
+    if approval.get("schema_version") not in (UNRENDERED_APPROVAL_SCHEMA_VERSION, APPROVAL_SCHEMA_VERSION):
+        raise ContractError("seed: %s schema_version %r is not %d or %d"
+                            % (APPROVAL_NAME, approval.get("schema_version"), UNRENDERED_APPROVAL_SCHEMA_VERSION,
+                               APPROVAL_SCHEMA_VERSION))
     if approval.get("contract_sha256") != contract_sha256:
         raise ContractError("seed: the Approved Proof was sealed for another contract "
                             "(contract_sha256 differs from the sealed contract's)")
@@ -317,6 +325,9 @@ def validate_seed(directory: Path, geometry_ids, contract_sha256: str,
             raise ContractError("seed: component %s's approved STEP is not the one sealed" % role)
     if not isinstance(approval.get("assembly_identity"), str) or not approval["assembly_identity"]:
         raise ContractError("seed: %s has no assembly_identity" % APPROVAL_NAME)
+    renders = None
+    if approval["schema_version"] == APPROVAL_SCHEMA_VERSION:
+        renders = check_assembly_renders(approval.get("assembly_renders"), sealed, design_contract)
     approved_by = approval.get("approved_by")
     if not isinstance(approved_by, str) or not approved_by.strip():
         raise ContractError("seed: %s names no approved_by" % APPROVAL_NAME)
@@ -334,7 +345,60 @@ def validate_seed(directory: Path, geometry_ids, contract_sha256: str,
         components={role: dict(item) for role, item in components.items()},
         assembly_identity=approval["assembly_identity"],
         check_inputs=dict(recorded),
+        assembly_renders=renders,
     )
+
+
+def assembly_cameras(design_contract: Mapping[str, Any]) -> list:
+    """``[AZ, EL]`` of every assembly reference of the contract, in order and
+    once each: where a seal renders the Approved Proof's assembly (ADR 0102,
+    2026-11-11 amendment)."""
+
+    cameras = []
+    for reference in (design_contract or {}).get("references") or ():
+        if not isinstance(reference, Mapping) or reference.get("shows") != "assembly":
+            continue
+        camera = reference.get("camera")
+        if (isinstance(camera, (list, tuple)) and len(camera) == 2
+                and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in camera)):
+            value = [float(camera[0]), float(camera[1])]
+            if value not in cameras:
+                cameras.append(value)
+    return cameras
+
+
+def assembly_render_name(camera) -> str:
+    """The sealed file of the assembly render at ``camera``: render_review's
+    own ``az{:g}_el{:g}.png`` name, under ``approved/assembly/``."""
+
+    return "%s/az%g_el%g.png" % (APPROVED_ASSEMBLY_DIR, float(camera[0]), float(camera[1]))
+
+
+def check_assembly_renders(renders: Any, sealed: Mapping[str, str],
+                           design_contract: Mapping[str, Any] = None) -> tuple:
+    """A schema 3 approval's ``assembly_renders``, or ContractError: each
+    ``{file, camera, sha256}`` is in the manifest as sealed under its own
+    camera's name, and, given the contract, they are its assembly reference
+    cameras exactly."""
+
+    if not isinstance(renders, list):
+        raise ContractError("seed: %s records no assembly_renders" % APPROVAL_NAME)
+    checked = []
+    for item in renders:
+        camera = item.get("camera") if isinstance(item, dict) else None
+        if (not isinstance(item, dict) or set(item) != {"file", "camera", "sha256"} or not isinstance(camera, list)
+                or len(camera) != 2 or not all(isinstance(v, (int, float)) and not isinstance(v, bool)
+                                               for v in camera)):
+            raise ContractError("seed: %s names an invalid assembly render" % APPROVAL_NAME)
+        if item["file"] != assembly_render_name(camera):
+            raise ContractError("seed: assembly render %r is not named for its camera" % (item["file"],))
+        if item["file"] not in sealed or sealed[item["file"]] != item["sha256"]:
+            raise ContractError("seed: assembly render %s is not in the manifest as sealed" % item["file"])
+        checked.append({"file": item["file"], "camera": [float(v) for v in camera], "sha256": item["sha256"]})
+    if design_contract is not None and [item["camera"] for item in checked] != assembly_cameras(design_contract):
+        raise ContractError("seed: the Approved Proof's assembly renders are not at the contract's assembly "
+                            "Reference Cameras; re-seal the Proof with design-a-toy's seal_proof.py")
+    return tuple(checked)
 
 
 def copy_seed(seed: SeedApproval, source: Path, destination: Path) -> None:

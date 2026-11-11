@@ -390,6 +390,15 @@ packet binds no Reference Image. The review answers `matches_approved`,
 lists `{feature, approved, model}` differences, and has no camera mismatch
 or Reference Conflict. `verify_made_seed` refuses a deviation whose review
 did not judge such a packet. Older seeded runs keep their reference review.
+Its 2026-11-11 amendment removes the last AI image from a seeded build's
+review. `seal_proof.py` seals APPROVAL schema 3, which records
+`assembly_renders`: the Proof's assembly rendered with `render_review` at
+each assembly Reference Camera, kept under `approved/assembly/`. When the
+carried assembly review does not apply, the assembly round composes those
+sealed renders beside the model. Its packet has `basis: "approved-proof"`
+and binds no reference, and `--record-visual` takes `matches_approved`.
+For such a seal, `verify_made_seed` refuses an assembly look taken against
+the references. A schema 2 seal keeps the reference look.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

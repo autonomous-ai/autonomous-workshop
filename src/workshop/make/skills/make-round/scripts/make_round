@@ -244,6 +244,8 @@ VISUAL_VIEWS = ("iso", "front", "left", "top", "iso_front", "iso_back",
 VISUAL_SHEET = "sheet"
 VISUAL_FEEDBACK_FIELDS = frozenset(
     ("packet_sha256", "status", "findings", "observation", "matches_plan", "matches_reference"))
+# An assembly look beside the Approved Proof's renders (Workshop ADR 0102).
+APPROVED_FEEDBACK_FIELDS = (VISUAL_FEEDBACK_FIELDS - {"matches_reference"}) | {"matches_approved"}
 # A packet binds the sheet alone: it holds every rendered view, so a reader
 # whose reads the host checks opens one image per round, not ten. The single
 # views stay on disk beside it.
@@ -303,6 +305,8 @@ DISPLAY_POSE_DIR = "display-pose"
 # Approved Proof's own Component, rendered here at each Reference Camera.
 APPROVED_PROOF = "approved-proof"
 APPROVED_POSE_DIR = "approved-proof"
+# Where a seal keeps the Approved Proof's assembly renders (APPROVAL schema 3).
+APPROVED_ASSEMBLY_DIR = "approved/assembly"
 INSTANCE_PARAM = "instance"
 INSTANCE_CONVENTION = ("define %s(shape, pose, %s) to place instance n in assembly coordinates, and "
                        "gen_step(%s=1) to build a variant per instance (omit it to build identical copies)"
@@ -432,7 +436,10 @@ def prepare_comparisons(project, out, refs, display_pose=False, approved=False):
         if reference is None or not reference.is_file() or not render.is_file():
             return {}, "no model render at the declared camera for %s" % label
         target = views / ("compare-%02d.png" % index)
-        if approved:
+        if approved and not display_pose:
+            caption = ("%s  approved Proof | model, both at the assembly Reference Camera %s"
+                       % (label, caption_camera))
+        elif approved:
             caption = ("%s  approved Proof | changed Component, both in the Display Pose at Reference Camera %s"
                        % (label, caption_camera))
         elif display_pose:
@@ -463,7 +470,8 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
     Workshop ADR 0102's review) is ``approved_proof_basis``'s record: each
     comparison shows the Approved Proof's Component beside the changed one
     instead of a Reference Image, and the packet binds no reference."""
-    if approved is not None and not (display_pose and refs):
+    assembly_basis = (approved or {}).get("assembly") if component is None else None
+    if approved is not None and component is not None and not (display_pose and refs):
         return {"status": "error", "findings": [],
                 "detail": "a seed deviation is compared with the Approved Proof at each Reference Camera, and "
                           "this round has none (Workshop ADR 0102)"}
@@ -489,7 +497,7 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
                                  *("--view=%s" % view for view in reference_views),
                                  "-o", str(views / DISPLAY_POSE_DIR)],
                      "cwd": project, "log": out / "display-pose-render.log", **env})
-    if approved is not None:
+    if approved is not None and component is not None:
         # Workshop ADR 0102: the sealed approved STEP, placed by the approved
         # source's assembly_pose, at the same cameras. Never the round's build.
         posed = out / ("approved_pose_%s.step.py" % component.replace("-", "_"))
@@ -510,7 +518,16 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
         if done.returncode or before != bound():
             return {"status": "error", "findings": [],
                     "detail": "Display Pose render failed or source changed; inspect display-pose-render.log"}
-    if approved is not None and (dones[-1].returncode or file_hash(approved["step"]) != approved["step_sha256"]):
+    if assembly_basis is not None:
+        # The 2026-11-11 amendment: the assembly's approved side is the seal's
+        # own render at each camera, copied beside the round's renders.
+        (views / APPROVED_POSE_DIR).mkdir(parents=True, exist_ok=True)
+        for item in assembly_basis:
+            if file_hash(item["path"]) != item["sha256"]:
+                return {"status": "error", "findings": [],
+                        "detail": "the Approved Proof's assembly render %s changed" % item["file"]}
+            shutil.copyfile(item["path"], views / APPROVED_POSE_DIR / (item["stem"] + ".png"))
+    elif approved is not None and (dones[-1].returncode or file_hash(approved["step"]) != approved["step_sha256"]):
         return {"status": "error", "findings": [],
                 "detail": "the Approved Proof's Component did not render, or its sealed STEP changed; inspect "
                           "approved-proof-render.log"}
@@ -526,7 +543,14 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
               "images": {str(p.resolve()): file_hash(p) for p in paths},
               "references": references,
               "comparisons": comparisons}
-    if approved is not None:
+    if assembly_basis is not None:
+        packet["basis"] = APPROVED_PROOF
+        packet["approved"] = {
+            "assembly_renders": {item["file"]: item["sha256"] for item in assembly_basis},
+            "sealed": {item["path"]: item["sha256"] for item in assembly_basis},
+            "renders": {str((views / APPROVED_POSE_DIR / (item["stem"] + ".png")).resolve()): item["sha256"]
+                        for item in assembly_basis}}
+    elif approved is not None:
         renders = sorted((views / APPROVED_POSE_DIR).glob("*.png"))
         packet["basis"] = APPROVED_PROOF
         packet["approved"] = {"step": approved["step"], "step_sha256": approved["step_sha256"],
@@ -563,6 +587,16 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
             detail += ("; the packet's rulings are the Workshop Manager's decisions on this Component's Blocked "
                        "Reports, which bind the reviewer")
         detail += COMPONENT_REVIEW_STEPS
+    elif assembly_basis is not None:
+        detail = VISUAL_REVIEW_STEPS.replace(
+            "against the reference images when the round has any",
+            "against the Approved Proof's own assembly renders").replace(
+            "matches_reference (null without references)", "matches_approved (null without approved renders)")
+        if comparisons:
+            detail += (" Then, in each compare-NN.png, compare the Approved Proof's assembly (left) with the model "
+                       "beside it at the same camera and list every difference of form as feature, approved, "
+                       "model, decision and reason; record matches_approved, never matches_reference "
+                       "(Workshop ADR 0102). No reference image is shown.")
     else:
         detail = VISUAL_REVIEW_STEPS
         if comparisons:
@@ -611,7 +645,7 @@ def packet_error(visual: dict, project: Path, role: str | None = None) -> str | 
     approved = packet.get("approved") or {}
     bound = {**packet["images"], **packet["references"],
              **{path: item["sha256"] for path, item in comparisons.items()},
-             **dict(approved.get("renders") or {}),
+             **dict(approved.get("renders") or {}), **dict(approved.get("sealed") or {}),
              **({approved["step"]: approved["step_sha256"]} if approved.get("step") else {})}
     for path, digest in bound.items():
         if not Path(path).is_file() or file_hash(path) != digest:
@@ -637,7 +671,12 @@ def record_visual(project, feedback_path, full=False, component=None, check_moti
     if stale is not None:
         raise ValueError("visual packet changed" if stale == "visual packet changed" else "visual feedback has %s" % stale)
     feedback = json.loads(Path(feedback_path).read_text())
-    if not VISUAL_FEEDBACK_FIELDS <= set(feedback) or not set(feedback) <= VISUAL_FEEDBACK_FIELDS | {"differences"}:
+    against_proof = json.loads(Path(visual["packet"]).read_text(encoding="utf-8")).get("basis") == APPROVED_PROOF
+    fields = APPROVED_FEEDBACK_FIELDS if against_proof else VISUAL_FEEDBACK_FIELDS
+    if against_proof and isinstance(feedback, dict) and "matches_reference" in feedback:
+        raise ValueError("this assembly round is looked at beside the Approved Proof's assembly renders, not a "
+                         "reference image: record matches_approved, never matches_reference (Workshop ADR 0102)")
+    if not isinstance(feedback, dict) or not fields <= set(feedback) or not set(feedback) <= fields | {"differences"}:
         raise ValueError("invalid visual feedback fields")
     if feedback["packet_sha256"] != visual["packet_sha256"]:
         raise ValueError("visual feedback belongs to a different round")
@@ -653,10 +692,13 @@ def record_visual(project, feedback_path, full=False, component=None, check_moti
             raise ValueError("visual finding text must be nonempty and bounded")
     if (feedback["status"] == "pass" and findings) or (feedback["status"] == "fail" and not findings):
         raise ValueError("visual status contradicts findings")
-    check_verdicts(feedback, visual, feedback["status"] == "pass", "a visual pass")
+    if against_proof:
+        check_approved_verdicts(feedback, visual)
+    else:
+        check_verdicts(feedback, visual, feedback["status"] == "pass", "a visual pass")
     if not isinstance(feedback["observation"], str) or not 1 <= len(feedback["observation"].strip()) <= 2000:
         raise ValueError("visual feedback needs a bounded observation, including uncertainty")
-    check_differences(feedback)
+    check_differences(feedback, approved=against_proof)
     previous = previous_observation(out, summary)
     if previous is not None and " ".join(previous.split()) in " ".join(feedback["observation"].split()):
         raise ValueError("visual feedback repeats the previous round's observation; inspect this round's images")
@@ -792,16 +834,36 @@ def check_verdicts(record: dict, visual: dict, passing: bool, what: str) -> None
         raise ValueError("%s needs matches_plan true and matches_reference not false" % what)
 
 
-def check_differences(feedback: dict) -> None:
-    """Differences from a reference are named, and one still to repair cannot
-    pass (ADR 0075)."""
+def check_approved_verdicts(record: dict, visual: dict) -> None:
+    """``check_verdicts`` for an assembly look beside the Approved Proof's
+    assembly renders (Workshop ADR 0102): ``matches_approved`` stands where
+    ``matches_reference`` would, and is null only when the seal recorded no
+    assembly render to show."""
 
+    if type(record["matches_plan"]) is not bool:
+        raise ValueError("matches_plan must be true or false")
+    shown = json.loads(Path(visual["packet"]).read_text(encoding="utf-8")).get("comparisons")
+    if shown:
+        if type(record["matches_approved"]) is not bool:
+            raise ValueError("matches_approved must be true or false when the packet shows the Approved Proof")
+    elif record["matches_approved"] is not None:
+        raise ValueError("matches_approved must be null when the packet shows no approved render")
+    if record["status"] == "pass" and (record["matches_plan"] is not True or record["matches_approved"] is False):
+        raise ValueError("a visual pass needs matches_plan true and matches_approved not false")
+
+
+def check_differences(feedback: dict, approved: bool = False) -> None:
+    """Differences from a reference are named, and one still to repair cannot
+    pass (ADR 0075). ``approved``: each names what the Approved Proof's
+    assembly render shows instead (Workshop ADR 0102)."""
+
+    side = "approved" if approved else "reference"
     differences = feedback.get("differences", [])
     if not isinstance(differences, list) or len(differences) > MAX_DIFFERENCES:
         raise ValueError("visual feedback needs at most %d differences" % MAX_DIFFERENCES)
     for item in differences:
-        if not isinstance(item, dict) or set(item) != {"feature", "reference", "model", "decision", "reason"}:
-            raise ValueError("a difference needs feature, reference, model, decision and reason")
+        if not isinstance(item, dict) or set(item) != {"feature", side, "model", "decision", "reason"}:
+            raise ValueError("a difference needs feature, %s, model, decision and reason" % side)
         if any(not isinstance(v, str) or not 1 <= len(v.strip()) <= 1000 for v in item.values()):
             raise ValueError("difference text must be nonempty and bounded")
         if item["decision"] not in ("repair", "keep"):
@@ -2097,9 +2159,10 @@ def render_summary(summary: dict) -> str:
         visual = summary["visual"]
         verdicts = ""
         if "matches_plan" in visual:
-            verdicts = "plan=%s ref=%s  " % (
-                str(visual["matches_plan"]).lower(),
-                "n/a" if visual["matches_reference"] is None else str(visual["matches_reference"]).lower())
+            side = "approved" if "matches_approved" in visual else "ref"
+            judged = visual["matches_approved" if side == "approved" else "matches_reference"]
+            verdicts = "plan=%s %s=%s  " % (str(visual["matches_plan"]).lower(), side,
+                                            "n/a" if judged is None else str(judged).lower())
         lines.append("  visual %s  %s%s" % (visual["status"].upper(), verdicts,
                                             visual.get("observation", visual.get("detail", ""))))
         if visual.get("packet_sha256"):
@@ -2108,8 +2171,9 @@ def render_summary(summary: dict) -> str:
         for item in visual["findings"]:
             lines.append("    %s: %s | evidence: %s | repair: %s" % (item["part"], item["defect"], item["evidence"], item["repair"]))
         for item in visual.get("differences") or []:
-            lines.append("    differs %s: reference %s | model %s | %s: %s" % (
-                item["feature"], item["reference"], item["model"], item["decision"], item["reason"]))
+            side = "approved" if "approved" in item else "reference"
+            lines.append("    differs %s: %s %s | model %s | %s: %s" % (
+                item["feature"], side, item[side], item["model"], item["decision"], item["reason"]))
         if visual["status"] == "pending" and summary.get("shape_limit") is not None:
             lines.append("    reviewer inspects %s; record it with --record-review <review.json>" % visual["packet"])
             lines.append("    worker: report this round and wait; only a rerun that leaves the geometry unchanged may run before the review")
@@ -2914,6 +2978,40 @@ def approved_proof_basis(project: Path, approved_component: dict, role: str) -> 
     return {"seed": str(seed), "part": source.name, "step": str(step.resolve()),
             "step_sha256": approved_component["step_sha256"], "source": str(source.resolve()),
             "source_sha256": file_hash(source)}
+
+
+def approved_assembly_basis(project: Path, approval: dict | None):
+    """What an assembly round's look compares with when its review does not
+    carry (Workshop ADR 0102, 2026-11-11 amendment): the Approved Proof's own
+    assembly renders the seal recorded at each assembly Reference Camera, as
+    ``(refs, approved)``. ``refs`` are ``(label, "PATH@AZ,EL")`` pairs that
+    name the camera each model render is made at; ``approved`` is
+    ``{"assembly": [...]}`` for ``prepare_visual``. None when the run did not
+    freeze the review or its seal (APPROVAL schema 2) carries no assembly
+    renders: that run keeps the reference images. ValueError when a sealed
+    render is missing or changed."""
+
+    if approval is None or "assembly_renders" not in approval or not seed_reviews_against_proof():
+        return None
+    seed = run_root(project) / "seed"
+    renders = approval.get("assembly_renders")
+    if not isinstance(renders, list):
+        raise ValueError("seed/APPROVAL.json's assembly_renders is not a list")
+    refs, items = [], []
+    for item in renders:
+        name = item.get("file") if isinstance(item, dict) else None
+        camera = item.get("camera") if isinstance(item, dict) else None
+        if (not isinstance(name, str) or not name.startswith(APPROVED_ASSEMBLY_DIR + "/")
+                or ".." in Path(name).parts or not isinstance(camera, list) or len(camera) != 2):
+            raise ValueError("seed/APPROVAL.json names an invalid assembly render: %r" % (item,))
+        path = seed / name
+        if not path.is_file() or file_hash(path) != item.get("sha256"):
+            raise ValueError("the Approved Proof's assembly render %s is missing or not the sealed one" % name)
+        az, el = (float(value) for value in camera)
+        refs.append(("assembly", "%s@%g,%g" % (path.resolve(), az, el)))
+        items.append({"file": name, "path": str(path.resolve()), "sha256": item["sha256"],
+                      "stem": "az%g_el%g" % (az, el)})
+    return refs, {"assembly": items}
 
 def sealed_references(project: Path):
     """The references the Wish sealed, as ``(references, error)``.
@@ -3762,7 +3860,13 @@ def carried_assembly_visual(project: Path, out: Path, visual: dict, approval: di
                 or feedback.get("status") != "pass" or feedback.get("packet_sha256") != summary["visual"].get(
                     "packet_sha256")):
             continue
-        if packet.get("sources") == current.get("sources") and packet.get("references") == current.get("references"):
+        # An earlier look carries only on the same basis (Workshop ADR 0102):
+        # one judged beside reference images never stands for one the run
+        # must judge beside the Approved Proof's assembly renders.
+        if (packet.get("sources") == current.get("sources") and packet.get("references") == current.get("references")
+                and packet.get("basis") == current.get("basis")
+                and (packet.get("approved") or {}).get("assembly_renders")
+                == (current.get("approved") or {}).get("assembly_renders")):
             return {**visual, "status": "carried", "carried_from": earlier.name,
                     "visual_feedback_sha256": hashlib.sha256(feedback_bytes).hexdigest(),
                     "observation": feedback.get("observation"),
@@ -7300,8 +7404,20 @@ def make_round(args) -> int:
                 against = approved_proof_basis(project, approved_component, component)
             except ValueError as exc:
                 visual = {"status": "error", "findings": [], "detail": str(exc)}
+        shown_refs = refs
+        if component is None and visual is None:
+            # The 2026-11-11 amendment: when the carried review does not
+            # apply, the assembly is looked at beside the Approved Proof's
+            # own assembly renders, never a Reference Image.
+            try:
+                basis = approved_assembly_basis(project, approval)
+            except ValueError as exc:
+                visual = {"status": "error", "findings": [], "detail": str(exc)}
+            else:
+                if basis is not None:
+                    shown_refs, against = basis
         if visual is None:
-            visual = prepare_visual(project, entry, out, cad, refs, component,
+            visual = prepare_visual(project, entry, out, cad, shown_refs, component,
                                     display_pose=component is not None and display_pose, contract=delivered,
                                     rulings=rulings, extra_env=check_env(entry_role), approved=against)
         brep_logs["render"] = out / "visual-render.log"

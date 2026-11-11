@@ -13,7 +13,14 @@ ADR 0102: with ``review_basis="approved-proof"`` a deviation locked by a
 Component Review needs a review with that basis whose packet, read from its
 round by sha256, compares with the sealed approved STEP and binds no
 Reference Image; a review against the references is refused. Without it the
-earlier review stands."""
+earlier review stands.
+
+ADR 0102's 2026-11-11 amendment: with that basis and a seal carrying
+``assembly_renders`` the last assembly round's look must be carried from
+the Approved Proof, or taken (on that round or the earlier round it carried
+from) on a packet with that basis that binds exactly the sealed renders and
+no Reference Image, recorded with ``matches_approved``. A look against the
+references is refused; a seal without renders keeps it."""
 
 from __future__ import annotations
 
@@ -24,7 +31,7 @@ import unittest
 from pathlib import Path
 
 from workshop.errors import ContractError
-from workshop.make.seed_check import verify_made_seed
+from workshop.make.seed_check import check_assembly_look, verify_made_seed
 
 APPROVED = {"body": {"identity": "A", "carry_key": "kA", "approved_step": "approved/part_body.step",
                     "step_sha256": "5" * 64}}
@@ -185,6 +192,100 @@ class SeedCheckTest(unittest.TestCase):
         (deviation,) = self._verify(error=RuntimeError("no OCP"))
         self.assertFalse(deviation["within_tolerance"])
         self.assertIn("no OCP", deviation["error"])
+
+
+RENDERS = [{"file": "approved/assembly/az90_el15.png", "camera": [90.0, 15.0], "sha256": "7" * 64}]
+
+
+class AssemblyLookTest(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.project = Path(temporary.name) / "cad"
+        (self.project / "measure/rounds").mkdir(parents=True)
+
+    def _look(self, number=1, visual=None, feedback=None, **packet_changes):
+        """An assembly round with a recorded look; its packet sha256."""
+        out = self.project / ("measure/rounds/r%04d" % number)
+        out.mkdir(parents=True, exist_ok=True)
+        packet = {"schema_version": 3, "sources": {}, "images": {}, "references": {}, "comparisons": {},
+                  "basis": "approved-proof",
+                  "approved": {"assembly_renders": {RENDERS[0]["file"]: "7" * 64},
+                               "sealed": {"/run/seed/approved/assembly/az90_el15.png": "7" * 64},
+                               "renders": {str(out / "visual/approved-proof/az90_el15.png"): "7" * 64}}}
+        packet.update(packet_changes)
+        content = json.dumps(packet).encode()
+        (out / "visual-packet.json").write_bytes(content)
+        digest = hashlib.sha256(content).hexdigest()
+        recorded = {"status": "pass", "packet_sha256": digest, "matches_plan": True, "matches_approved": True}
+        recorded.update(feedback or {})
+        (out / "visual-feedback.json").write_text(json.dumps({k: v for k, v in recorded.items() if v != "-"}))
+        (out / "summary.json").write_text(json.dumps({"scope": "assembly", "visual": {
+            "status": "pass", "packet": str(out / "visual-packet.json"), "packet_sha256": digest,
+            **(visual or {})}}))
+        (self.project / "measure/make-round-state.json").write_text(json.dumps({"round": number,
+                                                                                "last_out": str(out)}))
+        return digest
+
+    def test_a_look_beside_the_approved_renders_is_accepted(self):
+        self._look()
+        check_assembly_look(self.project, RENDERS)
+        # A later round that carried it reads the earlier round's look.
+        self._look(2, visual={"status": "carried", "carried_from": "r0001"})
+        check_assembly_look(self.project, RENDERS)
+        # The Approved Proof's own assembly review carried.
+        self._look(3, visual={"status": "carried", "carried_from": "seed-approval"}, basis=None)
+        check_assembly_look(self.project, RENDERS)
+
+    def test_a_look_not_beside_the_approved_renders_is_refused(self):
+        cases = [
+            ("taken against the Reference Images", dict(basis=None, approved=None)),
+            ("shows a Reference Image", dict(references={"/run/wish-references/ref-01-assembly.png": "2" * 64})),
+            ("does not compare with the Approved Proof's sealed assembly renders",
+             dict(approved={"assembly_renders": {}, "renders": {}})),
+            ("renders that are not the sealed ones",
+             dict(approved={"assembly_renders": {RENDERS[0]["file"]: "7" * 64}, "renders": {"/x": "8" * 64}})),
+            ("not recorded against the Approved Proof",
+             dict(feedback={"matches_approved": "-", "matches_reference": True})),
+            ("packet that changed", dict(feedback={"packet_sha256": "0" * 64})),
+        ]
+        for fragment, options in cases:
+            with self.subTest(fragment):
+                self._look(**options)
+                with self.assertRaisesRegex(ContractError, fragment):
+                    check_assembly_look(self.project, RENDERS)
+        # A carried look whose source round was against the references.
+        self._look(1, basis=None, approved=None)
+        self._look(2, visual={"status": "carried", "carried_from": "r0001"})
+        with self.assertRaisesRegex(ContractError, "carried from r0001 was taken against the Reference Images"):
+            check_assembly_look(self.project, RENDERS)
+
+    def test_no_assembly_round_or_no_recorded_look_is_refused(self):
+        with self.assertRaisesRegex(ContractError, "no readable last assembly round"):
+            check_assembly_look(self.project, RENDERS)
+        self._look()
+        (self.project / "measure/rounds/r0001/visual-feedback.json").unlink()
+        with self.assertRaisesRegex(ContractError, "no recorded look"):
+            check_assembly_look(self.project, RENDERS)
+
+    def test_verify_made_seed_checks_the_look_only_with_the_basis_and_renders(self):
+        run_root = self.project.parent
+        (self.project / "part_body.step").write_bytes(b"made")
+        root = self.project / "measure/component-rounds/body"
+        (root / "r0001").mkdir(parents=True)
+        (root / "make-round-state.json").write_text(json.dumps({"round": 1}))
+        (root / "r0001/summary.json").write_text(json.dumps(
+            {"identity": "A", "review": {"agrees": True, "seed": "exact", "carried_from": "seed-approval"}}))
+        self._look(basis=None, approved=None)
+        compare = lambda approved, built: {"passed": True, "parts": []}  # noqa: E731
+        # A schema 2 seal, or a run that did not freeze the review, keeps the reference look.
+        self.assertEqual(verify_made_seed(self.project, run_root, APPROVED, compare=compare,
+                                          review_basis="approved-proof"), [])
+        self.assertEqual(verify_made_seed(self.project, run_root, APPROVED, compare=compare,
+                                          assembly_renders=RENDERS), [])
+        with self.assertRaisesRegex(ContractError, "taken against the Reference Images"):
+            verify_made_seed(self.project, run_root, APPROVED, compare=compare, review_basis="approved-proof",
+                             assembly_renders=RENDERS)
 
 
 if __name__ == "__main__":

@@ -131,12 +131,26 @@ class SealProofTest(unittest.TestCase):
                 mock.patch.object(self.module, "read_contract",
                                   side_effect=lambda path: getattr(self, "design_contract", {})), \
                 mock.patch.object(self.module, "batch_runner", return_value=lambda *a: SealProofTest._batch_runner(self, *a)), \
+                mock.patch.object(self.module, "render_runner",
+                                  return_value=lambda *a: SealProofTest._render_runner(self, *a)), \
                 mock.patch.object(self.module, "run_spec_tool",
                                   side_effect=lambda proof, tool: SealProofTest._spec_tool(self, proof, tool)), \
                 contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as err:
             code = self.module.main(argv)
         self.stderr = err.getvalue()
         return code
+
+    def _render_runner(self, argv, cwd):
+        """Stand in for render_review: one PNG per requested camera view."""
+        self.render_calls = getattr(self, "render_calls", []) + [list(argv)]
+        if getattr(self, "render_exit", 0):
+            return self.render_exit, "render failed"
+        out = Path(argv[argv.index("-o") + 1])
+        for arg in argv:
+            if arg.startswith("--view=") and arg != getattr(self, "render_skip", None):
+                az, el = (float(v) for v in arg.split("=", 1)[1].split(","))
+                (out / ("az%g_el%g.png" % (az, el))).write_bytes(b"render " + arg.encode())
+        return 0, "ok"
 
     def _spec_tool(self, proof, tool):
         return getattr(self, "spec_failure", {}).get(tool, (0, "ok"))
@@ -171,7 +185,9 @@ class SealProofTest(unittest.TestCase):
             "features/print_details.py", "measure/check_fit.py", "measure/check_landmarks.py",
             "measure/check_spec.py", "params.py", "part_body.step.py", "snap/iso.png", "snap/signature.png",
             "toy_spec.md"])
-        self.assertEqual(approval["schema_version"], 2)
+        self.assertEqual(approval["schema_version"], 3)
+        # No assembly reference camera in this contract: nothing to render.
+        self.assertEqual(approval["assembly_renders"], [])
         self.assertEqual(approval["check_inputs"], {name: approval["manifest"][name] for name in
                                                     ("SEED-PRODUCT.json", "snap/iso.png", "snap/signature.png")})
         self.assertEqual(approval["batch"]["ok"], True)
@@ -459,6 +475,59 @@ class SealCheckInputsTest(unittest.TestCase):
         self.assertEqual(self._seal(), 0, self.stderr)
         final = [argv for argv in self.batch_calls if "--design" in argv][-1]
         self.assertIn("--geometry-seconds", final)
+
+    def _assembly_contract(self):
+        (self.proof / "toy.step.py").write_text("from part_body import *\n")
+        self.design_contract = {"references": [
+            {"file": "ref-01-assembly.png", "shows": "assembly", "camera": [90, 15]},
+            {"file": "ref-02-body.png", "shows": "geometry:body", "camera": [0, 0]},
+            {"file": "ref-03-assembly.png", "shows": "assembly", "camera": [-30, 20]}]}
+        SealProofTest._final_inputs(self)  # the entry is a source the print gates read
+
+    def test_seal_renders_the_approved_assembly_at_each_assembly_camera(self):
+        """ADR 0102, 2026-11-11 amendment: APPROVAL schema 3."""
+        self._assembly_contract()
+        self.assertEqual(self._seal(), 0, self.stderr)
+        approval = json.loads((self.proof / "APPROVAL.json").read_text())
+        files = ["approved/assembly/az90_el15.png", "approved/assembly/az-30_el20.png"]
+        self.assertEqual([item["file"] for item in approval["assembly_renders"]], files)
+        self.assertEqual([item["camera"] for item in approval["assembly_renders"]], [[90.0, 15.0], [-30.0, 20.0]])
+        for item in approval["assembly_renders"]:
+            self.assertEqual(item["sha256"], sha(self.proof / item["file"]))
+            self.assertEqual(approval["manifest"][item["file"]], item["sha256"])
+        (call,) = self.render_calls
+        self.assertEqual(Path(call[1]).name, "render_review")
+        self.assertEqual(call[2], "toy.step.py")
+        self.assertEqual([a for a in call if a.startswith("--view=")], ["--view=90,15", "--view=-30,20"])
+        self.assertEqual(self._verify(), 0, self.stderr)
+        # The host validates the renders against the manifest and the contract.
+        from workshop.wish.seed import validate_seed
+        seed = validate_seed(self.proof, ("body",), approval["contract_sha256"], self.design_contract)
+        self.assertEqual([item["file"] for item in seed.assembly_renders], files)
+
+    def test_a_render_that_fails_or_is_missing_refuses_the_seal(self):
+        for name, setup, fragment in (
+            ("exit", lambda: setattr(self, "render_exit", 1), "could not render the approved assembly"),
+            ("missing", lambda: setattr(self, "render_skip", "--view=-30,20"), "wrote no az-30_el20.png"),
+            ("two entries", lambda: ((self.proof / "other.step.py").write_text("\n"),
+                                     SealProofTest._final_inputs(self)), "exactly one assembly entry"),
+        ):
+            with self.subTest(name):
+                self.setUp()
+                self.render_exit, self.render_skip = 0, None
+                self._assembly_contract()
+                setup()
+                self.assertEqual(self._seal(), 1)
+                self.assertIn(fragment, self.stderr)
+                self.assertFalse((self.proof / "APPROVAL.json").exists())
+
+    def test_verify_still_accepts_a_schema_2_seal(self):
+        self.assertEqual(self._seal(), 0, self.stderr)
+        approval = json.loads((self.proof / "APPROVAL.json").read_text())
+        approval["schema_version"] = 2
+        approval.pop("assembly_renders")
+        (self.proof / "APPROVAL.json").write_text(json.dumps(approval))
+        self.assertEqual(self._verify(), 0, self.stderr)
 
     def test_verify_names_the_reseal_path_for_an_old_approval(self):
         self.assertEqual(self._seal(), 0, self.stderr)

@@ -27,6 +27,17 @@ visual packet, which must compare with this Component's sealed approved
 STEP and show no Reference Image. A run seeded before keeps its review
 against the references.
 
+In such a run whose seal carries the Approved Proof's assembly renders
+(APPROVAL schema 3, ``assembly_renders``; ADR 0102's 2026-11-11 amendment)
+it also refuses the last assembly round's look unless the Approved Proof's
+assembly review carried to it (``carried_from: "seed-approval"``), or the
+look that stands for it (that round's, or the earlier one it carried from)
+was taken beside those sealed renders: its packet names
+``basis: "approved-proof"``, binds exactly the sealed renders by sha256 and
+no Reference Image, and its recorded feedback answers ``matches_approved``,
+never ``matches_reference``. A seal without assembly renders keeps the
+reference look.
+
 Every Component whose identity is not the approved one is returned as a
 seed deviation, for the receipt and ``workshop status --json``.
 """
@@ -43,6 +54,7 @@ from workshop.errors import ContractError
 SEED_APPROVAL = "seed-approval"
 APPROVED_PROOF = "approved-proof"
 _ROUNDS = ("measure", "component-rounds")
+_ASSEMBLY_ROUNDS = ("measure", "rounds")
 _PART_KEYS = ("part", "passed", "volume_delta", "bbox_side_delta_mm", "two_way", "surface_deviation_mm")
 
 
@@ -74,13 +86,18 @@ def verify_made_seed(
     *,
     compare: Callable[[Path, Path], Mapping[str, Any]] = _default_compare,
     review_basis: str | None = None,
+    assembly_renders: Any = None,
 ) -> list[dict[str, Any]]:
     """Every seed deviation of the made Components, or ContractError.
     ``review_basis`` is what the run froze a deviation's review against:
-    ``"approved-proof"`` (ADR 0102) or None (the Reference Images)."""
+    ``"approved-proof"`` (ADR 0102) or None (the Reference Images).
+    ``assembly_renders`` is the seal's ``assembly_renders`` (APPROVAL schema
+    3), or None for a seal that carries none."""
 
     if review_basis not in (None, APPROVED_PROOF):
         raise ContractError("seed: unknown review basis %r" % (review_basis,))
+    if review_basis == APPROVED_PROOF and assembly_renders is not None:
+        check_assembly_look(Path(project), assembly_renders)
 
     deviations: list[dict[str, Any]] = []
     for role, approved in sorted(components.items()):
@@ -176,6 +193,72 @@ def _check_approved_proof_review(project: Path, role: str, review: Mapping[str, 
     if not isinstance(approved.get("step_sha256"), str) or shown.get("step_sha256") != approved["step_sha256"]:
         raise ContractError(where + "the packet its Component Review judged is not of the sealed approved STEP")
 
+def _sealed_render_hashes(assembly_renders: Any) -> dict[str, str]:
+    if not isinstance(assembly_renders, list):
+        raise ContractError("seed: the approval's assembly_renders is not a list")
+    hashes = {}
+    for item in assembly_renders:
+        if (not isinstance(item, Mapping) or not isinstance(item.get("file"), str)
+                or not isinstance(item.get("sha256"), str)):
+            raise ContractError("seed: the approval names an invalid assembly render")
+        hashes[item["file"]] = item["sha256"]
+    return hashes
+
+
+def check_assembly_look(project: Path, assembly_renders: Any) -> None:
+    """Refuse the last assembly round's look in a run that froze ADR 0102's
+    review when it was not taken beside the Approved Proof's sealed assembly
+    renders (the 2026-11-11 amendment); see the module docstring."""
+
+    sealed = _sealed_render_hashes(assembly_renders)
+    rounds = Path(project).joinpath(*_ASSEMBLY_ROUNDS)
+    try:
+        state = json.loads((Path(project) / "measure" / "make-round-state.json").read_text(encoding="utf-8"))
+        latest = "r%04d" % int(state["round"])
+        summary = json.loads((rounds / latest / "summary.json").read_text(encoding="utf-8"))
+        visual = summary["visual"]
+        status = visual["status"]
+    except (OSError, UnicodeError, ValueError, KeyError, TypeError) as exc:
+        raise ContractError("seed: the Make has no readable last assembly round with a look") from exc
+    if status == "carried" and visual.get("carried_from") == SEED_APPROVAL:
+        return
+    where = "seed: the last assembly round's look (%s) " % latest
+    look = latest
+    if status == "carried":
+        look = visual.get("carried_from")
+        if not isinstance(look, str) or not (rounds / look).is_dir() or "/" in look or look.startswith("."):
+            raise ContractError(where + "carries from no assembly round")
+        try:
+            summary = json.loads((rounds / look / "summary.json").read_text(encoding="utf-8"))
+            visual = summary["visual"]
+        except (OSError, UnicodeError, ValueError, KeyError, TypeError) as exc:
+            raise ContractError(where + "carries from %s, which has no readable look" % look) from exc
+        where = "seed: the assembly look carried from %s " % look
+    packet_path = rounds / look / "visual-packet.json"
+    try:
+        content = packet_path.read_bytes()
+        packet = json.loads(content)
+        feedback = json.loads((rounds / look / "visual-feedback.json").read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise ContractError(where + "has no recorded look at a packet") from exc
+    digest = hashlib.sha256(content).hexdigest()
+    if visual.get("packet_sha256") != digest or feedback.get("packet_sha256") != digest:
+        raise ContractError(where + "is of a packet that changed")
+    shown = packet.get("approved") if isinstance(packet, dict) else None
+    if packet.get("basis") != APPROVED_PROOF or not isinstance(shown, dict):
+        raise ContractError(where + "was taken against the Reference Images; a seeded run that froze the "
+                            "Approved Proof review looks at the assembly beside the Approved Proof's own "
+                            "assembly renders, never a Reference Image (ADR 0102)")
+    if packet.get("references"):
+        raise ContractError(where + "shows a Reference Image")
+    if shown.get("assembly_renders") != sealed:
+        raise ContractError(where + "does not compare with the Approved Proof's sealed assembly renders")
+    if sorted(dict(shown.get("renders") or {}).values()) != sorted(sealed.values()):
+        raise ContractError(where + "shows renders that are not the sealed ones")
+    if "matches_reference" in feedback or "matches_approved" not in feedback:
+        raise ContractError(where + "was not recorded against the Approved Proof (matches_approved)")
+
+
 def _check_carried_bases(review: Mapping[str, Any], deviations: list[dict[str, Any]]) -> None:
     """Refuse a carried assembly review whose bases do not cover the
     deviations the host measured itself (ADR 0096 partial carry)."""
@@ -206,4 +289,5 @@ def _carried_assembly_review(project: Path) -> Mapping[str, Any] | None:
     return review if isinstance(review, dict) and review.get("carried_from") == SEED_APPROVAL else None
 
 
-__all__ = ["APPROVED_PROOF", "SEED_APPROVAL", "latest_component_summary", "verify_made_seed"]
+__all__ = ["APPROVED_PROOF", "SEED_APPROVAL", "check_assembly_look", "latest_component_summary",
+           "verify_made_seed"]

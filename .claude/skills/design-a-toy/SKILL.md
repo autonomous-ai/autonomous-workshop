@@ -1374,7 +1374,12 @@ printed part is colour-named and resolves to one Component solid. A defect
 then costs a Proof round here, not a build. It refuses on any failure,
 quoting each check, and on a final verification that left any check
 UNVERIFIED. A re-seal sets the old `approved/` aside while the batch runs
-and puts it back if the seal refuses.
+and puts it back if the seal refuses. The seal also renders the Proof's
+assembly entry with `render_review` at each assembly Reference Camera into
+`proof/approved/assembly/` (APPROVAL schema 3, Workshop ADR 0102's
+2026-11-11 amendment): a seeded build's assembly look compares with these
+renders, never with the assembly Reference Image. A Proof sealed as schema 2
+keeps the reference look until it is sealed again.
 
 **Re-sealing a Proof sealed before ADR 0098.** `workshop wish|fix
 --seed-source` refuses an approval without check inputs (schema 1), naming

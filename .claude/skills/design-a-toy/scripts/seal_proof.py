@@ -42,8 +42,13 @@ Stage 4 renders always, the motion manifest, presentation and the Proof
 Critic's motion review for a moving toy, and the power, mount and Bought
 Part placement inputs for a powered one), and it runs the seeded batch's
 design plan on the Proof (`workshop.make.seeded_batch`) and refuses on any
-failure. The approval (schema 2) records the inputs by sha256 and the
-passing batch record. `inputs` lists what a Proof lacks and which design
+failure. The approval records the inputs by sha256 and the passing batch
+record. Schema 3 (ADR 0102's 2026-11-11 amendment) also renders the Approved
+Proof's assembly, with the CAD skill's own `render_review`, at each assembly
+Reference Camera of the contract into `PROOF/approved/assembly/` and records
+each as `assembly_renders` (`{file, camera, sha256}`): what a seeded run's
+assembly look compares with instead of a Reference Image. `verify` still
+accepts a schema 2 seal. `inputs` lists what a Proof lacks and which design
 step writes each: the re-seal path for a Proof sealed before ADR 0098,
 which a new `workshop wish|fix --seed-source` refuses.
 
@@ -69,7 +74,11 @@ MAKE_SKILLS = ROOT / "src/workshop/make/skills"
 MAKE_ROUND = MAKE_SKILLS / "make-round/scripts/make_round"
 PRINT_DETAILS = MAKE_SKILLS / "print-details/scripts/print_details.py"
 LOCK = MAKE_SKILLS / "LOCK.json"
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
+# Seals before ADR 0102's 2026-11-11 amendment carry no assembly renders;
+# `verify` still checks them, and a run seeded from one keeps its reference look.
+VERIFIED_SCHEMAS = (2, 3)
+RENDER_TIMEOUT_SECONDS = 1800
 APPROVAL = "APPROVAL.json"
 APPROVED_DIR = "approved"
 CHECKLIST = "CONCEPT-CHECKLIST.md"
@@ -329,6 +338,58 @@ def batch_runner():
     return seeded_batch.subprocess_runner
 
 
+def render_runner():
+    """How the seal renders the Approved Proof's assembly: a real
+    ``render_review`` process (a test passes a fake). It takes
+    ``(argv, cwd)`` and returns ``(exit code, output)``."""
+
+    def run(argv, cwd):
+        done = subprocess.run(argv, cwd=cwd, capture_output=True, text=True, timeout=RENDER_TIMEOUT_SECONDS)
+        return done.returncode, (done.stdout or "") + (done.stderr or "")
+
+    return run
+
+
+def render_assembly(proof: Path, design_contract: dict) -> list[dict]:
+    """ADR 0102's 2026-11-11 amendment: the Approved Proof's assembly,
+    rendered by ``render_review`` from the Proof's one assembly entry at each
+    assembly Reference Camera of the contract (the view an assembly round
+    renders the model at), sealed under ``approved/assembly/``. A seeded
+    run's assembly look compares its model beside these, never a Reference
+    Image. Empty when the contract has no assembly reference camera."""
+
+    from workshop.wish.seed import APPROVED_ASSEMBLY_DIR, assembly_cameras, assembly_render_name
+
+    cameras = assembly_cameras(design_contract)
+    if not cameras:
+        return []
+    entries = sorted(path.name for path in proof.glob("*.step.py") if not path.name.startswith("part_"))
+    if len(entries) != 1:
+        raise Refusal("the Proof needs exactly one assembly entry *.step.py to render the approved assembly "
+                      "at its Reference Cameras (found %d)" % len(entries))
+    holder = Path(tempfile.mkdtemp(prefix=".seal-proof-renders-", dir=proof.parent))
+    try:
+        argv = [sys.executable, str(CAD_SCRIPTS / "render_review"), entries[0],
+                *("--view=%g,%g" % (az, el) for az, el in cameras), "-o", str(holder)]
+        code, output = render_runner()(argv, proof)
+        if code != 0:
+            raise Refusal("render_review could not render the approved assembly (exit %s): %s"
+                          % (code, " ".join(str(output).split())[-400:]))
+        target = proof / APPROVED_ASSEMBLY_DIR
+        target.mkdir(parents=True, exist_ok=True)
+        renders = []
+        for camera in cameras:
+            name = assembly_render_name(camera)
+            made = holder / Path(name).name
+            if not made.is_file():
+                raise Refusal("render_review wrote no %s for the approved assembly" % made.name)
+            shutil.copyfile(made, proof / name)
+            renders.append({"file": name, "camera": camera, "sha256": sha256(proof / name)})
+        return renders
+    finally:
+        shutil.rmtree(holder, ignore_errors=True)
+
+
 def inputs_report(args) -> list[str]:
     """The re-seal path: each check input the contract needs, present or not,
     and which design step writes it."""
@@ -429,6 +490,7 @@ def _seal_after_set_aside(args, proof, contract, checklist, verdict, design_cont
         shutil.copyfile(built, target)
         components[role] = {**component, "approved_step": "%s/%s" % (APPROVED_DIR, built.name),
                             "parts": part_measures(target)}
+    assembly_renders = render_assembly(proof, design_contract)
     from workshop.wish.seed import seed_contract_sha256
 
     files = manifest(proof)
@@ -440,6 +502,7 @@ def _seal_after_set_aside(args, proof, contract, checklist, verdict, design_cont
         "contract_sha256": seed_contract_sha256(contract.read_text(encoding="utf-8")),
         "components": components,
         "assembly_identity": record["assembly_identity"],
+        "assembly_renders": assembly_renders,
         "critic": {"sha256": sha256(proof / CRITIC), "verdict": verdict,
                    "open_lines_approved": bool(args.open_lines_approved and verdict != "agree")},
         "checklist_sha256": sha256(copied),
@@ -468,7 +531,7 @@ def verify(args) -> list[str]:
         sealed = document["manifest"]
     except (OSError, ValueError, KeyError, TypeError) as exc:
         raise Refusal("no readable %s: %s" % (APPROVAL, exc)) from exc
-    if document.get("schema_version") != SCHEMA_VERSION:
+    if document.get("schema_version") not in VERIFIED_SCHEMAS:
         raise Refusal("%s schema_version %r is not %d; a Proof sealed before ADR 0098 is re-sealed: run "
                       "seal_proof.py inputs %s --contract CONTRACT.md, then seal again"
                       % (APPROVAL, document.get("schema_version"), SCHEMA_VERSION, proof))
