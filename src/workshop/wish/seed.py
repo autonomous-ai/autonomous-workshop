@@ -159,6 +159,45 @@ def check_seed_product(content: bytes) -> Dict[str, Any]:
     if not isinstance(document["research"], dict) or not document["research"]:
         raise ContractError("seed: %s needs its research object" % SEED_PRODUCT)
     return document
+CRITIC_VERDICTS = ("agree", "differences")
+
+
+def check_critic_requirements(critic: Any, design_contract: Mapping[str, Any]) -> None:
+    """The Proof Critic's per-requirement verdicts, or ContractError naming
+    what is wrong. A seeded run carries them as its review's
+    ``requirements`` rows, and build-a-toy's DETECT takes one row for each
+    contract requirement id (a missing row is a ``requirement:<id>``
+    finding). So ``critic["requirements"]`` must be a list of
+    ``{id, verdict, note}`` with exactly one row for each contract
+    requirement, each verdict ``agree`` or ``differences``."""
+
+    rows = critic.get("requirements") if isinstance(critic, dict) else None
+    if not isinstance(rows, list) or any(
+        not isinstance(row, dict) or not isinstance(row.get("id"), str) for row in rows
+    ):
+        raise ContractError(
+            "seed: %s has no per-requirement verdicts (`requirements: [{id, verdict, note}]`); "
+            "a seeded run's DETECT would report every requirement missing" % CRITIC_NAME)
+    expected = [item.get("id") for item in design_contract.get("requirements") or ()
+                if isinstance(item, Mapping)]
+    ids = [row["id"] for row in rows]
+    problems = []
+    repeated = sorted({item for item in ids if ids.count(item) > 1})
+    if repeated:
+        problems.append("repeats %s" % ", ".join(repeated))
+    missing = [item for item in expected if item not in ids]
+    if missing:
+        problems.append("has no verdict for %s" % ", ".join(missing))
+    unknown = [item for item in ids if item not in expected]
+    if unknown:
+        problems.append("names requirements the contract does not have: %s" % ", ".join(unknown))
+    invalid = [row["id"] for row in rows if row.get("verdict") not in CRITIC_VERDICTS]
+    if invalid:
+        problems.append("gives %s a verdict that is not agree or differences" % ", ".join(invalid))
+    if problems:
+        raise ContractError("seed: %s %s" % (CRITIC_NAME, "; ".join(problems)))
+
+
 MAX_APPROVAL_BYTES = 4 * 1024 * 1024
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 

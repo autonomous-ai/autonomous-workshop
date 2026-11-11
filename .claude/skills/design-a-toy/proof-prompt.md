@@ -207,7 +207,12 @@ which are missing:
   `concept` has exactly `title`, `summary`, `interaction`, `envelope_mm`,
   `mechanisms` and `components`, describing this Proof; `research` is the
   design's research notes. The build's Spark source is composed from them,
-  so the motion review's concept hash is this concept's;
+  so the motion review's concept hash is this concept's. The Make finalizer
+  checks this concept, and so does the seal: exactly one component has
+  `signature: true`, no `form`, `duty`, `placement` or `interfaces` hedges a
+  number ("about 18 across" is refused; write "18 mm across"), every
+  component mates with another or is named by `interaction`, and no
+  component is larger than `envelope_mm`;
 - `<OUT>/snap/iso.png` and `<OUT>/snap/signature.png`, the renders the
   owner approves;
 - for a contract with a Coupled Interface: `<OUT>/measure/motion.json`

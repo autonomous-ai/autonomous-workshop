@@ -148,7 +148,9 @@ with its `id`. `verdict: "agree"` is `passed: "requirement:<id>"`; quote
 when `open_lines_approved` is true, which means the owner approved that open
 line at Stage 4: record it in `passed` and copy the `note` into `notes`.
 Otherwise it is a `requirement:<id>` finding quoting the note. A missing row
-is a `requirement:<id>` finding, as above. For schema 11, copy each
+is a `requirement:<id>` finding, as above (a seal checks the rows with
+`workshop.wish.seed.check_critic_requirements`, so a Proof sealed since
+then has one per requirement). For schema 11, copy each
 `components` entry whose `basis` is not `exact` into `notes`; these are the
 changed Components the run's own Component Reviewers judged.
 
