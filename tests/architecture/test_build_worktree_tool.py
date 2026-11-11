@@ -137,5 +137,20 @@ class BuildWorktreeTest(unittest.TestCase):
         self.assertIn("already exists", result.stderr)
 
 
+class TestFixturesTest(unittest.TestCase):
+    def test_every_kept_fixture_is_tracked_in_this_repository(self):
+        sys.path.insert(0, str(TOOL.parent))
+        try:
+            import build_worktree
+        finally:
+            sys.path.remove(str(TOOL.parent))
+        repository = TOOL.parents[1]
+        for pattern in build_worktree.TEST_FIXTURES:
+            tracked = subprocess.run(["git", "ls-files", "--", pattern.strip("/")], cwd=repository,
+                                     capture_output=True, text=True, check=True).stdout
+            self.assertTrue(tracked.strip(), pattern)
+            self.assertIn(pattern, build_worktree.SPARSE_PATTERNS)
+
+
 if __name__ == "__main__":
     unittest.main()

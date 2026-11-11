@@ -5,7 +5,8 @@
 hold gigabytes of tracked toy archives a run never reads. This tool makes
 the worktree sparse instead: everything except toys/*, toys-spec/* and
 inbox/* (toys/README.md stays, so toys/ exists for the release projection
-and the source-checkout checks). Then it copies from the main checkout only
+and the source-checkout checks, and the few tracked toy files the test
+suite reads, TEST_FIXTURES, stay too). Then it copies from the main checkout only
 the input files named with --input (the round's contract, its reference,
 guide and print-art images, an existing toy directory) and, for
 --seed-source, exactly the Approved Proof's seed files (APPROVAL.json plus
@@ -33,10 +34,17 @@ from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 
 EXCLUDED_TOPS = ("toys", "toys-spec", "inbox")
+# Tracked toy files the test suite reads, kept so `uv run pytest` passes in
+# a light worktree as in a full one (about 12 MB of the ~3 GB of archives).
+TEST_FIXTURES = (
+    "/toys/ad-astra-antisol-companion/make/source/",
+    "/toys/leo-false-lantern/MANUAL.pdf",
+)
 SPARSE_PATTERNS = (
     "/*",
     "!/toys/*",
     "/toys/README.md",
+    *TEST_FIXTURES,
     "!/toys-spec/*",
     "!/inbox/*",
 )
