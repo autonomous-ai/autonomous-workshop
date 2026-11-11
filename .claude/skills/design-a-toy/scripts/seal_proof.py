@@ -43,7 +43,13 @@ Critic's motion review for a moving toy, and the power, mount and Bought
 Part placement inputs for a powered one), and it runs the seeded batch's
 design plan on the Proof (`workshop.make.seeded_batch`) and refuses on any
 failure. The approval records the inputs by sha256 and the passing batch
-record. Schema 4 (ADR 0103) replaces every Reference and Guide Image of the
+record. It also refuses what a seeded run's later stages refuse: a contract
+longer than `workshop wish` accepts as its objective (`Wish`), a
+`SEED-PRODUCT.json` concept the Make finalizer refuses (its own
+`_validate_concept_contract` and byte limit, loaded from the product-run
+template), and a `CRITIC.json` without one `{id, verdict, note}` row for
+each contract requirement (`workshop.wish.seed.check_critic_requirements`,
+the rows DETECT reads). Schema 4 (ADR 0103) replaces every Reference and Guide Image of the
 contract with a render of the approved Proof, with no AI. A reference is
 rendered by `render_review` at its Reference Camera; a guide is rendered by
 `proof_views.py guide` at the cameras it was drawn from (`--guide-view
@@ -66,6 +72,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import hashlib
+import importlib.util
 import json
 import shutil
 import subprocess
@@ -99,6 +106,9 @@ PRINT_GATES = Path("measure/print-gates/summary.json")
 REQUIRED_CHECKS = ("build", "thickness", "overhang", "mesh", "datum", "posed")
 AUDITS = ("measure/check_fit.py", "measure/check_spec.py", "measure/check_landmarks.py")
 CAD_SCRIPTS = MAKE_SKILLS / "cad/scripts"
+# The Make finalizer a run materializes from the product-run template; the
+# seal runs its own concept checks on SEED-PRODUCT.json.
+FINALIZER = ROOT / ".agents/product-run/.agents/skills/autonomous-workshop/scripts/stage_proposal.py"
 
 
 class Refusal(Exception):
@@ -291,6 +301,48 @@ def check_carried_motion_review(proof: Path, product: dict) -> None:
         raise Refusal("%s cannot be carried into a seeded run: %s" % (MOTION_REVIEW, "; ".join(problems)))
 
 
+def check_wish_objective(contract: Path) -> None:
+    """`workshop wish --contract` seals the contract's text as the Wish
+    objective; refuse one the Wish contract would refuse."""
+
+    from workshop.errors import ContractError
+    from workshop.wish.contracts import Wish
+
+    try:
+        Wish.create("seal-check", contract.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError) as exc:
+        raise Refusal("cannot read the contract: %s" % exc) from exc
+    except ContractError as exc:
+        raise Refusal("workshop wish would refuse this contract as its objective (%s); shorten "
+                      "the contract" % exc) from exc
+
+
+def load_finalizer():
+    """The run's Make finalizer module, loaded from its template bytes."""
+
+    spec = importlib.util.spec_from_file_location("_seal_stage_proposal", FINALIZER)
+    if spec is None or spec.loader is None:
+        raise Refusal("cannot load the Make finalizer at %s" % FINALIZER)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def check_seed_concept(product: dict) -> None:
+    """The Make finalizer's own checks on the sealed concept: the byte limit
+    of the authored source a seeded Make submits, and
+    `_validate_concept_contract` (unbound quantities, exactly one signature
+    part, mates, decoration, the envelope)."""
+
+    finalizer = load_finalizer()
+    source = {"concept": product["concept"], "research": product["research"]}
+    try:
+        finalizer._validate_json(source, "Spark Make authored source")
+        finalizer._validate_concept_contract(product["concept"])
+    except finalizer.ProposalError as exc:
+        raise Refusal("the Make finalizer would refuse SEED-PRODUCT.json's concept: %s" % exc) from exc
+
+
 def check_seed_inputs(proof: Path, design_contract: dict) -> dict:
     """ADR 0098 decision 1: every check input the contract needs, present
     and well formed; returns path -> sha256."""
@@ -307,6 +359,7 @@ def check_seed_inputs(proof: Path, design_contract: dict) -> dict:
         product = check_seed_product((proof / SEED_PRODUCT).read_bytes())
     except ContractError as exc:
         raise Refusal(str(exc)) from exc
+    check_seed_concept(product)
     if any(item.path == MOTION_REVIEW for item in required_check_inputs(design_contract)):
         check_carried_motion_review(proof, product)
     return {item.path: sha256(proof / item.path) for item in required_check_inputs(design_contract)}
@@ -536,6 +589,9 @@ def inputs_report(args) -> list[str]:
 
 
 def seal(args) -> dict:
+    from workshop.errors import ContractError
+    from workshop.wish.seed import check_critic_requirements
+
     proof = Path(args.proof).resolve()
     contract = Path(args.contract).resolve()
     checklist = Path(args.checklist).resolve()
@@ -550,7 +606,12 @@ def seal(args) -> dict:
     if verdict != "agree" and not args.open_lines_approved:
         raise Refusal("the Proof Critic's verdict is %r; seal only after it agrees, or pass "
                       "--open-lines-approved when the owner approved its open lines at Stage 4" % verdict)
+    check_wish_objective(contract)
     design_contract = read_contract(contract)
+    try:
+        check_critic_requirements(critic, design_contract)
+    except ContractError as exc:
+        raise Refusal(str(exc)) from exc
     check_inputs = check_seed_inputs(proof, design_contract)
     record = identities(proof, contract)
     if record.get("contract_sha256") != sha256(contract):

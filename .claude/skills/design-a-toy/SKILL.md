@@ -1376,6 +1376,16 @@ quoting each check, and on a final verification that left any check
 UNVERIFIED. A re-seal sets the old `approved/` aside while the batch runs
 and puts it back if the seal refuses.
 
+It also refuses, in the later stage's own words, what a seeded run would
+refuse after the seal. It runs the code that refuses each one:
+- `workshop wish`'s Wish objective limit (50,000 characters) on the
+  contract text;
+- the Make finalizer's concept checks and byte limit on
+  `SEED-PRODUCT.json`'s concept (one signature component, no hedged
+  number);
+- `check_critic_requirements` on `CRITIC.json`: one `{id, verdict, note}`
+  row for each contract requirement, the rows DETECT reads.
+
 **The seal replaces the contract's images with the approved Proof** (ADR
 0103, APPROVAL schema 4). Every Reference Image is re-rendered from the
 Proof at its Reference Camera: an assembly reference from the assembly

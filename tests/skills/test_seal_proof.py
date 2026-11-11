@@ -43,8 +43,11 @@ def load():
 
 SEED_PRODUCT = {
     "schema_version": 1, "kind": "workshop-seed-product", "title": "Toy Box", "summary": "A box.",
-    "concept": {"title": "Toy Box", "summary": "A box.", "interaction": "Lift the lid.",
-                "envelope_mm": [20, 10, 5], "mechanisms": [], "components": []},
+    "concept": {"title": "Toy Box", "summary": "A box.", "interaction": "Lift the lid off the body.",
+                "envelope_mm": {"length_mm": 20, "width_mm": 10, "height_mm": 5}, "mechanisms": [], "components": [
+                    {"key": "body", "name": "Body", "form": "A 20 by 10 box.", "duty": "Holds the lid.",
+                     "dimensions_mm": {"length_mm": 20, "width_mm": 10, "height_mm": 5}, "placement": "On the desk.", "interfaces": "None.",
+                     "mates_with": [], "signature": True}]},
     "research": {"notes": "none"},
 }
 
@@ -84,7 +87,7 @@ class SealProofTest(unittest.TestCase):
         self.helpers = {"params.py": sha(self.proof / "params.py"),
                         "features/print_details.py": sha(self.proof / "features/print_details.py")}
         (self.proof / "measure/shared-helpers-freeze.json").write_text(json.dumps({"helpers": self.helpers}))
-        (self.proof / "CRITIC.json").write_text(json.dumps({"schema_version": 1, "verdict": "agree"}))
+        (self.proof / "CRITIC.json").write_text(json.dumps({"schema_version": 1, "verdict": "agree", "requirements": []}))
         self.contract = self.design / "CONTRACT.md"
         self.contract.write_text("# Toy\n")
         self.checklist = self.design / "CONCEPT-CHECKLIST.md"
@@ -261,7 +264,7 @@ class SealProofTest(unittest.TestCase):
         self.assertIn("imports joints.py, which no passing Shared Helper freeze covers", self.stderr)
 
     def test_seal_refuses_a_critic_that_did_not_agree_unless_the_owner_approved(self):
-        (self.proof / "CRITIC.json").write_text(json.dumps({"verdict": "differences"}))
+        (self.proof / "CRITIC.json").write_text(json.dumps({"verdict": "differences", "requirements": []}))
         self.assertEqual(self._seal(), 1)
         self.assertIn("--open-lines-approved", self.stderr)
         self.assertEqual(self._seal("--open-lines-approved"), 0, self.stderr)
@@ -602,3 +605,72 @@ class SealCheckInputsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SealRunsLaterStageChecksTest(unittest.TestCase):
+    """The Amsterdam pilot: seal refuses, in the later stage's own words,
+    what `workshop wish`, the Make finalizer and DETECT would refuse."""
+
+    _record = SealProofTest._record
+    _seal = SealProofTest._seal
+    _spec_tool = SealProofTest._spec_tool
+    _final_inputs = SealProofTest._final_inputs
+
+    def setUp(self):
+        SealProofTest.setUp(self)
+
+    def _refused(self, fragment):
+        self.assertEqual(self._seal(), 1)
+        self.assertIn(fragment, self.stderr)
+        self.assertFalse((self.proof / "APPROVAL.json").exists())
+
+    def _product(self, **component):
+        product = json.loads(json.dumps(SEED_PRODUCT))
+        product["concept"]["components"][0].update(component)
+        (self.proof / "SEED-PRODUCT.json").write_text(json.dumps(product))
+        return product
+
+    def test_a_contract_longer_than_a_wish_objective_is_refused(self):
+        from workshop.wish.contracts import MAX_OBJECTIVE_CHARS
+
+        self.contract.write_text("# Toy\n" + "x" * MAX_OBJECTIVE_CHARS)
+        self._refused("workshop wish would refuse this contract as its objective")
+        self.assertIn("wish objective", self.stderr)
+
+    def test_a_hedged_dimension_is_refused_by_the_finalizers_check(self):
+        self._product(form="A crown about 18 across.")
+        self._refused("the Make finalizer would refuse SEED-PRODUCT.json's concept: Invented component body "
+                      "form uses an unbound quantity 'about 1'")
+
+    def test_more_than_one_signature_part_is_refused(self):
+        product = json.loads(json.dumps(SEED_PRODUCT))
+        lid = dict(product["concept"]["components"][0], key="lid", name="Lid", mates_with=["body"])
+        product["concept"]["components"].append(lid)
+        (self.proof / "SEED-PRODUCT.json").write_text(json.dumps(product))
+        self._refused("must flag exactly one signature component, found 2 (signature)")
+
+    def test_a_concept_over_the_finalizers_byte_limit_is_refused(self):
+        product = json.loads(json.dumps(SEED_PRODUCT))
+        product["research"] = {"notes": "x" * (2 * 1024 * 1024)}
+        (self.proof / "SEED-PRODUCT.json").write_text(json.dumps(product))
+        self._refused("Spark Make authored source exceeds its byte limit")
+
+    def test_a_critic_without_per_requirement_verdicts_is_refused(self):
+        self.design_contract = {"requirements": [{"id": "R1", "scope": "assembly", "text": "a"},
+                                                 {"id": "R2", "scope": "assembly", "text": "b"}]}
+        cases = [
+            ({"verdict": "agree"}, "has no per-requirement verdicts"),
+            ({"verdict": "agree", "requirements": []}, "has no verdict for R1, R2"),
+            ({"verdict": "agree", "requirements": [{"id": "R1", "verdict": "agree"},
+                                                   {"id": "R1", "verdict": "agree"},
+                                                   {"id": "R2", "verdict": "fine"},
+                                                   {"id": "R9", "verdict": "agree"}]},
+             "repeats R1; names requirements the contract does not have: R9; gives R2 a verdict"),
+        ]
+        for critic, fragment in cases:
+            with self.subTest(fragment):
+                (self.proof / "CRITIC.json").write_text(json.dumps(critic))
+                self._refused(fragment)
+        (self.proof / "CRITIC.json").write_text(json.dumps({"verdict": "agree", "requirements": [
+            {"id": "R1", "verdict": "agree", "note": ""}, {"id": "R2", "verdict": "agree", "note": ""}]}))
+        self.assertEqual(self._seal(), 0, self.stderr)
