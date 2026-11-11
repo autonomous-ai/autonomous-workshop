@@ -18,7 +18,9 @@
   contracts the approved Proof is the shape's source of truth), ADR 0093
   decision 1 (the Proof sees no image and closes every guess in the
   contract; "a Proof is never a Reference Image, and nothing compares it
-  with the model"; the deferred "Proof's CAD source as Make's starting
+  with the model", which ADR 0103 limits to before the seal: a schema 4
+  seal replaces every contract image with a render of the approved Proof;
+  the deferred "Proof's CAD source as Make's starting
   skeleton"), ADR 0094 decisions 3 and 4 (the kept Proof reader, the
   fresh contract-only read, and what DETECT compares), and for **seeded runs only** ADR 0075 (where the second
   reader lives), ADR 0076/0077/0080/0081 (Component Workers, the Component

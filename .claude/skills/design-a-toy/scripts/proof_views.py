@@ -42,7 +42,9 @@ Commands:
   guide ENTRY --view=AZ,EL[=AI.png] ... -o OUT.png [--title TEXT]
       A Component's Guide Image sheet: one column per view, the AI view on top
       when given, the Proof below it at that camera, every Proof render at one
-      scale with a 10 mm bar. At most 2048 pixels a side.
+      scale with a 10 mm bar. At most 2048 pixels a side. It writes the
+      cameras beside it as OUT.views.json, which seal_proof.py reads to
+      replace the sheet with the approved Proof at the same views (ADR 0103).
 
   carry ORIGINAL.png EDITED.png ENTRY --camera=AZ,EL -o OUT.png [--line TEXT]
       The trial of a Proof-edited Component reference (ADR 0093): the
@@ -509,6 +511,10 @@ def main(argv=None) -> int:
                 camera, _, ai = text.partition("=")
                 views.append((parse_camera(camera), Path(ai) if ai else None))
             print(json.dumps(guide(a.entry, views, a.out, a.title)))
+            # ADR 0103: the cameras beside the sheet, so seal_proof.py can
+            # replace it with the approved Proof at the same views.
+            a.out.with_name(a.out.name.rsplit(".", 1)[0] + ".views.json").write_text(
+                json.dumps({"views": [list(camera) for camera, _ai in views]}) + "\n", encoding="utf-8")
         elif a.command == "carry":
             print(json.dumps(carry(a.original, a.edited, a.entry, a.camera, a.out, a.line)))
     except (OSError, ValueError, AttributeError, ImportError) as exc:

@@ -33,7 +33,10 @@ from workshop.errors import ContractError
 from workshop.wish.bought_list import strip_bought_block
 
 APPROVAL_NAME = "APPROVAL.json"
-APPROVAL_SCHEMA_VERSION = 3
+APPROVAL_SCHEMA_VERSION = 4
+# ADR 0102's 2026-11-11 amendment: approved assembly renders under
+# approved/assembly/, superseded for new seals by ADR 0103's contract images.
+ASSEMBLY_RENDERS_SCHEMA_VERSION = 3
 # Approvals sealed before ADR 0102's 2026-11-11 amendment: no Approved Proof
 # assembly renders; a run seeded from one keeps the reference-image look.
 UNRENDERED_APPROVAL_SCHEMA_VERSION = 2
@@ -175,6 +178,9 @@ class SeedApproval:
     # APPROVAL schema 3 (ADR 0102, 2026-11-11 amendment): the Approved Proof's
     # assembly at each assembly Reference Camera; None for a schema 2 seal.
     assembly_renders: Any = None
+    # APPROVAL schema 4 (ADR 0103): the contract's Reference and Guide Images,
+    # each a render of the approved Proof; None for an older seal.
+    contract_images: Any = None
 
     def frozen(self) -> Dict[str, str]:
         """What `MAKE-OPTIONS.json` schema 3 freezes."""
@@ -251,10 +257,11 @@ def validate_seed(directory: Path, geometry_ids, contract_sha256: str,
             "seed: this Approved Proof was sealed before ADR 0098 (%s schema_version 1) and does not "
             "record the check inputs a new seeded run needs: %s. %s"
             % (APPROVAL_NAME, describe_check_inputs(missing), RESEAL_HINT % directory))
-    if approval.get("schema_version") not in (UNRENDERED_APPROVAL_SCHEMA_VERSION, APPROVAL_SCHEMA_VERSION):
-        raise ContractError("seed: %s schema_version %r is not %d or %d"
+    if approval.get("schema_version") not in (UNRENDERED_APPROVAL_SCHEMA_VERSION, ASSEMBLY_RENDERS_SCHEMA_VERSION,
+                                              APPROVAL_SCHEMA_VERSION):
+        raise ContractError("seed: %s schema_version %r is not %d, %d or %d"
                             % (APPROVAL_NAME, approval.get("schema_version"), UNRENDERED_APPROVAL_SCHEMA_VERSION,
-                               APPROVAL_SCHEMA_VERSION))
+                               ASSEMBLY_RENDERS_SCHEMA_VERSION, APPROVAL_SCHEMA_VERSION))
     if approval.get("contract_sha256") != contract_sha256:
         raise ContractError("seed: the Approved Proof was sealed for another contract "
                             "(contract_sha256 differs from the sealed contract's)")
@@ -325,9 +332,11 @@ def validate_seed(directory: Path, geometry_ids, contract_sha256: str,
             raise ContractError("seed: component %s's approved STEP is not the one sealed" % role)
     if not isinstance(approval.get("assembly_identity"), str) or not approval["assembly_identity"]:
         raise ContractError("seed: %s has no assembly_identity" % APPROVAL_NAME)
-    renders = None
-    if approval["schema_version"] == APPROVAL_SCHEMA_VERSION:
+    renders = images = None
+    if approval["schema_version"] == ASSEMBLY_RENDERS_SCHEMA_VERSION:
         renders = check_assembly_renders(approval.get("assembly_renders"), sealed, design_contract)
+    if approval["schema_version"] == APPROVAL_SCHEMA_VERSION:
+        images = check_contract_images(approval.get("contract_images"), design_contract)
     approved_by = approval.get("approved_by")
     if not isinstance(approved_by, str) or not approved_by.strip():
         raise ContractError("seed: %s names no approved_by" % APPROVAL_NAME)
@@ -346,7 +355,69 @@ def validate_seed(directory: Path, geometry_ids, contract_sha256: str,
         assembly_identity=approval["assembly_identity"],
         check_inputs=dict(recorded),
         assembly_renders=renders,
+        contract_images=images,
     )
+
+
+def check_contract_images(images: Any, design_contract: Mapping[str, Any] = None) -> tuple:
+    """A schema 4 approval's ``contract_images`` (ADR 0103), or
+    ContractError: one record per Reference Image (``{file, kind:
+    "reference", shows, camera, sha256}``) and per Guide Image (``{file,
+    kind: "guide", shows, views, sha256}``), and, given the contract,
+    exactly its references at their cameras and its guides, in order."""
+
+    if not isinstance(images, list):
+        raise ContractError("seed: %s records no contract_images" % APPROVAL_NAME)
+    checked = []
+    for item in images:
+        kind = item.get("kind") if isinstance(item, dict) else None
+        extra = "camera" if kind == "reference" else "views" if kind == "guide" else None
+        if (extra is None or set(item) != {"file", "kind", "shows", "sha256", extra}
+                or not _safe_relative(item["file"]) or "/" in item["file"]
+                or not isinstance(item["sha256"], str) or _SHA256.fullmatch(item["sha256"]) is None):
+            raise ContractError("seed: %s names an invalid contract image: %r" % (APPROVAL_NAME, item))
+        if kind == "reference" and not _camera(item["camera"]):
+            raise ContractError("seed: reference %s has no Reference Camera" % item["file"])
+        if kind == "guide" and (not isinstance(item["views"], list) or not item["views"]
+                                or not all(_camera(view) for view in item["views"])):
+            raise ContractError("seed: guide %s records no camera" % item["file"])
+        checked.append(dict(item))
+    if design_contract is not None:
+        wanted = [("reference", r.get("file"), [float(v) for v in r.get("camera") or ()])
+                  for r in design_contract.get("references") or () if isinstance(r, Mapping)]
+        wanted += [("guide", g.get("file"), None) for g in design_contract.get("guides") or ()
+                   if isinstance(g, Mapping)]
+        have = [(i["kind"], i["file"], [float(v) for v in i["camera"]] if i["kind"] == "reference" else None)
+                for i in checked]
+        if have != wanted:
+            raise ContractError("seed: the Approved Proof's contract images are not the contract's references "
+                                "at their cameras and its guides; re-seal the Proof with seal_proof.py")
+    return tuple(checked)
+
+
+def _camera(value: Any) -> bool:
+    return (isinstance(value, list) and len(value) == 2
+            and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in value))
+
+
+def check_launch_images(seed: "SeedApproval", given: Mapping[str, str]) -> None:
+    """ADR 0103: a run seeded from a schema 4 seal seals exactly the Proof
+    renders the seal recorded as the contract's Reference and Guide Images
+    (``given``: file name -> sha256 of each ``--ref``/``--guide`` image).
+    ContractError on a missing image or any other bytes, so a design-time AI
+    image (archived under ``design-refs/``) never reaches the run."""
+
+    if seed.contract_images is None:
+        return
+    recorded = {item["file"]: item["sha256"] for item in seed.contract_images}
+    missing = sorted(set(recorded) - set(given))
+    if missing:
+        raise ContractError("seed: the Approved Proof's renders of %s were not passed; pass the contract's "
+                            "images as the seal left them" % ", ".join(missing))
+    other = sorted(name for name, digest in given.items() if name in recorded and digest != recorded[name])
+    if other:
+        raise ContractError("seed: %s is not the approved Proof render the seal recorded (sha256 differs); a "
+                            "seeded run never reads a design-time image" % ", ".join(other))
 
 
 def assembly_cameras(design_contract: Mapping[str, Any]) -> list:

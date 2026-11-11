@@ -2931,6 +2931,16 @@ def _sealed_seed_assembly_renders(run_root: Path) -> Any:
     return approval["assembly_renders"]
 
 
+def _sealed_seed_contract_images(run_root: Path) -> Any:
+    """The sealed Approved Proof's contract images (APPROVAL schema 4, ADR
+    0103), or None for an older seal."""
+
+    approval = _sealed_seed_approval(run_root)
+    if approval is None or "contract_images" not in approval:
+        return None
+    return approval["contract_images"]
+
+
 def _sealed_seed_approval(run_root: Path) -> Optional[dict[str, Any]]:
     """``seed/APPROVAL.json`` of a seeded run, checked against the hash
     ``MAKE-OPTIONS.json`` froze; None for a run with no seed."""
@@ -8531,6 +8541,7 @@ def _evaluate_make_stage(
                 cad_project, run.run_root, seed_components,
                 review_basis=frozen_seed_review(run.run_root),
                 assembly_renders=_sealed_seed_assembly_renders(run.run_root),
+                contract_images=_sealed_seed_contract_images(run.run_root),
             )
         if seeded_batch_gate is not None:
             # ADR 0098: the Make record shows that the host ran the batch,

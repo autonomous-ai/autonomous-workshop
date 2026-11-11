@@ -79,6 +79,10 @@ Without `batch`, follow the order below.
    `matches_reference`) and differences `{feature, approved, model,
    decision, reason}`. The host refuses a look in such a run that was
    taken against the references.
+   With a seal of schema 4 (ADR 0103) every `wish-references/` image, and
+   every Guide Image, is itself a render of the approved Proof; the AI
+   drawings stay out of the run. Both looks show those sealed images on the
+   approved side, in the same packets and answers.
 6. Carry the assembly review instead of the blind review: `make_round
    <cad-project> --carry-assembly-review --concept-sha256 <Invented concept
    hash>`. It writes `snap/SIGNATURE-REVIEW.json` from the sealed

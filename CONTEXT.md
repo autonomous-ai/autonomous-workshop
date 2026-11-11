@@ -75,7 +75,7 @@ build against it. Only an approved, reconciled image becomes one. For a toy
 with an Approved Proof it is a design input only: the Contract Proof, the
 Proof Critic and the owner's Stage 4 review read it, and a new seeded build
 reads none (ADR 0102): its Component Reviews and, for a seal with assembly
-renders, its assembly look compare with the Approved Proof's renders.
+renders, its assembly look compare with the Approved Proof's renders. After a schema 4 seal it *is* such a render (ADR 0103).
 _Avoid_: Concept Image, render, picture
 
 **Guide Image**:
@@ -92,8 +92,9 @@ review, to check the contract rather than to build toward. Every number its
 drawer had to choose is a gap in the contract, and laid over a Reference Image
 it shows where the image disagrees with the numbers. The person approves it
 beside the Reference Images, and its views of each Part are sealed as that
-Component's Guide Images; it is never a Reference Image and nothing compares
-it with the model.
+Component's Guide Images. Until the seal it is never a Reference Image. A
+schema 4 seal replaces every Reference and Guide Image with a render of the
+approved Proof, archiving the AI images in `design-refs/` (ADR 0103).
 _Avoid_: Contract Preview, preview render, CAD reference
 
 **Signature Motion**:

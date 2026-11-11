@@ -148,7 +148,8 @@ Read `docs/NATIVE_AGENT_RUNTIME.md`,
 `docs/adr/0093-contract-proof-and-three-view-concepts.md`, and
 `docs/adr/0094-one-gate-one-proof-reader-and-no-duplicate-reads.md`, and
 `docs/adr/0095-powered-toys.md`, and
-`docs/adr/0102-seed-deviations-are-reviewed-against-the-approved-proof.md` before changing the CLI, runtime,
+`docs/adr/0102-seed-deviations-are-reviewed-against-the-approved-proof.md`, and
+`docs/adr/0103-sealed-contract-images-are-renders-of-the-approved-proof.md` before changing the CLI, runtime,
 workflow, product-run instructions, or lifecycle orchestration. ADR 0013
 supersedes ADR 0012's page-first Release details; ADR 0014 supersedes their
 optional-publication and executable-Deliver details. ADR 0015 supersedes the
@@ -399,6 +400,17 @@ sealed renders beside the model. Its packet has `basis: "approved-proof"`
 and binds no reference, and `--record-visual` takes `matches_approved`.
 For such a seal, `verify_made_seed` refuses an assembly look taken against
 the references. A schema 2 seal keeps the reference look.
+ADR 0103 makes `seal_proof.py` write APPROVAL schema 4. At the seal, every
+Reference Image and Guide Image of the contract is replaced by a
+deterministic render of the approved Proof under its own file name: a
+reference at its camera, a guide at the cameras it was drawn from. The AI
+originals move to `design-refs/`, and each render's hash is recorded as
+`contract_images`. `workshop wish|fix --seed-source` refuses any other
+bytes. In the run, these sealed images are the approved side of the
+Component Review and the assembly look, replacing ADR 0102's in-run STEP
+render and `approved/assembly/`. `verify_made_seed` refuses a packet that
+does not bind them. Before the seal a Proof is still never a Reference
+Image. Schema 2 and 3 seals are unchanged.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 

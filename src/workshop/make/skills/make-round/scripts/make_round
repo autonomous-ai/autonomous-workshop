@@ -470,7 +470,12 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
     Workshop ADR 0102's review) is ``approved_proof_basis``'s record: each
     comparison shows the Approved Proof's Component beside the changed one
     instead of a Reference Image, and the packet binds no reference."""
-    assembly_basis = (approved or {}).get("assembly") if component is None else None
+    # Sealed images on the approved side, copied rather than rendered: a
+    # schema 4 seal's contract images (ADR 0103) for a Component or the
+    # assembly, or a schema 3 seal's assembly renders (ADR 0102 amendment).
+    images_key = "contract_images" if (approved or {}).get("images") is not None else "assembly_renders"
+    assembly_basis = ((approved or {}).get("images") if (approved or {}).get("images") is not None
+                      else (approved or {}).get("assembly") if component is None else None)
     if approved is not None and component is not None and not (display_pose and refs):
         return {"status": "error", "findings": [],
                 "detail": "a seed deviation is compared with the Approved Proof at each Reference Camera, and "
@@ -497,7 +502,7 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
                                  *("--view=%s" % view for view in reference_views),
                                  "-o", str(views / DISPLAY_POSE_DIR)],
                      "cwd": project, "log": out / "display-pose-render.log", **env})
-    if approved is not None and component is not None:
+    if approved is not None and component is not None and assembly_basis is None:
         # Workshop ADR 0102: the sealed approved STEP, placed by the approved
         # source's assembly_pose, at the same cameras. Never the round's build.
         posed = out / ("approved_pose_%s.step.py" % component.replace("-", "_"))
@@ -525,7 +530,7 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
         for item in assembly_basis:
             if file_hash(item["path"]) != item["sha256"]:
                 return {"status": "error", "findings": [],
-                        "detail": "the Approved Proof's assembly render %s changed" % item["file"]}
+                        "detail": "the Approved Proof's render %s changed" % item["file"]}
             shutil.copyfile(item["path"], views / APPROVED_POSE_DIR / (item["stem"] + ".png"))
     elif approved is not None and (dones[-1].returncode or file_hash(approved["step"]) != approved["step_sha256"]):
         return {"status": "error", "findings": [],
@@ -546,7 +551,7 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
     if assembly_basis is not None:
         packet["basis"] = APPROVED_PROOF
         packet["approved"] = {
-            "assembly_renders": {item["file"]: item["sha256"] for item in assembly_basis},
+            images_key: {item["file"]: item["sha256"] for item in assembly_basis},
             "sealed": {item["path"]: item["sha256"] for item in assembly_basis},
             "renders": {str((views / APPROVED_POSE_DIR / (item["stem"] + ".png")).resolve()): item["sha256"]
                         for item in assembly_basis}}
@@ -587,7 +592,7 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
             detail += ("; the packet's rulings are the Workshop Manager's decisions on this Component's Blocked "
                        "Reports, which bind the reviewer")
         detail += COMPONENT_REVIEW_STEPS
-    elif assembly_basis is not None:
+    elif assembly_basis is not None and component is None:
         detail = VISUAL_REVIEW_STEPS.replace(
             "against the reference images when the round has any",
             "against the Approved Proof's own assembly renders").replace(
@@ -2980,6 +2985,32 @@ def approved_proof_basis(project: Path, approved_component: dict, role: str) -> 
             "source_sha256": file_hash(source)}
 
 
+def contract_image_basis(project: Path, approval: dict, shows: str):
+    """ADR 0103: what a seeded run of a schema 4 seal compares with, the
+    contract's own Reference Images, which the seal replaced with renders of
+    the approved Proof. ``shows`` is ``"assembly"`` or ``"geometry:<id>"``.
+    Returns ``(refs, approved)`` as ``approved_assembly_basis`` does, each
+    image the run sealed under ``wish-references/`` and checked against the
+    hash and camera the seal recorded; ValueError when one is missing or
+    other bytes, which a design-time image is."""
+
+    root = run_root(project)
+    refs, items = [], []
+    for record in approval.get("contract_images") or ():
+        if not isinstance(record, dict) or record.get("kind") != "reference" or record.get("shows") != shows:
+            continue
+        name, camera = str(record.get("file") or ""), record.get("camera")
+        path = root / WISH_REFERENCES_DIR / name
+        if (SEALED_NAME.fullmatch(name) is None or not path.is_file()
+                or file_hash(path) != record.get("sha256")):
+            raise ValueError("the run's %s is not the approved Proof render the seal recorded (ADR 0103)" % name)
+        az, el = (float(value) for value in camera)
+        refs.append((shows, "%s@%g,%g" % (path.resolve(), az, el)))
+        items.append({"file": name, "path": str(path.resolve()), "sha256": record["sha256"],
+                      "stem": "az%g_el%g" % (az, el)})
+    return refs, {"images": items}
+
+
 def approved_assembly_basis(project: Path, approval: dict | None):
     """What an assembly round's look compares with when its review does not
     carry (Workshop ADR 0102, 2026-11-11 amendment): the Approved Proof's own
@@ -2991,7 +3022,11 @@ def approved_assembly_basis(project: Path, approval: dict | None):
     renders: that run keeps the reference images. ValueError when a sealed
     render is missing or changed."""
 
-    if approval is None or "assembly_renders" not in approval or not seed_reviews_against_proof():
+    if approval is None or not seed_reviews_against_proof():
+        return None
+    if "contract_images" in approval:
+        return contract_image_basis(project, approval, "assembly")
+    if "assembly_renders" not in approval:
         return None
     seed = run_root(project) / "seed"
     renders = approval.get("assembly_renders")
@@ -3865,8 +3900,8 @@ def carried_assembly_visual(project: Path, out: Path, visual: dict, approval: di
         # must judge beside the Approved Proof's assembly renders.
         if (packet.get("sources") == current.get("sources") and packet.get("references") == current.get("references")
                 and packet.get("basis") == current.get("basis")
-                and (packet.get("approved") or {}).get("assembly_renders")
-                == (current.get("approved") or {}).get("assembly_renders")):
+                and all((packet.get("approved") or {}).get(key) == (current.get("approved") or {}).get(key)
+                        for key in ("assembly_renders", "contract_images"))):
             return {**visual, "status": "carried", "carried_from": earlier.name,
                     "visual_feedback_sha256": hashlib.sha256(feedback_bytes).hexdigest(),
                     "observation": feedback.get("observation"),
@@ -7399,12 +7434,19 @@ def make_round(args) -> int:
         # own Component, never against a Reference Image.
         against = None
         visual = None
+        shown_refs = refs
         if component is not None and seed is not None and seed_reviews_against_proof():
             try:
-                against = approved_proof_basis(project, approved_component, component)
+                if "contract_images" in approval:
+                    # ADR 0103: the contract's reference is the approved render.
+                    shown_refs, against = contract_image_basis(project, approval, GEOMETRY_LABEL + component)
+                    if not shown_refs:
+                        raise ValueError("the seal recorded no Proof render of %s at a Reference Camera"
+                                         % component)
+                else:
+                    against = approved_proof_basis(project, approved_component, component)
             except ValueError as exc:
                 visual = {"status": "error", "findings": [], "detail": str(exc)}
-        shown_refs = refs
         if component is None and visual is None:
             # The 2026-11-11 amendment: when the carried review does not
             # apply, the assembly is looked at beside the Approved Proof's

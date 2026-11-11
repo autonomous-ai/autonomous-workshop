@@ -95,6 +95,15 @@ calls were reassembling by hand.
   `matches_reference`. An earlier look carries only on the same basis and
   renders. A missing or changed sealed render is a visual error. A schema 2
   seal keeps the reference look.
+- With a schema 4 seal (Workshop ADR 0103), the contract's own images are
+  renders of the approved Proof, and `seed/APPROVAL.json` records them as
+  `contract_images`. Both looks then compose the run's sealed
+  `wish-references/` images, each checked against the recorded hash and
+  camera, as the approved side. A component round composes its
+  `geometry:<id>` references beside the Component in its Display Pose, and
+  nothing is rendered from the approved STEP. An assembly round composes its
+  assembly references. The packet binds them as
+  `approved.contract_images`. An image with other bytes is a visual error.
 - A round can take minutes. Wait for it in as few requests as possible: on
   Codex start it with `yield_time_ms: 300000` and continue with an empty
   `write_stdin` poll at the same yield. On Claude Code run it in the

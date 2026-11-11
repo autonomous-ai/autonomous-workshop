@@ -21,6 +21,7 @@ from workshop.errors import ContractError, WorkshopError
 class SeedSourceTest(unittest.TestCase):
     _record = seal_tests.SealProofTest._record
     _seal = seal_tests.SealProofTest._seal
+    _final_inputs = seal_tests.SealProofTest._final_inputs
 
     def setUp(self):
         seal_tests.SealProofTest.setUp(self)
@@ -54,6 +55,24 @@ class SeedSourceTest(unittest.TestCase):
         copy.write_text("Name this toy exactly: Beaver v01.\n\n" + self.contract.read_text() + "x")
         with self.assertRaisesRegex(ContractError, "sealed for another contract"):
             _load_seed(self._args(contract=copy), self.design)
+
+    def test_a_launch_seals_only_the_approved_proof_renders(self):
+        """ADR 0103: the contract's images are the seal's Proof renders; the
+        archived design-time AI image is refused, by its bytes."""
+        from workshop.wish.references import load_wish_references
+        folder = self.contract.parent
+        (self.proof / "toy.step.py").write_text("from part_body import *\n")
+        seal_tests.SealProofTest._final_inputs(self)
+        reference = {"file": "ref-01-assembly.png", "shows": "assembly", "camera": [90, 15]}
+        self.design_contract = {"references": [reference]}
+        (folder / "ref-01-assembly.png").write_bytes(seal_tests.png(b"AI drawing"))
+        self.assertEqual(self._seal(), 0, self.stderr)
+        design = {**self.design, "references": [reference]}
+        rendered = load_wish_references([folder / "ref-01-assembly.png"], [], [])
+        self.assertIsNotNone(_load_seed(self._args(), design, rendered))
+        original = folder / "design-refs/ref-01-assembly.png"
+        with self.assertRaisesRegex(ContractError, "never reads a design-time image"):
+            _load_seed(self._args(), design, load_wish_references([original], [], []))
 
     def test_no_seed_for_an_ordinary_contract(self):
         self.assertIsNone(_load_seed(self._args(seed_source=None), {"schema_version": 10}))

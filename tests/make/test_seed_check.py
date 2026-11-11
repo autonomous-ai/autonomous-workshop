@@ -194,6 +194,59 @@ class SeedCheckTest(unittest.TestCase):
         self.assertIn("no OCP", deviation["error"])
 
 
+IMAGES = [{"file": "ref-01-assembly.png", "kind": "reference", "shows": "assembly", "camera": [90, 15],
+           "sha256": "7" * 64},
+          {"file": "ref-02-body.png", "kind": "reference", "shows": "geometry:body", "camera": [0, 0],
+           "sha256": "8" * 64},
+          {"file": "guide-01-body.png", "kind": "guide", "shows": "back", "views": [[180, 0]], "sha256": "6" * 64}]
+
+
+class ContractImageReviewTest(SeedCheckTest):
+    """ADR 0103: a schema 4 seal's contract images are the approved side."""
+
+    def _image_packet(self, **changes):
+        return self._packet(approved={"contract_images": {"ref-02-body.png": "8" * 64},
+                                      "sealed": {"/run/wish-references/ref-02-body.png": "8" * 64},
+                                      "renders": {"/x/approved-proof/az0_el0.png": "8" * 64}}, **changes)
+
+    def _verify_images(self):
+        return verify_made_seed(self.project, self.run_root, APPROVED, compare=self._compare(passed=False),
+                                review_basis="approved-proof", contract_images=IMAGES)
+
+    def test_a_review_against_the_sealed_contract_image_is_accepted(self):
+        self._round(identity="C", review=self._proof_review(self._image_packet()))
+        (self.project / "measure/rounds").mkdir(parents=True)
+        AssemblyLookTest._look(self, key="contract_images", sealed={"ref-01-assembly.png": "7" * 64})
+        self.assertEqual(len(self._verify_images()), 1)
+
+    def test_a_review_not_against_the_sealed_contract_image_is_refused(self):
+        (self.project / "measure/rounds").mkdir(parents=True)
+        AssemblyLookTest._look(self, key="contract_images", sealed={"ref-01-assembly.png": "7" * 64})
+        for fragment, packet in (
+            ("approved Proof renders the seal recorded", lambda: self._packet()),  # a STEP-rendered packet
+            ("approved Proof renders the seal recorded", lambda: self._packet(
+                approved={"contract_images": {"ref-02-body.png": "9" * 64}, "renders": {}})),
+            ("renders that are not the sealed ones", lambda: self._packet(
+                approved={"contract_images": {"ref-02-body.png": "8" * 64}, "renders": {"/x": "9" * 64}})),
+            ("shows a Reference Image", lambda: self._image_packet(
+                references={"/run/wish-references/ref-02-body.png": "2" * 64})),
+        ):
+            with self.subTest(fragment):
+                self._round(identity="C", review=self._proof_review(packet()))
+                with self.assertRaisesRegex(ContractError, fragment):
+                    self._verify_images()
+
+    def test_the_assembly_look_reads_the_sealed_contract_image(self):
+        self._round(identity="C", review=self._proof_review(self._image_packet()))
+        (self.project / "measure/rounds").mkdir(parents=True)
+        AssemblyLookTest._look(self)  # a schema 3 packet: assembly_renders, not the contract image
+        with self.assertRaisesRegex(ContractError, "sealed assembly renders"):
+            self._verify_images()
+        AssemblyLookTest._look(self, basis=None, approved=None)
+        with self.assertRaisesRegex(ContractError, "taken against the Reference Images"):
+            self._verify_images()
+
+
 RENDERS = [{"file": "approved/assembly/az90_el15.png", "camera": [90.0, 15.0], "sha256": "7" * 64}]
 
 
@@ -204,13 +257,13 @@ class AssemblyLookTest(unittest.TestCase):
         self.project = Path(temporary.name) / "cad"
         (self.project / "measure/rounds").mkdir(parents=True)
 
-    def _look(self, number=1, visual=None, feedback=None, **packet_changes):
+    def _look(self, number=1, visual=None, feedback=None, key="assembly_renders", sealed=None, **packet_changes):
         """An assembly round with a recorded look; its packet sha256."""
         out = self.project / ("measure/rounds/r%04d" % number)
         out.mkdir(parents=True, exist_ok=True)
         packet = {"schema_version": 3, "sources": {}, "images": {}, "references": {}, "comparisons": {},
                   "basis": "approved-proof",
-                  "approved": {"assembly_renders": {RENDERS[0]["file"]: "7" * 64},
+                  "approved": {key: sealed or {RENDERS[0]["file"]: "7" * 64},
                                "sealed": {"/run/seed/approved/assembly/az90_el15.png": "7" * 64},
                                "renders": {str(out / "visual/approved-proof/az90_el15.png"): "7" * 64}}}
         packet.update(packet_changes)

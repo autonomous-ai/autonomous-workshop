@@ -12,6 +12,10 @@
 - **Amended** on 2026-11-11 (owner decision, Rein): a seeded build uses no
   AI Reference Image anywhere in review, the assembly look included. See
   the amendment at the end.
+- **Superseded in part** by ADR 0103 for schema 4 seals: the contract's own
+  images become renders of the approved Proof at the seal, and they are the
+  approved side of both reviews. Nothing is rendered from the approved STEP
+  in the run, and `approved/assembly/` is no longer written.
 
 ## Context
 

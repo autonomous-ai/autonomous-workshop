@@ -1374,12 +1374,25 @@ printed part is colour-named and resolves to one Component solid. A defect
 then costs a Proof round here, not a build. It refuses on any failure,
 quoting each check, and on a final verification that left any check
 UNVERIFIED. A re-seal sets the old `approved/` aside while the batch runs
-and puts it back if the seal refuses. The seal also renders the Proof's
-assembly entry with `render_review` at each assembly Reference Camera into
-`proof/approved/assembly/` (APPROVAL schema 3, Workshop ADR 0102's
-2026-11-11 amendment): a seeded build's assembly look compares with these
-renders, never with the assembly Reference Image. A Proof sealed as schema 2
-keeps the reference look until it is sealed again.
+and puts it back if the seal refuses.
+
+**The seal replaces the contract's images with the approved Proof** (ADR
+0103, APPROVAL schema 4). Every Reference Image is re-rendered from the
+Proof at its Reference Camera: an assembly reference from the assembly
+entry, a `geometry:<id>` reference from that Component in its Display Pose.
+Every Guide Image is re-rendered as a `proof_views.py guide` sheet at the
+cameras it was drawn from. These come from the `guide-NN-<id>.views.json`
+that `proof_views.py guide` writes beside the sheet, or from `--guide-view
+guide-NN-<id>.png=AZ,EL` once per view for a guide made before that file
+existed. Each render keeps the contract's file name. The AI original moves
+to `<contract-dir>/design-refs/`, which no run reads, and APPROVAL records
+each render's hash as `contract_images`.
+- Pass the same `<contract-dir>/ref-*` and `guide-*` files to `build-a-toy`
+  as before. `workshop wish --seed-source` refuses any other bytes.
+- The seal refuses a reference without a camera, a guide without cameras,
+  and a guide of transformation steps.
+- Show the owner the replaced images with the seal's result. They are now
+  what the build is held to.
 
 **Re-sealing a Proof sealed before ADR 0098.** `workshop wish|fix
 --seed-source` refuses an approval without check inputs (schema 1), naming
