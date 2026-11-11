@@ -339,9 +339,26 @@ waits for the person is listed under "When the loop stops and asks".
 
 ### One loop pass
 
-1. **Launch.** Make a fresh detached worktree at `origin/main` (`git fetch
-   origin && git worktree add --detach <dir> origin/main`) and run Step 2's
-   command from it. The round's name takes the next suffix (`<title> v<NN>`).
+1. **Launch.** Make a fresh light worktree at `origin/main` holding only
+   this round's inputs, never a plain `git worktree add` (that checks out
+   every tracked toy archive, about 3 GB):
+
+   ```bash
+   git fetch origin && uv run python tools/build_worktree.py <dir> --at origin/main \
+     --input <each file Step 2's command names under toys-spec/, toys/ or inbox/> \
+     [--seed-source <contract-dir>/proof]
+   ```
+
+   It checks out the code without `toys/*`, `toys-spec/*` and `inbox/*`
+   (only `toys/README.md`), copies each named file, or for a seed exactly
+   `APPROVAL.json` and the files the host checks, to the same path under
+   `<dir>`, and prints the list. The contract, every `--ref`, `--guide` and
+   `--print-art` image, a fix's brief and an existing toy directory are
+   inputs; the ledger is not: it stays in the main checkout. Run Step 2's
+   command from `<dir>` with those copied paths. When the run completes,
+   run `tools/sync-to-main.sh` from `<dir>` so its toy reaches the main
+   checkout's `toys/` (no Stop hook runs there), and record that path as
+   the round's toy directory. The round's name takes the next suffix (`<title> v<NN>`).
    Record the attempt in `rounds`, set `loop.attempt`, `loop.wish_id`,
    `loop.source_commit` and `loop.state: watching`.
 2. **Watch.** Run `scripts/watch.sh <wish-id>`; it prints a line whenever the
@@ -506,8 +523,9 @@ the images do not show) is applied the same way with `approved` set to
 1. Open the issue with `gh issue create` and record it in `harness_issues`
    with `opened_by_loop: true`. The loop implements **only** issues it opened
    itself, and merges none.
-2. Implement it in a subagent, in a fresh worktree from `origin/main`
-   (`status: implementing`), following the repository's `AGENTS.md`.
+2. Implement it in a subagent, in a fresh light worktree from `origin/main`
+   (`uv run python tools/build_worktree.py <dir> --at origin/main -b <branch>`;
+   `status: implementing`), following the repository's `AGENTS.md`.
 3. Run the full test suite:
    `uv run pytest`.
 4. `git fetch origin && git rebase origin/main`, run the suite again, push
@@ -533,7 +551,8 @@ review to unrelated sheet-review gates). Never refresh a running run from
 
 1. Make a branch at the run's source commit, the `loop.source_commit` of its
    attempt:
-   `git worktree add -b refresh/<wish-id> <dir> <source_commit>`.
+   `uv run python tools/build_worktree.py <dir> --at <source_commit> -b refresh/<wish-id>`
+   (no inputs: a resume reads only what the run sealed).
 2. Cherry-pick only the fix's commits onto it (`git cherry-pick <sha>...`).
    Resolve a conflict toward the source commit; never pull in a second
    change to make the fix apply.
