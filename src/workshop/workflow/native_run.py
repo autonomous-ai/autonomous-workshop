@@ -2915,6 +2915,26 @@ def _sealed_seed_components(run_root: Path) -> Optional[dict[str, Any]]:
     read from ``seed/APPROVAL.json`` after checking it is the approval
     ``MAKE-OPTIONS.json`` froze; None for a run with no seed."""
 
+    approval = _sealed_seed_approval(run_root)
+    if approval is None:
+        return None
+    return approval["components"]
+
+
+def _sealed_seed_assembly_renders(run_root: Path) -> Any:
+    """The sealed Approved Proof's assembly renders (APPROVAL schema 3, ADR
+    0102's 2026-11-11 amendment), or None for a seal without them."""
+
+    approval = _sealed_seed_approval(run_root)
+    if approval is None or "assembly_renders" not in approval:
+        return None
+    return approval["assembly_renders"]
+
+
+def _sealed_seed_approval(run_root: Path) -> Optional[dict[str, Any]]:
+    """``seed/APPROVAL.json`` of a seeded run, checked against the hash
+    ``MAKE-OPTIONS.json`` froze; None for a run with no seed."""
+
     try:
         options = json.loads((run_root / "MAKE-OPTIONS.json").read_bytes())
     except (OSError, ValueError):
@@ -2932,7 +2952,7 @@ def _sealed_seed_components(run_root: Path) -> Optional[dict[str, Any]]:
     components = approval.get("components") if isinstance(approval, dict) else None
     if not isinstance(components, dict):
         raise StateConflict("the sealed seed approval has no components")
-    return components
+    return approval
 
 
 def _made_component_acceptances(product: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -8510,6 +8530,7 @@ def _evaluate_make_stage(
             product_checks["seed_deviations"] = verify_made_seed(
                 cad_project, run.run_root, seed_components,
                 review_basis=frozen_seed_review(run.run_root),
+                assembly_renders=_sealed_seed_assembly_renders(run.run_root),
             )
         if seeded_batch_gate is not None:
             # ADR 0098: the Make record shows that the host ran the batch,

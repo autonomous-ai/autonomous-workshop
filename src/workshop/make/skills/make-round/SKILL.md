@@ -81,6 +81,20 @@ calls were reassembling by hand.
   Rounds and the acceptance at the limit are unchanged. The recorded
   review carries `basis` and `packet_sha256`, which the host checks before
   Make is accepted.
+- In such a run whose `seed/APPROVAL.json` (schema 3) records
+  `assembly_renders` (Workshop ADR 0102, 2026-11-11 amendment), an assembly
+  round whose look the approval's review does not carry compares the
+  model with the Approved Proof's own assembly renders, never the assembly
+  Reference Image. Each `compare-NN.png` shows the sealed
+  `seed/approved/assembly/az<AZ>_el<EL>.png` (copied after its hash is
+  checked) beside the model rendered at that camera. The packet has
+  `basis: "approved-proof"`, empty `references` and `approved:
+  {assembly_renders, sealed, renders}`. `--record-visual` then takes
+  `matches_approved` instead of `matches_reference`, and differences
+  `{feature, approved, model, decision, reason}`; it refuses
+  `matches_reference`. An earlier look carries only on the same basis and
+  renders. A missing or changed sealed render is a visual error. A schema 2
+  seal keeps the reference look.
 - A round can take minutes. Wait for it in as few requests as possible: on
   Codex start it with `yield_time_ms: 300000` and continue with an empty
   `write_stdin` poll at the same yield. On Claude Code run it in the

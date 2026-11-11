@@ -2874,3 +2874,16 @@ convention, so sealed STEPs and frozen runs keep their colours.
   model}` differences and refuses a camera mismatch or a Reference
   Conflict. `SKILL.md` says so. The `cad` and `make-round` locks move;
   `source_commit` values are unchanged.
+
+## Workshop-local: a seeded assembly look compares with the Approved Proof's assembly renders (2026-11-11, ADR 0102 amendment)
+
+- `make-round` only (Workshop-local; `cad` is unchanged). In a run that
+  froze `seed.review: "approved-proof"` and whose `seed/APPROVAL.json`
+  (schema 3) records `assembly_renders`, an assembly round whose look the
+  approval's review does not carry composes each sealed
+  `seed/approved/assembly/az<AZ>_el<EL>.png` beside the model at that
+  camera, with no reference image (`basis: "approved-proof"`), and
+  `--record-visual` takes `matches_approved` and `{feature, approved,
+  model, decision, reason}` differences and refuses `matches_reference`.
+  An earlier look carries only on the same basis and renders. `SKILL.md`
+  says so. The `make-round` lock moves; `source_commit` is unchanged.

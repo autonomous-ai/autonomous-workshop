@@ -70,6 +70,15 @@ Without `batch`, follow the order below.
    sources and references as one you already recorded a visual pass on
    carries that pass the same way. Otherwise the look is `pending` as in
    any run, and its `detail` says why the approval's review did not carry.
+   When `seed` has `review: "approved-proof"` and the seal recorded
+   `assembly_renders` (ADR 0102, 2026-11-11 amendment), that pending look
+   is beside the Approved Proof's own assembly, not a Reference Image: the
+   packet has `basis: "approved-proof"` and each `compare-NN.png` shows the
+   sealed `seed/approved/assembly/az<AZ>_el<EL>.png` beside the model at
+   that camera. Record it with `matches_approved` (never
+   `matches_reference`) and differences `{feature, approved, model,
+   decision, reason}`. The host refuses a look in such a run that was
+   taken against the references.
 6. Carry the assembly review instead of the blind review: `make_round
    <cad-project> --carry-assembly-review --concept-sha256 <Invented concept
    hash>`. It writes `snap/SIGNATURE-REVIEW.json` from the sealed

@@ -24,7 +24,8 @@ from pathlib import Path
 
 from workshop.errors import StateConflict
 from workshop.make import seeded_batch
-from workshop.workflow.native_run import _sealed_seed, _sealed_seed_components, _seed_start_inputs
+from workshop.workflow.native_run import (_sealed_seed, _sealed_seed_assembly_renders, _sealed_seed_components,
+                                          _seed_start_inputs)
 
 
 class SeedStartTest(unittest.TestCase):
@@ -140,6 +141,18 @@ class SeedStartTest(unittest.TestCase):
             (root / "seed").mkdir()
             (root / "seed/APPROVAL.json").write_bytes(approval)
             self.assertEqual(set(_sealed_seed_components(root)), {"body"})
+            # ADR 0102's 2026-11-11 amendment: a schema 3 seal's assembly
+            # renders reach the host's check; a schema 2 seal has none.
+            self.assertEqual(_sealed_seed_assembly_renders(root), json.loads(approval)["assembly_renders"])
+            older = json.loads(approval)
+            older.pop("assembly_renders")
+            older_bytes = json.dumps(older).encode()
+            (root / "MAKE-OPTIONS.json").write_text(json.dumps({"schema_version": 3, "check_motion": False, "seed": {
+                **frozen, "approval_sha256": hashlib.sha256(older_bytes).hexdigest()}}))
+            (root / "seed/APPROVAL.json").write_bytes(older_bytes)
+            self.assertIsNone(_sealed_seed_assembly_renders(root))
+            (root / "MAKE-OPTIONS.json").write_text(json.dumps({"schema_version": 3, "check_motion": False,
+                                                                 "seed": frozen}))
             (root / "seed/APPROVAL.json").write_bytes(approval + b" ")
             with self.assertRaisesRegex(StateConflict, "not the frozen one"):
                 _sealed_seed_components(root)

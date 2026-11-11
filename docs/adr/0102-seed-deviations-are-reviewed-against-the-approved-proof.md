@@ -9,6 +9,9 @@
 - **Unchanged:** unseeded runs, every contract before schema 11, and every
   run seeded before this ADR (MAKE-OPTIONS schema 3 or 4). They keep the
   review against the Reference Images.
+- **Amended** on 2026-11-11 (owner decision, Rein): a seeded build uses no
+  AI Reference Image anywhere in review, the assembly look included. See
+  the amendment at the end.
 
 ## Context
 
@@ -111,12 +114,11 @@ Shape Rounds on differences the approved Proof already had.
      views no reference (its instructions say so; nothing enforces it);
    - the assembly review carries the critic's verdict (ADR 0096 partial
      carry), which a deviation reviewed under this ADR still allows.
-   - **Not yet changed:** when the assembly carry does not hold (a
-     Component Acceptance, an open round), the assembly round's pending
-     look still composes the sealed assembly Reference Image, as in any
-     run. Replacing it needs an approved assembly render in the seed,
-     which `APPROVAL.json` does not seal today. That is a follow-up, not
-     part of this decision.
+   - when the assembly carry does not hold (a Component Acceptance, an
+     open round), the assembly round's look compares with the Approved
+     Proof's own assembly render, never the assembly Reference Image. See
+     the 2026-11-11 amendment below; a seal without that render keeps the
+     earlier look.
 7. **The owner still sees every visible deviation.** `build-a-toy` shows
    each over-tolerance `seed_deviations` entry before publication, as ADR
    0096 requires. It now shows the deviation **beside the approved Proof
@@ -151,3 +153,75 @@ Shape Rounds on differences the approved Proof already had.
   on the sealed STEP, without the Print Piece decals the changed side may
   carry. A decal is art on paper, not form (ADR 0091), and the reviewer
   judges form.
+
+## Amendment 2026-11-11: the assembly look compares with the Approved Proof
+
+The owner confirmed the intent: a seeded build must not use AI Reference
+Images anywhere in review. Decision 6 left one place. When the Approved
+Proof's assembly review does not carry (a Component Acceptance, an open
+round), the assembly round's pending look composed the sealed assembly
+Reference Image beside the model. It now composes the Approved Proof's own
+assembly instead.
+
+1. **The seal renders the approved assembly.** `seal_proof.py seal` writes
+   `APPROVAL.json` schema 3: schema 2 plus `assembly_renders`.
+   - The seal runs the CAD skill's `render_review` on the Proof's one
+     assembly entry (`*.step.py` that is not a `part_`) at each distinct
+     `[AZ, EL]` Reference Camera of the contract's `shows: "assembly"`
+     references. These are the same cameras, and the same `az{AZ}_el{EL}.png`
+     names, at which an assembly round renders the model.
+   - It seals each render under `approved/assembly/` (so it is in the
+     manifest) and records it as `{file, camera, sha256}`.
+   - A contract with no assembly camera seals an empty list. A render that
+     fails, a missing render or a Proof without exactly one entry refuses
+     the seal.
+   - The host's `validate_seed` accepts schema 2 and 3. For schema 3 it
+     checks that each render is in the manifest as sealed, is named for its
+     camera, and that the cameras are the contract's.
+2. **The assembly round compares with it.** In a run that froze the
+   review (`seed.review: "approved-proof"`, decision 5) and whose seal
+   carries `assembly_renders`, an assembly round whose look the Approved
+   Proof's review does not carry:
+   - composes, at each sealed render's camera, that render beside the model
+     rendered at the same camera. The render is copied from `seed/` after
+     its sha256 is checked; it is never rebuilt in the run;
+   - writes a packet with `basis: "approved-proof"`, empty `references`,
+     and `approved: {assembly_renders, sealed, renders}`, which binds the
+     sealed files and their copies by sha256. A changed copy or a changed
+     sealed render makes the packet stale. A missing or changed sealed
+     render is a visual error, never a fall-back to the reference;
+   - the camera is the sealed render's own. A host-recorded camera
+     amendment (ADR 0083) moves a Reference Image's camera, and no
+     Reference Image is shown here.
+3. **The Manager's look.** `--record-visual` on such a packet takes
+   `matches_approved` instead of `matches_reference`. It lists each
+   difference as `{feature, approved, model, decision, reason}`.
+   `matches_reference` is refused, and so is a reference-shaped difference
+   or a pass with `matches_approved` false. Everything else (findings, the
+   observation, `--full`) is unchanged.
+4. **Carrying an earlier look.** An earlier recorded pass carries (issue
+   #244) only when its packet has the same basis and the same sealed
+   renders as the new one. A look taken beside the references never stands
+   for one the run must take beside the Approved Proof.
+5. **The host refuses a look against the references.** Before Make is
+   accepted, `verify_made_seed` (with the frozen basis and the seal's
+   `assembly_renders`) reads the last assembly round. The Approved Proof's
+   carried review (`carried_from: "seed-approval"`) passes. Otherwise the
+   look that stands is either that round's or the earlier round's it
+   carried from. The host refuses that look when:
+   - it has no recorded feedback or no packet;
+   - the feedback or the summary binds another packet hash;
+   - its packet lacks `basis: "approved-proof"`, binds a Reference Image,
+     names other sealed renders, or shows copies that are not the sealed
+     bytes;
+   - its feedback answers `matches_reference` or omits `matches_approved`.
+6. **Existing seals keep the current behaviour.** A schema 2 seal carries
+   no assembly render. A run seeded from one compares its assembly look
+   with the Reference Image as before, and the host does not check that
+   look. That holds even in a run that froze the review. A new seal is
+   needed to switch an existing toy over.
+
+No gate is weakened. The Component Review of decisions 1 to 4, the blind
+review and `--full` are unchanged. The renders are B-rep renders, as the
+model side is, so neither a camera mismatch nor a Reference Conflict can
+arise here either.
