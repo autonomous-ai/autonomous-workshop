@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Benchmark a render of the Antisol Companion assembly, phase by phase.
+"""Benchmark a render of a real Antisol assembly, phase by phase.
 
-Issue #58. This measures the real 222-occurrence Companion assembly
-(`toys/ad-astra-antisol-companion`), never a synthetic mesh: the earlier
+Issue #58. This measures a real Antisol assembly, now the latest kept build
+(`toys/ad-astra-antisol-v13`; the 222-occurrence Companion the issue's
+figures were recorded on was removed with the older toy versions), never a
+synthetic mesh: the earlier
 50 us-per-triangle figure came from a synthetic mesh and had to be walked
 back as "the size of the prize, not a promise"
 (`docs/BASELINE_CORRECTION_RUN.md`).
@@ -40,7 +42,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RENDERER_PATH = REPO_ROOT / "src/workshop/make/skills/cad/scripts/render_review"
 COMPANION_ENTRY = (
-    REPO_ROOT / "toys/ad-astra-antisol-companion/make/source/cad/antisol.step.py"
+    REPO_ROOT / "toys/ad-astra-antisol-v13/make/source/cad/antisol.step.py"
 )
 CAMERA_VIEWS = ["iso", "front", "top", "rear_iso"]
 BOARD_STATES = ["opening", "midgame", "endgame"]

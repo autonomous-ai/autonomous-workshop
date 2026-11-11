@@ -37,7 +37,7 @@ EXCLUDED_TOPS = ("toys", "toys-spec", "inbox")
 # Tracked toy files the test suite reads, kept so `uv run pytest` passes in
 # a light worktree as in a full one (about 12 MB of the ~3 GB of archives).
 TEST_FIXTURES = (
-    "/toys/ad-astra-antisol-companion/make/source/",
+    "/toys/ad-astra-antisol-v13/make/source/",
     "/toys/leo-false-lantern/MANUAL.pdf",
 )
 SPARSE_PATTERNS = (
