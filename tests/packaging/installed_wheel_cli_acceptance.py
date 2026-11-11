@@ -43,14 +43,11 @@ LISTED_MAKE_SKILLS = tuple(
     name for name, relative in SKILL_PATHS.items() if relative.startswith("make/")
 )
 INVENTORS = (
-    "abo",
     "alice",
     "axel-rake",
     "bob",
-    "eve",
     "ferro-line",
     "halden-detent",
-    "ivy",
     "kestrel-knot",
     "leo",
     "luma-vale",
