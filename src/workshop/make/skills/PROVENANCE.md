@@ -2887,3 +2887,14 @@ convention, so sealed STEPs and frozen runs keep their colours.
   model, decision, reason}` differences and refuses `matches_reference`.
   An earlier look carries only on the same basis and renders. `SKILL.md`
   says so. The `make-round` lock moves; `source_commit` is unchanged.
+
+## Workshop-local: a schema 4 seal's contract images are the approved side (2026-11-11, ADR 0103)
+
+- `make-round` only (Workshop-local). With `seed/APPROVAL.json` schema 4
+  (`contract_images`), a seeded run that froze `seed.review:
+  "approved-proof"` composes its sealed `wish-references/` images (each
+  checked against the recorded hash and camera) as the approved side of a
+  Component Review and the assembly look, instead of rendering the
+  approved STEP or reading `approved/assembly/`. The packet binds them as
+  `approved.contract_images`. `SKILL.md` says so. The `make-round` lock
+  moves; `source_commit` is unchanged.

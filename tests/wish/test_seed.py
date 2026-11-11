@@ -61,8 +61,8 @@ class SeedValidationTest(unittest.TestCase):
         with self.assertRaises(ContractError) as caught:
             validate_seed(self.proof, ("body",), "0" * 64)
         self.assertIn("sealed for another contract", str(caught.exception))
-        self._edit(lambda a: a.update(schema_version=4))
-        self._refused("schema_version 4 is not 2 or 3")
+        self._edit(lambda a: a.update(schema_version=5))
+        self._refused("schema_version 5 is not 2, 3 or 4")
         self.approval_path.write_text("{")
         self._refused("does not parse")
         self.approval_path.unlink()
@@ -120,9 +120,52 @@ class SeedValidationTest(unittest.TestCase):
         """ADR 0102's 2026-11-11 amendment: existing seals keep the reference look."""
         def older(approval):
             approval["schema_version"] = 2
-            approval.pop("assembly_renders")
+            approval.pop("contract_images")
         self._edit(older)
-        self.assertIsNone(self._validate().assembly_renders)
+        seed = self._validate()
+        self.assertIsNone(seed.assembly_renders)
+        self.assertIsNone(seed.contract_images)
+
+    def test_contract_image_refusals(self):
+        """ADR 0103: a schema 4 seal's contract images."""
+        record = {"file": "ref-01-assembly.png", "kind": "reference", "shows": "assembly",
+                  "camera": [90, 15], "sha256": "4" * 64}
+        guide = {"file": "guide-01-body.png", "kind": "guide", "shows": "the back", "views": [[180, 0]],
+                 "sha256": "5" * 64}
+        self._edit(lambda a: a.update(contract_images=[record, guide]))
+        self.assertEqual(len(self._validate().contract_images), 2)
+        contract = {"references": [{"file": "ref-01-assembly.png", "shows": "assembly", "camera": [90, 15]}],
+                    "guides": [{"file": "guide-01-body.png", "shows": "the back"}]}
+        validate_seed(self.proof, ("body",), self.digest, contract)
+        contract["references"][0]["camera"] = [0, 0]
+        with self.assertRaisesRegex(ContractError, "not the contract's references at their cameras"):
+            validate_seed(self.proof, ("body",), self.digest, contract)
+        for fragment, images in (
+            ("has no Reference Camera", [dict(record, camera=None)]),
+            ("records no camera", [dict(guide, views=[])]),
+            ("invalid contract image", [dict(record, sha256="x")]),
+            ("invalid contract image", [dict(record, file="../ref-01-assembly.png")]),
+            ("records no contract_images", None),
+        ):
+            with self.subTest(fragment):
+                self._edit(lambda a: a.update(contract_images=images))
+                self._refused(fragment)
+
+    def test_a_launch_passes_exactly_the_sealed_renders(self):
+        from workshop.wish.seed import check_launch_images
+        record = {"file": "ref-01-assembly.png", "kind": "reference", "shows": "assembly",
+                  "camera": [90, 15], "sha256": "4" * 64}
+        self._edit(lambda a: a.update(contract_images=[record]))
+        seed = self._validate()
+        check_launch_images(seed, {"ref-01-assembly.png": "4" * 64})
+        # The archived design-time AI image has other bytes.
+        with self.assertRaisesRegex(ContractError, "never reads a design-time image"):
+            check_launch_images(seed, {"ref-01-assembly.png": "9" * 64})
+        with self.assertRaisesRegex(ContractError, "were not passed"):
+            check_launch_images(seed, {})
+        # An older seal records none and checks none.
+        check_launch_images(validate_seed.__globals__["SeedApproval"](**{**seed.__dict__, "contract_images": None}),
+                            {"ref-01-assembly.png": "9" * 64})
 
     def test_assembly_render_refusals(self):
         render = "approved/assembly/az90_el15.png"
@@ -131,6 +174,8 @@ class SeedValidationTest(unittest.TestCase):
 
         def with_render(**item):
             def change(approval):
+                approval["schema_version"] = 3
+                approval.pop("contract_images", None)
                 approval["manifest"][render] = sha(self.proof / render)
                 self._remanifest(approval)
                 approval["assembly_renders"] = [{"file": render, "camera": [90, 15],

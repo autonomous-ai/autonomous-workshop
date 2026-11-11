@@ -49,6 +49,17 @@ SEED_PRODUCT = {
 }
 
 
+def png(tag: bytes) -> bytes:
+    """A decodable 32 px image, distinct for each tag, large enough to seal
+    as a Wish reference."""
+    from PIL import Image
+
+    digest = hashlib.sha256(tag).digest()
+    buffer = io.BytesIO()
+    Image.new("RGB", (32, 32), (digest[0], digest[1], digest[2])).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
 def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -141,15 +152,19 @@ class SealProofTest(unittest.TestCase):
         return code
 
     def _render_runner(self, argv, cwd):
-        """Stand in for render_review: one PNG per requested camera view."""
+        """Stand in for render_review (one PNG per requested camera view) and
+        proof_views.py guide (one sheet at -o)."""
         self.render_calls = getattr(self, "render_calls", []) + [list(argv)]
         if getattr(self, "render_exit", 0):
             return self.render_exit, "render failed"
         out = Path(argv[argv.index("-o") + 1])
+        if Path(argv[1]).name == "proof_views.py":
+            out.write_bytes(png(b"guide " + " ".join(argv[3:]).encode()))
+            return 0, "ok"
         for arg in argv:
             if arg.startswith("--view=") and arg != getattr(self, "render_skip", None):
                 az, el = (float(v) for v in arg.split("=", 1)[1].split(","))
-                (out / ("az%g_el%g.png" % (az, el))).write_bytes(b"render " + arg.encode())
+                (out / ("az%g_el%g.png" % (az, el))).write_bytes(png(b"render " + arg.encode()))
         return 0, "ok"
 
     def _spec_tool(self, proof, tool):
@@ -185,9 +200,9 @@ class SealProofTest(unittest.TestCase):
             "features/print_details.py", "measure/check_fit.py", "measure/check_landmarks.py",
             "measure/check_spec.py", "params.py", "part_body.step.py", "snap/iso.png", "snap/signature.png",
             "toy_spec.md"])
-        self.assertEqual(approval["schema_version"], 3)
-        # No assembly reference camera in this contract: nothing to render.
-        self.assertEqual(approval["assembly_renders"], [])
+        self.assertEqual(approval["schema_version"], 4)
+        # No reference or guide in this contract: nothing to render.
+        self.assertEqual(approval["contract_images"], [])
         self.assertEqual(approval["check_inputs"], {name: approval["manifest"][name] for name in
                                                     ("SEED-PRODUCT.json", "snap/iso.png", "snap/signature.png")})
         self.assertEqual(approval["batch"]["ok"], True)
@@ -476,58 +491,104 @@ class SealCheckInputsTest(unittest.TestCase):
         final = [argv for argv in self.batch_calls if "--design" in argv][-1]
         self.assertIn("--geometry-seconds", final)
 
-    def _assembly_contract(self):
+    def _image_contract(self):
+        """ADR 0103: a contract with two references and one guide, their
+        design-time AI images in the contract's directory."""
         (self.proof / "toy.step.py").write_text("from part_body import *\n")
-        self.design_contract = {"references": [
-            {"file": "ref-01-assembly.png", "shows": "assembly", "camera": [90, 15]},
-            {"file": "ref-02-body.png", "shows": "geometry:body", "camera": [0, 0]},
-            {"file": "ref-03-assembly.png", "shows": "assembly", "camera": [-30, 20]}]}
+        self.design_contract = {
+            "references": [{"file": "ref-01-assembly.png", "shows": "assembly", "camera": [90, 15]},
+                           {"file": "ref-02-body.jpg", "shows": "geometry:body", "camera": [-30, 20]}],
+            "guides": [{"file": "guide-01-body.png", "shows": "the body from the back", "geometries": ["body"]}]}
+        for name in ("ref-01-assembly.png", "ref-02-body.jpg", "guide-01-body.png"):
+            (self.design / name).write_bytes(b"AI drawing " + name.encode())
+        (self.design / "guide-01-body.views.json").write_text(json.dumps({"views": [[180, 10], [0, 90]]}))
         SealProofTest._final_inputs(self)  # the entry is a source the print gates read
 
-    def test_seal_renders_the_approved_assembly_at_each_assembly_camera(self):
-        """ADR 0102, 2026-11-11 amendment: APPROVAL schema 3."""
-        self._assembly_contract()
+    def test_seal_replaces_every_contract_image_with_the_approved_proof(self):
+        self._image_contract()
         self.assertEqual(self._seal(), 0, self.stderr)
         approval = json.loads((self.proof / "APPROVAL.json").read_text())
-        files = ["approved/assembly/az90_el15.png", "approved/assembly/az-30_el20.png"]
-        self.assertEqual([item["file"] for item in approval["assembly_renders"]], files)
-        self.assertEqual([item["camera"] for item in approval["assembly_renders"]], [[90.0, 15.0], [-30.0, 20.0]])
-        for item in approval["assembly_renders"]:
-            self.assertEqual(item["sha256"], sha(self.proof / item["file"]))
-            self.assertEqual(approval["manifest"][item["file"]], item["sha256"])
-        (call,) = self.render_calls
-        self.assertEqual(Path(call[1]).name, "render_review")
-        self.assertEqual(call[2], "toy.step.py")
-        self.assertEqual([a for a in call if a.startswith("--view=")], ["--view=90,15", "--view=-30,20"])
+        self.assertEqual(approval["schema_version"], 4)
+        images = approval["contract_images"]
+        self.assertEqual([(i["file"], i["kind"]) for i in images],
+                         [("ref-01-assembly.png", "reference"), ("ref-02-body.jpg", "reference"),
+                          ("guide-01-body.png", "guide")])
+        self.assertEqual([images[0]["camera"], images[1]["camera"], images[2]["views"]],
+                         [[90.0, 15.0], [-30.0, 20.0], [[180.0, 10.0], [0.0, 90.0]]])
+        for item in images:
+            # The render sits under the contract's own name; the AI image is archived.
+            self.assertEqual(item["sha256"], sha(self.design / item["file"]))
+            self.assertEqual((self.design / "design-refs" / item["file"]).read_bytes(),
+                             b"AI drawing " + item["file"].encode())
+        from PIL import Image
+        self.assertEqual(Image.open(self.design / "ref-02-body.jpg").format, "JPEG")
+        assembly, body, guide = self.render_calls
+        self.assertEqual((Path(assembly[1]).name, Path(assembly[2]).name), ("render_review", "toy.step.py"))
+        self.assertIn("--view=90,15", assembly)
+        self.assertEqual(Path(body[2]).name, "posed_part_body.step.py")
+        self.assertIn("--view=-30,20", body)
+        self.assertEqual((Path(guide[1]).name, guide[2], Path(guide[3]).name), ("proof_views.py", "guide",
+                                                                                "part_body.step.py"))
+        self.assertEqual([a for a in guide if a.startswith("--view=")], ["--view=180,10", "--view=0,90"])
+        self.assertFalse(any(path.name.startswith(".seal-proof-images-") for path in self.design.iterdir()))
         self.assertEqual(self._verify(), 0, self.stderr)
-        # The host validates the renders against the manifest and the contract.
         from workshop.wish.seed import validate_seed
         seed = validate_seed(self.proof, ("body",), approval["contract_sha256"], self.design_contract)
-        self.assertEqual([item["file"] for item in seed.assembly_renders], files)
+        self.assertEqual([item["file"] for item in seed.contract_images],
+                         ["ref-01-assembly.png", "ref-02-body.jpg", "guide-01-body.png"])
+        # A re-seal renders again and keeps the archived AI images.
+        self.render_calls = []
+        self.assertEqual(self._seal(), 0, self.stderr)
+        self.assertEqual((self.design / "design-refs/ref-01-assembly.png").read_bytes(),
+                         b"AI drawing ref-01-assembly.png")
+        # A new image beside an archived one is never thrown away.
+        (self.design / "ref-01-assembly.png").write_bytes(b"a newer AI drawing")
+        self.assertEqual(self._seal(), 1)
+        self.assertIn("neither the earlier seal's render nor archived", self.stderr)
 
-    def test_a_render_that_fails_or_is_missing_refuses_the_seal(self):
+    def test_guide_views_can_be_given_on_the_command_line(self):
+        self._image_contract()
+        (self.design / "guide-01-body.views.json").unlink()
+        self.assertEqual(self._seal("--guide-view", "guide-01-body.png=45,30"), 0, self.stderr)
+        approval = json.loads((self.proof / "APPROVAL.json").read_text())
+        self.assertEqual(approval["contract_images"][2]["views"], [[45.0, 30.0]])
+
+    def test_refusals_leave_the_contract_images_alone(self):
+        def no_camera():
+            self.design_contract["references"][0].pop("camera")
+        def steps():
+            self.design_contract["guides"][0]["steps"] = ["fold the wing"]
         for name, setup, fragment in (
-            ("exit", lambda: setattr(self, "render_exit", 1), "could not render the approved assembly"),
-            ("missing", lambda: setattr(self, "render_skip", "--view=-30,20"), "wrote no az-30_el20.png"),
+            ("missing reference camera", no_camera, "has no Reference Camera"),
+            ("missing guide camera", lambda: (self.design / "guide-01-body.views.json").unlink(),
+             "names no camera"),
+            ("transformation steps", steps, "draws transformation steps"),
+            ("render fails", lambda: setattr(self, "render_exit", 1), "could not render ref-01-assembly.png"),
+            ("render missing", lambda: setattr(self, "render_skip", "--view=-30,20"),
+             "could not render ref-02-body.jpg"),
             ("two entries", lambda: ((self.proof / "other.step.py").write_text("\n"),
                                      SealProofTest._final_inputs(self)), "exactly one assembly entry"),
         ):
             with self.subTest(name):
                 self.setUp()
                 self.render_exit, self.render_skip = 0, None
-                self._assembly_contract()
+                self._image_contract()
                 setup()
                 self.assertEqual(self._seal(), 1)
                 self.assertIn(fragment, self.stderr)
                 self.assertFalse((self.proof / "APPROVAL.json").exists())
+                self.assertFalse((self.design / "design-refs").exists())
+                self.assertEqual((self.design / "ref-01-assembly.png").read_bytes(),
+                                 b"AI drawing ref-01-assembly.png")
 
-    def test_verify_still_accepts_a_schema_2_seal(self):
+    def test_verify_still_accepts_older_seals(self):
         self.assertEqual(self._seal(), 0, self.stderr)
         approval = json.loads((self.proof / "APPROVAL.json").read_text())
-        approval["schema_version"] = 2
-        approval.pop("assembly_renders")
-        (self.proof / "APPROVAL.json").write_text(json.dumps(approval))
-        self.assertEqual(self._verify(), 0, self.stderr)
+        approval.pop("contract_images")
+        for version in (2, 3):
+            approval["schema_version"] = version
+            (self.proof / "APPROVAL.json").write_text(json.dumps(approval))
+            self.assertEqual(self._verify(), 0, self.stderr)
 
     def test_verify_names_the_reseal_path_for_an_old_approval(self):
         self.assertEqual(self._seal(), 0, self.stderr)

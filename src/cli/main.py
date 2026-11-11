@@ -1067,14 +1067,16 @@ SEED_SOURCE_HELP = (
 )
 
 
-def _load_seed(args: argparse.Namespace, sealed_contract: Optional[Mapping]) -> Optional[dict]:
+def _load_seed(args: argparse.Namespace, sealed_contract: Optional[Mapping],
+               loaded_references: Sequence[LoadedWishReference] = ()) -> Optional[dict]:
     """Validate ``--seed-source`` against the sealed contract before any run
     starts and return what the Wish context records of it, or None.
 
     A schema 11 contract (``shape: approved-proof``) seals only with a seed;
     a seed needs a contract and the spark workflow."""
 
-    from workshop.wish.seed import contract_geometry_ids, seed_context, seed_contract_sha256, validate_seed
+    from workshop.wish.seed import (check_launch_images, contract_geometry_ids, seed_context,
+                                    seed_contract_sha256, validate_seed)
 
     source = getattr(args, "seed_source", None)
     shaped = isinstance(sealed_contract, Mapping) and sealed_contract.get("shape") == "approved-proof"
@@ -1101,6 +1103,12 @@ def _load_seed(args: argparse.Namespace, sealed_contract: Optional[Mapping]) -> 
     # ADR 0098 (owner decision 2): a new launch refuses an Approved Proof
     # sealed without its check inputs, naming them and the re-seal path.
     seed = validate_seed(source, contract_geometry_ids(sealed_contract), digest, sealed_contract)
+    # ADR 0103: a schema 4 seal's Reference and Guide Images are the approved
+    # Proof's renders, by exact bytes; a design-time image is refused.
+    check_launch_images(seed, {
+        item.reference.name: hashlib.sha256(item.content).hexdigest()
+        for item in loaded_references if item.reference.kind == "ref" or item.reference.guide
+    })
     return seed_context(seed, digest)
 
 
@@ -1149,7 +1157,7 @@ def _wish(args: argparse.Namespace) -> int:
         if kit_catalogue is not None:
             # ADR 0092: the catalogue entries Make's tree gates read.
             context["kit_catalogue"] = kit_catalogue
-        seed = _load_seed(args, sealed_contract)
+        seed = _load_seed(args, sealed_contract, loaded_references)
         if seed is not None:
             context["seed"] = seed
     else:
@@ -1219,7 +1227,7 @@ def _fix(args: argparse.Namespace) -> int:
         )
         if kit_catalogue is not None:
             revision_options["kit_catalogue"] = kit_catalogue
-    seed = _load_seed(args, revision_options.get("design_contract"))
+    seed = _load_seed(args, revision_options.get("design_contract"), loaded_references)
     if seed is not None:
         revision_options["seed"] = seed
     wish, snapshot = prepare_revision(args.source, prompt, **revision_options)

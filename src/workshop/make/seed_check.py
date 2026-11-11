@@ -38,6 +38,13 @@ no Reference Image, and its recorded feedback answers ``matches_approved``,
 never ``matches_reference``. A seal without assembly renders keeps the
 reference look.
 
+ADR 0103: a schema 4 seal records ``contract_images``, the contract's
+Reference and Guide Images replaced by renders of the approved Proof, and
+the run seals exactly those bytes. Both checks above then read them as the
+approved side: a deviation's packet must bind, as ``contract_images``,
+exactly the seal's renders of its Component and show no other image, and
+the assembly look exactly the seal's assembly renders.
+
 Every Component whose identity is not the approved one is returned as a
 seed deviation, for the receipt and ``workshop status --json``.
 """
@@ -87,16 +94,20 @@ def verify_made_seed(
     compare: Callable[[Path, Path], Mapping[str, Any]] = _default_compare,
     review_basis: str | None = None,
     assembly_renders: Any = None,
+    contract_images: Any = None,
 ) -> list[dict[str, Any]]:
     """Every seed deviation of the made Components, or ContractError.
     ``review_basis`` is what the run froze a deviation's review against:
     ``"approved-proof"`` (ADR 0102) or None (the Reference Images).
     ``assembly_renders`` is the seal's ``assembly_renders`` (APPROVAL schema
-    3), or None for a seal that carries none."""
+    3), or None for a seal that carries none. ``contract_images`` is a
+    schema 4 seal's (ADR 0103), or None."""
 
     if review_basis not in (None, APPROVED_PROOF):
         raise ContractError("seed: unknown review basis %r" % (review_basis,))
-    if review_basis == APPROVED_PROOF and assembly_renders is not None:
+    if review_basis == APPROVED_PROOF and contract_images is not None:
+        check_assembly_look(Path(project), _images_of(contract_images, "assembly"), key="contract_images")
+    elif review_basis == APPROVED_PROOF and assembly_renders is not None:
         check_assembly_look(Path(project), assembly_renders)
 
     deviations: list[dict[str, Any]] = []
@@ -140,7 +151,9 @@ def verify_made_seed(
         if exact:
             continue
         if review_basis == APPROVED_PROOF and not by_seed:
-            _check_approved_proof_review(Path(project), role, review, approved)
+            _check_approved_proof_review(
+                Path(project), role, review, approved,
+                None if contract_images is None else _images_of(contract_images, "geometry:%s" % role))
         deviation = {
             "component": role,
             "within_tolerance": within,
@@ -159,8 +172,17 @@ def verify_made_seed(
     return deviations
 
 
+def _images_of(contract_images: Any, shows: str) -> list[dict[str, Any]]:
+    """The seal's Reference Image renders of ``shows`` (ADR 0103)."""
+
+    if not isinstance(contract_images, list):
+        raise ContractError("seed: the approval's contract_images is not a list")
+    return [item for item in contract_images if isinstance(item, Mapping)
+            and item.get("kind") == "reference" and item.get("shows") == shows]
+
+
 def _check_approved_proof_review(project: Path, role: str, review: Mapping[str, Any],
-                                 approved: Mapping[str, Any]) -> None:
+                                 approved: Mapping[str, Any], images: Any = None) -> None:
     """Refuse a deviation's Component Review that was not taken against the
     Approved Proof (ADR 0102): the review names the basis and the packet it
     judged, and that packet, read from its round, compares with this
@@ -190,6 +212,15 @@ def _check_approved_proof_review(project: Path, role: str, review: Mapping[str, 
                             "Approved Proof's render")
     if packet.get("references"):
         raise ContractError(where + "the packet its Component Review judged shows a Reference Image")
+    if images is not None:
+        sealed = _sealed_render_hashes(images)
+        if not sealed or shown.get("contract_images") != sealed:
+            raise ContractError(where + "the packet its Component Review judged does not compare it with the "
+                                "approved Proof renders the seal recorded")
+        if not set(dict(shown.get("renders") or {}).values()) <= set(sealed.values()):
+            raise ContractError(where + "the packet its Component Review judged shows renders that are not "
+                                "the sealed ones")
+        return
     if not isinstance(approved.get("step_sha256"), str) or shown.get("step_sha256") != approved["step_sha256"]:
         raise ContractError(where + "the packet its Component Review judged is not of the sealed approved STEP")
 
@@ -205,7 +236,7 @@ def _sealed_render_hashes(assembly_renders: Any) -> dict[str, str]:
     return hashes
 
 
-def check_assembly_look(project: Path, assembly_renders: Any) -> None:
+def check_assembly_look(project: Path, assembly_renders: Any, key: str = "assembly_renders") -> None:
     """Refuse the last assembly round's look in a run that froze ADR 0102's
     review when it was not taken beside the Approved Proof's sealed assembly
     renders (the 2026-11-11 amendment); see the module docstring."""
@@ -251,7 +282,7 @@ def check_assembly_look(project: Path, assembly_renders: Any) -> None:
                             "assembly renders, never a Reference Image (ADR 0102)")
     if packet.get("references"):
         raise ContractError(where + "shows a Reference Image")
-    if shown.get("assembly_renders") != sealed:
+    if shown.get(key) != sealed:
         raise ContractError(where + "does not compare with the Approved Proof's sealed assembly renders")
     if sorted(dict(shown.get("renders") or {}).values()) != sorted(sealed.values()):
         raise ContractError(where + "shows renders that are not the sealed ones")

@@ -203,3 +203,48 @@ class ApprovedProofReviewTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ContractImageReviewTest(ApprovedProofReviewTest):
+    """ADR 0103: with a schema 4 seal the contract's own reference, sealed by
+    the run as the approved Proof render, is the approved side. Nothing is
+    rendered from the approved STEP in the run."""
+
+    def _record(self, **changes):
+        path = self.run / "wish-references/ref-02-body.png"
+        return {"file": "ref-02-body.png", "kind": "reference", "shows": "geometry:body", "camera": [90, 15],
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(), **changes}
+
+    def _module(self, frozen=True, record=None):
+        module = super()._module(frozen)
+        images = [record if record is not None else self._record()]
+        module.seed_approval = lambda project: {"components": {"body": self.approved}, "contract_images": images}
+        return module
+
+    def test_the_packet_shows_the_sealed_contract_reference_as_the_approved_side(self):
+        module, calls = self._module(), []
+        _, summary = self._round(module, calls)
+        self.assertEqual(summary["visual"]["status"], "pending")
+        renders = [c for c in calls if Path(c[1]).name == "render_review"]
+        self.assertEqual([Path(c[2]).name for c in renders], ["part_body.step.py", "display_pose_body.step.py"])
+        packet = json.loads(Path(summary["visual"]["packet"]).read_text())
+        record = self._record()
+        self.assertEqual((packet["basis"], packet["references"]), ("approved-proof", {}))
+        self.assertEqual(packet["approved"]["contract_images"], {"ref-02-body.png": record["sha256"]})
+        self.assertEqual(list(packet["approved"]["renders"].values()), [record["sha256"]])
+        self.assertNotIn("step_sha256", packet["approved"])
+        summary = self._review(module, summary)
+        self.assertEqual(summary["review"]["basis"], "approved-proof")
+
+    def test_a_reference_that_is_not_the_sealed_render_is_a_visual_error(self):
+        for name, record in (("other bytes", self._record(sha256="9" * 64)),
+                             ("no render of the Component", self._record(shows="geometry:lid"))):
+            with self.subTest(name):
+                module = self._module(record=record)
+                _, summary = self._round(module)
+                self.assertEqual(summary["visual"]["status"], "error")
+
+    # The STEP-rendered approved side does not apply to a schema 4 seal.
+    test_the_approved_entry_poses_the_sealed_step_with_the_approved_source = None
+    test_a_missing_or_changed_approved_step_is_a_visual_error = None
+    test_the_packet_compares_the_approved_component_and_shows_no_reference = None

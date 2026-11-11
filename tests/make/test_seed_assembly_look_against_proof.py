@@ -207,3 +207,36 @@ class AssemblyLookAgainstProofTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ContractImageAssemblyLookTest(AssemblyLookAgainstProofTest):
+    """ADR 0103: a schema 4 seal's assembly reference, sealed by the run as
+    the approved Proof render, is the approved side of the assembly look."""
+
+    def setUp(self):
+        super().setUp()
+        (self.run_dir / "wish-references").mkdir()
+        (self.run_dir / "wish-references/ref-01-assembly.png").write_bytes(RENDER_BYTES)
+
+    def _approval(self, renders=RENDERS):
+        if renders is None:
+            return {"components": {}}
+        return {"components": {}, "contract_images": [
+            {"file": "ref-01-assembly.png", "kind": "reference", "shows": "assembly", "camera": [90, 15],
+             "sha256": RENDERS[0]["sha256"]}]}
+
+    def test_the_look_binds_the_contract_image(self):
+        module = load_module()
+        _, summary = self._round(module)
+        packet = json.loads(Path(summary["visual"]["packet"]).read_text())
+        self.assertEqual(packet["approved"]["contract_images"], {"ref-01-assembly.png": RENDERS[0]["sha256"]})
+        self.assertNotIn("assembly_renders", packet["approved"])
+
+    def test_a_missing_or_changed_sealed_render_is_a_visual_error(self):
+        (self.run_dir / "wish-references/ref-01-assembly.png").write_bytes(b"AI drawing")
+        module = load_module()
+        _, summary = self._round(module)
+        self.assertEqual(summary["visual"]["status"], "error")
+        self.assertIn("not the approved Proof render", summary["visual"]["detail"])
+
+    test_the_look_compares_the_approved_assembly_render_and_shows_no_reference = None
