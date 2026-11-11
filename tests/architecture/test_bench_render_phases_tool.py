@@ -19,7 +19,7 @@ class BenchRenderPhasesToolTest(unittest.TestCase):
     def test_targets_the_real_companion_assembly_not_a_synthetic_mesh(self):
         self.assertTrue(BENCH.COMPANION_ENTRY.is_file())
         self.assertEqual(BENCH.COMPANION_ENTRY.name, "antisol.step.py")
-        self.assertIn("ad-astra-antisol-companion", str(BENCH.COMPANION_ENTRY))
+        self.assertIn("ad-astra-antisol-v13", str(BENCH.COMPANION_ENTRY))
 
     def test_cache_dir_is_the_occurrence_tessellation_cache_beside_the_entry(self):
         self.assertEqual(
