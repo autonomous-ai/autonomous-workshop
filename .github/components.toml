@@ -219,7 +219,7 @@ backup_github = []
 backup_status = "vacant"
 risk = "standard"
 source = ["inventors/**"]
-tests = ["inventors/*/skills/*/scripts/tests/**"]
+tests = []  # abo carried the only Inventor-owned tests
 docs = ["inventors/README.md"]
 
 [[components]]
