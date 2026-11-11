@@ -47,12 +47,9 @@ skill each. Shared CAD, simulation, and evidence tooling stays in Workshop.
 
 | Inventor | Native skill |
 |---|---|
-| ABO | `abo-inventor` |
 | Alice | `alice-inventor` |
 | [Arden Span](arden-span/) | `arden-span-inventor` |
 | Bob | `bob-inventor` |
-| Eve | `eve-inventor` |
-| Ivy | `ivy-inventor` |
 | Leo | `leo-inventor` |
 
 `TASTE.md` begins with the bounded `name` and `description` used for Match.

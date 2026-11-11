@@ -1,7 +1,7 @@
 # Plan: Review Loop wall-clock
 
 Date: 2026-09-22. Follows the grilling session recorded in
-`workshop-fix-flow-grill-handoff.md`. Vocabulary is `CONTEXT.md`.
+`docs/handoff/workshop-fix-flow-grill-handoff.md`. Vocabulary is `CONTEXT.md`.
 
 The goal is whole-run wall-clock for a Correction Run, with isolation and pure
 waste-removal available as compromises. Determinism and thoroughness are not.

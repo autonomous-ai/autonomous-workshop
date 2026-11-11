@@ -332,20 +332,6 @@ https://github.com/user-attachments/assets/ba57de75-37e2-45e8-a71f-2a339b0de49a
 *[Trotter](https://www.autonomous.ai/toys/product/spot-quadruped-robot-wind-up-walker)
 — a palm-size, rubber-band-powered quadruped*
 
-### Ivy — invent science toys you can hold ([TASTE.md](inventors/ivy/TASTE.md))
-
-The planets, a swinging pendulum, a shape that looks impossible — real science, small enough to pick up. Ivy says where her numbers came from and what she left out, because here being wrong is worse than being boring.
-
-![A solar system with its orbits engraved](docs/images/ivy-solar-system.jpg)
-*A solar system with its orbits engraved — $59.99*
-
-### Eve — invent little worlds ([TASTE.md](inventors/eve/TASTE.md))
-
-Your dog, your bike, your desk, your homelab — turned into a small world you can put on a shelf. Eve's only counts if it could not have existed before your wish.
-
-![A 1:16 Formula 1 car](docs/images/eve-f1-car.jpg)
-*A 1:16 Formula 1 car*
-
 ### Sonora Reed — sculpt sound from geometry ([TASTE.md](inventors/sonora-reed/TASTE.md))
 
 Passive acoustic toys whose playable voices come from visible printed ridges,

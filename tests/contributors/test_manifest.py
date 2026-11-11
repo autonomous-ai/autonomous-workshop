@@ -68,17 +68,13 @@ class RegistryTest(unittest.TestCase):
         self.assertEqual(
             [item.inventor_id for item in manifests],
             [
-                "abo",
                 "ad-astra",
                 "alice",
                 "arden-span",
                 "axel-rake",
                 "bob",
-                "eve",
                 "ferro-line",
                 "halden-detent",
-                "ivy",
-                "juno-defy",
                 "kestrel-knot",
                 "leo",
                 "luma-vale",
