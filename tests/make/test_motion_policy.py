@@ -90,6 +90,21 @@ class MotionPolicyTest(unittest.TestCase):
             with self.subTest(payload=sorted(payload)), self.assertRaises(ValueError):
                 self._seeded(payload)["seed"]()
 
+    def test_schema_5_freezes_the_review_against_the_approved_proof(self):
+        """Workshop ADR 0102: schema 5 is schema 4 plus review "approved-proof";
+        schemas 3 and 4 keep their review against the references."""
+        good = {"approval_sha256": "a" * 64, "manifest_sha256": "b" * 64, "batch": {"tool_sha256": "c" * 64}}
+        policy = self._seeded({"schema_version": 5, "check_motion": False, "seed": dict(good, review="approved-proof")})
+        self.assertEqual(policy["seed_review"](), "approved-proof")
+        self.assertEqual(policy["seed"]()["batch"], good["batch"])
+        self.assertIsNone(self._seeded({"schema_version": 4, "check_motion": False, "seed": good})["seed_review"]())
+        self.assertIsNone(self._seeded({"schema_version": 1, "check_motion": False})["seed_review"]())
+        for payload in ({"schema_version": 5, "check_motion": False, "seed": good},
+                        {"schema_version": 5, "check_motion": False, "seed": dict(good, review="references")},
+                        {"schema_version": 4, "check_motion": False, "seed": dict(good, review="approved-proof")}):
+            with self.subTest(payload=payload), self.assertRaises(ValueError):
+                self._seeded(payload)["seed"]()
+
 
 class VerifyMotionOptionTest(unittest.TestCase):
     def setUp(self):

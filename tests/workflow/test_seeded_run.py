@@ -28,6 +28,7 @@ from workshop.make import seeded_batch
 from workshop.wish.seed import seed_context, validate_seed
 from workshop.workflow import seeded_batch_host
 import workshop.workflow.native_run as host
+from workshop.workflow.agent_run import frozen_seed_review
 
 
 class SeededRunTest(unittest.TestCase):
@@ -61,8 +62,11 @@ class SeededRunTest(unittest.TestCase):
             self.assertEqual((workspace / "seed" / name).read_bytes(), (self.proof / name).read_bytes())
         frozen = {key: self.recorded[key] for key in ("approval_sha256", "manifest_sha256")}
         frozen["batch"] = {"tool_sha256": seeded_batch.module_sha256()}
+        # ADR 0102: a new run reviews a visible deviation against the Proof.
+        frozen["review"] = "approved-proof"
         options = json.loads((workspace / "MAKE-OPTIONS.json").read_bytes())
-        self.assertEqual((options["schema_version"], options["seed"]), (4, frozen))
+        self.assertEqual((options["schema_version"], options["seed"]), (5, frozen))
+        self.assertEqual(frozen_seed_review(workspace), "approved-proof")
         self.assertEqual(receipt["seed"], self.recorded)
         # No Make has been accepted yet, so no deviation is recorded.
         self.assertEqual(receipt["seed_deviations"], [])
@@ -93,6 +97,22 @@ class SeededRunTest(unittest.TestCase):
         self.assertEqual((options["schema_version"], options["seed"]), (3, frozen))
         paths = host.native_run_paths(self.product_id)
         self.assertFalse(seeded_batch_host.batch_due(paths.workspace, paths.host_state, "0" * 64))
+
+    def test_a_run_started_before_adr_0102_keeps_its_review_against_references(self):
+        # A run that froze MAKE-OPTIONS schema 4 (seed with batch, no review)
+        # resumes with the same options and never gains the Proof review.
+        frozen = {key: self.recorded[key] for key in ("approval_sha256", "manifest_sha256")}
+        frozen["batch"] = {"tool_sha256": seeded_batch.module_sha256()}
+        files = {"APPROVAL.json": (self.proof / "APPROVAL.json").read_bytes(),
+                 **{name: (self.proof / name).read_bytes()
+                    for name in json.loads((self.proof / "APPROVAL.json").read_bytes())["manifest"]}}
+        with mock.patch.object(host, "_seed_start_inputs", return_value=(frozen, files)):
+            host.start_native_run(self.wish, seed_source=self.proof)
+        workspace = host.native_run_paths(self.product_id).workspace
+        host.resume_native_run(self.product_id, check_motion=True)
+        options = json.loads((workspace / "MAKE-OPTIONS.json").read_bytes())
+        self.assertEqual((options["schema_version"], options["seed"]), (4, frozen))
+        self.assertIsNone(frozen_seed_review(workspace))
 
     def test_the_receipt_reports_run_boundary_refusals(self):
         # ADR 0096 pilot (B7, B8): a refusal the guard logged reaches the receipt.

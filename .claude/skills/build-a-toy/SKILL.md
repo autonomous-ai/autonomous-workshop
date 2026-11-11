@@ -242,7 +242,15 @@ the ledger, then return to Step 3.
 
 Only a build with zero findings is published. In a seeded toy, first show
 the owner every `seed_deviations` entry of the receipt; a visible one
-waits for their approval. It carries a suffixed title
+waits for their approval. Show each visible one (`within_tolerance` false)
+beside the approved Proof render, never beside a reference image (ADR
+0102). Each `visual/compare-NN.png` of the round its Component Review
+judged (`measure/component-rounds/<id>/rNNNN/`, `NNNN` the review's
+`round`) already holds the approved Component on the left and the made one
+on the right, at each Reference Camera. A run seeded before ADR 0102 has
+no such picture: render `<contract-dir>/proof/approved/part_<id>.step` and
+the made `part_<id>.step` with `render_review` at the same view and show
+them side by side. It carries a suffixed title
 such as `<title> v03`. Publish it under the clean `<title>` with
 `uv run workshop publish <wish-id> --title "<title>"`; run that file's
 checklist on the title first. This re-seals only the

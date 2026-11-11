@@ -71,7 +71,10 @@ _Avoid_: Moodboard, iteration, variant set
 **Reference Image**:
 One image sealed in a Design Contract: one per unique geometry, plus one of the
 assembled toy. Make builds toward it, and the Component Reviewer judges the
-build against it. Only an approved, reconciled image becomes one.
+build against it. Only an approved, reconciled image becomes one. For a toy
+with an Approved Proof it is a design input only: the Contract Proof, the
+Proof Critic and the owner's Stage 4 review read it, and a new seeded build
+reads none (ADR 0102).
 _Avoid_: Concept Image, render, picture
 
 **Guide Image**:
@@ -295,8 +298,25 @@ the differences to repair. A third answer, camera mismatch, says only that
 the side of the model facing the camera is not the side the reference shows:
 it is not a Shape Round, gives the Component Worker nothing to repair, and
 stops the run until that one Reference Camera is amended (ADR 0083). A
-Reference Conflict it lists is not a difference (ADR 0084).
+Reference Conflict it lists is not a difference (ADR 0084). For a Seed
+Deviation in a new seeded run it compares the Approved Proof's Component
+instead of the reference, and has neither of those two answers (ADR 0102).
 _Avoid_: Likeness check, self-review, sign-off
+
+**Approved Proof**:
+The Contract Proof the owner approved at Stage 4, sealed with its
+`APPROVAL.json`. A seeded run starts from it, and it owns the toy's shape
+(ADR 0096).
+_Avoid_: Seed, reference build
+
+**Seed Deviation**:
+A Component of a seeded build whose B-rep is not the Approved Proof's,
+changed because a forcing gate needed it. Within `proof_diff` tolerance it
+keeps the approval. Over tolerance it is visible: its Component Reviewer
+asks whether it still looks like the approved Component apart from what
+the gate needed, never whether it looks like the Reference Image (ADR 0102),
+and the owner sees it beside the approved render before publication.
+_Avoid_: Drift, regression
 
 **Reference Camera**:
 The azimuth and elevation, in the Display Pose frame, from which a reference

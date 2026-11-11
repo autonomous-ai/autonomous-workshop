@@ -51,6 +51,17 @@ Without `batch`, follow the order below.
    Worker for that Component only, under the usual worker and review rules.
    A worker's round within `proof_diff` tolerance (`seed-diff.json`) locks
    by the approval. One over tolerance waits for its Component Review.
+   When `MAKE-OPTIONS.json` `seed` has `review: "approved-proof"` (ADR
+   0102), that review is against the Approved Proof, not a Reference Image:
+   the round's packet has `basis: "approved-proof"` and each
+   `compare-NN.png` shows the approved Component beside the changed one at
+   a Reference Camera. Send the reviewer the packet path and hash as usual.
+   It agrees when the shape is the approved one or differs only where the
+   forcing gate needed. Otherwise it lists differences `{feature, approved,
+   model}` for the worker. It has no camera mismatch and no Reference
+   Conflict. Tell the worker to repair toward `seed/part_<id>.step.py` and
+   `seed/approved/part_<id>.step`, never toward a reference image. Nobody
+   in such a run opens `wish-references/` for a Component.
 5. Run the Interfaces and the assembly round, and render `snap/iso.png` and
    `snap/signature.png` as in any Spark Make. When every Component carries,
    the assembly round's `visual.status` is `carried` (from
@@ -110,4 +121,6 @@ why.
 - Before it accepts Make, the host diffs every delivered STEP against
   `seed/approved/` and reports every deviation. It refuses a carried
   assembly review whose bases do not cover a deviation it measured: one
-  over tolerance needs a Component Review.
+  over tolerance needs a Component Review. Under `review:
+  "approved-proof"` it also refuses a deviation whose Component Review was
+  not taken on its round's approved-proof packet.

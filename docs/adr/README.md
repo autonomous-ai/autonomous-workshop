@@ -56,3 +56,4 @@ ADR. Small factual corrections that do not change the decision are allowed.
 - [0099: Design asks for no Inventor; the author defaults to Rowan Vale](0099-design-has-no-inventor-choice.md) (accepted)
 - [0100: Domain skills have their own input budget](0100-domain-skills-have-their-own-input-budget.md) (accepted)
 - [0101: Spark runs leave out the Invent-route skills and cadgen's tests](0101-spark-runs-leave-out-invent-route-skills.md) (accepted)
+- [0102: A visible seed deviation is reviewed against the Approved Proof](0102-seed-deviations-are-reviewed-against-the-approved-proof.md) (accepted)

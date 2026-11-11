@@ -299,6 +299,10 @@ AMENDMENTS_NAME = "CONTRACT-AMENDMENTS.json"
 # refused, since its rounds would keep reading the sealed rows.
 OWNER_AMENDMENTS_MARKER = "workshop-owner-contract-amendments-v1"
 DISPLAY_POSE_DIR = "display-pose"
+# Workshop ADR 0102: a visible seed deviation is reviewed against the
+# Approved Proof's own Component, rendered here at each Reference Camera.
+APPROVED_PROOF = "approved-proof"
+APPROVED_POSE_DIR = "approved-proof"
 INSTANCE_PARAM = "instance"
 INSTANCE_CONVENTION = ("define %s(shape, pose, %s) to place instance n in assembly coordinates, and "
                        "gen_step(%s=1) to build a variant per instance (omit it to build identical copies)"
@@ -410,22 +414,28 @@ def reference_view(ref: str) -> tuple[str, str, str]:
     return "%g,%g" % (az, el), "az%g_el%g" % (az, el), "%g,%g" % (az, el)
 
 
-def prepare_comparisons(project, out, refs, display_pose=False):
+def prepare_comparisons(project, out, refs, display_pose=False, approved=False):
     """``(comparisons, error)``: one composed image per shown reference.
     ``display_pose`` composes the Component's Display Pose render at each
-    Reference Camera instead of the print stance (ADR 0083)."""
+    Reference Camera instead of the print stance (ADR 0083). ``approved``
+    (a seed deviation, Workshop ADR 0102) puts the Approved Proof's
+    Component, rendered in its Display Pose at that camera, where the
+    reference image would be: the reference itself is never shown."""
 
     views = out / "visual"
     renders = views / DISPLAY_POSE_DIR if display_pose else views
     comparisons = {}
     for index, (label, ref) in enumerate(refs):
-        reference = resolve_reference(ref, project)
         _view, stem, caption_camera = reference_view(ref)
+        reference = (views / APPROVED_POSE_DIR / (stem + ".png")) if approved else resolve_reference(ref, project)
         render = renders / (stem + ".png")
-        if reference is None or not render.is_file():
+        if reference is None or not reference.is_file() or not render.is_file():
             return {}, "no model render at the declared camera for %s" % label
         target = views / ("compare-%02d.png" % index)
-        if display_pose:
+        if approved:
+            caption = ("%s  approved Proof | changed Component, both in the Display Pose at Reference Camera %s"
+                       % (label, caption_camera))
+        elif display_pose:
             caption = "%s  reference | model in its Display Pose at Reference Camera %s" % (label, caption_camera)
         else:
             caption = "%s  reference | model at declared camera %s" % (label, caption_camera)
@@ -438,7 +448,7 @@ def prepare_comparisons(project, out, refs, display_pose=False):
 
 
 def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=False, contract=None,
-                   rulings=None, extra_env=None):
+                   rulings=None, extra_env=None, approved=None):
     """Render evidence for native inspection; never infer a visual verdict.
     ``component`` is the role of a component round, else None.
     ``display_pose`` (a component round of a schema 3 contract) renders the
@@ -449,7 +459,14 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
     ``rulings`` are the Workshop Manager's decided rulings on the
     Component's Blocked Reports, bound into the packet when there are any
     (issue #97). ``extra_env`` points the renders at the round's kept build
-    (issue #101)."""
+    (issue #101). ``approved`` (a seed deviation of a run that froze
+    Workshop ADR 0102's review) is ``approved_proof_basis``'s record: each
+    comparison shows the Approved Proof's Component beside the changed one
+    instead of a Reference Image, and the packet binds no reference."""
+    if approved is not None and not (display_pose and refs):
+        return {"status": "error", "findings": [],
+                "detail": "a seed deviation is compared with the Approved Proof at each Reference Camera, and "
+                          "this round has none (Workshop ADR 0102)"}
     bound = (lambda: component_sources(project, component)) if component else (lambda: source_hashes(project))
     before = bound()
     views = out / "visual"
@@ -472,6 +489,16 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
                                  *("--view=%s" % view for view in reference_views),
                                  "-o", str(views / DISPLAY_POSE_DIR)],
                      "cwd": project, "log": out / "display-pose-render.log", **env})
+    if approved is not None:
+        # Workshop ADR 0102: the sealed approved STEP, placed by the approved
+        # source's assembly_pose, at the same cameras. Never the round's build.
+        posed = out / ("approved_pose_%s.step.py" % component.replace("-", "_"))
+        posed.write_text(APPROVED_POSE_ENTRY % {"seed": approved["seed"], "part": approved["part"],
+                                                "step": approved["step"]}, encoding="utf-8")
+        jobs.append({"command": [sys.executable, str(cad / "render_review"), str(posed),
+                                 *("--view=%s" % view for view in reference_views),
+                                 "-o", str(views / APPROVED_POSE_DIR)],
+                     "cwd": project, "log": out / "approved-proof-render.log"})
     dones = run_all(jobs)
     done = dones[0]
     paths = [views / (VISUAL_SHEET + ".png")]
@@ -483,11 +510,15 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
         if done.returncode or before != bound():
             return {"status": "error", "findings": [],
                     "detail": "Display Pose render failed or source changed; inspect display-pose-render.log"}
-    comparisons, error = prepare_comparisons(project, out, refs, display_pose)
+    if approved is not None and (dones[-1].returncode or file_hash(approved["step"]) != approved["step_sha256"]):
+        return {"status": "error", "findings": [],
+                "detail": "the Approved Proof's Component did not render, or its sealed STEP changed; inspect "
+                          "approved-proof-render.log"}
+    comparisons, error = prepare_comparisons(project, out, refs, display_pose, approved=approved is not None)
     if error is not None:
         return {"status": "error", "findings": [], "detail": error}
     references = {}
-    for label, ref in refs:
+    for label, ref in refs if approved is None else ():
         path = resolve_reference(ref, project)
         if path is not None:
             references[str(path.resolve())] = file_hash(path)
@@ -495,13 +526,26 @@ def prepare_visual(project, entry, out, cad, refs, component=None, display_pose=
               "images": {str(p.resolve()): file_hash(p) for p in paths},
               "references": references,
               "comparisons": comparisons}
+    if approved is not None:
+        renders = sorted((views / APPROVED_POSE_DIR).glob("*.png"))
+        packet["basis"] = APPROVED_PROOF
+        packet["approved"] = {"step": approved["step"], "step_sha256": approved["step_sha256"],
+                              "source": approved["source"], "source_sha256": approved["source_sha256"],
+                              "renders": {str(p.resolve()): file_hash(p) for p in renders}}
     if contract is not None:
         packet["contract"] = contract
     if rulings:
         packet["rulings"] = rulings
     packet_path = out / "visual-packet.json"
     packet_path.write_text(json.dumps(packet, sort_keys=True, indent=2) + "\n", encoding="utf-8")
-    if component:
+    if component and approved is not None:
+        detail = ("A seed deviation (Workshop ADR 0102): an independent reviewer (not the Workshop Manager) "
+                  "compares the Approved Proof's Component with the changed one beside it, both in the Display "
+                  "Pose at each Reference Camera, and judges print-facing surfaces from the print-stance "
+                  "views; it agrees when the shape is the approved one or differs only where the forcing gate "
+                  "needed; record the review with --record-review <review.json>")
+        detail += COMPONENT_REVIEW_STEPS
+    elif component:
         detail = ("An independent reviewer (not the Workshop Manager) compares each reference with the model "
                   "beside it and all views; record the review with --record-review <review.json>")
         if display_pose:
@@ -564,8 +608,11 @@ def packet_error(visual: dict, project: Path, role: str | None = None) -> str | 
     if packet["sources"] != current:
         return "stale CAD sources or design constraints"
     comparisons = packet.get("comparisons") or {}
+    approved = packet.get("approved") or {}
     bound = {**packet["images"], **packet["references"],
-             **{path: item["sha256"] for path, item in comparisons.items()}}
+             **{path: item["sha256"] for path, item in comparisons.items()},
+             **dict(approved.get("renders") or {}),
+             **({approved["step"]: approved["step_sha256"]} if approved.get("step") else {})}
     for path, digest in bound.items():
         if not Path(path).is_file() or file_hash(path) != digest:
             return "stale images or references"
@@ -790,6 +837,12 @@ def record_review(project: Path, review_path, component: str) -> dict:
     ):
         raise ValueError("component round summary is invalid")
     review = json.loads(Path(review_path).read_text(encoding="utf-8"))
+    visual = summary.get("visual") or {}
+    if isinstance(visual.get("packet"), str) and Path(visual["packet"]).is_file():
+        shown_basis = json.loads(Path(visual["packet"]).read_text(encoding="utf-8")).get("basis")
+        if shown_basis == APPROVED_PROOF:
+            return record_approved_review(project, state, state_path, summary, summary_path, out, review,
+                                          latest, role)
     required = {"round", "packet_sha256", "reviewer", "agrees", "matches_plan", "matches_reference", "reason"}
     mismatch = isinstance(review, dict) and "camera_mismatch" in review
     if mismatch:
@@ -898,6 +951,111 @@ def record_review(project: Path, review_path, component: str) -> dict:
     state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return summary
 
+
+def record_approved_review(project, state, state_path, summary, summary_path, out, review, latest, role) -> dict:
+    """A Component Review of a seed deviation (Workshop ADR 0102): the
+    reviewer compared the changed Component with the Approved Proof's own,
+    both rendered in the Display Pose at each Reference Camera.
+
+    Both sides are exact renders of B-reps at one camera, so neither a
+    camera mismatch nor a Reference Conflict can arise: each is refused.
+    ``matches_approved`` replaces ``matches_reference`` (null: the packet
+    shows no reference image), and each difference names what the approved
+    render shows. Shape Round counting and the Component Acceptance at the
+    limit are unchanged."""
+
+    required = {"round", "packet_sha256", "reviewer", "agrees", "matches_plan", "matches_approved", "reason"}
+    if isinstance(review, dict) and ("camera_mismatch" in review or "reference_conflicts" in review):
+        raise ValueError("a seed deviation is compared with the Approved Proof's render, not a reference image: "
+                         "both sides are exact renders at one camera, so a camera mismatch or a Reference "
+                         "Conflict cannot arise (Workshop ADR 0102)")
+    if (not isinstance(review, dict) or not required <= set(review)
+            or not set(review) <= required | {"differences", "ruling_disputes"}):
+        raise ValueError("a review of a seed deviation needs round, packet_sha256, reviewer, agrees, matches_plan, "
+                         "matches_approved and reason, and optional differences and ruling_disputes")
+    if type(review["round"]) is not int or review["round"] != latest:
+        raise ValueError("a review must judge the latest round, r%04d" % latest)
+    if summary.get("review") is not None:
+        raise ValueError("r%04d already has a recorded review" % latest)
+    if not summary.get("checks_ok"):
+        raise ValueError("r%04d did not pass its build and print checks; repair them before review" % latest)
+    visual = summary.get("visual") or {}
+    if visual.get("status") != "pending" or not visual.get("packet"):
+        raise ValueError("r%04d has no visual packet to review" % latest)
+    if review["packet_sha256"] != visual["packet_sha256"]:
+        raise ValueError("the review belongs to a different visual packet")
+    stale = packet_error(visual, project, role)
+    if stale is not None:
+        raise ValueError("the reviewed round has %s" % stale if stale != "visual packet changed" else stale)
+    shown_rulings = json.loads(Path(visual["packet"]).read_text(encoding="utf-8")).get("rulings") or []
+    if shown_rulings != component_rulings(project, role):
+        raise ValueError("the Workshop Manager decided a Blocked Report of %s after r%04d was rendered, so its "
+                         "packet does not carry the current rulings; the worker reruns the Component unchanged "
+                         "and the reviewer judges the new packet" % (role, latest))
+    reviewer = review["reviewer"]
+    if not isinstance(reviewer, str) or not 1 <= len(reviewer.strip()) <= 200:
+        raise ValueError("a review needs the reviewer's name")
+    if reviewer.strip().lower() in MANAGER_NAMES:
+        raise ValueError("the Workshop Manager cannot review its own component")
+    wish = _wish_binding(project)
+    bound = reviewer_binding(state, reviewer, wish=wish)
+    if not isinstance(review["reason"], str) or not 1 <= len(review["reason"].strip()) <= MAX_REASON:
+        raise ValueError("a review needs a reason of 1 to %d characters" % MAX_REASON)
+    if type(review["agrees"]) is not bool:
+        raise ValueError("a review's agrees must be true or false")
+    if type(review["matches_plan"]) is not bool or type(review["matches_approved"]) is not bool:
+        raise ValueError("matches_plan and matches_approved must be true or false")
+    if review["agrees"] and (review["matches_plan"] is not True or review["matches_approved"] is not True):
+        raise ValueError("an agreeing review needs matches_plan and matches_approved true")
+    differences = review.get("differences", [])
+    if not isinstance(differences, list) or len(differences) > MAX_DIFFERENCES:
+        raise ValueError("a review lists at most %d differences" % MAX_DIFFERENCES)
+    for item in differences:
+        if not isinstance(item, dict) or set(item) != {"feature", "approved", "model"}:
+            raise ValueError("a difference from the Approved Proof needs feature, approved and model")
+        if any(not isinstance(v, str) or not 1 <= len(v.strip()) <= 1000 for v in item.values()):
+            raise ValueError("difference text must be nonempty and bounded")
+    disputes = ruling_disputes(review, summary, shown_rulings)
+    if not review["agrees"] and not differences:
+        if disputes:
+            raise ValueError("a review whose only findings are Ruling Disputes agrees: the Workshop Manager's "
+                             "ruling binds the reviewer, and a dispute is not a difference (issue #97); answer "
+                             "with agrees true")
+        raise ValueError("a disagreeing review must list how the model differs from the Approved Proof")
+    recorded = {
+        "reviewer": reviewer.strip(), "agrees": review["agrees"], "reason": review["reason"].strip(),
+        "matches_plan": review["matches_plan"], "matches_reference": None,
+        "matches_approved": review["matches_approved"], "basis": APPROVED_PROOF,
+        "packet_sha256": visual["packet_sha256"], "round": latest, "differences": differences,
+    }
+    policy = review_policy(component_policy(state, out.parent), {
+        "agrees": review["agrees"], "identity": state.get("identity"), "carry_key": summary.get("carry_key"),
+        "contract_rows": summary.get("contract_rows"),
+        "imported_helpers": summary.get("imported_helpers") or {}, "review": recorded,
+        **({"ruling_disputes": disputes} if disputes else {}),
+    })
+    reviewed = policy["reviewed"]
+    acceptance = None
+    if reviewed["accepted"]:
+        acceptance = {"reviewer": recorded["reviewer"], "reason": recorded["reason"],
+                      "shape_rounds": int(policy.get("shape_rounds") or 0)}
+        summary["accepted"] = acceptance
+    reviewed["acceptance"] = acceptance
+    summary["review"] = recorded
+    if disputes:
+        summary["ruling_disputes"] = disputes
+        (out / "ruling-disputes.json").write_text(json.dumps(disputes, sort_keys=True, indent=2) + "\n")
+    visual["status"] = "reviewed"
+    summary["ok"] = policy["phase"] == LOCKED
+    summary["locked"] = lock_record(policy)
+    worker_review = {key: value for key, value in review.items() if key != "ruling_disputes"}
+    (out / "review.json").write_text(json.dumps(worker_review, sort_keys=True, indent=2) + "\n")
+    summary_path.write_text(json.dumps(summary, sort_keys=True, indent=1) + "\n")
+    state["policy"] = policy
+    if bound is not None:
+        state.update(reviewer_id=bound, reviewer_wish=wish)
+    state_path.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    return summary
 
 def reference_conflicts(review: dict, summary: dict, project: Path) -> list[dict]:
     """A review's Reference Conflicts (ADR 0084), checked like a camera
@@ -1971,8 +2129,14 @@ def render_summary(summary: dict) -> str:
                 "n/a" if review["matches_reference"] is None else str(review["matches_reference"]).lower())
         lines.append("  review %s%s by %s: %s%s" % ("AGREES" if review["agrees"] else "DISAGREES", carried,
                                                   review["reviewer"], verdicts, review["reason"][:160]))
+        if review.get("basis") == APPROVED_PROOF:
+            lines.append("    judged against the Approved Proof's Component (Workshop ADR 0102): approved=%s"
+                         % str(review.get("matches_approved")).lower())
         for item in review.get("differences") or []:
-            lines.append("    differs %s: reference %s | model %s" % (item["feature"], item["reference"], item["model"]))
+            if "approved" in item:
+                lines.append("    differs %s: approved %s | model %s" % (item["feature"], item["approved"], item["model"]))
+            else:
+                lines.append("    differs %s: reference %s | model %s" % (item["feature"], item["reference"], item["model"]))
         if summary.get("accepted"):
             lines.append("    ACCEPTED at the shape-repair limit (%d shape rounds); reported when the run ends" % summary["accepted"]["shape_rounds"])
     if summary.get("rows_colour_only"):
@@ -2682,6 +2846,74 @@ def gen_step():
     return _with_decals(place(built, None), built)
 '''
 
+
+APPROVED_POSE_ENTRY = '''"""Generated by make_round for a seed deviation's review (Workshop ADR 0102).
+
+The Approved Proof's Component in its Display Pose: the sealed approved STEP,
+placed by the approved source's assembly_pose (the first instance of a
+geometry whose count is above 1). Rendered only to compare the changed
+Component with the shape the owner approved; never printed or built.
+"""
+
+import importlib.util
+import inspect
+import sys
+from pathlib import Path
+
+sys.dont_write_bytecode = True  # the sealed seed tree is never written
+PRINTABLE = False
+SEED = Path(%(seed)r)
+PART = %(part)r
+STEP = Path(%(step)r)
+
+
+def _takes_instance(function):
+    try:
+        return "instance" in inspect.signature(function).parameters
+    except (TypeError, ValueError):
+        return False
+
+
+def gen_step():
+    if str(SEED) not in sys.path:
+        sys.path.insert(0, str(SEED))
+    from build123d import import_step
+
+    spec = importlib.util.spec_from_file_location("_approved_proof_part", SEED / PART)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    built = import_step(str(STEP))
+    place = module.assembly_pose
+    if _takes_instance(place):
+        return place(built, None, instance=1)
+    return place(built, None)
+'''
+
+
+def seed_reviews_against_proof() -> bool:
+    """Whether this seeded run froze Workshop ADR 0102's review: a visible
+    seed deviation is reviewed against the Approved Proof's render, never a
+    Reference Image. False in every other run, including one seeded before."""
+
+    review = motion_policy().get("seed_review")
+    return review is not None and review() == APPROVED_PROOF
+
+
+def approved_proof_basis(project: Path, approved_component: dict, role: str) -> dict:
+    """What a seed deviation's packet compares with (Workshop ADR 0102): the
+    run's sealed approved STEP of ``role`` and the approved source whose
+    ``assembly_pose`` places it. ValueError when the seed lacks either."""
+
+    seed = run_root(project) / "seed"
+    step = seed / str(approved_component.get("approved_step") or "")
+    source = seed / ("part_%s.step.py" % role)
+    if not step.is_file() or file_hash(step) != approved_component.get("step_sha256"):
+        raise ValueError("the sealed approved STEP of %s is missing or not the approved one" % role)
+    if not source.is_file():
+        raise ValueError("the sealed Approved Proof has no part_%s.step.py" % role)
+    return {"seed": str(seed), "part": source.name, "step": str(step.resolve()),
+            "step_sha256": approved_component["step_sha256"], "source": str(source.resolve()),
+            "source_sha256": file_hash(source)}
 
 def sealed_references(project: Path):
     """The references the Wish sealed, as ``(references, error)``.
@@ -7058,9 +7290,20 @@ def make_round(args) -> int:
         # A component round's renders, and a one-piece project's, read the
         # entry's kept build; an assembly entry builds its parts as before.
         entry_role = entry.name.removeprefix("part_").removesuffix(".step.py")
-        visual = prepare_visual(project, entry, out, cad, refs, component,
-                                display_pose=component is not None and display_pose, contract=delivered,
-                                rulings=rulings, extra_env=check_env(entry_role))
+        # Workshop ADR 0102: in a seeded run that froze it, a Component the
+        # approval does not lock is reviewed against the Approved Proof's
+        # own Component, never against a Reference Image.
+        against = None
+        visual = None
+        if component is not None and seed is not None and seed_reviews_against_proof():
+            try:
+                against = approved_proof_basis(project, approved_component, component)
+            except ValueError as exc:
+                visual = {"status": "error", "findings": [], "detail": str(exc)}
+        if visual is None:
+            visual = prepare_visual(project, entry, out, cad, refs, component,
+                                    display_pose=component is not None and display_pose, contract=delivered,
+                                    rulings=rulings, extra_env=check_env(entry_role), approved=against)
         brep_logs["render"] = out / "visual-render.log"
         if component is None and ok:
             visual = carried_assembly_visual(project, out, visual, approval)

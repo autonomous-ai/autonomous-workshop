@@ -118,7 +118,13 @@ requires.
   the faces it names.
 - View your own sealed `geometry:<id>` reference image once, when you start,
   and keep what you saw in mind for the rest of your work. Do not view it
-  again.
+  again. In a seeded run whose `MAKE-OPTIONS.json` `seed` has `review:
+  "approved-proof"` (ADR 0102), view no reference image at all: your shape
+  is the Approved Proof's `seed/part_<id>.step.py` and
+  `seed/approved/part_<id>.step`, and your reviewer compares your rounds
+  with that approved Component. Each of its differences is `{feature,
+  approved, model}`: repair toward the approved shape, keeping only what
+  the forcing gate needs.
 - When the Design Contract seals Guide Images (`guide-NN-<slug>`, ADR 0089),
   the Manager's message and every round's `summary.json` list the ones for
   your Component under `guides`, each with what it `shows`: every guide

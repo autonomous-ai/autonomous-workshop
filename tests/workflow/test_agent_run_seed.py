@@ -16,7 +16,7 @@ import unittest
 
 from tests.workflow import test_agent_run as base
 from workshop.errors import ContractError, StateConflict
-from workshop.workflow.agent_run import AgentRun, _make_options_bytes
+from workshop.workflow.agent_run import AgentRun, _make_options_bytes, frozen_seed_review
 
 APPROVAL = b'{"schema_version":1}\n'
 FILES = {
@@ -127,6 +127,28 @@ class SeededAgentRunTest(unittest.TestCase):
                      dict(frozen(), manifest_sha256="short")):
             with self.subTest(seed=sorted(seed)), self.assertRaises(ContractError):
                 self.create(seed=seed, seed_files=FILES)
+
+    def test_a_new_seed_freezes_its_review_against_the_approved_proof(self):
+        """ADR 0102: schema 5 adds review "approved-proof" to a batched seed;
+        a resume rewrite or a batch rebind keeps it, and frozen_seed_review
+        reads it. Any other value, or a review without a batch, refuses."""
+        reviewed = {**frozen(), "batch": {"tool_sha256": "b" * 64}, "review": "approved-proof"}
+        run = self.create(seed=reviewed, seed_files=FILES)
+        options = json.loads((self.run_root / "MAKE-OPTIONS.json").read_bytes())
+        self.assertEqual((options["schema_version"], options["seed"]), (5, reviewed))
+        self.assertEqual(frozen_seed_review(self.run_root), "approved-proof")
+        run.refresh_domain_skill_tools({}, reason="workshop resume --refresh-tools",
+                                       seed_batch_tool_sha256="c" * 64)
+        options = json.loads((self.run_root / "MAKE-OPTIONS.json").read_bytes())
+        self.assertEqual((options["schema_version"], options["seed"]["review"], options["seed"]["batch"]),
+                         (5, "approved-proof", {"tool_sha256": "c" * 64}))
+        for seed in (dict(reviewed, review="references"), dict(frozen(), review="approved-proof")):
+            with self.subTest(seed=seed), self.assertRaises(ContractError):
+                _make_options_bytes(check_motion=False, carry_unchanged=False, seed=seed)
+
+    def test_a_seed_before_adr_0102_has_no_review_basis(self):
+        self.create(seed=frozen(), seed_files=FILES)
+        self.assertIsNone(frozen_seed_review(self.run_root))
 
     def test_a_seed_path_outside_seed_is_refused(self):
         for name in ("../escape.py", "/abs.py"):
