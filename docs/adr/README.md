@@ -54,3 +54,4 @@ ADR. Small factual corrections that do not change the decision are allowed.
 - [0097: A Listing Update appends a version to a public Factory design](0097-listing-updates-append-a-version-to-a-public-design.md)
 - [0098: A seeded Make runs its checks as one host batch, and the model works only on a failure](0098-seeded-make-runs-its-checks-as-one-host-batch.md) (proposed)
 - [0099: Design asks for no Inventor; the author defaults to Rowan Vale](0099-design-has-no-inventor-choice.md) (accepted)
+- [0100: Domain skills have their own input budget](0100-domain-skills-have-their-own-input-budget.md) (accepted)

@@ -17,7 +17,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from types import MappingProxyType
-from typing import Any, Callable, Mapping, Optional, Sequence
+from typing import Any, Callable, Iterable, Mapping, Optional, Sequence
 
 from workshop.artifacts import MAX_FILE_BYTES, assert_packable_content
 from workshop.contributors.extensions import (
@@ -120,11 +120,18 @@ _READABLE_AGENT_RUN_STAGES = (*AGENT_RUN_STAGES, "deliver")
 AGENT_OUTCOME_STATUSES = ("ready", "waiting", "failed")
 MAX_AGENT_OUTCOME_BYTES = 64 * 1024
 MAX_AGENT_CHECKPOINT_BYTES = 256 * 1024
-# The complete installed tool tree and Inventor roster need about 4.2 MiB in
-# about 460 inputs since the design wiki and the product-design skill were
-# materialized (about 3 MiB in 300 before). Both caps keep the headroom they
-# had then for Wish references, an imported correction tree and old-run tool
-# refresh.
+# ADR 0100: a run created since then splits its installed inventory into two
+# budgets. The domain skill trees (cad, wiki, make-round, ...) grow with every
+# resync and get their own 8 MiB; everything else the host materializes (the
+# constitution, the autonomous-workshop skill, the Inventor roster, agents and
+# host corrections) gets 2 MiB. Wish references, a revision and a seed keep
+# their own budgets as before. The run records its domain skill names in the
+# checkpoint (``domain_skills``), so verification classifies exactly the
+# trees create counted.
+MAX_DOMAIN_SKILL_BYTES = 8 * 1024 * 1024
+MAX_RUN_OWN_INPUT_BYTES = 2 * 1024 * 1024
+# A run created before ADR 0100 keeps the one combined budget it was created
+# under; it is also the largest single input file any run may hold.
 MAX_AGENT_INPUT_BYTES = 6 * 1024 * 1024
 MAX_AGENT_INPUT_FILES = 768
 # ADR 0096: an Approved Proof sealed under seed/ has its own byte budget, so
@@ -518,6 +525,63 @@ def _canonical_wish_bytes(value: bytes, product_id: str) -> bytes:
 
 def _is_wish_reference_path(path: str) -> bool:
     return path.startswith(WISH_REFERENCES_DIRECTORY + "/")
+
+
+def _input_budget_refusal(
+    entries: Iterable[tuple[str, int]],
+    domain_skills: Optional[Sequence[str]],
+) -> Optional[str]:
+    """Why these input sizes break the run's frozen byte budget, or None.
+
+    Wish references, a revision and a seed have their own budgets and are not
+    counted here. ``domain_skills`` is None for a run created before ADR 0100,
+    which keeps its one combined budget.
+    """
+
+    prefixes = tuple(".agents/skills/%s/" % name for name in domain_skills or ())
+    domain_total = 0
+    own_total = 0
+    for path, size in entries:
+        if _is_wish_reference_path(path) or path == REVISION_INPUT or _is_seed_path(path):
+            continue
+        if prefixes and path.startswith(prefixes):
+            domain_total += size
+        else:
+            own_total += size
+    if domain_skills is None:
+        if own_total > MAX_AGENT_INPUT_BYTES:
+            return "agent run inputs exceed their total byte limit (%d > %d bytes)" % (
+                own_total, MAX_AGENT_INPUT_BYTES)
+        return None
+    if domain_total > MAX_DOMAIN_SKILL_BYTES:
+        return ("agent run domain skills exceed their %d MiB byte budget "
+                "(%d > %d bytes; ADR 0100)" % (
+                    MAX_DOMAIN_SKILL_BYTES // (1024 * 1024), domain_total, MAX_DOMAIN_SKILL_BYTES))
+    if own_total > MAX_RUN_OWN_INPUT_BYTES:
+        return ("agent run inputs other than domain skills exceed their %d MiB byte budget "
+                "(%d > %d bytes; ADR 0100)" % (
+                    MAX_RUN_OWN_INPUT_BYTES // (1024 * 1024), own_total, MAX_RUN_OWN_INPUT_BYTES))
+    return None
+
+
+def _checkpoint_domain_skills(payload: Mapping[str, Any]) -> Optional[tuple[str, ...]]:
+    """The domain skill names a run froze at creation, or None before ADR 0100."""
+
+    if "domain_skills" not in payload:
+        return None
+    names = payload["domain_skills"]
+    if (
+        not isinstance(names, list)
+        or names != sorted(set(names))
+        or not all(
+            isinstance(name, str)
+            and _AGENT_SKILL_NAME.fullmatch(name) is not None
+            and name != "autonomous-workshop"
+            for name in names
+        )
+    ):
+        raise StateConflict("agent run domain skills are invalid")
+    return tuple(names)
 
 
 def _wish_reference_inputs(
@@ -1382,18 +1446,18 @@ class AgentRun:
         if len(all_input_files) - len(seed_inputs) > MAX_AGENT_INPUT_FILES:
             raise ArtifactError("agent run has too many input files")
         # Reference images carry their own byte budget so a few photographs
-        # cannot crowd out the constitution and skills, and vice versa.
+        # cannot crowd out the constitution and skills, and vice versa; the
+        # domain skills and the rest have one each (ADR 0100).
         reference_input_bytes = sum(
             len(content) for _, content, _ in wish_reference_inputs
         )
-        total_input_bytes = (
-            sum(len(content) for _, content, _ in all_input_files)
-            - reference_input_bytes
-            - sum(len(content) for _, content, _ in revision_inputs)
-            - sum(len(content) for _, content, _ in seed_inputs)
+        domain_skill_names = sorted(selected_domain_skills)
+        refusal = _input_budget_refusal(
+            ((relative.as_posix(), len(content)) for relative, content, _ in all_input_files),
+            domain_skill_names,
         )
-        if total_input_bytes > MAX_AGENT_INPUT_BYTES:
-            raise ArtifactError("agent run inputs exceed their total byte limit")
+        if refusal is not None:
+            raise ArtifactError(refusal)
         if reference_input_bytes > MAX_WISH_REFERENCE_TOTAL_BYTES:
             raise ArtifactError("agent run Wish references exceed their byte limit")
 
@@ -1520,6 +1584,7 @@ class AgentRun:
             "needs": [],
             "previous_checkpoint_sha256": None,
             "manager_id": selected_manager.manager_id,
+            "domain_skills": domain_skill_names,
         }
         if selected_effort is not None:
             core["effort"] = selected_effort.name
@@ -1691,6 +1756,8 @@ class AgentRun:
             expected_fields.add("make_round_guard_sha256")
         if "component_reviewer_binding" in payload:
             expected_fields.add("component_reviewer_binding")
+        if "domain_skills" in payload:
+            expected_fields.add("domain_skills")
         if set(payload) != expected_fields:
             raise StateConflict("agent run checkpoint fields are invalid")
         if (
@@ -1788,7 +1855,6 @@ class AgentRun:
             raise StateConflict("agent run input manifest is invalid")
         observed_paths = []
         input_content: dict[str, bytes] = {}
-        total = 0
         reference_total = 0
         seed_total = 0
         for item in inputs:
@@ -1824,11 +1890,18 @@ class AgentRun:
                 reference_total += size
             elif _is_seed_path(relative.as_posix()):
                 seed_total += size
-            elif relative.as_posix() != REVISION_INPUT:
-                total += size
+        domain_skills = _checkpoint_domain_skills(payload)
+        if domain_skills is not None and not all(
+            ".agents/skills/%s/SKILL.md" % name in input_content for name in domain_skills
+        ):
+            raise StateConflict("agent run domain skills are invalid")
+        refusal = _input_budget_refusal(
+            ((path, len(content)) for path, content in input_content.items()), domain_skills
+        )
+        if refusal is not None:
+            raise StateConflict(refusal)
         if (
             len(observed_paths) != len(set(observed_paths))
-            or total > MAX_AGENT_INPUT_BYTES
             or reference_total > MAX_WISH_REFERENCE_TOTAL_BYTES
             or seed_total > MAX_SEED_TOTAL_BYTES
         ):
@@ -2446,13 +2519,11 @@ class AgentRun:
         inputs = sorted(by_path.values(), key=lambda item: item["path"])
         if len([item for item in inputs if not _is_seed_path(item["path"])]) > MAX_AGENT_INPUT_FILES:
             raise ContractError("%s exceeds the agent input file limit" % label)
-        total = sum(
-            item["size"] for item in inputs
-            if not _is_wish_reference_path(item["path"]) and item["path"] != REVISION_INPUT
-            and not _is_seed_path(item["path"])
+        refusal = _input_budget_refusal(
+            ((item["path"], item["size"]) for item in inputs), _checkpoint_domain_skills(payload)
         )
-        if total > MAX_AGENT_INPUT_BYTES:
-            raise ContractError("%s exceeds the agent input byte budget" % label)
+        if refusal is not None:
+            raise ContractError("%s exceeds the agent input byte budget: %s" % (label, refusal))
 
         record = {
             "kind": "autonomous-workshop.host-correction",

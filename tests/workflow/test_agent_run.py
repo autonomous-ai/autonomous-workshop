@@ -328,19 +328,31 @@ class AgentRunTest(unittest.TestCase):
         self.assertTrue(run.snapshot().inventor_roster)
         reopened = AgentRun.open(self.run_root, host_state_root=self.host_state_root)
         self.assertEqual(reopened.snapshot(), run.snapshot())
-        # The installed tree must leave the room the caps were sized for: Wish
-        # references, an imported correction tree and an old-run tool refresh
-        # all share them. Outgrowing it fails here, by name, instead of in
-        # every end-to-end run.
+        # ADR 0100: the installed tree has two budgets, and each must keep the
+        # room it was sized for. The domain skills keep 1 MiB for the next
+        # resyncs; the rest keeps 512 KiB for host corrections and old-run tool
+        # refresh. Outgrowing either fails here, by name, instead of in every
+        # end-to-end run. Wish references, a revision and a seed have their own
+        # budgets and are not part of the installed tree.
+        domain_names = sorted(host.product_run_domain_skill_roots())
+        self.assertEqual(json.loads((self.host_state_root / "agent-run.json").read_bytes())["domain_skills"],
+                         domain_names)
         inputs = run.snapshot().input_sha256s
-        total = sum((self.run_root / path).stat().st_size for path in inputs)
+        sizes = {path: (self.run_root / path).stat().st_size for path in inputs}
+        prefixes = tuple(".agents/skills/%s/" % name for name in domain_names)
+        domain_total = sum(size for path, size in sizes.items() if path.startswith(prefixes))
+        own_total = sum(sizes.values()) - domain_total
         self.assertLessEqual(
             len(inputs), agent_run_module.MAX_AGENT_INPUT_FILES - 200,
             "%d installed inputs leave under 200 files of headroom" % len(inputs),
         )
         self.assertLessEqual(
-            total, agent_run_module.MAX_AGENT_INPUT_BYTES - 1024 * 1024,
-            "%d installed input bytes leave under 1 MiB of headroom" % total,
+            domain_total, agent_run_module.MAX_DOMAIN_SKILL_BYTES - 1024 * 1024,
+            "%d domain skill bytes leave under 1 MiB of their budget" % domain_total,
+        )
+        self.assertLessEqual(
+            own_total, agent_run_module.MAX_RUN_OWN_INPUT_BYTES - 512 * 1024,
+            "%d other installed bytes leave under 512 KiB of their budget" % own_total,
         )
 
     def test_input_file_limit_still_bounds_creation_and_refresh(self):
@@ -391,6 +403,107 @@ class AgentRunTest(unittest.TestCase):
         self.assertFalse((run.host_state_root / "host-corrections.jsonl").exists())
         self.assertFalse((run.run_root / ".agents/skills/cad/tool-000.txt").exists())
 
+    def domain_skill(self, name, sizes):
+        root = self.root / ("source-" + name)
+        root.mkdir()
+        (root / "SKILL.md").write_text("# %s\n" % name)
+        for index, size in enumerate(sizes):
+            (root / ("tool-%d.bin" % index)).write_bytes(b"\0" * size)
+        return root
+
+    def make_legacy(self, run):
+        """Rewrite a run's checkpoint as one created before ADR 0100."""
+        checkpoint_path = run.host_state_root / "agent-run.json"
+        payload = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+        payload.pop("checkpoint_sha256")
+        payload.pop("domain_skills")
+        agent_run_module.AgentRun._write_checkpoint_file(checkpoint_path, payload)
+        return AgentRun.open(run.run_root, host_state_root=run.host_state_root)
+
+    def test_domain_skills_have_their_own_budget_above_the_old_combined_cap(self):
+        mib = 1024 * 1024
+        cad = self.domain_skill("cad", (3 * mib + mib // 2, 3 * mib + mib // 2))
+        run = self.create(domain_skill_roots={"cad": cad})
+        # 7 MiB of domain skills: more than the whole pre-ADR 0100 budget.
+        self.assertGreater(7 * mib, agent_run_module.MAX_AGENT_INPUT_BYTES)
+        checkpoint = json.loads((run.host_state_root / "agent-run.json").read_bytes())
+        self.assertEqual(checkpoint["domain_skills"], ["cad"])
+        reopened = AgentRun.open(run.run_root, host_state_root=run.host_state_root)
+        self.assertEqual(reopened.snapshot(), run.snapshot())
+
+    def test_domain_skills_over_their_budget_are_refused_by_name(self):
+        mib = 1024 * 1024
+        cad = self.domain_skill("cad", (3 * mib, 3 * mib))
+        wiki = self.domain_skill("wiki", (2 * mib + 1,))
+        with self.assertRaisesRegex(
+            ArtifactError, r"domain skills exceed their 8 MiB byte budget \(\d+ > 8388608 bytes; ADR 0100\)"
+        ):
+            self.create(domain_skill_roots={"cad": cad, "wiki": wiki})
+        self.assertFalse(self.run_root.exists())
+        self.assertFalse(self.host_state_root.exists())
+
+    def test_other_inputs_over_their_budget_are_refused_by_name(self):
+        self.product_run_constitution.write_bytes(b"#" * (2 * 1024 * 1024 + 1))
+        with self.assertRaisesRegex(
+            ArtifactError,
+            r"inputs other than domain skills exceed their 2 MiB byte budget \(\d+ > 2097152 bytes; ADR 0100\)",
+        ):
+            self.create()
+        self.assertFalse(self.run_root.exists())
+
+    def test_a_refresh_over_the_domain_budget_is_refused_and_changes_nothing(self):
+        mib = 1024 * 1024
+        cad = self.domain_skill("cad", (3 * mib,))
+        run = self.create(domain_skill_roots={"cad": cad})
+        before = run.snapshot()
+        for index in range(1, 3):
+            (cad / ("tool-%d.bin" % index)).write_bytes(b"\0" * (3 * mib))
+        with self.assertRaisesRegex(ContractError, "domain skills exceed their 8 MiB byte budget"):
+            run.refresh_domain_skill_tools({"cad": cad}, reason="oversized resync")
+        self.assertEqual(run.snapshot(), before)
+        self.assertFalse((run.run_root / ".agents/skills/cad/tool-1.bin").exists())
+
+    def test_a_run_created_before_adr_0100_keeps_its_combined_budget(self):
+        mib = 1024 * 1024
+        cad = self.domain_skill("cad", (3 * mib,))
+        legacy = self.make_legacy(self.create(domain_skill_roots={"cad": cad}))
+        self.assertEqual(legacy.snapshot(), AgentRun.open(self.run_root, host_state_root=self.host_state_root).snapshot())
+        # Under its frozen 6 MiB combined budget, a refresh to 7 MiB is refused
+        # even though a run created now would take it.
+        (cad / "tool-1.bin").write_bytes(b"\0" * (4 * mib))
+        before = legacy.snapshot()
+        with self.assertRaisesRegex(ContractError, "inputs exceed their total byte limit"):
+            legacy.refresh_domain_skill_tools({"cad": cad}, reason="resync")
+        self.assertEqual(legacy.snapshot(), before)
+        self.run_root = self.root / "run-new"
+        self.host_state_root = self.root / "host-new"
+        current = self.create(domain_skill_roots={"cad": self.domain_skill("cad-new", (3 * mib,))})
+        source = self.root / "source-cad-new"
+        (source / "tool-1.bin").write_bytes(b"\0" * (4 * mib))
+        current.refresh_domain_skill_tools({"cad": source}, reason="resync")
+        self.assertIn(".agents/skills/cad/tool-1.bin", current.snapshot().input_sha256s)
+
+    def test_tampered_domain_skill_names_are_refused_on_reopen(self):
+        cad = self.domain_skill("cad", (16,))
+        cases = (
+            ("unknown skill", ["cad", "wiki"]),
+            ("unsorted", ["cad", "cad"]),
+            ("workshop skill", ["autonomous-workshop", "cad"]),
+            ("not a list", "cad"),
+        )
+        for name, value in cases:
+            with self.subTest(name):
+                self.run_root = self.root / ("run-" + name.replace(" ", "-"))
+                self.host_state_root = self.root / ("host-" + name.replace(" ", "-"))
+                run = self.create(domain_skill_roots={"cad": cad})
+                checkpoint_path = run.host_state_root / "agent-run.json"
+                payload = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+                payload.pop("checkpoint_sha256")
+                payload["domain_skills"] = value
+                agent_run_module.AgentRun._write_checkpoint_file(checkpoint_path, payload)
+                with self.assertRaisesRegex(StateConflict, "domain skills are invalid"):
+                    AgentRun.open(run.run_root, host_state_root=run.host_state_root)
+
     def test_create_materializes_wish_references_read_only_with_their_own_budget(self):
         # Larger than every other input may be together, so only the
         # references' own budget can admit it.
@@ -424,7 +537,7 @@ class AgentRunTest(unittest.TestCase):
                 checkpoint.input_sha256s["wish-references/%s" % name],
                 hashlib.sha256(content).hexdigest(),
             )
-        # 5 MiB of image rides above the 4 MiB constitution-and-skill budget.
+        # The image rides above every installed-inventory budget.
         self.assertGreater(len(big), agent_run_module.MAX_AGENT_INPUT_BYTES)
         reopened = AgentRun.open(
             run.run_root,
