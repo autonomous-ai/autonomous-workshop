@@ -1,1 +1,0 @@
-"""RIVETBACK assembly placement package."""
