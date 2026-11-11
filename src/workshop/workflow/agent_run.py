@@ -134,6 +134,16 @@ MAX_RUN_OWN_INPUT_BYTES = 2 * 1024 * 1024
 # under; it is also the largest single input file any run may hold.
 MAX_AGENT_INPUT_BYTES = 6 * 1024 * 1024
 MAX_AGENT_INPUT_FILES = 768
+# ADR 0101: files a domain skill vendors that no run reads (the upstream
+# cadgen package's own test suite). A new run never receives them; a run that
+# already carries some keeps refreshing them, so no older run changes.
+RUN_EXCLUDED_DOMAIN_SKILL_PREFIXES: Mapping[str, tuple[str, ...]] = MappingProxyType({
+    "cad": ("scripts/packages/cadgen/tests/",),
+})
+
+
+def _run_excluded_domain_path(name: str, relative: str) -> bool:
+    return relative.startswith(RUN_EXCLUDED_DOMAIN_SKILL_PREFIXES.get(name, ()))
 # ADR 0096: an Approved Proof sealed under seed/ has its own byte budget, so
 # its STEP files cannot crowd out the constitution and skills.
 SEED_DIRECTORY = "seed"
@@ -1263,6 +1273,8 @@ class AgentRun:
                 raise ArtifactError("source %s skill lacks SKILL.md" % name)
             target = PurePosixPath(".agents/skills") / name
             for relative, content, mode in files:
+                if _run_excluded_domain_path(name, relative.as_posix()):
+                    continue
                 destination = target / relative
                 _reject_private_agent_bytes(destination.as_posix(), content)
                 domain_files.append((destination, content, mode))
@@ -2231,8 +2243,15 @@ class AgentRun:
             if not any(relative.as_posix() == "SKILL.md" for relative, _, _ in files):
                 raise ArtifactError("source %s skill lacks SKILL.md" % name)
             wanted: dict[str, tuple[bytes, int]] = {}
+            # A run created before ADR 0101 carries the excluded files and
+            # keeps refreshing them; a newer run never gains them.
+            keeps_excluded = any(
+                _run_excluded_domain_path(name, path[len(prefix):]) for path in carried
+            )
             for relative, content, mode in files:
                 if name == "autonomous-workshop" and prefix + relative.as_posix() not in carried:
+                    continue
+                if not keeps_excluded and _run_excluded_domain_path(name, relative.as_posix()):
                     continue
                 destination = (PurePosixPath(".agents/skills") / name / relative).as_posix()
                 _reject_private_agent_bytes(destination, content)

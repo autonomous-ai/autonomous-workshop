@@ -11959,7 +11959,9 @@ def start_native_run(
     ):
         assets = product_run_agent_assets()
         wish_bytes = canonical_wish_bytes(wish)
-        domain_skill_roots = product_run_domain_skill_roots()
+        domain_skill_roots = product_run_domain_skill_roots(
+            invent_route=selected_effort is None or selected_effort.includes("invent")
+        )
         inventor_source_root = _product_run_inventor_source_root(assets)
         required_inventor_id = wish.context.get("inventor_id")
         paths = native_run_paths(wish.product_id, create=True)

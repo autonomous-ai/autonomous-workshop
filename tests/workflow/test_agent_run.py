@@ -6,6 +6,7 @@ import stat
 import tempfile
 import tomllib
 import unittest
+from unittest import mock
 from pathlib import Path
 from unittest.mock import patch
 
@@ -482,6 +483,46 @@ class AgentRunTest(unittest.TestCase):
         (source / "tool-1.bin").write_bytes(b"\0" * (4 * mib))
         current.refresh_domain_skill_tools({"cad": source}, reason="resync")
         self.assertIn(".agents/skills/cad/tool-1.bin", current.snapshot().input_sha256s)
+
+    def cad_with_upstream_tests(self):
+        cad = self.domain_skill("cad", ())
+        package = cad / "scripts/packages/cadgen"
+        (package / "src").mkdir(parents=True)
+        (package / "tests").mkdir()
+        (package / "src/gen.py").write_text("VERSION = 1\n")
+        (package / "tests/test_gen.py").write_text("def test_gen():\n    pass\n")
+        return cad
+
+    def test_a_new_run_never_receives_or_gains_the_cadgen_tests(self):
+        cad = self.cad_with_upstream_tests()
+        run = self.create(domain_skill_roots={"cad": cad})
+        inputs = run.snapshot().input_sha256s
+        self.assertIn(".agents/skills/cad/scripts/packages/cadgen/src/gen.py", inputs)
+        self.assertFalse(any("/cadgen/tests/" in path for path in inputs))
+        self.assertFalse((run.run_root / ".agents/skills/cad/scripts/packages/cadgen/tests").exists())
+        # A refresh brings the shipped package up to date and still adds no test.
+        (cad / "scripts/packages/cadgen/src/gen.py").write_text("VERSION = 2\n")
+        (cad / "scripts/packages/cadgen/tests/test_gen.py").write_text("def test_gen():\n    assert 1\n")
+        run.refresh_domain_skill_tools({"cad": cad}, reason="resync")
+        inputs = run.snapshot().input_sha256s
+        self.assertEqual(
+            (run.run_root / ".agents/skills/cad/scripts/packages/cadgen/src/gen.py").read_text(),
+            "VERSION = 2\n",
+        )
+        self.assertFalse(any("/cadgen/tests/" in path for path in inputs))
+
+    def test_a_run_that_carries_the_cadgen_tests_keeps_refreshing_them(self):
+        cad = self.cad_with_upstream_tests()
+        with mock.patch.object(agent_run_module, "RUN_EXCLUDED_DOMAIN_SKILL_PREFIXES", {}):
+            run = self.create(domain_skill_roots={"cad": cad})  # as before ADR 0101
+        test_path = ".agents/skills/cad/scripts/packages/cadgen/tests/test_gen.py"
+        self.assertIn(test_path, run.snapshot().input_sha256s)
+        reopened = AgentRun.open(run.run_root, host_state_root=run.host_state_root)
+        self.assertEqual(reopened.snapshot(), run.snapshot())
+        (cad / "scripts/packages/cadgen/tests/test_gen.py").write_text("def test_gen():\n    assert 2\n")
+        changes = reopened.refresh_domain_skill_tools({"cad": cad}, reason="resync")
+        self.assertEqual([change["path"] for change in changes], [test_path])
+        self.assertEqual((run.run_root / test_path).read_text(), "def test_gen():\n    assert 2\n")
 
     def test_tampered_domain_skill_names_are_refused_on_reopen(self):
         cad = self.domain_skill("cad", (16,))
