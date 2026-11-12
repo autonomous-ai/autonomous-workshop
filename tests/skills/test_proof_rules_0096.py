@@ -90,7 +90,10 @@ class CriticAndChecklistTest(unittest.TestCase):
         checklist = flat(DESIGN / "checklist-prompt.md")
         self.assertIn("Look only at the chosen Concept Image", checklist)
         self.assertIn("Read no contract", checklist)
-        self.assertIn("8 to 12 traits", checklist)
+        self.assertIn("one trait per distinct, visible thing", checklist)
+        self.assertIn("no cap or floor", checklist)
+        self.assertIn("one `###` heading and one table per region", checklist)
+        self.assertNotIn("8 to 12", checklist)
         self.assertIn('Write "required" in every "owner" cell', checklist)
         self.assertNotIn("changeable", checklist)
 
@@ -104,6 +107,22 @@ class SkillWiringTest(unittest.TestCase):
         self.assertIn("[checklist-prompt.md](checklist-prompt.md)", stage)
         self.assertIn("Every trait is required (owner rule, 2026-11-02)", stage)
         self.assertNotIn("Changeable:", stage)
+
+    def test_the_checklist_count_follows_the_concept(self):
+        self.assertNotIn("8 to 12", self.skill)
+        stage = self.skill[self.skill.index("### The chosen Concept Image"):self.skill.index("## Stage 2 ")]
+        self.assertIn("The count follows the concept, with no cap or floor", stage)
+
+    def test_every_owner_facing_result_is_self_reviewed_first(self):
+        review = self.skill[self.skill.index("## Self-review before the owner sees anything"):
+                            self.skill.index("## Stage 1 ")]
+        for check in ("**Concept.**", "**Checklist.**", "**Owner instructions.**", "**Occlusion.**",
+                      "**True scale.**", "**Function.**", "**Three views**", "**Printability.**",
+                      "`NOTES.md`", "12 mm bridge"):
+            with self.subTest(check=check):
+                self.assertIn(check, review)
+        stage4 = self.skill[self.skill.index("## Stage 4"):self.skill.index("## Stage 5")]
+        self.assertIn("(#self-review-before-the-owner-sees-anything) first", stage4)
 
     def test_stage_four_opens_with_the_concept_beside_the_proof(self):
         stage = self.skill[self.skill.index("## Stage 4"):self.skill.index("## Stage 5")]

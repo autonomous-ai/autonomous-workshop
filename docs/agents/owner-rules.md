@@ -42,7 +42,11 @@ rule, this file only points to it; that source stays the authority.
 - **Function first.** A new model starts from a concrete everyday job (what
   it holds or does, at real-use sizes), then gets a character that makes it
   unique, like Pelican Catchall. The function may be common; the design may
-  not be. Why: pure decoration doesn't sell.
+  not be. Give it one job: one-job items sell better than themed
+  multi-function ones. Every compartment holds its real item and empties
+  easily, nothing covers a well, a plugged-in cable gets an open slot, and
+  every tray belongs to something in the scene. Why: pure decoration
+  doesn't sell, and the city trays' bare or covered wells were sent back.
 - **No cost cap** (owner, 2026-11-10; replaces the US$25 cap of
   2026-11-05). Still estimate and report the price with [Pricing](#pricing),
   but never shrink, hollow or simplify a design to hit a price.
@@ -54,7 +58,9 @@ rule, this file only points to it; that source stays the authority.
   moment in one line. Why: the owner may not know the story; a lone prop on
   a shelf reads as decoration.
 - **No trademarks.** Never use a protected name, logo or official colour set
-  (falling-block designs never say Tetris). Why: trade-dress risk.
+  (falling-block designs never say Tetris). For a real city, check each
+  landmark: avoid post-1990 US buildings and trademarked shapes. Why:
+  trade-dress and building-design rights.
 - A daily funnel brief for autonomous.ai/toys exists and is the real per-toy
   demand signal; the owner pastes its links when needed.
 
@@ -65,6 +71,13 @@ rule, this file only points to it; that source stays the authority.
   unless the owner names another. Trade-offs follow the owner's answers, the
   chosen concept, readability and printability (owner, 2026-11-10; ADR
   0099). Why: the Inventor only names the listing's author now.
+- **Self-review before you show anything.** Before any owner-facing page or
+  image, check it against the concept, every Concept Checklist trait, every
+  instruction the owner gave in this design (kept as a running list in the
+  notes), occlusion from the concept camera, true-scale real objects, and
+  printability; fix what you find, then show it with one line per check.
+  `design-a-toy`'s "Self-review before the owner sees anything" is the
+  authority. Why: results shown unfinished cost the owner many comments.
 - **Reference images agree with the contract**, in proportions and landmark
   positions as well as counts. When they disagree and the image looks better,
   amend the contract to match the image. See `design-a-toy` Stage 3b. Why:
@@ -79,7 +92,9 @@ rule, this file only points to it; that source stays the authority.
 - **Draw objects at true scale.** Headphones, phones and pens in a concept
   image are drawn at real size, with real dimensions stated. Image models
   pull old proportions back from `--ref` inputs; check every image and redraw
-  without `--ref` if needed.
+  without `--ref` if needed. Still, no AI image decides a size or a fit:
+  models shrink real objects (a 51 mm note pad) to make room. Where real
+  objects or tight space are involved, show CAD renders at true scale.
 - **Judge faces feature by feature.** A whole-trait "agree" missed head tilt,
   eyes, nose and paws the owner saw. Give judges measured close-ups of each
   facial feature.
