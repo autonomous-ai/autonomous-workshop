@@ -109,7 +109,10 @@ build away from it.
   - After the three views in Stage 1, a fresh subagent that sees only
     the concept and its three views writes `CONCEPT-CHECKLIST.md`:
     8-12 defining traits, each with one line and, where possible, a
-    ratio measured on the image.
+    ratio measured on the image. *Amended 2026-11-12 (owner): one trait
+    per distinct, visible thing that makes the concept itself, grouped by
+    region, with no cap or floor (a simple object 4, a city scene 30 or
+    more).*
   - The owner marks each trait required or changeable. *Amended
     2026-11-02 (owner rule): every trait is required by default; the owner
     is not asked to mark the checklist and no changeable mark is proposed.

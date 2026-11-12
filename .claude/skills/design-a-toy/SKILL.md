@@ -51,6 +51,51 @@ unless the owner names another roster Inventor under `inventors/`; then use
 that one. A calling skill that sets the Inventor and its own judge, as
 `brainstorm-trend` does with `trend-lab` and its personalities, keeps both.
 
+## Self-review before the owner sees anything
+
+Every page or image you show the owner - a concept edit, a set of variants,
+a trait-at-risk trade-off, the Stage 4 page - is finished first. Run every
+check below that applies, fix what it finds, run it again, and only then
+show the result. Put one line per check on the page ("occlusion: the pad
+hides 0% of the pool from the concept camera"; "printability: every variant
+passes 45 degrees and the 12 mm bridge").
+
+Keep the **working notes** in `NOTES.md` beside the contract. Its first
+section, "Owner instructions", lists every instruction the owner has given
+in this design, one dated line each, added when it is given.
+
+1. **Concept.** Compare the result with the chosen Concept Image region by
+   region. Once a Proof exists, this is the Proof rendered at the concept's
+   cameras beside the concept, and it is the primary check before Stage 4:
+   the owner judges the Proof against the concept image, not against
+   contract rows. First Proofs tend to come out plain and boxy, so look in
+   each region for a detail, a curve or a layer the concept has and the
+   Proof lacks.
+2. **Checklist.** Every trait of `CONCEPT-CHECKLIST.md` is kept, or changed
+   only as its "owner" cell records.
+3. **Owner instructions.** Every line of `NOTES.md` "Owner instructions"
+   holds in the result.
+4. **Occlusion.** From the concept camera, measure what each raised part
+   hides (a pool, a road, a well, the scenery behind it) before polishing
+   anything. Give each variant its hidden percentage. A part in front that
+   needs a wide flat top, such as a sticky-note pad, either hides what is
+   behind it or reads as a box: change where it goes, and keep the object.
+5. **True scale.** AI images shrink real objects (a 51 mm note pad, a
+   phone, a pen) to make room, so no AI image decides a size or whether
+   something fits. Where real objects or tight space are involved, show CAD
+   renders at true scale (`proof_views.py render --px-per-mm N`).
+6. **Function.** Every compartment holds its real item at its real size
+   and empties easily, and nothing covers a well. A plugged-in cable runs
+   through an open slot, never a closed hole. Every tray or well belongs to
+   something in the scene; there is no bare leftover tray.
+7. **Three views**, whenever views are shown: Stage 1 step 1's per-view
+   checks.
+8. **Printability.** Check every variant against Make's print gates (45
+   degree overhang, 12 mm bridge, Stage 3c's minimums) before offering it
+   as an option, and check that every inserted part can go in. A dark strip
+   inside a closed building cannot be inserted; an open-frame tower that
+   needs a 50 mm bridge does not print as one part.
+
 ## Stage 1 - Grill the idea into a spec
 
 Invoke the `grilling` skill and work the design as a decision tree. Do not skip
@@ -115,6 +160,10 @@ Drive to a written spec containing:
   filament cannot carry - pictures, covers, spines, page text, textures,
   skies, glazing - is printed paper the buyer applies (see Print Sheets,
   after Stage 3b): which pieces, on which part, and how each is applied.
+- **Real objects.** Everything the toy holds or takes (a 51 mm note pad, a
+  phone, a pen tube, a cable plug), at its real size, and the well, slot or
+  tray sized from it. A model with a function does one job well: one-job
+  items sell better than themed multi-function ones.
 - **Bought Parts.** Every purchased part (battery box, LED, pin, screw,
   clear jar, bead, wire) from the owner's Bought Part catalogue
   (`bought-parts.json`), within its size limits. One outside it needs the
@@ -168,7 +217,9 @@ Only when the human explicitly asks for a playable game, also drive to:
 The human agrees the chosen Concept Image before any component image or
 contract exists. It usually comes from `brainstorm-concepts`; otherwise make
 one with AI generation now. Work on it with the human, one change per round,
-until they say it is right.
+each shown only after the
+[self-review](#self-review-before-the-owner-sees-anything), until they say
+it is right.
 
 1. **Three sides.** Redraw the chosen Concept Image from three cameras in one
    generation, one row on one ground line (LESSONS-REFERENCE-IMAGES.md, "Draw a part's extra
@@ -179,8 +230,10 @@ until they say it is right.
    [`scripts/proof_views.py`](scripts/proof_views.py) `split`. Where two
    views disagree (a window on one side only, a count that changes), it is a
    disagreement: fix it by editing, as Stage 3b resolves one, before the
-   human sees the sheet. Every later edit of the concept keeps all three
-   views.
+   human sees the sheet. Before calling the views consistent, check each
+   view: a part its camera cannot see is not drawn, left and right are not
+   mirrored, and the cable path runs where the other views put it. Every
+   later edit of the concept keeps all three views.
 
    **Counts drift.** An image model often redraws a count it was given
    (the beaver pilot asked for four coasters and got four in one view and
@@ -218,8 +271,10 @@ until they say it is right.
 5. **Concept Checklist** (ADR 0096). Spawn a fresh subagent with
    [checklist-prompt.md](checklist-prompt.md), given only the chosen Concept
    Image and its three views. It writes `CONCEPT-CHECKLIST.md` beside the
-   contract: 8 to 12 traits that make this concept itself, with measured
-   ratios where it can. Every trait is required (owner rule, 2026-11-02):
+   contract: one trait per distinct, visible thing that makes this concept
+   itself (each building, landmark, prop group, signature detail and layout
+   relation), grouped by region, with measured ratios where it can. The
+   count follows the concept, with no cap or floor. Every trait is required (owner rule, 2026-11-02):
    its "owner" cell says "required". Do not ask the owner to mark the
    checklist and do not propose a changeable mark. A mark changes only when
    the Proof or its critic finds a trait that cannot be made, and then only
@@ -1261,9 +1316,10 @@ claim holds from its camera.
 
 ## Stage 4 - Visual review
 
-**Stop. This is the only approval gate.** Show the human every reference image
-at once, assembly first. Give each one a single line in plain words: what it is,
-how many parts use it, and the camera it is seen from with its cue
+**Stop. This is the only approval gate.** Run the
+[self-review](#self-review-before-the-owner-sees-anything) first. Show the
+human every reference image at once, assembly first. Give each one a
+single line in plain words: what it is, how many parts use it, and the camera it is seen from with its cue
 ("ref-02 wheel - four of these; seen from the front-left, slightly above
 (-60, 15)"). Approving the images approves these cameras. Publish them as one
 private Artifact page (load the `artifact-design` skill first) that works at
@@ -1279,7 +1335,7 @@ Reference Image; until they do, neither is sealed.
 
 Open the page with the chosen Concept Image beside the Contract Proof at
 the concept's cameras and their 50% overlay, and the checklist count in one
-line ("11 of 12 traits kept; the tail is shorter, as you chose for
+line ("29 of 31 traits kept; the tail is shorter, as you chose for
 printing"). Every trait changed there is one the owner already answered at
 Stage 3a. Then show each reference as its Stage 3a compare: the AI image,
 the Contract Proof at the same camera and their 50% overlay, side by side,
@@ -1326,7 +1382,8 @@ cut redraws the flat lay.
 
 Wait for explicit approval of the images. If the human wants a change - a
 different shape, proportion, count, pose or feature - fix the images by AI
-editing or regeneration, amend the contract so it says what the new images
+editing or regeneration (AI-edit the Proof render, never the original
+concept, once a Proof exists), amend the contract so it says what the new images
 show, and redo Stages 3a to 3d for **every** image (the Proof rebuilt and
 the Proof Critic asked again when a shape changed). Then update the same
 Artifact page and show only the images that changed, each with its compare,
