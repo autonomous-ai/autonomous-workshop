@@ -47,6 +47,13 @@ rule, this file only points to it; that source stays the authority.
   easily, nothing covers a well, a plugged-in cable gets an open slot, and
   every tray belongs to something in the scene. Why: pure decoration
   doesn't sell, and the city trays' bare or covered wells were sent back.
+- **Every well reads as a scene element** (owner, 2026-11-13). A well is
+  shaped as something that belongs there (a pond, a canal, a boat's hold, a
+  tatami deck, a raked garden), so the owner can name it at a glance. Wells
+  are never lined up in front of the buildings like bins: the layout reads as
+  one scene, such as a lane with buildings facing it. Why: Kyoto's wooden
+  tub, stone dish and walled note well read as containers in a row and the
+  Stage 4 review was sent back.
 - **No cost cap** (owner, 2026-11-10; replaces the US$25 cap of
   2026-11-05). Still estimate and report the price with [Pricing](#pricing),
   but never shrink, hollow or simplify a design to hit a price.
