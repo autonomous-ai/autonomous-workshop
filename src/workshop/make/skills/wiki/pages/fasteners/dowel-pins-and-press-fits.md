@@ -41,6 +41,12 @@ Locating with one round pin and one slot:
 
 ## The FDM fit ladder
 
+**House default** for parts assembled after printing (owner rule,
+[[fit-derivation#the-fdm-clearance-table]]): a fixed fit (a tab, peg or leg in
+a socket) is +0.1 mm on the diameter, a moving fit (an axle, hinge or slider)
++0.2 mm. The published ladder below is context for choosing and checking, not
+a second default.
+
 Designed gap on diameter between a pin or shaft and a printed hole (Creative3DP):
 
 | fit | gap on diameter | use |
@@ -64,7 +70,9 @@ the class and to sanity-check the result.
   per side for PLA, up to 0.10 for PETG
   ([[shafts-and-bearings#bushing-or-ball-bearing]]).
 - TPU compresses and grips. A press fit wants double the interference; a
-  moving fit needs 0.5–0.8 mm total clearance or friction welds it shut.
+  moving fit needs 0.5–0.8 mm total clearance or friction welds it shut. This
+  is a TPU-only exception; rigid filaments keep the house moving fit of
+  +0.2 mm total.
 
 How a steel pin or bearing in a printed bore behaves over temperature:
 [[thermal-expansion-and-hybrid-parts]].

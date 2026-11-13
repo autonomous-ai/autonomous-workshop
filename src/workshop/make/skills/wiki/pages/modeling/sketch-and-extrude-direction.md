@@ -7,8 +7,9 @@ sources:
   - "experience: two modules independently shipped off-centre cutters from assuming align=None means centred"
   - "experience: a disc body extruded with a negative amount from a spline face landed above its bevel cap"
   - "experience: a clockwise polygon extruded with a forced dir gave an inverted solid that later cuts mishandled"
+  - "experience: one shapely-to-Face helper gave rib grid, fronds and sun alternately 0..t and -t..0; the sunk grid rendered as speckle"
 related: [operation-families, kernel-validity, modeling-failure-modes]
-updated: 2026-10-09
+updated: 2026-10-31
 ---
 
 # Sketch algebra, winding and extrude direction
@@ -59,6 +60,16 @@ its normal from the ring's winding, so it can face −Z: `extrude(face, -t)`
 meant to run down then runs up and fuses inside the body above it, and only
 the bounding box shows it. Pass `dir=(0, 0, -1)` with a positive amount.
 
+The same holds for a `Face(outer, inners)` built from any `shapely` polygon:
+shapely does not keep a winding, and a buffered, differenced or unioned
+polygon often comes back clockwise. So one helper that turns polygons into
+faces can give one part `0..t` and the next `-t..0`. That breaks a Z = 0 print
+datum and shifts every placement written for `0..t` by `t`. A raised rib grid
+sunk into the body it should stand on renders as speckle (its top coplanar with
+the body's top, both drawn at once), which looks like a tessellation fault and
+is not one. Normalise in the helper, `shapely.geometry.polygon.orient(poly, 1.0)`,
+before building the wires, and read each part's bounding-box Z range once.
+
 Forcing `dir=` fixes where a prism goes, not how its faces are oriented. A
 clockwise polygon forced the other way has come back as an inverted solid that
 later booleans mishandled. Make polygon sections counter-clockwise before
@@ -94,3 +105,17 @@ covers a window that is not there. One side of a cab lost its glass this way
 by a box meant for the outward direction). State the direction on every
 extrusion built from a mirrored outline (`dir=Vector(0, 0, 1)` in the frame's own
 z) and compare the volume of the two mirrored parts; they must be equal.
+
+## A shoulder spline that starts level makes an ear
+
+A dome or bell outline drawn as a flat top plus a side spline through the
+shoulder points: forcing the spline's start tangent to the flat top's direction
+(horizontal) makes it overshoot outward and then curve back. That leaves a
+small ear at each top corner and a concave neck below it, which reads as a notch
+in oblique views. A measured width profile does not show it, because the ear sits
+within one row. Start the tangent already falling, close to the first chord's
+slope, so the flank stays convex. Check it in an oblique render, not in the
+front silhouette. In the same outline, a flank that reaches full width halfway
+down and then runs straight reads as a box, not a bell: put the widest point
+near the rim.
+

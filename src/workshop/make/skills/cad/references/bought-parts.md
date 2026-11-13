@@ -20,7 +20,7 @@ python "$STEP_PARTS_SKILL_ROOT/scripts/download_step_part.py" --id sg90_micro_se
 import cadmount
 
 servo   = cadmount.load("ref/sg90_micro_servo.step")
-bracket -= cadmount.seat_for(servo, "slip", mouth=3)
+bracket -= cadmount.seat_for(servo, "clear", mouth=3)
 bracket -= cadmount.bolt_cutter(servo, "free", depth=BRACKET_T + 2)
 ```
 
@@ -57,8 +57,10 @@ pass (`wiki show seating-bought-parts#a-seat-is-a-prism-along-the-insertion-dire
   break through the bracket's surface. **The default of 0 is a blind pocket**,
   which is correct geometry and frequently leaves a skin the slicer prints and
   the component cannot pass.
-- `fit` — a `cadfits` class. `slip` (0.20/side) is the default. An interference
-  class is refused: a bought part does not compress.
+- `fit` — a `cadfits` class. `clear` (0.20/side, `cadfits.BOUGHT_PART_FIT`)
+  is the default. An interference class is refused: a bought part does not
+  compress. The printed-part house fits (`fixed` 0.05, `moving` 0.10 per side)
+  are for printed mates; `fixed` is under this gate's floor.
 
 A part that tapers along `insert` (a pyramid or cone cap) is the exception:
 the prism is its widest section swept straight, and touches no sloped face.
@@ -133,7 +135,7 @@ checked exactly as closely as a derived one.
 | `at` | pose in assembly coordinates: `[x,y,z]`, or `{position, rotation}` in degrees. Omitted means the origin. |
 | `sha256` | the file the seat was derived from. Absent is a note; wrong is a note that names both digests. |
 | `parts` | labelled parts to measure against. Omitted means the whole assembly. |
-| `min_clearance` | mm, default `snug` (0.10). Below it fails: a bought part does not compress. |
+| `min_clearance` | mm, default 0.10 (`cadfits.BOUGHT_PART_MIN_CLEARANCE`). Below it fails: a bought part does not compress. |
 | `bolt_axis` | constrain hole detection to one axis. Omitted searches any. |
 | `bolts` | `false` for a strapped, glued or captive-screwed component. |
 | `solid` | which solid of a multi-solid STEP is the part: `"largest"`, `"all"`, or an index. Omitted refuses a multi-solid file. |
@@ -208,7 +210,7 @@ gets a row for each state rather than one row that is wrong for all of them:
   screws as walled in. A second row with `"bolts": false` measures the
   installed clearance.
 - **A pressed fit on a bought shaft.** A printed hub pressed onto the motor's
-  shaft at the `snug` fit reads back exactly the floor. Give it its own row
+  shaft at the `fixed` fit reads back under the floor. Give it its own row
   with half the pressed clearance as the floor: zero is still a clash.
 - **Resting on a face by design.** A cell holder that stands on its door has
   zero clearance to the door, and that contact is the seat. One row with

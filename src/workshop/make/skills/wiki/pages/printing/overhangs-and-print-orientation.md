@@ -12,8 +12,9 @@ sources:
   - "experience: lever pockets beside a pushrod in a carved figure's split halves joined the socket's and channel's ceilings into one over-long bridge"
   - "experience: curved slot roofs, shallow tunnel roofs and ear bases on a dome failed check_overhang until gabled, sloped and sunk"
   - "experience: a lofted 45 deg flank failed check_overhang between stations; 40 deg passed"
+  - "experience: per-part print files exported through the assembly placement, rotated out of the stance their gates passed in"
 related: [overhang-shape-recipes, rounded-bodies-on-the-print-bed, fdm-bridging-and-sacrificial-layers, wall-thickness-and-hollowing, joints, printed-part-count, layer-anisotropy]
-updated: 2026-10-12
+updated: 2026-11-07
 ---
 
 # Overhangs and print orientation
@@ -42,6 +43,10 @@ Two numbers decide it. **Span** is the **shorter** plan dimension, because that
 is the one the slicer has to cross — a 10 × 40 mm roof is bridged across the 10.
 **Reach** is how far the region stands out from anything at its own level: half
 the span for a bore ceiling, the whole protrusion for a shelf.
+
+A horizontal boss with a polygon profile is judged by its lowest flanks, not
+its name: a hexagon stood on a corner has 30° flanks under it and needs
+support; a pointed profile (upright sides, a V of at least 50° beneath) prints.
 
 ## The cap on a stem
 
@@ -83,6 +88,17 @@ whole depth, not its own width, and the gate's voxel grid can put identical
 grooves either side of 1 mm. Keep such a roof under 1 mm deep, or slope all of
 it: falling toward the far wall at 52 deg (rising toward the mouth), which
 leaves nothing level and meets the bore at an obtuse corner.
+
+## A printable arch over a through mortise shows daylight
+
+A mortise that a flat tenon slides into from the side needs a pointed (55 deg)
+arch for a roof when the part prints upright. The tenon is flat, so it never
+fills the arch. If the mortise runs right through the part, the empty arch is
+a hole you can see the background through, every time anyone looks at the
+part. No gate sees it: overhang, thickness, interference and motion all pass.
+Make the mortise blind (stop it a clearance behind the tenon's far end and
+shorten the tenon to leave a back wall), so the arch reads as a dark recess.
+Then look at the part empty, without the item it holds.
 
 ## Pockets inside a split print: one ceiling, one bridge
 
@@ -140,6 +156,15 @@ instead and let the body keep its Z=0 datum.
 A door-flange rebate round an opening in the bed face is worse: its ceiling
 hangs off the outer wall alone. Lay the flange on the bed face instead.
 
+A part printed on its side has its print vertical along a model axis that is
+not Z. Write every slope limit along that axis: in a pose where model X
+becomes print Z, a flank needs at least `1/tan(overhang)` of rise in X per unit
+of its Z run (1.2 at a 40 deg limit), and a cap or bobble drawn with the slope
+inverted fails the gate however gentle it looks in the assembly view. Shallow
+engraved lines across the print vertical (toe lines, folds) fail on their down
+side for the same reason; keep engraving under about 0.6 mm or run it along
+the print vertical.
+
 ## A ledge is measured on a grid, and a slot from a hole's top leaves shelves
 
 A voxel gate rounds a ledge's reach to its grid: a 0.9 mm flat ledge read as
@@ -164,6 +189,17 @@ corner lips climb at 50 deg or more. A pyramid (an ear) on a sphere-like head
 must keep its whole base inside the head, or the base's downward faces fail.
 Keep its outward lean plus its side half-angle at 45 deg or less.
 
+## Rails between pickets: gable them, do not bridge them
+
+A fence rail running between pickets has a flat underside that the slicer
+bridges from picket to picket, and on a ring of pickets the gate groups
+neighbouring rail-bottom segments into one region. One merged region out of 70
+identical ones was classified overhang rather than bridge. Give the rail a
+gabled underside instead (two faces at about 39 deg from vertical meeting under
+the rail centre, 1.5 rise over a 2.4 thickness). Nothing is then level, so the
+classification is no longer a gamble. Build it as a revolved profile cut to
+the picket arc.
+
 ## Do not design at the limit
 
 A cone that flares one millimetre out per millimetre up is a 45° overhang —
@@ -171,6 +207,20 @@ exactly the threshold — and the flat facets a tessellator lays on it land at
 44.7°, on the wrong side. The same goes for a 45° buttress or a chamfer sized
 to the limit. Give the angle somewhere to go: 1.3 mm of rise per mm of flare is
 52° and passes at any tessellation tolerance.
+
+The usual offenders are features drawn at 45° because 45° is the drafting
+habit, not because they were checked: an octagonal key socket whose walls
+mirror a 45° key, a finial or eave flaring one millimetre per millimetre, a
+45° arch over a window. A socket does not have to mirror its key: one that
+closes onto the bore at 55° contains the 45° key and prints its roof. An
+octagon lofted up from a round column must start inscribed in the circle
+(across flats `D · cos 22.5°`), or its corners stand out over the round as
+ledges just over a millimetre wide that the gate fails.
+
+A face at the limit can pass for a while and then fail when an unrelated
+feature is added: a 45° bottom chamfer on a cylinder passed until a key rib
+split its ring, and then every stalk failed. The fix was the chamfer, not
+the rib.
 
 A smooth loft adds its own overshoot between stations: a lower flank whose
 stations were all at exactly 45 deg failed the gate. Build such flanks at about
@@ -181,6 +231,18 @@ chords, a ruled band only 0.06-0.08 mm wide in plan, meshed with triangles 10-15
 long along a gently curved outline, came out up to 25° flatter than drawn: a
 40° band read as 55-60° from vertical. Keep any band near the limit wide in plan
 (0.2 mm and more), and keep the drawing 15° under the limit.
+
+## The print file must hold the stance the gate checked
+
+An overhang result belongs to one orientation: the same solid turned on the
+bed has different downward faces. Export the file that will be printed from
+the part's own local frame, the stance its overhang and mesh checks ran in,
+never through the assembly's placement transform; the assembly pose belongs
+only in the assembly file. A part exported through its placement comes out
+translated and, for any part the assembly turns, rotated (a 12 x 12 x 27.5
+stick came out 12 x 18.05 x 25.37), and its passing overhang result no longer
+describes it. Assert it before delivery: each print file's bounding box equals
+its checked part's to within the export tolerance.
 
 ## What geometry cannot tell you
 

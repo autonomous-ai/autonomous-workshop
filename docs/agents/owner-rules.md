@@ -130,11 +130,14 @@ rule, this file only points to it; that source stays the authority.
   - **Loose fit** (anything that must rotate or slide: an axle, hinge or
     slider): hole = shaft + 0.2 mm. A 1.0 mm shaft goes into a 1.2 mm hole.
 
-  Write these into every contract joint and Interface. Where a skill, wiki
-  page or tool gives a per-side value (`cadfits`' `snug 0.10` and `slip
-  0.20`, `TAB_SLOT_CLEARANCE` 0.15), this rule wins: a per-side parameter
-  takes half the total (0.05 fixed, 0.10 loose). Why: per-side values
-  double the gap the owner wants.
+  Write these into every contract joint and Interface. A per-side
+  parameter takes half the total (0.05 fixed, 0.10 loose): `cadfits`'
+  `fixed`/`snug` 0.05 and `moving`/`slip` 0.10 (the default), and
+  `print-details`' `TAB_SLOT_CLEARANCE` 0.05. Where a skill, wiki page or
+  tool still gives another value for a printed mate, this rule wins. Why:
+  per-side values double the gap the owner wants. Print-in-place joints
+  (printed already assembled) keep their larger gaps, and a bought part's
+  seat keeps `check_mount`'s 0.10 mm-per-side floor.
 
 ### Image models
 

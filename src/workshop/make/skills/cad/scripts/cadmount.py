@@ -7,7 +7,7 @@ no dimension of a bought part is ever typed into a generator.
 
     import cadmount
     servo = cadmount.load("ref/sg90_micro_servo.step")
-    bracket -= cadmount.seat_for(servo, "slip")          # the pocket
+    bracket -= cadmount.seat_for(servo, "clear")         # the pocket
     bracket -= cadmount.bolt_cutter(servo, depth=6)      # its screw holes
 
 A motor seat sized by hand is the mate `cadfits` warns about, one step worse:
@@ -203,7 +203,7 @@ def outside_volume(outer, inner) -> float:
     return float(sum(solid.volume for solid in left.solids()))
 
 
-def seat_for(component, fit: str | float = cadfits.DEFAULT_FIT, *,
+def seat_for(component, fit: str | float = cadfits.BOUGHT_PART_FIT, *,
              insert=(0, 0, 1), mouth: float = 0.0,
              sections: int = DEFAULT_SECTIONS,
              max_sections: int = MAX_SECTIONS):
@@ -223,7 +223,8 @@ def seat_for(component, fit: str | float = cadfits.DEFAULT_FIT, *,
         raise ValueError(
             f"fit {fit!r} gives a per-side clearance of {clearance} mm. A seat "
             "for a bought part cannot be an interference fit -- the component "
-            "does not compress. Use 'snug' or looser.")
+            "does not compress. Use the default 'clear'; check_mount fails a "
+            f"seat under {cadfits.BOUGHT_PART_MIN_CLEARANCE} mm per side.")
     if mouth < 0:
         raise ValueError(f"mouth must be >= 0, got {mouth}")
 
@@ -250,7 +251,7 @@ def seat_for(component, fit: str | float = cadfits.DEFAULT_FIT, *,
         count *= 2
 
 
-def envelope_for(component, fit: str | float = cadfits.DEFAULT_FIT):
+def envelope_for(component, fit: str | float = cadfits.BOUGHT_PART_FIT):
     """The component's bounding box grown by the clearance for `fit`.
 
     Looser than :func:`seat_for` and immune to every sampling question: a box
@@ -461,29 +462,29 @@ def _self_check() -> int:
 
     # --- a seat is the silhouette plus one clearance per side, exactly --------
     block = Box(10, 20, 30)
-    slip = cadfits.mating_clearance("slip")
-    seat = seat_for(block, "slip")
-    want = (10 + 2 * slip) * (20 + 2 * slip) * (30 + 2 * slip)
+    clear = cadfits.mating_clearance("clear")
+    seat = seat_for(block, "clear")
+    want = (10 + 2 * clear) * (20 + 2 * clear) * (30 + 2 * clear)
     check("box seat is silhouette + 2x clearance",
           math.isclose(seat.volume, want, rel_tol=1e-9), f"{seat.volume:.4f} vs {want:.4f}")
     check("box seat contains its component",
           outside_volume(seat, block) <= CONTAIN_TOL_MM3)
-    mouth_box = seat_for(block, "slip", insert=(0, 0, 1), mouth=5).bounding_box()
+    mouth_box = seat_for(block, "clear", insert=(0, 0, 1), mouth=5).bounding_box()
     check("the mouth lies on the +insert side",
-          math.isclose(mouth_box.max.Z, 15 + slip + 5, abs_tol=1e-6)
-          and math.isclose(mouth_box.min.Z, -15 - slip, abs_tol=1e-6),
+          math.isclose(mouth_box.max.Z, 15 + clear + 5, abs_tol=1e-6)
+          and math.isclose(mouth_box.min.Z, -15 - clear, abs_tol=1e-6),
           f"Z {mouth_box.min.Z:.3f}..{mouth_box.max.Z:.3f}")
     check("mouth extends the seat by exactly its length",
-          math.isclose(seat_for(block, "slip", mouth=5).volume,
-                       seat.volume + (10 + 2 * slip) * (20 + 2 * slip) * 5,
+          math.isclose(seat_for(block, "clear", mouth=5).volume,
+                       seat.volume + (10 + 2 * clear) * (20 + 2 * clear) * 5,
                        rel_tol=1e-9))
 
     # --- the shadow is the silhouette, not the bounding box -------------------
     ell = Box(30, 10, 10) + Pos(10, 10, 0) * Box(10, 10, 10)
-    ell_seat = seat_for(ell, "slip")
+    ell_seat = seat_for(ell, "clear")
     check("L-shape seat is tighter than its bounding box",
-          ell_seat.volume < envelope_for(ell, "slip").volume,
-          f"seat {ell_seat.volume:.0f} < envelope {envelope_for(ell, 'slip').volume:.0f}")
+          ell_seat.volume < envelope_for(ell, "clear").volume,
+          f"seat {ell_seat.volume:.0f} < envelope {envelope_for(ell, 'clear').volume:.0f}")
     check("L-shape seat still contains it",
           outside_volume(ell_seat, ell) <= CONTAIN_TOL_MM3)
 
@@ -491,17 +492,17 @@ def _self_check() -> int:
     # Narrow at the mouth, wide below: an exact offset of this cannot be
     # assembled, and the seat has to be a straight slot at the widest section.
     tee = Box(6, 6, 20) + Pos(0, 0, -13) * Box(20, 20, 6)
-    tee_seat = seat_for(tee, "slip")
+    tee_seat = seat_for(tee, "clear")
     check("undercut seat contains the whole component",
           outside_volume(tee_seat, tee) <= CONTAIN_TOL_MM3)
     check("undercut seat is prismatic at the widest section",
-          math.isclose(tee_seat.bounding_box().size.X, 20 + 2 * slip, abs_tol=1e-6),
+          math.isclose(tee_seat.bounding_box().size.X, 20 + 2 * clear, abs_tol=1e-6),
           f"{tee_seat.bounding_box().size.X:.4f}")
 
     # --- a seat that cannot converge refuses rather than under-cutting --------
     # One section through the middle of the tee misses the wide foot entirely.
     try:
-        seat_for(tee, "slip", sections=1, max_sections=1)
+        seat_for(tee, "clear", sections=1, max_sections=1)
     except ValueError as err:
         check("under-sampled seat refuses", "outside it" in str(err))
     else:
@@ -509,7 +510,7 @@ def _self_check() -> int:
 
     # --- clearance comes from cadfits, and an interference fit is refused -----
     check("looser fit gives a bigger seat",
-          seat_for(block, "free").volume > seat_for(block, "snug").volume)
+          seat_for(block, "free").volume > seat_for(block, "moving").volume)
     try:
         seat_for(block, "press")
     except ValueError as err:
@@ -518,7 +519,7 @@ def _self_check() -> int:
         check("press fit refused for a bought part", False)
 
     # --- envelope can never miss a feature -----------------------------------
-    env = envelope_for(ell, "slip")
+    env = envelope_for(ell, "clear")
     check("envelope contains the component", outside_volume(env, ell) <= CONTAIN_TOL_MM3)
 
     # --- holes are found, bosses are not -------------------------------------
@@ -609,14 +610,14 @@ def _self_check() -> int:
           f"{cutter.volume:.3f}")
 
     # --- the report reads the built solids, not the recipe --------------------
-    bracket = Box(40, 40, 40) - seat_for(block, "slip")
+    bracket = Box(40, 40, 40) - seat_for(block, "clear")
     good = seat_report(bracket, block)
     check("a cut bracket seats the component", good["seated"], str(good))
     check("clearance measured is the fit clearance",
           good["min_clearance_mm"] is not None
-          and math.isclose(good["min_clearance_mm"], slip, abs_tol=1e-6),
+          and math.isclose(good["min_clearance_mm"], clear, abs_tol=1e-6),
           str(good["min_clearance_mm"]))
-    tight = seat_report(Box(40, 40, 40) - seat_for(Box(9, 19, 29), "slip"), block)
+    tight = seat_report(Box(40, 40, 40) - seat_for(Box(9, 19, 29), "clear"), block)
     check("an undersized pocket is reported as a clash",
           not tight["seated"] and tight["clash_mm3"] > 1.0, str(tight))
 

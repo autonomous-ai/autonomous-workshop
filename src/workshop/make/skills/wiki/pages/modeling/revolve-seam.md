@@ -74,6 +74,12 @@ the builder right after each fuse
 gate runs, before writing the STEP rather than after; on a failure try the
 seam's quarter-turns before touching any dimension.
 
+Placement flips it as well: a scaled-sphere knot fused onto a lofted log
+checked clean in the part's print pose and `selfIntersecting` in the assembly
+frame, so a part entry that validates does not clear the assembly. Run the
+builder assert on the shape in the frame the assembly uses, and replace the
+scaled sphere with an analytic spheroid (below) rather than hunting a pose.
+
 A scaled sphere fails on its own too: a half-ellipsoid (scaled sphere cut by a
 box) for an eye dome checked `selfIntersecting` with nothing fused to it. The
 round replacements that also survive the STEP the gate meshes:

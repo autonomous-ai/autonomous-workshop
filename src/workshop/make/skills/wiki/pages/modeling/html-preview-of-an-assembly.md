@@ -1,15 +1,16 @@
 ---
 title: Previewing an assembly in an HTML viewer
 tags: [preview, viewer, html, three-js, glb, unit, transparency, camera, animation]
-aliases: [html preview, three.js viewer, preview mesh units, GLB assembly transform, occurrence matrix, exploded preview, display floor, preview transparency, ghost housing, shader invalidation, needsUpdate, orbit damping, OrbitControls, camera preset, preview animation controls, playback slider]
+aliases: [html preview, assembly instructions, exploded view offsets, assembly illustration, three.js viewer, preview mesh units, GLB assembly transform, occurrence matrix, exploded preview, display floor, preview transparency, ghost housing, shader invalidation, needsUpdate, orbit damping, OrbitControls, camera preset, preview animation controls, playback slider]
 sources:
   - skills/cad/scripts/packages/cadgen/src/cadgen/_internal/glb_mesh_payload.py
   - skills/cad/scripts/packages/cadgen/src/cadgen/_internal/glb.py
   - "experience: an opaque display floor hid underside parts translated downward in an exploded preview"
   - "experience: changing a preview material's transparency flag without shader invalidation left it visually opaque despite passing property checks"
+  - "experience: an exploded assembly sheet put a nut sideways out of a forward-pulled arm; in the oblique view it projected onto the post"
   - "experience: a camera reset retained orbit inertia, and stopping preview playback overwrote a range input before its event handler read the new value"
 related: [frames-and-rotations, step-file-format]
-updated: 2026-10-10
+updated: 2026-11-02
 ---
 
 # Previewing an assembly in an HTML viewer
@@ -61,6 +62,25 @@ With Z up, use the invariant `floor_z < min(part_world_bbox.min.Z)` across the
 visible exploded parts. Restore the display floor when returning to the seated
 view. This floor is presentation geometry, not a print bed or a support surface
 used to establish physical fit.
+
+## Explode offsets must stay apart after projection
+
+An explode offset is a 3D vector, but the reader sees its projection. Two
+components moved along different axes can land on top of each other on the
+page: a nut pushed sideways out of an arm that was itself pulled forward
+projected straight onto the post in an oblique view, so the exploded picture
+showed the nut "inside" the wrong part. After choosing offsets, project each
+part's offset onto the camera's right and up vectors and check that the part's
+screen box no longer overlaps the part it leaves; choose the explode axis or
+the camera so they separate, never a misleading pose.
+
+For printed assembly instructions (a static step-by-step sheet rather than a
+live viewer), render the step pictures from the same part builders the STEP
+comes from, offsetting parts along their real insertion path, and show a part
+hidden inside another (a rod in a post, a captive nut) with a half-section of
+the printed parts while the steel stays whole. Put callout text in a reserved
+margin and anchor each leader on a projected model point; text placed over
+geometry was unreadable on dark parts.
 
 ## Transparent previews require shader invalidation and image review
 

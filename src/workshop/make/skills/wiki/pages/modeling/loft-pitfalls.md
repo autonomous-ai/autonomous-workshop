@@ -11,7 +11,7 @@ sources:
   - "experience: a bent witch-hat tip lofted from a horizontal base"
   - "experience: validate never finished on an 18-lobe loft from periodic-spline sections; per-lobe edges made it finish in 88 s"
 related: [loft-organic-bodies, operation-families, frames-and-rotations, modeling-failure-modes, boolean-pitfalls]
-updated: 2026-10-12
+updated: 2026-11-02
 ---
 
 # Loft pitfalls
@@ -52,6 +52,16 @@ neither edge count nor direction. A boundary wire and its mirror run opposite
 ways and give unorientable band faces inside a solid of exactly the right
 volume; build ruled bands edge by edge
 ([[freeform-surfaces-in-build123d#ruled-surfaces-make_surface_from_curves]]).
+
+**Sections at different yaws twist a smooth loft.** Three ellipses lofted
+smooth (`ruled=False`), the top one turned 40° from the foot, self-intersected
+on their own. The same three on one shared yaw were valid. A ruled loft from a
+foot ellipse to a spline section cut from a solid twisted too, undercutting
+the flank (overhang and an open mesh). When a section must match a solid, fit
+an analytic curve to it. A plane section of an ellipsoid or spheroid is an
+exact ellipse, so take the centre from the section's bounding box, the major
+direction and semi-axis from the farthest sampled point, and the minor
+semi-axis from the nearest. Then loft ellipse to ellipse on that one yaw.
 
 ## Sections need one parametrisation, or the knots multiply
 

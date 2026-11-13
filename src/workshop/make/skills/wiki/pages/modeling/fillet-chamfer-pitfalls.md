@@ -13,7 +13,7 @@ sources:
   - "experience: a traced, freeform token outline whose top-edge fillet failed its walk at every sample count; rounded instead by ruled bands"
   - "experience: a key-plate outline of circles, ellipses and lines whose batch 2D fillet failed on one short edge, whose taper cap failed on its ellipses, and whose 3D top-edge fillet passed"
 related: [construction-strategy, operation-families, kernel-validity, modeling-failure-modes, flexi-chain-joints, rounded-bodies-on-the-print-bed]
-updated: 2026-10-10
+updated: 2026-11-02
 ---
 
 # Fillet and chamfer pitfalls
@@ -126,6 +126,16 @@ of rectangles and circles leaves (an antler, a Y profile), which had refused a
 1.2 mm edge fillet with no narrower cause and took it once cleaned. On a part
 printed flat, fillet only the top edges; the bed edge is
 [[rounded-bodies-on-the-print-bed#breaking-the-bed-edge]].
+
+## Rounding a narrowed bar: arcs only, not the step
+
+Narrowing part of an extruded profile (a hook's curl cut down to a thinner
+bar) leaves a step face. Selecting every edge on the new face by position
+picks up the bar's arcs, but also the straight edges where the step meets it.
+A round over that whole set built, and it validated. The blend at the step
+then tessellated with an open loop: `check_mesh` found 9 open edges and 2
+pinched vertices, and `repair_mesh` could not name a source fix. Round only
+the arcs (`.filter_by(GeomType.CIRCLE)`) and leave the step's edges square.
 
 ## Sketch fillets go before the boolean
 

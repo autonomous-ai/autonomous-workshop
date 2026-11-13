@@ -40,6 +40,12 @@ more for PETG, which is tackier (Sovol, PrintStack3D). The gap is **radial**
 (per side); a pin in a bore is `bore_d = pin_d + 2·xy`. State it once and
 derive both mating faces from it ([[fit-derivation]]).
 
+These gaps are for **print-in-place only**: faces printed together in one job
+must survive bridge sag, stringing and elephant's foot, so they stay larger
+than the house fits. A part assembled after printing uses the house rule
+instead ([[fit-derivation#the-fdm-clearance-table]]): fixed +0.1 mm total,
+moving +0.2 mm total.
+
 Pick the looser class when the mating area is large or the Z span is tall:
 more touching area means more chances for one stray line to weld the joint.
 

@@ -44,16 +44,17 @@ class TabSlotClearanceTest(unittest.TestCase):
 
     def test_the_tab_slot_clearance_is_one_printer_setting_marked_as_an_estimate(self):
         # Owner decision Q35, 2026-10-26: press-fit, glue-free, shared by every
-        # toy, 0.15 mm per side until the pilot's fit coupon replaces it.
-        self.assertEqual(self.module.TAB_SLOT_CLEARANCE, 0.15)
+        # toy. The owner's fixed fit (2026-11-13) is slot = tab + 0.1 mm total,
+        # so 0.05 mm per side, until the pilot's fit coupon replaces it.
+        self.assertEqual(self.module.TAB_SLOT_CLEARANCE, 0.05)
         self.assertTrue(self.module.TAB_SLOT_CLEARANCE_IS_ESTIMATE)
         done = subprocess.run([sys.executable, str(SCRIPT), "--limits"],
                               capture_output=True, text=True, timeout=60)
         self.assertEqual(done.returncode, 0, done.stderr)
         line = next(item for item in done.stdout.splitlines() if item.startswith("tab_slot_clearance"))
-        self.assertIn("0.15 mm", line)
+        self.assertIn("0.05 mm", line)
         self.assertIn("never per contract ESTIMATE until the pilot's fit coupon", line)
-        self.assertIn("`TAB_SLOT_CLEARANCE`, 0.15 mm per", (ROOT / "SKILL.md").read_text(encoding="utf-8"))
+        self.assertIn("`TAB_SLOT_CLEARANCE`, 0.05 mm per", (ROOT / "SKILL.md").read_text(encoding="utf-8"))
 
 
 class PrintDetailsSkillTest(unittest.TestCase):

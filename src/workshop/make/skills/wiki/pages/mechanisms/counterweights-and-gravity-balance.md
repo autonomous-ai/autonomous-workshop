@@ -170,6 +170,11 @@ printed friction relaxes ([[creep-and-stress-relaxation]]).
   print pause, or screw a lid on and fill the voids with epoxy or a
   compressible pad ([[magnets-and-strap-slots]] shows the pause-and-drop
   pocket). Loose shot rattles ([[noise-and-vibration]]).
+- A pocket opening on the bed face of an upright-printed base is a ceiling
+  over air its whole width: a Ø50 washer pocket fails any bridge limit. Sink
+  the pocket into the top of the floor instead and cover it with a drop-in
+  plate (a paving or lid insert), which also holds the weight down without
+  glue. Keep at least 2 mm webs between neighbouring pockets.
 - Put the fill where the moment needs it — as far from the pivot as the
   envelope allows — and model it as its own body so the CoM check uses its
   real density.

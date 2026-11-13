@@ -12,8 +12,9 @@ sources:
   - "experience: a multi-tool cut between dense lofts came back plausible in volume and wrong in shape"
   - "experience: face openings cut into a ribbed periodic-spline loft were valid only as one multi-tool cut"
   - "experience: a cutter flush with a revolve tangent and two cutters 2 deg apart each left unmeshable slivers"
+  - "experience: a grid search for a clash-free placement against a whole assembly ran past its time limit"
 related: [kernel-validity, construction-strategy, loft-pitfalls, feature-recipes, text-patterns-and-surface-detail, fuse-pitfalls, occt-boolean-options, shapely-cutters, brep-vs-source]
-updated: 2026-10-12
+updated: 2026-11-07
 ---
 
 # Boolean pitfalls
@@ -111,7 +112,14 @@ intersect to nothing with exit 0: a box cutting the solid returns nothing, a
 `split` keeps the whole. The closer the surfaces, the worse it behaves, and no
 fuzzy value reliably rescues it
 ([[occt-boolean-options#walk-the-fuzzy-value-up-from-exact]]). Keep surfaces
-clearly apart or clearly crossing. Measuring a comparison the boolean cannot
+clearly apart or clearly crossing.
+
+**A small sphere sunk to near its equator in a larger one.** An ear ball
+whose centre lay a little inside the head's surface fused without complaint
+and passed `validate`, but the mesh gate found two open loops at its seam.
+Small changes to its depth, direction or radius moved the seam in and out of
+failure. Sink a bump clearly (a third of its radius or more) or set it
+clearly proud, and run `check_mesh` after any change to the bump. Measuring a comparison the boolean cannot
 compute: [[brep-vs-source#near-coincident-solids-collapse-the-comparison]].
 
 **Near-tangent skins cost minutes before they cost correctness.** Cutting a
@@ -127,12 +135,29 @@ with the result, so no gate notices. Two fixes that each removed it:
   only above the plate's top (`void & above(z_plate)`), rather than unioning
   `slab & void` back on to the shell along the void's own skin.
 
+**A polygon whose flats touch a cylinder.** An octagon flare that starts at
+the column's diameter across the flats meets the cylinder along eight tangent
+lines. The fuse itself succeeds, but the next fuse or cut on that body fails or
+returns extra solids. Start the polygon 0.5 mm or more inside the cylinder,
+e.g. across flats `2 r - 1`, so every flat crosses the round instead of
+touching it.
+
 **Cutters that graze a tangent or each other.** A cutter face flush with a
 revolve's vertical tangent leaves a sliver face of about 0.01 mm^2. The sliver
 does not mesh, and `check_mesh` then crashes with `'NoneType' object has no
 attribute 'NbNodes'`. Move the cutter clear of the tangent. Two cutter faces
 that meet about 2 deg apart leave an open-edge sliver. At 6 deg or more apart
 they cut clean.
+
+**Re-cutting a cavity with its own cutter is coincident.** Parts added to a
+dish whose tray was already cut (paws on the rim, a head) were trimmed with
+the identical tray cutter. The second tray cut returned a null shape
+(`Cannot ... Null TopoDS_Shape`). Parts trimmed by the identical cutter and
+then fused onto the tray faces validated self-intersecting, and a cutter
+grown 0.05 mm left a sliver that failed once placed. Trim each added part
+with the cutter grown about 0.3 mm before one multi-argument fuse. Keep any
+part that would be cut on both sides of the wall clear of the cavity
+altogether, and assert that clearance.
 
 ## A boss level with a rod's crest poisons later features
 
@@ -189,6 +214,18 @@ all. At 19 m rendered to 1920 px, 1 px is ~10 mm, so a 4 mm groove is
 sub-pixel and reads only because the edge overlay draws feature edges. Keep
 booleans for openings that change the silhouette, and build the rest
 additively.
+
+## Price a boolean search before running it
+
+One OCC `Common` between two solids of toy-part size costs roughly half a
+second, so a placement or clearance search is `candidates x neighbours x 0.5 s`:
+a grid of a few hundred candidates against a whole assembly is many minutes. A
+grid search for a clash-free placement ran past a 600 s limit; about twenty
+chosen candidates against only the six solids that could be reached answered
+the same question in under a minute, with the per-neighbour clash volumes the
+diagnosis needed. Reject pairs by bounding box before any boolean (an AABB
+reject skipped 3,091 of 3,321 pairs on an 82-solid assembly), and run the
+boolean only on the survivors.
 
 ## An underside that follows a supplied shell
 

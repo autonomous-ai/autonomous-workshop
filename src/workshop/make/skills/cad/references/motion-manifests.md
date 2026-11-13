@@ -368,6 +368,14 @@ stage (the core turned by the shell's crown while unlocking) is a mover with a
 table that ramps and then stops. Give it a `maxStepMm` that fits the stage
 that matters: an axial lift past radial clearances tolerates coarse steps.
 
+A sequence step's `id` shares one namespace with the top-level conditions.
+If you copy the top-level lift-outs into a sequence under the same ids, the
+retention audit fails with "condition id ... is duplicated", and every sweep
+then runs twice. A static assembly of glued parts needs only the blocked
+sideways conditions at top level. Give each lift-out once, as a step of the
+sequence, with its own id (`seq-...`). Sweeps of organic parts are not cheap:
+19 linear conditions over a few frond-and-trunk solids took about 8 minutes.
+
 ### A mechanism's cycle comes from the project's own solution
 
 When the project already solves its kinematics numerically (a walk through a

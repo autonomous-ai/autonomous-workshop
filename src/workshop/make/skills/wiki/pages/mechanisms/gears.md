@@ -7,8 +7,9 @@ sources:
   - Shigley's Mechanical Engineering Design, ch. 13 (gear geometry, worm gearing)
   - bd_warehouse gear docs; py_gearworks docs
   - "toolchain: py_gearworks mesh_to(backlash=0.0) moves centres inward on a thinned pair (reproducible)"
+  - "experience: a motion check demanding flank contact on a backlashed printed spur pair, which no pose could satisfy"
 related: [shafts-and-bearings, energy-drive, mechanism-verification, element-libraries, noise-and-vibration]
-updated: 2026-09-23
+updated: 2026-11-07
 ---
 
 # Gears
@@ -129,3 +130,17 @@ Two numbers make a mesh claim honest, both measured on the built solids:
 
 A full-cycle sweep at coarse steps is a bulk-clearance check, not a mesh
 check — say which one each condition is in its description.
+
+### A backlashed pair never touches at its nominal pose
+
+Thinned teeth on nominal centres leave a flank gap at every sampled pose; that
+gap *is* the backlash. Measured: an m1 60/20 spur pair, both built with
+constructor `backlash=0.2` on nominal centres, held a flank gap of
+0.199–0.200 mm at every sample across its travel. So a claim that the driven
+gear is in contact — minimum distance ≈ 0 at the nominal pose — cannot pass on
+a printable pair. Write the mesh assert as `0 < gap <= designed backlash`,
+constant across the travel, and prove the drive by the free-play rotation
+above. Do not delete the backlash or phase one gear onto its flank to
+manufacture contact: without backlash the print binds, and a phase shift has
+to land within about a micron of arc — short of it there is still a gap, past
+it the sweep's overlap check fails.

@@ -10,8 +10,9 @@ sources:
   - "experience: a revolved offset() envelope lost its offset-curve face in the STEP; the drum cut by it read back as an open shell"
   - "experience: a revolved pumpkin core whose STEP read back with negative face areas"
   - "toolchain: offset of a B-spline section face failed; offsetting a 360-point polygon of the same wire worked"
+  - "toolchain: export_step writes the wall-clock time into the FILE_NAME header unless timestamp= is given (reproducible)"
 related: [build123d-builder-and-algebra, operation-families, cad-joint-types, step-file-format, sweeps-and-helices, mass-properties-and-measurement]
-updated: 2026-10-12
+updated: 2026-11-07
 ---
 
 # build123d operations and STEP export
@@ -80,6 +81,13 @@ import_step(filename) -> Compound
   `write.precision.mode` ([[step-file-format#what-the-translator-writes]]).
 - `import_step` returns one `Compound`. Its children are the solids, and
   labels come back when the file carried them.
+- The bytes are not reproducible by default: the `FILE_NAME` header carries
+  the export time to the second, so two exports of the same solid a second
+  apart differ in sha256. Pass a fixed `timestamp=` (any constant string) and
+  the same solid writes identical bytes. Without it, anything that hashes STEP
+  bytes is stale after every regeneration even when the geometry did not move;
+  compare geometry (volume, bounding box, a B-rep identity hash) instead, and
+  write repeated copies of one part by copying the first file's bytes.
 
 ### A solid on an offset curve is written and not read back
 

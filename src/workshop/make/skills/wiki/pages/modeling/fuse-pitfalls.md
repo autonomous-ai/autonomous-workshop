@@ -92,6 +92,22 @@ point fused into **one valid solid of 56 mm³ from operands of 50 000 and
 5 400**: the one-solid half of the guard passed it, and only the volume half
 catches it. A union is never smaller than its larger operand — assert that.
 
+A figure assembled from many primitives (dish loft, head sphere, ears, paws,
+tail loft) fails when its unions are chained. Chained unions
+`a.fuse(b).fuse(c)...` raised "Cannot intersect shape with empty compound" or
+returned a body that had lost a part's volume. One `body.fuse(*parts)` gave
+one valid solid. Assert `len(result.solids()) == 1` and a volume above the
+largest input, because a dropped part raises nothing. Do not `.clean()` the
+result of such a fuse: on the same figure it left 63 open edges in the
+tessellation, which a mesh gate reports as a leak.
+
+Chained unions can also pass every mesh gate and still fail `validate`. A
+face mask built as a drafted skirt plus three domes added one at a time, then
+cut by its nose and eye seats one at a time, validated `selfIntersecting` at
+the same volume. One `skirt.fuse(*domes)` followed by one `mask.cut(*seats)`
+validated clean. While a figure is iterated, validate every part its
+parameters reach, not only the body under review.
+
 A model assembled from many roles wants the same guard once, where the roles
 are labelled: every role holds material, or the build stops.
 

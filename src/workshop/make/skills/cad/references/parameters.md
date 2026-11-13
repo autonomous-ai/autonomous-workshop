@@ -68,12 +68,20 @@ never a hex. The palettes and rules are **Colour** in
 
 ```python
 import cadfits
-stem = cadfits.peg_for(SEAT_BORE_D, "slip")   # male from female
+stem = cadfits.peg_for(SEAT_BORE_D, "fixed")  # male from female
 bore = cadfits.slot_for(PIN_D, 0.15)          # female from male
 ```
 
-`scripts/cadfits.py` holds the FDM clearance table (`press -0.05`, `snug 0.10`,
-`slip 0.20`, `free 0.40`, per side) and the two derivations. Every CLI launcher
+`scripts/cadfits.py` holds the FDM clearance table and the two derivations.
+The house rule, in TOTAL clearance, for parts assembled after printing: a
+**fixed** fit (a tab, peg or leg into a socket) is feature + 0.1 mm, so a
+1.0 mm leg goes into a 1.1 mm socket; a **moving** fit (an axle, hinge or
+slider) is shaft + 0.2 mm, so a 1.0 mm shaft goes into a 1.2 mm hole. The
+table is per side: `press -0.05`, `fixed 0.05` (older name `snug`), `moving
+0.10` (older name `slip`, the default), `clear 0.20` (a bought part's seat;
+`check_mount`'s 0.10 floor is separate and unchanged), `free 0.40` (a screw's
+clearance hole, not a printed mate). Print-in-place joints take their larger
+gaps from `print_in_place_gap()`. Every CLI launcher
 in `scripts/` puts that directory on `sys.path` before it loads a generator, so
 a `*_lib.py` can `import cadfits` with no setup. `verify_project` supplies the
 same materialized scripts directory when it launches local `measure/*.py`

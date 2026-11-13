@@ -12,8 +12,9 @@ sources:
   - skills/image-to-cad/references/repeated-scene.md
   - "user correction: a hat tipped 9 deg off its pumpkin to match a photo looked lopsided; coaxial was preferred at a lower likeness"
   - "user correction: a pumpkin face aimed at the photo camera showed its side from the lamp's front"
+  - "experience: an owner-fixed base narrower than the concept capped likeness; a one-number sweep separated that cost from the frond gap"
 related: [likeness-iteration, measuring-reference-photos, organic-likeness, reference-silhouette-masks]
-updated: 2026-10-12
+updated: 2026-10-30
 ---
 
 # Silhouette likeness — what it measures and how it lies
@@ -203,6 +204,17 @@ with a 23 mm roof flat): the bounds are the design, so choose them first.
 Where a hard constraint contradicts the reference (a screen that forces a
 steeper windshield than the picture shows), the fit finds the least damaging
 compromise; record that deviation in the spec.
+
+When the brief fixes a number the concept draws differently, find out what
+that number costs before blaming the rest of the model. A base the owner sets
+at 90 mm, drawn at about 135 mm, under a height also fixed by the owner,
+narrows the whole front silhouette once it is height-normalised. Score one
+throwaway variant with only that number set to the drawing's value, kept out of
+the delivery history. In one such case the drawn base raised the score by
+about 0.05, from 0.75 to 0.80, still far below 0.90. That showed the owner's
+number was not the whole gap: the rest was frond bulk. Report the conflict as
+an owner question with both scores. Do not move the owner's number to pass the
+gate, and do not credit it with the whole shortfall.
 
 ## Filling holes removes through-openings
 

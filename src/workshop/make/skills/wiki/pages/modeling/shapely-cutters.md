@@ -6,8 +6,9 @@ sources:
   - "experience: eight lofted segments trimmed by 64-sided arc prisms ran past two minutes; true circles took two seconds"
   - "experience: a sliver cleanup returned 1349 pieces, two of them real; filtering by area took the tray from over ten minutes to 0.4 s"
   - "experience: a ring clipped by a polygon extruded downward into the part and left a closed void"
+  - "experience: a mitre-join opening of clipped rib pieces grew a 0.26 mm sliver back into the keep-out; the wall-thickness gate failed it"
 related: [boolean-pitfalls, sketch-and-extrude-direction, kernel-validity, construction-strategy, pixel-art-plans]
-updated: 2026-10-10
+updated: 2026-10-31
 ---
 
 # Cutters built from shapely polygons
@@ -47,3 +48,27 @@ a closed void under the surface that only the shell count shows, and an
 
 A plate built from a grid of cells (pixel art, voxels) has two more traps,
 float-mm unions and corner-only contact: [[pixel-art-plans]].
+
+## Opening a region to a minimum width: round joins, and clip again
+
+`p.buffer(-w/2).buffer(w/2)` (a morphological opening) removes every part of a
+region narrower than `w`, which is how a 2D plan is made to pass a print
+wall-thickness gate before any solid exists. Use `join_style=1` (round) for
+it. An opening with round joins is always a subset of the original region; one
+with mitre joins (`join_style=2`) is not: the dilation squares off every
+eroded corner, and at a sharp corner that square reaches past the original
+edge. Ribs clipped to a keep-out and then opened with mitre joins grew a
+0.26 mm sliver back into the keep-out, the thinnest wall in the part. To be
+sure, intersect with the keep region again after opening.
+
+Where two keep-outs overlap (a ring round a foot and a slot beside it), frame
+the kept region along its own boundary rings (`[keep.exterior] +
+list(keep.interiors)`), not each keep-out separately. Separate frames meet in
+a lune that tapers to zero width. Keep two keep-out outlines from crossing
+at a shallow angle as well: where a foot's keep-out grazed the rim ring, the
+rib between them came out as a near-degenerate wall whose triangles
+tessellated with an open edge, and the mesh gate failed. Leave at least one
+full rib width between them, or make them cross steeply. Check a plan with
+`g.difference(opened(g)).area` before extruding it: a few hundredths of a
+mm² from corner rounding is harmless, and any larger piece is a wall the gate
+will fail.

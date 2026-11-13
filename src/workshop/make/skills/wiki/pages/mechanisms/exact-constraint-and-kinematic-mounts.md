@@ -173,6 +173,15 @@ The usual way to locate a plate, lid or module in its plane:
   tolerance ([[tolerance-stack-up]]).
 - Two round pins in two round holes need the two spacings to agree within the
   clearance; in print they seldom do.
+- A single round pin leaves rotation free. That is harmless only when the part
+  is symmetric about the pin axis. A body whose top sits off the pin axis — a
+  leaning or curved column on a pin under its offset foot — swings its top
+  round a circle of radius equal to the offset, and glue fixes whatever angle
+  it was set down at. Key it: a D-flat on the pin and a matching flat in the
+  recess, with the flat's clearance from the same `cadfits` fit as the round
+  part. Cut the recess roof with the same flat so no ledge forms over it. Prove
+  it with a rotation check that expects `blocked`, because sideways and lift
+  checks pass on an unkeyed pin.
 
 ## Joints and bearings are constraints too
 

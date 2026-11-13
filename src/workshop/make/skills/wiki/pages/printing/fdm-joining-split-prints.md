@@ -10,7 +10,7 @@ sources:
   - https://www.baysingersadditivemanufacturing.com/splitting-and-assembling-large-files/
   - https://kingroon.com/blogs/3d-print-101/best-methods-to-bond-3d-prints-together
 related: [printed-part-count, fit-derivation, layer-anisotropy, joints, exact-constraint-and-kinematic-mounts, interlocking-joinery-for-prints, push-pins-and-clip-fasteners, adhesives-and-solvent-welding]
-updated: 2026-10-10
+updated: 2026-11-02
 ---
 
 # Splitting large prints and joining the pieces
@@ -186,6 +186,13 @@ the datum and slot hold the step to the snug fit.
 - **Hydraulic lock**: a zero-clearance pin traps air and liquid glue, and
   the parts will not seat. Add relief channels or chamfered entries so
   excess adhesive escapes (Sovol).
+- A key rib that fills its slot to the surface vents nothing beyond the fit
+  clearance. End the rib flush with the socket's top face (a rib stopping
+  below it leaves the open slot showing at the surface as a gap), and in a
+  blind socket put the CA on the wall in dots, never in the floor, so air
+  leaves through the clearance as the part goes down. A socket glued with a
+  liquid that fills the floor needs a real vent: a groove down the wall or a
+  hole through the floor.
 - Tongue width at least 1.5–2 × the extrusion width; 0.5–1.0 mm
   fillets/chamfers on internal corners of the joint (Sovol).
 - Mechanical keys locate; glue holds. A dowel or plug aligns two faces, a
@@ -200,6 +207,15 @@ Which adhesive bonds which filament, with tensile results and gap filling:
 In Baysinger's test, glued parts broke in the printed material rather than at
 the glue line. A good glued seam is not the weak point: the layer lines next
 to it are.
+
+- A figure glued into a straight-walled seat pocket cut from its own
+  horizontal sections needs sections up to the pocket's full depth. The
+  pocket is one extrusion of the union of those sections, so a flank that
+  widens above the highest section (a shoulder, a tail root) clashes with the
+  pocket wall. Deepening such a seat from 2 to 3.5 mm while keeping the
+  sections at 0.4–2.0 left a 10.7 mm³ clash that only `interfere` found.
+  Derive the section heights from the depth, up to just under the top, and
+  assert that the highest one reaches it.
 
 ## Checks
 

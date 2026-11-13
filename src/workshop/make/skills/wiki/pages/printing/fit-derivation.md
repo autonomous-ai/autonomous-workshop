@@ -7,7 +7,7 @@ sources:
   - skills/cad/references/parameters.md
   - "experience: hand-sized mates whose audits restated their own arithmetic, and a retainer gap derived from the pin instead of its head"
 related: [joints, printed-part-count, wall-thickness-and-hollowing, mechanism-verification, tolerance-stack-up, post-processing-and-finishing, thermal-expansion-and-hybrid-parts]
-updated: 2026-09-23
+updated: 2026-11-13
 ---
 
 # Deriving fits and clearances
@@ -18,7 +18,25 @@ and derive the gap from the feature that actually decides it.
 
 ## The FDM clearance table
 
-Per side, from `cadfits`: `press -0.05`, `snug 0.10`, `slip 0.20`, `free 0.40`.
+**House rule (owner, 2026-11-13), in TOTAL clearance** for parts assembled
+after printing:
+
+| fit | what | clearance | example |
+|---|---|---|---|
+| fixed | a tab, peg or leg into a socket | socket = feature + 0.1 mm (0.05 per side) | 1.0 mm square leg → 1.1 mm socket |
+| moving | anything that rotates or slides: axle, hinge, slider | hole = shaft + 0.2 mm (0.10 per side) | 1.0 mm shaft → 1.2 mm hole |
+
+`cadfits` stores per-side values: `press -0.05`, `fixed 0.05` (older name
+`snug`), `moving 0.10` (older name `slip`, and the default), `clear 0.20` (a
+bought part's seat, see below), `free 0.40` (a screw's clearance hole or a
+loose drop-in, not a printed mate). A published range or an older page that
+gives another number for a printed mate is context; the house rule is the
+default. Print-in-place joints (printed already assembled) are the exception
+and take their larger gaps from `print_in_place_gap()`
+([[print-in-place-mechanisms#the-gap-is-per-face-and-per-direction]]). A bought
+part's seat keeps `check_mount`'s 0.10 mm-per-side floor: it does not
+compress.
+
 `peg_for(bore, cls)` gives the male from the female; `slot_for(pin, cls)` the
 female from the male. Which class each joint uses is in [[joints#two-fit-classes-per-project]].
 
@@ -34,7 +52,7 @@ assert math.isclose((PIN_D + 2 * PIN_CLEAR) - PIN_D, 2 * PIN_CLEAR)   # 2C == 2C
 
 That reduces to `True` and passes whatever the geometry does. Instead:
 
-- derive the second half through `cadfits` (`stem = cadfits.peg_for(SEAT_BORE_D, "slip")`,
+- derive the second half through `cadfits` (`stem = cadfits.peg_for(SEAT_BORE_D, "fixed")`,
   `bore = cadfits.slot_for(PIN_D, 0.15)`);
 - have the project's fit audit recompute module-level results *independently*
   and band-check every per-side clearance;
@@ -55,6 +73,17 @@ When three or more dimensions set the gap, sum them: [[tolerance-stack-up]].
 A finish coat changes a mate by twice its thickness on a diameter
 ([[post-processing-and-finishing]]); a metal part in a plastic one changes it
 with temperature ([[thermal-expansion-and-hybrid-parts]]).
+
+## A press fit is an interference the gate will flag
+
+Modelled at nominal, a `press` peg (a negative clearance) overlaps its hole,
+and `interfere` reports the overlap as a clash. For a small peg pressed by
+hand into a printed hole, use `fixed` (`peg_for(hole, "fixed")`). A printed
+hole comes out 0.1-0.3 mm undersize
+([[dowel-pins-and-press-fits]]), so a fixed-fit peg grips in practice while the
+model stays clash-free. Add a drop of glue where the joint must not come
+apart. Use `press` only for a bought dowel in a reamed or drilled hole, and
+record the deliberate overlap as an accepted interfere pair.
 
 ## Clearance comes off the largest feature, not the nearest one
 

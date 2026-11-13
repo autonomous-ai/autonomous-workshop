@@ -7,7 +7,7 @@ sources:
   - "experience: a kinematic model of that cube's eight hinges, every hinge open or folded, enumerated for loop closure and overlap"
   - "experience: three themed skins built on it; a build review found the seam band, the line width and the flat-joined seams"
 related: [mechanical-puzzles, print-in-place-mechanisms, hinges-and-pin-joints, fdm-multi-material-design, play-value-and-tactile-feel, mechanism-verification]
-updated: 2026-10-27
+updated: 2026-10-29
 ---
 
 # Infinity cubes — fold states and decorating every face
@@ -69,7 +69,16 @@ and the horizontal seam between the eyes and the mouth. A centred disc reads as 
 (a sun of radius 13 mm keeps 51 %; at 10 mm it kept 40 % and read as four
 fragments in each tile's inner corner). A ring about the centre
 must sit at a radius where enough of it clears the band: at r = 7.4 about half
-of it survives, and at r = 4.9 less than a quarter.
+of it survives, and at r = 4.9 less than a quarter. An outline (a hub
+frame, a square) centred on the crossing is worse: the cross leaves only its
+corners, which read as four brackets. For a focal motif that is a group rather
+than one shape, put one element wholly inside each tile, mirrored about both
+seams, and bridge them with lines that run straight over the seams, so they
+frame the crossing as one block. Each bridge must show about as much line per
+tile as the band is wide (3.6 mm against 5.6 mm): at under 2 mm per tile the
+bridges read as stubs, and the group falls back into separate motifs. Pull the
+elements outward until it does, even at the cost of outer detail. Assert that
+no focal element meets the band and every bridge keeps its run.
 
 Also keep every hinge pocket footprint, grown by the hinge keep-out band, bare.
 The pocket opens through the joint faces as well as the link's own face, so take
@@ -131,11 +140,23 @@ circuit prints, stock circuit patterns):
   that cannot reach a second chip fans out 45° into two pads;
 - chips anchor the layout (one per tile at its most open spot); hinge-link
   outlines double as connectors that traces leave like pins;
+- a chip reads as a chip only when its body is at least twice the width of
+  the bus that meets it and a leg sticks out at every pin; a square barely
+  wider than a two-trace bus reads as a bulge in the wire. The inlay's
+  round-joined clean-up turns a leg about as long as it is wide into a nub, and
+  a ring of nubs reads as a cog: draw legs at least about 1.75 x their width.
+  Mark pin 1 with a chamfered body corner, not a hole (a hole reads as an
+  eye). Where the body and its legs do not fit, leave the tile chipless with
+  fan-outs;
 - pads only at trace ends, a minimum centre pitch apart, everything a clear
   gap from what it does not join.
 
 Audit all of it on the vector layout (angles, ends, lone pads, pad pitch and
-clusters). Audit continuity and whole pads on the finished regions too. Measure
+clusters). **Replay every new check on the defect it was written for before
+trusting it.** A jumper-length check that clipped each tip to a 15 mm disc took
+in both tiles. It reported the whole jumper for each half, and it passed the
+2.6 mm stubs it was meant to catch. Measure a crossing trace's half on its own
+side of the seam, with the floor at the generator's own parameter. Audit continuity and whole pads on the finished regions too. Measure
 crossing room geometrically (a straight lane clear of the link outlines), so a
 face that cannot carry a crossing is reported rather than excused.
 

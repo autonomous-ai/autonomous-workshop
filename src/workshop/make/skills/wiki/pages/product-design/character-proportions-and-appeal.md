@@ -25,7 +25,7 @@ sources:
   - https://brianlemay.com/Drawingcourse/StraightsandCurves.html (lines are straights or C and S curves; W and M curves break the flow)
   - Tom Bancroft, Creating Characters with Personality (2006), ch. 2 (shape, size and variance)
 related: [product-aesthetics, body-dimensions-for-scale, stability-and-tipping, fdm-minimum-feature-sizes, fdm-multi-material-design, carved-figures-on-split-prints, fdm-joining-split-prints, toy-safety-constraints, posable-figure-joints, organic-likeness, smooth-skin-from-a-field, beam-and-plate-stiffness, printed-part-count, form-and-finish-heuristics, overhangs-and-print-orientation]
-updated: 2026-10-10
+updated: 2026-11-02
 ---
 
 # Character proportions and appeal
@@ -168,6 +168,29 @@ and take the detail budget; the nose and mouth shrink to a dot and a line.
   head width are 3.8 mm, and a quarter-eye highlight is 1 mm, at the
   two-line limit of a 0.4 mm nozzle. The highlight is the first feature the
   slicer drops: enlarge the eye or leave the highlight out.
+
+- **Aim the face at the view people see.** A small round light muzzle with a
+  dark nose in its middle is an eyeball when the face is turned away from the
+  camera: the head's width foreshortens, both eyes stack on one side, and the
+  muzzle becomes the biggest eye. Turn the face to the hero camera, make the
+  muzzle a wide low mask, and keep the nose small and near the mask's top.
+- **Put the eyes where the reference puts them.** A cartoon animal whose
+  light mask runs brow to chin carries its eyes on the mask; eyes set on the
+  dark head above it read as a different animal. Place each eye by marching
+  from the head centre along its direction until the point leaves the mask
+  solid, then bisect: a single ray–surface hit misses on a curved mask and the
+  eye silently vanishes. Assert the found radius exceeds the head's.
+- **Judge a character at the reference's camera, beside the reference.** Render
+  the figure at the camera and scale the concept was drawn from, set the two
+  side by side, and have a reviewer who did not build it compare them, round
+  after round. Turning the face three-quarter to look "natural" hid an eye and
+  lost the likeness; facing the hero camera kept it.
+  Ask the critic to grade every part by name (body, tail, limbs, ears, head,
+  face), not "does it look like the reference": a critic shown the whole
+  figure tends to judge the face, and passed a head that was right on a body
+  a later reviewer read as a canoe with a wedge tail.
+  For the concept-only checklist, the two-judge loop and the face, ear and
+  neck fixes it found, see [[character-likeness-review]].
 
 | eye method | how | limit |
 |---|---|---|

@@ -142,6 +142,11 @@ cleat can run full width and catch every stud it crosses.
 - A printed hook under a permanent load **creeps** open, faster when warm
   ([[creep-and-stress-relaxation]]): pick PETG, ASA or PC over PLA, and design
   the hook with a large safety factor on sustained stress.
+- **A hook that slides up into a slot** in a rail or branch can carry no
+  material above the host's widest line on the wall side, or the slide is
+  blocked before the hook seats. Cut the hook flat at that line (the top of its
+  wrapped toes) and let a cross pin, not the grip, retain it; prove the path
+  with a motion check in both the insert and the blocked directions.
 
 ## Orienting a printed wall bracket
 

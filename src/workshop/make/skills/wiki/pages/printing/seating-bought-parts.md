@@ -53,7 +53,8 @@ mouth has an undercut, and rigid parts do not bend into one.
   skin the slicer prints and the component cannot pass. The mouth goes on the
   side the part comes in from; a mouth on the floor side leaves the skin, as
   thin as the clearance, and only an insertion sweep sees it.
-- Use a running fit (`slip`, 0.20 per side) by default; never an interference
+- Use `clear` (0.20 per side, `cadmount`'s default) by default, not the
+  printed-part house fits, which are tighter; never an interference
   class — a bought part does not compress.
 - A bounding-box envelope is looser and cannot miss a feature: the answer when a
   silhouette seat will not converge, or when a rectangular pocket is what the
