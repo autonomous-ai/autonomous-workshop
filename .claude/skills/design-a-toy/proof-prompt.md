@@ -70,7 +70,9 @@ command from the repository root with `uv run python`, never
    `src/workshop/make/skills/wiki/scripts/wiki search …` and `show …`. Write
    `# wiki: <slug>` beside the value and add the page's `assert`. A fit the
    contract does not give is a guess (fits are a contract field), with the
-   page cited.
+   page cited. Fit clearances follow the owner's printed-fit rule in
+   `docs/agents/owner-rules.md` (total, not per side: fixed +0.1 mm, loose
+   +0.2 mm); it wins over a wiki or `cadfits` per-side value.
 4. **Standard parts.** Every gear, bearing and fastener comes from
    `src/workshop/make/skills/cad/scripts/stdpart` (`bd_warehouse`,
    `py_gearworks`). Never a hand-written involute. A pin, spring, magnet, cork

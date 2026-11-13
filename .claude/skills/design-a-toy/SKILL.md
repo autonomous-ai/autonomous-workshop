@@ -132,7 +132,9 @@ Drive to a written spec containing:
   straight knife edge as a thin wall, however its angle is tuned.
 - **Every joint, pinned.** For each pair of Components that join: the joint
   type (peg and socket, collar, pin, snap, glue face), its dimensions and
-  clearance in mm, and where it sits on both mating Components. Make builds
+  clearance in mm (total, from the owner's printed-fit rule in
+  `docs/agents/owner-rules.md`: fixed +0.1, loose +0.2), and where it sits
+  on both mating Components. Make builds
   joints exactly as written and cannot choose them: never write "hidden
   joints", "Make decides the pegs" or any other hand-off of joint geometry.
 - **No two statements that cannot both hold.** A face cannot be both a
@@ -192,8 +194,9 @@ sliding or spinning part — also drive to:
 
 - **Motion and fit.** Every moving part, what it moves against, and how it is
   retained. Whether it prints in place or is assembled. Each motion stated as
-  geometry the build can be checked against: clearance in mm, pin or axle
-  diameter, joint range in degrees. "Rolls freely" or "poses well" is prose for
+  geometry the build can be checked against: clearance in mm (total: a
+  moving fit is hole = shaft + 0.2 mm, per the owner's printed-fit rule in
+  `docs/agents/owner-rules.md`), pin or axle diameter, joint range in degrees. "Rolls freely" or "poses well" is prose for
   the spec, never a requirement.
 - **The Display Pose.** One fixed arrangement of every moving part. The assembly
   reference image and the built toy both use it, so every review compares
@@ -447,9 +450,10 @@ cannot be explained in one clear Manual step is a bad split.
    - A Panel is one filament colour. Its relief detail (a door's arch
      moulding, a frame) prints on its face; texture and colour go on Print
      Pieces.
-   - Tabs press into slots without glue. Never write a clearance into the
-     contract: it is one printer setting, `TAB_SLOT_CLEARANCE` in
-     `print-details` (an estimate until the pilot's fit coupon).
+   - Tabs press into slots without glue, at the owner's fixed fit: slot =
+     tab + 0.1 mm total (printed-fit rule in `docs/agents/owner-rules.md`).
+     `print-details`' `TAB_SLOT_CLEARANCE` (0.15 mm per side) disagrees;
+     the owner rule wins.
    - A box closes with each Panel entering alone: the last Panel slides in
      along grooves, so no step moves two Panels at once.
 2. **Order the steps** as Rolife does:

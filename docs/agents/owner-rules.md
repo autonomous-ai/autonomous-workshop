@@ -123,6 +123,18 @@ rule, this file only points to it; that source stays the authority.
   that fit in CAD can still be hard to fit together after printing, so print
   them as one piece with a multi-colour print instead. Why: the snowman cap's
   tip and body fitted in CAD but not in real prints (owner, 2026-11-05).
+- **Printed fits use total clearance** (owner, 2026-11-13). The value is the
+  whole difference between the two sizes, never per side:
+  - **Fixed fit** (a tab, peg or leg into a socket): socket = feature +
+    0.1 mm. A 1.0 mm square leg goes into a 1.1 mm square socket.
+  - **Loose fit** (anything that must rotate or slide: an axle, hinge or
+    slider): hole = shaft + 0.2 mm. A 1.0 mm shaft goes into a 1.2 mm hole.
+
+  Write these into every contract joint and Interface. Where a skill, wiki
+  page or tool gives a per-side value (`cadfits`' `snug 0.10` and `slip
+  0.20`, `TAB_SLOT_CLEARANCE` 0.15), this rule wins: a per-side parameter
+  takes half the total (0.05 fixed, 0.10 loose). Why: per-side values
+  double the gap the owner wants.
 
 ### Image models
 
