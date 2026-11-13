@@ -134,6 +134,15 @@ the pastel stays. Measure saturation and tint direction on subject, shadow and
 sweep before choosing; a subject tinted the ground's own way gets nothing from
 it.
 
+A warm-grey gradient sweep with a soft vignette (an AI product concept) defeats
+the default too: its border spans 30+ luminance levels, so `band`, `neutral` and
+`edge` flood the frame, `tint` drops every cream and white part, and the tool's
+own mask can lose a whole dark-green base. `--ground border` with a wide
+`--chroma-tol` (20) held the outline: the sweep's chroma is nearly constant
+while its luminance is not. Expect white parts that touch the ground (fence
+pickets) to come back notched and a sliver of contact shadow under the base;
+read the `-sil.png` and quote both.
+
 ### Score the pairs
 
 `render_views.py` prints the command:

@@ -38,7 +38,7 @@ Derive the barrel from the pin, never the other way round, and never type
 both:
 
 ```text
-barrel bore     d_b = slot_for(d_pin, fit)            (assembled pin)
+barrel bore     d_b = slot_for(d_pin, "moving")       (assembled pin: +0.2 mm total, house rule)
                 d_b = d_pin + 2 · gap_xy               (print-in-place, gap from print_in_place_gap)
 knuckle OD      D_k ≥ d_b + 2 · w_min,   w_min = 3 × nozzle width (1.2 mm at 0.4)
 printed pin     d_pin ≥ 6 × nozzle (2.4 mm); 3–6 mm is the comfortable range
@@ -66,7 +66,10 @@ horizontal or a vertical hinge axis are on
 [[print-in-place-mechanisms#the-gap-is-per-face-and-per-direction]] and
 [[print-in-place-mechanisms#pin-orientation]]. For a pin-in-barrel hinge use
 `"tight"` (0.20) on a tuned printer and `"sliding"` (0.30) as the default; if a
-tuned hinge still fuses, lower flow 2–5 % before widening the gap.
+tuned hinge still fuses, lower flow 2–5 % before widening the gap. These
+gaps (and the 0.15–0.40 mm per side the sources quote) are for
+**print-in-place only**; a hinge whose pin goes in after printing uses the
+house moving fit, +0.2 mm total ([[fit-derivation#the-fdm-clearance-table]]).
 
 A rigid sweep cannot prove a print-in-place hinge breaks free. Declare it an
 open item until a print does ([[mechanism-verification#9-what-nothing-here-proves]]).

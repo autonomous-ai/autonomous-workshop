@@ -70,6 +70,12 @@ intersection is trustworthy only after the ladder, and then it is useful: an
 earlier cut in the order may already have taken everything a later one would
 (a pupil inside an eye white meets nothing once the white is out of the head).
 
+A circle prism whose seam edge lies on an axis can come back from a common
+with a curved body as an **empty Compound** with no error, where the same
+outline turned a few degrees (37 deg worked) returns the region. Turn the seam
+off the axes, probe a surface with a small rectangle rather than a circle, and
+assert the result's volume before using its bounding box.
+
 ## Keep comparison operations read-only
 
 Do not assume `a - b` leaves `a` and `b` unchanged. A wrapper that calls

@@ -135,8 +135,9 @@ print defect; read the report row before changing numbers again.
 | steepest face looking down | 45 deg gate, designed to 38 | `printing/overhangs-and-print-orientation.md` |
 
 `--limits` also prints the one fit every kit panel shares, the press-fit,
-glue-free clearance of a tab in its slot: `TAB_SLOT_CLEARANCE`, 0.15 mm per
-side (owner decision Q35, 2026-10-26). It is a printer setting, never a
+glue-free clearance of a tab in its slot: `TAB_SLOT_CLEARANCE`, 0.05 mm per
+side, the owner's fixed fit of 0.1 mm total (owner decision Q35, 2026-10-26;
+value from the printed-fit rule, 2026-11-13). It is a printer setting, never a
 contract's, and an **estimate** until a printed fit coupon (tab and slot
 pairs at stepped clearances) in the kit pilot replaces it.
 

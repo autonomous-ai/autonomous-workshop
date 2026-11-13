@@ -40,7 +40,7 @@ class VerifyProjectAuditEnvironmentTest(unittest.TestCase):
         result = self.run_audit(
             "from dimensions import PIN_DIAMETER\n"
             "import cadfits\n"
-            "assert cadfits.slot_for(PIN_DIAMETER, 'slip') == 4.4\n"
+            "assert cadfits.slot_for(PIN_DIAMETER, 'slip') == 4.2\n"
         )
         self.assertEqual(result.returncode, 0, result.stderr)
 
@@ -60,7 +60,7 @@ class VerifyProjectAuditEnvironmentTest(unittest.TestCase):
 
     def test_bundled_helper_precedes_a_project_module_with_the_same_name(self):
         (self.project / "cadfits.py").write_text("raise RuntimeError('shadow helper')\n")
-        result = self.run_audit("import cadfits\nassert cadfits.slot_for(4, 'slip') == 4.4\n")
+        result = self.run_audit("import cadfits\nassert cadfits.slot_for(4, 'slip') == 4.2\n")
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_invalid_fit_still_fails_after_successful_import(self):
@@ -72,7 +72,7 @@ class VerifyProjectAuditEnvironmentTest(unittest.TestCase):
     def test_existing_pythonpath_dependencies_remain_available(self):
         dependency = self.root / "existing dependency"
         dependency.mkdir()
-        (dependency / "audit_dependency.py").write_text("EXPECTED = 4.4\n")
+        (dependency / "audit_dependency.py").write_text("EXPECTED = 4.2\n")
         result = self.run_audit(
             "import cadfits, audit_dependency\n"
             "assert cadfits.slot_for(4, 'slip') == audit_dependency.EXPECTED\n",

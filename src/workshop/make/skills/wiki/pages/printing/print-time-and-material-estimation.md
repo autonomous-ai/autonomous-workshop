@@ -81,6 +81,13 @@ metres per kg = 1000 / (g per metre)
 Cost is `m · price_per_kg / 1000`, with `m` including support, brim and
 purge.
 
+Estimate mass from the model, not from the object's look. A hook rack read as
+a light decorative log, guessed at 180 g, weighed 613 g from its solids at
+4 walls and 30 % infill, because thick hook bodies are mostly wall: on a part
+under about 20 mm thick, walls set the mass and infill barely matters. Give
+each part its own walls and infill in the ledger (a decorative body carries
+fewer walls than a load path), and recompute before quoting a unit cost.
+
 ## Time: flow-bound, then everything else
 
 A hotend can melt only so much plastic per second — the **maximum

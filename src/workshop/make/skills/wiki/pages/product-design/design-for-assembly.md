@@ -8,7 +8,7 @@ sources:
   - https://www.denix.osd.mil/soh/denix-files/sites/21/2016/03/02_MIL-STD-1472F-Human-Engineering.pdf
   - "experience: a shell split at a reference image's foot seam could not be lifted over the core inside it; check_motion's service path found it"
 related: [printed-part-count, joints, construction-strategy, handheld-ergonomics, mechanism-verification]
-updated: 2026-10-10
+updated: 2026-11-02
 ---
 
 # Design for assembly
@@ -78,11 +78,32 @@ too many.
 2. Give every separate part a single assembly direction and a keyed
    orientation (a single flat, an asymmetric tab), and check it with the
    joint's `clear` and `blocked` conditions ([[joints#the-two-conditions-every-joint-owes]]).
+   A round peg in a round socket has no orientation at all: give it a radial
+   rib in a socket slot. Two identical pegs in two sockets (twin stalks, twin
+   legs) still swap. Ribs of different widths only key one way: the wide rib
+   cannot enter the narrow slot, but the narrow rib slides into the wide slot,
+   turned until it lines up. Make the keys exclusive by varying two
+   dimensions in opposite senses, a narrow deep rib against a wide shallow
+   one, so each slot refuses the other's rib; or keep width-only keys and
+   make the order the key: glue the wide-rib parts first, so each narrow-rib
+   part finds only its own socket free, and say so in the step that uses it.
+   Choose each slot's azimuth in plan, from the
+   distance to every other cut and the rim, before choosing it from looks: a
+   slot cut toward a neighbouring socket takes its depth out of the thinnest
+   wall.
 3. Prefer snaps and captured pins over glue. A glued joint answers "must be
    separate" with no, which means it should usually have been one printed
    part.
 4. Put the chamfer on the socket or the pin as a feature in the source, not
    left to post-processing.
+5. Illustrate the assembly. Show an exploded view with every part labelled
+   and one picture per step. Point out each keying feature (a rib, its slot)
+   in the step that uses it, and pick each step's camera so that feature
+   faces the viewer; a rib on the far side of its stalk is invisible from
+   the hero camera. Explode small parts across the screen, not along a
+   direction that points at the camera: face parts pulled off along a face
+   that looks at the viewer stack into one blob. Add a close-up of small
+   parts.
 
 ## A shell parts where its opening clears what it covers
 

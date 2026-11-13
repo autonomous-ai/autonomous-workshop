@@ -113,10 +113,10 @@ PRINT_CLEARANCE = 0.2          # mm a recess or slot is longer than its piece
 SLOT_CLEARANCE = 0.3           # mm a card slot is wider than the card
 # A kit panel's tab in its slot (owner decision Q35, 2026-10-26): press-fit and
 # glue-free, one printer parameter shared by every toy, never set per contract.
-# Per side. An ESTIMATE, pending research into Rolife's fit: replace it with
-# the clearance a printed fit coupon (tab/slot pairs at stepped clearances)
-# proves in the pilot.
-TAB_SLOT_CLEARANCE = 0.15
+# Per side: 0.05, the owner's fixed fit (2026-11-13), slot = tab + 0.1 mm
+# total. Still an ESTIMATE until a printed fit coupon (tab/slot pairs at
+# stepped clearances) proves it in the pilot.
+TAB_SLOT_CLEARANCE = 0.05
 TAB_SLOT_CLEARANCE_IS_ESTIMATE = True
 STAND_TAB = 5.0                # mm of tab under a standing card (print_sheets.py)
 WRAP_OVERLAP = 5.0             # mm of glue overlap on a band (print_sheets.py)

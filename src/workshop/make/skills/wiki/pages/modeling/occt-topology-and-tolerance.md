@@ -1,13 +1,14 @@
 ---
 title: OpenCASCADE topology and tolerance
 tags: [occt, opencascade, topology, tolerance, orientation, brep, shape-type]
-aliases: [TopAbs_ShapeEnum, TopoDS, TShape, TopLoc_Location, shape orientation, FORWARD REVERSED, compsolid, shape tolerance]
+aliases: [ThreePointArc endpoint, non-reproducible build, TopAbs_ShapeEnum, TopoDS, TShape, TopLoc_Location, shape orientation, FORWARD REVERSED, compsolid, shape tolerance]
 sources:
   - https://occt3d.com/dev/doc/overview/html/occt_user_guides__modeling_data.html
   - https://occt3d.com/dev/doc/overview/html/specification__boolean_operations.html
   - https://occt3d.com/dev/doc/overview/html/occt_user_guides__shape_healing.html
+  - "experience: a teardrop outline whose lines met a ThreePointArc at a computed tangent point built two different vertex sets, 31 of 60 builds against 29, in one process"
 related: [occt-boolean-options, occt-shape-healing, kernel-validity, build123d-builder-and-algebra]
-updated: 2026-09-23
+updated: 2026-11-01
 ---
 
 # OpenCASCADE topology and tolerance
@@ -86,6 +87,16 @@ a gap as far as topology is concerned, and sewing exists to merge them.
 - Healing tools take a working precision, a maximum tolerance (how far a fix
   may grow tolerances) and a minimum tolerance (the smallest edge to keep):
   [[occt-shape-healing]].
+- **Join a line to an arc at the arc's own endpoint.** `ThreePointArc` refits
+  its ends through the circle it lies on, so an end you computed yourself (a
+  tangent point, a chord end) and the arc's end can differ by one ULP.
+  `make_face` welds the shared vertex to whichever copy it meets first, so the
+  face's vertex set changes from build to build with the same area and bounds:
+  a teardrop with flanks at 37.776° gave two vertex sets, 31 of 60 builds
+  against 29. No boolean, `clean()` or healing pass makes them agree. Build the
+  arc first and draw each line to `arc @ 0` and `arc @ 1`; that gave one vertex
+  set over 180 builds in four processes. Assert it:
+  `assert (line_end - arc @ 1).length == 0`.
 
 ## What a boolean argument must be
 

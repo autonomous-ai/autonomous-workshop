@@ -1,7 +1,7 @@
 ---
 title: Overhang shape recipes
 tags: [overhang, orientation, support, teardrop, figure, dome, dimple, opening, fan, cone]
-aliases: [support-free figure, overhang recipe, fan on edge, chin overhang, raised relief overhang, flat-topped dome, dome ceiling, tilted socket, spherical dimple, bead dimple, carved opening, lantern face, ball on a cone, free fist, bed-face groove, seam groove]
+aliases: [support-free figure, overhang recipe, fan on edge, chin overhang, raised relief overhang, flat-topped dome, dome ceiling, tilted socket, leaning trunk, bent column, spherical dimple, bead dimple, carved opening, lantern face, ball on a cone, free fist, bed-face groove, seam groove]
 sources:
   - skills/cad/scripts/check_overhang
   - "experience: support-free figurines: a horse chin, raised chest emblems and stacked arm segments all failed check_overhang"
@@ -9,8 +9,9 @@ sources:
   - "experience: bauble dimples on a revolved tree failed check_overhang with a 50 deg tangent roof and passed at 40 deg"
   - "experience: a pixel cabin's roof halves and seam grooves; a voxel gift box's bed-face grooves"
   - "experience: a jack-o'-lantern shell with a carved face, printed upright on its open rim; a chibi figure with a carried pumpkin and a free fist"
+  - "experience: a ringed vase trunk leaned 8 and 14 deg over a straight bore, printed upright with no support"
 related: [overhangs-and-print-orientation, rounded-bodies-on-the-print-bed, knife-edges-and-tapers, wall-thickness-and-hollowing, carved-figures-on-split-prints, fdm-bridging-and-sacrificial-layers]
-updated: 2026-10-10
+updated: 2026-11-02
 ---
 
 # Overhang shape recipes
@@ -134,6 +135,58 @@ toward a pyramid's edge (`phi = 45 deg`) instead of a face roughly halves the
 added overhang: a 63 deg pyramid socket fails at 20 deg toward a face and
 passes at 25 deg toward an edge, tops out near 28 deg.
 
+## A leaning column with a straight bore, printed upright
+
+A column that must lean but still take a straight insert (a vase trunk over
+a test tube) bends only where it is solid. Give the solid foot below the bore
+a constant-radius arc that starts vertical on the bed and ends at the lean
+angle, and keep everything above it straight on the tilted axis, so the bore,
+the insert and the crown sockets stay coaxial and the insert goes in and lifts
+out along one vector. Build it from the straight revolved column: cut it
+into slabs at its ring boundaries, place each foot slab on the arc at the
+tilt of its mid-height, and place the upper slab at the full lean. Give each
+slab a buried spigot a few millimetres long (radius about 2 mm inside the slab below) so
+the joints between differently tilted slabs leave no downward face or gap.
+Cut vertical features that mate with the bed side (a locating-pin recess)
+after the bend, in the world frame.
+
+The lean adds to every outward slope on the downhill side: a crown flare of
+`f` from vertical hangs at `f + lean`. Derive the flare height from a budget,
+`flare + lean <= 40 deg`, rather than reusing the upright value: a 35 deg flare
+that passed upright reaches the 45 deg limit at a 10 deg lean. The ring tapers
+of a stepped trunk (about 7 deg) and the bore wall (equal to the lean) stay
+far inside the limit even at 14 deg.
+
+To bring the crown back over the base centre, move the foot the other way.
+The base sets how far it can go: a keep-out that grazes a rim ring at a
+shallow angle leaves a near-degenerate wall that tessellates with an open
+edge (see [[shapely-cutters#opening-a-region-to-a-minimum-width-round-joins-and-clip-again]]),
+so stop the foot one full rib short of the rim.
+
+### A curved column around a straight vertical bore
+
+To make the outside bend in one continuous curve while the bore stays
+straight and vertical, stack horizontal rings and loft each one (`ruled=True`)
+between two horizontal circles whose centres follow the curve. Make each
+ring's radius the top radius plus its own sideways offset. The wall to the
+bore is then constant, and no tilted slabs or spigots are needed. The tight
+spots are the ring ends, because radius and offset both vary linearly in
+between, so the wall can only be thinnest at an end. Below the bore floor the
+radius can stop growing while the centre keeps moving, so both outlines of the
+foot lean.
+
+The bore puts a hard cap on the curve. Above the bore floor the offset can
+never exceed `radius - bore/2 - wall`. With a constant-curvature offset
+`k (z_top - z)^2 / 2` and the crown on the base centre, foot offset plus
+swollen foot radius must fit the base's foot room. That gives
+`k = 2 (room - r_top - flare) / (H^2 + H_floor^2)`, where `H` is the
+foot-to-neck height and `H_floor` the bore-floor-to-neck height. Each extra
+10 mm of base diameter adds only about 2 deg of foot lean on a 180 mm column,
+so a bigger base buys little. The side the column leans toward stays almost
+vertical above the bore floor. The curve shows on the other side and in the
+foot. The swollen foot also pushes back anything standing behind it, such as
+a backdrop plate and the slot it sits in.
+
 ## A spherical dimple in an upright print
 
 A bead or ball half-sunk in a side wall needs a teardrop roof over its dimple.
@@ -201,6 +254,32 @@ because a patch skin ripples a few degrees. A fist hanging free at the side
 prints when it is drawn into a teardrop that runs down to a point on the
 thigh. End the glove colour at the fist, so the teardrop reads as part of the
 leg.
+
+## A printed ring hung over a printed hook
+
+To make a small printed ornament (a lantern, a charm) hang from a printed
+hook, put a real ring over the hook's open end. A hole through the ornament's
+cap does not do this. The geometry that prints upright with the ornament:
+
+- **Narrow the hook where the ring passes.** Cut the end of the curl down to
+  a bar about 8 mm wide, flush with the hook's bed face, and round its other
+  edges. A full-width bracket would need a ring as wide as the arm. Start the
+  narrowing where the curl leaves the arm, not at the tip, so no square tab is
+  left.
+- **Give the ring a lancet hole with a flat floor and an outer round top.**
+  The hole's sides meet at the 52° design angle, so its roof needs no bridge.
+  The outer top is a round arc, and it faces up. The ring stands on the
+  ornament's cap on a V that also slopes at 52°. Keep the wall at least
+  2.5 mm measured across the sloped sides (horizontal wall × sin 52°), and
+  make the hole width `slot_for(bar, "free")`.
+- **Find the ring's height from the bar's chord, not its radius.** A ring of
+  thickness t sits on a curved bar where the bar is thinner. Its floor must
+  clear the bar's underside at `c_z - sqrt(r_in² - (t/2)²)`, not at
+  `c_z - r_in`.
+- **Prove it comes off.** Rotate the ornament about the hook's curl axis
+  until the ring clears the open end, and check that path with
+  `check_motion`. Then show it cannot drop or slide sideways while hung. A
+  curl that sweeps too far shuts the path; 290° with a 35° swing worked.
 
 ## A glued saddle on a rounded rim: keep the outer crown cylindrical
 

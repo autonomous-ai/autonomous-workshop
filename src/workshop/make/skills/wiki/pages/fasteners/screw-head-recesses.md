@@ -90,6 +90,20 @@ printer first lays a flat bridge, print the round hole on top, then drill or
 poke through the skin after printing. The bridge itself follows
 [[overhangs-and-print-orientation#bridge-ledge-overhang]].
 
+## A nut tightened from the bed face
+
+A clamp nut under a base that prints upright needs a downward bearing face
+and room for a socket, and a round recess big enough for the socket (about
+Ø19 for a 10 mm socket) has a ceiling too wide to bridge. Split the two jobs:
+a shallow socket mouth, a cone at 55° or steeper narrowing onto a **square
+seat** just larger than the nut across corners (M6: 11.55 → 11.95 with slip),
+and the seat's flat roof as the bearing face. The square is flanked on four
+sides, so its roof is a bridge under 12 mm; the nut still turns in it; the
+socket grips the lower part of the nut inside the cone. There is no room for
+a washer, so the nut bears straight on PLA: keep the preload to snug (about
+0.5 N·m on M6, around 14 MPa under the nut face) and do not rely on it,
+because printed clamps relax ([[creep-and-stress-relaxation]]).
+
 ## Checks
 
 ```python

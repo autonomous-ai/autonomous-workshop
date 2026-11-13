@@ -11,7 +11,7 @@ sources:
   - "experience: a rim band over a sloped underside and the points of a flat-printed star read as sub-wall knife edges"
   - "experience: a 50 deg wedge between a level face and a slope failed the thickness gate as a wall; a revolved flare ended in a knife edge at its foot"
 related: [wall-thickness-and-hollowing, fdm-minimum-feature-sizes, overhang-shape-recipes, rounded-bodies-on-the-print-bed, push-to-turn-indexer, interlocking-joinery-for-prints, fit-derivation]
-updated: 2026-10-12
+updated: 2026-11-02
 ---
 
 # Knife edges and tapers
@@ -68,6 +68,17 @@ each looks like a sensible feature:
   within about 20 deg of square to their axis.
 - **A sheet edge laid on a body.** A sheet's edge (a cape's collar) that rests
   on a body and stands 0.2 mm proud is a thin wall. Bury it at least 1.5 mm.
+- **A pin bore leaving an oblique face.** A cross bore that exits a slot face
+  lying 30-60 deg to its axis leaves a crescent wedge round the exit, and a
+  rhombic spot face cut parallel to that face only moves the wedge. Cut a
+  square-sided spot face whose floor is normal to the bore, through the whole
+  part width, or a relief cone of about 50 deg under the exit.
+- **Box grooves on a lofted surface.** A rectangular groove swept along a
+  sloped or tapering loft (bark, ribs) leaves a feather ridge wherever the
+  surface turns under the groove's flat floor, and a groove that follows a
+  spline drifts off the surface between stations. Cut round grooves as straight
+  cylinder runs between loft stations with a sphere at each joint, and add any
+  boss that crosses a groove (a knot) after the grooves, never before.
 
 - **A sawtooth tip.** A ramp meeting a wall is a wedge between two flat faces,
   and that is always a wall to the gate however long the tooth. Cut the tip
@@ -87,11 +98,75 @@ each looks like a sensible feature:
 - **A revolved flare meeting a flat foot face** (a stem's foot) ends in a knife
   edge. Add an upright band about 1 mm tall at the foot.
 
+## A flat cut-out with spiky points: open the outline
+
+A grass tuft, flame, crown or star drawn as a polygon and printed flat has
+blade tips that taper to nothing, and the thickness gate finds sub-0.2 mm
+walls along every tip. Open the outline once in 2D instead of trimming tips
+one by one: offset the face inward by `r`, then back out by `r`
+(`offset(offset(face, -r), r)`). Every convex point becomes an arc and no
+feature narrower than `2r` survives. Concave notches between blades stay
+sharp, which is harmless. `r = 0.7` gives 1.4 mm, about three lines at 0.4,
+and the tuft still reads as spiky.
+
+## Domes on flat faces, and bosses sunk in domes
+
+A half ellipsoid printed on its flat face meets the bed at a grazing angle, so
+its whole rim is a taper; the flatter the dome, the more of its surface is in
+that band, and a low, wide face mask went over the taper budget where a taller
+one had passed. Stand the dome on a short vertical skirt (0.6 mm cleared it).
+A boss sunk into a dome must start its top round above the dome's surface;
+when the round starts below it, the pocket the boss cuts has a knife-edged rim.
+Make the boss taller rather than the round smaller.
+
+Cut a boss's seat with the boss's outline as a straight prism, not with the
+boss itself. Where the surrounding surface rises above the start of the
+boss's top round, a seat cut by the rounded boss follows the round inward and
+leaves a wedge of the host over it. A boss seated in a valley, such as a nose
+between two raised cheek pads, has the host rising on both sides. A seat wall
+along the boss axis then leans over the host all round the rim. Flaring the
+seat cutter 20° from the floor brought the rim under the taper budget; 30°
+gained nothing more. A deeper seat floor made the taper worse. The boss stays
+straight, and the flare leaves a glue ring of 0.4 mm or less at the surface.
+
+An inlay groove traced along a curved surface and extruded along one mean
+normal meets the surface off square where the curve turns, about 25° at the
+ends of a smile arc. That leaves an acute lip on one side. Extruding each
+stroke along its own mean normal squares up its own lips but leaves a wedge
+where the strokes meet. Flaring the groove walls fixes the gate, but the
+lit flank of the flare renders as a pale ribbon or a dark trench beside the
+inlay. Before cutting the clearance, look for the taper the inlay does not
+own, such as a seat rim or the slope of the surface around it, and fix that.
+
 ## Wedge angle
 
 A level face meeting a 50 deg face makes a 50 deg wedge, and the thickness
 gate calls its band (about 0.86 mm at a 0.4 mm nozzle) a wall. About 56 deg or
 more passes, so chamfer the level face to open the wedge.
+
+A straight slot cut through a polygonal prism makes the same wedge where its
+wall leaves the prism. When the slot is wider than the flat it exits through
+(a 16.4 mm window through an octagon 32 across the flats, whose flats are
+13.3 mm long), the wall runs on into the neighbouring 45 deg flats and leaves
+a 45 deg wedge that the gate reads as a 0.3 mm wall. Turn the polygon so the
+slot leaves through a corner instead: there each wall meets a face at
+67.5 deg. Or keep the slot narrower than the flat.
+
+A blind slot needs the same care at its closed end. Where the end corners
+come near the diagonal flats, those corners are thin walls too. Stop the slot
+where `AF/2 * sqrt(2) - w/2 - wall` still leaves the minimum wall. When the
+slot must stay wider than the flat it exits through, cut the polygon back at
+that same depth on the exit side, so each wall ends on a face square to it.
+A slot floor that runs out over a 52 deg flare makes the level-to-sloped
+wedge described above. Carry the slot down to the flare wherever the floor
+would be thinner than the wall.
+
+A cut shared by two printed parts, such as an inlay and its pocket, has the
+same wedge on both sides of its wall. Drafting the wall opens the wedge on
+one part and closes it on the other. On a surface that meets the cut at a
+grazing angle, 35° of draft feathered the inlay's edge past the taper
+budget, and 0° left the host a 0.15 mm lip. An angle in between (18–25°)
+passed on both. Check both parts after every change to the draft.
 
 ## A part that leans on a cone: cut it square to itself
 

@@ -451,9 +451,8 @@ cannot be explained in one clear Manual step is a bad split.
      moulding, a frame) prints on its face; texture and colour go on Print
      Pieces.
    - Tabs press into slots without glue, at the owner's fixed fit: slot =
-     tab + 0.1 mm total (printed-fit rule in `docs/agents/owner-rules.md`).
-     `print-details`' `TAB_SLOT_CLEARANCE` (0.15 mm per side) disagrees;
-     the owner rule wins.
+     tab + 0.1 mm total (printed-fit rule in `docs/agents/owner-rules.md`),
+     which is `print-details`' `TAB_SLOT_CLEARANCE` (0.05 mm per side).
    - A box closes with each Panel entering alone: the last Panel slides in
      along grooves, so no step moves two Panels at once.
 2. **Order the steps** as Rolife does:

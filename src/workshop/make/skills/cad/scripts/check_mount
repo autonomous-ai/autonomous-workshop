@@ -71,10 +71,12 @@ BOUGHT_BODIES = Path("measure") / "bought-bodies.json"
 # Contact is not collision, as everywhere else in this toolchain.
 CLASH_TOL_MM3 = 1e-3
 
-# The gap a hand-assembled bought part wants at minimum. `snug` rather than
-# `slip`: a seat tighter than this needs force against a component that does
-# not compress, and the failure is a cracked bracket at the printer, not here.
-DEFAULT_MIN_CLEARANCE = cadfits.FIT_TABLE["snug"]
+# The gap a hand-assembled bought part wants at minimum, 0.10 mm per side: a
+# seat tighter than this needs force against a component that does not
+# compress, and the failure is a cracked bracket at the printer, not here. It
+# is its own constant, not a printed-part fit class, so a change to the house
+# fits (cadfits.FIT_TABLE) never moves this floor.
+DEFAULT_MIN_CLEARANCE = cadfits.BOUGHT_PART_MIN_CLEARANCE
 
 # A clearance far past any fit class is a component rattling in its pocket. It
 # is reported, never failed: a deliberately loose cradle for a foam-mounted

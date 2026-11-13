@@ -78,6 +78,30 @@ order:
 5. **Archetype default.** Failing all of the above, use the archetype's usual
    plan proportion, tag it `[assumed]`, and put it in the Assumptions list.
 
+### Positions in a cluster must keep the hero view's columns
+
+When a plan holds several upright bodies (stalks, towers, bottles) read off a
+3/4 view and then spread to fit their real diameters and walls, the spread
+can stack two of them on one line of sight: the plan still has the right
+left-to-right order in X, and the hero render shows one column where the
+reference shows two. Check the spacing where it is seen, not in plan:
+project each axis to screen-x at the reference camera
+(`screen-x = −X·sin(az) + Y·cos(az)` for a camera at azimuth `az` from +X,
+the renderers' convention; at az −80 that is `0.985 X + 0.174 Y`), and compare
+neighbour offsets with the reference's in body widths. A body behind
+another shows a strip of (offset + difference of radii).
+
+When the footprint is tight (body diameters summing past the base width),
+hand-moving one body only pushes the clash to its neighbour. Solve it as one
+constrained search over every free pose: body centres, cut-outs such as
+pools, and the figure's position and yaw (yaw held to about ±12°, or the
+figure turns to face the camera and stops reading as in the reference),
+with every wall minimum (body–body, body–rim, body–seat) as a hard limit and
+the smallest screen offset as the objective. A shapely evaluation of circles
+and the figure's seat outline runs thousands of candidates a minute. If the
+best result still stacks a pair, the base is too small for those diameters.
+That is an owner question, not a silent overlap.
+
 ## A flat part lying on a table shows its whole plan
 
 A constant-thickness plate photographed lying on its back (a token, a

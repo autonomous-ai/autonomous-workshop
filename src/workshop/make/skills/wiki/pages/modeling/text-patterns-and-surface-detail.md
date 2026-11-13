@@ -15,8 +15,9 @@ sources:
   - "experience: a carved two-shell pumpkin over a glowing core"
   - "experience: a face carved through a ribbed pumpkin shell failed the thickness gate at every crease and lower lip until it was carved on a smooth sphere cap"
   - "experience: a face cap cut through a ribbed pumpkin and a glow insert with skin-following tops each failed the thickness gate until reshaped"
+  - "experience: an eye pit cut as a near-round hole with a sloping lid was built to its numbers and read backwards by two independent reviews"
 related: [feature-recipes, fdm-minimum-feature-sizes, boolean-pitfalls, unmeshable-faces, sketch-and-extrude-direction, kernel-validity, lightweighting-and-lattices]
-updated: 2026-10-09
+updated: 2026-11-02
 ---
 
 # Text, patterns and surface detail
@@ -251,6 +252,45 @@ fine and no gate complained; only a review render found it. Cut surface detail
 on the face the camera meets at that station, after every union. Render the
 view the detail is for before calling it done.
 
+## Drafted decor on a turned column: pipe, band, slit, panel
+
+A decor library that drafts every underside (a torus pipe, a proud band, a
+slit flute, an inset panel) still runs plain booleans against the host. On a
+tapered, fluted column, each decor call can fail in its own way.
+
+- **A band on a cone host can return the band alone.** The fuse drops the
+  host, and the result is still one solid, so a solid-count check passes.
+  Build the band on a short cylinder sleeve whose radius is the column's
+  radius at that height. Fuse the sleeve-with-band into the column, then
+  assert that the volume grew by roughly the band's own volume.
+- **A pipe whose drafted flank meets a horizontal face is refused** ("concave
+  surface"). A torus seated straight on a plinth top is one such case. Lift
+  the pipe until its flank ends on the round shaft, which here took about the
+  pipe radius plus 3 mm.
+- **A slit whose drafted roof runs into a band's flank shatters the body**:
+  one run gave 9 solids. End each flute run short of every band and pipe
+  flank, so the runs sit between the rings.
+- **Panels go on every face except the one a later cut opens**, such as a
+  nut slot's mouth. Otherwise the panel's frame is cut in half.
+
+After each decor call, assert `len(body.solids()) == 1` and a volume change of
+the expected sign. Count the decor faces in the landmark ledger, because a
+render at the reference camera is the only other place a missing ring shows.
+
+## A small cut that means a direction needs an outline that points
+
+A cut whose meaning is a direction, such as a lid sloping one way, a taper or
+a lean, does not read when it is a round hole with a small change. An eye pit
+1.6 across was cut as a circle with a flat lid sloping toward the face's
+centre. The solid was right, with the outer edge 0.91 mm above the inner edge,
+yet two independent reviews of its renders read the slope backwards. Recut as
+a wedge, a sill at 5 degrees under a lid at 40 degrees with the tip toward the
+face centre, with the same drop, it read correctly at once. At render scale a
+detail under about 3 mm shows only its outline, so give the direction to the
+outline: the outline must stop being symmetric about the axis the direction
+lies along. Measuring the solid again confirms the model but does not change
+how it reads.
+
 ## Checks
 
 ```python
@@ -263,4 +303,7 @@ before = body.volume; body -= extrude(face_plane * glyphs, amount=-p.deboss_d)
 assert body.volume < before - 0.5 * glyphs.area * p.deboss_d
 assert len(body.solids()) == 1
 assert len(body.faces()) <= p.face_budget
+# a directional pit (outline face in the cut plane, direction along X): area centre off the box centre
+bb = pit_outline.bounding_box()
+assert abs(pit_outline.center().X - bb.center().X) > 0.1 * bb.size.X, "pit outline does not point"
 ```

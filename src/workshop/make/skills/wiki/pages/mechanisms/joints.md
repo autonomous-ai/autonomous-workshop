@@ -28,17 +28,18 @@ from them:
 ```python
 import cadfits
 
-RUN = "slip"    # turning / sliding joints: bearings, bores, slots, forks  (0.20 per side)
-SEAT = "snug"   # static pressed joints: keyed sockets, pin sockets        (0.10 per side)
+RUN = "moving"  # turning / sliding joints: bearings, bores, slots, forks  (0.2 mm total)
+SEAT = "fixed"  # static joints: tabs, pegs and legs in sockets            (0.1 mm total)
 
 SHAFT_D = 6.0                                      # [orig]
-BEARING_BORE_D = cadfits.slot_for(SHAFT_D, RUN)    # 6.40 journal
-KEY_SOCKET_D = cadfits.slot_for(SHAFT_D, SEAT)     # 6.20 part fixed on the shaft
+BEARING_BORE_D = cadfits.slot_for(SHAFT_D, RUN)    # 6.20 journal
+KEY_SOCKET_D = cadfits.slot_for(SHAFT_D, SEAT)     # 6.10 part fixed on the shaft
 ```
 
 A joint that moves uses `RUN`; a joint that must not move uses `SEAT`
-(friction) or `press` (interference, not removable by hand). `free` (0.40) is
-for long slides and tall Z spans that print less accurately. A mate that moves
+(friction) or `press` (interference, not removable by hand). These are the
+house fits ([[fit-derivation#the-fdm-clearance-table]]). `free` (0.40 per
+side) is a screw's clearance hole or a loose drop-in, not a printed mate. A mate that moves
 and is printed in one job with its partner uses `cadfits.print_in_place_gap()`
 instead — see below.
 

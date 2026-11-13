@@ -1,5 +1,75 @@
 # Shared skill provenance
 
+## Resync to upstream `69d083d`: the owner's printed-part fit rule, likeness-free lessons, ring-on-hook and likeness-review wiki (2026-11-13)
+
+- Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
+  `69d083d6fdfe76bcedfbdc726bd3444bd811876c` (2026-11-13), resynced from
+  `23089af`. That is 29 non-merge upstream commits touching 54 vendored files
+  (52 edited, 2 added). Same three-way merge as before: the locked `23089af`
+  bytes are the base, the Workshop tree is one side and upstream `HEAD` the
+  other. `cad`, `image-to-cad`, `step-parts` and `wiki` move.
+  `design-reference`, `electromechanical-integration` and `product-design`
+  came out byte-identical, so only their `source_commit` moves. Upstream's
+  `build-review`, `toy-archive`, `step-to-source` and `stl-to-step` stay out.
+- **What upstream brought.**
+  - `cad`: the owner's printed-part fit rule (upstream PR #7). In TOTAL
+    clearance, a fixed fit (tab, peg or leg into a socket) is feature +
+    0.1 mm, and a moving fit (axle, hinge, slider) is shaft + 0.2 mm.
+    `cadfits` gains `fixed` 0.05 and `moving` 0.10 per side. `snug` and
+    `slip` stay as older names for those values (were 0.10 and 0.20), and
+    `DEFAULT_FIT` is `moving`. `clear` 0.20 is the old bought-part seat
+    value and `free` 0.40 is unchanged. `cadmount`'s seats default to
+    `BOUGHT_PART_FIT` (`clear`, as before). `check_mount`'s floor is its own
+    `BOUGHT_PART_MIN_CLEARANCE` 0.10, no longer read from `snug`.
+    `print_in_place_gap()` is unchanged. Reference text: variant audits
+    inherit silent rows, renaming every reference to an entry, slot ends
+    over a flare, backlash at the nominal pose, STEP timestamp bytes.
+  - `image-to-cad`: a gradient-sweep ground rule in `likeness-gate.md`.
+  - `step-parts`: measure a threaded-rod file against its `lengthMm`.
+  - `wiki`: 2 new pages (`ring-on-an-open-hook`,
+    `character-likeness-review`), and 37 edited, among them the fit pages
+    (`fit-derivation`, `joints`, `print-in-place-mechanisms`,
+    `dowel-pins-and-press-fits`, `hinges-and-pin-joints`,
+    `mechanical-puzzles`, `telescoping-tubes-and-locks`,
+    `seating-bought-parts`), overhangs, sketch direction, text patterns,
+    character proportions and design for assembly. 220 pages.
+
+Merge decisions:
+
+- Five files conflicted.
+  - `cad/SKILL.md`: Workshop's restricted-run cache line stays, and
+    upstream's new fit line is taken.
+  - `verify_project`: every upstream change in the range is likeness work
+    (an unaccepted likeness failure noted as not accepted, the print sweep
+    run after it, a likeness-scored view-only props scene, accepted-fail
+    only when accepted). ADR 0076 removed the likeness gate, so the file
+    stays exactly Workshop's. The cleanly merged hunks referenced the
+    undefined `likeness_entries` and are dropped with it.
+  - `image-derived-verification.md` and `run-cost.md`: the upstream
+    likeness passages are dropped and Workshop's text stays. Upstream's
+    non-likeness addition (variant audits inherit silent rows) is taken.
+  - `check_layout`: Workshop's byte-for-byte host-library check (#103)
+    stays. Upstream's `INSTALLED_LIBRARIES` marker skip is dropped: it would
+    exempt an edited copy that still contains the marker.
+- **Workshop review of anything that could move a gate.** Only `check_mount`
+  is a gate here. Its default floor stays 0.10 mm per side, now its own
+  constant, so changing the house fits cannot loosen it. A seat cut at the
+  new `fixed` (0.05) fit reads under that floor and fails, as it should. No
+  Workshop gate reads `FIT_TABLE`. The print gates, `check_motion` and the
+  print-in-place gaps are untouched.
+- **Workshop-local, same change.** `print-details`' `TAB_SLOT_CLEARANCE` goes
+  from 0.15 to 0.05 mm per side, the owner's fixed fit, and stays marked an
+  estimate until the pilot's fit coupon. `test_print_details` and
+  `test_verify_project_audits` (`slot_for(4, 'slip')` is now 4.2) follow,
+  and `docs/agents/owner-rules.md` and `design-a-toy` say the tools now
+  agree with the rule. Only new runs get the new bytes.
+- Verified: `tools/verify_skill_locks.py`, the `cadfits`, `cadmount` and
+  `check_layout --self-check` self-checks, `wiki lint` (0 errors, 9
+  warnings, as upstream), and the full suite: 3961 passed, 19 skipped,
+  9 failed. The 9 (`test_motion_parallel`,
+  `test_check_motion_parallel_integration`) fail identically on `origin/main` 095fef36 in this
+  environment; none is new.
+
 ## Workshop-local: `check_motion` fuses a rigid mover once (2026-11-09, PR #265)
 
 - **Local patch to upstream `cad`.** `check_motion` fuses a multi-body

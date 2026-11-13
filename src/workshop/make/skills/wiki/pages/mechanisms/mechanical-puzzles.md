@@ -26,7 +26,7 @@ sources:
   - https://www.vanishingincmagic.co.uk/puzzles-and-brainteasers/articles/what-is-a-japanese-puzzle-box/ (4-66 steps typical, record 1536; steps do not measure difficulty)
   - "https://puzzleworld.org/PuzzlingWorld/introduction.htm (Coffin - the idea, not fiendish difficulty; close tolerances)"
   - https://en.wikipedia.org/wiki/Disentanglement_puzzle (wire-and-string, wire, plate-and-ring families)
-  - skills/cad/scripts/cadfits.py (snug 0.10, slip 0.20, free 0.40 per side; print_in_place_gap sliding 0.30 XY, Z = XY + layer)
+  - skills/cad/scripts/cadfits.py (house fits fixed/snug 0.05, moving/slip 0.10, free 0.40 per side; print_in_place_gap sliding 0.30 XY, Z = XY + layer)
 related: [interlocking-joinery-for-prints, fit-derivation, fdm-hole-accuracy, print-in-place-mechanisms, tolerance-stack-up, mechanism-verification, latches-detents-and-ratchets, magnets-and-strap-slots, friction-wear-and-lubricants, linear-guides-and-slides, gears, springs, toy-safety-constraints, noise-and-vibration]
 updated: 2026-10-10
 ---
@@ -45,8 +45,8 @@ Per side, derived through `cadfits` ([[fit-derivation]]), never typed twice:
 
 | contact | per side | evidence |
 |---|---|---|
-| assembled, not meant to move | 0.10 (`snug`) | 0.1 mm in a published printed box |
-| separate pieces that slide or turn | 0.20 (`slip`) | 0.2 mm in the same box and in a print bureau's twisty-puzzle guide |
+| assembled, not meant to move | 0.05 (`fixed`, house rule: +0.1 mm total) | 0.1 mm in a published printed box |
+| separate pieces that slide or turn | 0.10 (`moving`, house rule: +0.2 mm total) | 0.2 mm in the same box and in a print bureau's twisty-puzzle guide |
 | pieces that must never touch (hover) | 0.4-0.5 (`free`) | 0.5 mm twisty, 0.4 mm X/Y in a maze generator |
 | sliding pieces printed in place | ≥ 0.30 (`print_in_place_gap("sliding")`, Z gap one layer more) | 0.15 and 0.2 locked solid, 0.3 mostly freed |
 

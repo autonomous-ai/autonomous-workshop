@@ -94,6 +94,21 @@ object:
 └── README.md                          what each file is, sizes, rebuild commands
 ```
 
+Name the assembly entry after the project directory
+(`output/lamp-stand/lamp-stand.step.py`). `toy-archive`'s `pack` and `publish`
+take `<project-dir>.step` as the primary model and refuse a project without
+it. Renaming the entry at handover rebuilds every STEP, the verify record and
+the review renders. Also rename every file reference to the entry:
+`measure/motion.json`'s `"assembly"` and any audit that loads the entry by path
+(`check_landmarks.py` usually does). Delete the old `.step` so it does not ship
+as a second model.
+
+An entry cannot import another entry (`<x>.step.py` is not an importable module
+name). When two entries share a placement — a combined entry and a scene that adds
+reference objects to it — put the labelled-children function in the library and
+have both call it. Entries reach build123d names through their own import, never
+through the library's namespace, so a later library split does not break them.
+
 **Tier 3 — project package.** When the library file itself passes ~400 lines or
 the parts stop being readable side by side, split it. The first half of that
 sentence is what `check_layout` measures — **400 code lines**, comments and
@@ -130,6 +145,13 @@ must not use any name from `params.py`. Re-export it near the top of
 Prove the split by comparing every uppercase name's value before and after.
 Do not turn `params` into a package: the spec checks would then find no
 parameter module.
+
+`check_spec_numbers` checks a number only when the backticked name comes first
+and the number follows it on the same line: `` `HERO_CC` 10.8 mm ``, `` `NAME` =
+3 ``, or the next table cell. "10.8 mm (`HERO_CC`)" is read as no claim at all,
+so a value the source later changes stays wrong in the spec and the gate still
+passes. Write every dimension a design review moves in the name-first form, and
+replay the gate with the old value to see that it fails.
 
 There is no project manifest and no directory-level build. Every tier is built
 the same way: `scripts/gen` on an explicit entry target.

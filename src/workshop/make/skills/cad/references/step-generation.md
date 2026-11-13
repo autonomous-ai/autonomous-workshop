@@ -270,6 +270,12 @@ defect is repaired; inspect the changed geometry and let the trusted fresh
 rebuild establish freshness. Do not repeatedly delete the cache between commands that all
 correspond to the same source revision.
 
+Scripted parameter sweeps hit a second stale cache, Python's own. A `sed`
+edit that keeps the file's size and lands in the same second as the previous
+write leaves the `__pycache__/*.pyc` looking current, so the next import runs
+the old value and a bisection lies. Delete the project's `__pycache__` with
+`__cadgen__` before every sweep step, or run with `PYTHONDONTWRITEBYTECODE=1`.
+
 ## Render packages
 
 Every `scripts/gen` run writes a hidden adjacent GLB/topology package as its

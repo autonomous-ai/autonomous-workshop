@@ -13,7 +13,7 @@ Derive the second half instead, and the drift becomes unrepresentable:
     import cadfits
 
     bore = SEAT_BORE_D                          # the female, owned by the seat
-    stem = cadfits.peg_for(bore, "slip")        # the male, derived
+    stem = cadfits.peg_for(bore, "fixed")       # the male, derived
 
 That is the whole point. An assertion that merely restates the sizing formula
 can be true by construction and prove nothing. A derivation cannot drift the
@@ -21,6 +21,20 @@ same way.
 
 Per-side clearances assume a calibrated 0.4 mm-nozzle FDM printer. Tune once
 here and every project that reads the table follows.
+
+House fit rule (owner, 2026-11-13). The numbers are TOTAL clearance:
+
+- fixed fit -- a tab, peg or leg into a socket: socket = feature + 0.1 mm
+  (0.05 per side). A 1.0 mm square leg goes into a 1.1 mm socket.
+- moving fit -- anything that rotates or slides (axle, hinge, slider):
+  hole = shaft + 0.2 mm (0.10 per side). A 1.0 mm shaft goes into a 1.2 mm
+  hole.
+
+The table holds per-side values, so ``fixed`` is 0.05 and ``moving`` is 0.10.
+``snug`` and ``slip`` are the older names for the same two fits. The rule is
+for parts assembled after printing; a print-in-place joint has its own,
+larger gaps (:data:`PIP_FIT_TABLE`), and a bought part's seat keeps the
+``check_mount`` floor (:data:`BOUGHT_PART_MIN_CLEARANCE`).
 
 Importing it
 ------------
@@ -51,12 +65,23 @@ from __future__ import annotations
 # or heat and does not come apart again by hand.
 FIT_TABLE: dict[str, float] = {
     "press": -0.05,  # interference — won't fall out; needs force / heat to seat
-    "snug": 0.10,    # light friction; hand-press, stays put without force
-    "slip": 0.20,    # slides / seats freely by hand — default assembled fit
-    "free": 0.40,    # loose, easy hand assembly; drops in with no fuss
+    "fixed": 0.05,   # house fixed fit: tab / peg / leg in a socket, 0.1 total
+    "snug": 0.05,    # older name for `fixed`
+    "moving": 0.10,  # house moving fit: axle / hinge / slider, 0.2 total
+    "slip": 0.10,    # older name for `moving`
+    "clear": 0.20,   # a bought part dropped into its printed seat (cadmount)
+    "free": 0.40,    # loose drop-in or a screw's clearance hole; not a mate
 }
 
-DEFAULT_FIT = "slip"
+# The house default is the moving fit: a mate that must turn or slide never
+# binds, and a fixed one is a deliberate `fixed`.
+DEFAULT_FIT = "moving"
+
+# A bought part does not compress. Its seat is cut at `clear` by default, and
+# `check_mount` fails any seat whose measured gap is under this floor. This is a
+# gate value, independent of the printed-part fits above: keep it at 0.10.
+BOUGHT_PART_FIT = "clear"
+BOUGHT_PART_MIN_CLEARANCE = 0.10
 
 # Hand-assembly band for an explicit per-side clearance. Outside it the mate is
 # either an interference fit that needs force (below) or a rattling one (above),
@@ -104,8 +129,8 @@ def slot_for(tab: float, fit: str | float = DEFAULT_FIT) -> float:
     Build the male at ``tab`` and the female at ``slot_for(tab, fit)`` so the
     two halves are always one edit apart and cannot drift.
 
-    >>> slot_for(4.0, "slip")
-    4.4
+    >>> slot_for(1.0, "fixed")
+    1.1
     """
     if tab <= 0:
         raise ValueError(f"tab must be > 0, got {tab}")
@@ -118,8 +143,8 @@ def peg_for(hole: float, fit: str | float = DEFAULT_FIT) -> float:
     The inverse of :func:`slot_for`: derive the male from the female the other
     part already owns, so the mate shares one source-of-truth dimension.
 
-    >>> peg_for(5.6, "slip")
-    5.2
+    >>> peg_for(1.2, "moving")
+    1.0
     """
     if hole <= 0:
         raise ValueError(f"hole must be > 0, got {hole}")
@@ -223,7 +248,16 @@ def _self_check() -> int:
               math.isclose(slot_for(10.0, name) - 10.0, 2 * mating_clearance(name),
                            abs_tol=1e-9))
 
-    check("slip is the documented 0.2/side", math.isclose(mating_clearance("slip"), 0.20))
+    # The owner's rule, in TOTAL clearance: fixed +0.1 mm, moving +0.2 mm.
+    check("fixed: 1.0 mm leg -> 1.1 mm socket", math.isclose(slot_for(1.0, "fixed"), 1.1))
+    check("moving: 1.0 mm shaft -> 1.2 mm hole", math.isclose(slot_for(1.0, "moving"), 1.2))
+    check("snug is the older name for fixed", FIT_TABLE["snug"] == FIT_TABLE["fixed"])
+    check("slip is the older name for moving", FIT_TABLE["slip"] == FIT_TABLE["moving"])
+    check("default fit is the moving fit", DEFAULT_FIT == "moving")
+    check("bought-part seat clears the check_mount floor",
+          mating_clearance(BOUGHT_PART_FIT) > BOUGHT_PART_MIN_CLEARANCE)
+    check("check_mount floor stays 0.10/side",
+          math.isclose(BOUGHT_PART_MIN_CLEARANCE, 0.10))
     check("explicit clearance passes through", math.isclose(mating_clearance(0.15), 0.15))
 
     for bad, exc, label in (

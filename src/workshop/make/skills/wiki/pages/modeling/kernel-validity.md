@@ -8,7 +8,7 @@ sources:
   - "toolchain: OCP 7.9 BRepBndLib.AddOptimal on Bezier and NURBS faces trimmed by a plane"
   - "experience: a revolve profile whose closing segment was collinear with its first failed the BOP check"
 related: [boolean-pitfalls, modeling-failure-modes, construction-strategy, mass-properties-and-measurement, unmeshable-faces, freeform-surfaces-in-build123d, revolve-seam]
-updated: 2026-10-12
+updated: 2026-11-02
 ---
 
 # Kernel validity checks
@@ -71,6 +71,12 @@ edge and vertex tolerance (`BRep_Tool.Tolerance`) after the round and refuse
 anything above about 1e-3 mm. Then hold every cut to its own bookkeeping:
 the volume removed must equal the cutter's prism volume. On that outline,
 the fix was to keep the chamfer and drop the round.
+
+`scripts/inspect validate` keys on the `BOPAlgo_SelfIntersect` status alone
+(`cadgen.validity._is_self_intersecting`). A bare `BRepAlgoAPI_Check(...).IsValid()`
+also goes false on too-small edges and curve-on-surface faults that validate
+does not fail. A cream face cap read "invalid" that way while every gate
+passed. To screen per round, call the gate's own function, not `IsValid()`.
 
 ## Part(solid.wrapped) has zero volume
 

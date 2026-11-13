@@ -42,8 +42,9 @@ drag while loaded       F_f = μ (R_mouth + R_tail) = μ W (2 L_e + L_o) / L_o
 ```
 
 Size the overlap from the play you accept, `L_o ≥ c · L_e / δ_max`. Worked:
-`slip` on both sides gives `c = 0.4 mm`. At `L_e = 150 mm` that needs
-`L_o ≥ 20 mm` for 3 mm of tip play and 60 mm for 1 mm. Published floors for
+the house moving fit (`slip`/`moving`, +0.2 mm total) gives `c = 0.2 mm`.
+At `L_e = 150 mm` that needs `L_o ≥ 10 mm` for 3 mm of tip play and 30 mm
+for 1 mm. Published floors for
 loaded metal tubes: a bicycle quill stem must stay inserted at least 2.5 ×
 its diameter, by regulation. Robot elevators reserve a quarter to a fifth of
 each stage, and the older rule was 30 %. Printed clearances are larger, so

@@ -37,6 +37,13 @@ when they are flat. An audit or selector that filters on `GeomType.PLANE`
 misses them silently. Select by face normal, constant across the face, or by
 `is_planar`, instead of by geometry type.
 
+## A sphere face can report no radius
+
+A spherical face that a fuse has trimmed can still be typed `SPHERE` and
+return `None` from `.radius`, so a count of `f.radius == R` misses it. Accept
+`None` and bound the face by area instead (a trimmed sphere face is smaller
+than `4πR²`), or measure the radius from the face's centre of curvature.
+
 ## Rules for stable selection
 
 Avoid fragile topology order. Select by, in order of preference:

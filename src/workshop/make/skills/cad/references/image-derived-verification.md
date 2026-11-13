@@ -81,6 +81,17 @@ but it must measure the returned geometry rather than restating the arithmetic
 that created it. Keep exact distances and alignments in
 `inspect measure/align/frame`.
 
+A variant project copied from a sibling inherits the sibling's audit rows.
+When the variant changes a construction family (a revolved trunk becomes
+lofted rings on a curve) those rows go silent: one still checks for the
+sibling's face types, which the fused variant also contains, and one compares
+a parameter with the formula built from it (`LEAN_DEG` against the tilt that
+`LEAN_DEG` set). Both pass whatever the geometry is. Rewrite them for the
+variant's own claim in the same round as the generator change. The bounding
+box of a thin slab (`shape & Pos(0, 0, z) * Box(big, big, 0.2)`) is a cheap,
+measured reading of an outline's centre at a station. Two stations give a
+measured lean, and a cylinder face filtered by radius gives a bore's axis.
+
 **Read the solid's topology; do not sample it.** This audit is project code,
 so nothing bounds its cost. Reach for `edges()`/`faces()` filtered by
 `geom_type`, radius, axis or position first; a `Location`/bbox read second;
