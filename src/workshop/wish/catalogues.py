@@ -49,7 +49,11 @@ FILAMENT_KINDS = ("opaque", "translucent", "glow")
 PART_CATEGORIES = ("lamp", "power", "cell", "contact", "switch", "fastener", "container",
                    "bead", "wire", "other")
 MATERIAL_CATEGORIES = ("tool", "consumable")
-CATEGORIES = PART_CATEGORIES + MATERIAL_CATEGORIES
+# What a kit's box adds that is neither a Part nor a Manual material: the
+# printed Manual and the packing (ADR 0104, owner 2026-11-14). It is billed
+# from the contract's bought-parts block only, never a tree leaf or material.
+PACKAGING_CATEGORIES = ("packaging",)
+CATEGORIES = PART_CATEGORIES + MATERIAL_CATEGORIES + PACKAGING_CATEGORIES
 MAX_NAME_CHARS = 120
 # The size whose presence makes a Bought Part a Wired Part (ADR 0095).
 LEAD_DIAMETER = "lead diameter"
@@ -150,6 +154,12 @@ class CataloguedPart:
         """A tool or consumable: in material lists only, never a tree leaf."""
 
         return self.category in MATERIAL_CATEGORIES
+
+    @property
+    def packaging(self) -> bool:
+        """What a kit's box adds (ADR 0104): billed, never a tree leaf or material."""
+
+        return self.category in PACKAGING_CATEGORIES
 
     @property
     def lead_diameter_mm(self) -> Optional[float]:
@@ -413,6 +423,7 @@ __all__ = [
     "MATERIAL_CATEGORIES",
     "MAX_UNIT_PRICE_CENTS",
     "MODEL_FORMS",
+    "PACKAGING_CATEGORIES",
     "PART_CATEGORIES",
     "load_catalogues",
     "parse_catalogues",

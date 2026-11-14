@@ -12,6 +12,11 @@ catalogue snapshot's ``unit_prices``; the board's is the contract's. A
 priced board includes the parts mounted on it (``electrical.pcba.parts``),
 so those are not billed again; only the board is.
 
+A kit (ADR 0104) bills from the same block, which its parser holds equal to
+or above the Assembly Tree's Bought Parts. A kit whose tree holds Bought
+Parts but whose Wish sealed no block bills them unpriced, by the tree's
+count, so its publication is refused rather than leaving their cost out.
+
 A part without a price refuses the publication; nothing is estimated here.
 A run whose Wish sealed no Bought Parts block and draws no bought models
 bills nothing, as before.
@@ -24,6 +29,7 @@ from typing import Any, Mapping, Optional
 
 from workshop.errors import ContractError
 from workshop.make.bought_model import draws_bought_parts
+from workshop.wish.assembly_tree import bought_totals
 from workshop.wish.electrical import pcba_parts
 
 PCBA_PART = "pcba"
@@ -43,7 +49,9 @@ def sealed_bought_lines(
     block = contract.get("bought_parts")
     if not isinstance(block, Mapping):
         block = None
-    if block is None and not draws_bought_parts(contract, catalogue):
+    tree = contract.get("assembly_tree") if isinstance(contract.get("assembly_tree"), Mapping) else None
+    tree_only = bought_totals(tree) if block is None and tree is not None else {}
+    if block is None and not tree_only and not draws_bought_parts(contract, catalogue):
         return None
     catalogue = catalogue if isinstance(catalogue, Mapping) else {}
     entries = catalogue.get("bought_parts") if isinstance(catalogue.get("bought_parts"), Mapping) else {}
@@ -66,6 +74,11 @@ def sealed_bought_lines(
         counts[item["bought"]] = counts.get(item["bought"], 0) + int(item.get("count", 1))
     for item in (block or {}).get("parts") or ():
         counts[item["bought"]] = counts.get(item["bought"], 0) + int(item["count"])
+    circuit = set(counts)
+    for part, count in tree_only.items():
+        # No block sealed a price for these: they bill unpriced and refuse.
+        if part not in circuit:
+            counts[part] = counts.get(part, 0) + count
     lines = []
     for part, count in counts.items():
         entry = entries.get(part) if isinstance(entries.get(part), Mapping) else {}
