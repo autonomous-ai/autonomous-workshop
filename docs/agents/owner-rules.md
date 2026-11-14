@@ -190,7 +190,9 @@ Tree and Manual.
 - **Every gate must be cut with nippers.** Put gates on straight,
   outward-facing edges, never in a channel between protrusions. Keep at
   least 6 mm clear for the jaws on both sides of each gate. Never let a
-  fragile tip point at a gate or at the frame. Why: the owner could not see
+  fragile tip point at a gate or at the frame, and never tie a tip to the
+  frame by a gate on its apex: the cut leaves a stub on the most visible
+  point. Turn the part so its points face open sheet space instead. Why: the owner could not see
   how to cut out a parapet whose gates sat between its pinnacles.
 - **Minimum loose part size:** at least 1.6 mm thick, a short side of at
   least 4 mm, and at least 35 mm² to grip. Add one spare, marked "+", for
