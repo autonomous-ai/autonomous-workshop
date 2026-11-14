@@ -299,6 +299,7 @@ def _parse_parts(
         return printed, bought
     letters: Dict[str, Tuple[str, str]] = {}
     colours: Dict[str, Tuple[str, str]] = {}
+    loose_of: Dict[str, Tuple[bool, str]] = {}
     for index, item in enumerate(value):
         label = "assembly_tree.parts[%d]" % index
         if not isinstance(item, dict):
@@ -343,12 +344,17 @@ def _parse_parts(
             bought[identifier] = item
             continue
         if not {"id", "name", "filament", "form"} <= set(item) <= {
-            "id", "name", "filament", "form", "thickness_mm", "thickness_reason"
+            "id", "name", "filament", "form", "thickness_mm", "thickness_reason", "loose_reason"
         }:
             errors.append(
-                "%s: a printed Part is {id, name, filament, form}, and a panel may add "
-                "thickness_mm and thickness_reason" % label
+                "%s: a printed Part is {id, name, filament, form}, a panel may add "
+                "thickness_mm and thickness_reason, and a loose Part adds loose_reason" % label
             )
+            continue
+        loose = "loose_reason" in item
+        if loose and not _text(item["loose_reason"], MAX_REASON_CHARS):
+            errors.append("%s.loose_reason must say in at most %d characters why the Part prints loose"
+                          % (label, MAX_REASON_CHARS))
             continue
         if not _check_form(item, label, panel_mm, errors):
             continue
@@ -365,6 +371,21 @@ def _parse_parts(
         if not filament.confirmed:
             used.add("filaments.json:%s" % filament.id)
         letter = match.group(1)
+        # Loose Parts (ADR 0104) print off any sheet and may share one letter
+        # across filaments, as the Amsterdam kit's T01-T15 do; a letter is
+        # either wholly loose or wholly one filament.
+        word = {True: "loose", False: "not loose"}
+        if letter in loose_of and loose_of[letter][0] != loose:
+            errors.append(
+                "%s: letter %s is %s (%s), so %s cannot be %s: a letter is either the loose Parts' "
+                "or one filament's" % (label, letter, word[loose_of[letter][0]], loose_of[letter][1],
+                                       identifier, word[loose])
+            )
+            continue
+        loose_of.setdefault(letter, (loose, identifier))
+        if loose:
+            printed[identifier] = item
+            continue
         if letter in letters and letters[letter][0] != filament.id:
             errors.append(
                 "%s: letter %s is %s (%s), so %s cannot be %s: one letter is one filament"

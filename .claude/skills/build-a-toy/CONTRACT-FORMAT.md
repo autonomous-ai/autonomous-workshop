@@ -227,7 +227,11 @@ instances.)
     (Q37). The tab-slot clearance is no contract field: it is the printer's
     `TAB_SLOT_CLEARANCE` in `print-details` (Q35, an estimate). Its letter groups Parts by
     colour: any letter except M and N (Print Pieces), P (Bought Parts) and S
-    (steps), one letter per filament and one filament per letter. A Bought Part is
+    (steps), one letter per filament and one filament per letter. A **loose
+    Part** (ADR 0104: a printed Part off any FDM sheet) adds `"loose_reason"`
+    (at most 300 characters); loose Parts may share one letter across
+    filaments (the Amsterdam kit's T01-T15), and a letter is either wholly
+    loose or wholly one filament. A Bought Part is
     `{"id": "P02-steel-pin", "bought": "<Bought Part id>"}`. Both ids come
     from the owner's catalogues, `src/workshop/wish/catalogues/filaments.json`
     and `bought-parts.json`. A colour or Bought Part outside them is refused:

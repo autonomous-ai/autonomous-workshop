@@ -5,7 +5,9 @@
   has exercised yet; this header is updated as each step lands.
   - Decision 2 (Bought Parts, tools and packaging billed): implemented,
     deterministic tests only; no kit has been published with it.
-  - Decisions 1, 3, 4, 5: not implemented yet.
+  - Decision 1, loose Parts only (`loose_reason`, one loose letter across
+    filaments): implemented, deterministic tests only.
+  - Decision 1 (Sheets) and decisions 3, 4, 5: not implemented yet.
 - **Date:** 2026-11-14
 - **Amends:** ADR 0092 (what a kit prints, which Manual ships, a kit's
   Bought Parts block), ADR 0095's 2026-11-07 amendment (the Bought Parts
@@ -66,6 +68,11 @@ to publish. A product agent mapped four gaps, each confirmed in the code:
   spares, never less. A printed Part on no Sheet is a **loose Part** and
   states `loose_reason` (owner rule: a part that cannot be flat leaves the
   sheet with a written reason). A tree without `sheets` is unchanged.
+- **Loose letters** (pilot finding L06, implemented). Loose Parts may share
+  one Part letter across filaments, as the Amsterdam kit's T01-T15 do on
+  its sheets and in its approved Manual; a letter is either wholly loose
+  or wholly one filament. `loose_reason` is accepted on any kit's printed
+  Part now; the rule that a Part on no Sheet needs one lands with Sheets.
 - **Why not a Sheet Part and a "cut from sheet" step in the tree.** That was
   the first proposal. ADR 0092's tree holds each Part as one leaf and makes
   every step produce one Sub-assembly; a cut step would turn one leaf into
