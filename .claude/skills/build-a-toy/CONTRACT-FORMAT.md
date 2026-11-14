@@ -231,7 +231,11 @@ instances.)
     Part** (ADR 0104: a printed Part off any FDM sheet) adds `"loose_reason"`
     (at most 300 characters); loose Parts may share one letter across
     filaments (the Amsterdam kit's T01-T15), and a letter is either wholly
-    loose or wholly one filament. A Bought Part is
+    loose or wholly one filament. A printed Part under the minimum size
+    (MIN-PART-SIZE R1: thickness 1.6 mm, short side 4 mm, long side 8 mm,
+    footprint 35 mm², volume 50 mm³) in a kit with Sheets adds
+    `"small_reason"` (at most 300 characters); the Sheet gate lists it and
+    holds it to every other rule. A Bought Part is
     `{"id": "P02-steel-pin", "bought": "<Bought Part id>"}`. Both ids come
     from the owner's catalogues, `src/workshop/wish/catalogues/filaments.json`
     and `bought-parts.json`. A colour or Bought Part outside them is refused:
@@ -241,6 +245,16 @@ instances.)
     owner decision Q29). Tools and
     consumables (tweezers, foam tape and dots, glue, a screwdriver) are never
     Parts; they go in `materials`.
+  - `sheets[]` (optional, ADR 0104): the kit's FDM **Sheets**, each
+    `{"id": "B1", "filament": "<filament id>", "parts": [{"id":
+    "B01-cabinet-carcass", "count": 1}]}`. A Sheet id is its filament's
+    Part letter and a number; it holds only printed, non-loose Parts of that
+    filament. Over all Sheets a Part's count is at least the toy's total
+    (more are spares), and every printed Part is on a Sheet or states
+    `loose_reason`. A Part whose longest side is under 15 mm needs a spare.
+    Each Sheet is the project file `sheet_<id>.py` defining `sheet()`;
+    `make_round` checks every Sheet in assembly rounds,
+    `--print-gates-only` and final verification (`kit_sheets.py check`).
   - `steps[]`, in Manual order with rising numbers, each `{"id":
     "S07-teacher-desk-items", "output": "<the Sub-assembly's name, at most 80
     characters>", "count": <how many times it is made per toy>, "joint":

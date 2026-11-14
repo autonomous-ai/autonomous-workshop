@@ -7,7 +7,11 @@
     deterministic tests only; no kit has been published with it.
   - Decision 1, loose Parts only (`loose_reason`, one loose letter across
     filaments): implemented, deterministic tests only.
-  - Decision 1 (Sheets) and decisions 3, 4, 5: not implemented yet.
+  - Decision 1 (Sheets) and decision 3 (the Sheet gate, `small_reason`,
+    spares): implemented, deterministic tests only. No Amsterdam Sheet
+    has been checked by it yet, and no printed test Sheet confirms its
+    constants.
+  - Decisions 4 and 5: not implemented yet.
 - **Date:** 2026-11-14
 - **Amends:** ADR 0092 (what a kit prints, which Manual ships, a kit's
   Bought Parts block), ADR 0095's 2026-11-07 amendment (the Bought Parts
@@ -81,14 +85,15 @@ to publish. A product agent mapped four gaps, each confirmed in the code:
   reconcile. A Sheet is a print form of Parts, like `print_parts()` (ADR
   0092 decision 11), so it sits beside the tree, as Check Steps do. The
   Manual's "cut from the sheet" instruction is read from it.
-- **Geometry.** Each Sheet is a CAD file `sheet_<id>.step.py` in the
-  project (so in an Approved Proof's manifest) defining `sheet()`, which
-  returns `{"frame": shape, "parts": [{"id", "shape"}], "gates": [{"part",
-  "x", "y", "d"}]}`: the frame with runners, tags and gate bars fused; every
-  Part copy in its print stance at its place on the plate; and each gate's
-  cut point on the Part outline with `d` = +1 (runner below) or -1 (runner
-  above). The project's `sheets.py` packs and gates the Amsterdam sheets
-  this way already; only its return shape is new.
+- **Geometry.** Each Sheet is a CAD file `sheet_<id>.py` in the project
+  (so in an Approved Proof's manifest) defining `sheet()`, which returns
+  `{"frame": shape, "parts": [{"id", "shape", "gates": [{"shape", "x", "y",
+  "d"}]}]}`: the frame with its runners and tags; every Part copy in its
+  print stance at its place on the plate; and each copy's gate bars, each
+  with its cut point on the Part outline and `d` = +1 (runner below) or -1
+  (runner above). The name is not `*.step.py`, so cadgen never builds a
+  Sheet as a project entry. The project's `sheets.py` packs and gates the
+  Amsterdam sheets this way already; only its return shape is new.
 
 ### 2. A kit's Bought Parts, tools and packaging are sealed and billed (implemented)
 
@@ -123,8 +128,11 @@ to publish. A product agent mapped four gaps, each confirmed in the code:
 
 ### 3. Sheet checks are deterministic print gates in `make_round`
 
-A new gate, `check_sheet`, runs on each Sheet in assembly rounds and final
-verification (a Sheet spans Components). It ports the project's
+A new gate, `kit_sheets.py check` (beside `make_round`), runs on every
+Sheet of a kit with Sheets in assembly rounds, `--print-gates-only` and
+final verification; never in a component round, since a Sheet spans
+Components. It also fails a missing `sheet_<id>.py` and one the contract
+does not name. It ports the project's
 `sheets.py` checks, which the owner reviewed on the Amsterdam sheets, with
 their constants:
 
@@ -154,10 +162,10 @@ their constants:
   3.0 mm tall.
 
 The ordinary print gates (`check_mesh`, `check_overhang`,
-`check_thickness`) still gate each Part alone; `check_sheet` adds to them.
-Its rows enter `verification-pipeline.md` like every gate, so a failing row
-blocks Spark Make's finalizer, and the Proof's `--print-gates-only` runs it
-too.
+`check_thickness`) still gate each Part alone; the Sheet gate adds to them.
+A failing report fails the round and `verify_project`, so it blocks Spark
+Make's finalizer, and the Proof's `--print-gates-only` runs it too. The
+round summary records the report as `sheets`.
 
 ### 4. A kit's Factory primary is its print layout
 
@@ -198,7 +206,7 @@ too.
 
 1. This ADR.
 2. Decision 2.
-3. Decision 1 (contract) and 3 (`check_sheet`).
+3. Decision 1 (contract) and 3 (the Sheet gate).
 4. Decision 4.
 5. Decision 5.
 6. The pilot: the Amsterdam kit's contract and Proof, seal, and

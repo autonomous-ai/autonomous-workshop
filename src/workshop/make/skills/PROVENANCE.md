@@ -2991,3 +2991,19 @@ convention, so sealed STEPs and frozen runs keep their colours.
   approved STEP or reading `approved/assembly/`. The packet binds them as
   `approved.contract_images`. `SKILL.md` says so. The `make-round` lock
   moves; `source_commit` is unchanged.
+
+## Workshop-local: a kit's FDM Sheets are a make-round gate (2026-11-14, ADR 0104)
+
+- `make-round/scripts/kit_sheets.py` checks a kit's `sheet_<id>.py` files
+  against `assembly_tree.sheets`: same Part copies as `print_parts()`, flat,
+  separable, nipper access at every gate, fragile tips, MIN-PART-SIZE R1
+  (unless `small_reason`) and spares. `make_round` runs it in assembly rounds
+  and `--print-gates-only` of a kit with Sheets. It reads `cad`'s
+  `_runtime_paths` layout and build123d through the same paths as
+  `kit_print_parts.py`.
+- **Local patch to upstream `cad`.** `verify_project` runs
+  `make-round/scripts/kit_sheets.py check` right after the kit tree gates
+  (`_run_kit_sheets`), only when the installed tree declares Sheets.
+  Upstream has no Assembly Tree, so a resync must keep the hook, as it keeps
+  `_run_kit_tree`. Only `cad`'s and `make-round`'s locks move;
+  `source_commit` values are unchanged.

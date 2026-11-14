@@ -1801,8 +1801,12 @@ _KIT_TREE = []
 # ADR 0092, owner decision 2026-10-28: a kit Component's print gates measure
 # each printed Part alone in its print stance, from its print_parts().
 KIT_PRINT_PARTS_SCRIPT = Path(__file__).resolve().with_name("kit_print_parts.py")
+# ADR 0104: a kit's FDM Sheets, checked in assembly rounds, final
+# verification and --print-gates-only.
+KIT_SHEETS_SCRIPT = Path(__file__).resolve().with_name("kit_sheets.py")
 KIT_PRINT_DIR = ("__cadgen__", "print-parts")
 _KIT_PRINT_PARTS = []
+_KIT_MODULES: dict = {}
 
 
 def has_assembly_tree(contract) -> bool:
@@ -1823,6 +1827,26 @@ def kit_tree():
         spec.loader.exec_module(module)
         _KIT_TREE.append(module)
     return _KIT_TREE[0]
+
+
+def kit_sheets():
+    """The kit_sheets.py module beside this script."""
+
+    if "kit_sheets" not in _KIT_MODULES:
+        spec = importlib.util.spec_from_file_location("make_round_kit_sheets", KIT_SHEETS_SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _KIT_MODULES["kit_sheets"] = module
+    return _KIT_MODULES["kit_sheets"]
+
+
+def kit_has_sheets(kit: dict | None) -> bool:
+    return isinstance(kit, dict) and bool((kit.get("assembly_tree") or {}).get("sheets"))
+
+
+def sheets_job(python: str, project: Path, out: Path) -> dict:
+    return {"command": [python, str(KIT_SHEETS_SCRIPT), "check", str(project)],
+            "cwd": project, "log": out / "sheets.log", "timeout": FULL_TIMEOUT_SECONDS}
 
 
 def kit_print_parts():
@@ -2104,6 +2128,14 @@ def render_summary(summary: dict) -> str:
         elif tree.get("slips"):
             lines.append("  tree  labelling slip: the bodies do not match the tree; repair them in the next round "
                          "like any failing gate (Q28)")
+    sheets = summary.get("sheets")
+    if sheets is not None:
+        # ADR 0104: the kit's FDM Sheets and its loose-part rules.
+        lines.append("  sheets %-4s %d Sheet(s)%s" % (
+            sheets["verdict"], len(sheets.get("sheets") or ()),
+            ", under the minimum by small_reason: %s" % ", ".join(sheets["small"]) if sheets.get("small") else ""))
+        for item in (sheets.get("failures") or [])[:12]:
+            lines.append("    %s" % item)
     unchecked = [r for r in summary["parts"] if r not in summary["checked"] and r not in regated]
     if unchecked:
         lines.append("  build skip %d unchanged part(s): %s" % (len(unchecked), ", ".join(unchecked[:6]) + (" ..." if len(unchecked) > 6 else "")))
@@ -6774,8 +6806,23 @@ def _print_gates_only(project: Path, args, cad: Path, parts: list, kit: dict | N
     # its Display Pose, and its print stance on the bed (check_fit).
     final_jobs = final_check_jobs(python, cad, project, parts, roles, out, bed,
                                   {role for role in built_roles if role not in kit_refusals}, kit_roles)
+    # 2c. ADR 0104: the kit's Sheets, which span Components: on the whole
+    # project only, as an assembly round checks them.
+    sheet_jobs = []
+    if kit_has_sheets(kit) and not getattr(args, "component", None):
+        kit_file = out / "kit.json"
+        kit_file.write_text(json.dumps(kit, sort_keys=True), encoding="utf-8")
+        job = sheets_job(python, project, out)
+        job["command"] += ["--kit", str(kit_file)]
+        job["extra_env"] = NO_BYTECODE
+        sheet_jobs.append(job)
     finished = run_all([job for _role, _name, _gate, job in gate_jobs]
-                       + [job for _role, _check, job in final_jobs])
+                       + [job for _role, _check, job in final_jobs] + sheet_jobs)
+    sheets = None
+    if sheet_jobs:
+        done = finished[-1]
+        finished = finished[:-1]
+        sheets = kit_sheets().parse_report(done.stdout, done.returncode)
     checked, final_done = finished[:len(gate_jobs)], finished[len(gate_jobs):]
     measured: dict[str, dict] = {}
     for (role, name, gate, job), done in zip(gate_jobs, checked):
@@ -6798,11 +6845,14 @@ def _print_gates_only(project: Path, args, cad: Path, parts: list, kit: dict | N
         if any(item["verdict"] != "PASS" for item in checks.values()):
             printing[role]["verdict"] = "FAIL"
     ok = (all(item["verdict"] == "PASS" for item in build.values())
-          and all(item["verdict"] == "PASS" for item in printing.values()))
+          and all(item["verdict"] == "PASS" for item in printing.values())
+          and (sheets is None or sheets["verdict"] == "PASS"))
     summary = {"scope": PRINT_GATES_SCOPE, "project": str(project), "nozzle": args.nozzle,
                "overhang_angle": args.overhang_angle, "bed": bed, "kit": kit is not None,
                "parts": roles, "build": build, "print": printing, "ok": ok, "out": str(out),
                "checks": list(PRINT_GATES_ONLY_CHECKS), "sources": geometry_source_hashes(project)}
+    if sheets is not None:
+        summary["sheets"] = sheets
     (out / "summary.json").write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     if args.json:
         print(json.dumps(summary, sort_keys=True))
@@ -6815,6 +6865,9 @@ def _print_gates_only(project: Path, args, cad: Path, parts: list, kit: dict | N
             for check, item in sorted((printing[role].get("final") or {}).items()):
                 lines.append(("  %-5s %s %s  %s" % (check, item["verdict"], role,
                                                       "; ".join(item["failures"])[:300])).rstrip())
+        if sheets is not None:
+            lines.append("  sheets %s %d Sheet(s)" % (sheets["verdict"], len(sheets.get("sheets") or ())))
+            lines += ["    %s" % item for item in (sheets.get("failures") or [])[:12]]
         lines.append("  %s  reports under %s" % ("PASS" if ok else "FAIL", out))
         print("\n".join(lines))
     return 0 if ok else 1
@@ -7280,8 +7333,21 @@ def make_round(args) -> int:
             tree = finish_tree(project, {}, kit_error)
         else:
             tree_jobs.append(tree_job(project, out, args.nozzle, component))
+    # 2e. ADR 0104: a kit's FDM Sheets, which span Components, in assembly
+    # rounds only.
+    sheets, sheet_jobs = None, []
+    if component is None and kit_has_sheets(kit):
+        if build_failures:
+            sheets = {"kind": "kit-sheets-report", "verdict": "FAIL", "sheets": [], "small": [],
+                      "failures": ["a part did not build, so the Sheets were not checked"]}
+        else:
+            sheet_jobs.append(sheets_job(python, project, out))
     checked = run_all([job for _role, _name, _gate, job in gate_jobs]
-                      + [job for _key, _side, _reference, job in envelope_pending] + tree_jobs)
+                      + [job for _key, _side, _reference, job in envelope_pending] + tree_jobs + sheet_jobs)
+    if sheet_jobs:
+        done = checked[-1]
+        checked = checked[:-1]
+        sheets = kit_sheets().parse_report(done.stdout, done.returncode)
     if tree_jobs:
         done = checked[-1]
         checked = checked[:-1]
@@ -7387,6 +7453,7 @@ def make_round(args) -> int:
         and (motion is None or motion["verdict"] in ("pass", "unverified"))
         and (full is None or full["ok"])
         and (tree is None or tree["verdict"] == "PASS")
+        and (sheets is None or sheets["verdict"] == "PASS")
     )
 
     # The round policy (ADR 0081): whether this is a Shape Round, whether an
@@ -7530,6 +7597,9 @@ def make_round(args) -> int:
     if tree is not None:
         # ADR 0092: the Assembly Tree gates of this round's scope.
         summary["tree"] = tree
+    if sheets is not None:
+        # ADR 0104: the kit's FDM Sheets.
+        summary["sheets"] = sheets
     if component is not None:
         next_policy = outcome["state"]
         carried = outcome["carried"]
