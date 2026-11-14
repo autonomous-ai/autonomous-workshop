@@ -3007,3 +3007,14 @@ convention, so sealed STEPs and frozen runs keep their colours.
   Upstream has no Assembly Tree, so a resync must keep the hook, as it keeps
   `_run_kit_tree`. Only `cad`'s and `make-round`'s locks move;
   `source_commit` values are unchanged.
+
+## Workshop-local: a kit's print layout is its Factory primary (2026-11-14, ADR 0104 decision 4)
+
+- `make-round/scripts/kit_print.py layout` writes `measure/kit/print.step`
+  and `measure/kit/print.json`: every Sheet and every loose printed copy,
+  named leaves, no Bought Part. It reads `kit_sheets.py`'s `print_shapes`
+  and `cadgen.step_export.export_build123d_step_file`.
+- **Local patch to upstream `cad`.** `verify_project` runs it right after
+  `_run_kit_sheets` on every kit with an installed tree
+  (`_run_kit_print_layout`). A resync must keep the hook. Only `cad`'s and
+  `make-round`'s locks move; `source_commit` values are unchanged.

@@ -11,7 +11,11 @@
     spares): implemented, deterministic tests only. No Amsterdam Sheet
     has been checked by it yet, and no printed test Sheet confirms its
     constants.
-  - Decisions 4 and 5: not implemented yet.
+  - Decision 4 (the print layout is the Factory primary, and the
+    not-printed `bodies` key fix): implemented, deterministic tests only.
+    No kit layout has crossed to Factory yet, and whether Factory prints
+    one layout STEP as several plates is still open.
+  - Decision 5: not implemented yet.
 - **Date:** 2026-11-14
 - **Amends:** ADR 0092 (what a kit prints, which Manual ships, a kit's
   Bought Parts block), ADR 0095's 2026-11-07 amendment (the Bought Parts
@@ -169,17 +173,32 @@ round summary records the report as `sheets`.
 
 ### 4. A kit's Factory primary is its print layout
 
-- Final verification seals `measure/kit/print.step`: every Sheet as built
-  and every loose Part copy in its print stance, laid apart; no Bought Part.
-  `measure/kit/print.json` records its hash and, per printed Part, the
-  copies it holds. The host checks before Make acceptance that the counts
-  cover the tree (plus spares), that no body is magenta or `bought_`, and
-  that the hashes match.
-- The Factory adapter ships that file as the primary, so Factory weighs
-  the filament the maker prints, frames included. The not-printed check of
-  `_assert_printed_bodies_only` reads the kit file's real `bodies` key and
-  applies when the scene itself would cross; the magenta and `bought_`
-  scans still run on whatever crosses.
+- Final verification (`make-round/scripts/kit_print.py layout`, after the
+  Sheet gate) seals `measure/kit/print.step` for every kit: every Sheet as
+  `sheet()` builds it and one copy of every printed Part on no Sheet for
+  each time the toy uses it, laid apart in rows; no Bought Part. Its leaves
+  are named `<Sheet>/frame` (frame, runners and gate bars),
+  `<Sheet>/<Part>#n` and `loose/<Part>#n`, in their filament colours.
+  `measure/kit/print.json` records the STEP's hash, the tree it was laid
+  out for, each Sheet's copies, the loose copies and the leaf names.
+- Before Make acceptance the host (`workshop.make.kit_print`) checks, on
+  the sealed bytes, that the record is for the sealed tree and names the
+  sealed STEP; that its Sheets and loose copies are exactly what the tree
+  gives; and that the STEP's leaves are exactly those names, so no Bought
+  Part body is in it, each holds a solid, and copies of one Part match in
+  volume and area. A kit with Sheets must have a layout. A kit without
+  Sheets is checked when it wrote one (current tools always do); a frozen
+  run that wrote none keeps its scene. The Make receipt records it as
+  `kit_print`, in the printed-only primary's shape (ADR 0095, 2026-11-07)
+  plus `layout_path` and `layout_sha256`.
+- The Factory adapter ships that file as the root `assembled.step`, the
+  only STEP that crosses, so Factory weighs the filament the maker prints,
+  frames included; the scene stays in Made. Release refuses a layout record
+  whose `print.json` is not sealed. The not-printed check of
+  `_assert_printed_bodies_only` now reads the kit file's real `bodies` key
+  (it read `not_printed`, which the file never had) and applies when the
+  scene itself would cross; the magenta and `bought_` scans still run on
+  whatever crosses.
 
 ### 5. An owner-approved Manual is sealed with the Proof and shipped
 

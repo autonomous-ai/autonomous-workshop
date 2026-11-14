@@ -2498,6 +2498,57 @@ class FactoryReleaseTest(unittest.TestCase):
             self.assert_refused_before_any_effect(message)
             shutil.rmtree(self.root / "resealed-product")
 
+    # ADR 0104 decision 4: a kit's print layout crosses in place of its scene.
+
+    LAYOUT = "cad/measure/kit/print.step"
+    LAYOUT_RECORD = "cad/measure/kit/print.json"
+
+    def seal_kit_layout(self, **changes):
+        scene = step_solid_document([("workshop", "#4c859e"), ("P01-steel-pin#1", "#ff00ff")])
+        listed = canonical_json({"kind": "kit-not-printed",
+                                 "bodies": [{"body": "P01-steel-pin#1", "part": "P01-steel-pin"}]})
+        layout_record = canonical_json({"kind": "kit-print-layout"})
+        self.reseal_made({"assembled.step": scene, self.LAYOUT: TETRA_STEP,
+                          self.LAYOUT_RECORD: layout_record, "cad/measure/not-printed.json": listed})
+        record = {
+            "path": self.LAYOUT, "sha256": hashlib.sha256(TETRA_STEP).hexdigest(),
+            "scene_path": "assembled.step", "scene_sha256": hashlib.sha256(scene).hexdigest(),
+            "removed": ["P01-steel-pin#1"], "printed_bodies": 1, "removed_bodies": 1,
+            "layout_path": self.LAYOUT_RECORD, "layout_sha256": hashlib.sha256(layout_record).hexdigest(),
+        }
+        record.update(changes)
+        self.context = ReleaseContext(self.made, printed_primary=record)
+
+    def test_a_kit_scene_listed_under_bodies_is_refused(self):
+        report = {"kind": "kit-not-printed", "bodies": [{"body": "P01-steel-pin#1", "part": "P01-steel-pin"}]}
+        self.reseal_made({"assembled.step": TETRA_STEP, "cad/measure/not-printed.json": canonical_json(report)})
+        self.assert_refused_before_any_effect("P01-steel-pin#1")
+
+    def test_a_kit_print_layout_is_the_one_step_that_crosses(self):
+        self.seal_kit_layout()
+        transport = FactoryTransport()
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertTrue(receipt.is_verified_draft)
+        call = next(call for call in transport.calls if call[1].endswith("/designs/import"))
+        with zipfile.ZipFile(io.BytesIO(multipart_parts(call[2], call[3])["file"][0])) as archive:
+            steps = sorted(name for name in archive.namelist()
+                           if PurePosixPath(name).suffix.casefold() in {".step", ".stp"})
+            self.assertEqual(steps, ["assembled.step"])
+            self.assertEqual(archive.read("assembled.step"), TETRA_STEP)
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+        self.assertEqual(facts["printed_primary"]["source_path"], self.LAYOUT)
+        self.assertEqual(facts["printed_primary"]["removed"], ["P01-steel-pin#1"])
+
+    def test_a_kit_layout_record_that_is_not_sealed_is_refused(self):
+        for changes, message in (
+            ({"layout_sha256": "0" * 64}, "layout's record is not sealed"),
+            ({"layout_path": "cad/measure/kit/missing.json"}, "layout's record is not sealed"),
+            ({"sha256": "0" * 64}, "is not sealed in Made"),
+        ):
+            self.seal_kit_layout(**changes)
+            self.assert_refused_before_any_effect(message)
+            shutil.rmtree(self.root / "resealed-product")
+
     def sealed_lamp_context(self, board_price=400, glue_price=32):
         contract = {
             "electrical": {

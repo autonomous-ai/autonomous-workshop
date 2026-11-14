@@ -39,6 +39,14 @@ class AcceptedPrintedPrimaryTest(unittest.TestCase):
         self.receipt("003-make.json", {})
         self.assertIsNone(_accepted_printed_primary(self.run_))
 
+    def test_a_kit_ships_its_print_layout(self):
+        layout = dict(RECORD, path="cad/measure/kit/print.step", removed=["P01-pin#1"],
+                      layout_path="cad/measure/kit/print.json", layout_sha256="c" * 64)
+        self.receipt("001-make.json", {"kit_tree": [{"printed_parts": 5}], "kit_print": [layout]})
+        self.assertEqual(_accepted_printed_primary(self.run_), layout)
+        self.receipt("002-make.json", {"kit_tree": [{"printed_parts": 5}]})
+        self.assertIsNone(_accepted_printed_primary(self.run_), "only the latest acceptance counts")
+
     def test_an_unreadable_receipt_stops_the_release(self):
         self.receipt("001-make.json", {"bought_model": {"printed_primary": RECORD}})
         with self.assertRaises(StateConflict):
