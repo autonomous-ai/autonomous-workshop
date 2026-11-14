@@ -70,6 +70,31 @@ Merge decisions:
   `test_check_motion_parallel_integration`) fail identically on `origin/main` 095fef36 in this
   environment; none is new.
 
+## Workshop-local: `check_overhang` reads a low ceiling's walls (2026-11-14)
+
+- **Local patch to upstream `cad`.** The flank, reach and chord probes read
+  the voxel cell at or below one pitch under a face. For a ceiling under
+  about 0.67 mm (0.4 mm grid), that cell's centre lies below the bed. It
+  holds no material, so a 2 mm channel open to the bed, under a 0.5 mm
+  ceiling with walls both sides, read as an unflanked overhang with reach
+  `inf`.
+- The result also depended on what else was in the scene. The same channel
+  passed when region clustering happened to merge it with a neighbouring
+  bridge, and failed when it did not (Miami kit A05/A06 cells versus the
+  standalone Part).
+- `probe_slice` now never reads a slice below all material: the first slice
+  holding material stands in. Every face higher up reads exactly the slice
+  it read before. A higher probe was tried and rejected because it cuts a
+  sloped region's own solid and shortens its reach. The 45 degree limit,
+  the bridge length and the ledge reach are unchanged.
+- **Evidence.**
+  - `tests/make/test_check_overhang_low_ceiling.py`.
+  - On 150 sampled published STEPs, 148 are identical. In the other 2, two
+    0.3 mm ceilings each turn from overhang into 1.1 to 1.3 mm bridges. No
+    verdict changes.
+- Only `cad`'s lock moves; `source_commit` is unchanged. A resync must keep
+  this patch until upstream has it.
+
 ## Workshop-local: an approved Proof keeps its fit table (2026-11-14, ADR 0105)
 
 - **Local patch to upstream `cad`.**
