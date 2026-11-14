@@ -187,6 +187,15 @@ Tree and Manual.
   cross-laps or snaps at the fits above. List any remaining glue joint with
   its reason. Why: the owner counts glue as a design failure; Amsterdam
   went from 9 glue steps to 0.
+- **Every freestanding part must survive a knock on the tray.** Trees,
+  houses, towers, lamps and boats each need a mechanical hold: deeper
+  engagement, a snap or detent, a twist-lock, or a keyed press fit. A
+  shallow loose spigot or a slip-over seat is not a hold. If a part must
+  lift off, for example a house over its stash cup, use a detent that a
+  deliberate lift releases and a knock does not. Show each part's
+  engagement depth against its height, and check that it stays seated with
+  the tray tilted 45° in any direction. Why: the Amsterdam kit's trees and
+  houses fell over when the owner bumped the tray.
 - **Every gate must be cut with nippers.** Put gates on straight,
   outward-facing edges, never in a channel between protrusions. Keep at
   least 6 mm clear for the jaws on both sides of each gate. Never let a
