@@ -77,6 +77,45 @@ FIT_TABLE: dict[str, float] = {
 # binds, and a fixed one is a deliberate `fixed`.
 DEFAULT_FIT = "moving"
 
+# Workshop-local (ADR 0105): a design approved under an earlier table keeps
+# it. Each named table is the FIT_TABLE and DEFAULT_FIT one period of this
+# library shipped. ``WORKSHOP_FIT_TABLE`` names the one a process builds with:
+# Workshop's make_round and verify_project set it from a seeded run's
+# Approved Proof, and a designer reopening an approved Proof sets it by hand.
+# Unset, the current table above holds. An unknown name refuses to import,
+# so a pinned design never silently builds with another table.
+FIT_TABLE_ENV = "WORKSHOP_FIT_TABLE"
+CURRENT_FIT_TABLE = "fits-2026-11-13"
+FIT_TABLES: dict[str, tuple[dict[str, float], str]] = {
+    # The owner's total-clearance rule (2026-11-13), the table above.
+    CURRENT_FIT_TABLE: (dict(FIT_TABLE), DEFAULT_FIT),
+    # Every Proof approved before 2026-11-13: per-side snug 0.10, slip 0.20,
+    # default slip. That library had no fixed, moving or clear, so no such
+    # design names them; they keep their current values for the library's
+    # own use (a bought part's seat is cut at clear 0.20, as slip cut it).
+    "fits-legacy": ({"press": -0.05, "fixed": 0.05, "snug": 0.10, "moving": 0.10, "slip": 0.20,
+                     "clear": 0.20, "free": 0.40}, "slip"),
+}
+
+
+def _pinned_table() -> None:
+    import os
+
+    name = os.environ.get(FIT_TABLE_ENV)
+    if not name:
+        return
+    if name not in FIT_TABLES:
+        raise ImportError("%s=%r names no fit table; known: %s"
+                          % (FIT_TABLE_ENV, name, ", ".join(sorted(FIT_TABLES))))
+    table, default = FIT_TABLES[name]
+    global DEFAULT_FIT
+    FIT_TABLE.clear()
+    FIT_TABLE.update(table)
+    DEFAULT_FIT = default
+
+
+_pinned_table()
+
 # A bought part does not compress. Its seat is cut at `clear` by default, and
 # `check_mount` fails any seat whose measured gap is under this floor. This is a
 # gate value, independent of the printed-part fits above: keep it at 0.10.
@@ -225,6 +264,7 @@ def print_in_place_gap(
 def _self_check() -> int:
     """Assertions this module has to keep. Run as a script; no test framework."""
     import math
+    import os
 
     failures: list[str] = []
 
@@ -248,12 +288,23 @@ def _self_check() -> int:
               math.isclose(slot_for(10.0, name) - 10.0, 2 * mating_clearance(name),
                            abs_tol=1e-9))
 
-    # The owner's rule, in TOTAL clearance: fixed +0.1 mm, moving +0.2 mm.
-    check("fixed: 1.0 mm leg -> 1.1 mm socket", math.isclose(slot_for(1.0, "fixed"), 1.1))
-    check("moving: 1.0 mm shaft -> 1.2 mm hole", math.isclose(slot_for(1.0, "moving"), 1.2))
-    check("snug is the older name for fixed", FIT_TABLE["snug"] == FIT_TABLE["fixed"])
-    check("slip is the older name for moving", FIT_TABLE["slip"] == FIT_TABLE["moving"])
-    check("default fit is the moving fit", DEFAULT_FIT == "moving")
+    # Workshop-local (ADR 0105): every named table names every class, and a
+    # pinned table is exactly the one this process builds with.
+    for name, (table, default) in FIT_TABLES.items():
+        check(f"fit table {name} names every class", set(table) == set(FIT_TABLES[CURRENT_FIT_TABLE][0]))
+        check(f"fit table {name} default is a class", default in table)
+    pinned = os.environ.get(FIT_TABLE_ENV) or CURRENT_FIT_TABLE
+    check(f"builds with fit table {pinned}", (FIT_TABLE, DEFAULT_FIT) == FIT_TABLES[pinned])
+    if pinned == "fits-legacy":
+        check("legacy: slip 1.0 mm shaft -> 1.4 mm hole", math.isclose(slot_for(1.0, "slip"), 1.4))
+        check("legacy: default fit is slip", DEFAULT_FIT == "slip")
+    if pinned == CURRENT_FIT_TABLE:
+        # The owner's rule, in TOTAL clearance: fixed +0.1 mm, moving +0.2 mm.
+        check("fixed: 1.0 mm leg -> 1.1 mm socket", math.isclose(slot_for(1.0, "fixed"), 1.1))
+        check("moving: 1.0 mm shaft -> 1.2 mm hole", math.isclose(slot_for(1.0, "moving"), 1.2))
+        check("snug is the older name for fixed", FIT_TABLE["snug"] == FIT_TABLE["fixed"])
+        check("slip is the older name for moving", FIT_TABLE["slip"] == FIT_TABLE["moving"])
+        check("default fit is the moving fit", DEFAULT_FIT == "moving")
     check("bought-part seat clears the check_mount floor",
           mating_clearance(BOUGHT_PART_FIT) > BOUGHT_PART_MIN_CLEARANCE)
     check("check_mount floor stays 0.10/side",

@@ -31,6 +31,7 @@ from typing import Any, Dict, Mapping
 
 from workshop.errors import ContractError
 from workshop.wish.bought_list import strip_bought_block
+from workshop.wish.fit_tables import approval_fit_table
 
 APPROVAL_NAME = "APPROVAL.json"
 APPROVAL_SCHEMA_VERSION = 4
@@ -304,6 +305,12 @@ def validate_seed(directory: Path, geometry_ids, contract_sha256: str,
     if approval.get("contract_sha256") != contract_sha256:
         raise ContractError("seed: the Approved Proof was sealed for another contract "
                             "(contract_sha256 differs from the sealed contract's)")
+    try:
+        approval_fit_table(approval)
+    except ValueError as exc:
+        # ADR 0105: a run builds the Proof with the table it was approved
+        # with, so one it cannot name cannot seed a run.
+        raise ContractError("seed: %s" % exc) from exc
 
     sealed = approval.get("manifest")
     if not isinstance(sealed, dict) or not sealed:

@@ -134,6 +134,12 @@ def _closure_hash_for_pairs(pairs: list[tuple[str, str]]) -> str:
         digest.update(b"\0")
         digest.update(file_hash.encode("ascii"))
         digest.update(b"\0")
+    # Workshop-local (ADR 0105): cadfits reads its fit table from
+    # WORKSHOP_FIT_TABLE, so the same sources under another table are another
+    # build. Unset keeps every recorded closure hash valid.
+    table = os.environ.get("WORKSHOP_FIT_TABLE")
+    if table:
+        digest.update(b"fit-table\0" + table.encode("utf-8"))
     return digest.hexdigest()
 
 

@@ -3673,6 +3673,22 @@ def seed_approval(project: Path) -> dict | None:
     return approval
 
 
+def pin_seed_fit_table(project: Path) -> str | None:
+    """In a seeded run, build with the fit table the Approved Proof was
+    approved with (Workshop ADR 0105): every cadfits import below this
+    process reads it. Returns the table's name, or None outside a seeded
+    run. An unreadable approval is left to the round that reads it."""
+
+    try:
+        approval = seed_approval(project)
+    except ValueError:
+        return None
+    if approval is None:
+        return None
+    from workshop.wish.fit_tables import pin
+    return pin(os.environ, approval)
+
+
 def seed_diff(approved: Path, built: Path, out: Path) -> dict:
     """``proof_diff`` of one built Component against its approved STEP,
     written to ``out/seed-diff.json``. ``passed`` is None when the diff
@@ -7895,6 +7911,19 @@ def self_check() -> int:
 
 
 def main(argv=None) -> int:
+    # A seeded run pins the fit table for this process and its children
+    # (ADR 0105); a caller that imports this module gets its own back.
+    saved = os.environ.get("WORKSHOP_FIT_TABLE")
+    try:
+        return _main(argv)
+    finally:
+        if saved is None:
+            os.environ.pop("WORKSHOP_FIT_TABLE", None)
+        else:
+            os.environ["WORKSHOP_FIT_TABLE"] = saved
+
+
+def _main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("project", nargs="?", help="the cad directory holding *.step.py sources")
     parser.add_argument("--entry", help="entry generator name when more than one non-part *.step.py exists")
@@ -7944,6 +7973,7 @@ def main(argv=None) -> int:
         return self_check()
     if not args.project:
         parser.error("project is required")
+    pin_seed_fit_table(Path(args.project))
     if args.identities_only:
         if not args.contract:
             parser.error("--identities-only needs --contract")

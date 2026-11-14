@@ -50,7 +50,10 @@ def socket_path() -> Path:
     override = os.environ.get("CADGEN_DAEMON_SOCKET")
     if override:
         return Path(override)
-    digest = hashlib.sha256(str(SKILL_ROOT).encode("utf-8")).hexdigest()[:12]
+    # Workshop-local (ADR 0105): one warm daemon per fit table, so a build
+    # pinned to an approved Proof's table never reuses another table's import.
+    key = str(SKILL_ROOT) + "\0" + os.environ.get("WORKSHOP_FIT_TABLE", "")
+    digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:12]
     return Path(os.environ.get("TMPDIR") or "/tmp") / f"cg-{digest}.sock"
 
 
