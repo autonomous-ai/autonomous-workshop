@@ -99,6 +99,27 @@ class KitSheetCheckTest(unittest.TestCase):
                                                                                         "area": 360 + 56 * 3.5}})
         self.assertTrue(any("3.5 mm tall; a Sheet is a flat plate" in line for line in fails), fails)
 
+    def test_a_sheet_fits_the_printers_bed(self):
+        from shapely.geometry import box
+        from shapely import wkt
+
+        described = self._describe()
+        frame = wkt.loads(described["frame"]["footprint"])
+        lo_x, lo_y = frame.bounds[:2]
+
+        def framed(width, depth):
+            # The frame's runner extended to a plate of the given plan size.
+            outline = frame.union(box(lo_x, lo_y, lo_x + width, lo_y + 1.0)).union(
+                box(lo_x, lo_y, lo_x + 1.0, lo_y + depth))
+            return {**described, "frame": {**described["frame"], "footprint": outline.wkt}}
+
+        self.assertEqual(ks.SHEET_MAX_MM, 250.0)
+        self.assertEqual(ks.check(framed(250.0, 250.0), SPEC, {"A01-panel": PANEL}), [])
+        for width, depth in ((250.5, 40.0), (40.0, 251.0)):
+            fails = ks.check(framed(width, depth), SPEC, {"A01-panel": PANEL})
+            self.assertEqual(len(fails), 1, fails)
+            self.assertIn("in plan; it must fit 250 x 250 mm, the 256 mm bed", fails[0])
+
     def test_a_copy_too_near_the_frame_is_not_separable(self):
         # The panel 1.0 mm above the runner: under 2.0 from the frame, and
         # the runner stands in the gate's 2 mm keep-out.

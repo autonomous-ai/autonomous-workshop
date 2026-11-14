@@ -33,6 +33,9 @@ own ``sheets.py`` (2026-11-14):
   equal in volume and area to that Part's ``print_parts()`` shape, on the
   bed.
 - **Flat plate.** No copy is over 3.0 mm tall.
+- **One bed.** The whole Sheet, frame, gates and copies, fits in plan
+  within 250 x 250 mm: Factory's printer (Bambu A1) has a 256 mm bed, less
+  3 mm a side. A larger Sheet is printed on no plate.
 - **Separable.** Each copy is at least 2.0 mm from the frame and every other
   copy, touches each of its gates and has at least one; each gate touches
   the frame.
@@ -68,6 +71,9 @@ FUNCTION = "sheet"
 BED_TOLERANCE_MM = 0.01
 SAME_TOLERANCE = 1e-4            # relative volume and area of a copy against its print_parts() shape
 MAX_HEIGHT_MM = 3.0              # a Sheet is a flat plate
+BED_MM = 256.0                   # Factory's printer (Bambu A1)
+BED_MARGIN_MM = 3.0              # kept clear at each edge of the bed
+SHEET_MAX_MM = BED_MM - 2 * BED_MARGIN_MM
 SEPARATION_MM = 2.0              # a copy to the frame and to every other copy, away from its gates
 TOUCH_MM = 1e-3
 JAW_HALF, JAW_D = 6.0, 2.0       # the nipper's keep-out at a cut point
@@ -358,6 +364,7 @@ def check(described: dict, spec: dict, measures: dict) -> list[str]:
                          "%.0f mm back) meets %s" % (name, parts[index]["id"], gate["x"], JAW_HALF, JAW_D,
                                                      ", ".join(hits)))
     bars = unary_union([bar for _, _, bar in gates])
+    fails += bed_failures(name, unary_union([frame, every_part, bars]))
     for index, own in enumerate(footprints):
         others = unary_union([fp for n, fp in enumerate(footprints) if n != index])
         for x, y, direction in fragile_tips(own):
@@ -375,6 +382,18 @@ def check(described: dict, spec: dict, measures: dict) -> list[str]:
                 fails.append("%s: the fragile tip of %s at (%.1f, %.1f) pointing %s has %s: turn it into open "
                              "sheet space" % (name, parts[index]["id"], x, y, direction, "; ".join(why)))
     return fails
+
+
+def bed_failures(name: str, plan) -> list[str]:
+    """The One bed rule on a whole Sheet's plan geometry (shapely)."""
+
+    lo_x, lo_y, hi_x, hi_y = plan.bounds
+    width, depth = hi_x - lo_x, hi_y - lo_y
+    if max(width, depth) <= SHEET_MAX_MM + 1e-6:
+        return []
+    return ["%s: the Sheet is %.1f x %.1f mm in plan; it must fit %.0f x %.0f mm, the %.0f mm bed less %.0f mm "
+            "a side: split it into two Sheets or move Parts to another"
+            % (name, width, depth, SHEET_MAX_MM, SHEET_MAX_MM, BED_MM, BED_MARGIN_MM)]
 
 
 def part_failures(sheets: list, printed: dict, totals: dict, measures: dict) -> tuple[list[str], list[str]]:
