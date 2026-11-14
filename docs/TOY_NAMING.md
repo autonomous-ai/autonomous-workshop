@@ -104,6 +104,7 @@ Products of the same kind use the **same type word**, always at the end of the n
 | Spinners, cubes, braids for fidgeting | **Fidget Toy** (or the specific item: `Fidget Spinner`, `Infinity Cube`) | System |
 | Static display pieces and statues | **Desk Sculpture** | Display Piece, Statue |
 | Scale vehicles and aircraft | **Model** | Model Kit, Replica |
+| User-assembled printed kits (sheets, loose parts, Manual) | **Build Kit** (e.g. `Amsterdam Canal Build Kit`) | Kit, Assembly Kit, DIY Kit |
 | Moonlit Atlas add-ons | **City Pack** (`Moonlit Atlas: [City] City Pack`) | Pack, Set |
 | Desk organisers | **Pen Cup**, **Catchall**, **Holder** | Keeper, Caddy |
 | Lights | **Night Light**, **Tea Light Holder** | Lamp (for these) |
