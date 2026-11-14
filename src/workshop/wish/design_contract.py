@@ -1177,7 +1177,8 @@ def parse_design_contract(text: str, catalogues: Optional[Catalogues] = None) ->
             except ContractError as exc:
                 errors.append(str(exc))
         bought = parse_bought_block(
-            text, version=version, has_tree=assembly_tree is not None,
+            text, version=version, has_tree=kit,
+            tree=assembly_tree.section if assembly_tree is not None else None,
             electrical=electrical.to_dict() if electrical is not None else None,
             catalogues=catalogues, errors=errors,
         )

@@ -157,6 +157,28 @@ def _snapshot(
     return {"filaments": dict(sorted(filaments.items())), "bought_parts": dict(sorted(parts.items()))}
 
 
+def bought_totals(section: Mapping[str, Any]) -> Dict[str, int]:
+    """How many pieces of each catalogue Bought Part one toy holds, by
+    catalogue id: every Bought Part leaf's input count times the count of
+    the step it goes into (ADR 0104). ``section`` is a validated tree, as
+    the sealed contract carries it."""
+
+    by_part = {
+        item["id"]: item["bought"]
+        for item in section.get("parts") or ()
+        if isinstance(item, Mapping) and isinstance(item.get("bought"), str)
+    }
+    totals: Dict[str, int] = {}
+    for step in section.get("steps") or ():
+        if not isinstance(step, Mapping):
+            continue
+        for item in step.get("inputs") or ():
+            if isinstance(item, Mapping) and item.get("id") in by_part:
+                bought = by_part[item["id"]]
+                totals[bought] = totals.get(bought, 0) + int(step.get("count", 1)) * int(item.get("count", 1))
+    return totals
+
+
 def _mnemonic(identifier: str) -> str:
     return identifier.split("-", 1)[1]
 
@@ -302,6 +324,12 @@ def _parse_parts(
                 errors.append(
                     "%s.bought %r is not in the Bought Part catalogue: one outside it needs the "
                     "owner's approval, by adding it to bought-parts.json" % (label, item["bought"])
+                )
+                continue
+            if entry.packaging:
+                errors.append(
+                    "%s.bought %r is packaging: a kit bills it in its bought-parts block, never "
+                    "in the tree" % (label, item["bought"])
                 )
                 continue
             if entry.material:
@@ -885,5 +913,6 @@ __all__ = [
     "SHAPINGS",
     "SOLID",
     "STEP_ID",
+    "bought_totals",
     "parse_assembly_tree",
 ]
