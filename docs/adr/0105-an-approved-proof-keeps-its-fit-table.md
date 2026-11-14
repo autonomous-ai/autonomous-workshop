@@ -1,8 +1,8 @@
 # ADR 0105: An approved Proof keeps the fit table it was approved with
 
 - **Status:** Accepted (builder, 2026-11-14). Implemented with deterministic
-  tests. The Amsterdam tray Proof was rebuilt under the legacy table outside a
-  run (see Verification). No live seeded run has used it yet.
+  tests. The Amsterdam tray Proof rebuilt identically under the legacy table
+  outside a run (see Verification). No live seeded run has used it yet.
 - **Date:** 2026-11-14
 - **Amends:** ADR 0096 (what an Approved Proof seals and what a seeded run
   builds) and the 2026-11-13 resync of the vendored `cad` skill.
@@ -110,6 +110,9 @@ parent run's table.
 - Deterministic tests: `tests/make/test_fit_tables.py` and
   `tests/skills/test_seal_proof_fit_table.py`.
 - The `cadfits` self-check passes under every table.
-- Live: see the PR. The Amsterdam tray Proof, built with
-  `make_round --identities-only` under `fits-legacy`, is compared there with
-  the identities its approval sealed.
+- The published Amsterdam tray Proof was built with `make_round
+  --identities-only` under `fits-legacy` (2026-11-14). All 32 Components'
+  B-rep identities and STEP sha256 match those its approval sealed, and so
+  does the assembly identity. Without the pin, `params.py` refuses to build.
+  This was a rebuild outside a run; a seeded `workshop fix` has not run on
+  it yet.
