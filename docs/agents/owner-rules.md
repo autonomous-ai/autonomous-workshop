@@ -212,6 +212,13 @@ Tree and Manual.
   parts to grey. Lighten dark colours. Put a part-ID bubble on every
   figure. Why: steps 13–15 of the first pen tower manual could not be
   followed, and the dark brown pages were unreadable.
+- **Do not print fine foliage.** Rolife builds plants from florist wire,
+  a crepe-paper trunk and printed paper leaves or flock (DH201-19..23, -44).
+  On a printed toy, choose plants whose form prints well, such as cherry
+  blossom clusters, over fine strands such as a willow. Otherwise print only
+  the trunk and branches and use Rolife's paper or flock layer for leaves.
+  Why: the Kyoto willow took nine Proof rounds and still read as a
+  mushroom, an umbrella, a palm and then lampshades (owner, 2026-11-14).
 - **The play feature is the hero.** Size the scene so the mechanism reads
   first, for example by widening the canal so the drawbridge is large.
 - **Report every visible change against the published toy**, such as a
