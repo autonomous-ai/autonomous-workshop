@@ -139,6 +139,54 @@ rule, this file only points to it; that source stays the authority.
   (printed already assembled) keep their larger gaps, and a bought part's
   seat keeps `check_mount`'s 0.10 mm-per-side floor.
 
+### Assembly kits
+
+Lessons from turning the Amsterdam tray into a user-assembled kit (owner,
+2026-11-13/14). Rolife-style kits are the benchmark; their research is in
+[`docs/research/book-nook-kits/`](../research/book-nook-kits/README.md), and
+[ADR 0092](../adr/0092-kit-assembly-tree-and-manual.md) holds the Assembly
+Tree and Manual.
+
+- **A sheet holds only thin flat plates, at most 3 mm thick.** Build volume
+  from plates. A part that cannot be flat leaves the sheet as a loose
+  printed part, with a written reason. Why: Rolife sheets are all flat
+  plates, and thick blocks on a sheet read as a print, not a kit.
+- **Build sub-assemblies first, then join them into the whole.** Never slide
+  a part between two parts that are already fixed, and never ask for a
+  blind insertion. Why: the first pen tower order made the user wedge a
+  wall between two fixed walls.
+- **Glue is the last resort.** Join with tabs and slots, pegs, half-laps,
+  cross-laps or snaps at the fits above. List any remaining glue joint with
+  its reason. Why: the owner counts glue as a design failure; Amsterdam
+  went from 9 glue steps to 0.
+- **Every gate must be cut with nippers.** Put gates on straight,
+  outward-facing edges, never in a channel between protrusions. Keep at
+  least 6 mm clear for the jaws on both sides of each gate. Never let a
+  fragile tip point at a gate or at the frame. Why: the owner could not see
+  how to cut out a parapet whose gates sat between its pinnacles.
+- **Minimum loose part size:** at least 1.6 mm thick, a short side of at
+  least 4 mm, and at least 35 mm² to grip. Add one spare, marked "+", for
+  each part under 15 mm. Why: Rolife cuts nothing smaller than about 4 mm.
+- **Hidden storage must be reachable.** A finger cannot reach into a cup
+  21 mm deep and 9 mm wide. Use a shallow cup (about 9 mm) that lifts out by
+  a pull tab, and say what it holds.
+- **Every Manual step reads on its own:**
+  - an anchor part already sits on the table;
+  - each new part is drawn at its destination, with an arrow that ends on
+    the slot or tab it enters;
+  - the camera stays the same within a sub-assembly;
+  - the text matches the picture;
+  - no step only holds parts in mid-air.
+
+  Draw new parts in their own colour with a bold outline, and fade earlier
+  parts to grey. Lighten dark colours. Put a part-ID bubble on every
+  figure. Why: steps 13–15 of the first pen tower manual could not be
+  followed, and the dark brown pages were unreadable.
+- **The play feature is the hero.** Size the scene so the mechanism reads
+  first, for example by widening the canal so the drawbridge is large.
+- **Report every visible change against the published toy**, such as a
+  dropped post, a loose part or a seam.
+
 ### Image models
 
 Model choice per edit is in
@@ -222,6 +270,12 @@ waiting for an OK on every PR kept stalling builds.
 
 ## Repository and reports
 
+- **Record every lesson here by PR as soon as you learn it.** Whenever the
+  owner corrects work, or you find a rule that would have prevented a
+  defect, add it to this file (or to the skill that owns it) in a small PR
+  the same day, with its Why. Merge it under the usual rule. Why: lessons
+  kept only in an agent's memory do not reach the other agents (owner,
+  2026-11-14).
 - **Never commit new files under `toys/`, `toys-spec/` or `inbox/`**; see
   `AGENTS.md` working rules. Say they were synced to the main checkout.
 - **`inbox/` holds only files the owner sends in.** Read them without
