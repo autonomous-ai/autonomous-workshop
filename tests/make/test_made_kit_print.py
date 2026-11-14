@@ -4,8 +4,11 @@ the printed-only primary Release ships to Factory.
 
 Contract: the record is for the sealed tree, names the sealed STEP by hash
 and lays out the tree's Sheets and every loose printed copy; the STEP's
-leaves are exactly those copies, each a solid, and copies of one Part are
-alike. A kit with Sheets must have one; a kit without Sheets that wrote
+leaves are exactly one per Sheet and one per loose copy, each Sheet one
+connected solid (one solid, one outer shell; a void inside is allowed),
+each loose copy a solid, and copies of one Part are alike. A schema 1
+record, which a run materialized before 2026-11-14 writes, keeps its
+unfused leaves. A kit with Sheets must have one; a kit without Sheets that wrote
 none, and a non-kit, give None."""
 
 from __future__ import annotations
@@ -25,16 +28,20 @@ from tests.make import test_made_kit_tree as tree_tests
 PRODUCT = tree_tests.PRODUCT
 
 
-def layout_step(names, *, odd=None) -> bytes:
+def layout_step(names, *, odd=None, shapes=None) -> bytes:
+    """A layout STEP with one box leaf per name; ``shapes`` maps a name to
+    the shape built for it instead."""
+
     from build123d import Box, Compound, Pos
 
     from cadgen.step_export import export_build123d_step_file
 
     children = []
     for index, name in enumerate(names):
-        part = name.split("/", 1)[1].rsplit("#", 1)[0]
+        part = name.split("/", 1)[-1].rsplit("#", 1)[0]
         size = 4 + (sum(map(ord, part)) % 7) + (1 if name == odd else 0)
-        solid = Pos(index * 30.0, 0, 0) * Box(size, size, 2)
+        built = (shapes or {}).get(name)
+        solid = Pos(index * 30.0, 0, 0) * (built() if built else Box(size, size, 2))
         solid.label = name
         children.append(solid)
     root = Compound(children=children)
@@ -57,10 +64,10 @@ class MadeKitPrintTest(unittest.TestCase):
         if str(root) not in sys.path:
             sys.path.insert(0, str(root))
 
-    def seal(self, contract=None, names=None, step=None, **changes):
+    def seal(self, contract=None, names=None, step=None, schema_version=2, **changes):
         contract = contract or self.contract
         sheets, loose = expected_copies(contract)
-        names = expected_bodies(sheets, loose) if names is None else names
+        names = expected_bodies(sheets, loose, schema_version) if names is None else names
         step = layout_step(names) if step is None else step
         (self.cad / "measure/kit").mkdir(parents=True, exist_ok=True)
         (self.cad / "measure/kit/print.step").write_bytes(step)
@@ -71,11 +78,11 @@ class MadeKitPrintTest(unittest.TestCase):
                 copies[part] = copies.get(part, 0) + count
         for part, count in loose.items():
             copies[part] = copies.get(part, 0) + count
-        report = {"kind": "kit-print-layout", "schema_version": 1,
+        report = {"kind": "kit-print-layout", "schema_version": schema_version,
                   "tree_sha256": tree_digest(install_document(contract, self.catalogue)),
                   "step": "measure/kit/print.step", "sha256": hashlib.sha256(step).hexdigest(),
                   "sheets": sheets, "loose": loose, "copies": dict(sorted(copies.items())),
-                  "bodies": expected_bodies(sheets, loose)}
+                  "bodies": expected_bodies(sheets, loose, schema_version)}
         report.update(changes)
         self.write("measure/kit/print.json", report)
         return report
@@ -110,17 +117,70 @@ class MadeKitPrintTest(unittest.TestCase):
         self.assertEqual(record["removed"], [item["body"] for item in self.listed["bodies"]])
         self.assertEqual(record["removed_bodies"], len(self.listed["bodies"]))
 
-    def test_a_sheet_and_its_frame_are_laid_out(self):
+    def test_a_sheet_is_one_fused_leaf_and_loose_parts_stay_apart(self):
         contract = self.sheeted()
         self.seal(contract)
         names = expected_bodies(*expected_copies(contract))
-        self.assertIn("B1/frame", names)
-        self.assertIn("B1/B01-cabinet-carcass#1", names)
+        self.assertIn("B1", names)
+        self.assertFalse(any(name.startswith("B1/") for name in names))
         self.assertNotIn("loose/B01-cabinet-carcass#1", names)
+        loose = [name for name in names if name.startswith("loose/")]
+        self.assertEqual(len(loose), len(names) - 1)
         record = self.check(contract)
         self.assertEqual(record["printed_bodies"], len(names))
         # The record must be for the tree in effect.
         self.assertIn("another Assembly Tree", self.refused())
+
+    def test_a_sheet_with_a_void_inside_is_still_one_connected_solid(self):
+        from build123d import Box
+
+        contract = self.sheeted()
+        self.seal(contract, step=layout_step(expected_bodies(*expected_copies(contract)),
+                                             shapes={"B1": lambda: Box(20, 20, 6) - Box(6, 6, 2)}))
+        self.assertIsNotNone(self.check(contract))
+
+    def test_a_sheet_that_is_not_one_connected_solid_is_refused(self):
+        from build123d import Box, Compound, Pos
+
+        def apart():
+            # A copy whose gate misses the frame: two solids in one leaf.
+            return Compound([Box(10, 10, 2), Pos(30, 0, 0) * Box(10, 10, 2)])
+
+        def two_shells():
+            # One solid that bounds two separate pieces of material.
+            from build123d import Solid
+            from OCP.BRep import BRep_Builder
+            from OCP.TopoDS import TopoDS_Solid
+
+            builder, solid = BRep_Builder(), TopoDS_Solid()
+            builder.MakeSolid(solid)
+            for piece in (Box(10, 10, 2), Pos(30, 0, 0) * Box(10, 10, 2)):
+                builder.Add(solid, piece.shells()[0].wrapped)
+            return Solid(solid)
+
+        contract = self.sheeted()
+        names = expected_bodies(*expected_copies(contract))
+        for label, build in (("two solids", apart), ("two outer shells", two_shells)):
+            with self.subTest(label):
+                self.seal(contract, step=layout_step(names, shapes={"B1": build}))
+                self.assertIn("Sheet B1 is not one connected solid but 2 piece(s)", self.refused(contract))
+
+    def test_a_schema_1_layout_keeps_its_unfused_leaves(self):
+        contract = self.sheeted()
+        self.seal(contract, schema_version=1)
+        names = expected_bodies(*expected_copies(contract), 1)
+        self.assertIn("B1/frame", names)
+        self.assertIn("B1/B01-cabinet-carcass#1", names)
+        self.assertEqual(self.check(contract)["printed_bodies"], len(names))
+        # A schema 2 record cannot name the unfused leaves.
+        self.seal(contract, step=layout_step(names))
+        self.assertIn("missing B1", self.refused(contract))
+        for bad in (True, 3, "2"):
+            with self.subTest(bad):
+                report = self.seal(contract)
+                report["schema_version"] = bad
+                self.write("measure/kit/print.json", report)
+                self.assertIn("is not a kit print layout record", self.refused(contract))
 
     def test_a_kit_with_sheets_needs_its_layout_and_one_without_may_keep_its_scene(self):
         self.assertIsNone(self.check())

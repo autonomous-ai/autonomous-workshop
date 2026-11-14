@@ -215,7 +215,9 @@ def sheet():
         parts.append({{"id": part, "shape": placed, "gates": [{{"shape": gate, "x": middle, "y": 10.0, "d": 1}}]}})
         x += box.size.X + 8.0
         top = max(top, 10 + box.size.Y)
-    frame = Pos(0, 0, 0) * Box(x, 2.4, 1.6, align=A) + Pos(0, top + 4.0, 0) * Box(x, 2.4, 1.6, align=A)
+    # Two runners and the side rails that join them into one frame.
+    frame = (Pos(0, 0, 0) * Box(x, 2.4, 1.6, align=A) + Pos(0, top + 4.0, 0) * Box(x, 2.4, 1.6, align=A)
+             + Pos(0, 0, 0) * Box(1.6, top + 6.4, 1.6, align=A) + Pos(x - 1.6, 0, 0) * Box(1.6, top + 6.4, 1.6, align=A))
     return {{"frame": frame, "parts": parts}}
 '''
 

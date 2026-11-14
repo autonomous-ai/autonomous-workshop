@@ -187,17 +187,31 @@ round summary records the report as `sheets`.
 - Final verification (`make-round/scripts/kit_print.py layout`, after the
   Sheet gate) seals `measure/kit/print.step` for every kit: every Sheet as
   `sheet()` builds it and one copy of every printed Part on no Sheet for
-  each time the toy uses it, laid apart in rows; no Bought Part. Its leaves
-  are named `<Sheet>/frame` (frame, runners and gate bars),
-  `<Sheet>/<Part>#n` and `loose/<Part>#n`, in their filament colours.
+  each time the toy uses it, laid apart in rows; no Bought Part. Since
+  2026-11-14 (record schema 2) each Sheet is one leaf, `<Sheet>`: its
+  frame, runners, tags, gate bars and copies fused into one connected
+  solid, as the plate leaves the printer. Each loose copy stays its own
+  leaf, `loose/<Part>#n`, its own solid. Leaves keep their filament colours.
+  A Sheet that does not fuse into one connected solid fails the layout.
   `measure/kit/print.json` records the STEP's hash, the tree it was laid
   out for, each Sheet's copies, the loose copies and the leaf names.
+- Why fused: Factory's slicer (panda-social-backend `internal/slicer`,
+  read 2026-11-14) splits the STEP into its solids, then auto-orients and
+  auto-arranges each one onto 256 mm plates. An unfused Sheet was priced
+  and arranged as loose frames, gate bars and Parts, so its plates were
+  not the Sheets; a gate bar too thin to slice was counted at full volume.
+  Fused, each Sheet is one flat object on one plate (the One bed rule of
+  decision 3 keeps it within the bed). The grams change little.
 - Before Make acceptance the host (`workshop.make.kit_print`) checks, on
   the sealed bytes, that the record is for the sealed tree and names the
   sealed STEP; that its Sheets and loose copies are exactly what the tree
   gives; and that the STEP's leaves are exactly those names, so no Bought
-  Part body is in it, each holds a solid, and copies of one Part match in
-  volume and area. A kit with Sheets must have a layout. A kit without
+  Part body is in it. Each Sheet leaf must be one connected solid, meaning
+  one solid with one outer shell (a void inside is allowed). Each loose
+  leaf must hold a solid, and loose copies of one Part must match in volume
+  and area. A schema 1 record, written by a run materialized before the
+  change, keeps its unfused `<Sheet>/frame` and `<Sheet>/<Part>#n` leaves
+  and their check. A kit with Sheets must have a layout. A kit without
   Sheets is checked when it wrote one (current tools always do); a frozen
   run that wrote none keeps its scene. The Make receipt records it as
   `kit_print`, in the printed-only primary's shape (ADR 0095, 2026-11-07)
