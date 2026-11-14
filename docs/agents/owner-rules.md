@@ -230,6 +230,13 @@ Tree and Manual.
   mushroom, an umbrella, a palm and then lampshades (owner, 2026-11-14).
 - **The play feature is the hero.** Size the scene so the mechanism reads
   first, for example by widening the canal so the drawbridge is large.
+- **A mechanism concept is not proven by a clash check.** Before
+  proposing one, trace the motion: name the faces that touch in each
+  direction, the clearance and engagement depth at each, the end stops, and
+  what happens if the user turns or pushes the wrong way. Sample the true
+  kinematics, not a linear stand-in, and check binding. Why: the Miami kiosk
+  drawer passed its clash check, but its yoke slot had no face to push the
+  drawer out and nothing stopped the crank from turning the wrong way.
 - **Report every visible change against the published toy**, such as a
   dropped post, a loose part or a seam.
 
