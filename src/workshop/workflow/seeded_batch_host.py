@@ -34,6 +34,7 @@ from typing import Any, Mapping, Optional
 
 from workshop.errors import ContractError, StateConflict, WorkshopError
 from workshop.make import seeded_batch
+from workshop.wish import fit_tables
 from workshop.make.make_round_guard import NONCE_TABLE_NAME
 from workshop.runtime.execution import minimal_tool_environment
 from workshop.runtime.make_round_hook import MAKE_ROUND_GUARD_DIRECTORY
@@ -182,12 +183,22 @@ def plan(run_root: Path, round_index: int, *, python: str = sys.executable) -> t
 
 
 def environment(run_root: Path) -> dict:
-    """What every step sees: no credential, the run's own temp directory."""
+    """What every step sees: no credential, the run's own temp directory,
+    and the fit table the Approved Proof was approved with (ADR 0105)."""
 
     private = Path(run_root) / ".tmp"
     private.mkdir(mode=0o700, exist_ok=True)
-    return {**minimal_tool_environment(), "TMPDIR": str(private), "WORKSHOP_PYTHON": sys.executable,
-            "PYTHONNOUSERSITE": "1"}
+    steps = {**minimal_tool_environment(), "TMPDIR": str(private), "WORKSHOP_PYTHON": sys.executable,
+             "PYTHONNOUSERSITE": "1"}
+    try:
+        approval = _json(Path(run_root) / "seed" / "APPROVAL.json")
+    except (OSError, ValueError) as exc:
+        raise StateConflict("a seeded run's seed/APPROVAL.json is unreadable: %s" % exc) from exc
+    try:
+        fit_tables.pin(steps, approval)
+    except ValueError as exc:
+        raise StateConflict(str(exc)) from exc
+    return steps
 
 
 def _previous(run_root: Path, project: Path) -> Optional[dict]:

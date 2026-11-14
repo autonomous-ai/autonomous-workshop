@@ -18,6 +18,10 @@
 - the hashes of the contract, `CRITIC.json`, `CONCEPT-CHECKLIST.md` (copied
   into PROOF), the make_round tool, the skills' `LOCK.json` and the installed
   `features/print_details.py`;
+- the cadfits fit table every gate built with (`fit_table`, Workshop ADR
+  0105): `WORKSHOP_FIT_TABLE`, else the current table. A re-seal refuses
+  another table than the previous approval's unless `--refit` says the
+  owner ordered the Proof rebuilt under it;
 - the nozzle, who approved it and when, the design's cost, and a manifest of
   every file of the seed tree.
 
@@ -74,6 +78,7 @@ import datetime
 import hashlib
 import importlib.util
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -588,6 +593,36 @@ def inputs_report(args) -> list[str]:
     return lines
 
 
+def check_fit_table(proof: Path, refit: bool) -> str:
+    """The cadfits fit table this seal records (Workshop ADR 0105): the one
+    ``WORKSHOP_FIT_TABLE`` names, which every gate of this seal built with,
+    else the current table. A re-seal keeps the table the owner approved
+    the Proof with unless ``--refit`` says the owner ordered it rebuilt
+    under another."""
+
+    from workshop.wish.fit_tables import FIT_TABLE_ENV, approval_fit_table, sealing_fit_table
+
+    try:
+        name = sealing_fit_table(os.environ)
+    except ValueError as exc:
+        raise Refusal(str(exc)) from exc
+    try:
+        previous = json.loads((proof / APPROVAL).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return name
+    if not isinstance(previous, dict):
+        return name
+    try:
+        approved = approval_fit_table(previous)
+    except ValueError as exc:
+        raise Refusal(str(exc)) from exc
+    if approved != name and not refit:
+        raise Refusal("this Proof was approved with fit table %s, and this seal builds with %s: export "
+                      "%s=%s to re-seal it as approved, or pass --refit when the owner ordered it rebuilt "
+                      "under %s" % (approved, name, FIT_TABLE_ENV, approved, name))
+    return name
+
+
 def seal(args) -> dict:
     from workshop.errors import ContractError
     from workshop.wish.seed import check_critic_requirements
@@ -606,6 +641,7 @@ def seal(args) -> dict:
     if verdict != "agree" and not args.open_lines_approved:
         raise Refusal("the Proof Critic's verdict is %r; seal only after it agrees, or pass "
                       "--open-lines-approved when the owner approved its open lines at Stage 4" % verdict)
+    args.fit_table = check_fit_table(proof, getattr(args, "refit", False))
     check_wish_objective(contract)
     design_contract = read_contract(contract)
     try:
@@ -728,6 +764,9 @@ def _write_approval(args, proof, contract, copied, verdict, record, components, 
         "make_round_sha256": sha256(MAKE_ROUND),
         "skills_lock_sha256": sha256(LOCK),
         "print_details_sha256": sha256(proof / "features/print_details.py"),
+        # ADR 0105: the cadfits table every gate of this seal built with,
+        # which a seeded run pins its builds to.
+        "fit_table": args.fit_table,
         "nozzle_mm": args.nozzle,
         "approved_by": args.approved_by,
         "date": args.date or datetime.date.today().isoformat(),
@@ -787,6 +826,9 @@ def main(argv=None) -> int:
     p.add_argument("--images", help="where the contract's images are (default: the contract's directory)")
     p.add_argument("--guide-view", action="append", metavar="FILE=AZ,EL",
                    help="a camera a Guide Image is drawn from, once per view in order (ADR 0103)")
+    p.add_argument("--refit", action="store_true",
+                   help="the owner ordered this approved Proof rebuilt under the fit table WORKSHOP_FIT_TABLE "
+                        "names (default: the current one) instead of the one it was approved with (ADR 0105)")
     p = sub.add_parser("verify")
     p.add_argument("proof")
     p.add_argument("--contract")

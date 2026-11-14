@@ -70,6 +70,29 @@ Merge decisions:
   `test_check_motion_parallel_integration`) fail identically on `origin/main` 095fef36 in this
   environment; none is new.
 
+## Workshop-local: an approved Proof keeps its fit table (2026-11-14, ADR 0105)
+
+- **Local patch to upstream `cad`.**
+  - `cadfits` keeps every table it shipped in `FIT_TABLES`:
+    `fits-2026-11-13` (current) and `fits-legacy` (snug 0.10, slip 0.20,
+    default slip).
+  - It builds with the one `WORKSHOP_FIT_TABLE` names. Unset means
+    current, and an unknown name refuses to import.
+  - The self-check checks every table and the pinned one.
+- **The same variable joins three keys:**
+  - `cadcache.cache_key`;
+  - cadgen's `_closure_hash_for_pairs` (source closure);
+  - the warm daemon's `socket_path`.
+
+  So no build reuses another table's result. Unset, every key is
+  byte-identical to before.
+- **`make-round`.** `make_round` pins a seeded run's approval table for
+  itself and its children (`pin_seed_fit_table`) and restores its caller's
+  environment.
+- Upstream has no named tables, so a resync must keep all of this. Only
+  `cad`'s and `make-round`'s locks move. `source_commit` values are
+  unchanged.
+
 ## Workshop-local: `check_motion` fuses a rigid mover once (2026-11-09, PR #265)
 
 - **Local patch to upstream `cad`.** `check_motion` fuses a multi-body

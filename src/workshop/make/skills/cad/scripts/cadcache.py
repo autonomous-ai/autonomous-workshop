@@ -83,6 +83,11 @@ def _kernel_version() -> str:
 def cache_key(func: str, item: str, *, root: Path, inputs: Callable[[str], str | bytes],
               sources: Iterable[str | os.PathLike] = ()) -> str:
     h = hashlib.sha256(f"{func}\0{item}\0{_kernel_version()}\0{sys.version_info[:2]}".encode())
+    # Workshop-local (ADR 0105): a body built under one fit table is not
+    # another's. Unset keeps the key every existing cache entry has.
+    table = os.environ.get("WORKSHOP_FIT_TABLE")
+    if table:
+        h.update(b"\0fit-table\0" + table.encode())
     for path in [_module_file(func, root), *sorted(Path(s) for s in sources)]:
         h.update(Path(path).read_bytes())
     data = inputs(item)

@@ -1436,6 +1436,17 @@ quoting each check, and on a final verification that left any check
 UNVERIFIED. A re-seal sets the old `approved/` aside while the batch runs
 and puts it back if the seal refuses.
 
+**Fit table (ADR 0105).** The seal records the `cadfits` fit table that
+every gate built with, as `fit_table`. A seeded build builds with that
+table.
+- A new design leaves `WORKSHOP_FIT_TABLE` unset and gets the owner's
+  total-clearance rule.
+- When you reopen a Proof approved before 2026-11-13, export
+  `WORKSHOP_FIT_TABLE=fits-legacy` for every gate and the seal. The seal
+  refuses another table than the one the approval recorded.
+- Pass `--refit` only when the owner ordered the approved geometry
+  rebuilt under the new rule.
+
 It also refuses, in the later stage's own words, what a seeded run would
 refuse after the seal. It runs the code that refuses each one:
 - `workshop wish`'s Wish objective limit (50,000 characters) on the
