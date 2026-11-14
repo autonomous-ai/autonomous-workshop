@@ -237,6 +237,26 @@ def _walk(inside, origin, pitch, start, direction, steps):
     return False
 
 
+def probe_slice(inside, origin, pitch, z):
+    """The voxel slice the flank, reach and chord probes read for a face at
+    height `z`: the cell at or below `z - pitch`, as they always read, but
+    never a slice below all material.
+
+    That cell's centre lies one to two pitches under the face. For a ceiling
+    under about 0.67 mm (0.4 mm grid) it is a slice centred below the bed,
+    which holds nothing. A channel's walls then went unseen, and a short
+    bridge read as an overhang reaching infinitely far (Miami kit A05/A06,
+    2026-11-14). The first slice holding material is the first one the printer
+    lays, so it stands in. Every face higher up reads the same slice as before:
+    a higher probe would cut a sloped region's own solid and shorten its reach.
+    """
+    k = int(np.floor((z - pitch - origin[2]) / pitch))
+    filled = np.flatnonzero(inside.any(axis=(0, 1)))
+    if filled.size:
+        k = max(k, int(filled[0]))
+    return k
+
+
 def flanked(inside, origin, pitch, region, span):
     """Is there material beside this region, at its own level, on both sides?
 
@@ -264,7 +284,9 @@ def flanked(inside, origin, pitch, region, span):
     shape = np.array(inside.shape)
     lo, hi = np.array(region["lo"]), np.array(region["hi"])
     middle = (lo + hi) / 2.0
-    z = region["z"] - pitch  # just under the face, inside whatever it roofs
+    # just under the face, inside whatever it roofs: a height inside that slice
+    k = probe_slice(inside, origin, pitch, region["z"])
+    z = max(region["z"] - pitch, origin[2] + (k + 0.25) * pitch)
     steps = int(span / pitch) + 1
     reached = []
     for axis, sign in ((0, 1), (0, -1), (1, 1), (1, -1)):
@@ -317,7 +339,7 @@ def reach(inside, origin, pitch, region, levels):
     from scipy.ndimage import distance_transform_edt
 
     shape = inside.shape
-    k = int(np.floor((region["z"] - pitch - origin[2]) / pitch))
+    k = probe_slice(inside, origin, pitch, region["z"])
     if not (0 <= k < shape[2]):
         return float("inf")
     if k not in levels:
@@ -351,7 +373,7 @@ def across(inside, origin, pitch, region, limit):
     from scipy.ndimage import binary_dilation
 
     shape = inside.shape
-    k = int(np.floor((region["z"] - pitch - origin[2]) / pitch))
+    k = probe_slice(inside, origin, pitch, region["z"])
     if not (0 <= k < shape[2]):
         return float("inf")
     xy = region["points"][:, :2]
