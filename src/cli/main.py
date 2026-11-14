@@ -592,8 +592,12 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
     if isinstance(kit_manual, Mapping):
         # ADR 0092 decision 9: the kit's Manual, written by Make.
         print(
-            "Kit Manual: %s, %s page(s), %s section(s), %s Check Step(s); after-sales contact %s"
-            % (kit_manual.get("pdf", "?"), kit_manual.get("pages", "?"), kit_manual.get("sections", "?"),
+            "Kit Manual: %s, %s, %s section(s), %s Check Step(s); after-sales contact %s"
+            % (kit_manual.get("pdf", "?"),
+               # ADR 0104 decision 5: a seeded kit ships the PDF the owner approved.
+               "the owner-approved PDF" if kit_manual.get("source") == "owner-approved"
+               else "%s page(s)" % kit_manual.get("pages", "?"),
+               kit_manual.get("sections", "?"),
                kit_manual.get("check_steps", "?"),
                "confirmed" if kit_manual.get("after_sales_confirmed") is True
                else "UNCONFIRMED: the owner sets it in make-round/company.json")

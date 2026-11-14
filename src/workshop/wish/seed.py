@@ -48,6 +48,8 @@ LEGACY_APPROVAL_SCHEMA_VERSION = 1
 CRITIC_NAME = "CRITIC.json"
 CHECKLIST_NAME = "CONCEPT-CHECKLIST.md"
 APPROVED_DIR = "approved"
+# ADR 0104 decision 5: the kit Manual the owner approved, shipped byte for byte.
+KIT_MANUAL_FILE = APPROVED_DIR + "/kit-manual.pdf"
 # Evidence and caches are never part of the seed, nor is the STEP each source
 # builds beside itself (its approved copy is under approved/) or a build log.
 EXCLUDED_DIRS = frozenset({"measure", "__cadgen__", "__pycache__", "compare", ".cache"})
@@ -221,6 +223,9 @@ class SeedApproval:
     # APPROVAL schema 4 (ADR 0103): the contract's Reference and Guide Images,
     # each a render of the approved Proof; None for an older seal.
     contract_images: Any = None
+    # ADR 0104 decision 5: ``{file, sha256}`` of the owner-approved kit
+    # Manual, or None when the seal carries none.
+    kit_manual: Any = None
 
     def frozen(self) -> Dict[str, str]:
         """What `MAKE-OPTIONS.json` schema 3 freezes."""
@@ -383,6 +388,8 @@ def validate_seed(directory: Path, geometry_ids, contract_sha256: str,
         renders = check_assembly_renders(approval.get("assembly_renders"), sealed, design_contract)
     if approval["schema_version"] == APPROVAL_SCHEMA_VERSION:
         images = check_contract_images(approval.get("contract_images"), design_contract)
+    manual = check_kit_manual(approval.get("kit_manual"), sealed, design_contract) \
+        if "kit_manual" in approval else None
     approved_by = approval.get("approved_by")
     if not isinstance(approved_by, str) or not approved_by.strip():
         raise ContractError("seed: %s names no approved_by" % APPROVAL_NAME)
@@ -402,7 +409,22 @@ def validate_seed(directory: Path, geometry_ids, contract_sha256: str,
         check_inputs=dict(recorded),
         assembly_renders=renders,
         contract_images=images,
+        kit_manual=manual,
     )
+
+
+def check_kit_manual(value: Any, sealed: Mapping[str, str], design_contract: Mapping[str, Any] = None) -> dict:
+    """An approval's ``kit_manual`` (ADR 0104 decision 5), or ContractError:
+    ``{file, sha256}`` naming the sealed ``approved/kit-manual.pdf`` of a kit
+    contract."""
+
+    if not isinstance(value, dict) or set(value) != {"file", "sha256"}:
+        raise ContractError("seed: %s kit_manual is not {file, sha256}" % APPROVAL_NAME)
+    if value["file"] != KIT_MANUAL_FILE or sealed.get(KIT_MANUAL_FILE) != value["sha256"]:
+        raise ContractError("seed: the owner-approved kit Manual is not the sealed %s" % KIT_MANUAL_FILE)
+    if design_contract is not None and not isinstance(design_contract.get("assembly_tree"), Mapping):
+        raise ContractError("seed: the Approved Proof seals a kit Manual, but its contract is no kit")
+    return dict(value)
 
 
 def check_contract_images(images: Any, design_contract: Mapping[str, Any] = None) -> tuple:

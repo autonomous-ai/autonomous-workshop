@@ -1447,6 +1447,14 @@ table.
 - Pass `--refit` only when the owner ordered the approved geometry
   rebuilt under the new rule.
 
+**Kit Manual (ADR 0104 decision 5).** For a kit, once the owner has
+approved its Manual PDF, add `--kit-manual <the approved PDF>`. The seal
+copies it to `proof/approved/kit-manual.pdf` and records it as
+`kit_manual`. A seeded build still checks the plan's coverage, but it ships
+those exact bytes as `manual/manual.pdf` instead of drawing a new one. A
+re-seal refuses unless you pass the same flag again. Do not pass it
+before the owner has approved that exact PDF.
+
 It also refuses, in the later stage's own words, what a seeded run would
 refuse after the seal. It runs the code that refuses each one:
 - `workshop wish`'s Wish objective limit (50,000 characters) on the

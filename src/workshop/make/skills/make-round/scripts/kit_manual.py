@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Write a schema 7 kit's Manual from its Assembly Tree (ADR 0092 decision 9).
 
-    kit_manual.py <cad-project> [--company FILE] [--json]
+    kit_manual.py <cad-project> [--company FILE] [--json] [--approved PDF --approved-sha256 HEX]
     kit_manual.py --self-check
 
 The Manual is the Rolife-style assembly book that ships in the box. This tool
@@ -20,6 +20,13 @@ section's material list and every check) into the CAD project. Final
 verification runs it after the tree gates and the Print Sheets; the host
 checks the report and the PDF's hash before Make is accepted, and Release
 ships the PDF beside the STEP files and ``print/``.
+
+A seeded run whose Approved Proof seals the Manual the owner approved
+(Workshop ADR 0104 decision 5) passes it as ``--approved``: the plan and all
+of its coverage checks run as always, but the PDF written is exactly those
+bytes, checked against ``--approved-sha256``, nothing is drawn, and the
+report's ``pdf`` records ``source: "owner-approved"`` (``"generated"``
+otherwise). The approved Manual pictures the Approved Proof.
 
 What the Manual holds, in order
 -------------------------------
@@ -976,9 +983,12 @@ def _step(c, pages: Pages, readers, images, plan, document, step: str, left: flo
 # the whole run
 
 
-def write_manual(project: Path, kit: dict, company: dict, meshes=None) -> tuple[dict, int]:
+def write_manual(project: Path, kit: dict, company: dict, meshes=None,
+                 approved: tuple[Path, str] | None = None) -> tuple[dict, int]:
     """Plan, picture and write the Manual into ``<project>/manual``.
-    ``meshes`` is the injected geometry; None builds it from the project."""
+    ``meshes`` is the injected geometry; None builds it from the project.
+    ``approved`` is ``(PDF, sha256)`` of the owner-approved Manual, written
+    as it is instead of a drawn one."""
 
     project = Path(project)
     document = plan_manual(kit, company)
@@ -990,12 +1000,22 @@ def write_manual(project: Path, kit: dict, company: dict, meshes=None) -> tuple[
             pdf.unlink()
         (out / REPORT_NAME).write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")
         return document, 1
+    if approved is not None:
+        content = Path(approved[0]).read_bytes()
+        if hashlib.sha256(content).hexdigest() != approved[1] or not content.startswith(b"%PDF"):
+            raise ValueError("the owner-approved Manual %s is not the PDF the approval sealed" % approved[0])
+        pdf.write_bytes(content)
+        document["pages"] = None
+        document["pdf"] = {"file": PDF_NAME, "sha256": approved[1], "source": "owner-approved"}
+        (out / REPORT_NAME).write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+        return document, 0
     plan = kit_tree().Plan(kit)
     if meshes is None:
         meshes = cad_meshes(project, plan)
     images = pictures(document, plan, meshes)
     document["pages"] = draw_pdf(document, plan, images, pdf)
-    document["pdf"] = {"file": PDF_NAME, "sha256": hashlib.sha256(pdf.read_bytes()).hexdigest()}
+    document["pdf"] = {"file": PDF_NAME, "sha256": hashlib.sha256(pdf.read_bytes()).hexdigest(),
+                       "source": "generated"}
     (out / REPORT_NAME).write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return document, 0
 
@@ -1006,7 +1026,11 @@ def main(argv=None) -> int:
     parser.add_argument("--company", type=Path, default=COMPANY_FILE, help="the company configuration")
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--self-check", action="store_true")
+    parser.add_argument("--approved", type=Path, help="the owner-approved Manual PDF a seeded run ships")
+    parser.add_argument("--approved-sha256", help="its sha256, as the approval sealed it")
     args = parser.parse_args(argv)
+    if (args.approved is None) != (args.approved_sha256 is None):
+        parser.error("--approved and --approved-sha256 go together")
     if args.self_check:
         return self_check()
     if not args.project:
@@ -1017,7 +1041,8 @@ def main(argv=None) -> int:
         if kit is None:
             raise UsageError("the Assembly Tree is not installed: run kit_tree.py --install first")
         company = load_company(args.company)
-        document, code = write_manual(project, kit, company)
+        approved = (args.approved, args.approved_sha256) if args.approved is not None else None
+        document, code = write_manual(project, kit, company, approved=approved)
     except (OSError, UsageError, KeyError, TypeError, ValueError) as error:
         print("kit_manual: %s" % error, file=sys.stderr)
         return 2
@@ -1027,7 +1052,10 @@ def main(argv=None) -> int:
         return 1
     for failure in document["failures"]:
         print("FAIL %s" % failure)
-    if code == 0:
+    if code == 0 and document["pdf"].get("source") == "owner-approved":
+        print("PASS kit manual: the owner-approved PDF, %d section(s), %d Check Step(s) planned and covered"
+              % (len(document["sections"]), len(document["checks"])))
+    elif code == 0:
         print("PASS kit manual: %d page(s), %d section(s), %d Check Step(s); after-sales contact %s"
               % (document["pages"], len(document["sections"]), len(document["checks"]),
                  "confirmed" if document["company"]["confirmed"] else "UNCONFIRMED (owner placeholder)"))

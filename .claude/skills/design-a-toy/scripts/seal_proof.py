@@ -3,7 +3,8 @@
 
     uv run python .claude/skills/design-a-toy/scripts/seal_proof.py seal PROOF \\
         --contract CONTRACT.md --checklist CONCEPT-CHECKLIST.md --nozzle 0.4 \\
-        --approved-by NAME [--date YYYY-MM-DD] [--cost UNITS] [--open-lines-approved]
+        --approved-by NAME [--date YYYY-MM-DD] [--cost UNITS] [--open-lines-approved] \\
+        [--kit-manual MANUAL.pdf]
     uv run python .claude/skills/design-a-toy/scripts/seal_proof.py verify PROOF [--contract CONTRACT.md]
     uv run python .claude/skills/design-a-toy/scripts/seal_proof.py inputs PROOF --contract CONTRACT.md
 
@@ -23,7 +24,11 @@
   another table than the previous approval's unless `--refit` says the
   owner ordered the Proof rebuilt under it;
 - the nozzle, who approved it and when, the design's cost, and a manifest of
-  every file of the seed tree.
+  every file of the seed tree;
+- for a kit, the Manual the owner approved (`--kit-manual`, Workshop ADR
+  0104 decision 5), copied to `PROOF/approved/kit-manual.pdf` and recorded
+  as `kit_manual`. A seeded run ships those bytes as `manual/manual.pdf`. A
+  re-seal of a Proof that sealed one must pass `--kit-manual` again.
 
 It refuses a Proof that breaks ADR 0096 decision 1b: no installed
 `features/print_details.py` with the library's bytes, no passing Shared Helper
@@ -623,6 +628,34 @@ def check_fit_table(proof: Path, refit: bool) -> str:
     return name
 
 
+KIT_MANUAL_FILE = "approved/kit-manual.pdf"
+
+
+def check_kit_manual(proof: Path, args, design_contract: dict) -> bytes | None:
+    """The owner-approved kit Manual's bytes (Workshop ADR 0104 decision 5),
+    or None when this seal carries none."""
+
+    given = getattr(args, "kit_manual", None)
+    if given is None:
+        try:
+            previous = json.loads((proof / APPROVAL).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            previous = None
+        if isinstance(previous, dict) and previous.get("kit_manual") is not None:
+            raise Refusal("the previous approval sealed the owner-approved kit Manual: pass --kit-manual "
+                          "with the PDF the owner approved, so this seal keeps it")
+        return None
+    if not isinstance(design_contract.get("assembly_tree"), dict):
+        raise Refusal("--kit-manual is for a kit: this contract has no Assembly Tree")
+    try:
+        content = Path(given).read_bytes()
+    except OSError as exc:
+        raise Refusal("no kit Manual at %s: %s" % (given, exc)) from exc
+    if not content.startswith(b"%PDF"):
+        raise Refusal("%s is not a PDF" % given)
+    return content
+
+
 def seal(args) -> dict:
     from workshop.errors import ContractError
     from workshop.wish.seed import check_critic_requirements
@@ -649,6 +682,7 @@ def seal(args) -> dict:
     except ContractError as exc:
         raise Refusal(str(exc)) from exc
     check_inputs = check_seed_inputs(proof, design_contract)
+    args.kit_manual_bytes = check_kit_manual(proof, args, design_contract)
     record = identities(proof, contract)
     if record.get("contract_sha256") != sha256(contract):
         raise Refusal("make_round read another contract than %s" % contract)
@@ -707,6 +741,8 @@ def _seal_after_set_aside(args, proof, contract, checklist, verdict, design_cont
     if approved.exists():
         shutil.rmtree(approved)
     approved.mkdir()
+    if getattr(args, "kit_manual_bytes", None) is not None:
+        (proof / KIT_MANUAL_FILE).write_bytes(args.kit_manual_bytes)
     components = {}
     for role, component in sorted(record["components"].items()):
         built = proof / ("part_%s.step" % role)
@@ -776,6 +812,9 @@ def _write_approval(args, proof, contract, copied, verdict, record, components, 
         "manifest": files,
         "manifest_sha256": manifest_sha256(files),
     }
+    if getattr(args, "kit_manual_bytes", None) is not None:
+        # Workshop ADR 0104 decision 5: the Manual the owner approved.
+        document["kit_manual"] = {"file": KIT_MANUAL_FILE, "sha256": files[KIT_MANUAL_FILE]}
     try:
         previous = {item["file"]: item["sha256"] for item in
                     json.loads((proof / APPROVAL).read_text(encoding="utf-8")).get("contract_images") or ()}
@@ -826,6 +865,8 @@ def main(argv=None) -> int:
     p.add_argument("--images", help="where the contract's images are (default: the contract's directory)")
     p.add_argument("--guide-view", action="append", metavar="FILE=AZ,EL",
                    help="a camera a Guide Image is drawn from, once per view in order (ADR 0103)")
+    p.add_argument("--kit-manual", metavar="PDF",
+                   help="the kit Manual the owner approved, shipped byte for byte (Workshop ADR 0104)")
     p.add_argument("--refit", action="store_true",
                    help="the owner ordered this approved Proof rebuilt under the fit table WORKSHOP_FIT_TABLE "
                         "names (default: the current one) instead of the one it was approved with (ADR 0105)")

@@ -1,6 +1,8 @@
 # ADR 0104: A printed kit ships its sheets, its Bought Parts and its approved Manual
 
-- **Status:** Proposed (builder, 2026-11-14), for the Amsterdam kit pilot.
+- **Status:** Accepted (builder, 2026-11-14), for the Amsterdam kit pilot. All
+  five decisions are implemented with deterministic tests; the pilot (step 6)
+  has not run.
   Each decision below says what is implemented on main and what no live run
   has exercised yet; this header is updated as each step lands.
   - Decision 2 (Bought Parts, tools and packaging billed): implemented,
@@ -15,7 +17,10 @@
     not-printed `bodies` key fix): implemented, deterministic tests only.
     No kit layout has crossed to Factory yet, and whether Factory prints
     one layout STEP as several plates is still open.
-  - Decision 5: not implemented yet.
+  - Decision 5 (the owner-approved Manual sealed and shipped byte for
+    byte): implemented, deterministic tests only. No Proof has sealed a
+    Manual yet. `kit_manual` is an optional APPROVAL field and the schema
+    stays 4, as with ADR 0105's `fit_table`.
 - **Date:** 2026-11-14
 - **Amends:** ADR 0092 (what a kit prints, which Manual ships, a kit's
   Bought Parts block), ADR 0095's 2026-11-07 amendment (the Bought Parts
@@ -202,13 +207,21 @@ round summary records the report as `sheets`.
 
 ### 5. An owner-approved Manual is sealed with the Proof and shipped
 
-- `seal_proof.py` takes the owner-approved Manual PDF and seals APPROVAL
-  schema 5 with `kit_manual: {file, sha256}` (`approved/kit-manual.pdf`).
+- `seal_proof.py seal --kit-manual PDF` takes the owner-approved Manual,
+  copies it to `approved/kit-manual.pdf` (so it is in the seed manifest)
+  and records `kit_manual: {file, sha256}`. This is an optional field and
+  APPROVAL stays schema 4. The seal refuses a contract without an Assembly
+  Tree, a file that is not a PDF, and a re-seal that would drop a sealed
+  Manual. `validate_seed` refuses a `kit_manual` that is not that sealed
+  file, or one whose contract is not a kit.
 - Make still plans the Manual from the tree (`manual.json`, all of its
-  coverage checks), but when the seed seals a Manual, `kit_manual.py` writes
-  those exact bytes as `manual/manual.pdf` and records `source:
-  "owner-approved"`. `verify_made_manual` binds the PDF to the sealed hash
-  instead of the generated one.
+  coverage checks). When the seed seals a Manual, `verify_project` passes
+  it to `kit_manual.py --approved PDF --approved-sha256 HEX`, which writes
+  those exact bytes as `manual/manual.pdf` without drawing anything and
+  records `pdf.source: "owner-approved"`; otherwise the source is
+  `"generated"`. `verify_made_manual` binds the PDF to the sealed hash. It
+  refuses a seeded kit whose PDF is not the approved bytes, and a Manual
+  that claims the owner approved it when no seal carries one.
 - Release ships `manual/manual.pdf` as today (a Made file to Factory and the
   public archive). The approved Manual pictures the Approved Proof; a seed
   deviation that changes what it shows is reported, not redrawn.
