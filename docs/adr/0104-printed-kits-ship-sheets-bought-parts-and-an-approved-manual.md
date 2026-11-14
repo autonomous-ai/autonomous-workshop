@@ -66,6 +66,11 @@ to publish. A product agent mapped four gaps, each confirmed in the code:
   spares, never less. A printed Part on no Sheet is a **loose Part** and
   states `loose_reason` (owner rule: a part that cannot be flat leaves the
   sheet with a written reason). A tree without `sheets` is unchanged.
+- **Loose letters** (pilot finding L06, implemented). Loose Parts may share
+  one Part letter across filaments, as the Amsterdam kit's T01-T15 do on
+  its sheets and in its approved Manual; a letter is either wholly loose
+  or wholly one filament. `loose_reason` is accepted on any kit's printed
+  Part now; the rule that a Part on no Sheet needs one lands with Sheets.
 - **Why not a Sheet Part and a "cut from sheet" step in the tree.** That was
   the first proposal. ADR 0092's tree holds each Part as one leaf and makes
   every step produce one Sub-assembly; a cut step would turn one leaf into
