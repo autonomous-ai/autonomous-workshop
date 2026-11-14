@@ -14,6 +14,11 @@ sealed bytes and without rebuilding any geometry (ADR 0061), that
 - it lists every Bought Part body as bought, not printed, exactly as the
   tree gives them (owner decision Q29).
 
+A seeded run whose Approved Proof seals the owner-approved Manual (ADR 0104
+decision 5) must ship exactly those bytes: the report records ``source:
+"owner-approved"`` and the PDF hashes to the approval's ``kit_manual``. Any
+other run ships a generated Manual and may not claim the owner approved it.
+
 Release adds nothing: it ships the accepted PDF beside the STEP files and the
 Print Sheets. A route whose host reruns final verification (Forge, Quest)
 also proves the Manual deterministic, because every declared file must come
@@ -50,10 +55,12 @@ def verify_made_manual(
     made: Any,
     contract: Mapping[str, Any] | None,
     catalogue: Any,
+    approved: Mapping[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     """The accepted Manual's account, or None for a contract without an Assembly Tree.
-    ``catalogue`` is the Wish's sealed ``kit_catalogue``. Raises
-    ContractError naming what is wrong."""
+    ``catalogue`` is the Wish's sealed ``kit_catalogue``; ``approved`` is
+    the sealed seed approval's ``kit_manual`` (``{file, sha256}``), or None.
+    Raises ContractError naming what is wrong."""
 
     if not has_assembly_tree(contract):
         return None
@@ -124,6 +131,15 @@ def verify_made_manual(
     named = report.get("pdf") if isinstance(report.get("pdf"), Mapping) else {}
     if not pdf.startswith(b"%PDF") or named.get("sha256") != pdf_sha256:
         raise ContractError("the kit Manual PDF is not the one its report names")
+    source = named.get("source", "generated")
+    if approved is not None:
+        if source != "owner-approved" or pdf_sha256 != approved.get("sha256"):
+            raise ContractError(
+                "the Approved Proof seals the owner-approved kit Manual (ADR 0104 decision 5), but %s is "
+                "not its bytes: final verification ships it as it is" % PDF_PATH
+            )
+    elif source != "generated":
+        raise ContractError("the kit Manual claims the owner approved it, but no Approved Proof seals one")
     company = report.get("company") if isinstance(report.get("company"), Mapping) else {}
     return {
         "pdf": (prefix / PDF_PATH).as_posix(),
@@ -133,6 +149,7 @@ def verify_made_manual(
         "check_steps": len(checks),
         "not_printed": len(bodies),
         "after_sales_confirmed": company.get("confirmed") is True,
+        "source": source,
     }
 
 

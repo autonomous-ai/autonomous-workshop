@@ -2942,6 +2942,16 @@ def _sealed_seed_contract_images(run_root: Path) -> Any:
     return approval["contract_images"]
 
 
+def _sealed_seed_kit_manual(run_root: Path) -> Any:
+    """The owner-approved kit Manual a seeded run's Approved Proof seals
+    (ADR 0104 decision 5), ``{file, sha256}``, or None."""
+
+    approval = _sealed_seed_approval(run_root)
+    if approval is None or approval.get("kit_manual") is None:
+        return None
+    return approval["kit_manual"]
+
+
 def _sealed_seed_approval(run_root: Path) -> Optional[dict[str, Any]]:
     """``seed/APPROVAL.json`` of a seeded run, checked against the hash
     ``MAKE-OPTIONS.json`` froze; None for a run with no seed."""
@@ -8517,6 +8527,7 @@ def _evaluate_make_stage(
         kit_manual = verify_made_manual(
             run.run_root, made, sealed_contract,
             _sealed_kit_catalogue(run.run_root, checkpoint.wish_sha256),
+            approved=_sealed_seed_kit_manual(run.run_root),
         )
         if kit_manual is not None:
             product_checks["kit_manual"] = [kit_manual]

@@ -63,6 +63,47 @@ class MadeKitManualTest(unittest.TestCase):
         self.assertTrue(account["after_sales_confirmed"])
         json.dumps(account)
 
+    # ADR 0104 decision 5: a seeded kit ships the Manual its Approved Proof sealed.
+
+    APPROVED = b"%PDF-1.7\nthe owner-approved manual\n%%EOF\n"
+
+    def write_approved(self):
+        source = self.run_root / "approved.pdf"
+        source.write_bytes(self.APPROVED)
+        digest = __import__("hashlib").sha256(self.APPROVED).hexdigest()
+        kit = install_document(self.contract, self.catalogue)
+        _document, code = kit_manual.write_manual(self.cad, kit, COMPANY, approved=(source, digest))
+        self.assertEqual(code, 0)
+        return {"file": "approved/kit-manual.pdf", "sha256": digest}
+
+    def test_a_seeded_kit_ships_the_owner_approved_bytes(self):
+        approved = self.write_approved()
+        self.assertEqual((self.cad / "manual" / "manual.pdf").read_bytes(), self.APPROVED)
+        report = json.loads(self.report_path.read_text())
+        self.assertEqual(report["pdf"]["source"], "owner-approved")
+        self.assertEqual(report["sections"], self.report["sections"], "the plan and its coverage still run")
+        account = verify_made_manual(self.run_root, self.made(), self.contract, self.catalogue, approved=approved)
+        self.assertEqual((account["source"], account["pdf_sha256"]), ("owner-approved", approved["sha256"]))
+
+    def test_the_approved_and_generated_manuals_cannot_stand_for_each_other(self):
+        approved = {"file": "approved/kit-manual.pdf", "sha256": self.report["pdf"]["sha256"]}
+        with self.assertRaises(ContractError) as caught:
+            verify_made_manual(self.run_root, self.made(), self.contract, self.catalogue, approved=approved)
+        self.assertIn("is not its bytes", str(caught.exception))
+        self.write_approved()
+        self.assertIn("no Approved Proof seals one", self.refused())
+        with self.assertRaises(ContractError):
+            verify_made_manual(self.run_root, self.made(), self.contract, self.catalogue,
+                               approved={"file": "approved/kit-manual.pdf", "sha256": "0" * 64})
+
+    def test_a_pdf_that_is_not_the_sealed_approval_writes_nothing(self):
+        source = self.run_root / "approved.pdf"
+        source.write_bytes(self.APPROVED)
+        kit = install_document(self.contract, self.catalogue)
+        with self.assertRaises(ValueError):
+            kit_manual.write_manual(self.cad, kit, COMPANY, approved=(source, "0" * 64))
+        self.assertEqual(json.loads(self.report_path.read_text())["pdf"]["source"], "generated")
+
     def test_a_manual_that_does_not_list_the_bought_bodies_as_not_printed_is_refused(self):
         # Q29: the Manual names every Bought Part body as bought, not printed.
         self.rewrite({**self.report, "not_printed": self.report["not_printed"][1:]})
@@ -156,7 +197,65 @@ class ReceiptManualTest(unittest.TestCase):
             _print_native_receipt(receipt, verb="wish")
         self.assertIn("Kit Manual: cad/manual/manual.pdf, 9 page(s), 5 section(s), 1 Check Step(s); "
                       "after-sales contact UNCONFIRMED", stdout.getvalue())
+        receipt["kit_manual"]["source"] = "owner-approved"
+        stdout = StringIO()
+        with redirect_stdout(stdout):
+            _print_native_receipt(receipt, verb="wish")
+        self.assertIn("Kit Manual: cad/manual/manual.pdf, the owner-approved PDF, 5 section(s)", stdout.getvalue())
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FinalVerificationApprovedManualTest(unittest.TestCase):
+    """verify_project hands kit_manual.py the Manual a seeded run's Approved
+    Proof sealed, and nothing in any other run."""
+
+    def run_hook(self, approval):
+        import contextlib
+        import io
+        import runpy
+        from unittest import mock
+
+        from tests.make.test_kit_print_parts import VERIFIER
+
+        verifier = runpy.run_path(str(VERIFIER))
+        tool = {"kit_state": lambda project: ({"kind": "kit-tree"}, None),
+                "seed_approval": lambda project: approval,
+                "run_root": lambda project: Path("/run")}
+        runner = verifier["Runner"](cwd=Path("/run/cad"), dry_run=True, verbose=False)
+        with mock.patch("runpy.run_path", return_value=tool), contextlib.redirect_stdout(io.StringIO()):
+            code = verifier["_run_kit_manual"](runner, Path("/run/cad"))
+        return code, runner.records
+
+    def test_a_seeded_kit_passes_its_approved_manual(self):
+        code, records = self.run_hook({"components": {}, "kit_manual": {"file": "approved/kit-manual.pdf",
+                                                                         "sha256": "a" * 64}})
+        self.assertEqual(code, 0)
+        self.assertIn("--approved /run/seed/approved/kit-manual.pdf --approved-sha256 " + "a" * 64,
+                      records[-1]["command"])
+
+    def test_any_other_run_writes_its_own(self):
+        for approval in (None, {"components": {}}):
+            code, records = self.run_hook(approval)
+            self.assertEqual(code, 0)
+            self.assertNotIn("--approved", records[-1]["command"])
+
+    def test_an_unreadable_seed_fails_the_hook(self):
+        def unreadable(project):
+            raise ValueError("seed/APPROVAL.json is not the approval MAKE-OPTIONS.json froze")
+        import contextlib
+        import io
+        import runpy
+        from unittest import mock
+
+        from tests.make.test_kit_print_parts import VERIFIER
+
+        verifier = runpy.run_path(str(VERIFIER))
+        tool = {"kit_state": lambda project: ({"kind": "kit-tree"}, None), "seed_approval": unreadable,
+                "run_root": lambda project: Path("/run")}
+        runner = verifier["Runner"](cwd=Path("/run/cad"), dry_run=True, verbose=False)
+        with mock.patch("runpy.run_path", return_value=tool), contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(verifier["_run_kit_manual"](runner, Path("/run/cad")), 1)
+        self.assertIn("FAILED", runner.records[-1]["command"])

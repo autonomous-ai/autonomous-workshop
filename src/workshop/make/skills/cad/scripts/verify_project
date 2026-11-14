@@ -1608,10 +1608,20 @@ def _run_kit_manual(runner: Runner, project: Path) -> int:
         print(f"[verify_project] kit manual: {error}", flush=True)
         runner.records.append({"command": f"kit manual  # FAILED: {error}", "status": "rc=1", "seconds": 0.0})
         return 1
-    return 1 if runner.command(
-        [sys.executable, KIT_MANUAL_SCRIPT, _path_arg(project, runner.cwd)],
-        replay_success_stdout=True,
-    ) != 0 else 0
+    command = [sys.executable, KIT_MANUAL_SCRIPT, _path_arg(project, runner.cwd)]
+    # Workshop ADR 0104 decision 5: a seeded run ships the Manual its
+    # Approved Proof sealed, byte for byte.
+    try:
+        approval = tool["seed_approval"](project) if "seed_approval" in tool else None
+    except ValueError as exc:
+        print(f"[verify_project] kit manual: {exc}", flush=True)
+        runner.records.append({"command": f"kit manual  # FAILED: {exc}", "status": "rc=1", "seconds": 0.0})
+        return 1
+    approved = (approval or {}).get("kit_manual")
+    if isinstance(approved, dict):
+        seed = tool["run_root"](project) / "seed"
+        command += ["--approved", str(seed / approved["file"]), "--approved-sha256", str(approved["sha256"])]
+    return 1 if runner.command(command, replay_success_stdout=True) != 0 else 0
 
 
 def _run_bought_model(runner: Runner, project: Path) -> int:

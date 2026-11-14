@@ -3018,3 +3018,12 @@ convention, so sealed STEPs and frozen runs keep their colours.
   `_run_kit_sheets` on every kit with an installed tree
   (`_run_kit_print_layout`). A resync must keep the hook. Only `cad`'s and
   `make-round`'s locks move; `source_commit` values are unchanged.
+
+## Workshop-local: a seeded kit ships its owner-approved Manual (2026-11-14, ADR 0104 decision 5)
+
+- `make-round/scripts/kit_manual.py --approved PDF --approved-sha256 HEX`
+  writes those bytes as `manual/manual.pdf` after the plan's coverage
+  checks pass, and records `pdf.source: "owner-approved"`.
+- **Local patch to upstream `cad`.** `verify_project`'s `_run_kit_manual`
+  reads the seeded run's `seed/APPROVAL.json` through make_round's
+  `seed_approval` and passes its `kit_manual`. A resync must keep it.
