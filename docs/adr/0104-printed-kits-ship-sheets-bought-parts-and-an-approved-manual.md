@@ -5,7 +5,9 @@
   has exercised yet; this header is updated as each step lands.
   - Decision 2 (Bought Parts, tools and packaging billed): implemented,
     deterministic tests only; no kit has been published with it.
-  - Decisions 1, 3, 4, 5: not implemented yet.
+  - Decision 1, loose Parts only (`loose_reason`, one loose letter across
+    filaments): implemented, deterministic tests only.
+  - Decision 1 (Sheets) and decisions 3, 4, 5: not implemented yet.
 - **Date:** 2026-11-14
 - **Amends:** ADR 0092 (what a kit prints, which Manual ships, a kit's
   Bought Parts block), ADR 0095's 2026-11-07 amendment (the Bought Parts
