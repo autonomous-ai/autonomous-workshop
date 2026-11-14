@@ -68,6 +68,13 @@ FACTORY_CONTENT_STORY_BLOCKS_MAX = 10
 # The Design Contract's words a Spark page carries to Factory as design notes.
 MAKE_OUTPUT_DESIGN_NOTE_FIELDS = ("print_settings", "assembly")
 MAKE_OUTPUT_DESIGN_NOTE_MAX = 20_000
+# The Design Contract's print settings a Spark page carries to Factory as
+# overrides of its shop process: Factory measures, prices and prints the
+# design with them. Today only the sparse infill, a whole percent in Factory's
+# accepted range.
+MAKE_OUTPUT_PRINT_OVERRIDE_FIELDS = ("infill_percent",)
+MAKE_OUTPUT_INFILL_MIN = 5
+MAKE_OUTPUT_INFILL_MAX = 100
 _PAGE_SECTION_FIELDS = frozenset(
     ("headline", "body", "visual_direction", "evidence_refs")
 )
@@ -830,10 +837,12 @@ def validate_release_product(
     if product_schema_version == DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION:
         return _validate_direct_release_product(product)
     if product_schema_version == MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION:
-        if set(product) - {"design_notes"} != _DIRECT_RELEASE_PRODUCT_FIELDS | {"source_document"}:
+        if set(product) - {"design_notes", "print_overrides"} != _DIRECT_RELEASE_PRODUCT_FIELDS | {"source_document"}:
             raise ContractError("Make-output Release product fields are invalid")
         if "design_notes" in product:
             _validate_design_notes(product["design_notes"])
+        if "print_overrides" in product:
+            _validate_print_overrides(product["print_overrides"])
         if product.get("status") != MAKE_OUTPUT_RELEASE_PRODUCT_STATUS:
             raise ContractError("Make-output Release status is invalid")
         document = product.get("source_document")
@@ -1270,12 +1279,29 @@ def _validate_design_notes(notes: Any) -> None:
             raise ContractError("Make-output design note %s is invalid" % name)
 
 
+def _validate_print_overrides(overrides: Any) -> None:
+    if (
+        not isinstance(overrides, Mapping)
+        or not overrides
+        or not set(overrides) <= set(MAKE_OUTPUT_PRINT_OVERRIDE_FIELDS)
+    ):
+        raise ContractError("Make-output print overrides fields are invalid")
+    infill = overrides.get("infill_percent")
+    if infill is not None and (
+        isinstance(infill, bool)
+        or not isinstance(infill, int)
+        or not MAKE_OUTPUT_INFILL_MIN <= infill <= MAKE_OUTPUT_INFILL_MAX
+    ):
+        raise ContractError("Make-output print override infill_percent is invalid")
+
+
 def make_output_release_product(
     facts: Mapping[str, Any],
     *,
     product_artifact_sha256: str,
     source_document: Mapping[str, str] | None,
     design_notes: Mapping[str, str] | None = None,
+    print_overrides: Mapping[str, int] | None = None,
 ) -> dict[str, Any]:
     """Derive the schema-6 site metadata from Made facts; nothing is authored.
 
@@ -1283,6 +1309,8 @@ def make_output_release_product(
     only when Make wrote them, and Playtest is truthfully ``not-run``.
     ``design_notes`` are the sealed Design Contract's own words, present only
     when the host found them, so a page without them keeps its exact bytes.
+    ``print_overrides`` are the contract's print settings Factory applies to
+    its shop process (today the infill), under the same rule.
     """
 
     def optional_texts(name: str) -> list[str]:
@@ -1290,6 +1318,9 @@ def make_output_release_product(
         return list(value) if isinstance(value, (list, tuple)) and all(isinstance(item, str) for item in value) else []
 
     notes = {} if design_notes is None else {"design_notes": design_notes}
+    if print_overrides is not None:
+        _validate_print_overrides(print_overrides)
+        notes["print_overrides"] = dict(print_overrides)
     return validate_release_product({
         **notes,
         "schema_version": MAKE_OUTPUT_RELEASE_PRODUCT_SCHEMA_VERSION,
@@ -1312,6 +1343,7 @@ def prepare_make_output_release(
     made: NativeMade,
     *,
     design_notes: Mapping[str, str] | None = None,
+    print_overrides: Mapping[str, int] | None = None,
 ) -> NativeRelease:
     """Seal a deterministic publication carrier without changing Make output.
 
@@ -1335,6 +1367,7 @@ def prepare_make_output_release(
         product_artifact_sha256=made.product_manifest.artifact_sha256,
         source_document=document,
         design_notes=design_notes,
+        print_overrides=print_overrides,
     )
     contents = {
         NATIVE_RELEASE_PRODUCT_PATH: _canonical_json(product),
