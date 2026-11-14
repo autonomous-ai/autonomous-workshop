@@ -123,6 +123,28 @@ rule, this file only points to it; that source stays the authority.
   that fit in CAD can still be hard to fit together after printing, so print
   them as one piece with a multi-colour print instead. Why: the snowman cap's
   tip and body fitted in CAD but not in real prints (owner, 2026-11-05).
+- **A gate's time limit is not a design reason.** When a print-gate check
+  times out on a shape, make the mesh lighter and keep the look: union
+  strands per sector before the check, use fewer but thicker bundles, or
+  tessellate coarser. The shape must still pass at the gate's default
+  limit, because Make reruns the gates at that default. Why: the Kyoto
+  willow kept a smooth dome cap, which read as an umbrella, because a
+  ridged cap's self-intersection check ran past 60 s (2026-11-14).
+- **A weeping tree has no cap.** Draw short arching branches off the trunk
+  top, with layered strand curtains hanging from them, thicker near the
+  top, and gaps through which the trunk and branches show. Why: every dome
+  or lump crown on the Kyoto willow read as a mushroom, an umbrella or a
+  cloud (2026-11-13/14).
+- **Check what shows above the tray rim from the concept camera.** A low
+  part just inside the rim shows only its top. A fence there needs both
+  rails clearly above the rim. Why: the Kyoto shrine's front fence showed
+  only its post tops, which read as a row of red cubes (2026-11-14).
+- **A landmark leads its well.** Where a well belongs to a landmark (a
+  shrine's stone basin, a temple's pond), the landmark is the area's
+  focus. From the concept camera its visible area is clearly larger than
+  the well's (measure both), and the well is textured as its material,
+  never a plain tub. Why: in the Kyoto precinct the staple basin dominated
+  and the shrine read as a shed (2026-11-14).
 - **Printed fits use total clearance** (owner, 2026-11-13). The value is the
   whole difference between the two sizes, never per side:
   - **Fixed fit** (a tab, peg or leg into a socket): socket = feature +
