@@ -3,7 +3,9 @@
 - **Status:** Proposed (builder, 2026-11-14), for the Amsterdam kit pilot.
   Each decision below says what is implemented on main and what no live run
   has exercised yet; this header is updated as each step lands.
-  - Decisions 1-5: not implemented yet.
+  - Decision 2 (Bought Parts, tools and packaging billed): implemented,
+    deterministic tests only; no kit has been published with it.
+  - Decisions 1, 3, 4, 5: not implemented yet.
 - **Date:** 2026-11-14
 - **Amends:** ADR 0092 (what a kit prints, which Manual ships, a kit's
   Bought Parts block), ADR 0095's 2026-11-07 amendment (the Bought Parts
@@ -47,7 +49,8 @@ to publish. A product agent mapped four gaps, each confirmed in the code:
 4. **The approved Manual cannot ship.** Make writes its own Manual from the
    tree (`kit_manual.py`), and the host binds that file's hash. The owner
    approved a different, hand-directed 35-page Manual
-   (`manual/AMSTERDAM-KIT-MANUAL-standalone.pdf`).
+   (`manual/AMSTERDAM-KIT-MANUAL-standalone.pdf`). The box also ships it
+   printed, with packing, and neither was billed.
 
 ## Decision
 
@@ -80,21 +83,34 @@ to publish. A product agent mapped four gaps, each confirmed in the code:
   above). The project's `sheets.py` packs and gates the Amsterdam sheets
   this way already; only its return shape is new.
 
-### 2. A kit's Bought Parts are sealed and billed
+### 2. A kit's Bought Parts, tools and packaging are sealed and billed (implemented)
 
 - The `bought-parts` block (ADR 0095 amendment) is allowed in a schema 10 or
   later kit. Its parser holds it to the tree: every catalogue entry a tree
   leaf names, unless the electrical section counts it, is listed with at
   least the tree's count (more are spares); any other entry is a tool or
   consumable the tree's `materials` lists, such as the nippers and glue the
-  box includes. Self-prepared materials are left out of the block.
+  box includes, or **packaging** (below). Self-prepared materials are
+  left out of the block.
+- **Packaging** (owner and leader, 2026-11-14). A kit's box also carries a
+  printed Manual and its packing (small-part bags, a liner between
+  sheets), and both are billed as priced extras like the pins. They are a
+  new catalogue category, `packaging`, which is never a tree leaf and never
+  a Manual material (the tree parser refuses both); the block names them.
 - `sealed_bought_lines` bills the block as before. A kit whose tree holds
   Bought Parts but whose Wish sealed no block now bills them unpriced, by
   the tree's count, so `factory_extra_materials` refuses the publication
   instead of leaving their cost out. This is a stricter Release; it relaxes
   nothing.
 - The catalogue adds `nipper-mini` (tool, 150 US cents, the owner's own
-  estimate on the kit proposal page, unconfirmed).
+  estimate on the kit proposal page), `kit-manual-print-a5` (packaging, 120
+  cents) and `kit-packing` (packaging, 50 cents), the owner's estimates of
+  2026-11-14, and the kit's two pin lengths, `steel-pin-1.5x20.6` and
+  `steel-pin-1.5x4.3` (fasteners, 6 cents each like the 29.5 mm pin),
+  bought at length so the buyer cuts nothing (leader, 2026-11-14). All are
+  unconfirmed estimates, not supplier quotes. The Amsterdam kit's extras
+  are therefore 3 pins 1.5 x 20.6 and 5 pins 1.5 x 4.3 (each with one
+  spare), a glue tube, a mini nipper, a printed Manual and its packing.
 - The block stays out of the Proof's seed hash, so the owner can price a
   sealed kit without re-sealing its Proof.
 

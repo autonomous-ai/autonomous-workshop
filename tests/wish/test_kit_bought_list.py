@@ -15,7 +15,7 @@ from tests.wish.test_electrical import _kit10, _kit_catalogues
 
 PRICES = {"steel-pin-1.5x29.5": 6, "clear-jar-6x7": 20, "led-3v-cool-white": 14,
           "battery-box-2aa-switch": 35, "tweezers": 78, "foam-tape": 59, "glue": 32, "nipper-mini": 150,
-          "manual-printed": 120, "kit-packing": 50}
+          "kit-manual-print-a5": 120, "kit-packing": 50}
 
 
 def _catalogues():
@@ -26,7 +26,7 @@ def _catalogues():
     categories = {"steel-pin-1.5x29.5": "fastener", "clear-jar-6x7": "container", "led-3v-cool-white": "lamp",
                   "battery-box-2aa-switch": "power", "tweezers": "tool", "foam-tape": "consumable",
                   "glue": "consumable", "nipper-mini": "tool",
-                  "manual-printed": "packaging", "kit-packing": "packaging"}
+                  "kit-manual-print-a5": "packaging", "kit-packing": "packaging"}
     parts = [{"id": key, "name": key, "category": category, "sizes": [], "pack": 1, "source": "a shop",
               "confirmed": True, "unit_price_cents": PRICES[key]} for key, category in categories.items()]
     return parse_catalogues(filaments, {"schema_version": 1, "parts": parts})
@@ -97,15 +97,15 @@ class KitBoughtBlockTest(unittest.TestCase):
                       self._refused(FULL, _kit(materials=("tweezers",))))
 
     def test_packaging_is_billed_from_the_block_and_never_a_part_or_material(self):
-        packed = FULL + [{"bought": "manual-printed", "count": 1}, {"bought": "kit-packing", "count": 1}]
+        packed = FULL + [{"bought": "kit-manual-print-a5", "count": 1}, {"bought": "kit-packing", "count": 1}]
         contract = self._parse(packed)
         lines = {line["part"]: line for line in sealed_bought_lines(contract.to_dict(), contract.kit_catalogue())}
-        self.assertEqual((lines["manual-printed"]["count"], lines["manual-printed"]["unit_price_cents"]), (1, 120))
+        self.assertEqual((lines["kit-manual-print-a5"]["count"], lines["kit-manual-print-a5"]["unit_price_cents"]), (1, 120))
         self.assertEqual((lines["kit-packing"]["count"], lines["kit-packing"]["unit_price_cents"]), (1, 50))
         block = _kit(materials=("tweezers", "nipper-mini", "kit-packing"))
         self.assertIn("names 'kit-packing', a packaging", self._refused(FULL, block))
         block = _kit()
-        block[0]["assembly_tree"]["parts"][5]["bought"] = "manual-printed"
+        block[0]["assembly_tree"]["parts"][5]["bought"] = "kit-manual-print-a5"
         self.assertIn("is packaging: a kit bills it in its bought-parts block", self._refused(FULL, block))
 
     def test_a_kit_circuit_counts_its_own_parts_and_the_block_the_rest(self):
@@ -140,7 +140,10 @@ class KitBoughtBlockTest(unittest.TestCase):
         parts = load_catalogues().parts
         self.assertTrue(parts["nipper-mini"].material)
         self.assertEqual(parts["nipper-mini"].unit_price_cents, 150)
-        for name, cents in (("manual-printed", 120), ("kit-packing", 50)):
+        for name in ("steel-pin-1.5x20.6", "steel-pin-1.5x4.3"):
+            self.assertEqual(parts[name].category, "fastener")
+            self.assertGreater(parts[name].unit_price_cents, 0)
+        for name, cents in (("kit-manual-print-a5", 120), ("kit-packing", 50)):
             self.assertTrue(parts[name].packaging)
             self.assertFalse(parts[name].material)
             self.assertEqual(parts[name].unit_price_cents, cents)
