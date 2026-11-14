@@ -50,6 +50,10 @@ class SceneBody:
     # The whole body's volume and area. Some writers' parts read back as
     # closed shells rather than solids; they are matched on this.
     total: Tuple[float, float] = (0.0, 0.0)
+    # Closed pieces of material: shells that bound volume outward. A void
+    # inside a solid is a shell too, but it bounds inward and is not counted.
+    # One solid with one outer shell is one connected piece.
+    outer_shells: int = 0
 
 
 @dataclass(frozen=True)
@@ -69,7 +73,9 @@ def _ocp():
         from OCP.TDataStd import TDataStd_Name
         from OCP.TDF import TDF_Label, TDF_LabelSequence, TDF_Tool
         from OCP.TDocStd import TDocStd_Document
-        from OCP.TopAbs import TopAbs_SOLID
+        from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid
+        from OCP.TopAbs import TopAbs_SHELL, TopAbs_SOLID
+        from OCP.TopoDS import TopoDS
         from OCP.TopExp import TopExp_Explorer
         from OCP.XCAFDoc import XCAFDoc_DocumentTool, XCAFDoc_ShapeTool
     except ImportError as exc:  # pragma: no cover - the CAD venv has OCP
@@ -130,6 +136,19 @@ def _solids(shape) -> Tuple[Tuple[float, float], ...]:
     return tuple(sorted(result))
 
 
+def _outer_shells(shape) -> int:
+    ocp = _ocp()
+    count = 0
+    explorer = ocp["TopExp_Explorer"](shape, ocp["TopAbs_SHELL"])
+    while explorer.More():
+        bounded = ocp["BRepBuilderAPI_MakeSolid"](ocp["TopoDS"].Shell_s(explorer.Current())).Solid()
+        volume = ocp["GProp_GProps"]()
+        ocp["BRepGProp"].VolumeProperties_s(bounded, volume)
+        count += volume.Mass() > _ABSOLUTE_TOLERANCE
+        explorer.Next()
+    return count
+
+
 def _leaves(document) -> List[Tuple[object, Optional[object], SceneBody]]:
     """Every leaf as (its component label or free label, parent, body)."""
 
@@ -152,7 +171,7 @@ def _leaves(document) -> List[Tuple[object, Optional[object], SceneBody]]:
             return
         shape = shape_tool.GetShape_s(label)
         found.append((label, parent, SceneBody(
-            name=name, solids=_solids(shape), total=_measures(shape))))
+            name=name, solids=_solids(shape), total=_measures(shape), outer_shells=_outer_shells(shape))))
 
     free = ocp["TDF_LabelSequence"]()
     tool.GetFreeShapes(free)

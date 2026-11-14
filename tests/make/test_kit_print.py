@@ -1,11 +1,12 @@
 """ADR 0104 decision 4: a kit's print layout, the STEP Factory weighs.
 
-Contract: ``kit_print.py layout`` writes ``measure/kit/print.step`` with a
-leaf per Sheet frame, per Sheet copy and per loose copy of every printed
-Part the toy uses, named ``<Sheet>/frame``, ``<Sheet>/<Part>#n`` and
-``loose/<Part>#n``, and no Bought Part; ``measure/kit/print.json`` records
-its hash, the tree it was laid out for and the copies. A Sheet that does
-not hold its contract copies fails and writes nothing."""
+Contract: ``kit_print.py layout`` writes ``measure/kit/print.step`` with
+one leaf per Sheet, ``<Sheet>``, its frame, gates and copies fused into one
+connected solid, and one leaf per loose copy of every printed Part the toy
+uses, ``loose/<Part>#n``, each its own solid; no Bought Part.
+``measure/kit/print.json`` (schema 2) records its hash, the tree it was
+laid out for and the copies. A Sheet that does not hold its contract copies,
+or does not fuse into one connected solid, fails and writes nothing."""
 
 from __future__ import annotations
 
@@ -47,13 +48,24 @@ class KitPrintLayoutTest(unittest.TestCase):
         bodies = scene_bodies(step)
         names = sorted(body.name for body in bodies)
         self.assertEqual(names, report["bodies"])
-        self.assertEqual(names, sorted(["A1/frame", "A1/A01-case-shell#1", "B1/frame", "B1/B01-cabinet-carcass#1",
-                                        "B1/B02-cabinet-door#1", "C1/frame", "C1/C01-desk-body#1",
-                                        "C1/C01-desk-body#2", "loose/D01-inkwell#1"]))
+        self.assertEqual(report["schema_version"], 2)
+        self.assertEqual(names, ["A1", "B1", "C1", "loose/D01-inkwell#1"])
         self.assertFalse(any("bought" in name or name.startswith("P") for name in names))
-        # A frame carries its gate bars; every copy is one solid.
-        self.assertEqual(Counter(len(b.solids) for b in bodies if not b.name.endswith("/frame")), Counter({1: 6}))
-        self.assertTrue(all(len(b.solids) >= 2 for b in bodies if b.name.endswith("/frame")))
+        # Each Sheet and each loose copy is one connected solid.
+        self.assertEqual(Counter((len(b.solids), b.outer_shells) for b in bodies), Counter({(1, 1): 4}))
+        # Fused, a Sheet weighs its frame, gates and copies: B1 holds two panels.
+        volume = {b.name: b.total[0] for b in bodies}
+        self.assertGreater(volume["B1"], 2 * 20 * 12 * 2)
+
+    def test_a_sheet_that_does_not_fuse_into_one_solid_fails_and_writes_nothing(self):
+        sheet = self.project / "sheet_A1.py"
+        # The gate stops 0.6 mm short of the runner: the copy floats.
+        sheet.write_text(sheet.read_text().replace("Pos(middle - 0.8, 2.4, 0) * Box(1.6, 7.6, 1.2",
+                                                   "Pos(middle - 0.8, 3.0, 0) * Box(1.6, 7.0, 1.2"))
+        done = self.layout()
+        self.assertEqual(done.returncode, 1)
+        self.assertIn("Sheet A1 does not fuse into one connected solid but 2 piece(s)", done.stdout)
+        self.assertFalse((self.project / "measure/kit/print.json").exists())
 
     def test_a_sheet_that_does_not_hold_its_copies_fails_and_writes_nothing(self):
         self.kit["assembly_tree"]["sheets"][2]["parts"][0]["count"] = 3

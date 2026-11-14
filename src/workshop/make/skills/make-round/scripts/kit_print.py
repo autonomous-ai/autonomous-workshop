@@ -9,11 +9,15 @@ of the tree as ``sheet()`` builds it, and one copy in its print stance of
 every printed Part on no Sheet for each time the toy uses it, laid apart on
 the plane. No Bought Part is in it. Its leaves are named
 
-- ``<Sheet id>/frame``: the frame with its runners, tags and gate bars;
-- ``<Sheet id>/<Part id>#<n>``: the Sheet's n-th copy of a Part;
-- ``loose/<Part id>#<n>``: the n-th loose copy of a Part,
+- ``<Sheet id>``: the whole Sheet, its frame, runners, tags, gate bars and
+  every copy fused into one connected solid, as it leaves the printer;
+- ``loose/<Part id>#<n>``: the n-th loose copy of a Part, its own solid,
 
-each in its filament's catalogue colour. ``measure/kit/print.json``
+each in its filament's catalogue colour. Factory splits a STEP into its
+solids and slices each one on its own, so a Sheet left in pieces would be
+priced and arranged as loose Parts; fused, it is one flat plate on one bed
+(schema 2, 2026-11-14). A Sheet that does not fuse into one connected solid
+fails: some copy or gate touches nothing. ``measure/kit/print.json``
 records the file's sha256, the tree it was laid out for and the copies it
 holds. The host checks both against the sealed tree before Make is
 accepted, and Release ships the file as the Factory primary. A failure
@@ -29,7 +33,7 @@ import sys
 from pathlib import Path
 
 KIND = "kit-print-layout"
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 STEP_PATH = "measure/kit/print.step"
 REPORT_PATH = "measure/kit/print.json"
 LOOSE = "loose"
@@ -92,6 +96,38 @@ def _place(items):
     return placed
 
 
+def _solids(shape) -> list:
+    return list(shape.solids()) or [shape]
+
+
+def fused(sheet_id: str, pieces: list):
+    """One Sheet's frame, gate bars and copies fused into one connected
+    solid, or ValueError naming how many pieces it stays in."""
+
+    sheet = pieces[0].fuse(*pieces[1:]) if len(pieces) > 1 else pieces[0]
+    solids = sheet.solids()
+    if len(solids) != 1 or outer_shells(solids[0]) != 1:
+        raise ValueError("Sheet %s does not fuse into one connected solid but %d piece(s): join every runner "
+                         "into one frame and every copy to it by its gates"
+                         % (sheet_id, max(len(solids), sum(outer_shells(s) for s in solids))))
+    return solids[0]
+
+
+def outer_shells(solid) -> int:
+    """Shells of ``solid`` that bound material outward; a void does not count."""
+
+    from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid
+    from OCP.BRepGProp import BRepGProp
+    from OCP.GProp import GProp_GProps
+
+    count = 0
+    for shell in solid.shells():
+        props = GProp_GProps()
+        BRepGProp.VolumeProperties_s(BRepBuilderAPI_MakeSolid(shell.wrapped).Solid(), props)
+        count += props.Mass() > 1e-6
+    return count
+
+
 def layout(project: Path) -> dict:
     sheets_tool = _sibling("kit_sheets")
     sheets_tool._runtime_paths()
@@ -113,15 +149,16 @@ def layout(project: Path) -> dict:
         with project_on_path(project), contextlib.redirect_stdout(io.StringIO()), detail_build():
             built = load_entry(entry, "kit_print_sheet").sheet()
         colour = _colour(plan, sheet["filament"])
-        frame = Compound([built["frame"], *[g["shape"] for item in built["parts"] for g in item["gates"]]])
-        group, seen = [("%s/frame" % sheet["id"], frame, colour)], {}
+        seen = {}
         for item in built["parts"]:
             seen[item["id"]] = seen.get(item["id"], 0) + 1
-            group.append(("%s/%s#%d" % (sheet["id"], item["id"], seen[item["id"]]), item["shape"], colour))
         if seen != sheet["copies"]:
             raise ValueError("sheet_%s.py holds %s, not its contract copies %s: run kit_sheets.py check"
                              % (sheet["id"], seen, sheet["copies"]))
-        groups.append(group)
+        pieces = [*_solids(built["frame"]),
+                  *[solid for item in built["parts"]
+                    for shape in (item["shape"], *(g["shape"] for g in item["gates"])) for solid in _solids(shape)]]
+        groups.append([(sheet["id"], fused(sheet["id"], pieces), colour)])
     shapes, fails = sheets_tool.print_shapes(project, plan)
     if fails:
         raise ValueError("; ".join(fails))
