@@ -139,6 +139,12 @@ rule, this file only points to it; that source stays the authority.
   (printed already assembled) keep their larger gaps, and a bought part's
   seat keeps `check_mount`'s 0.10 mm-per-side floor.
 
+- **A slow or timed-out check is never a design reason.** When a gate or
+  tool runs too long on the shape the concept needs, fix the check's input
+  (union strands, coarser mesh) or its timeout, never the look. Why: a
+  Kyoto willow was left as a smooth umbrella dome because the strand
+  version's self-intersection check ran past 60 s (2026-11-14).
+
 ### Assembly kits
 
 Lessons from turning the Amsterdam tray into a user-assembled kit (owner,
