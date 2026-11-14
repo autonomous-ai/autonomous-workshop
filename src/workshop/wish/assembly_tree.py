@@ -344,12 +344,17 @@ def _parse_parts(
             bought[identifier] = item
             continue
         if not {"id", "name", "filament", "form"} <= set(item) <= {
-            "id", "name", "filament", "form", "thickness_mm", "thickness_reason", "loose_reason"
+            "id", "name", "filament", "form", "thickness_mm", "thickness_reason", "loose_reason", "small_reason"
         }:
             errors.append(
                 "%s: a printed Part is {id, name, filament, form}, a panel may add "
-                "thickness_mm and thickness_reason, and a loose Part adds loose_reason" % label
+                "thickness_mm and thickness_reason, a loose Part adds loose_reason, and a Part under "
+                "the minimum loose-part size adds small_reason" % label
             )
+            continue
+        if "small_reason" in item and not _text(item["small_reason"], MAX_REASON_CHARS):
+            errors.append("%s.small_reason must say in at most %d characters why the Part may be under the "
+                          "minimum loose-part size" % (label, MAX_REASON_CHARS))
             continue
         loose = "loose_reason" in item
         if loose and not _text(item["loose_reason"], MAX_REASON_CHARS):
@@ -587,7 +592,7 @@ def parse_assembly_tree(
         errors.append("assembly_tree must be an object with parts, steps and components (schema_version 7)")
         return None
     before = len(errors)
-    unknown = sorted(set(value) - {"parts", "steps", "components", "materials", "checks", "panel_mm"})
+    unknown = sorted(set(value) - {"parts", "steps", "components", "materials", "checks", "panel_mm", "sheets"})
     if unknown:
         errors.append("assembly_tree has unknown field(s): %s" % ", ".join(unknown))
     ids = _Ids(errors)
@@ -652,12 +657,86 @@ def parse_assembly_tree(
     )
     _check_materials(value.get("materials"), catalogues, unconfirmed, errors)
     _check_checks(value, bought, catalogues, ids, errors)
+    if "sheets" in value:
+        _check_sheets(value["sheets"], printed, totals, errors)
     if len(errors) != before:
         return None
     return ContractAssemblyTree(
         section=value, component_of=component_of, unconfirmed=tuple(sorted(unconfirmed)),
         catalogue=_snapshot(printed, bought, value.get("materials"), catalogues),
     )
+
+
+SHEET_ID = re.compile(r"([A-Z])([1-9][0-9]?)")
+
+
+def _check_sheets(
+    value: Any, printed: Mapping[str, Mapping[str, Any]], totals: Mapping[str, int], errors: List[str],
+) -> None:
+    """ADR 0104 decision 1: a kit's FDM Sheets. Each is one filament's plate,
+    named by that filament's Part letter and a number, listing the Part
+    copies it carries. Over all Sheets a Part's count covers the toy, and
+    every printed Part is on a Sheet or states ``loose_reason``."""
+
+    if not isinstance(value, list) or not value:
+        errors.append("assembly_tree.sheets must be a non-empty list of {id, filament, parts}")
+        return
+    letter_of = {key: PART_ID.fullmatch(key).group(1) for key in printed}
+    on_sheets: Dict[str, int] = {}
+    seen: Set[str] = set()
+    for index, sheet in enumerate(value):
+        label = "assembly_tree.sheets[%d]" % index
+        if not isinstance(sheet, dict) or set(sheet) != {"id", "filament", "parts"}:
+            errors.append("%s must be exactly {id, filament, parts}" % label)
+            continue
+        identifier = sheet["id"]
+        match = SHEET_ID.fullmatch(identifier) if isinstance(identifier, str) else None
+        if match is None:
+            errors.append("%s.id must be its filament's Part letter and a number, such as A1" % label)
+            continue
+        if identifier in seen:
+            errors.append("%s.id %s names two Sheets" % (label, identifier))
+            continue
+        seen.add(identifier)
+        entries = sheet["parts"]
+        if not isinstance(entries, list) or not entries:
+            errors.append("%s.parts must list the Part copies Sheet %s carries" % (label, identifier))
+            continue
+        listed: Set[str] = set()
+        for number, entry in enumerate(entries):
+            where = "%s.parts[%d]" % (label, number)
+            if not isinstance(entry, dict) or set(entry) != {"id", "count"} or type(entry["count"]) is not int \
+                    or entry["count"] < 1:
+                errors.append("%s must be {id, count} with a positive integer count" % where)
+                continue
+            part = entry["id"]
+            item = printed.get(part) if isinstance(part, str) else None
+            if item is None:
+                errors.append("%s: %r is no printed Part of the tree: a Sheet carries printed Parts only"
+                              % (where, part))
+                continue
+            if "loose_reason" in item:
+                errors.append("%s: %s states loose_reason, so it is on no Sheet" % (where, part))
+                continue
+            if item["filament"] != sheet["filament"] or letter_of[part] != match.group(1):
+                errors.append("%s: %s is %s, letter %s; Sheet %s is %s: a Sheet is one filament's plate, "
+                              "named by its letter" % (where, part, item["filament"], letter_of[part],
+                                                       identifier, sheet["filament"]))
+                continue
+            if part in listed:
+                errors.append("%s: %s is listed twice on Sheet %s" % (where, part, identifier))
+                continue
+            listed.add(part)
+            on_sheets[part] = on_sheets.get(part, 0) + entry["count"]
+    for part, item in printed.items():
+        if "loose_reason" in item:
+            continue
+        if part not in on_sheets:
+            errors.append("%s is on no Sheet: put it on a Sheet of %s, or state its loose_reason"
+                          % (part, item["filament"]))
+        elif on_sheets[part] < totals.get(part, 0):
+            errors.append("the Sheets carry %d x %s, but the toy uses %d: a Sheet count is the tree's total "
+                          "plus its spares" % (on_sheets[part], part, totals.get(part, 0)))
 
 
 def _check_leads(
