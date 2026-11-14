@@ -98,6 +98,7 @@ from workshop.make.native import NativeMade, validate_build_groups
 from workshop.make.role_agents import make_role_agent_files
 from workshop.make.print_sheets import verify_made_print_sheets
 from workshop.make.kit_tree import verify_made_tree
+from workshop.make.kit_print import verify_made_print_layout
 from workshop.make.kit_manual import verify_made_manual
 from workshop.make.power import verify_made_power
 from workshop.make.bought_model import verify_made_bought
@@ -8519,6 +8520,14 @@ def _evaluate_make_stage(
         )
         if kit_manual is not None:
             product_checks["kit_manual"] = [kit_manual]
+        # ADR 0104 decision 4: the kit's print layout, every Sheet and loose
+        # copy and no Bought Part, is the primary Factory weighs.
+        kit_print = verify_made_print_layout(
+            run.run_root, made, sealed_contract,
+            _sealed_kit_catalogue(run.run_root, checkpoint.wish_sha256),
+        )
+        if kit_print is not None:
+            product_checks["kit_print"] = [kit_print]
         # ADR 0095: a powered contract's circuit is the one Make's power
         # report describes, and final verification passed check_power on it.
         power = verify_made_power(run.run_root, made, sealed_contract)
@@ -9695,11 +9704,16 @@ def _publication_release_context(
 
 def _accepted_printed_primary(run: AgentRun) -> Optional[Mapping[str, Any]]:
     """The printed-only primary the latest Make acceptance sealed (ADR 0095,
-    2026-11-07), or None for a run that sealed none."""
+    2026-11-07, or a kit's print layout, ADR 0104), or None for a run that
+    sealed none."""
 
     for check in _latest_make_check(run.host_state_root, "bought_model"):
         if isinstance(check, Mapping) and check.get("printed_primary") is not None:
             return check["printed_primary"]
+    # ADR 0104 decision 4: a kit's print layout, checked the same way.
+    for check in _latest_make_check(run.host_state_root, "kit_print"):
+        if isinstance(check, Mapping):
+            return check
     return None
 
 

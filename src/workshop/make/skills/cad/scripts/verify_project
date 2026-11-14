@@ -90,6 +90,7 @@ KIT_TREE_SCRIPT = MAKE_ROUND_SCRIPT.with_name("kit_tree.py")
 KIT_MANUAL_SCRIPT = MAKE_ROUND_SCRIPT.with_name("kit_manual.py")
 # Workshop ADR 0104: a kit's FDM Sheets and its loose-part size rules.
 KIT_SHEETS_SCRIPT = MAKE_ROUND_SCRIPT.with_name("kit_sheets.py")
+KIT_PRINT_SCRIPT = MAKE_ROUND_SCRIPT.with_name("kit_print.py")
 BOUGHT_MODEL_SCRIPT = MAKE_ROUND_SCRIPT.with_name("bought_model.py")
 # ADR 0092 (owner decision 2026-10-28): each kit Part, alone in its print stance.
 KIT_PRINT_PARTS_SCRIPT = MAKE_ROUND_SCRIPT.with_name("kit_print_parts.py")
@@ -1569,6 +1570,26 @@ def _run_kit_sheets(runner: Runner, project: Path) -> int:
     ) != 0 else 0
 
 
+def _run_kit_print_layout(runner: Runner, project: Path) -> int:
+    """A kit's print layout (Workshop ADR 0104 decision 4): every Sheet and
+    every loose printed copy in ``measure/kit/print.step``, the primary
+    Release ships to Factory. Nothing runs for a contract without an
+    Assembly Tree."""
+
+    if not MAKE_ROUND_SCRIPT.is_file() or not KIT_PRINT_SCRIPT.is_file():
+        return 0
+    tool = runpy.run_path(str(MAKE_ROUND_SCRIPT))
+    if "kit_state" not in tool:
+        return 0
+    kit, error = tool["kit_state"](project)
+    if error is not None or kit is None:
+        return 0  # an install error already failed the tree gate
+    return 1 if runner.command(
+        [sys.executable, KIT_PRINT_SCRIPT, "layout", _path_arg(project, runner.cwd)],
+        replay_success_stdout=True,
+    ) != 0 else 0
+
+
 def _run_kit_manual(runner: Runner, project: Path) -> int:
     """The kit's Manual (ADR 0092 decision 9): written deterministically
     into manual/ from the installed Assembly Tree and the build, after the
@@ -2478,6 +2499,10 @@ def _final(
 
     # Workshop ADR 0104: the kit's FDM Sheets, after the tree they lay out.
     if _run_kit_sheets(runner, project) != 0:
+        return 1
+    # Workshop ADR 0104 decision 4: the layout Factory weighs, once the
+    # Sheets it lays out passed.
+    if _run_kit_print_layout(runner, project) != 0:
         return 1
 
     # ADR 0091: the Print Sheet gate, cheap, before the print sweep.

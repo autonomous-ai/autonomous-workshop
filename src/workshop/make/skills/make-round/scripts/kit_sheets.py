@@ -431,6 +431,14 @@ def print_measures(project: Path, plan) -> tuple[dict, list[str]]:
     """``({Part id: {volume, area, size}}, failures)`` from each kit
     Component's ``print_parts()``, the shapes the Sheets must carry."""
 
+    shapes, fails = print_shapes(project, plan)
+    return {part: _measures(shape) for part, shape in shapes.items()}, fails
+
+
+def print_shapes(project: Path, plan) -> tuple[dict, list[str]]:
+    """``({Part id: shape}, failures)``: each printed Part's ``print_parts()``
+    shape, in its print stance."""
+
     _runtime_paths()
     from printlib import detail_build, load_entry, project_on_path
 
@@ -448,7 +456,7 @@ def print_measures(project: Path, plan) -> tuple[dict, list[str]]:
             continue
         for part in wanted:
             if part in built:
-                measures[part] = _measures(built[part])
+                measures[part] = built[part]
     return measures, fails
 
 

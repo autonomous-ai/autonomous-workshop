@@ -430,6 +430,8 @@ FACTORY_PRINTED_PRIMARY_PATH = "assembled.step"
 _PRINTED_PRIMARY_FIELDS = frozenset(
     {"path", "sha256", "scene_path", "scene_sha256", "removed", "printed_bodies", "removed_bodies"}
 )
+# ADR 0104 decision 4: a kit's print layout adds the record it was laid out by.
+_KIT_LAYOUT_FIELDS = _PRINTED_PRIMARY_FIELDS | {"layout_path", "layout_sha256"}
 
 
 def _printed_primary(context: Any, manifest: ArtifactManifest) -> Optional[Mapping[str, Any]]:
@@ -440,8 +442,12 @@ def _printed_primary(context: Any, manifest: ArtifactManifest) -> Optional[Mappi
     record = getattr(context, "printed_primary", None)
     if record is None:
         return None
-    if not isinstance(record, Mapping) or set(record) != _PRINTED_PRIMARY_FIELDS:
+    if not isinstance(record, Mapping) or set(record) not in (_PRINTED_PRIMARY_FIELDS, _KIT_LAYOUT_FIELDS):
         raise ContractError("the Make record's printed-only primary is malformed")
+    if "layout_path" in record:
+        layout = _manifest_entry(manifest, record.get("layout_path"))
+        if layout is None or layout.sha256 != record.get("layout_sha256"):
+            raise ContractError("the kit print layout's record is not sealed in Made")
     path = record.get("path")
     entry = _manifest_entry(manifest, path) if isinstance(path, str) else None
     if (
@@ -1020,7 +1026,7 @@ _STEP_MAGENTA = re.compile(rb"PRE_DEFINED_COLOUR\s*\(\s*'magenta'\s*\)", re.IGNO
 
 
 def _assert_printed_bodies_only(
-    content: bytes, root: Path, manifest: ArtifactManifest
+    content: bytes, root: Path, manifest: ArtifactManifest, *, scene: bool = True
 ) -> None:
     """Refuse a primary STEP that still carries a body nobody prints.
 
@@ -1047,11 +1053,15 @@ def _assert_printed_bodies_only(
     # reader above never sees. No stocked filament is magenta.
     if _STEP_MAGENTA.search(content):
         found.add("a body coloured not-printed magenta")
-    for entry in manifest.entries:
+    # A kit lists its Bought Part bodies under ``bodies`` (ADR 0092 Q29);
+    # they are in the scene, so they count only when the scene crosses. A
+    # printed-only primary (ADR 0095, ADR 0104) holds none by its host check,
+    # and the name and colour scans above still read its bytes.
+    for entry in manifest.entries if scene else ():
         if PurePosixPath(entry.path).name != PurePosixPath(NOT_PRINTED_PATH).name:
             continue
         report = _read_json_file(root / entry.path, "Made %s" % entry.path)
-        bodies = report.get("not_printed")
+        bodies = report.get("bodies", report.get("not_printed"))
         if isinstance(bodies, list) and bodies:
             found.update(
                 str(item.get("body")) if isinstance(item, Mapping) else str(item)
@@ -1245,7 +1255,7 @@ def _build_model_handoff(
         _assert_printed_bodies_only(
             printed_content if printed_content is not None
             else _read_bound_file(root, manifest, primary_source),
-            root, manifest,
+            root, manifest, scene=printed is None,
         )
 
     # Keep assembled.step at the root when Make provides it. Factory's importer

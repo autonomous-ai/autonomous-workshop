@@ -89,12 +89,10 @@ def _leaves(contract: Mapping[str, Any]) -> dict[str, list[str]]:
     }
 
 
-def not_printed(contract: Mapping[str, Any], catalogue: Mapping[str, Any]) -> list[dict[str, Any]]:
-    """Every Bought Part body of the toy, ``<id>#n`` across the whole toy, as
-    the run-local ``kit_tree.not_printed`` lists it: the count is the Part's
-    occurrences under the root, from the tree alone."""
+def tree_totals(tree: Mapping[str, Any]) -> dict[str, int]:
+    """How many times the toy uses each node of an Assembly Tree, from the
+    tree alone, as the run-local ``Plan.totals`` counts it."""
 
-    tree = contract["assembly_tree"]
     steps = list(tree["steps"])
     totals: dict[str, int] = {steps[-1]["id"]: int(steps[-1]["count"])}
     for item in reversed(steps):
@@ -102,6 +100,16 @@ def not_printed(contract: Mapping[str, Any], catalogue: Mapping[str, Any]) -> li
         totals.setdefault(node, int(item["count"]))
         for entry in item["inputs"]:
             totals[entry["id"]] = totals[node] * int(entry.get("count", 1))
+    return totals
+
+
+def not_printed(contract: Mapping[str, Any], catalogue: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Every Bought Part body of the toy, ``<id>#n`` across the whole toy, as
+    the run-local ``kit_tree.not_printed`` lists it: the count is the Part's
+    occurrences under the root, from the tree alone."""
+
+    tree = contract["assembly_tree"]
+    totals = tree_totals(tree)
     owner = {part: item["geometry"] for item in tree["components"] for part in item["parts"]}
     entries = catalogue.get("bought_parts") or {}
     found = []
@@ -205,4 +213,4 @@ def verify_made_tree(
     }
 
 
-__all__ = ["install_document", "not_printed", "tree_digest", "verify_made_tree"]
+__all__ = ["install_document", "not_printed", "tree_digest", "tree_totals", "verify_made_tree"]
