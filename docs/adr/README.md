@@ -58,3 +58,4 @@ ADR. Small factual corrections that do not change the decision are allowed.
 - [0101: Spark runs leave out the Invent-route skills and cadgen's tests](0101-spark-runs-leave-out-invent-route-skills.md) (accepted)
 - [0102: A visible seed deviation is reviewed against the Approved Proof](0102-seed-deviations-are-reviewed-against-the-approved-proof.md) (accepted; amended 2026-11-11: the assembly look too)
 - [0103: Once sealed, a contract's images are renders of the Approved Proof](0103-sealed-contract-images-are-renders-of-the-approved-proof.md) (accepted)
+- [0104: A printed kit ships its sheets, its Bought Parts and its approved Manual](0104-printed-kits-ship-sheets-bought-parts-and-an-approved-manual.md) (proposed)
