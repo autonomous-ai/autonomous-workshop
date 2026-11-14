@@ -17,8 +17,8 @@ rebuilding geometry (ADR 0061), that
 
 Factory splits the STEP into its solids and arranges and slices each one on
 its own, so a fused Sheet is weighed and placed as the one plate it prints
-as (schema 2, 2026-11-14). A run whose materialized tool wrote schema 1,
-with ``<Sheet>/frame`` and ``<Sheet>/<Part>#n`` leaves, keeps that check.
+as (schema 2, 2026-11-14). Only schema 2 is accepted: no kit run ever wrote
+the unfused schema 1, and accepting it would let a run ship unfused Sheets.
 
 The accepted record names the file Release ships as the Factory primary in
 place of the assembled scene, so Factory weighs the filament the maker
@@ -40,7 +40,6 @@ from workshop.make.kit_tree import has_assembly_tree, install_document, not_prin
 
 KIND = "kit-print-layout"
 SCHEMA_VERSION = 2
-SCHEMA_VERSIONS = (1, 2)
 STEP_PATH = "measure/kit/print.step"
 REPORT_PATH = "measure/kit/print.json"
 SCENE_PATH = "assembled.step"
@@ -66,15 +65,8 @@ def expected_copies(contract: Mapping[str, Any]) -> tuple[list[dict[str, Any]], 
     return sheets, loose
 
 
-def expected_bodies(sheets, loose, schema_version: int = SCHEMA_VERSION) -> list[str]:
-    names = []
-    for sheet in sheets:
-        if schema_version >= 2:
-            names.append(sheet["id"])
-            continue
-        names.append("%s/frame" % sheet["id"])
-        for part, count in sheet["copies"].items():
-            names += ["%s/%s#%d" % (sheet["id"], part, n) for n in range(1, count + 1)]
+def expected_bodies(sheets, loose) -> list[str]:
+    names = [sheet["id"] for sheet in sheets]
     for part, count in loose.items():
         names += ["%s/%s#%d" % (LOOSE, part, n) for n in range(1, count + 1)]
     return sorted(names)
@@ -84,10 +76,10 @@ def _close(a: float, b: float) -> bool:
     return abs(a - b) <= max(1e-6, _TOLERANCE * max(abs(a), abs(b)))
 
 
-def check_layout_step(content: bytes, names: list[str], schema_version: int = SCHEMA_VERSION) -> int:
+def check_layout_step(content: bytes, names: list[str]) -> int:
     """Refuse a layout STEP whose leaves are not exactly ``names``, hold no
-    solid, whose fused Sheet (schema 2) is not one connected solid, or whose
-    copies of one Part differ; return its leaf count."""
+    solid, whose fused Sheet is not one connected solid, or whose copies of
+    one Part differ; return its leaf count."""
 
     from workshop.release.printed_primary import scene_bodies
 
@@ -104,15 +96,14 @@ def check_layout_step(content: bytes, names: list[str], schema_version: int = SC
     for body in bodies:
         if not body.solids or body.total[0] <= 0:
             raise ContractError("%s leaf %s holds no solid" % (STEP_PATH, body.name))
-        if schema_version >= 2 and "/" not in body.name:
+        if "/" not in body.name:
             if len(body.solids) != 1 or body.outer_shells != 1:
                 raise ContractError(
                     "%s Sheet %s is not one connected solid but %d piece(s): Factory would price and arrange "
                     "its pieces as loose Parts" % (STEP_PATH, body.name, max(len(body.solids), body.outer_shells))
                 )
             continue
-        if not body.name.endswith("/frame"):
-            by_part[body.name.split("/", 1)[1].rsplit("#", 1)[0]].append(body)
+        by_part[body.name.split("/", 1)[1].rsplit("#", 1)[0]].append(body)
     for part, copies in by_part.items():
         first = copies[0].total
         if any(not (_close(c.total[0], first[0]) and _close(c.total[1], first[1])) for c in copies[1:]):
@@ -160,14 +151,13 @@ def verify_made_print_layout(
     except (UnicodeError, ValueError) as exc:
         raise ContractError("%s is not JSON" % REPORT_PATH) from exc
     if not isinstance(report, Mapping) or report.get("kind") != KIND or (
-        type(report.get("schema_version")) is not int or report["schema_version"] not in SCHEMA_VERSIONS
+        type(report.get("schema_version")) is not int or report["schema_version"] != SCHEMA_VERSION
     ):
         raise ContractError("%s is not a kit print layout record" % REPORT_PATH)
     if report.get("tree_sha256") != tree_digest(install_document(contract, catalogue)):
         raise ContractError("%s was laid out for another Assembly Tree than the sealed one" % REPORT_PATH)
     sheets, loose = expected_copies(contract)
-    schema_version = report["schema_version"]
-    names = expected_bodies(sheets, loose, schema_version)
+    names = expected_bodies(sheets, loose)
     copies: dict[str, int] = defaultdict(int)
     for sheet in sheets:
         for part, count in sheet["copies"].items():
@@ -187,7 +177,7 @@ def verify_made_print_layout(
     content, step_sha256 = sealed(step_path, "the Made CAD project lacks %s" % STEP_PATH)
     if report.get("sha256") != step_sha256:
         raise ContractError("%s is not the layout %s names" % (STEP_PATH, REPORT_PATH))
-    leaves = check_layout_step(content, names, schema_version)
+    leaves = check_layout_step(content, names)
     _scene, scene_sha256 = sealed(SCENE_PATH, "the Made product lacks %s" % SCENE_PATH)
     removed = [item["body"] for item in not_printed(contract, catalogue)]
     return {

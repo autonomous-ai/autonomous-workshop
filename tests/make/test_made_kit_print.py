@@ -6,9 +6,9 @@ Contract: the record is for the sealed tree, names the sealed STEP by hash
 and lays out the tree's Sheets and every loose printed copy; the STEP's
 leaves are exactly one per Sheet and one per loose copy, each Sheet one
 connected solid (one solid, one outer shell; a void inside is allowed),
-each loose copy a solid, and copies of one Part are alike. A schema 1
-record, which a run materialized before 2026-11-14 writes, keeps its
-unfused leaves. A kit with Sheets must have one; a kit without Sheets that wrote
+each loose copy a solid, and copies of one Part are alike. Only schema 2
+is accepted: a schema 1 record, with unfused Sheet leaves, is refused from
+any run. A kit with Sheets must have one; a kit without Sheets that wrote
 none, and a non-kit, give None."""
 
 from __future__ import annotations
@@ -64,10 +64,10 @@ class MadeKitPrintTest(unittest.TestCase):
         if str(root) not in sys.path:
             sys.path.insert(0, str(root))
 
-    def seal(self, contract=None, names=None, step=None, schema_version=2, **changes):
+    def seal(self, contract=None, names=None, step=None, **changes):
         contract = contract or self.contract
         sheets, loose = expected_copies(contract)
-        names = expected_bodies(sheets, loose, schema_version) if names is None else names
+        names = expected_bodies(sheets, loose) if names is None else names
         step = layout_step(names) if step is None else step
         (self.cad / "measure/kit").mkdir(parents=True, exist_ok=True)
         (self.cad / "measure/kit/print.step").write_bytes(step)
@@ -78,11 +78,11 @@ class MadeKitPrintTest(unittest.TestCase):
                 copies[part] = copies.get(part, 0) + count
         for part, count in loose.items():
             copies[part] = copies.get(part, 0) + count
-        report = {"kind": "kit-print-layout", "schema_version": schema_version,
+        report = {"kind": "kit-print-layout", "schema_version": 2,
                   "tree_sha256": tree_digest(install_document(contract, self.catalogue)),
                   "step": "measure/kit/print.step", "sha256": hashlib.sha256(step).hexdigest(),
                   "sheets": sheets, "loose": loose, "copies": dict(sorted(copies.items())),
-                  "bodies": expected_bodies(sheets, loose, schema_version)}
+                  "bodies": expected_bodies(sheets, loose)}
         report.update(changes)
         self.write("measure/kit/print.json", report)
         return report
@@ -165,15 +165,16 @@ class MadeKitPrintTest(unittest.TestCase):
                 self.seal(contract, step=layout_step(names, shapes={"B1": build}))
                 self.assertIn("Sheet B1 is not one connected solid but 2 piece(s)", self.refused(contract))
 
-    def test_a_schema_1_layout_keeps_its_unfused_leaves(self):
+    def test_a_schema_1_layout_from_a_current_run_is_refused(self):
+        # The unfused layout #312 wrote: a frame leaf and a leaf per copy.
         contract = self.sheeted()
-        self.seal(contract, schema_version=1)
-        names = expected_bodies(*expected_copies(contract), 1)
-        self.assertIn("B1/frame", names)
-        self.assertIn("B1/B01-cabinet-carcass#1", names)
-        self.assertEqual(self.check(contract)["printed_bodies"], len(names))
-        # A schema 2 record cannot name the unfused leaves.
-        self.seal(contract, step=layout_step(names))
+        sheets, loose = expected_copies(contract)
+        unfused = sorted(["B1/frame", "B1/B01-cabinet-carcass#1"]
+                         + [name for name in expected_bodies(sheets, loose) if name.startswith("loose/")])
+        self.seal(contract, step=layout_step(unfused), schema_version=1, bodies=unfused)
+        self.assertIn("is not a kit print layout record", self.refused(contract))
+        # Relabelled schema 2, its unfused leaves are still not the Sheet.
+        self.seal(contract, step=layout_step(unfused))
         self.assertIn("missing B1", self.refused(contract))
         for bad in (True, 3, "2"):
             with self.subTest(bad):

@@ -209,9 +209,10 @@ round summary records the report as `sheets`.
   Part body is in it. Each Sheet leaf must be one connected solid, meaning
   one solid with one outer shell (a void inside is allowed). Each loose
   leaf must hold a solid, and loose copies of one Part must match in volume
-  and area. A schema 1 record, written by a run materialized before the
-  change, keeps its unfused `<Sheet>/frame` and `<Sheet>/<Part>#n` leaves
-  and their check. A kit with Sheets must have a layout. A kit without
+  and area. Only a schema 2 record is accepted. The unfused schema 1
+  (`<Sheet>/frame`, `<Sheet>/<Part>#n`) was current for a few hours on
+  2026-11-14 and no kit run wrote it; accepting it would let any run ship
+  unfused Sheets. A kit with Sheets must have a layout. A kit without
   Sheets is checked when it wrote one (current tools always do); a frozen
   run that wrote none keeps its scene. The Make receipt records it as
   `kit_print`, in the printed-only primary's shape (ADR 0095, 2026-11-07)
