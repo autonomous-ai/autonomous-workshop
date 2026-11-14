@@ -169,6 +169,12 @@ their constants:
   spare on its Sheets.
 - **Sheets are flat plates** (owner rule): no Part copy on a Sheet is over
   3.0 mm tall.
+- **One bed** (2026-11-14): the whole Sheet, frame, gate bars and copies,
+  fits within 250 x 250 mm in plan. Factory prices and ops print on a
+  Bambu A1, whose bed is 256 mm; 3 mm a side stays clear. A larger Sheet is
+  measured by Factory on an unbounded bed and flagged `oversize_bed`, and
+  no plate prints it. The eight Amsterdam kit Sheets measure 243.9 mm at
+  most, and all pass.
 
 The ordinary print gates (`check_mesh`, `check_overhang`,
 `check_thickness`) still gate each Part alone; the Sheet gate adds to them.
