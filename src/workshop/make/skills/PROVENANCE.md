@@ -92,8 +92,14 @@ Merge decisions:
   - On 150 sampled published STEPs, 148 are identical. In the other 2, two
     0.3 mm ceilings each turn from overhang into 1.1 to 1.3 mm bridges. No
     verdict changes.
-- Only `cad`'s lock moves; `source_commit` is unchanged. A resync must keep
-  this patch until upstream has it.
+- Only `cad`'s lock moves; `source_commit` is unchanged.
+- **Upstream.** The same fix is merged upstream as
+  [autonomous-product-to-cad#8](https://github.com/autonomous-ai/autonomous-product-to-cad/pull/8)
+  (b7e2a9c), with `--self-check` fixtures for it. Upstream has no chord
+  probe (`across`), so there the clamp covers only the flank and reach
+  probes. A resync from b7e2a9c or later takes it from upstream. It must
+  keep Workshop's `across` clamp, and must not drop the patch when
+  resyncing from an older commit.
 
 ## Workshop-local: an approved Proof keeps its fit table (2026-11-14, ADR 0105)
 
