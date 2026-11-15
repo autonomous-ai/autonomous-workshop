@@ -213,14 +213,23 @@ Tree and Manual.
   - an anchor part already sits on the table;
   - each new part is drawn at its destination, with an arrow that ends on
     the slot or tab it enters;
-  - the camera stays the same within a sub-assembly;
+  - the camera stays the same within a sub-assembly: the same angle and
+    the same scale, so do not crop each figure to its own contents;
+  - turning the model over is its own step, marked with a turn icon, and
+    its text says which face goes down;
   - the text matches the picture;
-  - no step only holds parts in mid-air.
+  - no step only holds parts in mid-air;
+  - a step adds one kind of part, or a few that go in the same way.
 
   Draw new parts in their own colour with a bold outline, and fade earlier
-  parts to grey. Lighten dark colours. Put a part-ID bubble on every
-  figure. Why: steps 13–15 of the first pen tower manual could not be
-  followed, and the dark brown pages were unreadable.
+  parts to grey. A white or grey new part is drawn darker than the faded
+  parts it lands on. Lighten dark colours. Put a part-ID bubble on every
+  figure. Fill each page: no page leaves an empty quarter while its
+  figures are small. The cover, page title and every other mention name
+  the kit "[Name] Build Kit" (`docs/TOY_NAMING.md` Rule 5). Why: steps 13–15
+  of the first pen tower manual could not be followed, and the dark brown
+  pages were unreadable; the Miami manual repeated Amsterdam's zoom jumps,
+  grey-on-grey steps and empty quarters (owner, 2026-11-15).
 - **Do not print fine foliage.** Rolife builds plants from florist wire,
   a crepe-paper trunk and printed paper leaves or flock (DH201-19..23, -44).
   On a printed toy, choose plants whose form prints well, such as cherry
@@ -253,7 +262,10 @@ Tree and Manual.
   every sheet before the owner sees a sheet map or manual, never only a
   local copy of the rules. Why: the approved Amsterdam manual's sheets
   failed the host check at seal (4 missing spares, 5 gates the jaws could
-  not reach), so the approved manual had to change.
+  not reach), so the approved manual had to change. The host check reads
+  footprints and gates, not print physics: also run the print gates on
+  every finished sheet cell, because a tab can print in air while
+  `kit_sheets.py check` passes (Miami parapet ring, 2026-11-15).
 - **The play feature is the hero.** Size the scene so the mechanism reads
   first, for example by widening the canal so the drawbridge is large.
 - **A mechanism concept is not proven by a clash check.** Before
