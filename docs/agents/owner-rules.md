@@ -259,6 +259,19 @@ Tree and Manual.
   smooths away the puffs and the drooping lobes on the underside. Why: the
   Kyoto cherry's tapered crowns (round 11) passed every gate but read as
   cupcakes, so they were reverted to round 10's band (2026-11-15).
+- **Every manual step states each part's orientation.** Say in the text
+  and show in the picture whether a part stands on its long edge or lies
+  flat, and which face points where. A sub-assembly built lying down gets
+  a small "Finished" inset of it standing. Label plates by role ("B03
+  front", "B11 floor") where a lying plate could read as a base. Why: the
+  owner could not tell whether the Amsterdam back-rests stand or lie, and
+  read the pen tower's face-down front wall as its base (2026-11-15).
+- **Check every manual page for clipping before the owner sees it.** A
+  figure, sheet map or text running off the page is a defect even when
+  every gate passes. Look at every page at full size, and check
+  overflow by machine. Why: the Amsterdam manual sent for approval had a
+  sheet map cut off on page 3 and four more clipped pages (owner,
+  2026-11-15).
 - **Audit a kit against every rule here before the owner sees it.** Write
   a table, one row per Assembly kits rule: status, evidence (page, step or
   render), fix. Show it with the manual. Why: the Miami kit manual repeated
