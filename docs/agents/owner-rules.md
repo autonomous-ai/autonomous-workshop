@@ -228,6 +228,13 @@ Tree and Manual.
   the trunk and branches and use Rolife's paper or flock layer for leaves.
   Why: the Kyoto willow took nine Proof rounds and still read as a
   mushroom, an umbrella, a palm and then lampshades (owner, 2026-11-14).
+- **Do not taper a printed crown's underside to hide its flat print face.**
+  A blossom crown that prints right way up keeps a thin flat band under
+  its domes. Keep it, and judge the crown from the concept camera, which
+  sees mostly its top. A taper steep enough to print without supports
+  smooths away the puffs and the drooping lobes on the underside. Why: the
+  Kyoto cherry's tapered crowns (round 11) passed every gate but read as
+  cupcakes, so they were reverted to round 10's band (2026-11-15).
 - **Check sheets with the host's own gate while designing.** A kit's
   design scripts must run `kit_sheets.py check` (and the print gates) on
   every sheet before the owner sees a sheet map or manual, never only a
