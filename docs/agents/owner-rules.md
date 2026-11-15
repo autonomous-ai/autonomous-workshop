@@ -244,6 +244,14 @@ Tree and Manual.
   blossom. Show the owner true-scale mockups of two or three techniques
   before spending Proof rounds on one. Why: the owner called the Kyoto
   cherry's 3D bubble crowns ugly after two Proof rounds (2026-11-15).
+- **Every flat decor panel has one exact place.** Paper-cut style blossom
+  or leaf panels (printed or bought) mount on keyed tabs or sockets that
+  differ per panel, so none fits the wrong place or face. Number each
+  panel and its socket to match, and give the manual a labelled placement
+  diagram plus steps whose arrows end at each socket. Never "glue the
+  clusters along the branch". Why: approving the Kyoto paper-cut cherry,
+  the owner required that the assembler know exactly where every panel
+  goes (2026-11-15).
 - **Do not taper a printed crown's underside to hide its flat print face.**
   A blossom crown that prints right way up keeps a thin flat band under
   its domes. Keep it, and judge the crown from the concept camera, which
