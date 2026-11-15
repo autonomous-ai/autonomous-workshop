@@ -228,6 +228,12 @@ Tree and Manual.
   the trunk and branches and use Rolife's paper or flock layer for leaves.
   Why: the Kyoto willow took nine Proof rounds and still read as a
   mushroom, an umbrella, a palm and then lampshades (owner, 2026-11-14).
+- **Check sheets with the host's own gate while designing.** A kit's
+  design scripts must run `kit_sheets.py check` (and the print gates) on
+  every sheet before the owner sees a sheet map or manual, never only a
+  local copy of the rules. Why: the approved Amsterdam manual's sheets
+  failed the host check at seal (4 missing spares, 5 gates the jaws could
+  not reach), so the approved manual had to change.
 - **The play feature is the hero.** Size the scene so the mechanism reads
   first, for example by widening the canal so the drawbridge is large.
 - **A mechanism concept is not proven by a clash check.** Before
