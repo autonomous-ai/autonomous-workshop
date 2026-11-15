@@ -228,6 +228,13 @@ Tree and Manual.
   the trunk and branches and use Rolife's paper or flock layer for leaves.
   Why: the Kyoto willow took nine Proof rounds and still read as a
   mushroom, an umbrella, a palm and then lampshades (owner, 2026-11-14).
+- **Make trees simple, not sculpted.** Do not model a tree crown as a 3D
+  mass of bumps or puffs. Use a simple technique that reads at once and
+  takes few assembly steps: crossed flat silhouette plates, tiered flat
+  canopy discs, or a printed trunk with Rolife-style paper or flock
+  blossom. Show the owner true-scale mockups of two or three techniques
+  before spending Proof rounds on one. Why: the owner called the Kyoto
+  cherry's 3D bubble crowns ugly after two Proof rounds (2026-11-15).
 - **Do not taper a printed crown's underside to hide its flat print face.**
   A blossom crown that prints right way up keeps a thin flat band under
   its domes. Keep it, and judge the crown from the concept camera, which
