@@ -242,6 +242,12 @@ Tree and Manual.
   smooths away the puffs and the drooping lobes on the underside. Why: the
   Kyoto cherry's tapered crowns (round 11) passed every gate but read as
   cupcakes, so they were reverted to round 10's band (2026-11-15).
+- **Audit a kit against every rule here before the owner sees it.** Write
+  a table, one row per Assembly kits rule: status, evidence (page, step or
+  render), fix. Show it with the manual. Why: the Miami kit manual repeated
+  the Amsterdam kit's defects (camera jumps within a sub-assembly, small
+  figures, the tray's name on a kit, thick loose parts) although every one
+  was already a rule here (owner, 2026-11-15).
 - **Check sheets with the host's own gate while designing.** A kit's
   design scripts must run `kit_sheets.py check` (and the print gates) on
   every sheet before the owner sees a sheet map or manual, never only a
