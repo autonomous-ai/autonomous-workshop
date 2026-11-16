@@ -91,6 +91,7 @@ BAMBU_COLOUR_NAMES: Tuple[str, ...] = (
     "sakura_pink",
     "scarlet_red",
     "sky_blue",
+    "stone_grey",
     "sunflower_yellow",
     "terracotta",
     "white",
