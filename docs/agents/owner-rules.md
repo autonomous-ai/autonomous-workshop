@@ -284,6 +284,17 @@ Tree and Manual.
   weak and harder to build. Why: the owner asked for the Amsterdam pen
   tower's floor and side walls to join as one frame first, and its four
   crown parapets to join at the corners (2026-11-16).
+- **Keep a part loose only after trying to build it from plates.** Boxes,
+  trays, cups, rings and drums can be built from flat sheet plates, as
+  Rolife does. For every loose part, record the plate build you tried and
+  why it failed: a visible seam, a plate over 3 mm, or a wall too thin. Why:
+  the Miami kit kept 34 loose parts, and the owner saw that more of them
+  could be plates (2026-11-16).
+- **A small scene prop must read at a glance.** A towel, a bag or a sign
+  needs its telling detail (a fringe, bold contrasting stripes, a rumpled
+  edge) and a colour that stands out from its ground. Judge it from the
+  concept camera. Why: the owner could not read the Miami beach towel as a
+  towel (2026-11-16).
 - **The manual lists loose parts too.** Besides the sheet maps, a kit
   manual has a loose-parts inventory: every printed part not on a sheet,
   pictured in its colour with its ID, name, count and spares. Every step
