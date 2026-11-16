@@ -284,6 +284,11 @@ Tree and Manual.
   weak and harder to build. Why: the owner asked for the Amsterdam pen
   tower's floor and side walls to join as one frame first, and its four
   crown parapets to join at the corners (2026-11-16).
+- **The manual lists loose parts too.** Besides the sheet maps, a kit
+  manual has a loose-parts inventory: every printed part not on a sheet,
+  pictured in its colour with its ID, name, count and spares. Every step
+  that uses one shows its ID bubble. Why: the Amsterdam manual showed only
+  the sheets, so the loose parts had no place in it (owner, 2026-11-16).
 - **Every manual step states each part's orientation.** Say in the text
   and show in the picture whether a part stands on its long edge or lies
   flat, and which face points where. A sub-assembly built lying down gets
