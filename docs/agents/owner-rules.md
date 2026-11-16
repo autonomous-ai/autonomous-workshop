@@ -175,6 +175,11 @@ rule, this file only points to it; that source stays the authority.
   with a fold and a shadow, never meets it at a flat cut), and fabric
   hangs as it would under gravity. Why: v13 had 0 mm3 overlap but its
   tails still read as tubes stuck onto the knot.
+  A visible flaw in geometry carried over from an older version is not
+  exempt: fix it, or show it to the owner as an open defect, never pass it
+  as "unchanged". Review in the owner's viewer lighting too (flat shading
+  with a headlight, as in CAD Assistant). Why: the v5 knot's wedge flaps
+  were reported as "kept from v5", and the owner saw them as extra plastic.
 - **A seat reads as its scene object, filled or empty** (owner,
   2026-11-16). Where a real item stands in for a scene object (an earbud
   case as a dry garden's big stone), the seat's own surface carries the
