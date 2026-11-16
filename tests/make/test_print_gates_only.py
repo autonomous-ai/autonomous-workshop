@@ -341,5 +341,77 @@ class FinalChecksTest(unittest.TestCase):
         self.assertEqual(unverified["verdict"], "FAIL")
 
 
+class AssemblyInterferenceTest(unittest.TestCase):
+    """Issue #118 in the Contract Proof (2026-11-16): on the whole project the
+    mode runs the assembly round's interference check on the assembly entry,
+    so a Proof whose printed bodies share space in the assembled pose fails
+    before the owner approves it, as its seeded run's assembly round would."""
+
+    gates = PrintGatesOnlyTest.gates
+    part = PrintGatesOnlyTest.part
+    setUp = FinalChecksTest.setUp
+    CLASH = {"ok": False, "clashCount": 1, "errors": [], "clashes": [
+        {"a": {"ref": "1", "name": "roof"}, "b": {"ref": "2", "name": "lantern"}, "volume": 30.5,
+         "bounds": {"min": [1.0, 2.0, 3.0], "max": [2.0, 3.0, 4.0]}}]}
+
+    def setUpProject(self):
+        self.part("roof")
+        self.part("lantern")
+        (self.project / "toy.step.py").write_text("def gen_step(): pass\n")
+
+    def interfere_calls(self):
+        return [command for command, _ in self.tools.calls
+                if Path(command[1]).name == "inspect" and command[2] == "interfere"]
+
+    def test_two_bodies_sharing_space_fail_named_by_pair_and_volume(self):
+        self.setUpProject()
+        self.reports[("toy", "inspect")] = (json.dumps(self.CLASH), 1)
+        summary, printed = self.gates(code=1)
+        self.assertFalse(summary["ok"])
+        self.assertEqual(summary["interference"]["verdict"], "fail")
+        self.assertEqual(summary["interference"]["clashes"][0]["volume_mm3"], 30.5)
+        self.assertIn("clash FAIL", printed)
+        self.assertIn("roof x lantern 30.50 mm3", printed)
+        self.assertEqual(self.interfere_calls(), [[self.interfere_calls()[0][0], self.interfere_calls()[0][1],
+                                                   "interfere", "toy.step.py", "--format", "json"]])
+        # Every per-part gate passed: the clash alone fails the Proof.
+        self.assertTrue(all(item["verdict"] == "PASS" for item in summary["print"].values()))
+
+    def test_no_clash_passes_and_the_summary_records_the_check(self):
+        self.setUpProject()
+        self.reports[("toy", "inspect")] = ('{"ok":true,"clashCount":0,"errors":[],"clashes":[]}\n', 0)
+        summary, printed = self.gates(code=0)
+        self.assertEqual(summary["interference"]["verdict"], "pass")
+        self.assertEqual(summary["checks"], [*load_module().PRINT_GATES_ONLY_CHECKS, "interfere"])
+        self.assertIn("clash PASS", printed)
+
+    def test_an_entry_that_does_not_build_for_it_fails(self):
+        self.setUpProject()
+        self.reports[("toy", "inspect")] = ("Traceback: ImportError\n", 1)
+        summary, _ = self.gates(code=1)
+        self.assertEqual(summary["interference"]["verdict"], "error")
+
+    def test_a_part_that_does_not_build_leaves_the_assembly_unchecked_and_fails(self):
+        self.setUpProject()
+        self.tools.unbuilt.add("roof")
+        summary, _ = self.gates(code=1)
+        self.assertEqual(summary["interference"]["verdict"], "not-run")
+        self.assertEqual(self.interfere_calls(), [])
+
+    def test_a_component_run_checks_no_assembly(self):
+        self.setUpProject()
+        summary, _ = self.gates("--component", "part_roof.step.py", code=0)
+        self.assertNotIn("interference", summary)
+        self.assertNotIn("interfere", summary["checks"])
+        self.assertEqual(self.interfere_calls(), [])
+
+    def test_without_an_assembly_entry_nothing_is_claimed(self):
+        self.part("roof")
+        self.part("lantern")
+        summary, printed = self.gates(code=0)
+        self.assertNotIn("interfere", summary["checks"])
+        self.assertIn("no assembly entry, so no interference check", printed)
+
+
 if __name__ == "__main__":
     unittest.main()

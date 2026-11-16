@@ -147,7 +147,11 @@ gate when print/pieces.json is installed. It needs no run, nonce, Shared
 Helper freeze or round history, measures every part afresh, and writes only
 inside the directory: each part's STEP, measure/print-gates/ and
 __cadgen__/print-parts/print-gates/. Inside a Workshop run it refuses: there
-every gate verdict is a round's. design-a-toy's Contract Proof runs it.
+every gate verdict is a round's. On the whole project it also runs the
+assembly round's interference check, `inspect interfere` on the assembly
+entry (the one non-part entry, or --entry) at the same tolerance: two
+printed bodies sharing space in the assembled pose fail it, named by pair,
+volume and place. design-a-toy's Contract Proof runs it.
 --shared-helpers --contract CONTRACT.md runs the same Shared Helper check
 and freeze on a CAD directory outside a Workshop run, reading the Interfaces
 from that contract file instead of a sealed Wish; inside a run it refuses.
@@ -6649,6 +6653,22 @@ def identities_only(args) -> int:
 # What --print-gates-only checks, so seal_proof can refuse a summary an
 # older make_round wrote without the final verification's own checks.
 PRINT_GATES_ONLY_CHECKS = ("build", "thickness", "overhang", "mesh", "datum", "posed")
+# Added to a summary's checks when the whole project's assembly entry was
+# checked for interference (issue #118 in the Contract Proof, 2026-11-16).
+INTERFERENCE_CHECK = "interfere"
+
+
+def gates_only_entry(project: Path, args, parts: list):
+    """The assembly entry a round would check for interference: ``--entry``,
+    else the one non-part ``*.step.py`` (a one-piece project's own entry);
+    None when there is none to pick."""
+
+    generators = sorted(project.glob("*.step.py"))
+    entries = [g for g in generators if not g.name.startswith("part_")]
+    if args.entry:
+        entry = project / Path(args.entry).name
+        return entry if entry.is_file() else None
+    return entries[0] if len(entries) == 1 else None
 
 
 def geometry_source_hashes(project: Path) -> dict:
@@ -6816,8 +6836,28 @@ def _print_gates_only(project: Path, args, cad: Path, parts: list, kit: dict | N
         job["command"] += ["--kit", str(kit_file)]
         job["extra_env"] = NO_BYTECODE
         sheet_jobs.append(job)
+    # 2d. Issue #118's assembly interference, the check an assembly round
+    # and final verification run on the assembled object (2026-11-16): the
+    # Contract Proof is the build, so two of its printed bodies may not share
+    # space either. Whole project only, once every part built.
+    entry = gates_only_entry(project, args, parts)
+    interference, interference_jobs = None, []
+    if entry is not None and not getattr(args, "component", None):
+        if set(roles) - built_roles:
+            interference = {"verdict": "not-run", "returncode": None, "clashes": [],
+                            "detail": "a part did not build, so the assembly was not checked for interference"}
+        else:
+            interference_jobs.append({
+                "command": [python, str(cad / "inspect"), "interfere", entry.relative_to(project).as_posix(),
+                            "--format", "json"],
+                "cwd": project, "log": out / "interference.log", "timeout": FULL_TIMEOUT_SECONDS,
+                "extra_env": NO_BYTECODE})
     finished = run_all([job for _role, _name, _gate, job in gate_jobs]
-                       + [job for _role, _check, job in final_jobs] + sheet_jobs)
+                       + [job for _role, _check, job in final_jobs] + sheet_jobs + interference_jobs)
+    if interference_jobs:
+        done = finished[-1]
+        finished = finished[:-1]
+        interference = parse_assembly_interference(done.stdout, done.returncode)
     sheets = None
     if sheet_jobs:
         done = finished[-1]
@@ -6846,13 +6886,19 @@ def _print_gates_only(project: Path, args, cad: Path, parts: list, kit: dict | N
             printing[role]["verdict"] = "FAIL"
     ok = (all(item["verdict"] == "PASS" for item in build.values())
           and all(item["verdict"] == "PASS" for item in printing.values())
-          and (sheets is None or sheets["verdict"] == "PASS"))
+          and (sheets is None or sheets["verdict"] == "PASS")
+          and (interference is None or interference["verdict"] in ("pass", "unverified")))
+    checks = list(PRINT_GATES_ONLY_CHECKS)
+    if interference is not None:
+        checks.append(INTERFERENCE_CHECK)
     summary = {"scope": PRINT_GATES_SCOPE, "project": str(project), "nozzle": args.nozzle,
                "overhang_angle": args.overhang_angle, "bed": bed, "kit": kit is not None,
                "parts": roles, "build": build, "print": printing, "ok": ok, "out": str(out),
-               "checks": list(PRINT_GATES_ONLY_CHECKS), "sources": geometry_source_hashes(project)}
+               "checks": checks, "sources": geometry_source_hashes(project)}
     if sheets is not None:
         summary["sheets"] = sheets
+    if interference is not None:
+        summary["interference"] = interference
     (out / "summary.json").write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     if args.json:
         print(json.dumps(summary, sort_keys=True))
@@ -6868,6 +6914,11 @@ def _print_gates_only(project: Path, args, cad: Path, parts: list, kit: dict | N
         if sheets is not None:
             lines.append("  sheets %s %d Sheet(s)" % (sheets["verdict"], len(sheets.get("sheets") or ())))
             lines += ["    %s" % item for item in (sheets.get("failures") or [])[:12]]
+        if interference is not None:
+            lines.append("  clash %-4s %s" % (interference["verdict"].upper()[:4], interference["detail"][:300]))
+            lines += ["    %s" % clash_text(clash) for clash in interference.get("clashes", [])[:12]]
+        elif not getattr(args, "component", None):
+            lines.append("  clash none: no assembly entry, so no interference check (pass --entry)")
         lines.append("  %s  reports under %s" % ("PASS" if ok else "FAIL", out))
         print("\n".join(lines))
     return 0 if ok else 1

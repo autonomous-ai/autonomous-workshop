@@ -135,6 +135,57 @@ class AssemblyInterferenceTest(unittest.TestCase):
         self.assertIn("No module named 'params'", result["detail"])
 
 
+PROOF_PART = """from build123d import Align, Box, Pos
+
+
+def gen_step():
+    return Box(10, 10, 10, align=(Align.MIN, Align.MIN, Align.MIN))
+
+
+def assembly_pose(shape, pose):
+    return Pos(%r, 0, 0) * shape
+"""
+
+
+class ProofInterferenceTest(unittest.TestCase):
+    """2026-11-16: ``make_round --print-gates-only``, the Contract Proof's
+    gate, runs the same check on real B-reps. Two printed bodies sharing
+    space in the assembled pose fail it, named with the volume; touching
+    bodies and a fit's clearance gap pass. The tolerance is the assembly
+    round's own, so the Proof and its seeded run agree."""
+
+    def _gates(self, right_offset):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp) / "proof"
+            project.mkdir()
+            (project / "part_left.step.py").write_text(PROOF_PART % 0.0)
+            (project / "part_right.step.py").write_text(PROOF_PART % right_offset)
+            (project / "toy.step.py").write_text(ENTRY)
+            done = subprocess.run([sys.executable, str(MAKE_ROUND), str(project), "--print-gates-only"],
+                                  capture_output=True, text=True, timeout=900, env=_environment())
+            summary = json.loads((project / "measure/print-gates/summary.json").read_text())
+        return done, summary
+
+    def test_bodies_that_share_space_fail_with_both_names_and_the_volume(self):
+        done, summary = self._gates(8.0)  # the right cube's x 8..18 enters the left's x 0..10
+        self.assertEqual(done.returncode, 1, done.stdout + done.stderr)
+        self.assertEqual(summary["interference"]["verdict"], "fail")
+        clash = summary["interference"]["clashes"][0]
+        self.assertEqual({clash["a"], clash["b"]}, {"left", "right"})
+        self.assertAlmostEqual(clash["volume_mm3"], 200.0, places=2)
+        self.assertIn("left x right 200.00 mm3", done.stdout.replace("right x left", "left x right"))
+        # Each Component alone passes every print gate.
+        self.assertTrue(all(item["verdict"] == "PASS" for item in summary["print"].values()), summary["print"])
+
+    def test_touching_bodies_and_a_fit_clearance_pass(self):
+        for offset in (10.0, 10.1):  # face to face; a 0.1 mm fixed-fit gap
+            with self.subTest(offset=offset):
+                done, summary = self._gates(offset)
+                self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+                self.assertEqual(summary["interference"]["verdict"], "pass")
+                self.assertIn("interfere", summary["checks"])
+
+
 class GeneratorImportPathTest(unittest.TestCase):
     def test_the_seed_holds_while_gen_step_runs_and_is_restored_after(self):
         # The project is not the working directory, so nothing but the

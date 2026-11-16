@@ -141,6 +141,51 @@ read 0.1, output 5) found:
   `design-a-toy` run, before it becomes the default; until then it stays
   the trial of ADR 0093.
 
+## Amendment 2026-11-16: the Proof checks interference as the assembly round does
+
+- **Gap.** An assembly round and final verification run `inspect interfere`
+  on the assembled object (issue #118). Any two printed bodies whose
+  boolean intersection is over the cad skill's 1.0 mm3 tolerance fail,
+  named by pair, volume and place. The check runs in every Workshop run,
+  seeded or not: the seeded batch's assembly round runs it too.
+  `--print-gates-only`, the Contract Proof's gate, ran only per-Component
+  checks. The Kyoto Gion Proof (round 20) therefore passed every gate while
+  holding three collisions, which a hand-written scan found: a roof eave in
+  two stone lanterns (30 and 5 mm3), the same eave in a wall and its cap
+  (11 and 24 mm3), and a lantern in a deck rail (41 and 12 mm3). Its seeded
+  run's assembly round would have failed, after the owner had approved the
+  Proof.
+- **Decision.** `make_round --print-gates-only` on the whole project now
+  runs the same `inspect interfere` job on the assembly entry (the one
+  non-part `*.step.py`, or `--entry`), after every part builds. It uses the
+  same parser and passing verdicts as the round: `pass`, or `unverified`
+  when its time allowance ran out with nothing found. A clash, an entry
+  that cannot build for it, or a part that did not build fails it. The
+  summary records `interference` and adds `interfere` to its `checks`.
+  `seal_proof.py` refuses a summary without `interfere` and names a failing
+  clash. A `--component` run, or a project with no single assembly entry,
+  checks no assembly and does not claim the check.
+- **Same tolerance, no exemption list.** The Proof's check is the round's
+  check, so the Proof never passes what its build then refuses:
+  - The tolerance is the cad skill's 1.0 mm3. The Kyoto collisions were 5
+    to 41 mm3, and touching faces leave slivers under it.
+  - No pair is exempt. A declared fit cut with its clearance (fixed +0.1,
+    moving +0.2 total) leaves a gap, so it passes without one; `check_fit`
+    and the Interface checks still own its size. A pair that truly
+    interpenetrates by design, such as a press fit, already fails the
+    run's assembly round. Exempting it only in the Proof would let the
+    owner approve a build that cannot pass. Such a toy needs its own
+    decision on the round's check; this amendment changes neither gate.
+- **Where it runs.**
+  - Contract Proof: `make_round --print-gates-only`, which `seal_proof` requires.
+  - Every Workshop run: the assembly round, unchanged.
+  - Final verification: `verify_project`'s inspect batch, unchanged.
+
+  Frozen runs keep their materialized make_round bytes.
+- Implemented with deterministic tests, plus real B-rep tests: an overlap
+  fails naming both bodies and 200 mm3, while touching bodies and a 0.1 mm
+  gap pass. No live Proof has run it yet.
+
 ## Consequences
 
 - A design costs fewer Proof rounds and no Stage 3e subagents.

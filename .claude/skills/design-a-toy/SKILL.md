@@ -1405,7 +1405,8 @@ byte, as the run's hash-checked objective. Name the toy in its `#` title by
 
 Then seal what the owner approved (ADR 0096): run the Proof's print gates
 (`make_round <proof> --print-gates-only`, which also checks each Component
-in its Display Pose and on the bed) and `make_round <proof> --shared-helpers
+in its Display Pose and on the bed, and that no two printed bodies share
+space in the assembled Proof) and `make_round <proof> --shared-helpers
 --contract CONTRACT.md` once more on the final contract. Check that the
 Proof wrote its `*_spec.md` and its three `measure/` audits (proof-prompt.md,
 "Final verification inputs") and every check input its contract needs
