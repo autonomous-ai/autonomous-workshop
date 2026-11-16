@@ -163,6 +163,12 @@ rule, this file only points to it; that source stays the authority.
   scene (raked rings round the stone's spot) and the scene continues
   round it, so the owner can name it with and without the item. Why: the
   Kyoto garden's smooth earbud seat read as a blank tray.
+- **A device seat is walled on all four sides** (owner, 2026-11-16). A
+  seat for a real item (an earbud or iPod case) is enclosed by scene walls
+  on every side, open only at the top and at one small finger notch or
+  gate just wide enough to lift the item out. It never stands open on a
+  yard. Why: the Kyoto earbud case stood open behind a barrel rack and the
+  owner wanted it closed in, with only a small way to take it out.
 - **Printed fits use total clearance** (owner, 2026-11-13). The value is the
   whole difference between the two sizes, never per side:
   - **Fixed fit** (a tab, peg or leg into a socket): socket = feature +
