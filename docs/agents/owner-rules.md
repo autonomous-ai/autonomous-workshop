@@ -141,10 +141,28 @@ rule, this file only points to it; that source stays the authority.
   only its post tops, which read as a row of red cubes (2026-11-14).
 - **A landmark leads its well.** Where a well belongs to a landmark (a
   shrine's stone basin, a temple's pond), the landmark is the area's
-  focus. From the concept camera its visible area is clearly larger than
-  the well's (measure both), and the well is textured as its material,
-  never a plain tub. Why: in the Kyoto precinct the staple basin dominated
-  and the shrine read as a shed (2026-11-14).
+  focus by its detail, colour and height, and the well is textured as its
+  material, never a plain tub. Why: in the Kyoto precinct the staple basin
+  dominated and the shrine read as a shed (2026-11-14). Since 2026-11-16 a
+  landmark no longer grows past its true scale to out-area its well (next
+  rule).
+- **Buildings keep their true relative scale** (owner, 2026-11-16). Size
+  each real building from its real dimensions against the scene's scale
+  (set by the main building's storeys), and cite the source (a map
+  outline, a measured photo) in the notes. Never enlarge a small building
+  to make it the focus. Why: the Kyoto Tatsumi shrine, drawn to lead the
+  basin, came out far too big beside the machiya and teahouse.
+- **Stone reads as stone at a glance** (owner, 2026-11-16). A stone
+  vessel or rock is rough-hewn: chiselled faceted sides, no rounded box
+  corners, in a grey stone colour, with the props that name it (a bamboo
+  spout and ladles for a shrine basin). Why: the smooth cream rounded
+  Kyoto basin read as a bathtub.
+- **A seat reads as its scene object, filled or empty** (owner,
+  2026-11-16). Where a real item stands in for a scene object (an earbud
+  case as a dry garden's big stone), the seat's own surface carries the
+  scene (raked rings round the stone's spot) and the scene continues
+  round it, so the owner can name it with and without the item. Why: the
+  Kyoto garden's smooth earbud seat read as a blank tray.
 - **Printed fits use total clearance** (owner, 2026-11-13). The value is the
   whole difference between the two sizes, never per side:
   - **Fixed fit** (a tab, peg or leg into a socket): socket = feature +
