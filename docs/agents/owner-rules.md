@@ -253,6 +253,11 @@ Tree and Manual.
   price is shown. Factory splits a STEP by solid, so a sliver cut free by
   a pocket prints as a stray piece the manual never names. Why: Amsterdam
   T03 carried 3 paving bars cut free behind the stash cups.
+- **Stored items come out toward the user** (owner, 2026-11-16). A desk
+  tray's note pad, card or other item a person takes often comes out
+  from the front edge, the side facing the person, never from the side
+  or the back. Why: the Miami note pad options opened on the tray's
+  side, and the owner wanted it taken from the front as the natural move.
 - **Hidden storage must be reachable.** A finger cannot reach into a cup
   21 mm deep and 9 mm wide. Use a shallow cup (about 9 mm) that lifts out by
   a pull tab, and say what it holds.
