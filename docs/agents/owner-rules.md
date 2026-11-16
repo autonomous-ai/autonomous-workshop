@@ -259,6 +259,13 @@ Tree and Manual.
   smooths away the puffs and the drooping lobes on the underside. Why: the
   Kyoto cherry's tapered crowns (round 11) passed every gate but read as
   cupcakes, so they were reverted to round 10's band (2026-11-15).
+- **Join neighbouring plates to each other, not only to a base.** Walls,
+  floors and parapets that meet should interlock (tab and slot, cross-lap,
+  corner half-lap), so each sub-assembly holds on its own before it meets
+  the next plate. A ring of parts that each stand only in a base plate is
+  weak and harder to build. Why: the owner asked for the Amsterdam pen
+  tower's floor and side walls to join as one frame first, and its four
+  crown parapets to join at the corners (2026-11-16).
 - **Every manual step states each part's orientation.** Say in the text
   and show in the picture whether a part stands on its long edge or lies
   flat, and which face points where. A sub-assembly built lying down gets
