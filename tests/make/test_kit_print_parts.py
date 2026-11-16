@@ -388,6 +388,53 @@ class FinalVerificationTest(unittest.TestCase):
         self.assertNotIn("kit_print_parts.py", [Path(c[1]).name for c in runner.commands])
 
 
+class PreflightFitTest(unittest.TestCase):
+    """ADR 0092 decision 11 in the preflight group: check_fit never gates a
+    kit Component assembled in its place (the Amsterdam kit Proof's seal,
+    2026-11-16, failed print-datum on every Component at its display Z)."""
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.project = Path(temporary.name)
+        self.cabinet = self.project / "part_cabinet.step.py"
+        self.cabinet.write_text("def gen_step(): pass\ndef print_parts(): pass\n")
+        self.stand = self.project / "part_stand.step.py"
+        self.stand.write_text("def gen_step(): pass\n")
+        self.verifier = runpy.run_path(str(VERIFIER))
+
+    def preflight(self, printables):
+        runner = RecordingRunner(self.project, described())
+        with contextlib.redirect_stdout(io.StringIO()):
+            code = self.verifier["_run_preflight_audits"](
+                runner, self.project, printables, strict_fit=True, bed=(220.0, 220.0, 220.0))
+        fit = [c for c in runner.commands if Path(c[1]).name == "check_fit"]
+        return code, runner, fit
+
+    def install(self):
+        (self.project / "tree").mkdir()
+        (self.project / "tree" / "kit.json").write_text(json.dumps(sealed_kit()))
+
+    def test_a_kit_component_is_not_fit_checked_assembled(self):
+        self.install()
+        _code, runner, fit = self.preflight([self.cabinet])
+        self.assertEqual(fit, [])
+        self.assertIn("check_fit", runner.skips)
+
+    def test_a_printable_outside_the_tree_is_still_fit_checked(self):
+        self.install()
+        _code, _runner, fit = self.preflight([self.cabinet, self.stand])
+        self.assertEqual(len(fit), 1)
+        entries = [fit[0][i + 1] for i, a in enumerate(fit[0]) if a == "--entry"]
+        self.assertEqual([Path(e).name for e in entries], ["part_stand.step.py"])
+        self.assertIn("--strict", fit[0])
+
+    def test_without_a_tree_the_component_is_fit_checked_as_before(self):
+        _code, _runner, fit = self.preflight([self.cabinet])
+        self.assertEqual(len(fit), 1)
+        self.assertIn("part_cabinet.step.py", [Path(a).name for a in fit[0]])
+
+
 class RealGeometryTest(unittest.TestCase):
     """The real describe, entry and overhang gate on a small build123d
     cabinet: its top board is a ceiling assembled and flat on the bed."""

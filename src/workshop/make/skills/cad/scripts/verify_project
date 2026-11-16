@@ -1821,6 +1821,22 @@ def _audit_env(project: Path) -> dict[str, str]:
     return {"PYTHONPATH": value}
 
 
+def _not_kit_components(project: Path, printables: list[Path]) -> list[Path]:
+    """``printables`` without a kit's Components (ADR 0092 decision 11):
+    those whose ``part_<id>`` the sealed tree gives printed Parts."""
+
+    kit, tool = _kit_print_parts(project)
+    if kit is None:
+        return printables
+    kept = []
+    for printable in printables:
+        role = printable.name.removesuffix(ENTRY_SUFFIX)
+        if role.startswith(PART_PREFIX) and tool.printed_parts(kit, role.removeprefix(PART_PREFIX)) is not None:
+            continue
+        kept.append(printable)
+    return kept
+
+
 def _run_preflight_audits(
     runner: Runner,
     project: Path,
@@ -1839,6 +1855,13 @@ def _run_preflight_audits(
     """
     failures = 0
 
+    # ADR 0092 decision 11: a kit Component is built assembled, in its place,
+    # and never printed whole; each of its Parts is gated alone in its print
+    # stance (bottom at Z 0) by the print gate group's print_parts() check.
+    # check_fit on the assembled Component would gate the Component in its
+    # place, so it reads only what prints as one piece, as make_round's
+    # --print-gates-only datum check does.
+    printables = _not_kit_components(project, printables)
     if printables:
         fit_args: list[str | Path] = [
             sys.executable,
@@ -1856,7 +1879,8 @@ def _run_preflight_audits(
     else:
         runner.skipped(
             "check_fit",
-            "no printable entry is declared; geometry-only final workflow",
+            "no printable entry is declared (a kit Component's Parts are gated alone by the "
+            "print gate group); geometry-only final workflow",
         )
 
     for audit_name in PROJECT_AUDITS:

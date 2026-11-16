@@ -344,6 +344,13 @@ both are decided together. Six 2026 Rolife manuals were read page by page
       Piece, a copy, another Component's Part or an unknown Part, fails the
       round with the repair, a free repair like a print gate. Nothing ever
       gates the assembled Component in its place.
+    - Final verification's preflight `check_fit` (min Z at 0, bed
+      footprint, one body under `--strict`) reads no kit Component either
+      (2026-11-16): each of its Parts is held to Z 0 by the `print_parts()`
+      check, as `make_round --print-gates-only` already skipped its `datum`
+      check for kit Components. A printable outside the tree is checked as
+      before. The Amsterdam kit Proof's seal found it: every Component
+      failed `print-datum` at its display height.
     - A round reuses a Part's passing gates only while the Part's B-rep
       identity, the tools and the conditions are unchanged, so a Part
       turned to another stance is gated again even when the assembled
