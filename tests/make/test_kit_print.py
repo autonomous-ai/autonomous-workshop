@@ -42,20 +42,30 @@ class KitPrintLayoutTest(unittest.TestCase):
         self.assertEqual(report["kind"], "kit-print-layout")
         self.assertEqual(report["tree_sha256"], tree_digest(self.kit))
         self.assertEqual(report["sha256"], __import__("hashlib").sha256(step).hexdigest())
-        self.assertEqual(report["loose"], {"D01-inkwell": 1})
+        # The toy uses one inkwell; its tree entry declares one spare.
+        self.assertEqual(report["loose"], {"D01-inkwell": 2})
         self.assertEqual(report["copies"], {"A01-case-shell": 1, "B01-cabinet-carcass": 1, "B02-cabinet-door": 1,
-                                            "C01-desk-body": 2, "D01-inkwell": 1})
+                                            "C01-desk-body": 2, "D01-inkwell": 2})
         bodies = scene_bodies(step)
         names = sorted(body.name for body in bodies)
         self.assertEqual(names, report["bodies"])
         self.assertEqual(report["schema_version"], 2)
-        self.assertEqual(names, ["A1", "B1", "C1", "loose/D01-inkwell#1"])
+        self.assertEqual(names, ["A1", "B1", "C1", "loose/D01-inkwell#1", "loose/D01-inkwell#2"])
         self.assertFalse(any("bought" in name or name.startswith("P") for name in names))
         # Each Sheet and each loose copy is one connected solid.
-        self.assertEqual(Counter((len(b.solids), b.outer_shells) for b in bodies), Counter({(1, 1): 4}))
+        self.assertEqual(Counter((len(b.solids), b.outer_shells) for b in bodies), Counter({(1, 1): 5}))
         # Fused, a Sheet weighs its frame, gates and copies: B1 holds two panels.
         volume = {b.name: b.total[0] for b in bodies}
         self.assertGreater(volume["B1"], 2 * 20 * 12 * 2)
+
+    def test_a_loose_part_without_spares_prints_once_per_use(self):
+        del next(p for p in self.kit["assembly_tree"]["parts"] if p["id"] == "D01-inkwell")["spares"]
+        self.install()
+        done = self.layout()
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        report = json.loads((self.project / "measure/kit/print.json").read_text())
+        self.assertEqual(report["loose"], {"D01-inkwell": 1})
+        self.assertEqual([b for b in report["bodies"] if b.startswith("loose/")], ["loose/D01-inkwell#1"])
 
     def test_a_sheet_that_does_not_fuse_into_one_solid_fails_and_writes_nothing(self):
         sheet = self.project / "sheet_A1.py"

@@ -117,6 +117,35 @@ class MadeKitPrintTest(unittest.TestCase):
         self.assertEqual(record["removed"], [item["body"] for item in self.listed["bodies"]])
         self.assertEqual(record["removed_bodies"], len(self.listed["bodies"]))
 
+    def with_spares(self, part, spares):
+        contract = copy.deepcopy(self.contract)
+        entry = next(p for p in contract["assembly_tree"]["parts"] if p["id"] == part)
+        entry["loose_reason"], entry["spares"] = "A round pot.", spares
+        return contract
+
+    def test_a_loose_parts_spares_are_laid_out_and_counted(self):
+        contract = self.with_spares("D01-inkwell", 2)
+        uses = expected_copies(self.contract)[1]["D01-inkwell"]
+        sheets, loose = expected_copies(contract)
+        self.assertEqual(loose["D01-inkwell"], uses + 2)
+        report = self.seal(contract)
+        self.assertEqual(report["copies"]["D01-inkwell"], uses + 2)
+        self.assertIn("loose/D01-inkwell#%d" % (uses + 2), report["bodies"])
+        record = self.check(contract)
+        self.assertEqual(record["printed_bodies"], sum(loose.values()))
+
+    def test_a_layout_without_the_declared_spares_is_refused(self):
+        contract = self.with_spares("D01-inkwell", 1)
+        # The layout the tool wrote before spares: one copy per use.
+        plain = expected_copies(self.contract)
+        names = expected_bodies(*plain)
+        self.seal(contract, names=names, sheets=plain[0], loose=plain[1], bodies=names,
+                  copies={part: count for part, count in sorted(plain[1].items())})
+        self.assertIn("as many times as the toy uses it plus its spares", self.refused(contract))
+        # A record that counts the spares but whose STEP lacks the spare leaf.
+        self.seal(contract, step=layout_step(names))
+        self.assertIn("missing loose/D01-inkwell#", self.refused(contract))
+
     def test_a_sheet_is_one_fused_leaf_and_loose_parts_stay_apart(self):
         contract = self.sheeted()
         self.seal(contract)

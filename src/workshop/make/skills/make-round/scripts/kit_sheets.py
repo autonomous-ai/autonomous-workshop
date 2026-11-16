@@ -52,7 +52,8 @@ own ``sheets.py`` (2026-11-14):
 or not, to the minimum size (owner rule MIN-PART-SIZE R1, on the sorted
 print-stance size: thickness 1.6, short side 4, long side 8, footprint
 short x long 35 mm2, volume 50 mm3) unless it states ``small_reason``, and
-asks a spare on its Sheets of each Part under 15 mm long.
+asks a spare of each Part under 15 mm long: on its Sheets, or, for a loose
+Part, as its ``spares`` (2026-11-16).
 """
 
 from __future__ import annotations
@@ -430,6 +431,9 @@ def part_failures(sheets: list, printed: dict, totals: dict, measures: dict) -> 
         if long_ < SPARE_BELOW_MM and part in on_sheets and on_sheets[part] < totals.get(part, 0) + 1:
             fails.append("%s is %.1f mm long, under %.0f: its Sheets carry %d, the toy uses %d; add one spare"
                          % (part, long_, SPARE_BELOW_MM, on_sheets[part], totals.get(part, 0)))
+        elif long_ < SPARE_BELOW_MM and part not in on_sheets and int(printed[part].get("spares", 0)) < 1:
+            fails.append("%s is %.1f mm long, under %.0f, and prints loose with no spare: state \"spares\": 1 "
+                         "or more on its tree entry" % (part, long_, SPARE_BELOW_MM))
     return fails, small
 
 

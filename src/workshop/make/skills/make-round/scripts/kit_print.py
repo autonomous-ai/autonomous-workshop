@@ -6,8 +6,9 @@
 Final verification runs it after the Sheet gate on every kit with an
 installed Assembly Tree. It writes ``measure/kit/print.step``: every Sheet
 of the tree as ``sheet()`` builds it, and one copy in its print stance of
-every printed Part on no Sheet for each time the toy uses it, laid apart on
-the plane. No Bought Part is in it. Its leaves are named
+every printed Part on no Sheet for each time the toy uses it, plus the
+spares the Part declares (``spares``, 2026-11-16), laid apart on the
+plane. No Bought Part is in it. Its leaves are named
 
 - ``<Sheet id>``: the whole Sheet, its frame, runners, tags, gate bars and
   every copy fused into one connected solid, as it leaves the printer;
@@ -57,7 +58,8 @@ def _colour(plan, filament: str):
 
 def expected_copies(kit: dict) -> tuple[list[dict], dict]:
     """``(sheets, loose)``: each Sheet's ``{id, filament, copies}`` from the
-    tree, and ``{Part id: count}`` for every printed Part on no Sheet."""
+    tree, and ``{Part id: count}`` for every printed Part on no Sheet: the
+    toy's total plus the Part's ``spares``."""
 
     plan = _sibling("kit_tree").Plan(kit)
     sheets = []
@@ -68,7 +70,7 @@ def expected_copies(kit: dict) -> tuple[list[dict], dict]:
             copies[entry["id"]] = copies.get(entry["id"], 0) + int(entry["count"])
             on_sheet.add(entry["id"])
         sheets.append({"id": sheet["id"], "filament": sheet["filament"], "copies": copies})
-    loose = {part: plan.totals.get(part, 0) for part in sorted(plan.printed)
+    loose = {part: plan.totals.get(part, 0) + int(plan.parts[part].get("spares", 0)) for part in sorted(plan.printed)
              if part not in on_sheet and plan.totals.get(part, 0) > 0}
     return sheets, loose
 

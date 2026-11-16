@@ -166,6 +166,19 @@ class KitPartSizeTest(unittest.TestCase):
         fails, _ = ks.part_failures(self.SHEETS, {"A01-panel": {}}, {"A01-panel": 1}, {"A01-panel": short})
         self.assertEqual(fails, [])
 
+    def test_a_small_loose_part_declares_its_spares(self):
+        short = {"size": [2.0, 5.0, 12.0], "volume": 120.0}
+        loose = {"T01-pin": {"loose_reason": "round"}}
+        fails, _ = ks.part_failures(self.SHEETS, loose, {"T01-pin": 2}, {"T01-pin": short})
+        self.assertEqual(fails, ['T01-pin is 12.0 mm long, under 15, and prints loose with no spare: state '
+                                 '"spares": 1 or more on its tree entry'])
+        loose["T01-pin"]["spares"] = 1
+        self.assertEqual(ks.part_failures(self.SHEETS, loose, {"T01-pin": 2}, {"T01-pin": short})[0], [])
+        # At 15 mm or longer a loose Part needs no spare, as on a Sheet.
+        long_ = {"size": [2.0, 5.0, 15.0], "volume": 150.0}
+        self.assertEqual(ks.part_failures(self.SHEETS, {"T01-pin": {"loose_reason": "round"}}, {"T01-pin": 2},
+                                          {"T01-pin": long_})[0], [])
+
     def test_an_unmeasured_part_fails(self):
         fails, _ = ks.part_failures(self.SHEETS, {"A01-panel": {}}, {"A01-panel": 1}, {})
         self.assertIn("print_parts() did not measure it", fails[0])
@@ -233,7 +246,9 @@ class KitSheetsProjectTest(unittest.TestCase):
         self.project = Path(temporary.name)
         self.kit = sealed_kit()
         tree = self.kit["assembly_tree"]
-        next(p for p in tree["parts"] if p["id"] == "D01-inkwell")["loose_reason"] = "A round pot."
+        inkwell = next(p for p in tree["parts"] if p["id"] == "D01-inkwell")
+        inkwell["loose_reason"] = "A round pot."
+        inkwell["spares"] = 1  # 8 mm long: under 15 mm, a loose Part declares its spare
         tree["sheets"] = [
             {"id": "A1", "filament": "navy", "parts": [{"id": "A01-case-shell", "count": 1}]},
             {"id": "B1", "filament": "dark-oak", "parts": [{"id": "B01-cabinet-carcass", "count": 1},
@@ -282,6 +297,15 @@ class KitSheetsProjectTest(unittest.TestCase):
         self.install()
         code, report = self.run_check()
         self.assertEqual((code, report["small"]), (0, ["D01-inkwell"]))
+
+    def test_a_small_loose_part_without_spares_fails(self):
+        inkwell = next(p for p in self.kit["assembly_tree"]["parts"] if p["id"] == "D01-inkwell")
+        del inkwell["spares"]
+        self.install()
+        code, report = self.run_check()
+        self.assertEqual(code, 1)
+        self.assertEqual(report["failures"], ['D01-inkwell is 8.0 mm long, under 15, and prints loose with no '
+                                              'spare: state "spares": 1 or more on its tree entry'])
 
     def test_without_sheets_nothing_is_checked(self):
         del self.kit["assembly_tree"]["sheets"]
