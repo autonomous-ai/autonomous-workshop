@@ -157,6 +157,13 @@ rule, this file only points to it; that source stays the authority.
   corners, in a grey stone colour, with the props that name it (a bamboo
   spout and ladles for a shrine basin). Why: the smooth cream rounded
   Kyoto basin read as a bathtub.
+- **Review every junction in a tight close-up** (owner, 2026-11-16).
+  Where two modelled parts meet (a scarf tail under its knot, a lid on its
+  box), render the junction at 3-4x zoom from several angles and measure
+  the overlap volume between the parts, which must be 0. A whole-part view
+  hides a small lip or an interpenetration. Why: the snowman v12 left tail
+  poked out above its knot and overlapped it; the leader passed it from
+  the normal close-up and the owner caught it.
 - **A seat reads as its scene object, filled or empty** (owner,
   2026-11-16). Where a real item stands in for a scene object (an earbud
   case as a dry garden's big stone), the seat's own surface carries the
