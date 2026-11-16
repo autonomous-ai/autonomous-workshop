@@ -17,6 +17,8 @@
     not-printed `bodies` key fix): implemented, deterministic tests only.
     No kit layout has crossed to Factory yet, and whether Factory prints
     one layout STEP as several plates is still open.
+  - The 2026-11-16 amendment (a loose Part's `spares`): implemented,
+    deterministic tests only. No kit contract declares it yet.
   - Decision 5 (the owner-approved Manual sealed and shipped byte for
     byte): implemented, deterministic tests only. No Proof has sealed a
     Manual yet. `kit_manual` is an optional APPROVAL field and the schema
@@ -246,6 +248,39 @@ round summary records the report as `sheets`.
 - Release ships `manual/manual.pdf` as today (a Made file to Factory and the
   public archive). The approved Manual pictures the Approved Proof; a seed
   deviation that changes what it shows is reported, not redrawn.
+
+## Amendment 2026-11-16: a loose Part declares its spares
+
+- **Problem.** A Part on a Sheet carries spares in its Sheet counts, but a
+  loose Part had no way to declare any. `kit_print.py` laid out exactly
+  one copy per use, so the Factory primary shipped fewer Parts than an
+  approved Manual promised. The Amsterdam kit's Manual promises five loose
+  spares (T09 +1, T10 +1, T11 +2, T12 +1), which is 30 loose copies, but
+  the layout held 25. The spare rule of decision 3 also checked only Parts
+  on Sheets.
+- **Contract.** A loose Part (one with `loose_reason`) may add
+  `"spares": <positive integer>`: the copies printed beyond the toy's
+  total. The field is optional, and leaving it out means none. A Part
+  without `loose_reason` that declares it is refused, as is a value that is
+  not a positive integer (`0`, `true`, `1.0`). A Part on a Sheet keeps
+  taking its spares in its Sheet counts.
+- **Layout and host check.** Decision 4's loose copies of a Part are its
+  tree total plus its `spares`. This is so in `kit_print.py layout`
+  (`loose`, `copies`, the `loose/<Part>#n` leaves of
+  `measure/kit/print.step`, and so Factory's grams and price) and in the
+  host's `workshop.make.kit_print`, which refuses a record or STEP without
+  the declared spares.
+- **Gate.** Decision 3's spare rule now covers loose Parts the same way.
+  In a kit with Sheets, a loose Part whose longest print-stance side is
+  under 15 mm fails `kit_sheets.py check` unless it declares
+  `spares` of at least 1. The 15 mm limit, the one-spare minimum and the
+  absence of any `small_reason` exemption are those of the Sheet rule.
+  A kit without Sheets is not checked, as before.
+- **Unchanged.** A contract without `spares` lays out, prices and passes
+  the host check exactly as before. Frozen runs keep their run-local tool
+  bytes. A kit with Sheets whose loose Part is under 15 mm now needs
+  `spares` before its next round or Proof passes; this is the owner's rule
+  that every Part under 15 mm has a spare, not a new limit.
 
 ## Not decided here
 

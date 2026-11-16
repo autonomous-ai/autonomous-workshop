@@ -229,7 +229,11 @@ instances.)
     colour: any letter except M and N (Print Pieces), P (Bought Parts) and S
     (steps), one letter per filament and one filament per letter. A **loose
     Part** (ADR 0104: a printed Part off any FDM sheet) adds `"loose_reason"`
-    (at most 300 characters); loose Parts may share one letter across
+    (at most 300 characters) and may add `"spares": <positive integer>`,
+    the copies printed beyond the toy's total (ADR 0104, 2026-11-16 amendment;
+    `"spares": 1` on a Part used twice prints 3). Only a loose Part takes
+    `spares`; a Part on a Sheet takes its spares in its Sheet counts. Loose
+    Parts may share one letter across
     filaments (the Amsterdam kit's T01-T15), and a letter is either wholly
     loose or wholly one filament. A printed Part under the minimum size
     (MIN-PART-SIZE R1: thickness 1.6 mm, short side 4 mm, long side 8 mm,
@@ -251,7 +255,8 @@ instances.)
     Part letter and a number; it holds only printed, non-loose Parts of that
     filament. Over all Sheets a Part's count is at least the toy's total
     (more are spares), and every printed Part is on a Sheet or states
-    `loose_reason`. A Part whose longest side is under 15 mm needs a spare.
+    `loose_reason`. A Part whose longest side is under 15 mm needs a spare:
+    on its Sheets, or, for a loose Part, as `"spares"`.
     Each Sheet is the project file `sheet_<id>.py` defining `sheet()`;
     `make_round` checks every Sheet in assembly rounds,
     `--print-gates-only` and final verification (`kit_sheets.py check`).

@@ -8,7 +8,8 @@ rebuilding geometry (ADR 0061), that
 
 - the record is for the sealed tree and names the sealed STEP by hash;
 - its Sheets are the tree's Sheets with their contract copies, and its loose
-  copies are every printed Part on no Sheet, as many as the toy uses;
+  copies are every printed Part on no Sheet, as many as the toy uses plus
+  the spares the Part declares (``spares``, 2026-11-16);
 - the STEP's leaves are exactly ``<Sheet>`` for each Sheet and
   ``loose/<Part>#n`` for each loose copy, so no Bought Part body is in it;
   each Sheet is one connected solid (one solid, one outer shell), each
@@ -60,8 +61,9 @@ def expected_copies(contract: Mapping[str, Any]) -> tuple[list[dict[str, Any]], 
             copies[entry["id"]] = copies.get(entry["id"], 0) + int(entry["count"])
             on_sheet.add(entry["id"])
         sheets.append({"id": sheet["id"], "filament": sheet["filament"], "copies": copies})
-    printed = sorted(item["id"] for item in tree["parts"] if "filament" in item)
-    loose = {part: totals.get(part, 0) for part in printed if part not in on_sheet and totals.get(part, 0) > 0}
+    spares = {item["id"]: int(item.get("spares", 0)) for item in tree["parts"] if "filament" in item}
+    loose = {part: totals.get(part, 0) + spares[part] for part in sorted(spares)
+             if part not in on_sheet and totals.get(part, 0) > 0}
     return sheets, loose
 
 
@@ -169,7 +171,7 @@ def verify_made_print_layout(
     ) or report.get("bodies") != names:
         raise ContractError(
             "%s does not lay out the sealed tree's Sheets and loose copies (each printed Part on no "
-            "Sheet, as many times as the toy uses it)" % REPORT_PATH
+            "Sheet, as many times as the toy uses it plus its spares)" % REPORT_PATH
         )
     if report.get("step") != STEP_PATH:
         raise ContractError("%s names another STEP than %s" % (REPORT_PATH, STEP_PATH))

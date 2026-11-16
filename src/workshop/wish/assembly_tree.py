@@ -344,12 +344,13 @@ def _parse_parts(
             bought[identifier] = item
             continue
         if not {"id", "name", "filament", "form"} <= set(item) <= {
-            "id", "name", "filament", "form", "thickness_mm", "thickness_reason", "loose_reason", "small_reason"
+            "id", "name", "filament", "form", "thickness_mm", "thickness_reason", "loose_reason", "small_reason",
+            "spares",
         }:
             errors.append(
                 "%s: a printed Part is {id, name, filament, form}, a panel may add "
-                "thickness_mm and thickness_reason, a loose Part adds loose_reason, and a Part under "
-                "the minimum loose-part size adds small_reason" % label
+                "thickness_mm and thickness_reason, a loose Part adds loose_reason and may add spares, and a "
+                "Part under the minimum loose-part size adds small_reason" % label
             )
             continue
         if "small_reason" in item and not _text(item["small_reason"], MAX_REASON_CHARS):
@@ -360,6 +361,14 @@ def _parse_parts(
         if loose and not _text(item["loose_reason"], MAX_REASON_CHARS):
             errors.append("%s.loose_reason must say in at most %d characters why the Part prints loose"
                           % (label, MAX_REASON_CHARS))
+            continue
+        if "spares" in item and not loose:
+            errors.append("%s.spares is only for a loose Part: a Part on a Sheet takes its spares in its "
+                          "Sheet counts" % label)
+            continue
+        if "spares" in item and (type(item["spares"]) is not int or item["spares"] < 1):
+            errors.append("%s.spares must be a positive integer: the loose copies printed beyond the toy's "
+                          "total (omit it for none)" % label)
             continue
         if not _check_form(item, label, panel_mm, errors):
             continue

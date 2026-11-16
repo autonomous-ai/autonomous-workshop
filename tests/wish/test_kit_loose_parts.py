@@ -69,6 +69,30 @@ class LoosePartTest(unittest.TestCase):
         self.assertIn("letter T is not loose (T02-cabinet-door), so T01-inkwell cannot be loose",
                       self._refused(block))
 
+    def _inkwell(self, block):
+        return next(item for item in block["assembly_tree"]["parts"] if item["id"] == "T01-inkwell")
+
+    def test_a_loose_part_may_declare_its_spares(self):
+        block = _with_loose(_tree_block(), "D01-inkwell")
+        self._inkwell(block)["spares"] = 2
+        parts = {item["id"]: item for item in self._parse(block).to_dict()["assembly_tree"]["parts"]}
+        self.assertEqual(parts["T01-inkwell"]["spares"], 2)
+        # Optional: a loose Part without it has none.
+        del self._inkwell(block)["spares"]
+        parts = {item["id"]: item for item in self._parse(block).to_dict()["assembly_tree"]["parts"]}
+        self.assertNotIn("spares", parts["T01-inkwell"])
+
+    def test_spares_is_a_positive_integer(self):
+        block = _with_loose(_tree_block(), "D01-inkwell")
+        for bad in (0, -1, 1.0, True, "1", None):
+            self._inkwell(block)["spares"] = bad
+            self.assertIn("spares must be a positive integer", self._refused(block))
+
+    def test_only_a_loose_part_declares_spares(self):
+        block = _tree_block()
+        next(item for item in block["assembly_tree"]["parts"] if item["id"] == "D01-inkwell")["spares"] = 1
+        self.assertIn("spares is only for a loose Part", self._refused(block))
+
     def test_a_loose_reason_is_short_text(self):
         block = _with_loose(_tree_block(), "D01-inkwell")
         part = next(item for item in block["assembly_tree"]["parts"] if item["id"] == "T01-inkwell")
