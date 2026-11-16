@@ -170,6 +170,11 @@ rule, this file only points to it; that source stays the authority.
   hides a small lip or an interpenetration. Why: the snowman v12 left tail
   poked out above its knot and overlapped it; the leader passed it from
   the normal close-up and the owner caught it.
+  Zero measured overlap is not enough: the junction must also look like
+  the real thing at normal viewing distance (fabric tucks under a knot
+  with a fold and a shadow, never meets it at a flat cut), and fabric
+  hangs as it would under gravity. Why: v13 had 0 mm3 overlap but its
+  tails still read as tubes stuck onto the knot.
 - **A seat reads as its scene object, filled or empty** (owner,
   2026-11-16). Where a real item stands in for a scene object (an earbud
   case as a dry garden's big stone), the seat's own surface carries the
