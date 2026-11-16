@@ -160,6 +160,18 @@ class MadeKitPrintTest(unittest.TestCase):
         # The record must be for the tree in effect.
         self.assertIn("another Assembly Tree", self.refused())
 
+    def test_a_loose_copy_of_two_solids_is_refused_and_one_passes(self):
+        from build123d import Box, Compound, Pos
+
+        names = expected_bodies(*expected_copies(self.contract))
+        copy_name = "loose/D01-inkwell#1"
+        self.seal(step=layout_step(names, shapes={copy_name: lambda: Box(6, 6, 2)}))
+        self.assertIsNotNone(self.check())
+        # The plate with a paving bar cut free of it: two solids in one leaf.
+        self.seal(step=layout_step(names, shapes={copy_name: lambda: Compound(
+            [Box(6, 6, 2), Pos(10, 0, 0) * Box(2, 6, 2)])}))
+        self.assertIn("loose copy loose/D01-inkwell#1 is not one connected solid but 2 piece(s)", self.refused())
+
     def test_a_sheet_with_a_void_inside_is_still_one_connected_solid(self):
         from build123d import Box
 

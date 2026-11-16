@@ -67,6 +67,13 @@ class KitPrintLayoutTest(unittest.TestCase):
         self.assertEqual(report["loose"], {"D01-inkwell": 1})
         self.assertEqual([b for b in report["bodies"] if b.startswith("loose/")], ["loose/D01-inkwell#1"])
 
+    def test_a_loose_part_of_two_solids_fails_and_writes_nothing(self):
+        self.write_parts(inkwell=(8.0, 8.0, 8.0), split={"D01-inkwell"})
+        done = self.layout()
+        self.assertEqual(done.returncode, 1)
+        self.assertIn("loose Part D01-inkwell is 2 solids, not one connected solid", done.stdout)
+        self.assertFalse((self.project / "measure/kit/print.json").exists())
+
     def test_a_sheet_that_does_not_fuse_into_one_solid_fails_and_writes_nothing(self):
         sheet = self.project / "sheet_A1.py"
         # The gate stops 0.6 mm short of the runner: the copy floats.

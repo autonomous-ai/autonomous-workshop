@@ -19,6 +19,9 @@
     one layout STEP as several plates is still open.
   - The 2026-11-16 amendment (a loose Part's `spares`): implemented,
     deterministic tests only. No kit contract declares it yet.
+  - The second 2026-11-16 amendment (every kit Part is one connected
+    solid): implemented, deterministic tests only. No kit has re-run its
+    gates under it yet.
   - Decision 5 (the owner-approved Manual sealed and shipped byte for
     byte): implemented, deterministic tests only. No Proof has sealed a
     Manual yet. `kit_manual` is an optional APPROVAL field and the schema
@@ -281,6 +284,32 @@ round summary records the report as `sheets`.
   bytes. A kit with Sheets whose loose Part is under 15 mm now needs
   `spares` before its next round or Proof passes; this is the owner's rule
   that every Part under 15 mm has a spare, not a new limit.
+
+## Amendment 2026-11-16: every kit Part is one connected solid
+
+- **Problem.** The Amsterdam kit's loose Part T03, the rotating main plate,
+  builds as 4 disjoint solids: 3 paving bars are cut free of the plate.
+  Factory splits the print STEP by solid, so it would print 3 stray bars
+  that no Manual step uses. Nothing checked this. A loose copy was its own
+  leaf but could hold any number of solids. A Part on a Sheet was only
+  caught if its stray piece also missed every gate, through the fused-Sheet
+  rule of decision 4.
+- **Gate.** Each printed Part's `print_parts()` shape must be exactly one
+  connected solid: one solid with one outer shell, where a void inside does
+  not count. The rule applies three times:
+  - `kit_sheets.py check` (decision 3) applies it, in a kit with Sheets, to
+    every printed Part, loose or not. It also applies it to every copy a
+    Sheet places.
+  - `kit_print.py layout` (decision 4) refuses a loose Part of several
+    pieces in every kit, with or without Sheets, and writes nothing.
+  - The host's `workshop.make.kit_print` refuses a sealed layout whose
+    `loose/<Part>#n` leaf is not one connected solid, as it already refused
+    such a Sheet leaf. It formerly required only that the leaf hold a solid.
+
+  Each failure names the Part and its piece count.
+- **Unchanged.** A kit whose Parts are each one body passes as before.
+  Frozen runs keep their run-local tool bytes. The host check applies on
+  Make acceptance; no kit layout has been accepted or published yet.
 
 ## Not decided here
 

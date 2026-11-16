@@ -30,8 +30,8 @@ the CAD kernel, with the constants the owner reviewed on the Amsterdam kit's
 own ``sheets.py`` (2026-11-14):
 
 - **Same Parts.** The copies are exactly the Sheet's contract entries, each
-  equal in volume and area to that Part's ``print_parts()`` shape, on the
-  bed.
+  equal in volume and area to that Part's ``print_parts()`` shape and one
+  connected solid, on the bed.
 - **Flat plate.** No copy is over 3.0 mm tall.
 - **One bed.** The whole Sheet, frame, gates and copies, fits in plan
   within 250 x 250 mm: Factory's printer (Bambu A1) has a 256 mm bed, less
@@ -52,7 +52,8 @@ own ``sheets.py`` (2026-11-14):
 or not, to the minimum size (owner rule MIN-PART-SIZE R1, on the sorted
 print-stance size: thickness 1.6, short side 4, long side 8, footprint
 short x long 35 mm2, volume 50 mm3) unless it states ``small_reason``, and
-asks a spare of each Part under 15 mm long: on its Sheets, or, for a loose
+holds each to one connected solid (2026-11-16), and asks a spare of each
+Part under 15 mm long: on its Sheets, or, for a loose
 Part, as its ``spares`` (2026-11-16).
 """
 
@@ -127,9 +128,34 @@ def footprint(shape):
     return unary_union(polygons).buffer(0.01).buffer(-0.01)
 
 
+def outer_shells(solid) -> int:
+    """Shells of ``solid`` that bound material outward; a void does not count."""
+
+    from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid
+    from OCP.BRepGProp import BRepGProp
+    from OCP.GProp import GProp_GProps
+
+    count = 0
+    for shell in solid.shells():
+        props = GProp_GProps()
+        BRepGProp.VolumeProperties_s(BRepBuilderAPI_MakeSolid(shell.wrapped).Solid(), props)
+        count += props.Mass() > 1e-6
+    return count
+
+
+def pieces(shape) -> int:
+    """How many connected pieces ``shape`` prints as: its solids, or its
+    outer shells where one solid holds several. Factory splits a STEP by
+    solid, so a Part of two pieces prints as two loose objects."""
+
+    solids = list(shape.solids())
+    return max(len(solids), sum(outer_shells(solid) for solid in solids))
+
+
 def _measures(shape) -> dict:
     box = shape.bounding_box()
     return {"volume": round(float(shape.volume), 4), "area": round(float(shape.area), 4),
+            "pieces": pieces(shape),
             "size": sorted(round(float(v), 3) for v in (box.size.X, box.size.Y, box.size.Z)),
             "bottom": round(float(box.min.Z), 4), "top": round(float(box.max.Z), 4)}
 
@@ -329,6 +355,9 @@ def check(described: dict, spec: dict, measures: dict) -> list[str]:
             fails.append("%s: a copy of %s is %.1f mm3 / %.1f mm2, but print_parts() builds it at %.1f mm3 / "
                          "%.1f mm2: place the Part's own print_parts() shape on the Sheet"
                          % (name, item["id"], item["volume"], item["area"], reference["volume"], reference["area"]))
+        if item.get("pieces", 1) != 1:
+            fails.append("%s: a copy of %s is %d solids, not one connected solid: join its pieces, or Factory "
+                         "prints the strays" % (name, item["id"], item["pieces"]))
         if abs(item["bottom"]) > BED_TOLERANCE_MM:
             fails.append("%s: a copy of %s has its bottom at Z %.3f, not on the bed" % (name, item["id"], item["bottom"]))
         if item["top"] - item["bottom"] > MAX_HEIGHT_MM + 1e-6:
@@ -415,6 +444,9 @@ def part_failures(sheets: list, printed: dict, totals: dict, measures: dict) -> 
         if not measure:
             fails.append("%s: print_parts() did not measure it" % part)
             continue
+        if measure.get("pieces", 1) != 1:
+            fails.append("%s is %d solids, not one connected solid: join its pieces into one body, or Factory "
+                         "splits them apart and prints the strays" % (part, measure["pieces"]))
         thick, short, long_ = measure["size"]
         under = [what for what, ok in (
             ("thickness %.1f < %.1f" % (thick, MIN_THICK), thick >= MIN_THICK - 1e-6),

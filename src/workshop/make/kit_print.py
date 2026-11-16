@@ -12,9 +12,9 @@ rebuilding geometry (ADR 0061), that
   the spares the Part declares (``spares``, 2026-11-16);
 - the STEP's leaves are exactly ``<Sheet>`` for each Sheet and
   ``loose/<Part>#n`` for each loose copy, so no Bought Part body is in it;
-  each Sheet is one connected solid (one solid, one outer shell), each
-  loose leaf holds a solid, and every loose copy of one Part has the same
-  volume and area.
+  each Sheet and, since 2026-11-16, each loose copy is one connected solid
+  (one solid, one outer shell), and every loose copy of one Part has the
+  same volume and area.
 
 Factory splits the STEP into its solids and arranges and slices each one on
 its own, so a fused Sheet is weighed and placed as the one plate it prints
@@ -98,12 +98,17 @@ def check_layout_step(content: bytes, names: list[str]) -> int:
     for body in bodies:
         if not body.solids or body.total[0] <= 0:
             raise ContractError("%s leaf %s holds no solid" % (STEP_PATH, body.name))
-        if "/" not in body.name:
-            if len(body.solids) != 1 or body.outer_shells != 1:
+        if len(body.solids) != 1 or body.outer_shells != 1:
+            if "/" not in body.name:
                 raise ContractError(
                     "%s Sheet %s is not one connected solid but %d piece(s): Factory would price and arrange "
                     "its pieces as loose Parts" % (STEP_PATH, body.name, max(len(body.solids), body.outer_shells))
                 )
+            raise ContractError(
+                "%s loose copy %s is not one connected solid but %d piece(s): Factory would print each piece "
+                "as a stray Part" % (STEP_PATH, body.name, max(len(body.solids), body.outer_shells))
+            )
+        if "/" not in body.name:
             continue
         by_part[body.name.split("/", 1)[1].rsplit("#", 1)[0]].append(body)
     for part, copies in by_part.items():

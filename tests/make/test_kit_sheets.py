@@ -179,6 +179,26 @@ class KitPartSizeTest(unittest.TestCase):
         self.assertEqual(ks.part_failures(self.SHEETS, {"T01-pin": {"loose_reason": "round"}}, {"T01-pin": 2},
                                           {"T01-pin": long_})[0], [])
 
+    def test_a_part_is_one_connected_solid(self):
+        one = {"size": [2.0, 10.0, 20.0], "volume": 400.0, "pieces": 1}
+        self.assertEqual(ks.part_failures(self.SHEETS, {"A01-panel": {}}, {"A01-panel": 1}, {"A01-panel": one})[0], [])
+        fails, _ = ks.part_failures(self.SHEETS, {"A01-panel": {}}, {"A01-panel": 1},
+                                    {"A01-panel": {**one, "pieces": 4}})
+        self.assertEqual(fails, ["A01-panel is 4 solids, not one connected solid: join its pieces into one body, "
+                                 "or Factory splits them apart and prints the strays"])
+        fails, _ = ks.part_failures(self.SHEETS, {"T03-plate": {"loose_reason": "turns"}}, {"T03-plate": 1},
+                                    {"T03-plate": {**one, "pieces": 2}})
+        self.assertIn("T03-plate is 2 solids", fails[0])
+
+    def test_pieces_counts_solids_and_outer_shells_not_voids(self):
+        from build123d import Box, Compound, Pos
+
+        ks._runtime_paths()
+        self.assertEqual(ks.pieces(Box(10, 10, 2)), 1)
+        self.assertEqual(ks.pieces(Box(20, 20, 6) - Box(6, 6, 2)), 1)
+        self.assertEqual(ks.pieces(Compound(children=[Box(10, 10, 2), Pos(20, 0, 0) * Box(4, 4, 2)])), 2)
+        self.assertEqual(ks.pieces(Box(10, 10, 2) + Pos(30, 0, 0) * Box(4, 4, 2)), 2)
+
     def test_an_unmeasured_part_fails(self):
         fails, _ = ks.part_failures(self.SHEETS, {"A01-panel": {}}, {"A01-panel": 1}, {})
         self.assertIn("print_parts() did not measure it", fails[0])
@@ -189,17 +209,25 @@ if __name__ == "__main__":
 
 
 PART_FILE = '''
-from build123d import Align, Box
+from build123d import Align, Box, Compound, Pos
 A = (Align.MIN, Align.MIN, Align.MIN)
 SIZES = {sizes!r}
+SPLIT = {split!r}  # Parts built as their box plus a stray bar cut free of it
 
 
 def gen_step():
     return None
 
 
+def _built(part, size):
+    body = Box(*size, align=A)
+    if part not in SPLIT:
+        return body
+    return Compound(children=[body, Pos(size[0] + 3, 0, 0) * Box(2, size[1], size[2], align=A)])
+
+
 def print_parts():
-    return {{part: Box(*size, align=A) for part, size in SIZES.items()}}
+    return {{part: _built(part, size) for part, size in SIZES.items()}}
 '''
 
 SHEET_FILE = '''
@@ -266,12 +294,12 @@ class KitSheetsProjectTest(unittest.TestCase):
         (self.project / "tree").mkdir(exist_ok=True)
         (self.project / "tree" / "kit.json").write_text(json.dumps(self.kit))
 
-    def write_parts(self, inkwell):
+    def write_parts(self, inkwell, split=()):
         sizes = {"case": {"A01-case-shell": self.PANEL},
                  "cabinet": {"B01-cabinet-carcass": self.PANEL, "B02-cabinet-door": self.PANEL, "D01-inkwell": inkwell},
                  "desk": {"C01-desk-body": self.PANEL}}
         for role, parts in sizes.items():
-            (self.project / ("part_%s.step.py" % role)).write_text(PART_FILE.format(sizes=parts))
+            (self.project / ("part_%s.step.py" % role)).write_text(PART_FILE.format(sizes=parts, split=sorted(split)))
 
     def run_check(self):
         done = subprocess.run([sys.executable, str(SCRIPT), "check", str(self.project)],
@@ -306,6 +334,21 @@ class KitSheetsProjectTest(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertEqual(report["failures"], ['D01-inkwell is 8.0 mm long, under 15, and prints loose with no '
                                               'spare: state "spares": 1 or more on its tree entry'])
+
+    def test_a_loose_part_of_two_solids_fails(self):
+        self.write_parts(inkwell=(8.0, 8.0, 8.0), split={"D01-inkwell"})
+        code, report = self.run_check()
+        self.assertEqual(code, 1)
+        self.assertEqual(report["failures"], ["D01-inkwell is 2 solids, not one connected solid: join its pieces "
+                                              "into one body, or Factory splits them apart and prints the strays"])
+
+    def test_a_sheet_part_of_two_solids_fails(self):
+        self.write_parts(inkwell=(8.0, 8.0, 8.0), split={"B02-cabinet-door"})
+        code, report = self.run_check()
+        self.assertEqual(code, 1)
+        text = "\n".join(report["failures"])
+        self.assertIn("B02-cabinet-door is 2 solids, not one connected solid", text)
+        self.assertIn("sheet_B1.py: a copy of B02-cabinet-door is 2 solids, not one connected solid", text)
 
     def test_without_sheets_nothing_is_checked(self):
         del self.kit["assembly_tree"]["sheets"]
