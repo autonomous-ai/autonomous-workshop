@@ -147,7 +147,12 @@ stays in the Proof.
    on the print stance (the bottom at Z 0, the bed footprint), and `posed`,
    `inspect validate` on the Component placed by `assembly_pose(gen_step(),
    None)`, since a solid valid as printed can self-intersect in the Display
-   Pose. Both are your modelling: fix them. It exits 1 on any failure and
+   Pose. Both are your modelling: fix them. On the whole Proof it also
+   runs the assembly round's interference check, `inspect interfere` on
+   the assembly entry (`toy.step.py`, or `--entry`): a `clash FAIL` line
+   names two printed bodies that share space in the assembled pose, with
+   the volume and where. A clearance fit leaves a gap and passes; a roof
+   cutting a lantern does not. Move or trim one of them. It exits 1 on any failure and
    writes only inside `<OUT>`, its reports under
    `<OUT>/measure/print-gates/`. `seal_proof.py` refuses a Proof without a
    passing run of every Component over its current sources. Never run the

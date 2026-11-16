@@ -112,8 +112,9 @@ CRITIC = "CRITIC.json"
 FREEZE = Path("measure/shared-helpers-freeze.json")
 PRINT_GATES = Path("measure/print-gates/summary.json")
 # What a print-gate summary must have checked; kept in step with make_round's
-# PRINT_GATES_ONLY_CHECKS.
-REQUIRED_CHECKS = ("build", "thickness", "overhang", "mesh", "datum", "posed")
+# PRINT_GATES_ONLY_CHECKS plus its whole-project INTERFERENCE_CHECK: no two
+# printed bodies of the assembled Proof share space (2026-11-16).
+REQUIRED_CHECKS = ("build", "thickness", "overhang", "mesh", "datum", "posed", "interfere")
 AUDITS = ("measure/check_fit.py", "measure/check_spec.py", "measure/check_landmarks.py")
 CAD_SCRIPTS = MAKE_SKILLS / "cad/scripts"
 # The Make finalizer a run materializes from the product-run template; the
@@ -238,6 +239,10 @@ def check_final_inputs(proof: Path, roles, nozzle: float) -> None:
                         if isinstance(item, dict) and item.get("verdict") != "PASS")
         failed += sorted(role for role, item in (summary.get("build") or {}).items()
                          if isinstance(item, dict) and item.get("verdict") != "PASS")
+        interference = summary.get("interference")
+        if isinstance(interference, dict) and interference.get("verdict") not in ("pass", "unverified"):
+            raise Refusal("two printed bodies of the assembled Proof share space (%s); see %s"
+                          % (str(interference.get("detail"))[:400], PRINT_GATES.parent))
         raise Refusal("the print gates failed for %s (a self-intersection in the Display Pose and a part off "
                       "the bed are failures too); see %s" % (", ".join(sorted(set(failed))) or "a part",
                                                             PRINT_GATES.parent))

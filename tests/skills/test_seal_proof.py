@@ -301,6 +301,11 @@ class SealProofTest(unittest.TestCase):
             "no print-gate summary": unlink(str(self.module.PRINT_GATES)),
             "did not check datum, posed": lambda: self._final_inputs(
                 checks=["build", "thickness", "overhang", "mesh"]),
+            "did not check interfere": lambda: self._final_inputs(
+                checks=["build", "thickness", "overhang", "mesh", "datum", "posed"]),
+            "printed bodies of the assembled Proof share space \\(roof x lantern": lambda: self._final_inputs(
+                ok=False, interference={"verdict": "fail", "clashes": [],
+                                        "detail": "roof x lantern 30.00 mm3 between Components"}),
             "covers nothing, not every Component": lambda: self._final_inputs(parts=[]),
             "nozzle 0.6, not 0.4": lambda: self._final_inputs(nozzle=0.6),
             "a source changed": lambda: self._final_inputs(sources={}),
