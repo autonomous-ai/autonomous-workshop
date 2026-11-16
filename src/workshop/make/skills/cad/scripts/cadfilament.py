@@ -184,6 +184,7 @@ MATERIALS: dict[str, dict[str, str]] = {
         "translucent natural": "#EFE9DC",# translucent-natural
         "sakura pink": "#F2B8C6",       # sakura-pink
         "rose pink": "#E58FAA",         # rose-pink
+        "stone grey": "#8F9190",        # stone-grey
     },
 }
 
