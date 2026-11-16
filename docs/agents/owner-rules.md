@@ -158,6 +158,12 @@ rule, this file only points to it; that source stays the authority.
   read (a lifeguard tower: hut raised on legs, long ramp, deck rail, flag),
   build those cues, and render the photo beside the model. Why: the Miami
   lifeguard tower was a hut sitting on the sand and read as a food cart.
+  Match the photos' colour balance too, at normal viewing distance: the
+  colour that covers most of the real object covers most of the model,
+  and marks and accents stay small and few. Why: the Kyoto komodaru
+  barrels got solid navy and red labels across 140 degrees of each front;
+  the real walls read as white straw with black calligraphy and small red
+  accents, and the model read as rows of coloured spools or cans.
 - **Stone reads as stone at a glance** (owner, 2026-11-16). A stone
   vessel or rock is rough-hewn: chiselled faceted sides, no rounded box
   corners, in a grey stone colour, with the props that name it (a bamboo
