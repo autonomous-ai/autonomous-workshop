@@ -230,6 +230,11 @@ Tree and Manual.
 - **Minimum loose part size:** at least 1.6 mm thick, a short side of at
   least 4 mm, and at least 35 mm² to grip. Add one spare, marked "+", for
   each part under 15 mm. Why: Rolife cuts nothing smaller than about 4 mm.
+- **Every printed part is one connected solid** (2026-11-16). Check each
+  loose part and each sheet part for its solid count before a manual or
+  price is shown. Factory splits a STEP by solid, so a sliver cut free by
+  a pocket prints as a stray piece the manual never names. Why: Amsterdam
+  T03 carried 3 paving bars cut free behind the stash cups.
 - **Hidden storage must be reachable.** A finger cannot reach into a cup
   21 mm deep and 9 mm wide. Use a shallow cup (about 9 mm) that lifts out by
   a pull tab, and say what it holds.
