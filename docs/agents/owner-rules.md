@@ -152,6 +152,12 @@ rule, this file only points to it; that source stays the authority.
   outline, a measured photo) in the notes. Never enlarge a small building
   to make it the focus. Why: the Kyoto Tatsumi shrine, drawn to lead the
   basin, came out far too big beside the machiya and teahouse.
+- **Model a named real object from real photos** (owner, 2026-11-16).
+  Before modelling a recognisable real object (a lifeguard tower, a
+  basin, a shrine), find 3-5 real photographs, list the cues that make it
+  read (a lifeguard tower: hut raised on legs, long ramp, deck rail, flag),
+  build those cues, and render the photo beside the model. Why: the Miami
+  lifeguard tower was a hut sitting on the sand and read as a food cart.
 - **Stone reads as stone at a glance** (owner, 2026-11-16). A stone
   vessel or rock is rough-hewn: chiselled faceted sides, no rounded box
   corners, in a grey stone colour, with the props that name it (a bamboo
