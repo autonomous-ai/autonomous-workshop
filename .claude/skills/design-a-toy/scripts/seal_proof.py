@@ -387,7 +387,8 @@ def dry_run_batch(proof: Path, contract: Path, design_contract: dict, nozzle: fl
         roles=contract_geometry_ids(design_contract), nozzle=nozzle,
         coupled_interfaces=seeded_batch.coupled_interface_ids(design_contract),
         powered=contract_is_powered(design_contract), moving=contract_is_moving(design_contract),
-        image_derived=bool(design_contract.get("references")))
+        image_derived=bool(design_contract.get("references")),
+        printed_parts=seeded_batch.kit_printed_parts(design_contract))
     path = proof / seeded_batch.RECORD
     record = seeded_batch.run_batch(seeded_batch.design_plan(inputs), proof, runner=batch_runner(),
                                     record_path=path, plan_name="design")

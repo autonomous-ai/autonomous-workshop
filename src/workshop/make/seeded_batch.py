@@ -408,10 +408,74 @@ class PlanInputs:
     concept_sha256: Optional[str] = None
     finalizer: tuple = ()
     deadlines: Mapping[str, float] = field(default_factory=dict)
+    # A kit Component's printed Part count (ADR 0092), from
+    # kit_printed_parts(); empty for a toy that is no kit.
+    printed_parts: Mapping[str, int] = field(default_factory=dict)
 
 
 def _tool(inputs: PlanInputs, *parts: str) -> str:
     return str(inputs.skills_root.joinpath(*parts))
+
+
+# make_round's own geometry allowance when no --geometry-seconds is given.
+DEFAULT_GEOMETRY_S = 600.0
+# A kit Component's print gates gate each printed Part alone, three analyses
+# a Part (ADR 0092), so a fixed allowance cannot hold a kit: the Amsterdam
+# kit's 20-Part canal base needed about 115 s a Part, and its seal's design
+# batch ran out of make_round's 600 s and the layer's 900 s. A step that
+# gates kit Parts gets this much geometry time for every printed Part it
+# gates, never less than a toy that is no kit gets.
+KIT_PART_GEOMETRY_S = 240.0
+
+
+def kit_printed_parts(contract: Any) -> dict:
+    """``{Component: printed Part count}`` of a kit contract's Assembly Tree
+    (the Parts with a filament, as the run-local tree counts them); ``{}``
+    for a contract without one."""
+
+    from workshop.make.kit_tree import has_assembly_tree
+
+    if not has_assembly_tree(contract):
+        return {}
+    tree = contract["assembly_tree"]
+    printed = {item["id"] for item in tree.get("parts") or () if isinstance(item, Mapping) and "filament" in item}
+    return {item["geometry"]: sum(1 for part in item.get("parts") or () if part in printed)
+            for item in tree.get("components") or () if isinstance(item, Mapping) and "geometry" in item}
+
+
+def _kit_geometry(inputs: PlanInputs, roles: Iterable[str]) -> float:
+    """The geometry time the print gates of ``roles``' kit Parts need."""
+
+    return KIT_PART_GEOMETRY_S * sum(int(inputs.printed_parts.get(role, 0)) for role in roles)
+
+
+def _kit_allowance(inputs: PlanInputs, roles: Iterable[str], layer: str) -> tuple:
+    """``(extra argv, deadline)`` of a step that runs the print gates of
+    ``roles`` with make_round's own allowance: nothing for a toy that is no
+    kit (its command and reuse key stay as they were); for kit Components a
+    ``--geometry-seconds`` that covers each printed Part and a deadline that
+    covers that allowance and the report."""
+
+    kit = _kit_geometry(inputs, roles)
+    if not kit:
+        return (), None
+    geometry = max(DEFAULT_GEOMETRY_S, kit)
+    return ("--geometry-seconds", "%g" % geometry), max(DEFAULT_DEADLINES[layer], geometry + FINAL_REPORT_MARGIN_S)
+
+
+def _shared_allowance(inputs: PlanInputs, layer: str) -> tuple:
+    """``(geometry, deadline)`` of a step whose analyses share one allowance
+    across the whole build (the assembly round, final verification): the
+    layer's deadline less the report margin, or, for a kit, at least the
+    time every printed Part needs, with a deadline to match (None: the
+    layer's own)."""
+
+    deadline = inputs.deadlines.get(layer, DEFAULT_DEADLINES[layer])
+    geometry = max(60.0, deadline - FINAL_REPORT_MARGIN_S)
+    kit = _kit_geometry(inputs, inputs.roles)
+    if kit > geometry:
+        return kit, kit + FINAL_REPORT_MARGIN_S
+    return geometry, None
 
 
 def _source_inputs(roles: Iterable[str]) -> tuple:
@@ -467,27 +531,28 @@ def run_plan(inputs: PlanInputs, *, run_root: Path, product_root: Path, source: 
                   inputs=(str(run_root / "seed"),))]
     steps += _common_layers(inputs, design=False)
     for role in inputs.roles:
+        extra, deadline = _kit_allowance(inputs, (role,), "components")
         steps.append(Step("component:%s" % role, "components",
                           (py, make_round, project, "--component", "part_%s.step.py" % role,
-                           "--nozzle", "%g" % inputs.nozzle, "--json"),
+                           "--nozzle", "%g" % inputs.nozzle, *extra, "--json"),
                           inputs=("params.py", "features", "part_%s.step.py" % role),
-                          reports=("measure/rounds/%s" % role,), nonce_component=role))
+                          reports=("measure/rounds/%s" % role,), nonce_component=role, deadline_s=deadline))
     for interface in inputs.coupled_interfaces:
         steps.append(Step("interface:%s" % interface, "interfaces",
                           (py, make_round, project, "--interface", interface),
                           inputs=_source_inputs(inputs.roles), reports=("measure/interface-rounds/%s" % interface,)))
     # The round's check_motion and print gates share one geometry allowance;
     # give them the layer's deadline less time to build and report, never
-    # less than the batch's own motion step (issue #244).
-    assembly = inputs.deadlines.get("assembly", DEFAULT_DEADLINES["assembly"])
-    geometry = max(60.0, assembly - FINAL_REPORT_MARGIN_S)
+    # less than the batch's own motion step (issue #244), nor than a kit's
+    # printed Parts need.
+    geometry, assembly_deadline = _shared_allowance(inputs, "assembly")
     steps += [
         # A seeded round carries the approval's assembly review (ADR 0096),
         # so it needs no Manager look.
         Step("assembly-round", "assembly", (py, make_round, project, "--require-component-passes",
                                             "--nozzle", "%g" % inputs.nozzle, "--geometry-seconds", "%g" % geometry,
                                             "--json"),
-             inputs=_source_inputs(inputs.roles), round_summary=True),
+             inputs=_source_inputs(inputs.roles), round_summary=True, deadline_s=assembly_deadline),
         Step("carry-assembly-review", "assembly", (py, make_round, project, "--carry-assembly-review",
                                                    "--concept-sha256", inputs.concept_sha256),
              reports=("snap/SIGNATURE-REVIEW.json",)),
@@ -524,9 +589,9 @@ def _final_step(inputs: PlanInputs, report: str, *, design: bool) -> Step:
     reviews = () if design else ("snap/SIGNATURE-REVIEW.json", "snap/MOTION-REVIEW.json")
     # verify_project shares one allowance across every geometry analysis and
     # records what it could not finish UNVERIFIED (issue #241): the batch
-    # gives them the layer's deadline, less time to build and report.
-    deadline = inputs.deadlines.get("final", DEFAULT_DEADLINES["final"])
-    geometry = max(60.0, deadline - FINAL_REPORT_MARGIN_S)
+    # gives them the layer's deadline, less time to build and report, and a
+    # kit at least what its printed Parts need.
+    geometry, deadline = _shared_allowance(inputs, "final")
     return Step("final-verification", "final",
                 (inputs.python, _tool(inputs, "cad", "scripts", "verify_project"), str(inputs.project),
                  *(("--design", "--contract", str(inputs.contract_path)) if design else ()),
@@ -536,7 +601,7 @@ def _final_step(inputs: PlanInputs, report: str, *, design: bool) -> Step:
                  *(("--image-derived",) if inputs.image_derived else ()), *flags),
                 inputs=(*_source_inputs(inputs.roles), *reviews, "measure/motion.json", "measure/power.json",
                         "measure/mounts.json"),
-                reports=(report,), verdict_report=report)
+                reports=(report,), verdict_report=report, deadline_s=deadline)
 
 
 FINAL_REPORT_MARGIN_S = 300.0
@@ -599,10 +664,13 @@ def design_plan(inputs: PlanInputs) -> list:
     make_round = _tool(inputs, "make-round", "scripts", "make_round")
     contract = str(inputs.contract_path)
     steps = _common_layers(inputs, design=True)
+    # One run gates every Component, sharing make_round's one allowance.
+    extra, deadline = _kit_allowance(inputs, inputs.roles, "components")
     steps.append(Step("print-gates", "components",
                       (py, make_round, project, "--print-gates-only", "--nozzle", "%g" % inputs.nozzle,
-                       "--overhang-angle", "45", "--contract", contract),
-                      inputs=_source_inputs(inputs.roles), reports=("measure/print-gates/summary.json",)))
+                       "--overhang-angle", "45", "--contract", contract, *extra),
+                      inputs=_source_inputs(inputs.roles), reports=("measure/print-gates/summary.json",),
+                      deadline_s=deadline))
     for interface in inputs.coupled_interfaces:
         steps.append(Step("interface:%s" % interface, "interfaces",
                           (py, make_round, project, "--interface", interface, "--contract", contract),
@@ -617,10 +685,17 @@ def design_plan(inputs: PlanInputs) -> list:
 
 def _with_deadlines(steps: list, deadlines: Mapping[str, float]) -> list:
     """The plan in layer order (stable within a layer), each step with its
-    layer's deadline override."""
+    layer's deadline override, never below the deadline a step that gates
+    kit Parts needs for them."""
 
     ordered = sorted(steps, key=lambda step: LAYERS.index(step.layer))
-    return [replace(step, deadline_s=deadlines.get(step.layer, step.deadline_s)) for step in ordered]
+    return [replace(step, deadline_s=_deadline(deadlines.get(step.layer), step.deadline_s)) for step in ordered]
+
+
+def _deadline(override: Optional[float], own: Optional[float]) -> Optional[float]:
+    if override is None or own is None:
+        return own if override is None else override
+    return max(override, own)
 
 
 def module_sha256() -> str:
@@ -666,7 +741,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                         contract_path=args.contract.resolve(), roles=contract_geometry_ids(contract),
                         nozzle=args.nozzle, coupled_interfaces=coupled_interface_ids(contract),
                         powered=contract_is_powered(contract), moving=contract_is_moving(contract),
-                        image_derived=bool(contract.get("references")))
+                        image_derived=bool(contract.get("references")), printed_parts=kit_printed_parts(contract))
     record = run_batch(design_plan(inputs), project, record_path=args.record or project / RECORD, plan_name="design")
     for item in record["steps"]:
         print("seeded_batch: %-14s %-24s %s%s" % (item["layer"], item["id"], item["status"],

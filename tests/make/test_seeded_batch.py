@@ -417,6 +417,67 @@ class PlanTest(unittest.TestCase):
         steps = sb.design_plan(self._inputs(deadlines={"motion": 42.0}))
         self.assertEqual(next(step for step in steps if step.layer == "motion").deadline_s, 42.0)
 
+    def _flag(self, step):
+        return float(step.argv[step.argv.index("--geometry-seconds") + 1]) if "--geometry-seconds" in step.argv else None
+
+    def test_a_toy_that_is_no_kit_keeps_its_print_gate_commands(self):
+        """A pass recorded before kit allowances existed is still reused."""
+        run = {step.id: step for step in self._run_plan()}
+        design = {step.id: step for step in sb.design_plan(self._inputs())}
+        for step in (run["component:body"], run["component:lid"], design["print-gates"]):
+            self.assertIsNone(self._flag(step))
+            self.assertIsNone(step.deadline_s)
+        self.assertEqual(self._flag(run["final-verification"]), 3300.0)
+        self.assertIsNone(run["final-verification"].deadline_s)
+
+    def test_a_kit_component_round_gets_time_for_every_printed_part(self):
+        """The Amsterdam kit's 20-Part canal base ran out of make_round's
+        600 s allowance and the layer's 900 s deadline at its seal."""
+        run = {step.id: step for step in self._run_plan(printed_parts={"body": 20, "lid": 1})}
+        body, lid = run["component:body"], run["component:lid"]
+        self.assertEqual(self._flag(body), 20 * sb.KIT_PART_GEOMETRY_S)
+        self.assertEqual(body.deadline_s, 20 * sb.KIT_PART_GEOMETRY_S + sb.FINAL_REPORT_MARGIN_S)
+        self.assertEqual(body.argv[-1], "--json")
+        # A one-Part Component never gets less than a toy that is no kit.
+        self.assertEqual(self._flag(lid), sb.DEFAULT_GEOMETRY_S)
+        self.assertEqual(lid.deadline_s, sb.DEFAULT_DEADLINES["components"])
+
+    def test_the_design_print_gates_share_one_allowance_for_every_kit_part(self):
+        gates = next(step for step in sb.design_plan(self._inputs(printed_parts={"body": 20, "lid": 30}))
+                     if step.id == "print-gates")
+        self.assertEqual(self._flag(gates), 50 * sb.KIT_PART_GEOMETRY_S)
+        self.assertEqual(gates.deadline_s, 50 * sb.KIT_PART_GEOMETRY_S + sb.FINAL_REPORT_MARGIN_S)
+
+    def test_the_whole_build_steps_cover_every_kit_part(self):
+        kit = {"body": 20, "lid": 30}
+        for plan in (self._run_plan(printed_parts=kit), sb.design_plan(self._inputs(printed_parts=kit))):
+            final = next(step for step in plan if step.id == "final-verification")
+            self.assertEqual(self._flag(final), 50 * sb.KIT_PART_GEOMETRY_S)
+            self.assertEqual(final.deadline_s, 50 * sb.KIT_PART_GEOMETRY_S + sb.FINAL_REPORT_MARGIN_S)
+        round_step = next(step for step in self._run_plan(printed_parts=kit) if step.id == "assembly-round")
+        self.assertEqual(self._flag(round_step), 50 * sb.KIT_PART_GEOMETRY_S)
+        self.assertEqual(round_step.deadline_s, 50 * sb.KIT_PART_GEOMETRY_S + sb.FINAL_REPORT_MARGIN_S)
+        # A small kit keeps the layer's larger allowance.
+        small = next(step for step in self._run_plan(printed_parts={"body": 2}) if step.id == "final-verification")
+        self.assertEqual(self._flag(small), 3300.0)
+        self.assertIsNone(small.deadline_s)
+
+    def test_a_layer_override_never_cuts_a_kit_steps_time(self):
+        steps = self._run_plan(printed_parts={"body": 20}, deadlines={"components": 100.0})
+        body = next(step for step in steps if step.id == "component:body")
+        lid = next(step for step in steps if step.id == "component:lid")
+        self.assertEqual(body.deadline_s, 20 * sb.KIT_PART_GEOMETRY_S + sb.FINAL_REPORT_MARGIN_S)
+        self.assertEqual(lid.deadline_s, 100.0)
+
+    def test_the_kit_printed_parts_come_from_the_assembly_tree(self):
+        tree = {"parts": [{"id": "A", "filament": "navy"}, {"id": "B", "filament": "red"},
+                          {"id": "P", "bought": "pin-1.5"}],
+                "components": [{"geometry": "base", "parts": ["A", "B", "P"]}, {"geometry": "lid", "parts": ["P"]}],
+                "steps": []}
+        self.assertEqual(sb.kit_printed_parts({"schema_version": 11, "assembly_tree": tree}), {"base": 2, "lid": 0})
+        self.assertEqual(sb.kit_printed_parts({"schema_version": 6, "assembly_tree": tree}), {})
+        self.assertEqual(sb.kit_printed_parts({"schema_version": 11}), {})
+
 
 class ComposedSourceTest(unittest.TestCase):
     def test_the_concept_hash_is_the_finalizers(self):
