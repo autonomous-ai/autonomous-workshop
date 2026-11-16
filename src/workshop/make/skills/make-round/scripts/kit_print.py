@@ -12,7 +12,8 @@ plane. No Bought Part is in it. Its leaves are named
 
 - ``<Sheet id>``: the whole Sheet, its frame, runners, tags, gate bars and
   every copy fused into one connected solid, as it leaves the printer;
-- ``loose/<Part id>#<n>``: the n-th loose copy of a Part, its own solid,
+- ``loose/<Part id>#<n>``: the n-th loose copy of a Part, one connected
+  solid (2026-11-16: a loose Part of several pieces fails the layout),
 
 each in its filament's catalogue colour. Factory splits a STEP into its
 solids and slices each one on its own, so a Sheet left in pieces would be
@@ -118,16 +119,7 @@ def fused(sheet_id: str, pieces: list):
 def outer_shells(solid) -> int:
     """Shells of ``solid`` that bound material outward; a void does not count."""
 
-    from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeSolid
-    from OCP.BRepGProp import BRepGProp
-    from OCP.GProp import GProp_GProps
-
-    count = 0
-    for shell in solid.shells():
-        props = GProp_GProps()
-        BRepGProp.VolumeProperties_s(BRepBuilderAPI_MakeSolid(shell.wrapped).Solid(), props)
-        count += props.Mass() > 1e-6
-    return count
+    return _sibling("kit_sheets").outer_shells(solid)
 
 
 def layout(project: Path) -> dict:
@@ -167,6 +159,10 @@ def layout(project: Path) -> dict:
     for part, count in loose.items():
         if part not in shapes:
             raise ValueError("no print_parts() shape for loose Part %s" % part)
+        found = sheets_tool.pieces(shapes[part])
+        if found != 1:
+            raise ValueError("loose Part %s is %d solids, not one connected solid: join its pieces into one "
+                             "body, or Factory splits them apart and prints the strays" % (part, found))
         colour = _colour(plan, plan.parts[part]["filament"])
         for n in range(1, count + 1):
             groups.append([("%s/%s#%d" % (LOOSE, part, n), shapes[part], colour)])

@@ -256,7 +256,10 @@ instances.)
     filament. Over all Sheets a Part's count is at least the toy's total
     (more are spares), and every printed Part is on a Sheet or states
     `loose_reason`. A Part whose longest side is under 15 mm needs a spare:
-    on its Sheets, or, for a loose Part, as `"spares"`.
+    on its Sheets, or, for a loose Part, as `"spares"`. Every printed Part,
+    loose or on a Sheet, is one connected solid: Factory splits the print
+    STEP by solid, so a detail cut free of its Part prints as a stray piece
+    (ADR 0104, 2026-11-16).
     Each Sheet is the project file `sheet_<id>.py` defining `sheet()`;
     `make_round` checks every Sheet in assembly rounds,
     `--print-gates-only` and final verification (`kit_sheets.py check`).
