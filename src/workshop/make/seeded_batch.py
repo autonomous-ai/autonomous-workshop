@@ -614,18 +614,36 @@ def _kit_allowance(inputs: PlanInputs, roles: Iterable[str], layer: str) -> tupl
     return ("--geometry-seconds", "%g" % geometry), max(DEFAULT_DEADLINES[layer], geometry + FINAL_REPORT_MARGIN_S)
 
 
+# Final verification works through every Component in turn, kit or not:
+# generation, the fit check, one inspection of each Component, its three
+# print gates and the views of the whole. Its time grows with the Component
+# count, so a fixed deadline cannot hold a large toy: the Kyoto tray's 75
+# Components took 4302 s (about 57 s a Component) and its seal ran out of
+# the layer's 3600 s. Final verification gets this much time for every
+# Component, never less than the layer's own.
+FINAL_COMPONENT_S = 150.0
+
+
+def _final_geometry(inputs: PlanInputs) -> float:
+    """The time final verification needs for this toy's Components and,
+    for a kit, its printed Parts."""
+
+    return max(_kit_geometry(inputs, inputs.roles), FINAL_COMPONENT_S * len(inputs.roles))
+
+
 def _shared_allowance(inputs: PlanInputs, layer: str) -> tuple:
     """``(geometry, deadline)`` of a step whose analyses share one allowance
     across the whole build (the assembly round, final verification): the
-    layer's deadline less the report margin, or, for a kit, at least the
-    time every printed Part needs, with a deadline to match (None: the
-    layer's own)."""
+    layer's deadline less the report margin, or at least the time the toy's
+    size needs, with a deadline to match (None: the layer's own). For the
+    assembly round that is a kit's printed Parts; for final verification
+    every Component as well."""
 
     deadline = inputs.deadlines.get(layer, DEFAULT_DEADLINES[layer])
     geometry = max(60.0, deadline - FINAL_REPORT_MARGIN_S)
-    kit = _kit_geometry(inputs, inputs.roles)
-    if kit > geometry:
-        return kit, kit + FINAL_REPORT_MARGIN_S
+    need = _final_geometry(inputs) if layer == "final" else _kit_geometry(inputs, inputs.roles)
+    if need > geometry:
+        return need, need + FINAL_REPORT_MARGIN_S
     return geometry, None
 
 
@@ -755,8 +773,8 @@ def _final_step(inputs: PlanInputs, report: str, *, design: bool, preflight: boo
     reviews = () if design else ("snap/SIGNATURE-REVIEW.json", "snap/MOTION-REVIEW.json")
     # verify_project shares one allowance across every geometry analysis and
     # records what it could not finish UNVERIFIED (issue #241): the batch
-    # gives them the layer's deadline, less time to build and report, and a
-    # kit at least what its printed Parts need.
+    # gives them the layer's deadline, less time to build and report, and
+    # at least what its Components (and a kit's printed Parts) need.
     geometry, deadline = _shared_allowance(inputs, "final")
     if preflight and deadline is None:
         deadline = DEFAULT_DEADLINES["preflight"]
