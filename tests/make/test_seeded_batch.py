@@ -463,6 +463,22 @@ class PlanTest(unittest.TestCase):
         self.assertEqual(self._flag(small), 3300.0)
         self.assertIsNone(small.deadline_s)
 
+    def test_a_kit_exports_no_parts_and_checks_no_package(self):
+        """ADR 0104 decision 4: a kit's print layout is the only STEP it
+        ships, so neither the run nor the seal exports or checks
+        per-occurrence parts (the Amsterdam kit's seal failed its
+        package-check on Part names the Factory path never reads)."""
+        kit = {"body": 20, "lid": 1}
+        run = [step.id for step in self._run_plan(printed_parts=kit)]
+        self.assertNotIn("parts", run)
+        self.assertEqual(run[-3:], ["final-verification", "product", "finalizer"])
+        design = [step.id for step in sb.design_plan(self._inputs(printed_parts=kit))]
+        self.assertNotIn("package-check", design)
+        self.assertEqual(design[-1], "final-verification")
+        # A toy that is no kit keeps both.
+        self.assertIn("parts", [step.id for step in self._run_plan()])
+        self.assertIn("package-check", [step.id for step in sb.design_plan(self._inputs())])
+
     def test_a_layer_override_never_cuts_a_kit_steps_time(self):
         steps = self._run_plan(printed_parts={"body": 20}, deadlines={"components": 100.0})
         body = next(step for step in steps if step.id == "component:body")

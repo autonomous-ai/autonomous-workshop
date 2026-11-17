@@ -231,6 +231,13 @@ round summary records the report as `sheets`.
   scene itself would cross; the magenta and `bought_` scans still run on
   whatever crosses.
 
+- Amendment 2026-11-17: a seeded kit's batch (ADR 0098) exports no
+  per-occurrence `parts/` in the run and runs no `package-check` at the
+  seal. The print layout is the only STEP a kit ships, and the host checks
+  it; the scene's assembly package keeps the kit's Part names (`T01-tray`),
+  which the Factory path ignores as it ignores any package it cannot read.
+  The Amsterdam kit's seal failed package-check on those names.
+
 ### 5. An owner-approved Manual is sealed with the Proof and shipped
 
 - `seal_proof.py seal --kit-manual PDF` takes the owner-approved Manual,
