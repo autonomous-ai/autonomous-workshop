@@ -714,17 +714,21 @@ def run_plan(inputs: PlanInputs, *, run_root: Path, product_root: Path, source: 
                                     "--product-root", str(product_root), "--source", str(source)),
              inputs=("measure/verification-pipeline.md", "measure/electrical/assembly.md", str(run_root / "seed"),
                      str(Path(__file__).with_name("seeded_package.py")))),
+    ]
+    if not inputs.printed_parts:
         # The production solid of every printed occurrence, from the
         # Component STEPs the print gates passed, so a multi-part build's
-        # finalizer needs no model turn.
-        Step("parts", "parts", (*package, "parts", "--project", project, "--product-root", str(product_root)),
-             # Final verification rewrites the combined STEP and its package
-             # whenever a Component STEP changes, so these bind the parts.
-             inputs=(str(product_root / "assembled.step"), str(product_root / "assembled.step.json"),
-                     str(Path(__file__).with_name("seeded_package.py"))),
-             reports=(str(product_root / "parts"),)),
-        Step("finalizer", "finalize", tuple(inputs.finalizer)),
-    ]
+        # finalizer needs no model turn. A kit ships its print layout as the
+        # only STEP (ADR 0104 decision 4), which final verification seals
+        # and the host checks, so it exports no per-occurrence parts.
+        steps.append(Step("parts", "parts", (*package, "parts", "--project", project,
+                                             "--product-root", str(product_root)),
+                          # Final verification rewrites the combined STEP and its package
+                          # whenever a Component STEP changes, so these bind the parts.
+                          inputs=(str(product_root / "assembled.step"), str(product_root / "assembled.step.json"),
+                                  str(Path(__file__).with_name("seeded_package.py"))),
+                          reports=(str(product_root / "parts"),)))
+    steps.append(Step("finalizer", "finalize", tuple(inputs.finalizer)))
     return _with_deadlines(steps, inputs.deadlines)
 
 
@@ -850,9 +854,12 @@ def design_plan(inputs: PlanInputs) -> list:
                           inputs=_source_inputs(inputs.roles),
                           reports=("measure/interface-rounds/%s/design" % interface,)))
     steps.append(_final_step(inputs, DESIGN_REPORT, design=True))
-    steps.append(Step("package-check", "product",
-                      (py, "-m", "workshop.make.seeded_package", "check", "--project", project),
-                      inputs=(DESIGN_REPORT, str(Path(__file__).with_name("seeded_package.py")))))
+    if not inputs.printed_parts:
+        # The run's parts step, checked at design cost; a kit has none
+        # (ADR 0104 decision 4: its print layout is the only STEP it ships).
+        steps.append(Step("package-check", "product",
+                          (py, "-m", "workshop.make.seeded_package", "check", "--project", project),
+                          inputs=(DESIGN_REPORT, str(Path(__file__).with_name("seeded_package.py")))))
     return _with_deadlines(steps, inputs.deadlines)
 
 
