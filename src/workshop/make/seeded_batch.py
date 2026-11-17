@@ -614,18 +614,18 @@ def _kit_allowance(inputs: PlanInputs, roles: Iterable[str], layer: str) -> tupl
     return ("--geometry-seconds", "%g" % geometry), max(DEFAULT_DEADLINES[layer], geometry + FINAL_REPORT_MARGIN_S)
 
 
-# Final verification works through every Component in turn, kit or not:
-# generation, the fit check, one inspection of each Component, its three
-# print gates and the views of the whole. Its time grows with the Component
-# count, so a fixed deadline cannot hold a large toy: the Kyoto tray's 75
-# Components took 4302 s (about 57 s a Component) and its seal ran out of
-# the layer's 3600 s. Final verification gets this much time for every
-# Component, never less than the layer's own.
+# Final verification and the assembly round work through every Component,
+# kit or not: generation, the fit check, an inspection and three print
+# gates for each, and the views of the whole. Their time grows with the
+# Component count, so a fixed deadline cannot hold a large toy: the Kyoto
+# tray's 75 Components took 4302 s in final verification (about 57 s a
+# Component) and its seal ran out of the layer's 3600 s. Both steps get this
+# much time for every Component, never less than the layer's own.
 FINAL_COMPONENT_S = 150.0
 
 
-def _final_geometry(inputs: PlanInputs) -> float:
-    """The time final verification needs for this toy's Components and,
+def _whole_build_geometry(inputs: PlanInputs) -> float:
+    """The time a whole-build step needs for this toy's Components and,
     for a kit, its printed Parts."""
 
     return max(_kit_geometry(inputs, inputs.roles), FINAL_COMPONENT_S * len(inputs.roles))
@@ -635,13 +635,12 @@ def _shared_allowance(inputs: PlanInputs, layer: str) -> tuple:
     """``(geometry, deadline)`` of a step whose analyses share one allowance
     across the whole build (the assembly round, final verification): the
     layer's deadline less the report margin, or at least the time the toy's
-    size needs, with a deadline to match (None: the layer's own). For the
-    assembly round that is a kit's printed Parts; for final verification
-    every Component as well."""
+    Components (and a kit's printed Parts) need, with a deadline to match
+    (None: the layer's own)."""
 
     deadline = inputs.deadlines.get(layer, DEFAULT_DEADLINES[layer])
     geometry = max(60.0, deadline - FINAL_REPORT_MARGIN_S)
-    need = _final_geometry(inputs) if layer == "final" else _kit_geometry(inputs, inputs.roles)
+    need = _whole_build_geometry(inputs)
     if need > geometry:
         return need, need + FINAL_REPORT_MARGIN_S
     return geometry, None
@@ -712,8 +711,8 @@ def run_plan(inputs: PlanInputs, *, run_root: Path, product_root: Path, source: 
                           inputs=_source_inputs(inputs.roles), reports=("measure/interface-rounds/%s" % interface,)))
     # The round's check_motion and print gates share one geometry allowance;
     # give them the layer's deadline less time to build and report, never
-    # less than the batch's own motion step (issue #244), nor than a kit's
-    # printed Parts need.
+    # less than the batch's own motion step (issue #244), nor than its
+    # Components and a kit's printed Parts need.
     geometry, assembly_deadline = _shared_allowance(inputs, "assembly")
     steps += [
         # A seeded round carries the approval's assembly review (ADR 0096),

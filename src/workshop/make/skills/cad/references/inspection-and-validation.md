@@ -37,6 +37,10 @@ Inspection targets resolve from the command cwd; prefer cwd-relative target path
 per line. Use it for independent refs, validate, and targeted measurement calls
 that would otherwise start several CLIs. It runs sequentially in one process,
 paying the OCP import once and avoiding warm-daemon queue contention.
+`verify_project` gives each entry's requests their own cold batch process and
+runs several entries at once (`VERIFY_PROJECT_JOBS`, default min(8, cores - 2);
+1 for one after another), as it does each print target's gates, reading the
+answers in request order; the record and verdicts are those of one process.
 
 ```bash
 printf '%s\n' \

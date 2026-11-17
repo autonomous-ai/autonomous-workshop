@@ -498,21 +498,23 @@ class PlanTest(unittest.TestCase):
                 self.assertEqual(self._flag(step), need)
                 self.assertEqual(step.deadline_s, need + sb.FINAL_REPORT_MARGIN_S)
                 self.assertGreater(step.deadline_s, 4302.0, "Kyoto's measured final verification fits")
-        # Only the whole-build final checks grow: a toy that is no kit keeps
-        # its component rounds, print gates and assembly round as they were.
+        # The run's assembly round works through the whole build too.
+        self.assertEqual(self._flag(run["assembly-round"]), need)
+        self.assertEqual(run["assembly-round"].deadline_s, need + sb.FINAL_REPORT_MARGIN_S)
+        # Only the whole-build steps grow: a toy that is no kit keeps its
+        # component rounds and print gates as they were.
         for step in (run["component:c00"], design["print-gates"]):
             self.assertIsNone(self._flag(step))
             self.assertIsNone(step.deadline_s)
-        self.assertEqual(self._flag(run["assembly-round"]), 3300.0)
-        self.assertIsNone(run["assembly-round"].deadline_s)
 
     def test_a_small_toy_keeps_the_final_layers_own_deadline(self):
         """22 Components fit the layer's 3300 s; the command and its reuse
         key stay as they were."""
         roles = tuple("c%02d" % index for index in range(int(3300.0 // sb.FINAL_COMPONENT_S)))
-        final = next(step for step in self._run_plan(roles=roles) if step.id == "final-verification")
-        self.assertEqual(self._flag(final), 3300.0)
-        self.assertIsNone(final.deadline_s)
+        plan = {step.id: step for step in self._run_plan(roles=roles)}
+        for step in (plan["final-verification"], plan["assembly-round"]):
+            self.assertEqual(self._flag(step), 3300.0)
+            self.assertIsNone(step.deadline_s)
         bigger = next(step for step in self._run_plan(roles=roles + ("extra",)) if step.id == "final-verification")
         self.assertEqual(bigger.deadline_s, (len(roles) + 1) * sb.FINAL_COMPONENT_S + sb.FINAL_REPORT_MARGIN_S)
 
@@ -524,13 +526,16 @@ class PlanTest(unittest.TestCase):
         many_parts = next(step for step in self._run_plan(roles=roles, printed_parts={"c00": 40})
                           if step.id == "final-verification")
         self.assertEqual(self._flag(many_parts), 40 * sb.KIT_PART_GEOMETRY_S)
+        round_step = next(step for step in self._run_plan(roles=roles, printed_parts={"c00": 2})
+                          if step.id == "assembly-round")
+        self.assertEqual(self._flag(round_step), 30 * sb.FINAL_COMPONENT_S)
 
     def test_a_final_layer_override_never_cuts_the_components_time_and_may_raise_it(self):
         roles = tuple("c%02d" % index for index in range(75))
         need = 75 * sb.FINAL_COMPONENT_S + sb.FINAL_REPORT_MARGIN_S
-        low = next(step for step in self._run_plan(roles=roles, deadlines={"final": 600.0})
-                   if step.id == "final-verification")
-        self.assertEqual(low.deadline_s, need)
+        low = {step.id: step for step in self._run_plan(roles=roles, deadlines={"final": 600.0, "assembly": 600.0})}
+        self.assertEqual(low["final-verification"].deadline_s, need)
+        self.assertEqual(low["assembly-round"].deadline_s, need)
         high = next(step for step in self._run_plan(roles=roles, deadlines={"final": 20000.0})
                     if step.id == "final-verification")
         self.assertEqual(high.deadline_s, 20000.0)
