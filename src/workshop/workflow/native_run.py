@@ -7899,6 +7899,16 @@ def _record_wish_run_timing(event: WishRunTimingEvent) -> None:
         record_wish_run_timing_event(host_state, event)
     except Exception:
         pass
+    # The shared timing ledger (ADR 0106) gets the same terminal events; it
+    # only records, and never fails the run.
+    try:
+        from workshop.runtime import timing_ledger
+
+        timing_ledger.record_workshop_event(
+            product_id=event.product_id, stage=event.stage, operation=event.operation,
+            state=event.state, observed_at=event.observed_at, elapsed_ms=event.elapsed_ms)
+    except Exception:
+        pass
 
 
 def _combined_timing_observer(

@@ -603,4 +603,8 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:  # timed in the Workshop timing ledger (ADR 0106); it only records
+        from workshop.runtime.timing_ledger import script_main
+    except Exception:  # noqa: BLE001 - a bare run copy has no ledger
+        script_main = None
+    raise SystemExit(main() if script_main is None else script_main('kit_sheets', main))
