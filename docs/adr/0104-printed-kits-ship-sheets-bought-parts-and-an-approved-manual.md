@@ -370,6 +370,57 @@ round summary records the report as `sheets`.
   Implemented and tested on deterministic fakes and one build123d probe;
   not yet run on a live kit seal.
 
+## Amendment 2026-11-17 (later): several snap pairs, barb ramps, and a failed union
+
+- **Problem.** The Miami Deco kit is the second kit with snaps. Its
+  `kit_tree --final` failed 11 times with no visible defect:
+  - The phone hotel snaps in on two keels, Q11 and Q12, and the pool hotel
+    on two walls, A06 and A07. Each barb catches T01-tray, but a step could
+    declare only one pair, so the second barb of each still blocked.
+  - The barbs' 60 degree ramps, at the seat inside the declared region,
+    read as non-parallel joints, four per step.
+  - At the kiosk seat, the union of the moving group had an inconsistent
+    volume. The drum and its stripe touch with no overlap, yet OCCT's fuse
+    of the two came out 2.5 mm3 larger than their sum. Nothing could be
+    swept.
+
+  The owner approved all three changes on 2026-11-17.
+- **Contract.** A snap step's `snap` is one pair, as before, or a
+  non-empty list of pairs, each `{"part", "catch", "catch_mm",
+  "region_mm"?}` with every rule of the single pair. A list may not name
+  the same (part, catch) twice. The single-object form is unchanged.
+- **Gate.** Every pair is checked like the single snap: its catch depth,
+  its region, overlap somewhere on the way in, and a seat of 0.001 mm3 or
+  less. Each pair is recorded in `snaps`, with id suffix `.snap` for a lone
+  pair and `.snap1`, `.snap2`, and so on for a list. Every moving body is
+  swept at 0.001 mm3 against every catch it is not declared to snap into.
+  That includes a snapping Part against another pair's catch, and every
+  other assembled Part, as before.
+- **Barb ramps.** A flat face of a pair's snapping Part is exempt from the
+  non-parallel joint check when both of these hold:
+  - its bounding box lies wholly inside that pair's `region_mm` (plus
+    0.001 mm);
+  - it mates a face of that pair's catch.
+
+  Such a face is recorded in the pair's `ramp_faces`. A pair without
+  `region_mm` exempts nothing. Faces of other Parts, faces against other
+  Parts, and faces reaching outside the region are judged as before.
+- **Failed union.** When the moving group's solids cannot be fused into one
+  material, the sweep falls back to one solid at a time. This covers an
+  invalid union and a volume that is non-finite, negative or inconsistent
+  (`check_motion.rigid_material` raises). Each solid is swept against every
+  obstacle, held to the overlap limit divided by the number of solids.
+  A solid's overlap with an obstacle is at least its share of the union's
+  overlap, so the fallback passes nothing the fused sweep would refuse. Each
+  fallback is recorded in the report's `fallbacks`, with the reason, the
+  solid count, the limit per solid and the outcome.
+- **Host.** `check_snaps` requires one record per copy for every declared
+  pair across Components, matched by step, part and catch. It refuses a
+  record for a pair the sealed tree does not declare.
+- **Unchanged.** A contract with one snap object, and every other joint,
+  are checked exactly as before. Frozen runs keep their run-local tool
+  bytes. Implemented and tested on deterministic fakes and build123d boxes.
+
 ## Not decided here
 
 - The gate and fit constants are the Amsterdam project's, set by the owner

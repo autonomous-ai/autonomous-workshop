@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import copy
 import unittest
+from pathlib import Path
 
 from workshop.errors import ContractError
 from workshop.make import kit_tree as host_kit_tree
@@ -98,12 +99,43 @@ class ClipGeometry(BoxGeometry):
                                               "bounds": piece})
         return found
 
-    def nonparallel(self, moving, obstacles, direction):
-        return []
+    def __init__(self, layout=None, faces=()):
+        BoxGeometry.__init__(self, layout)
+        # (moving label, obstacle label, face box, message): a flat mating
+        # pair at an angle to the direction, as the B-rep backend reads one.
+        self.faces = list(faces)
+
+    def _label(self, shape):
+        return next(item[0] for items in self.layout.values() for item in items if item[1] == shape)
+
+    def nonparallel(self, moving, obstacles, direction, exempt=()):
+        found = []
+        for mover, holder, face, message in self.faces:
+            for shape in moving:
+                if self._label(shape) != mover:
+                    continue
+                for other in obstacles:
+                    if self._label(other) != holder:
+                        continue
+                    ramp = kit_tree._ramp_of(exempt, shape, other, Box(face))
+                    if ramp is not None:
+                        ramp["faces"].append(message)
+                    else:
+                        found.append(message)
+        return found
 
     def route(self, points, size, obstacles):
         flat = [kit_tree.Body(o.label, part, key=o.key) for o in obstacles for part in boxes(o.shape)]
         return BoxGeometry.route(self, points, size, flat)
+
+
+class Box:
+    """A face's bounding box as build123d gives it."""
+
+    def __init__(self, face):
+        (x0, y0, z0), (x1, y1, z1) = face
+        self.min = type("V", (), {"X": x0, "Y": y0, "Z": z0})
+        self.max = type("V", (), {"X": x1, "Y": y1, "Z": z1})
 
 
 SNAP = {"part": "B01-cabinet-carcass", "catch": "A01-case-shell", "catch_mm": 0.35}
@@ -228,6 +260,186 @@ class SnapGateTest(unittest.TestCase):
         self.assertEqual(set(manual.JOINT_LABELS), set(host_tree.JOINTS))
         self.assertEqual(kit_tree.SNAP_TOLERANCE_MM, host_kit_tree.SNAP_TOLERANCE_MM)
         self.assertEqual(kit_tree.OVERLAP_MM3, host_kit_tree.SEATED_MM3)
+
+
+# The case shell with a second 2 mm slot at X 20-22, Y 45-55, and the
+# inkwell given its own clip through it: two barbs of one input snap into
+# the one shell.
+SHELL_TWO = [box((0, 0, 0), (20, 100, 5)), box((22, 0, 0), (54, 100, 5)), box((56, 0, 0), (100, 100, 5)),
+             box((20, 0, 0), (22, 45, 5)), box((20, 55, 0), (22, 100, 5)),
+             box((54, 0, 0), (56, 45, 5)), box((54, 55, 0), (56, 100, 5))]
+INKWELL_CLIP = [box((55, 35, 20), (58, 40, 24)), box((20.05, 45, -1), (21.95, 55, 5)),
+                box((19.7, 45, -1.0), (22.3, 55, -0.5))]
+INKWELL = {"part": "D01-inkwell", "catch": "A01-case-shell", "catch_mm": 0.35}
+# The carcass barb's ramp face, at 60 deg to the direction, on the barb
+# under the slot; and the same face reaching up the shank above the floor.
+RAMP = ((53.7, 45, -1.0), (54.05, 55, -0.5))
+RAMP_TALL = ((53.7, 45, -1.0), (54.05, 55, 6.0))
+RAMP_TEXT = "a flat joint face at 60 deg to it near (53.88, 50.00, -0.75)"
+REGION = [[53, 44, -1], [57, 56, 5]]
+
+
+def two_clip_layout():
+    layout = snap_layout()
+    layout[("case", 1)][0] = ("A01-case-shell", SHELL_TWO)
+    layout[("cabinet", 1)][2] = ("D01-inkwell", INKWELL_CLIP)
+    return layout
+
+
+def pairs_block(pairs):
+    block = sealed_block()
+    step = _step(block, "S07-furniture")
+    step["joint"] = "snap"
+    step["snap"] = pairs
+    return block
+
+
+class MultiPairSnapTest(unittest.TestCase):
+    """ADR 0104 amendment 2026-11-17 (multi-pair): one snap step declares
+    several pairs, each held to every rule of the single snap; a barb's ramp
+    face wholly inside its pair's region is no non-parallel joint; every
+    undeclared pair and every other face is checked as before."""
+
+    def final(self, pairs, layout=None, faces=()):
+        plan = kit_tree.Plan(sealed_kit(pairs_block(pairs)))
+        geometry = ClipGeometry(layout or two_clip_layout(), faces)
+        return kit_tree.summarise(kit_tree.check_assembly(plan, geometry, 0.4, reconcile_all=True))
+
+    def test_two_declared_pairs_pass_and_each_is_recorded(self):
+        report = self.final([SNAP, INKWELL])
+        self.assertEqual(report["failures"], [])
+        self.assertEqual(report["verdict"], "PASS")
+        self.assertEqual(sorted((r["id"].rsplit(".", 1)[1], r["part"], r["verdict"]) for r in report["snaps"]),
+                         [("snap1", "B01-cabinet-carcass", "PASS"), ("snap2", "D01-inkwell", "PASS")])
+        for record in report["snaps"]:
+            self.assertAlmostEqual(record["max_depth_mm"], 0.3, places=6)
+        tree = sealed_kit(pairs_block([SNAP, INKWELL]))["assembly_tree"]
+        host_kit_tree.check_snaps(tree, report["snaps"])
+        with self.assertRaises(ContractError) as caught:
+            host_kit_tree.check_snaps(tree, report["snaps"][:1])
+        self.assertIn("records 0 snap pass(es) for S07-furniture (D01-inkwell into A01-case-shell)",
+                      str(caught.exception))
+        with self.assertRaises(ContractError) as caught:
+            host_kit_tree.check_snaps(sealed_kit(snap_block())["assembly_tree"], report["snaps"])
+        self.assertIn("a pair the sealed tree does not declare", str(caught.exception))
+
+    def test_a_second_undeclared_pair_is_still_blocked(self):
+        for declared in (SNAP, [SNAP]):
+            with self.subTest(form=type(declared).__name__):
+                report = self.final(declared)
+                self.assertEqual(report["verdict"], "FAIL")
+                self.assertIn("S07-furniture: S03-hang-door#1 cannot go in alone along [0, 0, -1]: blocked by "
+                              "A01-case-shell#1", "\n".join(report["failures"]))
+                self.assertEqual([r["part"] for r in report["snaps"]], ["B01-cabinet-carcass"])
+
+    def test_each_pair_keeps_its_own_catch_depth(self):
+        report = self.final([SNAP, {**INKWELL, "catch_mm": 0.25}])
+        self.assertEqual(report["verdict"], "FAIL")
+        self.assertIn("deeper than its declared 0.25 mm catch", "\n".join(report["failures"]))
+        self.assertEqual({r["part"]: r["verdict"] for r in report["snaps"]},
+                         {"B01-cabinet-carcass": "PASS", "D01-inkwell": "FAIL"})
+
+    def test_a_ramp_face_inside_its_region_is_exempt_and_recorded(self):
+        report = self.final([{**SNAP, "region_mm": REGION}, INKWELL],
+                            faces=[("B01-cabinet-carcass", "A01-case-shell", RAMP, RAMP_TEXT)])
+        self.assertEqual(report["failures"], [])
+        record = next(r for r in report["snaps"] if r["part"] == "B01-cabinet-carcass")
+        self.assertEqual(record["ramp_faces"], [RAMP_TEXT])
+
+    def test_a_ramp_face_outside_its_region_still_fails(self):
+        report = self.final([{**SNAP, "region_mm": REGION}, INKWELL],
+                            faces=[("B01-cabinet-carcass", "A01-case-shell", RAMP_TALL, RAMP_TEXT)])
+        self.assertEqual(report["verdict"], "FAIL")
+        self.assertIn("engages a joint that is not parallel to its direction [0, 0, -1]: " + RAMP_TEXT,
+                      "\n".join(report["failures"]))
+
+    def test_without_a_region_no_face_is_exempt(self):
+        report = self.final([SNAP, INKWELL], faces=[("B01-cabinet-carcass", "A01-case-shell", RAMP, RAMP_TEXT)])
+        self.assertIn(RAMP_TEXT, "\n".join(report["failures"]))
+
+    def test_the_exemption_is_only_on_its_own_pairs_part_and_catch(self):
+        # The same face inside the carcass pair's region, but on the inkwell
+        # (whose pair states no region), or against a Part no pair catches.
+        for mover, holder in (("D01-inkwell", "A01-case-shell"), ("B01-cabinet-carcass", "P04-battery-box")):
+            with self.subTest(mover=mover, holder=holder):
+                report = self.final([{**SNAP, "region_mm": REGION}, INKWELL],
+                                    faces=[(mover, holder, RAMP, RAMP_TEXT)])
+                self.assertIn(RAMP_TEXT, "\n".join(report["failures"]))
+
+    def test_the_contract_takes_a_list_and_refuses_a_repeated_or_empty_one(self):
+        sealed_kit(pairs_block([SNAP, INKWELL]))
+        sealed_kit(pairs_block([SNAP]))
+        for pairs, text in (([SNAP, dict(SNAP)], "names one pair of Part and catch more than once"),
+                            ([], "names at least one snap pair"),
+                            ([SNAP, {**INKWELL, "catch_mm": 1.5}], ".snap[1].catch_mm must be")):
+            with self.subTest(text=text), self.assertRaises(ContractError) as caught:
+                sealed_kit(pairs_block(pairs))
+            self.assertIn(text, str(caught.exception))
+
+
+class FusedFallbackTest(unittest.TestCase):
+    """When the moving group's union fails, each solid is swept on its own
+    against every obstacle, each at the overlap limit over the solid count,
+    and the fallback is recorded."""
+
+    def setUp(self):
+        try:
+            from build123d import Box, Pos
+        except ImportError:                                   # pragma: no cover
+            self.skipTest("build123d")
+        import runpy
+
+        geometry = kit_tree.CadGeometry.__new__(kit_tree.CadGeometry)
+        scripts = Path(kit_tree.__file__).resolve().parents[2] / "cad" / "scripts"
+        geometry.motion = runpy.run_path(str(scripts / "check_motion"), run_name="kit_tree_check_motion")
+        geometry.fallbacks = []
+
+        def refuse(shape):
+            raise ValueError("motion group union has inconsistent volume")
+
+        geometry.motion["rigid_material"] = refuse
+        self.geometry, self.Box, self.Pos = geometry, Box, Pos
+
+    def body(self, key, *solids):
+        from build123d import Compound
+
+        shape = solids[0] if len(solids) == 1 else Compound(list(solids))
+        return kit_tree.Body(key.split("#")[0], shape, solids=len(solids), key=key)
+
+    def condition(self):
+        return {"id": "S01.X#1", "check": "linear_motion_collision", "expect": "clear",
+                "inputs": {"moving_part": "X#1", "obstacle_parts": [], "translation": [0, 0, 20], "steps": 40,
+                           "allow_seated_contact": True},
+                "thresholds": {"maxOverlapMm3": 0.001, "maxStepMm": 0.5}}
+
+    def test_a_real_clash_of_one_solid_is_still_caught(self):
+        Box, Pos = self.Box, self.Pos
+        moving = [self.body("X#1", Pos(0, 0, 0) * Box(2, 2, 2), Pos(10, 0, 0) * Box(2, 2, 2))]
+        lid = self.body("L#1", Pos(10, 0, 8) * Box(4, 4, 1))
+        result = self.geometry.sweep(self.condition(), moving, [lid])
+        self.assertEqual(result["status"], "fail")
+        self.assertIn("swept solid by solid, 2 solids", result["detail"])
+        (record,) = self.geometry.fallbacks
+        self.assertEqual((record["solids"], record["status"], record["max_overlap_mm3_each"]), (2, "fail", 0.0005))
+
+    def test_a_clear_path_passes_solid_by_solid(self):
+        Box, Pos = self.Box, self.Pos
+        moving = [self.body("X#1", Pos(0, 0, 0) * Box(2, 2, 2), Pos(10, 0, 0) * Box(2, 2, 2))]
+        beside = self.body("L#1", Pos(30, 0, 8) * Box(4, 4, 1))
+        result = self.geometry.sweep(self.condition(), moving, [beside])
+        self.assertEqual(result["status"], "pass")
+        self.assertEqual(self.geometry.fallbacks[0]["status"], "pass")
+
+    def test_a_fused_group_does_not_fall_back(self):
+        import runpy
+
+        scripts = Path(kit_tree.__file__).resolve().parents[2] / "cad" / "scripts"
+        self.geometry.motion = runpy.run_path(str(scripts / "check_motion"), run_name="kit_tree_check_motion")
+        Box, Pos = self.Box, self.Pos
+        moving = [self.body("X#1", Pos(0, 0, 0) * Box(2, 2, 2), Pos(10, 0, 0) * Box(2, 2, 2))]
+        lid = self.body("L#1", Pos(10, 0, 8) * Box(4, 4, 1))
+        self.assertEqual(self.geometry.sweep(self.condition(), moving, [lid])["status"], "fail")
+        self.assertEqual(self.geometry.fallbacks, [])
 
 
 if __name__ == "__main__":
