@@ -36,6 +36,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Mapping
 
 from workshop.errors import ContractError
+from workshop.wish.assembly_tree import snap_pairs
 from workshop.wish.catalogues import BOUGHT_PART_HEX
 
 TREE_SCHEMA_VERSION = 7
@@ -114,10 +115,11 @@ SNAP_TOLERANCE_MM = 1e-3
 SEATED_MM3 = 0.001
 
 
-def _snap_spans(tree: Mapping[str, Any]) -> dict[str, tuple[Mapping[str, Any], str]]:
+def _snap_spans(tree: Mapping[str, Any]) -> dict[str, list[tuple[Mapping[str, Any], str]]]:
     """Every snap step final verification sweeps, the ones across
-    Components: step id -> (its snap, the input that snaps in). A snap
-    wholly inside one Component is checked in that Component's rounds."""
+    Components: step id -> its declared pairs, each (the pair, the input that
+    snaps in). A snap wholly inside one Component is checked in that
+    Component's rounds."""
 
     children = {item["id"]: [entry["id"] for entry in item["inputs"]] for item in tree["steps"]}
     owner = {part: item["geometry"] for item in tree["components"] for part in item["parts"]}
@@ -133,18 +135,20 @@ def _snap_spans(tree: Mapping[str, Any]) -> dict[str, tuple[Mapping[str, Any], s
             continue
         if len({owner[leaf] for leaf in leaves(item["id"]) if leaf in owner}) < 2:
             continue
-        snap = item["snap"]
-        moving = next(entry["id"] for entry in item["inputs"][1:] if snap["part"] in leaves(entry["id"]))
-        found[item["id"]] = (snap, moving)
+        found[item["id"]] = [
+            (snap, next(entry["id"] for entry in item["inputs"][1:] if snap["part"] in leaves(entry["id"])))
+            for snap in snap_pairs(item)
+        ]
     return found
 
 
 def check_snaps(tree: Mapping[str, Any], records: Any) -> None:
     """The host's mirror of the snap rule (ADR 0104 amendment 2026-11-17) on
-    the final report, without geometry: every copy of every snap across
-    Components has its record, for the sealed Part, catch and region; it
-    overlapped its catch on the way in, no deeper than the catch; its seat is
-    clear; and no other step was let overlap. Raises ContractError."""
+    the final report, without geometry: every copy of every declared snap
+    pair across Components has its record, for the sealed Part, catch and
+    region; it overlapped its catch on the way in, no deeper than the catch;
+    its seat is clear; and no other step or pair was let overlap. Raises
+    ContractError."""
 
     spans = _snap_spans(tree)
     totals = tree_totals(tree)
@@ -155,28 +159,37 @@ def check_snaps(tree: Mapping[str, Any], records: Any) -> None:
         if record.get("step") not in spans:
             raise ContractError("%s lets %s overlap as a snap, but the sealed tree declares no snap there"
                                 % (REPORT_PATH, record.get("step")))
-    for step, (snap, moving) in sorted(spans.items()):
-        mine = [record for record in records if record.get("step") == step]
-        if len(mine) != totals[moving]:
-            raise ContractError("%s records %d snap pass(es) for %s, not one for each of its %d %s"
-                                % (REPORT_PATH, len(mine), step, totals[moving], moving))
-        for record in mine:
-            label = "%s: %s" % (step, record.get("input"))
-            if (record.get("part"), record.get("catch"), record.get("catch_mm"), record.get("region_mm")) != (
-                    snap["part"], snap["catch"], snap["catch_mm"], snap.get("region_mm")):
-                raise ContractError("%s's snap record is not the sealed snap of %s into %s"
-                                    % (label, snap["part"], snap["catch"]))
-            depth, seated, seen = record.get("max_depth_mm"), record.get("seated_mm3"), record.get("overlapping_samples")
-            if record.get("verdict") != "PASS" or not all(
-                    isinstance(v, (int, float)) and not isinstance(v, bool) for v in (depth, seated, seen)):
-                raise ContractError("%s's snap did not pass" % label)
-            if seen < 1:
-                raise ContractError("%s never overlapped its catch %s: it is no snap" % (label, snap["catch"]))
-            if depth > snap["catch_mm"] + SNAP_TOLERANCE_MM:
-                raise ContractError("%s passed %s %.3f mm deep, deeper than its sealed %.3g mm catch"
-                                    % (label, snap["catch"], depth, snap["catch_mm"]))
-            if seated > SEATED_MM3:
-                raise ContractError("%s is not clear of %s at its seat (%.4g mm3)" % (label, snap["catch"], seated))
+        if (record.get("part"), record.get("catch")) not in {
+                (snap["part"], snap["catch"]) for snap, _ in spans[record["step"]]}:
+            raise ContractError("%s lets %s overlap %s in %s, a pair the sealed tree does not declare"
+                                % (REPORT_PATH, record.get("part"), record.get("catch"), record.get("step")))
+    for step, pairs in sorted(spans.items()):
+        for snap, moving in pairs:
+            _check_pair(step, snap, moving, totals, records)
+
+
+def _check_pair(step: str, snap: Mapping[str, Any], moving: str, totals: Mapping[str, int], records) -> None:
+    mine = [record for record in records if record.get("step") == step
+            and (record.get("part"), record.get("catch")) == (snap["part"], snap["catch"])]
+    if len(mine) != totals[moving]:
+        raise ContractError("%s records %d snap pass(es) for %s (%s into %s), not one for each of its %d %s"
+                            % (REPORT_PATH, len(mine), step, snap["part"], snap["catch"], totals[moving], moving))
+    for record in mine:
+        label = "%s: %s" % (step, record.get("input"))
+        if (record.get("catch_mm"), record.get("region_mm")) != (snap["catch_mm"], snap.get("region_mm")):
+            raise ContractError("%s's snap record is not the sealed snap of %s into %s"
+                                % (label, snap["part"], snap["catch"]))
+        depth, seated, seen = record.get("max_depth_mm"), record.get("seated_mm3"), record.get("overlapping_samples")
+        if record.get("verdict") != "PASS" or not all(
+                isinstance(v, (int, float)) and not isinstance(v, bool) for v in (depth, seated, seen)):
+            raise ContractError("%s's snap did not pass" % label)
+        if seen < 1:
+            raise ContractError("%s never overlapped its catch %s: it is no snap" % (label, snap["catch"]))
+        if depth > snap["catch_mm"] + SNAP_TOLERANCE_MM:
+            raise ContractError("%s passed %s %.3f mm deep, deeper than its sealed %.3g mm catch"
+                                % (label, snap["catch"], depth, snap["catch_mm"]))
+        if seated > SEATED_MM3:
+            raise ContractError("%s is not clear of %s at its seat (%.4g mm3)" % (label, snap["catch"], seated))
 
 
 def not_printed(contract: Mapping[str, Any], catalogue: Mapping[str, Any]) -> list[dict[str, Any]]:

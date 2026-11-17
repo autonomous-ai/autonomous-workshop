@@ -760,12 +760,37 @@ def _check_sheets(
                           "plus its spares" % (on_sheets[part], part, totals.get(part, 0)))
 
 
-def _snap_shape(value: Any, label: str, errors: List[str]) -> bool:
-    """A snap step's ``snap``: ``{part, catch, catch_mm, region_mm?}``."""
+def snap_pairs(step: Mapping[str, Any]) -> List[Mapping[str, Any]]:
+    """A snap step's declared pairs, in order: its ``snap`` is one pair or a
+    list of them (ADR 0104 amendment 2026-11-17, multi-pair)."""
 
-    where = "%s.snap" % label
+    value = step.get("snap") if step.get("joint") == SNAP else None
+    if value is None:
+        return []
+    return list(value) if isinstance(value, list) else [value]
+
+
+def _snap_shape(value: Any, label: str, errors: List[str]) -> bool:
+    """A snap step's ``snap``: one pair ``{part, catch, catch_mm,
+    region_mm?}`` or a non-empty list of them, each (part, catch) once."""
+
+    if isinstance(value, list):
+        if not value:
+            errors.append("%s: a snap step names at least one snap pair" % label)
+            return False
+        ok = all([_snap_pair(item, "%s.snap[%d]" % (label, n), label, errors) for n, item in enumerate(value)])
+        pairs = [(item.get("part"), item.get("catch")) for item in value if isinstance(item, dict)]
+        if ok and len(set(pairs)) != len(pairs):
+            errors.append("%s.snap names one pair of Part and catch more than once" % label)
+            ok = False
+        return ok
+    return _snap_pair(value, "%s.snap" % label, label, errors)
+
+
+def _snap_pair(value: Any, where: str, label: str, errors: List[str]) -> bool:
     if not isinstance(value, dict):
-        errors.append("%s: a snap step names its snap: {part, catch, catch_mm, region_mm (optional)}" % label)
+        errors.append("%s: a snap step names its snap: {part, catch, catch_mm, region_mm (optional)}, "
+                      "or a list of them" % label)
         return False
     ok = True
     unknown = sorted(set(value) - {"part", "catch", "catch_mm", "region_mm"})
@@ -822,35 +847,43 @@ def _check_snaps(
     for step in steps:
         if step.get("joint") != SNAP:
             continue
-        snap = step["snap"]
-        label = "%s.snap" % step["id"]
-        part, catch = snap["part"], snap["catch"]
-        for key, value in (("part", part), ("catch", catch)):
-            if value not in printed:
-                errors.append("%s.%s %r is no printed Part" % (label, key, value))
-        inputs = step["inputs"]
-        holders = [
-            position for position, entry in enumerate(inputs)
-            if part in _leaves_under(entry["id"], children)
-        ]
-        if len(holders) != 1 or holders[0] == 0:
-            errors.append(
-                "%s.part %r must be a leaf of exactly one input that moves in, not of the base"
-                % (label, part)
-            )
-            continue
-        moving = inputs[holders[0]]
-        if not any(catch in _leaves_under(entry["id"], children) for entry in inputs[: holders[0]]):
-            errors.append(
-                "%s.catch %r must be a leaf of the base or of an input before %s: what is "
-                "already assembled" % (label, catch, moving["id"])
-            )
-        direction = moving.get("direction") or ()
-        if sum(1 for value in direction if value != 0) != 1:
-            errors.append(
-                "%s: %s snaps in, so it goes in along one axis of the assembly frame, not %s"
-                % (label, moving["id"], list(direction))
-            )
+        pairs = snap_pairs(step)
+        for n, snap in enumerate(pairs):
+            label = "%s.snap" % step["id"] if len(pairs) == 1 else "%s.snap[%d]" % (step["id"], n)
+            _check_snap_pair(step, snap, label, children, printed, errors)
+
+
+def _check_snap_pair(
+    step: Mapping[str, Any], snap: Mapping[str, Any], label: str, children: Mapping[str, List[str]],
+    printed: Mapping[str, Any], errors: List[str],
+) -> None:
+    part, catch = snap["part"], snap["catch"]
+    for key, value in (("part", part), ("catch", catch)):
+        if value not in printed:
+            errors.append("%s.%s %r is no printed Part" % (label, key, value))
+    inputs = step["inputs"]
+    holders = [
+        position for position, entry in enumerate(inputs)
+        if part in _leaves_under(entry["id"], children)
+    ]
+    if len(holders) != 1 or holders[0] == 0:
+        errors.append(
+            "%s.part %r must be a leaf of exactly one input that moves in, not of the base"
+            % (label, part)
+        )
+        return
+    moving = inputs[holders[0]]
+    if not any(catch in _leaves_under(entry["id"], children) for entry in inputs[: holders[0]]):
+        errors.append(
+            "%s.catch %r must be a leaf of the base or of an input before %s: what is "
+            "already assembled" % (label, catch, moving["id"])
+        )
+    direction = moving.get("direction") or ()
+    if sum(1 for value in direction if value != 0) != 1:
+        errors.append(
+            "%s: %s snaps in, so it goes in along one axis of the assembly frame, not %s"
+            % (label, moving["id"], list(direction))
+        )
 
 
 def _check_leads(

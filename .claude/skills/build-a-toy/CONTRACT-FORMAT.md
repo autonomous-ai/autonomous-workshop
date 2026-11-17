@@ -281,7 +281,12 @@ instances.)
     somewhere on the way in, and must be clear at the seat. Every other
     pair still fails at 0.001 mm3. No other step takes `snap`. Example:
     `"joint": "snap", "snap": {"part": "E11-h1-fr-trim", "catch":
-    "T03-quay-main", "catch_mm": 0.35}`. Each input is `{"id": "<Part, Print Piece or earlier
+    "T03-quay-main", "catch_mm": 0.35}`. A step whose input snaps in on
+    several barbs lists them: `"snap": [{...}, {...}]`, each pair with every
+    rule above. A list names each (part, catch) once. Every pair not in the
+    list still fails. A flat face of a pair's `part`, wholly inside that
+    pair's `region_mm` and mating its `catch`, is the barb's ramp and is not
+    judged as a non-parallel joint. Without `region_mm` no face is exempt. Each input is `{"id": "<Part, Print Piece or earlier
     step>", "direction": [x, y, z], "count": n}`; `count` (default 1) is how
     many one making of the step takes, and a step's `count` equals its parent
     step's count times that. The finished toy is made once. `joint` is one
