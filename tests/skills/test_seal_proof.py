@@ -680,3 +680,37 @@ class SealRunsLaterStageChecksTest(unittest.TestCase):
         (self.proof / "CRITIC.json").write_text(json.dumps({"verdict": "agree", "requirements": [
             {"id": "R1", "verdict": "agree", "note": ""}, {"id": "R2", "verdict": "agree", "note": ""}]}))
         self.assertEqual(self._seal(), 0, self.stderr)
+
+
+class SealedImageNameTest(unittest.TestCase):
+    """ADR 0103 amendment: two Components of one shape render to the same
+    pixels at one camera, and a Wish refuses two images of the same bytes
+    (the Amsterdam kit's two tree crowns). Each sealed image carries its
+    contract file name, so its bytes are its own and its pixels unchanged."""
+
+    def test_same_pixels_under_two_names_are_two_byte_strings(self):
+        from PIL import Image
+
+        tool = load()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            made = root / "made.png"
+            Image.new("RGB", (64, 48), (200, 30, 30)).save(made)
+            for suffix in ("png", "jpg", "webp"):
+                with self.subTest(suffix):
+                    one, two = root / ("ref-03-crown-1." + suffix), root / ("ref-04-crown-2." + suffix)
+                    tool._save_as(made, one)
+                    tool._save_as(made, two)
+                    self.assertNotEqual(one.read_bytes(), two.read_bytes())
+                    with Image.open(one) as a, Image.open(two) as b:
+                        self.assertEqual(a.format, {"png": "PNG", "jpg": "JPEG", "webp": "WEBP"}[suffix])
+                        self.assertEqual(a.tobytes(), b.tobytes())
+                    if suffix == "png":
+                        with Image.open(one) as a, Image.open(made) as source:
+                            self.assertEqual(a.convert("RGB").tobytes(), source.convert("RGB").tobytes())
+                            self.assertEqual(a.text["Title"], "Approved Proof: ref-03-crown-1.png")
+                    # The same name twice is the same bytes: the seal stays deterministic.
+                    again = root / "again" / one.name
+                    again.parent.mkdir(exist_ok=True)
+                    tool._save_as(made, again)
+                    self.assertEqual(again.read_bytes(), one.read_bytes())
