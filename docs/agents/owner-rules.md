@@ -220,6 +220,25 @@ rule, this file only points to it; that source stays the authority.
   Kyoto willow was left as a smooth umbrella dome because the strand
   version's self-intersection check ran past 60 s (2026-11-14).
 
+- **Every scene element is visibly held by the scene.** A rack, stand,
+  sign or prop stands on, in or against something that would hold the
+  real one (a wall, a storefront, a base that meets the paving), the way
+  real photos of it show it mounted. A free end with bare ground beside
+  it reads as floating. Look up real mountings and record them with the
+  photos' sources. Why: the Kyoto komodaru rack read as standing alone in
+  front of its yard until the yard walls were run on behind its end
+  (2026-11-17).
+- **A same-colour engraving is not a mark.** An engraved or embossed
+  pattern in the body's own filament shows only as shadow, and it nearly
+  vanishes under flat light at normal distance. Where a mark must read
+  (calligraphy, a label), give it a contrasting colour, and check it with
+  flat shading and a headlight. Why: engraved Kyoto barrel marks
+  disappeared in the flat-light render (2026-11-17).
+- **A review page shows the current state only.** Keep a dated, read-only
+  copy, then cut the earlier rounds' sections and history from the live
+  page. Why: the owner asked for the Kyoto Stage 4 page to be trimmed
+  (2026-11-17).
+
 ### Assembly kits
 
 Lessons from turning the Amsterdam tray into a user-assembled kit (owner,
