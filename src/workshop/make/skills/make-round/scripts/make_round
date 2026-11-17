@@ -196,7 +196,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 STATE_NAME = "make-round-state.json"
@@ -6392,17 +6392,24 @@ def kit_gate_plan(kit: dict | None, roles, described: dict) -> tuple[dict, dict]
 
 def print_gate_jobs(python: str, cad: Path, project: Path, part: Path, role: str, out: Path, nozzle: float,
                     angle: float, bed: str, env: dict | None = None, parts: dict | None = None,
-                    entries_dir: Path | None = None, paper: bool = False) -> list:
+                    entries_dir: Path | None = None, paper: bool = False,
+                    kept: tuple | None = None) -> list:
     """``[(Part id or None, gate, job)]``: check_thickness, check_overhang and
     check_mesh on ``part``, or, for a kit Component, on each of ``parts``
     (its print_parts() Part ids) alone through its own entry written into
     ``entries_dir``; and the paper gate on ``part`` when ``paper``. Each job
-    is a ``run`` keyword dict whose reports and log go into ``out``."""
+    is a ``run`` keyword dict whose reports and log go into ``out``.
+    ``kept``, ``(root, {Part id: identity})`` from ``kit_print_parts.py
+    describe --keep``, gives each such Part's checks the B-rep that one build
+    kept, which they read instead of building print_parts() again."""
 
     if parts is not None:
-        # Each Part alone, through its own entry; it builds from source.
+        # Each Part alone, through its own entry: its kept build, or from source.
         entries = kit_print_parts().write_entries(part, entries_dir, sorted(parts))
-        targets = [(name, path, "%s-%s" % (role, name), {}) for name, path in entries.items()]
+        root, identities = kept or (None, {})
+        targets = [(name, path, "%s-%s" % (role, name),
+                    brep_env(root / name, identities.get(name)) if root is not None else {})
+                   for name, path in entries.items()]
     else:
         targets = [(None, part, role, env)]
     jobs = []
@@ -6787,83 +6794,126 @@ def _print_gates_only(project: Path, args, cad: Path, parts: list, kit: dict | N
     out.mkdir(parents=True, exist_ok=True)
     roles = [part.name.removeprefix("part_").removesuffix(".step.py") for part in parts]
     kit_roles = kit_print_roles(kit, roles)
-    # 1. build each part, and describe each kit Component's print_parts(), as a round does.
+    bed = round_bed(project)
+    hosts, paper_error = paper_hosts(project)
+    # Every job below is a round's own job, run with the round's width. Each
+    # starts as soon as what it reads is ready, not after a whole wave
+    # (2026-11-17: on the Amsterdam kit the Sheets check, about 15 minutes,
+    # waited behind every Part's gates):
+    # - the Sheets, which build what they check, at once;
+    # - each part's build, and each kit Component's print_parts(), at once;
+    # - a part's final checks once its build passed;
+    # - the assembly interference once every part built;
+    # - the print gates once every print_parts() is described.
+    # The records are the same: each job keeps its own log and verdict.
     builds = [{"command": [python, str(cad / "gen"), str(part), "--write", "--json"], "cwd": project,
                "log": out / ("gen-%s.log" % role), "extra_env": NO_BYTECODE}
               for part, role in zip(parts, roles)]
-    describes = {}
-    for part, role in zip(parts, roles):
-        if role in kit_roles:
-            describes[role] = len(builds)
-            builds.append({"command": [python, str(KIT_PRINT_PARTS_SCRIPT), "describe", str(part)],
-                           "cwd": project, "log": out / ("print-parts-%s.log" % role), "extra_env": NO_BYTECODE})
-    built = run_all(builds)
-    build: dict[str, dict] = {}
-    for part, role, done in zip(parts, roles, built):
-        parsed = parse_build(done.stdout, done.stderr, done.returncode)
-        if parsed["verdict"] == "PASS" and not part.with_name(part.name[:-len(".py")]).is_file():
-            parsed = {"verdict": "FAIL", "failures": ["gen reported success but wrote no %s" % part.name[:-3]]}
-        build[role] = parsed
-    built_roles = {role for role, item in build.items() if item["verdict"] == "PASS"}
-    described = {role: kit_print_parts().parse(built[index].stdout, built[index].returncode)
-                 for role, index in describes.items()}
-    # 2. the print gates (2b of a round), every part measured afresh.
-    bed = round_bed(project)
-    hosts, paper_error = paper_hosts(project)
-    kit_refusals, part_identities = kit_gate_plan(kit, kit_roles & built_roles, described)
-    gate_jobs = []
-    for part, role in zip(parts, roles):
-        if role not in built_roles or role in kit_refusals:
-            continue
-        for name, gate, job in print_gate_jobs(
-                python, cad, project, part, role, out, args.nozzle, args.overhang_angle, bed, None,
-                part_identities.get(role), project.joinpath(*KIT_PRINT_DIR, PRINT_GATES_SCOPE, role),
-                role in hosts and paper_error is None):
-            job["extra_env"] = {**job.get("extra_env", {}), **NO_BYTECODE}
-            gate_jobs.append((role, name, gate, job))
-    # 2b. what final verification also rejects and the print gates do not
-    # measure (ADR 0096 pilot, B2 and B3): the Component's B-rep validity in
-    # its Display Pose, and its print stance on the bed (check_fit).
-    final_jobs = final_check_jobs(python, cad, project, parts, roles, out, bed,
-                                  {role for role in built_roles if role not in kit_refusals}, kit_roles)
+    # Each kit Component's print_parts() is built once, here, and every Part
+    # kept as a B-rep bundle its three checks read (2026-11-17): a check no
+    # longer builds the whole Component again for one Part.
+    keep_root = project.joinpath(*BREP_DIR, PRINT_GATES_SCOPE)
+    if keep_root.is_dir() and not keep_root.is_symlink():
+        shutil.rmtree(keep_root)
+    describes = {role: {"command": [python, str(KIT_PRINT_PARTS_SCRIPT), "describe", str(part),
+                                    "--keep", str(keep_root / role),
+                                    "--entries", str(project.joinpath(*KIT_PRINT_DIR, PRINT_GATES_SCOPE, role))],
+                        "cwd": project, "log": out / ("print-parts-%s.log" % role), "extra_env": NO_BYTECODE}
+                 for part, role in zip(parts, roles) if role in kit_roles}
     # 2c. ADR 0104: the kit's Sheets, which span Components: on the whole
     # project only, as an assembly round checks them.
-    sheet_jobs = []
+    sheet_job = None
     if kit_has_sheets(kit) and not getattr(args, "component", None):
         kit_file = out / "kit.json"
         kit_file.write_text(json.dumps(kit, sort_keys=True), encoding="utf-8")
-        job = sheets_job(python, project, out)
-        job["command"] += ["--kit", str(kit_file)]
-        job["extra_env"] = NO_BYTECODE
-        sheet_jobs.append(job)
-    # 2d. Issue #118's assembly interference, the check an assembly round
-    # and final verification run on the assembled object (2026-11-16): the
-    # Contract Proof is the build, so two of its printed bodies may not share
-    # space either. Whole project only, once every part built.
+        sheet_job = sheets_job(python, project, out)
+        sheet_job["command"] += ["--kit", str(kit_file)]
+        sheet_job["extra_env"] = NO_BYTECODE
     entry = gates_only_entry(project, args, parts)
-    interference, interference_jobs = None, []
-    if entry is not None and not getattr(args, "component", None):
-        if set(roles) - built_roles:
-            interference = {"verdict": "not-run", "returncode": None, "clashes": [],
-                            "detail": "a part did not build, so the assembly was not checked for interference"}
-        else:
-            interference_jobs.append({
-                "command": [python, str(cad / "inspect"), "interfere", entry.relative_to(project).as_posix(),
-                            "--format", "json"],
-                "cwd": project, "log": out / "interference.log", "timeout": FULL_TIMEOUT_SECONDS,
-                "extra_env": NO_BYTECODE})
-    finished = run_all([job for _role, _name, _gate, job in gate_jobs]
-                       + [job for _role, _check, job in final_jobs] + sheet_jobs + interference_jobs)
-    if interference_jobs:
-        done = finished[-1]
-        finished = finished[:-1]
-        interference = parse_assembly_interference(done.stdout, done.returncode)
-    sheets = None
-    if sheet_jobs:
-        done = finished[-1]
-        finished = finished[:-1]
-        sheets = kit_sheets().parse_report(done.stdout, done.returncode)
-    checked, final_done = finished[:len(gate_jobs)], finished[len(gate_jobs):]
+    with ThreadPoolExecutor(max_workers=max(1, round_jobs())) as pool:
+        def start(job):
+            return pool.submit(lambda: run(**job))
+
+        sheet_future = start(sheet_job) if sheet_job is not None else None
+        gen_futures = {start(job): (part, role) for job, part, role in zip(builds, parts, roles)}
+        describe_futures = {role: start(job) for role, job in describes.items()}
+        # 1. each part's build; 2b. once it passed, what final verification
+        # also rejects and the print gates do not measure (ADR 0096 pilot, B2
+        # and B3): its B-rep validity in its Display Pose, and its print
+        # stance on the bed (check_fit).
+        build: dict[str, dict] = {}
+        final_futures: dict[str, list] = {}
+        for future in as_completed(gen_futures):
+            part, role = gen_futures[future]
+            done = future.result()
+            parsed = parse_build(done.stdout, done.stderr, done.returncode)
+            if parsed["verdict"] == "PASS" and not part.with_name(part.name[:-len(".py")]).is_file():
+                parsed = {"verdict": "FAIL", "failures": ["gen reported success but wrote no %s" % part.name[:-3]]}
+            build[role] = parsed
+            if parsed["verdict"] == "PASS":
+                final_futures[role] = [(check, job, start(job)) for _role, check, job in final_check_jobs(
+                    python, cad, project, [part], [role], out, bed, {role}, kit_roles)]
+        build = {role: build[role] for role in roles}
+        built_roles = {role for role, item in build.items() if item["verdict"] == "PASS"}
+        # 2d. Issue #118's assembly interference, the check an assembly round
+        # and final verification run on the assembled object (2026-11-16): the
+        # Contract Proof is the build, so two of its printed bodies may not share
+        # space either. Whole project only, once every part built.
+        interference, interference_future = None, None
+        if entry is not None and not getattr(args, "component", None):
+            if set(roles) - built_roles:
+                interference = {"verdict": "not-run", "returncode": None, "clashes": [],
+                                "detail": "a part did not build, so the assembly was not checked for interference"}
+            else:
+                interference_future = start({
+                    "command": [python, str(cad / "inspect"), "interfere", entry.relative_to(project).as_posix(),
+                                "--format", "json"],
+                    "cwd": project, "log": out / "interference.log", "timeout": FULL_TIMEOUT_SECONDS,
+                    "extra_env": NO_BYTECODE})
+        described = {}
+        for role, future in describe_futures.items():
+            done = future.result()
+            described[role] = kit_print_parts().parse(done.stdout, done.returncode)
+        # 2. the print gates (2b of a round), every part measured afresh.
+        kit_refusals, part_identities = kit_gate_plan(kit, kit_roles & built_roles, described)
+        gate_jobs = []
+        for part, role in zip(parts, roles):
+            if role not in built_roles or role in kit_refusals:
+                continue
+            kept = None
+            if role in described:
+                kept = (keep_root / role, {name: identity for name, identity
+                                           in (described[role].get("kept") or {}).items()
+                                           if isinstance(identity, str)})
+            for name, gate, job in print_gate_jobs(
+                    python, cad, project, part, role, out, args.nozzle, args.overhang_angle, bed, None,
+                    part_identities.get(role), project.joinpath(*KIT_PRINT_DIR, PRINT_GATES_SCOPE, role),
+                    role in hosts and paper_error is None, kept):
+                job["extra_env"] = {**job.get("extra_env", {}), **NO_BYTECODE}
+                gate_jobs.append((role, name, gate, job))
+        gate_futures = [start(job) for _role, _name, _gate, job in gate_jobs]
+        checked = [future.result() for future in gate_futures]
+        # A kit Component whose print_parts() was refused has no final checks
+        # (nothing of it is gated): one started before the refusal was known
+        # is dropped with what it wrote.
+        final_jobs, final_done = [], []
+        for role in roles:
+            for check, job, future in final_futures.get(role, ()):
+                done = future.result()
+                if role in kit_refusals:
+                    Path(job["log"]).unlink(missing_ok=True)
+                    if check == "posed":
+                        Path(job["command"][3]).unlink(missing_ok=True)
+                    continue
+                final_jobs.append((role, check, job))
+                final_done.append(done)
+        sheets = None
+        if sheet_future is not None:
+            done = sheet_future.result()
+            sheets = kit_sheets().parse_report(done.stdout, done.returncode)
+        if interference_future is not None:
+            done = interference_future.result()
+            interference = parse_assembly_interference(done.stdout, done.returncode)
     measured: dict[str, dict] = {}
     for (role, name, gate, job), done in zip(gate_jobs, checked):
         measured.setdefault(role, {}).setdefault(name, {})[gate] = (job["log"], done)
@@ -6895,6 +6945,11 @@ def _print_gates_only(project: Path, args, cad: Path, parts: list, kit: dict | N
                "overhang_angle": args.overhang_angle, "bed": bed, "kit": kit is not None,
                "parts": roles, "build": build, "print": printing, "ok": ok, "out": str(out),
                "checks": checks, "sources": geometry_source_hashes(project)}
+    if described:
+        # Which Parts were gated from the one kept build and which from source.
+        summary["kept_builds"] = {role: {"kept": sorted(item.get("kept") or ()),
+                                         "unkept": dict(item.get("unkept") or {})}
+                                  for role, item in sorted(described.items())}
     if sheets is not None:
         summary["sheets"] = sheets
     if interference is not None:

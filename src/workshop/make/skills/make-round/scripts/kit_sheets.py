@@ -160,6 +160,49 @@ def _measures(shape) -> dict:
             "bottom": round(float(box.min.Z), 4), "top": round(float(box.max.Z), 4)}
 
 
+# How far a box may sit inside its shape's true extent, beyond the kernel's
+# own enclosing guarantee: the margin a pruned pair must clear.
+BOX_MARGIN_MM = 0.1
+
+
+def enclosing_box(shape) -> tuple:
+    """``(xmin, ymin, zmin, xmax, ymax, zmax)`` of a box that encloses the
+    shape: the kernel's geometric bound, never its triangulation (which can
+    sit inside a curved face), so no point of the shape lies outside it."""
+
+    from OCP.Bnd import Bnd_Box
+    from OCP.BRepBndLib import BRepBndLib
+
+    box = Bnd_Box()
+    BRepBndLib.Add_s(shape.wrapped, box, False)
+    return box.Get()
+
+
+def box_gap(a: tuple, b: tuple) -> float:
+    """The distance between two boxes: no point of one is nearer the other."""
+
+    gaps = [max(0.0, a[axis] - b[axis + 3], b[axis] - a[axis + 3]) for axis in range(3)]
+    return sum(gap * gap for gap in gaps) ** 0.5
+
+
+def nearest_distance(index: int, shapes: list, boxes: list) -> float:
+    """The exact distance from ``shapes[index]`` to the nearest other copy,
+    99.0 when there is none: the very minimum the full pairwise sweep finds.
+    Copies are measured nearest box first, and a copy whose box lies farther
+    than the best distance yet (by more than BOX_MARGIN_MM) is not measured:
+    its distance cannot be smaller (2026-11-17, the Amsterdam Sheets spent
+    about 75 s measuring every pair)."""
+
+    order = sorted((box_gap(boxes[index], boxes[j]), j) for j in range(len(shapes)) if j != index)
+    best = None
+    for gap, j in order:
+        if best is not None and gap - BOX_MARGIN_MM > best:
+            break
+        distance = float(shapes[index].distance_to(shapes[j]))
+        best = distance if best is None else min(best, distance)
+    return 99.0 if best is None else best
+
+
 def describe(entry: Path) -> dict:
     _runtime_paths()
     from build123d import Shape
@@ -188,13 +231,14 @@ def describe(entry: Path) -> dict:
                         % (index, number)}
         copies.append(item)
     parts = []
+    shapes = [item["shape"] for item in copies]
+    boxes = [enclosing_box(shape) for shape in shapes]
     for index, item in enumerate(copies):
         shape = item["shape"]
-        others = [other["shape"] for j, other in enumerate(copies) if j != index]
         parts.append({
             "id": item["id"], **_measures(shape), "footprint": footprint(shape).wkt,
             "to_frame": round(float(shape.distance_to(frame)), 3),
-            "to_part": round(min((float(shape.distance_to(o)) for o in others), default=99.0), 3),
+            "to_part": round(nearest_distance(index, shapes, boxes), 3),
             "gates": [{"x": float(g["x"]), "y": float(g["y"]), "d": int(g["d"]),
                        "bar": footprint(g["shape"]).wkt if footprint(g["shape"]).area > 0
                        else _plan_box(g["shape"]),

@@ -237,7 +237,16 @@ component geometry.
   solid to measure. A round passes only when every gate passes on every part,
   so `built` and `printable at this nozzle` stay separate verdicts.
   A kit Component is gated Part by Part instead, from its `print_parts()`
-  (see "The kit's Assembly Tree"), never assembled.
+  (see "The kit's Assembly Tree"), never assembled. In `--print-gates-only`
+  and final verification `kit_print_parts.py describe --keep` builds
+  `print_parts()` once per Component and keeps each Part as a B-rep bundle
+  (`__cadgen__/round-brep/print-gates/` or `.../final/`), which that Part's
+  three gates read instead of building the whole Component again; a Part it
+  could not keep is gated from source, and `summary.json`'s `kept_builds`
+  lists both. `--print-gates-only` starts each job as soon as what it reads
+  is ready: the Sheets check at once, a part's final checks once it built,
+  the interference check once every part built, the gates once every
+  `print_parts()` is described.
 - A round's builds all run at once (issue #101): `gen --write`, the
   reproduction build and `brepbundle.py build`, which builds the part once
   as a gate would and keeps it as a native B-rep bundle in cadgen's derived
@@ -855,7 +864,7 @@ Every gate `make_round` runs, exactly as it runs it. `$C` is
 | a kit Component's Parts | `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/kit_print_parts.py describe part_<role>.step.py`, then the print gates on each `__cadgen__/print-parts/<scope>/<role>/part_<Part>.step.py` it writes, reports `<round>/<gate>-<role>-<Part>.md` | the JSON line's `parts` (identity, `bottom_mm`) or `error`; each gate as above |
 | a kit's FDM Sheets (ADR 0104) | `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/kit_sheets.py check <project>`, in assembly rounds, `--print-gates-only` and final verification of a kit whose tree declares `sheets`; `describe sheet_<id>.py` shows one Sheet's plan measures | the JSON line's `verdict`, `sheets`, `small` (Parts passing under the minimum size by `small_reason`) and `failures`, each naming its file and rule |
 | a kit's print layout (ADR 0104 decision 4) | `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/kit_print.py layout <project>`, which final verification runs on every kit after the Sheet gate | `measure/kit/print.step` (each Sheet fused into one connected solid and every loose printed copy apart, no Bought Part: the Factory primary) and `measure/kit/print.json`; a `FAIL` line names what stopped it |
-| print gates only | `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-dir> --print-gates-only [--component part_<role>.step.py] --nozzle N --overhang-angle A [--contract CONTRACT.md]`: the build, print gates and paper gate above on every part, a kit Component Part by Part (its tree from `--contract` or `tree/kit.json`), outside a Workshop run (inside one it refuses), with no nonce, freeze or round history; writes only under `<cad-dir>` (`measure/print-gates/`, `__cadgen__/print-parts/print-gates/`). The Contract Proof runs it | the round's `build`, `wall`, `over`, `mesh`, `parts` and `paper` lines; exit 1 on any failure |
+| print gates only | `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/make_round <cad-dir> --print-gates-only [--component part_<role>.step.py] --nozzle N --overhang-angle A [--contract CONTRACT.md]`: the build, print gates and paper gate above on every part, a kit Component Part by Part (its tree from `--contract` or `tree/kit.json`), outside a Workshop run (inside one it refuses), with no nonce, freeze or round history; writes only under `<cad-dir>` (`measure/print-gates/`, `__cadgen__/print-parts/print-gates/`, `__cadgen__/round-brep/print-gates/`). The Contract Proof runs it | the round's `build`, `wall`, `over`, `mesh`, `parts` and `paper` lines; exit 1 on any failure |
 | build a sample | `PYTHONPATH=<project> "$WORKSHOP_PYTHON" $C/gen samples/<name>.step.py --write --json`, then both print gates | exit codes and gate verdicts |
 | keep-out envelope | `"$WORKSHOP_PYTHON" .agents/skills/make-round/scripts/check_envelope part_<role>.step.py --envelope <round>/envelope-<id>.json --role inside\|outside --json` | `ok` and the per-pose volumes outside or inside the envelope |
 | interface interference | `"$WORKSHOP_PYTHON" $C/inspect interfere measure/interface-rounds/<id>/rNNNN/interface_<id>.step.py --format json` | `ok` and each clash's parts and volume |

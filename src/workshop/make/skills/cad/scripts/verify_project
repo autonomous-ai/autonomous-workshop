@@ -1703,8 +1703,10 @@ def _gate_entry(
     nozzle: float,
     skip_thickness: bool,
     overhang_angle: float,
+    env_extra: dict[str, str] | None = None,
 ) -> int:
-    """The three print gates of one printed object; how many failed."""
+    """The three print gates of one printed object; how many failed.
+    ``env_extra`` names the kept build a kit Part's gates read."""
     entry_arg = _path_arg(entry, runner.cwd)
     mesh_ok = runner.command(
         [
@@ -1714,6 +1716,7 @@ def _gate_entry(
             "--bed",
             f"{bed[0]:g}x{bed[1]:g}x{bed[2]:g}",
         ],
+        env_extra=env_extra,
     ) == 0
     if not mesh_ok:
         # Overhang and thickness both decide inside-vs-outside by flood fill,
@@ -1737,6 +1740,7 @@ def _gate_entry(
             "--report",
             _path_arg(project / "measure" / f"overhang-{label}.md", runner.cwd),
         ],
+        env_extra=env_extra,
     ) != 0
     if not skip_thickness:
         failures += runner.command(
@@ -1749,6 +1753,7 @@ def _gate_entry(
                 "--report",
                 _path_arg(project / "measure" / f"thickness-{label}.md", runner.cwd),
             ],
+            env_extra=env_extra,
         ) != 0
     return int(failures)
 
@@ -1764,9 +1769,17 @@ def _gate_kit_parts(
 ) -> int:
     """Each printed Part of one kit Component, alone in its print stance
     (ADR 0092, 2026-10-28); how many failed. A ``print_parts()`` that is not
-    the Component's printed Parts fails, and nothing is gated in its place."""
-    command = [sys.executable, KIT_PRINT_PARTS_SCRIPT, "describe", _path_arg(component, runner.cwd)]
+    the Component's printed Parts fails, and nothing is gated in its place.
+
+    ``print_parts()`` is built once, by ``describe``, which keeps each Part's
+    B-rep (2026-11-17); each Part's gates read it instead of building the
+    whole Component again. A Part it could not keep is gated from source."""
+    entries_dir = project / "__cadgen__" / "print-parts" / "final" / role
+    keep = project / "__cadgen__" / "round-brep" / "final" / role
+    command = [sys.executable, KIT_PRINT_PARTS_SCRIPT, "describe", _path_arg(component, runner.cwd),
+               "--keep", keep, "--entries", entries_dir]
     returncode = runner.command(command)
+    kept: dict = {}
     if runner.dry_run:
         names = tool.printed_parts(kit, role) or []
     else:
@@ -1779,8 +1792,15 @@ def _gate_kit_parts(
                                        "seconds": 0.0})
             return 1
         names = sorted(described["parts"])
-    entries = tool.write_entries(component, project / "__cadgen__" / "print-parts" / "final" / role, names)
-    return sum(_gate_entry(runner, project, path, f"{role}-{name}", **gates) for name, path in entries.items())
+        kept = {name: identity for name, identity in (described.get("kept") or {}).items()
+                if isinstance(identity, str)}
+        for name, why in sorted((described.get("unkept") or {}).items()):
+            print(f"[verify_project] print parts: {role}/{name} gated from source: {why}", flush=True)
+    entries = tool.write_entries(component, entries_dir, names)
+    return sum(_gate_entry(runner, project, path, f"{role}-{name}", **gates,
+                           env_extra={"WORKSHOP_BREP_BUNDLE": str(keep / name),
+                                      "WORKSHOP_BREP_IDENTITY": kept[name]} if name in kept else None)
+               for name, path in entries.items())
 
 
 def _run_print_gates(
