@@ -269,6 +269,12 @@ Tree and Manual.
   from the front edge, the side facing the person, never from the side
   or the back. Why: the Miami note pad options opened on the tray's
   side, and the owner wanted it taken from the front as the natural move.
+  Front access keeps the rim whole (owner, 2026-11-17): cut one finger
+  scallop through the front rim, the smallest that lets two fingers pinch
+  the item, its bottom at the seat's floor. The floor under the item stays
+  solid: a notch may reach the floor but never pass through it. Why: the
+  Miami pad's 51 mm lowered rim and its finger groove through the beach
+  plate left an open gap the owner rejected.
 - **Hidden storage must be reachable.** A finger cannot reach into a cup
   21 mm deep and 9 mm wide. Use a shallow cup (about 9 mm) that lifts out by
   a pull tab, and say what it holds.
