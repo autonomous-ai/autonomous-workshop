@@ -118,6 +118,35 @@ class ComponentStepsTest(unittest.TestCase):
         write(self.project, "measure/bought-bodies.json", "{not json")
         self.assertEqual(len(self.steps()[1]), 2)
 
+    def kit_print(self, *, kind="kit-print-layout", step="measure/kit/print.step"):
+        """The layout ``kit_print.py layout`` writes, with its report."""
+        path = write(self.project, "measure/kit/print.step", STEP_TEXT + "kit\n")
+        write(self.project, "measure/kit/print.json", json.dumps({
+            "kind": kind, "schema_version": 2, "step": step,
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}))
+        bodies_document(self.project, {"bought_usb_c": "bought/bought_usb_c.step",
+                                       "bought_wire_1": "bought/bought_wire_1.step"})
+
+    def test_the_kit_print_layout_its_report_names_is_no_component(self):
+        # The seal's preflight layer writes it; the full run that follows
+        # must not refuse its own output (ADR 0098 amendment 2026-11-17).
+        self.kit_print()
+        self.assertEqual(self.steps(), ([], []))
+
+    def test_a_kit_print_layout_whose_bytes_changed_stays_a_stray(self):
+        self.kit_print()
+        write(self.project, "measure/kit/print.step", STEP_TEXT + "edited\n")
+        self.assertEqual(self.steps()[1], ["measure/kit/print.step"])
+
+    def test_a_kit_print_report_of_another_kind_or_path_excludes_nothing(self):
+        self.kit_print(kind="kit-sheets")
+        self.assertEqual(self.steps()[1], ["measure/kit/print.step"])
+        self.kit_print(step="measure/kit/other.step")
+        self.assertEqual(self.steps()[1], ["measure/kit/print.step"])
+        self.kit_print()
+        write(self.project, "measure/kit/print.json", "{not json")
+        self.assertEqual(self.steps()[1], ["measure/kit/print.step"])
+
     def test_final_mode_refuses_an_unlisted_stray_before_any_gate(self):
         bodies_document(self.project, {"bought_usb_c": "bought/bought_usb_c.step"})
         signature_review(self.project)
