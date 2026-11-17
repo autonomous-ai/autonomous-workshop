@@ -1403,11 +1403,14 @@ that is what lets `workshop wish --contract` seal this exact file, byte for
 byte, as the run's hash-checked objective. Name the toy in its `#` title by
 [docs/TOY_NAMING.md](../../../docs/TOY_NAMING.md).
 
-Then seal what the owner approved (ADR 0096): run the Proof's print gates
-(`make_round <proof> --print-gates-only`, which also checks each Component
-in its Display Pose and on the bed, and that no two printed bodies share
-space in the assembled Proof) and `make_round <proof> --shared-helpers
---contract CONTRACT.md` once more on the final contract. Check that the
+Then seal what the owner approved (ADR 0096): run `make_round <proof>
+--shared-helpers --contract CONTRACT.md` once more on the final contract.
+The seal runs the Proof's print gates itself (`make_round <proof>
+--print-gates-only`, which also checks each Component in its Display Pose
+and on the bed, and that no two printed bodies share space in the
+assembled Proof), after the cheap gates, and reuses the last seal's
+passing run while nothing it reads changed; a separate run beforehand is
+not needed. Check that the
 Proof wrote its `*_spec.md` and its three `measure/` audits (proof-prompt.md,
 "Final verification inputs") and every check input its contract needs
 (proof-prompt.md, "Seed inputs"; ADR 0098): `seal_proof.py inputs
@@ -1424,11 +1427,19 @@ uv run python .claude/skills/design-a-toy/scripts/seal_proof.py seal <contract-d
   --approved-by <owner> --cost <design units from build-a-toy's tokens.py>
 ```
 
+Before a seal, `seal_proof.py preflight <contract-dir>/proof --contract
+CONTRACT.md --nozzle <NOZZLE>` runs the seal's prechecks and its cheap
+gates only (the dry run, the helper freeze and `verify_project --design
+--preflight-only`) and writes no approval; on a kit it finds a stale spec,
+tree, Sheet or Manual in about half an hour instead of after the print
+gates.
+
 It writes `proof/APPROVAL.json` and `proof/approved/` (the docstring lists
 what it binds and refuses). Before it seals, it runs the seeded batch's
 design plan on the Proof (`measure/seeded-batch.json`). That plan is the
 build's whole batch with the build's own tools, as far as no run is needed:
-each Component's print gates, each Coupled Interface on the Proof's
+the cheap final gates first (`--preflight-only`), each Component's print
+gates (reused from the last seal while their key holds), each Coupled Interface on the Proof's
 Components, final verification (`verify_project --design`, without the
 signature review the build carries) and the packaging check that every
 printed part is colour-named and resolves to one Component solid. A defect

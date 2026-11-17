@@ -403,6 +403,87 @@ turn.
    invocation may not be recorded, which would let a resumed run spend
    past its cap. Its cause is not yet known.
 
+## Amendment 2026-11-17: the seal fails fast and reuses its print gates
+
+**Why.** Eight Amsterdam kit seals failed over more than a day. Each spent
+about 90 minutes on the batch's print gates (5,330 s on seal 8), then
+another hour in final verification, and died on a check that takes seconds
+or minutes: a spec number, a layout limit, the Assembly Tree, a Sheet, the
+Manual. None found a product defect. Two causes:
+- the cheap final gates ran after the print gates;
+- the seal passed no previous record, so the print gates reran on every
+  seal. And their key bound `params.py`, `features/` and the part files
+  but not the kit modules those files load with `importlib`.
+
+**Decision.** The checks and their thresholds do not change; only their
+order and reuse do.
+
+1. **A preflight layer.** The design plan gains a `preflight` layer, after
+   the project dry run and the Shared Helper freeze and before the
+   components. It runs final verification with the design plan's own argv,
+   except that `--preflight-only` replaces `--print-gates`. That runs the
+   final gates up to and including the kit gates, in final order:
+   - check_layout and generation;
+   - the preflight audit group: check_fit, the project audits,
+     check_spec_numbers and check_spec_format;
+   - the kit's tree, Sheets, print layout, Print Sheet and Manual gates.
+
+   It skips mount, power, motion, inspection, the orthogonal views, the
+   Bought Parts model and the print gates. Reasons: the power layer's model
+   build runs after the components, and the views and inspection are not
+   cheap. `--preflight-only` is refused with `--quick` or `--print-gates`
+   and never reuses a prior verdict. Its report (`measure/design-preflight.md`)
+   says `preflight`, and it is never accepted as final verification. Full
+   final verification still runs every gate afterwards, the cheap ones
+   again, so its record stays complete.
+2. **The seal checks spec files before the batch and the print-gates
+   summary after it.** The spec and audit files are checked before any
+   batch step. The print-gates summary is checked after the batch's print
+   gates ran or were reused. A separate print-gates run before the seal is
+   no longer needed.
+3. **An exact reuse key.**
+   - The key binds `@sources`
+     (`workshop.make.batch_sources.source_closure`):
+     - the static import closure of the part files;
+     - every project Python file, if any module in that closure loads code
+       dynamically (`import_module`, `spec_from_file_location`, `exec`, …)
+       or fails to parse;
+     - every project data file.
+   - Outputs, evidence, Markdown, STEP, images, the review records and
+     `approved/` are excluded.
+   - The print-gates key also binds the contract, the skills' `LOCK.json`,
+     make_round's bytes, its argv and `WORKSHOP_FIT_TABLE`.
+   - A recorded pass is reused only when all of these hold:
+     - the key is equal;
+     - the summary is still the bytes it recorded;
+     - that summary passed outright: `ok`, every build, print and final
+       check PASS, Sheets PASS, interference `pass`.
+   - Anything else reruns. A FAIL or UNVERIFIED result is never reused.
+   - Run plans bind the same closure in their component steps.
+4. **`seal_proof.py preflight`** runs the seal's prechecks and the cheap
+   layers only, with the seal's options. It records them in
+   `measure/seal-preflight.json`. It sets `approved/` aside while it runs
+   and always restores it. It writes no `APPROVAL.json` and leaves
+   `measure/seeded-batch.json` alone, so a later seal can still reuse its
+   print gates.
+
+**Expected cost on the Amsterdam kit** (from seal 8's timings). These are
+estimates, not yet measured on a live seal:
+- A cheap failure is refused after the prechecks and the preflight, about
+  25–35 min: check_fit 384 s, check_landmarks 480 s, kit_tree 536 s, plus
+  Sheets, layout and Manual. The old order took 150 min or more.
+- A re-seal with unchanged sources, contract, LOCK and fit table skips the
+  print gates, saving about 90 min.
+- A full first seal costs about 30 min more than before, because the
+  cheap gates run twice.
+
+**Status.** Implemented with deterministic-fake tests (order, cheap-failure
+exit before print gates, reuse, kit-module key, FAIL/UNVERIFIED/rewritten
+summaries, the `preflight` command, `--preflight-only` refusals). Not yet
+live-tested on a real seal. Frozen runs keep their tool bytes. Seals made
+before this amendment have no reusable print-gates key, so their first
+re-seal runs the print gates once.
+
 ## Implementation status
 
 The batch engine, seal and host merged in PR #234. The rest is on branch

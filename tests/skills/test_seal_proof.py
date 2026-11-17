@@ -476,9 +476,10 @@ class SealCheckInputsTest(unittest.TestCase):
         self.assertEqual(self._seal(), 0, self.stderr)
         approval = (self.proof / "APPROVAL.json").read_bytes()
         copies = {path.name: path.read_bytes() for path in (self.proof / "approved").iterdir()}
-        self.batch_exit = {"--print-gates-only": RunResult(1, "print gates: body overhang 52 deg over 45")}
+        # The print gates' pass is reused (2026-11-17); the cheap gates run again.
+        self.batch_exit = {"--preflight-only": RunResult(1, "check_spec_numbers: spec says 40 mm, source 42")}
         self.assertEqual(self._seal(), 1)
-        self.assertIn("body overhang 52 deg over 45", self.stderr)
+        self.assertIn("spec says 40 mm, source 42", self.stderr)
         self.assertEqual((self.proof / "APPROVAL.json").read_bytes(), approval)
         self.assertEqual({path.name: path.read_bytes() for path in (self.proof / "approved").iterdir()}, copies)
         self.assertEqual(self._beside(), [])
