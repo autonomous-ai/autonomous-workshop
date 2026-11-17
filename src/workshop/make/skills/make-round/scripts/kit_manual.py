@@ -131,13 +131,13 @@ ACCENT = (0.93, 0.47, 0.13)       # Rolife's orange tabs and page numbers
 WRONG = (0.80, 0.12, 0.12)
 RIGHT = (0.13, 0.55, 0.20)
 
-JOINS = ("peg-socket", "tab-slot", "pin-hinge", "foam-tape", "glue")
+JOINS = ("peg-socket", "tab-slot", "pin-hinge", "foam-tape", "glue", "snap")
 PAPER = "paper"
 SWEPT = JOINS + (PAPER,)
 JOINT_LABELS = {
     "peg-socket": "Press-fit", "tab-slot": "Tab into slot", "pin-hinge": "Pin hinge",
     "foam-tape": "Foam tape", "glue": "Glue", "paper": "Paper", "fold": "Fold", "cut": "Cut",
-    "bend": "Bend", "roll": "Roll", "leads": "Join the leads",
+    "bend": "Bend", "roll": "Roll", "leads": "Join the leads", "snap": "Snap in",
 }
 # How a leads step joins its leads (ADR 0095); a step without a method keeps
 # the schema 7 label.

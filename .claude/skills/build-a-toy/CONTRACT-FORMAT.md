@@ -269,7 +269,19 @@ instances.)
     "<kind>", "inputs": [...], "text": "<one short English instruction, at
     most 200 characters>"}`, optionally `"error_prone": true` (the Manual
     adds a correct/incorrect picture) and `"leads"`. The Sub-assembly takes
-    the step's id. Each input is `{"id": "<Part, Print Piece or earlier
+    the step's id. A `snap` step (ADR 0104 amendment 2026-11-17) adds
+    `"snap": {"part": "<printed Part>", "catch": "<printed Part>",
+    "catch_mm": <the barb's catch a side, above 0, at most 1.0>,
+    "region_mm": [[x, y, z], [x, y, z]]}`, `region_mm` optional. `part`
+    carries the barb and is a leaf of exactly one later input, which goes in
+    along one axis. `catch` is a leaf of the base or of an input before it.
+    In every insertion sweep, that pair alone may overlap on the way in.
+    Each overlap may be no deeper across the direction than `catch_mm`, and
+    must lie inside `region_mm` when it is given. The pair must overlap
+    somewhere on the way in, and must be clear at the seat. Every other
+    pair still fails at 0.001 mm3. No other step takes `snap`. Example:
+    `"joint": "snap", "snap": {"part": "E11-h1-fr-trim", "catch":
+    "T03-quay-main", "catch_mm": 0.35}`. Each input is `{"id": "<Part, Print Piece or earlier
     step>", "direction": [x, y, z], "count": n}`; `count` (default 1) is how
     many one making of the step takes, and a step's `count` equals its parent
     step's count times that. The finished toy is made once. `joint` is one
@@ -279,6 +291,7 @@ instances.)
     |---|---|---|
     | `peg-socket`, `tab-slot`, `pin-hinge`, `foam-tape` | joins its inputs | two or more |
     | `glue` | joins them, as a last resort, with `glue_reason` | two or more |
+    | `snap` | joins them by a barb that clicks past a catch, with `snap` | two or more |
     | `paper` | applies Print Pieces to their host | two or more |
     | `fold`, `cut`, `bend`, `roll` | reshapes one input | exactly one |
     | `leads` | joins the leads of `lamps`, its Wired Parts, by its `method` | one or more |

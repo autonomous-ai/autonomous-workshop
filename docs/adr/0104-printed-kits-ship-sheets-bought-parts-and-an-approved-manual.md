@@ -311,6 +311,65 @@ round summary records the report as `sheets`.
   Frozen runs keep their run-local tool bytes. The host check applies on
   Make acceptance; no kit layout has been accepted or published yet.
 
+## Amendment 2026-11-17: a snap joint
+
+- **Problem.** The Amsterdam kit fixes each canal house to quay-main T03
+  with two split-arrow clips. Their barbs catch 0.35 mm a side under a
+  sleeve at Z 3.5. The owner approved this as the house's knock-proof hold.
+  The rigid insertion sweep of ADR 0092 decision 8 cannot pass a barb: at
+  `kit_tree --final`, steps S72 to S74 fail with 0.82 mm3 at the first
+  sample above the seat. The seated pose is clear. No joint kind
+  (peg-socket, tab-slot, pin-hinge, foam-tape, glue) described a snap.
+- **Contract.** A new joint kind, `snap`. A snap step names its snap:
+  `{"part", "catch", "catch_mm", "region_mm"?}`.
+  - `part` is the printed Part that carries the barb. It is a leaf of
+    exactly one later input, never of the base, and that input's direction
+    lies along one axis of the assembly frame.
+  - `catch` is the printed Part the barb clicks past. It is a leaf of the
+    base or of an input before the snapping one.
+  - `catch_mm` is the barb's catch a side, above 0 and at most
+    `MAX_SNAP_CATCH_MM` = 1.0 mm.
+  - `region_mm` is optional: a box in the assembly frame where the overlap
+    must lie.
+
+  The host's contract parser refuses a field on any other joint, a missing
+  or malformed snap, and a deeper catch.
+- **Gate.** Each copy of the snapping input is checked by `kit_tree.py` in
+  every scope that sweeps it: component rounds, assembly rounds and
+  `--final`.
+  - Its bodies are swept as before against everything already assembled
+    except the catch, at 0.001 mm3.
+  - Its bodies other than the snapping Part are swept against the catch at
+    0.001 mm3.
+  - The snapping Part's overlap with the catch is measured as solids at
+    every sample, from the seat outward. Each solid's axis-aligned extent
+    across the direction, its smaller side, is its depth. Each depth must
+    be at most `catch_mm` (plus 0.001 mm of float noise), and each solid
+    must lie inside `region_mm` when it is given. An axis-aligned box never
+    reads a barb shallower than it is.
+  - At the seat the pair must overlap no more than 0.001 mm3: the barb
+    sits clear under its catch.
+  - A declared snap whose pair never overlaps on the way in fails as no
+    snap. The exemption cannot be declared where nothing needs it.
+
+  Each pass is recorded in the report's `snaps` with its depth, overlap,
+  overlapping samples and seated volume. `inspect interfere` (2026-11-16)
+  is unchanged.
+- **Host.** Before Make is accepted, `workshop.make.kit_tree.check_snaps`
+  reads the final report without geometry. It requires:
+  - one record for every copy of every snap step across Components, for
+    the sealed Part, catch, depth and region;
+  - each record passed, overlapped at least once, reached no deeper than
+    the catch, and had a clear seat;
+  - no record for a step that declares no snap.
+
+  A snap wholly inside one Component is checked in that Component's rounds
+  and is not in the final report, like any other step there.
+- **Unchanged.** Every other joint and every contract without `snap` is
+  swept exactly as before. Frozen runs keep their run-local tool bytes.
+  Implemented and tested on deterministic fakes and one build123d probe;
+  not yet run on a live kit seal.
+
 ## Not decided here
 
 - The gate and fit constants are the Amsterdam project's, set by the owner

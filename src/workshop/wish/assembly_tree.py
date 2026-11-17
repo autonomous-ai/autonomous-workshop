@@ -52,8 +52,13 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple
 from workshop.wish.catalogues import Catalogues
 
 # Joints that join inputs (ADR 0092 decision 6). Glue is a last resort and
-# names its reason.
-JOINS = ("peg-socket", "tab-slot", "pin-hinge", "foam-tape", "glue")
+# names its reason. A snap (ADR 0104 amendment 2026-11-17) names its
+# snapping Part, its catch Part and how deep its barb catches.
+JOINS = ("peg-socket", "tab-slot", "pin-hinge", "foam-tape", "glue", "snap")
+SNAP = "snap"
+# The deepest catch a snap may declare, a side: a barb past it is no snap
+# a printed prong can flex over.
+MAX_SNAP_CATCH_MM = 1.0
 # A step that applies a Print Piece to its host.
 PAPER = "paper"
 # One-input steps: the input is reshaped, not joined (ADR 0092 decision 2).
@@ -460,7 +465,7 @@ def _parse_steps(
         errors.append("assembly_tree.steps must list 1 to %d Assembly Steps in Manual order" % MAX_STEPS)
         return steps, parent
     allowed = {"id", "output", "count", "joint", "inputs", "text", "error_prone", "leads",
-               "lamps", "glue_reason", "method"}
+               "lamps", "glue_reason", "method", "snap"}
     known_steps: Set[str] = set()
     last_number = 0
     for index, item in enumerate(value):
@@ -506,6 +511,12 @@ def _parse_steps(
                 valid = False
         elif "glue_reason" in item:
             errors.append("%s.glue_reason belongs to a glue joint only" % label)
+            valid = False
+        if joint == SNAP:
+            if not _snap_shape(item.get("snap"), label, errors):
+                valid = False
+        elif "snap" in item:
+            errors.append("%s.snap belongs to a snap joint only" % label)
             valid = False
         if joint == LEADS:
             lamps = item.get("lamps")
@@ -660,6 +671,7 @@ def parse_assembly_tree(
             totals[leaf] = by_id[above]["count"] * per
 
     _check_leads(steps, children, bought, catalogues, errors)
+    _check_snaps(steps, children, printed, errors)
     _check_pieces(piece_by_id, leaves, by_id, parent, children, totals, errors)
     component_of = _check_components(
         value.get("components"), geometries, printed, bought, parent, children, totals, errors
@@ -746,6 +758,99 @@ def _check_sheets(
         elif on_sheets[part] < totals.get(part, 0):
             errors.append("the Sheets carry %d x %s, but the toy uses %d: a Sheet count is the tree's total "
                           "plus its spares" % (on_sheets[part], part, totals.get(part, 0)))
+
+
+def _snap_shape(value: Any, label: str, errors: List[str]) -> bool:
+    """A snap step's ``snap``: ``{part, catch, catch_mm, region_mm?}``."""
+
+    where = "%s.snap" % label
+    if not isinstance(value, dict):
+        errors.append("%s: a snap step names its snap: {part, catch, catch_mm, region_mm (optional)}" % label)
+        return False
+    ok = True
+    unknown = sorted(set(value) - {"part", "catch", "catch_mm", "region_mm"})
+    if unknown:
+        errors.append("%s has unknown field(s): %s" % (where, ", ".join(unknown)))
+        ok = False
+    for key in ("part", "catch"):
+        if not isinstance(value.get(key), str):
+            errors.append("%s.%s must name a printed Part" % (where, key))
+            ok = False
+    if ok and value["part"] == value["catch"]:
+        errors.append("%s: a Part cannot snap into itself" % where)
+        ok = False
+    depth = value.get("catch_mm")
+    if (
+        isinstance(depth, bool) or not isinstance(depth, (int, float))
+        or not 0 < depth <= MAX_SNAP_CATCH_MM
+    ):
+        errors.append(
+            "%s.catch_mm must be the barb's catch a side in mm, above 0 and at most %.1f"
+            % (where, MAX_SNAP_CATCH_MM)
+        )
+        ok = False
+    if "region_mm" in value:
+        region = value["region_mm"]
+        if (
+            not isinstance(region, list) or len(region) != 2
+            or not all(_corner(corner) for corner in region)
+            or not all(region[0][axis] < region[1][axis] for axis in range(3))
+        ):
+            errors.append(
+                "%s.region_mm must be the box the barb may overlap its catch in, "
+                "[[x, y, z] low, [x, y, z] high] in the assembly frame" % where
+            )
+            ok = False
+    return ok
+
+
+def _corner(value: Any) -> bool:
+    return (
+        isinstance(value, list) and len(value) == 3
+        and all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in value)
+    )
+
+
+def _check_snaps(
+    steps: Sequence[Mapping[str, Any]], children: Mapping[str, List[str]],
+    printed: Mapping[str, Any], errors: List[str],
+) -> None:
+    """A snap's Part is a printed leaf of exactly one moving input, which goes
+    in along one axis; its catch is a printed leaf of what is already there:
+    the base or an input before it."""
+
+    for step in steps:
+        if step.get("joint") != SNAP:
+            continue
+        snap = step["snap"]
+        label = "%s.snap" % step["id"]
+        part, catch = snap["part"], snap["catch"]
+        for key, value in (("part", part), ("catch", catch)):
+            if value not in printed:
+                errors.append("%s.%s %r is no printed Part" % (label, key, value))
+        inputs = step["inputs"]
+        holders = [
+            position for position, entry in enumerate(inputs)
+            if part in _leaves_under(entry["id"], children)
+        ]
+        if len(holders) != 1 or holders[0] == 0:
+            errors.append(
+                "%s.part %r must be a leaf of exactly one input that moves in, not of the base"
+                % (label, part)
+            )
+            continue
+        moving = inputs[holders[0]]
+        if not any(catch in _leaves_under(entry["id"], children) for entry in inputs[: holders[0]]):
+            errors.append(
+                "%s.catch %r must be a leaf of the base or of an input before %s: what is "
+                "already assembled" % (label, catch, moving["id"])
+            )
+        direction = moving.get("direction") or ()
+        if sum(1 for value in direction if value != 0) != 1:
+            errors.append(
+                "%s: %s snaps in, so it goes in along one axis of the assembly frame, not %s"
+                % (label, moving["id"], list(direction))
+            )
 
 
 def _check_leads(
@@ -1014,12 +1119,14 @@ __all__ = [
     "JOINTS",
     "LEADS",
     "LEAD_METHODS",
+    "MAX_SNAP_CATCH_MM",
     "PANEL",
     "PANEL_MM_DEFAULT",
     "PAPER",
     "PART_ID",
     "PIECE_ID",
     "SHAPINGS",
+    "SNAP",
     "SOLID",
     "STEP_ID",
     "bought_totals",

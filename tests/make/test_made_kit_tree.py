@@ -162,3 +162,34 @@ class MadeKitTreeTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MadeSnapTreeTest(MadeKitTreeTest):
+    """ADR 0104 amendment 2026-11-17: Make acceptance mirrors the snap rule
+    on the sealed final report."""
+
+    def setUp(self):
+        from tests.make.test_kit_tree_snap import snap_block
+
+        super().setUp()
+        parsed = parse_design_contract(_contract_text(snap_block()), catalogues=_catalogues())
+        self.contract, self.catalogue = parsed.to_dict(), parsed.kit_catalogue()
+        self.install = install_document(self.contract, self.catalogue)
+        self.write("tree/kit.json", self.install)
+        self.record = {"id": "S07-furniture.S03-hang-door#1.snap", "step": "S07-furniture",
+                       "input": "S03-hang-door#1", "part": "B01-cabinet-carcass", "catch": "A01-case-shell",
+                       "catch_mm": 0.35, "region_mm": None, "samples": 40, "overlapping_samples": 7,
+                       "max_depth_mm": 0.3, "max_overlap_mm3": 1.2, "seated_mm3": 0.0, "verdict": "PASS"}
+        self.report.update(tree_sha256=tree_digest(self.install), snaps=[self.record])
+        self.write("measure/tree-report.json", self.report)
+        self.listed = TOOL.not_printed_document(self.install)
+        self.write("measure/not-printed.json", self.listed)
+
+    def test_a_snap_report_is_mirrored_before_acceptance(self):
+        self.assertEqual(self.check()["insertions_across_components"], 3)
+        self.report["snaps"] = [{**self.record, "max_depth_mm": 0.36}]
+        self.write("measure/tree-report.json", self.report)
+        self.assertIn("deeper than its sealed 0.35 mm catch", self.refused())
+        self.report["snaps"] = []
+        self.write("measure/tree-report.json", self.report)
+        self.assertIn("records 0 snap pass(es) for S07-furniture", self.refused())
