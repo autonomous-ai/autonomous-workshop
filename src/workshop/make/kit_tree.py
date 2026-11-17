@@ -19,6 +19,10 @@ without rebuilding any geometry (ADR 0061), that
 - ``measure/not-printed.json`` lists exactly the Bought Part bodies the tree
   gives, each with its catalogue id, in the reserved not-printed colour
   (owner decision Q29); its bodies join the account the receipt carries.
+- every snap step across Components (ADR 0104 amendment 2026-11-17) has a
+  passing record in the final report for each copy, for the sealed Part,
+  catch and region, no deeper than its catch, clear at its seat and
+  overlapping on the way in (:func:`check_snaps`).
 
 The run-local tool is ``make-round/scripts/kit_tree.py``; the install
 document here is built the same way, and a test holds the two together.
@@ -103,6 +107,78 @@ def tree_totals(tree: Mapping[str, Any]) -> dict[str, int]:
     return totals
 
 
+# How far a snap's measured depth may pass its declared catch: the run-local
+# tool's SNAP_TOLERANCE_MM, float noise only. Its seat is held to the sweep's
+# 0.001 mm3 contact limit.
+SNAP_TOLERANCE_MM = 1e-3
+SEATED_MM3 = 0.001
+
+
+def _snap_spans(tree: Mapping[str, Any]) -> dict[str, tuple[Mapping[str, Any], str]]:
+    """Every snap step final verification sweeps, the ones across
+    Components: step id -> (its snap, the input that snaps in). A snap
+    wholly inside one Component is checked in that Component's rounds."""
+
+    children = {item["id"]: [entry["id"] for entry in item["inputs"]] for item in tree["steps"]}
+    owner = {part: item["geometry"] for item in tree["components"] for part in item["parts"]}
+
+    def leaves(node: str) -> set[str]:
+        if node not in children:
+            return {node}
+        return set().union(*(leaves(child) for child in children[node]))
+
+    found = {}
+    for item in tree["steps"]:
+        if item.get("joint") != "snap":
+            continue
+        if len({owner[leaf] for leaf in leaves(item["id"]) if leaf in owner}) < 2:
+            continue
+        snap = item["snap"]
+        moving = next(entry["id"] for entry in item["inputs"][1:] if snap["part"] in leaves(entry["id"]))
+        found[item["id"]] = (snap, moving)
+    return found
+
+
+def check_snaps(tree: Mapping[str, Any], records: Any) -> None:
+    """The host's mirror of the snap rule (ADR 0104 amendment 2026-11-17) on
+    the final report, without geometry: every copy of every snap across
+    Components has its record, for the sealed Part, catch and region; it
+    overlapped its catch on the way in, no deeper than the catch; its seat is
+    clear; and no other step was let overlap. Raises ContractError."""
+
+    spans = _snap_spans(tree)
+    totals = tree_totals(tree)
+    records = records or []
+    if not isinstance(records, list) or not all(isinstance(item, Mapping) for item in records):
+        raise ContractError("%s lists its snaps wrongly" % REPORT_PATH)
+    for record in records:
+        if record.get("step") not in spans:
+            raise ContractError("%s lets %s overlap as a snap, but the sealed tree declares no snap there"
+                                % (REPORT_PATH, record.get("step")))
+    for step, (snap, moving) in sorted(spans.items()):
+        mine = [record for record in records if record.get("step") == step]
+        if len(mine) != totals[moving]:
+            raise ContractError("%s records %d snap pass(es) for %s, not one for each of its %d %s"
+                                % (REPORT_PATH, len(mine), step, totals[moving], moving))
+        for record in mine:
+            label = "%s: %s" % (step, record.get("input"))
+            if (record.get("part"), record.get("catch"), record.get("catch_mm"), record.get("region_mm")) != (
+                    snap["part"], snap["catch"], snap["catch_mm"], snap.get("region_mm")):
+                raise ContractError("%s's snap record is not the sealed snap of %s into %s"
+                                    % (label, snap["part"], snap["catch"]))
+            depth, seated, seen = record.get("max_depth_mm"), record.get("seated_mm3"), record.get("overlapping_samples")
+            if record.get("verdict") != "PASS" or not all(
+                    isinstance(v, (int, float)) and not isinstance(v, bool) for v in (depth, seated, seen)):
+                raise ContractError("%s's snap did not pass" % label)
+            if seen < 1:
+                raise ContractError("%s never overlapped its catch %s: it is no snap" % (label, snap["catch"]))
+            if depth > snap["catch_mm"] + SNAP_TOLERANCE_MM:
+                raise ContractError("%s passed %s %.3f mm deep, deeper than its sealed %.3g mm catch"
+                                    % (label, snap["catch"], depth, snap["catch_mm"]))
+            if seated > SEATED_MM3:
+                raise ContractError("%s is not clear of %s at its seat (%.4g mm3)" % (label, snap["catch"], seated))
+
+
 def not_printed(contract: Mapping[str, Any], catalogue: Mapping[str, Any]) -> list[dict[str, Any]]:
     """Every Bought Part body of the toy, ``<id>#n`` across the whole toy, as
     the run-local ``kit_tree.not_printed`` lists it: the count is the Part's
@@ -179,6 +255,7 @@ def verify_made_tree(
         raise ContractError("the Assembly Tree gates did not pass: %s" % shown)
     if report.get("slips"):
         raise ContractError("the Assembly Tree gates did not pass: a labelling slip is open")
+    check_snaps(contract["assembly_tree"], report.get("snaps"))
     leaves = _leaves(contract)
     if report.get("leaves") != leaves:
         raise ContractError("%s does not account for every leaf of the sealed tree" % REPORT_PATH)
@@ -213,4 +290,4 @@ def verify_made_tree(
     }
 
 
-__all__ = ["install_document", "not_printed", "tree_digest", "tree_totals", "verify_made_tree"]
+__all__ = ["check_snaps", "install_document", "not_printed", "tree_digest", "tree_totals", "verify_made_tree"]

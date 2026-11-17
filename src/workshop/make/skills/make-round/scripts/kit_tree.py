@@ -54,7 +54,7 @@ The gates
   :data:`BOUGHT_PART_HEX`; every Bought Part's body carries that reserved
   colour.
 - **Insertion.** Each Assembly Step that joins (a joint of peg-socket,
-  tab-slot, pin-hinge, foam-tape, glue or paper) becomes one
+  tab-slot, pin-hinge, foam-tape, glue, snap or paper) becomes one
   ``assembly_sequence`` of ``linear_motion_collision`` conditions
   (``check_motion``, ADR 0088), in Manual order. Its first input is the base
   and stays put. Every later input, each copy of it on its own, is swept from
@@ -71,6 +71,12 @@ The gates
   parallel flat faces, or two cylinders or cones on parallel axes, within
   ``JOINT_GAP_MM``) faces along or across it, or has its axis along it. A
   pair at an angle is a non-parallel joint.
+  A ``snap`` step (ADR 0104 amendment 2026-11-17) declares one pair that
+  may overlap on the way in: its snapping Part against its catch, each
+  overlap no deeper across the direction than its ``catch_mm`` and inside
+  its ``region_mm`` if given. The pair must overlap somewhere on the way in
+  (or it is no snap) and be clear at the seat. Every other pair is swept as
+  above; each pass is recorded in the report's ``snaps``.
 - **Lead routes.** A sphere of the lead's diameter (the lamp's catalogue
   ``lead diameter``) plus ``LEAD_CLEARANCE_MM`` is swept along each declared
   route; any printed body of the step's Sub-assembly in its way closes it.
@@ -124,7 +130,8 @@ NOT_PRINTED_KIND = "kit-not-printed"
 # same value (workshop.wish.catalogues.BOUGHT_PART_HEX); a test keeps them one.
 BOUGHT_PART_HEX = "#ff00ff"
 
-JOINS = ("peg-socket", "tab-slot", "pin-hinge", "foam-tape", "glue")
+JOINS = ("peg-socket", "tab-slot", "pin-hinge", "foam-tape", "glue", "snap")
+SNAP = "snap"
 PAPER = "paper"
 LEADS = "leads"
 SWEPT = JOINS + (PAPER,)
@@ -132,6 +139,9 @@ SWEPT = JOINS + (PAPER,)
 OVERLAP_MM3 = 0.001          # contact is not collision (check_motion's default)
 OUTSIDE_MARGIN_MM = 1.0      # how far past the Sub-assembly's bounds a sweep starts
 LEAD_CLEARANCE_MM = 0.4      # 0.2 mm all round the lead: a cadfits slip fit
+# A snap's measured depth may exceed its declared catch by no more than this
+# (an OCCT bounding box's float noise, not a design allowance).
+SNAP_TOLERANCE_MM = 1e-3
 JOINT_GAP_MM = 0.3           # a face this close to what it joins is a joint face
 PARALLEL_TOLERANCE_DEG = 2.0
 PRINT_LINES = 2              # the thinnest printable wall, in lines
@@ -664,7 +674,7 @@ def travel_mm(moving_bounds, other_bounds, direction) -> float:
 def _check(scope: str | None, plan: Plan, geometry, bodies: dict[str, Body], nozzle: float) -> dict:
     """Every insertion and lead route of one scope against its bodies."""
 
-    report = {"conditions": [], "failures": [], "routes": []}
+    report = {"conditions": [], "failures": [], "routes": [], "snaps": []}
     for item in plan.steps_in(scope):
         step = item["id"]
         involved = sorted(plan.owners(step))
@@ -711,6 +721,7 @@ def _insert_step(plan, geometry, bodies, item, k, wall, sequence, report) -> Non
     for entry in inputs[1:]:
         per = int(entry.get("count", 1))
         direction = _unit(entry["direction"])
+        snap = _snap_of(plan, item, entry)
         for j in range((k - 1) * per + 1, k * per + 1):
             moving = _bodies_of(plan, bodies, entry["id"], j)
             if not moving:
@@ -718,50 +729,151 @@ def _insert_step(plan, geometry, bodies, item, k, wall, sequence, report) -> Non
             name = "%s#%d" % (entry["id"], j)
             others = [body for body in whole if body not in moving]
             if not assembled or not others:
+                if snap is not None:
+                    report["failures"].append(
+                        "%s: %s declares a snap into %s but nothing is assembled for it to pass"
+                        % (step, name, snap["catch"]))
                 assembled += [(entry["id"], body) for body in moving]
                 continue
             travel = travel_mm(geometry.bounds([b.shape for b in moving]),
                                geometry.bounds([b.shape for b in others]), direction)
             steps = max(1, math.ceil(travel / wall - 1e-9))
+            # A declared snap's catch is swept on its own (_snap_pass); every
+            # other body already there blocks as for any join.
+            caught = [body for _, body in assembled if snap is not None and _leaf(body) == snap["catch"]]
+            blocking = [(source, body) for source, body in assembled if body not in caught]
             condition = {
                 "id": "%s.%s" % (step, name) if plan.totals[step] == 1 else "%s#%d.%s" % (step, k, name),
                 "check": "linear_motion_collision",
                 "expect": "clear",
                 "description": "%s goes in alone along %s" % (name, list(entry["direction"])),
-                "inputs": {"moving_part": name, "obstacle_parts": [body.key for _, body in assembled],
+                "inputs": {"moving_part": name, "obstacle_parts": [body.key for _, body in blocking],
                            "translation": [round(-c * travel, 6) for c in direction],
                            "steps": steps, "allow_seated_contact": True},
                 "thresholds": {"maxOverlapMm3": OVERLAP_MM3, "maxStepMm": round(wall, 6)},
             }
-            sequence["inputs"]["steps"].append(condition)
-            result = geometry.sweep(condition, moving, [body for _, body in assembled])
-            condition["result"] = {key: result.get(key) for key in ("status", "detail", "obstacle", "overlapMm3")
-                                   if key in result}
-            if result.get("status") != "pass":
-                obstacle = result.get("obstacle")
-                sibling = next((source for source, body in assembled if body.key == obstacle), None)
-                simultaneous = False
-                if sibling is not None and sibling != base["id"] and result.get("status") == "fail":
-                    # Blocked on the way, not at the seat, and clear without
-                    # that sibling: the two go in only together.
-                    blocker = [body for source, body in assembled if source == sibling]
-                    seated = geometry.sweep(_at_seat(condition), moving, blocker)
-                    rest = [body for source, body in assembled if source != sibling]
-                    again = geometry.sweep({**condition, "id": condition["id"] + ".alone"}, moving, rest)
-                    simultaneous = seated.get("status") == "pass" and again.get("status") == "pass"
-                if simultaneous:
-                    report["failures"].append(
-                        "%s: %s is blocked only by %s, which went in before it in the same step: they go in "
-                        "only together, a simultaneous move; each input is inserted alone (ADR 0092)"
-                        % (step, name, obstacle))
-                else:
-                    report["failures"].append("%s: %s cannot go in alone along %s: %s"
-                                              % (step, name, list(entry["direction"]), result.get("detail")))
+            if blocking:
+                sequence["inputs"]["steps"].append(condition)
+                result = geometry.sweep(condition, moving, [body for _, body in blocking])
+                condition["result"] = {key: result.get(key) for key in ("status", "detail", "obstacle", "overlapMm3")
+                                       if key in result}
+                if result.get("status") != "pass":
+                    _blocked(geometry, step, name, entry, base, condition, result, moving, blocking, report)
+            if snap is not None:
+                _snap_pass(geometry, step, name, entry, snap, condition, moving, caught, report)
             for face in geometry.nonparallel([b.shape for b in moving], [b.shape for _, b in assembled],
                                              direction):
                 report["failures"].append("%s: %s engages a joint that is not parallel to its direction %s: %s"
                                           % (step, name, list(entry["direction"]), face))
             assembled += [(entry["id"], body) for body in moving]
+
+
+def _blocked(geometry, step, name, entry, base, condition, result, moving, assembled, report) -> None:
+    obstacle = result.get("obstacle")
+    sibling = next((source for source, body in assembled if body.key == obstacle), None)
+    simultaneous = False
+    if sibling is not None and sibling != base["id"] and result.get("status") == "fail":
+        # Blocked on the way, not at the seat, and clear without
+        # that sibling: the two go in only together.
+        blocker = [body for source, body in assembled if source == sibling]
+        seated = geometry.sweep(_at_seat(condition), moving, blocker)
+        rest = [body for source, body in assembled if source != sibling]
+        again = geometry.sweep({**condition, "id": condition["id"] + ".alone"}, moving, rest)
+        simultaneous = seated.get("status") == "pass" and again.get("status") == "pass"
+    if simultaneous:
+        report["failures"].append(
+            "%s: %s is blocked only by %s, which went in before it in the same step: they go in "
+            "only together, a simultaneous move; each input is inserted alone (ADR 0092)"
+            % (step, name, obstacle))
+    else:
+        report["failures"].append("%s: %s cannot go in alone along %s: %s"
+                                  % (step, name, list(entry["direction"]), result.get("detail")))
+
+
+def _triple(point) -> str:
+    return "(%.2f, %.2f, %.2f)" % tuple(point)
+
+
+def _leaf(body) -> str:
+    return body.key.rsplit("#", 1)[0]
+
+
+def _snap_of(plan, item, entry) -> dict | None:
+    """The step's declared snap when ``entry`` is the input that snaps in."""
+
+    snap = item.get("snap") if item.get("joint") == SNAP else None
+    if snap is None or snap["part"] not in plan.leaves_under(entry["id"]):
+        return None
+    return snap
+
+
+def _snap_pass(geometry, step, name, entry, snap, condition, moving, caught, report) -> None:
+    """A declared snap (ADR 0104 amendment 2026-11-17): every moving body but
+    the snapping Part stays clear of the catch; the snapping Part may overlap
+    the catch on its way in, each overlap no deeper across the direction than
+    the declared catch and inside the declared barb region; at its seat it is
+    clear; and it does overlap, or it is no snap."""
+
+    held = [body for body in moving if _leaf(body) == snap["part"]]
+    rest = [body for body in moving if body not in held]
+    label = "%s: %s" % (step, name)
+    if not caught or not held:
+        report["failures"].append("%s declares a snap of %s into %s, but %s is not there to pass"
+                                  % (label, snap["part"], snap["catch"],
+                                     snap["catch"] if not caught else snap["part"]))
+        return
+    if rest:
+        clear = {**condition, "id": condition["id"] + ".catch",
+                 "description": "%s but its snapping Part stays clear of %s" % (name, snap["catch"]),
+                 "inputs": {**condition["inputs"], "obstacle_parts": [body.key for body in caught]}}
+        result = geometry.sweep(clear, rest, caught)
+        if result.get("status") != "pass":
+            report["failures"].append("%s cannot go in alone along %s: %s"
+                                      % (label, list(entry["direction"]), result.get("detail")))
+    axis = max(range(3), key=lambda a: abs(entry["direction"][a]))
+    across = [a for a in range(3) if a != axis]
+    if sum(1 for c in entry["direction"] if c != 0) != 1:
+        report["failures"].append("%s snaps in along %s, not along one axis of the assembly frame"
+                                  % (label, list(entry["direction"])))
+        return
+    passing = {**condition, "id": condition["id"] + ".snap", "check": "snap_catch",
+               "description": "%s passes %s no deeper than its %.3g mm catch" % (held[0].key, snap["catch"],
+                                                                              snap["catch_mm"]),
+               "inputs": {**condition["inputs"], "moving_part": ", ".join(body.key for body in held),
+                          "obstacle_parts": [body.key for body in caught], "allow_seated_contact": False}}
+    samples = geometry.snap_overlaps(passing, held, caught)
+    total = condition["inputs"]["steps"]
+    seated = sum(item["volume"] for item in samples if item["step"] == 0)
+    on_way = [item for item in samples if item["step"] > 0]
+    region = snap.get("region_mm")
+    depth, worst, failures = 0.0, 0.0, []
+    for item in on_way:
+        lo, hi = item["bounds"]
+        deep = min(hi[a] - lo[a] for a in across)
+        depth, worst = max(depth, deep), max(worst, item["volume"])
+        if deep > snap["catch_mm"] + SNAP_TOLERANCE_MM:
+            failures.append("%s passes %s %.3f mm deep at step %d/%d, deeper than its declared %.3g mm catch"
+                            % (label, item["catch"], deep, item["step"], total, snap["catch_mm"]))
+        elif region is not None and not all(
+                region[0][a] - SNAP_TOLERANCE_MM <= lo[a] and hi[a] <= region[1][a] + SNAP_TOLERANCE_MM
+                for a in range(3)):
+            failures.append("%s overlaps %s outside its declared barb region %s at step %d/%d: %s to %s"
+                            % (label, item["catch"], region, item["step"], total,
+                               _triple(lo), _triple(hi)))
+    if seated > OVERLAP_MM3:
+        failures.insert(0, "%s is not clear of %s at its seat (%.4g mm3): a snap's barb sits clear under "
+                           "its catch" % (label, snap["catch"], seated))
+    if not on_way:
+        failures.append("%s declares a snap into %s but never overlaps it on its way in: no barb passes "
+                        "a catch, so declare the joint it is" % (label, snap["catch"]))
+    report["failures"] += list(dict.fromkeys(failures))
+    report["snaps"].append({
+        "id": passing["id"], "step": step, "input": name, "part": snap["part"], "catch": snap["catch"],
+        "catch_mm": snap["catch_mm"], "region_mm": region, "samples": total,
+        "overlapping_samples": len({item["step"] for item in on_way}),
+        "max_depth_mm": round(depth, 6), "max_overlap_mm3": round(worst, 6), "seated_mm3": round(seated, 6),
+        "verdict": "FAIL" if failures else "PASS",
+    })
 
 
 def _at_seat(condition: dict) -> dict:
@@ -820,7 +932,7 @@ def check_component(plan: Plan, geometry, role: str, nozzle: float) -> dict:
     leaves, their colours, and every step and route wholly inside it."""
 
     report = {"scope": "component:%s" % role, "defects": [], "slips": [], "failures": [], "conditions": [],
-              "routes": []}
+              "routes": [], "snaps": []}
     expected = plan.expected_labels(role)
     instances = geometry.instances(role)
     for instance in instances:
@@ -835,7 +947,7 @@ def check_component(plan: Plan, geometry, role: str, nozzle: float) -> dict:
         if slips:
             continue
         checked = _check(role, plan, geometry, keyed(plan, role, bodies), nozzle)
-        for key in ("conditions", "failures", "routes"):
+        for key in ("conditions", "failures", "routes", "snaps"):
             report[key] += checked[key]
     report["failures"] = list(dict.fromkeys(report["failures"]))
     return report
@@ -847,7 +959,7 @@ def check_assembly(plan: Plan, geometry, nozzle: float, *, reconcile_all: bool =
     also reconciles and colour-checks every Component."""
 
     report = {"scope": "final" if reconcile_all else "assembly", "defects": structure_defects(plan),
-              "slips": [], "failures": [], "conditions": [], "routes": []}
+              "slips": [], "failures": [], "conditions": [], "routes": [], "snaps": []}
     bodies: dict[str, Body] = {}
     for role in sorted(plan.component_parts):
         expected = plan.expected_labels(role)
@@ -869,7 +981,7 @@ def check_assembly(plan: Plan, geometry, nozzle: float, *, reconcile_all: bool =
             bodies.update(keyed(plan, role, built, instance))
     if not report["defects"] and not report["slips"]:
         checked = _check(None, plan, geometry, bodies, nozzle)
-        for key in ("conditions", "failures", "routes"):
+        for key in ("conditions", "failures", "routes", "snaps"):
             report[key] += checked[key]
     report["failures"] = list(dict.fromkeys(report["failures"]))
     return report
@@ -1002,6 +1114,37 @@ class CadGeometry:
         condition = json.loads(json.dumps({key: value for key, value in condition.items() if key != "result"}))
         condition["inputs"]["obstacle_parts"] = [body.key for body in obstacles]
         return self.motion["run_condition"](condition, parts, 0)
+
+    def snap_overlaps(self, condition: dict, moving: list[Body], obstacles: list[Body]) -> list[dict]:
+        """Every solid where ``moving``, at each sample of the condition's
+        translation from its seat (sample 0) outward, overlaps an obstacle:
+        its sample, obstacle, volume and axis-aligned bounds. An axis-aligned
+        box never reads a barb shallower than it is."""
+
+        from build123d import Location, Vector
+
+        inputs = condition["inputs"]
+        steps, move = int(inputs["steps"]), Vector(*inputs["translation"])
+        group = self._group(moving)
+        found = []
+        for step in range(0, steps + 1):
+            moved = group.moved(Location(move * (step / steps)))
+            box = moved.bounding_box()
+            for body in obstacles:
+                if _apart(box, _grown(body.shape.bounding_box(), 0.0)):
+                    continue
+                try:
+                    common = moved.intersect(body.shape)
+                except Exception as exc:                         # noqa: BLE001
+                    raise RuntimeError("the overlap of %s and %s at step %d/%d could not be measured: %s"
+                                       % (inputs["moving_part"], body.key, step, steps, exc)) from exc
+                for solid in (common.solids() if common is not None else ()):
+                    if solid.volume <= OVERLAP_MM3:
+                        continue
+                    bb = solid.bounding_box()
+                    found.append({"step": step, "catch": body.key, "volume": float(solid.volume),
+                                  "bounds": ((bb.min.X, bb.min.Y, bb.min.Z), (bb.max.X, bb.max.Y, bb.max.Z))})
+        return found
 
     def nonparallel(self, moving, obstacles, direction) -> list[str]:
         """Every mating face pair at the seat that does not slide along

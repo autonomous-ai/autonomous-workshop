@@ -456,8 +456,9 @@ class AssemblyTreeTest(unittest.TestCase):
 
     def test_joint_kinds_and_their_fields(self):
         block = _tree_block()
-        _step(block, "S06-case-battery")["joint"] = "snap"
-        self.assertIn("joint must be one of peg-socket, tab-slot, pin-hinge, foam-tape, glue", self._refused(block))
+        _step(block, "S06-case-battery")["joint"] = "rivet"
+        self.assertIn("joint must be one of peg-socket, tab-slot, pin-hinge, foam-tape, glue, snap",
+                      self._refused(block))
         block = _tree_block()
         _step(block, "S06-case-battery")["joint"] = "glue"
         self.assertIn("glue is a last resort and needs its glue_reason", self._refused(block))
@@ -472,6 +473,49 @@ class AssemblyTreeTest(unittest.TestCase):
         message = self._refused(block)
         self.assertIn("a fold step has exactly one input", message)
         self.assertIn("lamps belongs to a leads step only", message)
+
+    def test_a_snap_names_its_part_its_catch_and_a_sane_catch_depth(self):
+        # ADR 0104 amendment 2026-11-17: the cabinet's carcass snaps into the
+        # case shell, its barb catching 0.35 mm a side.
+        def snapped(**snap):
+            block = _tree_block()
+            step = _step(block, "S07-furniture")
+            step["joint"] = "snap"
+            step["snap"] = {"part": "B01-cabinet-carcass", "catch": "A01-case-shell", "catch_mm": 0.35, **snap}
+            return block
+
+        sealed = self._parse(snapped(region_mm=[[50, 40, -2], [60, 60, 5]])).assembly_tree
+        self.assertEqual(next(item for item in sealed.section["steps"] if item["id"] == "S07-furniture")["snap"],
+                         {"part": "B01-cabinet-carcass", "catch": "A01-case-shell", "catch_mm": 0.35,
+                          "region_mm": [[50, 40, -2], [60, 60, 5]]})
+        for depth in (0, -0.1, 1.01, 2, True, "0.35", None):
+            with self.subTest(catch_mm=depth):
+                self.assertIn("catch_mm must be the barb's catch a side in mm, above 0 and at most 1.0",
+                              self._refused(snapped(catch_mm=depth)))
+        self.assertIsNotNone(self._parse(snapped(catch_mm=1.0)).assembly_tree)
+        cases = {
+            "region_mm must be the box": snapped(region_mm=[[60, 40, -2], [50, 60, 5]]),
+            "snap has unknown field(s): depth": snapped(depth=1),
+            "a Part cannot snap into itself": snapped(catch="B01-cabinet-carcass"),
+            "part 'P02-jar' is no printed Part": snapped(part="P02-jar"),
+            "part 'A01-case-shell' must be a leaf of exactly one input that moves in, not of the base":
+                snapped(part="A01-case-shell", catch="C01-desk-body"),
+            "catch 'C01-desk-body' must be a leaf of the base or of an input before S03-hang-door":
+                snapped(catch="C01-desk-body"),
+        }
+        for message, block in cases.items():
+            with self.subTest(message):
+                self.assertIn(message, self._refused(block))
+        oblique = snapped()
+        _step(oblique, "S07-furniture")["inputs"][1]["direction"] = [0, 1, -1]
+        self.assertIn("goes in along one axis of the assembly frame", self._refused(oblique))
+        bare = _tree_block()
+        _step(bare, "S07-furniture")["joint"] = "snap"
+        self.assertIn("a snap step names its snap", self._refused(bare))
+        stray = _tree_block()
+        _step(stray, "S07-furniture")["snap"] = {"part": "B01-cabinet-carcass", "catch": "A01-case-shell",
+                                                 "catch_mm": 0.35}
+        self.assertIn("snap belongs to a snap joint only", self._refused(stray))
 
     def test_a_short_instruction_and_a_boolean_error_mark(self):
         block = _tree_block()
