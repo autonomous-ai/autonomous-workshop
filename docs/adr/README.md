@@ -60,3 +60,4 @@ ADR. Small factual corrections that do not change the decision are allowed.
 - [0103: Once sealed, a contract's images are renders of the Approved Proof](0103-sealed-contract-images-are-renders-of-the-approved-proof.md) (accepted)
 - [0104: A printed kit ships its sheets, its Bought Parts and its approved Manual](0104-printed-kits-ship-sheets-bought-parts-and-an-approved-manual.md) (proposed)
 - [0105: An approved Proof keeps the fit table it was approved with](0105-an-approved-proof-keeps-its-fit-table.md) (accepted)
+- [0106: A timing ledger and a slow-step review](0106-a-timing-ledger-and-a-slow-step-review.md) (accepted)

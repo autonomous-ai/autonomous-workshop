@@ -411,6 +411,12 @@ Component Review and the assembly look, replacing ADR 0102's in-run STEP
 render and `approved/assembly/`. `verify_made_seed` refuses a packet that
 does not bind them. Before the seal a Proof is still never a Reference
 Image. Schema 2 and 3 seals are unchanged.
+ADR 0106 adds a host-side timing ledger, `$WORKSHOP_HOME/timing/ledger.jsonl`:
+seeded batch steps, seal_proof commands, make_round modes, the kit tools,
+publish and `workshop wish`/`fix` stage operations append one row each with
+wall time, outcome and a deterministic failure class. It only records; no
+gate reads it. `tools/process_review.py` ranks it into
+`docs/research/process-review/<date>.md`; fixing what it finds is agent work.
 Preserve useful deterministic contracts and tests; do not reintroduce removed
 cognitive orchestration as a compatibility layer.
 
