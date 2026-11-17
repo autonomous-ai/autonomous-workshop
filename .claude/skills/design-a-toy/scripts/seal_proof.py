@@ -5,6 +5,8 @@
         --contract CONTRACT.md --checklist CONCEPT-CHECKLIST.md --nozzle 0.4 \\
         --approved-by NAME [--date YYYY-MM-DD] [--cost UNITS] [--open-lines-approved] \\
         [--kit-manual MANUAL.pdf]
+    uv run python .claude/skills/design-a-toy/scripts/seal_proof.py preflight PROOF \\
+        --contract CONTRACT.md --nozzle 0.4 [--open-lines-approved] [--kit-manual MANUAL.pdf]
     uv run python .claude/skills/design-a-toy/scripts/seal_proof.py verify PROOF [--contract CONTRACT.md]
     uv run python .claude/skills/design-a-toy/scripts/seal_proof.py inputs PROOF --contract CONTRACT.md
 
@@ -38,12 +40,30 @@ agree unless the owner approved its open lines at Stage 4
 (`--open-lines-approved`).
 
 It also refuses what final verification would reject (the beaver pilot,
-B2-B5): no passing `make_round --print-gates-only` summary of every
-Component at the sealed nozzle, written by a make_round that checks each
-Component's validity in its Display Pose and its print stance on the bed,
-over the current sources; and no `*_spec.md` (exactly one, passing
-`check_spec_format` and `check_spec_numbers`) or no `measure/check_fit.py`,
-`measure/check_spec.py` and `measure/check_landmarks.py`.
+B2-B5): no `*_spec.md` (exactly one, passing `check_spec_format` and
+`check_spec_numbers`) or no `measure/check_fit.py`, `measure/check_spec.py`
+and `measure/check_landmarks.py`, before any batch step runs; and, once the
+batch's print gates ran or were reused, no passing `make_round
+--print-gates-only` summary of every Component at the sealed nozzle, written
+by a make_round that checks each Component's validity in its Display Pose
+and its print stance on the bed, over the current sources.
+
+Fail fast (ADR 0098 amendment 2026-11-17). The batch runs every cheap gate
+before the print gates: the project dry run, the Shared Helper freeze and
+`verify_project --design --preflight-only` (check_layout, generation,
+check_fit, the project audits, the spec checks and the kit's tree, Sheets,
+print layout, Print Sheet and Manual gates, with the final thresholds). A
+failure there refuses the seal in minutes, before an hour of print gates.
+The print-gates step of the last seal's `measure/seeded-batch.json` is
+reused when its key is unchanged (the command, make_round, every source
+the part files reach, a kit module loaded with `importlib` included, the
+contract, the skills' `LOCK.json` and `WORKSHOP_FIT_TABLE`) and its summary
+is still the bytes it wrote and passed outright; anything else reruns it,
+and a failed or UNVERIFIED result is never reused. Full final verification
+then runs every gate, the cheap ones again. `preflight` runs the prechecks
+and the cheap layers only, records them in `measure/seal-preflight.json`
+and writes no approval: it leaves `APPROVAL.json`, `approved/` and
+`measure/seeded-batch.json` as they were.
 
 ADR 0098: it refuses a Proof without every check input its contract needs
 (`workshop.wish.seed.required_check_inputs`: `SEED-PRODUCT.json` and the
@@ -213,8 +233,18 @@ def geometry_sources(proof: Path) -> dict:
 
 def check_final_inputs(proof: Path, roles, nozzle: float) -> None:
     """What final verification rejects, checked before the owner's approval
-    is sealed: the print gates with Display-Pose validity and the bed datum,
-    and the spec and project audits the seeded run's verifier needs."""
+    is sealed: the spec and project audits the seeded run's verifier needs,
+    then the print gates with Display-Pose validity and the bed datum."""
+
+    check_final_files(proof)
+    check_print_gates(proof, roles, nozzle)
+
+
+def check_print_gates(proof: Path, roles, nozzle: float) -> None:
+    """The Proof's print-gate summary: every Component, every required
+    check, the sealed nozzle, the current sources, and a pass. The seal's
+    batch runs (or reuses) the print gates first, so this reads its
+    summary."""
 
     command = ("make_round %s --print-gates-only --nozzle %g --overhang-angle 45 --contract CONTRACT.md"
                % (proof, nozzle))
@@ -246,6 +276,12 @@ def check_final_inputs(proof: Path, roles, nozzle: float) -> None:
         raise Refusal("the print gates failed for %s (a self-intersection in the Display Pose and a part off "
                       "the bed are failures too); see %s" % (", ".join(sorted(set(failed))) or "a part",
                                                             PRINT_GATES.parent))
+
+
+def check_final_files(proof: Path) -> None:
+    """The spec and project audits final verification needs: one passing
+    ``*_spec.md`` and the three ``measure/`` audits. Seconds."""
+
     specs = sorted(path.name for path in proof.glob("*_spec.md"))
     if len(specs) != 1:
         raise Refusal("final verification needs exactly one *_spec.md in the Proof; found %d" % len(specs))
@@ -380,9 +416,18 @@ def check_seed_inputs(proof: Path, design_contract: dict) -> dict:
     return {item.path: sha256(proof / item.path) for item in required_check_inputs(design_contract)}
 
 
-def dry_run_batch(proof: Path, contract: Path, design_contract: dict, nozzle: float) -> dict:
+def dry_run_batch(proof: Path, contract: Path, design_contract: dict, nozzle: float, *,
+                  preflight: bool = False) -> dict:
     """Owner decision 5: the seeded batch's design plan on the Proof. Refuses
-    on any failing step, quoting each in its own words."""
+    on any failing step, quoting each in its own words.
+
+    The plan runs its cheap gates before the print gates (2026-11-17).
+    ``preflight`` runs only those layers and records them apart, in
+    ``PREFLIGHT_RECORD``, so the seal's own record keeps its print-gate
+    pass. The seal reuses that pass when its key still holds (the
+    command, make_round, every source the part files reach, the contract,
+    the skills' LOCK and the fit table) and its summary passed outright;
+    no other step is reused, and a failure never is."""
 
     from workshop.make import seeded_batch
     from workshop.wish.seed import contract_geometry_ids, contract_is_moving, contract_is_powered
@@ -394,9 +439,15 @@ def dry_run_batch(proof: Path, contract: Path, design_contract: dict, nozzle: fl
         powered=contract_is_powered(design_contract), moving=contract_is_moving(design_contract),
         image_derived=bool(design_contract.get("references")),
         printed_parts=seeded_batch.kit_printed_parts(design_contract))
-    path = proof / seeded_batch.RECORD
-    record = seeded_batch.run_batch(seeded_batch.design_plan(inputs), proof, runner=batch_runner(),
-                                    record_path=path, plan_name="design")
+    plan = seeded_batch.design_plan(inputs)
+    if preflight:
+        path = proof / PREFLIGHT_RECORD
+        record = seeded_batch.run_batch(plan, proof, runner=batch_runner(), record_path=path,
+                                        plan_name="design-preflight", layers=seeded_batch.PREFLIGHT_LAYERS)
+    else:
+        path = proof / seeded_batch.RECORD
+        record = seeded_batch.run_batch(plan, proof, runner=batch_runner(), record_path=path, plan_name="design",
+                                        previous=reusable_print_gates(path))
     if record["status"] != seeded_batch.PASS:
         failing = ["%s (%s): %s" % (item["id"], item.get("reason") or "exit %s" % item.get("exit_code"),
                                     (item.get("excerpt") or "").strip()[-400:])
@@ -406,6 +457,25 @@ def dry_run_batch(proof: Path, contract: Path, design_contract: dict, nozzle: fl
                       % (record["status"], seeded_batch.RECORD, "\n".join(failing)))
     return {"ok": True, "plan": "design", "record_sha256": sha256(path),
             "tool_sha256": seeded_batch.module_sha256()}
+
+
+# Where ``seal_proof.py preflight`` records its batch: never the seal's own
+# record, whose print-gate pass a later seal reuses.
+PREFLIGHT_RECORD = "measure/seal-preflight.json"
+
+
+def reusable_print_gates(path: Path) -> dict | None:
+    """The previous design batch record, holding only its print-gates step:
+    the one step a seal reuses."""
+
+    try:
+        previous = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(previous, dict) or not isinstance(previous.get("steps"), list):
+        return None
+    return {**previous, "steps": [item for item in previous["steps"]
+                                  if isinstance(item, dict) and item.get("id") == "print-gates"]}
 
 
 def batch_runner():
@@ -662,14 +732,20 @@ def check_kit_manual(proof: Path, args, design_contract: dict) -> bytes | None:
     return content
 
 
-def seal(args) -> dict:
+def prechecks(args, *, checklist: Path | None) -> tuple:
+    """Everything the seal checks before its batch, in seconds:
+    ``(proof, contract, critic verdict, design contract, check inputs,
+    identities record)``."""
+
     from workshop.errors import ContractError
     from workshop.wish.seed import check_critic_requirements
 
     proof = Path(args.proof).resolve()
     contract = Path(args.contract).resolve()
-    checklist = Path(args.checklist).resolve()
-    for path, what in ((proof, "Proof directory"), (contract, "contract"), (checklist, "Concept Checklist")):
+    given = ((proof, "Proof directory"), (contract, "contract"))
+    if checklist is not None:
+        given += ((checklist, "Concept Checklist"),)
+    for path, what in given:
         if not path.exists():
             raise Refusal("no %s at %s" % (what, path))
     try:
@@ -693,7 +769,29 @@ def seal(args) -> dict:
     if record.get("contract_sha256") != sha256(contract):
         raise Refusal("make_round read another contract than %s" % contract)
     check_rules(proof, record)
-    check_final_inputs(proof, record["components"], args.nozzle)
+    check_final_files(proof)
+    return proof, contract, verdict, design_contract, check_inputs, record
+
+
+def preflight(args) -> dict:
+    """``seal_proof.py preflight``: the seal's checks up to the print gates
+    (its prechecks and the design batch's cheap layers), so a defect a
+    seal would meet in minutes is met before hours of print gates. It
+    writes no approval: ``APPROVAL.json`` and ``approved/`` are left as
+    they were, and its batch record is ``PREFLIGHT_RECORD``."""
+
+    proof, contract, _verdict, design_contract, _check_inputs, record = prechecks(args, checklist=None)
+    held = set_aside(proof / APPROVED_DIR)
+    try:
+        batch = dry_run_batch(proof, contract, design_contract, args.nozzle, preflight=True)
+    finally:
+        restore(held, proof / APPROVED_DIR)
+    return {"components": sorted(record["components"]), "batch": batch}
+
+
+def seal(args) -> dict:
+    checklist = Path(args.checklist).resolve()
+    proof, contract, verdict, design_contract, check_inputs, record = prechecks(args, checklist=checklist)
     # Issue #241: a re-seal's old approved/ copies are STEP files no
     # Component builds, which the batch's project check refuses as strays.
     # They wait outside the Proof and come back if this seal refuses, so a
@@ -737,6 +835,9 @@ def restore(held, directory: Path) -> None:
 def _seal_after_set_aside(args, proof, contract, checklist, verdict, design_contract, check_inputs,
                           record) -> dict:
     batch = dry_run_batch(proof, contract, design_contract, args.nozzle)
+    # The batch ran (or reused) the print gates; their summary must cover
+    # every Component at this nozzle over the current sources.
+    check_print_gates(proof, record["components"], args.nozzle)
 
     copied = proof / CHECKLIST
     if checklist != copied:
@@ -876,6 +977,13 @@ def main(argv=None) -> int:
     p.add_argument("--refit", action="store_true",
                    help="the owner ordered this approved Proof rebuilt under the fit table WORKSHOP_FIT_TABLE "
                         "names (default: the current one) instead of the one it was approved with (ADR 0105)")
+    p = sub.add_parser("preflight", help="the seal's checks up to the print gates; writes no approval")
+    p.add_argument("proof")
+    p.add_argument("--contract", required=True)
+    p.add_argument("--nozzle", type=float, required=True)
+    p.add_argument("--open-lines-approved", action="store_true")
+    p.add_argument("--kit-manual", metavar="PDF")
+    p.add_argument("--refit", action="store_true")
     p = sub.add_parser("verify")
     p.add_argument("proof")
     p.add_argument("--contract")
@@ -889,6 +997,11 @@ def main(argv=None) -> int:
             for line in lines:
                 print("seal_proof: %s" % line)
             return 1 if any(line.startswith("MISSING") for line in lines) else 0
+        if args.command == "preflight":
+            done = preflight(args)
+            print("seal_proof: preflight passed for %d Component(s); the print gates and the rest of final "
+                  "verification are the seal's" % len(done["components"]))
+            return 0
         if args.command == "seal":
             document = seal(args)
             print("seal_proof: sealed %d Component(s), manifest %s" % (len(document["components"]),

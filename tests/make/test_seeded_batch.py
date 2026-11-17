@@ -294,7 +294,8 @@ class PlanTest(unittest.TestCase):
         steps = self._run_plan()
         self.assertEqual([step.layer for step in steps], sorted((step.layer for step in steps),
                                                                 key=sb.LAYERS.index))
-        self.assertEqual({step.layer for step in steps}, set(sb.LAYERS))
+        self.assertEqual({step.layer for step in steps}, set(sb.LAYERS) - {"preflight"},
+                         "the cheap gates layer is the design plan's; the run's final verification runs them")
         ids = [step.id for step in steps]
         for expected in ("prepare", "project", "shared-helpers", "component:body", "component:lid",
                          "interface:hinge", "bought-model", "check-power", "check-mount", "check-motion",
@@ -367,9 +368,9 @@ class PlanTest(unittest.TestCase):
         seal with the run's own tools, in the run's layer order."""
         steps = sb.design_plan(self._inputs())
         ids = [step.id for step in steps]
-        self.assertEqual(ids, ["project", "shared-helpers", "print-gates", "interface:hinge", "bought-model",
-                               "check-power", "check-mount", "check-motion", "final-verification",
-                               "package-check"])
+        self.assertEqual(ids, ["project", "shared-helpers", "preflight", "print-gates", "interface:hinge",
+                               "bought-model", "check-power", "check-mount", "check-motion",
+                               "final-verification", "package-check"])
         interface = steps[ids.index("interface:hinge")]
         self.assertEqual(interface.argv[2:], ("/run/artifacts/make/r0001/product/cad", "--interface", "hinge",
                                               "--contract", "/run/WISH.json"))
@@ -502,3 +503,121 @@ class ComposedSourceTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PrintGateReuseKeyTest(unittest.TestCase):
+    """ADR 0098 amendment 2026-11-17: the print-gates key binds every source a
+    part file reaches, a module loaded by name included, and its fit table;
+    a recorded pass is reused only while its summary passed outright."""
+
+    def setUp(self):
+        from workshop.make import batch_sources
+
+        self.closure = batch_sources.source_closure
+        self.project = Path(self.enterContext(tempfile.TemporaryDirectory())).resolve()
+        self.write("params.py", "A = 1\n")
+        self.write("part_a.step.py", "from params import A\n")
+        self.write("unused.py", "B = 2\n")
+        self.write("kitmap.json", "{}")
+        self.write("toy_spec.md", "# spec\n")
+        self.write("measure/report.json", "{}")
+        self.write("snap/iso.png", "png")
+        self.write("part_a.step", "STEP")
+
+    def write(self, name, text):
+        path = self.project / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+
+    def test_a_static_closure_binds_imports_and_data_but_no_output(self):
+        self.assertEqual(set(self.closure(self.project, "a")), {"part_a.step.py", "params.py", "kitmap.json"})
+
+    def test_a_module_loaded_by_name_binds_every_project_module(self):
+        self.write("part_a.step.py", "import kitparts\n")
+        self.write("kitparts.py", "import importlib\nM = importlib.import_module('base4')\n")
+        self.write("base4.py", "X = 1\n")
+        self.write("published/part_q.py", "Q = 1\n")
+        self.write("measure/check_spec.py", "pass\n")
+        bound = set(self.closure(self.project, "a"))
+        self.assertTrue({"kitparts.py", "base4.py", "published/part_q.py", "unused.py"} <= bound)
+        self.assertNotIn("measure/check_spec.py", bound)
+
+    def test_an_unreadable_module_binds_every_project_module(self):
+        self.write("part_a.step.py", "import broken\n")
+        self.write("broken.py", "def (:\n")
+        self.assertIn("unused.py", self.closure(self.project, "a"))
+
+    def _gates(self):
+        return Step("print-gates", "components", ("round", "--print-gates-only"),
+                    inputs=(sb.sources_of(),), reports=("measure/print-gates/summary.json",),
+                    env_keys=("WORKSHOP_FIT_TABLE",), gates_summary="measure/print-gates/summary.json")
+
+    def test_the_key_changes_with_a_kit_module_and_the_fit_table_only(self):
+        from unittest import mock
+
+        self.write("part_a.step.py", "import kitparts\n")
+        self.write("kitparts.py", "import importlib\nM = importlib.import_module('base4')\n")
+        self.write("base4.py", "X = 1\n")
+        step = self._gates()
+        key = sb.step_key(step, self.project)
+        self.write("toy_spec.md", "# reworded\n")
+        self.write("measure/report.json", '{"a": 1}')
+        self.assertEqual(sb.step_key(step, self.project), key)
+        self.write("base4.py", "X = 2\n")
+        changed = sb.step_key(step, self.project)
+        self.assertNotEqual(changed, key)
+        with mock.patch.dict("os.environ", {"WORKSHOP_FIT_TABLE": "other"}):
+            self.assertNotEqual(sb.step_key(step, self.project), changed)
+
+    def _summary(self, **change):
+        document = {"ok": True, "build": {"a": {"verdict": "PASS"}},
+                    "print": {"a": {"verdict": "PASS", "final": {"check_overhang": {"verdict": "PASS"}}}},
+                    "sheets": {"verdict": "PASS"}, "interference": {"verdict": "pass"}}
+        document.update(change)
+        self.write("measure/print-gates/summary.json", json.dumps(document))
+
+    def test_only_an_outright_pass_counts(self):
+        name = "measure/print-gates/summary.json"
+        self._summary()
+        self.assertTrue(sb.gates_summary_passed(self.project, name))
+        failing = {
+            "not ok": {"ok": False},
+            "a build fails": {"build": {"a": {"verdict": "FAIL"}}},
+            "a final check is unverified": {
+                "print": {"a": {"verdict": "PASS", "final": {"check_thickness": {"verdict": "UNVERIFIED"}}}}},
+            "sheets fail": {"sheets": {"verdict": "FAIL"}},
+            "interference unverified": {"interference": {"verdict": "unverified"}},
+            "nothing gated": {"print": {}},
+        }
+        for name_, change in failing.items():
+            with self.subTest(name_):
+                self._summary(**change)
+                self.assertFalse(sb.gates_summary_passed(self.project, name))
+        (self.project / name).write_text("not json")
+        self.assertFalse(sb.gates_summary_passed(self.project, name))
+
+    def test_a_pass_is_reused_only_on_its_key_and_its_summary(self):
+        step = self._gates()
+
+        def run(summary):
+            def runner(argv, cwd, timeout):
+                self._summary(**summary)
+                return RunResult(0, "ok", duration_s=1.0)
+            return runner
+
+        first = sb.run_batch([step], self.project, runner=run({}))
+        self.assertEqual(first["steps"][0]["status"], sb.PASS)
+        never = lambda argv, cwd, timeout: self.fail("a reusable pass ran again")
+        second = sb.run_batch([step], self.project, runner=never, previous=first)
+        self.assertEqual(second["steps"][0]["status"], sb.REUSED)
+        reran = []
+        again = lambda argv, cwd, timeout: reran.append(argv) or RunResult(0, "ok")
+        self._summary(note="rewritten by a standalone run")
+        sb.run_batch([step], self.project, runner=again, previous=second)
+        self.assertEqual(len(reran), 1, "a summary that is not the recorded bytes reruns")
+        unverified = sb.run_batch([step], self.project, runner=run({"interference": {"verdict": "unverified"}}))
+        sb.run_batch([step], self.project, runner=again, previous=unverified)
+        self.assertEqual(len(reran), 2, "an unverified summary is never reused")
+        failed = sb.run_batch([step], self.project, runner=lambda *a: RunResult(1, "FAIL overhang"))
+        sb.run_batch([step], self.project, runner=again, previous=failed)
+        self.assertEqual(len(reran), 3, "a failure is never reused")

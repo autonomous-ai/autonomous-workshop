@@ -2380,6 +2380,32 @@ def _quick(
     return 0
 
 
+def _kit_gates(runner: Runner, project: Path, parts: list[Path], nozzle: float) -> int:
+    """The kit and Print Sheet gates, in their order; nothing runs for a
+    toy that has none."""
+
+    # ADR 0092: the Assembly Tree gates, before the Print Sheets they place.
+    if _run_kit_tree(runner, project, nozzle) != 0:
+        return 1
+
+    # Workshop ADR 0104: the kit's FDM Sheets, after the tree they lay out.
+    if _run_kit_sheets(runner, project) != 0:
+        return 1
+    # Workshop ADR 0104 decision 4: the layout Factory weighs, once the
+    # Sheets it lays out passed.
+    if _run_kit_print_layout(runner, project) != 0:
+        return 1
+
+    # ADR 0091: the Print Sheet gate, cheap, before the print sweep.
+    if _run_print_sheets(runner, project, parts) != 0:
+        return 1
+
+    # ADR 0092 decision 9: the kit's Manual, once its tree and sheets passed.
+    if _run_kit_manual(runner, project) != 0:
+        return 1
+    return 0
+
+
 def _final(
     runner: Runner,
     project: Path,
@@ -2398,7 +2424,16 @@ def _final(
     overhang_angle: float,
     image_derived: bool,
     skip_gen: bool = False,
+    preflight_only: bool = False,
 ) -> int:
+    """The final gates in their fixed order. ``preflight_only`` (the seal's
+    fail-fast layer, ADR 0098 amendment 2026-11-17) runs only the cheap
+    ones, in the same order and with the same thresholds: generation, the
+    preflight audit group and the kit's tree, Sheets, print layout, Print
+    Sheet and Manual gates. Mount, power, motion, inspection, the
+    orthogonal views, the Bought Parts model and the print gates are left
+    to the full run, which runs every gate again."""
+
     entries = [assembly, *parts]
     entry_args = [_path_arg(path, runner.cwd) for path in entries]
 
@@ -2417,6 +2452,9 @@ def _final(
         bed=bed,
     ) != 0:
         return 1
+
+    if preflight_only:
+        return _kit_gates(runner, project, parts, nozzle)
 
     mount_manifest = project / "measure" / "mounts.json"
     if mount_manifest.is_file():
@@ -2527,24 +2565,7 @@ def _final(
         if not _run_or_stop(runner, render_args):
             return 1
 
-    # ADR 0092: the Assembly Tree gates, before the Print Sheets they place.
-    if _run_kit_tree(runner, project, nozzle) != 0:
-        return 1
-
-    # Workshop ADR 0104: the kit's FDM Sheets, after the tree they lay out.
-    if _run_kit_sheets(runner, project) != 0:
-        return 1
-    # Workshop ADR 0104 decision 4: the layout Factory weighs, once the
-    # Sheets it lays out passed.
-    if _run_kit_print_layout(runner, project) != 0:
-        return 1
-
-    # ADR 0091: the Print Sheet gate, cheap, before the print sweep.
-    if _run_print_sheets(runner, project, parts) != 0:
-        return 1
-
-    # ADR 0092 decision 9: the kit's Manual, once its tree and sheets passed.
-    if _run_kit_manual(runner, project) != 0:
+    if _kit_gates(runner, project, parts, nozzle) != 0:
         return 1
 
     # ADR 0095 (2026-11-01): a powered toy's Bought Parts and its circuit
@@ -3134,6 +3155,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--report", help="final pipeline record path inside project (default: measure/verification-pipeline.md)")
     parser.add_argument("--no-report", action="store_true", help="do not persist the final pipeline record")
     parser.add_argument("--dry-run", action="store_true", help="print the sequential plan without changing files")
+    parser.add_argument("--preflight-only", action="store_true", help="final mode, cheap gates only (the seal's fail-fast layer): every refusal, check_layout, generation, the preflight audit group (check_fit, the project audits, check_spec_numbers, check_spec_format) and the kit's tree, Sheets, print layout, Print Sheet and Manual gates, in the final order with the final thresholds. Mount, power, motion, inspection, the orthogonal views, the Bought Parts model and the print gates are not run, so a PASS here is no final verification. Refuses --quick and --print-gates; never reuses a prior verdict")
     parser.add_argument("--design", action="store_true", help="final mode on a Contract Proof outside a Workshop run (the seal's design batch, ADR 0098): every final gate runs; the blind signature review is the run's and is not required. Needs --contract; refused inside a run")
     parser.add_argument("--contract", metavar="CONTRACT.md", help="with --design: the Design Contract file whose circuit and catalogue snapshot a run would seal, for the Bought Parts model")
     parser.add_argument("--geometry-seconds", type=float, help="total seconds for every geometry analysis of this run (check_mesh, check_overhang, check_thickness, check_motion); default WORKSHOP_GEOMETRY_TIMEOUT or 600. An analysis left when it is spent is recorded UNVERIFIED")
@@ -3235,6 +3257,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--unpowered is only needed with --image-derived")
     if args.report and args.no_report:
         parser.error("--report and --no-report are mutually exclusive")
+    if args.preflight_only and args.quick:
+        parser.error("--preflight-only is a final-mode option and cannot be combined with --quick")
+    if args.preflight_only and args.print_gates:
+        parser.error("--preflight-only runs no print gates; drop --print-gates")
     if args.design and args.quick:
         parser.error("--design is a final-mode option and cannot be combined with --quick")
     if args.design != bool(args.contract):
@@ -3481,7 +3507,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         ):
             result = 1
         else:
-            if not args.no_report and not args.dry_run:
+            if not args.no_report and not args.dry_run and not args.preflight_only:
                 reuse_report = report_path or (project / "measure" / "verification-pipeline.md")
                 closure = _sweep_closure_sha256(
                     entries=entries,
@@ -3518,8 +3544,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                     overhang_angle=float(args.overhang_angle),
                     image_derived=bool(args.image_derived),
                     skip_gen=True,
+                    preflight_only=bool(args.preflight_only),
                 )
     elapsed = time.perf_counter() - workflow_started
+    if args.preflight_only and not args.quick:
+        # Its record says what it is: the cheap gates only, never a final
+        # verification.
+        mode += " preflight"
     final_report = None
     if not args.quick and not args.no_report and not args.dry_run:
         final_report = report_path or (project / "measure" / "verification-pipeline.md")

@@ -20,12 +20,18 @@ Within a layer every step runs even when one fails, so one report carries
 every independent failure (owner decision 4). A layer after a failed one is
 skipped and named as skipped. A step whose command and input bytes are those
 of a recorded pass is reused rather than rerun; a failure is never reused.
+A step's sources input (``@sources``) binds every file the part files can
+reach, a module loaded by name included (``batch_sources``); a print-gates
+step is reused only while its summary is the bytes it wrote and passed
+outright, nothing FAIL or UNVERIFIED (ADR 0098 amendment 2026-11-17).
 
 Two plans share the engine. ``run_plan`` is what the host runs inside a
 seeded run, as the run user, with the run's materialized tools.
 ``design_plan`` is what ``seal_proof.py seal`` runs on the Proof before the
 owner's approval is sealed (owner decision 5): the layers that need no run
-state, so a defect is found at design cost.
+state, so a defect is found at design cost. Its ``preflight`` layer runs
+final verification's cheap gates (``--preflight-only``) before the print
+gates, so a stale spec, layout, tree or Manual fails in minutes.
 """
 
 from __future__ import annotations
@@ -47,6 +53,9 @@ LAYERS = (
     "seed",
     "project",
     "shared-helpers",
+    # The design plan's cheap final gates (ADR 0098 amendment 2026-11-17):
+    # every check that takes seconds or minutes, before any that takes hours.
+    "preflight",
     "components",
     "interfaces",
     "power",
@@ -75,6 +84,7 @@ DEFAULT_DEADLINES = {
     "seed": 300.0,
     "project": 300.0,
     "shared-helpers": 900.0,
+    "preflight": 3600.0,
     "components": 900.0,
     "interfaces": 900.0,
     "power": 900.0,
@@ -119,6 +129,12 @@ class Step:
     # An assembly round records an analysis it could not finish as
     # geometry_status "unverified" in its summary (issue #244).
     round_summary: bool = False
+    # Environment variables whose values decide the step's result (the fit
+    # table a build reads); part of its reuse key.
+    env_keys: tuple = ()
+    # A print-gates summary the step writes: a recorded pass is reused only
+    # while this summary passed outright, nothing FAIL or UNVERIFIED in it.
+    gates_summary: Optional[str] = None
 
     def __post_init__(self) -> None:
         if self.layer not in LAYERS:
@@ -226,9 +242,29 @@ def _tree_hashes(project: Path, name: str) -> dict:
     return {name: None}
 
 
+# An input naming the project's sources rather than one path: every file
+# that could decide the shapes of every entry (``@sources``) or of one
+# Component (``@sources:<role>``), from workshop.make.batch_sources.
+SOURCES = "@sources"
+
+
+def sources_of(role: Optional[str] = None) -> str:
+    return SOURCES if role is None else "%s:%s" % (SOURCES, role)
+
+
+def _input_hashes(project: Path, name: str) -> dict:
+    if name == SOURCES or name.startswith(SOURCES + ":"):
+        from workshop.make.batch_sources import source_closure
+
+        role = name[len(SOURCES) + 1:] or None
+        return {"%s/%s" % (name, path): digest for path, digest in source_closure(project, role).items()}
+    return _tree_hashes(project, name)
+
+
 def step_key(step: Step, project: Path) -> str:
     """The reuse key: the command, the bytes of the tool it runs and of every
-    declared input. Equal keys run the same check on the same bytes."""
+    declared input, and the environment the step reads. Equal keys run the
+    same check on the same bytes."""
 
     tools = {}
     for item in step.argv[:2]:
@@ -237,8 +273,42 @@ def step_key(step: Step, project: Path) -> str:
             tools[item] = _sha256_bytes(candidate.read_bytes())
     inputs: dict = {}
     for relative in step.inputs:
-        inputs.update(_tree_hashes(project, relative))
-    return _sha256_bytes(_canonical({"argv": list(step.argv), "tools": tools, "inputs": inputs}))
+        inputs.update(_input_hashes(project, relative))
+    document = {"argv": list(step.argv), "tools": tools, "inputs": inputs}
+    if step.env_keys:
+        document["env"] = {name: os.environ.get(name) for name in step.env_keys}
+    return _sha256_bytes(_canonical(document))
+
+
+def gates_summary_passed(project: Path, summary: str) -> bool:
+    """Whether a print-gates summary passed outright: ``ok`` true, every
+    build, print and final verdict PASS, its Sheets PASS, and its assembly
+    interference ``pass``. ``unverified`` interference lets a run pass but
+    is never reused: a gate that did not finish is checked again."""
+
+    try:
+        document = json.loads((Path(project) / summary).read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError):
+        return False
+    if not isinstance(document, Mapping) or document.get("ok") is not True:
+        return False
+    for group in ("build", "print"):
+        items = document.get(group)
+        if not isinstance(items, Mapping) or not items:
+            return False
+        for item in items.values():
+            if not isinstance(item, Mapping) or item.get("verdict") != "PASS":
+                return False
+            for check in (item.get("final") or {}).values():
+                if not isinstance(check, Mapping) or check.get("verdict") != "PASS":
+                    return False
+    sheets = document.get("sheets")
+    if sheets is not None and (not isinstance(sheets, Mapping) or sheets.get("verdict") != "PASS"):
+        return False
+    interference = document.get("interference")
+    if interference is not None and (not isinstance(interference, Mapping) or interference.get("verdict") != "pass"):
+        return False
+    return True
 
 
 def _excerpt(output: str, limit: int = EXCERPT_BYTES) -> str:
@@ -253,9 +323,22 @@ def _excerpt(output: str, limit: int = EXCERPT_BYTES) -> str:
 def _previous_passes(previous: Optional[Mapping[str, Any]]) -> dict:
     if not isinstance(previous, Mapping) or previous.get("kind") != RECORD_KIND:
         return {}
-    return {item["id"]: item["key"] for item in previous.get("steps") or ()
+    return {item["id"]: item for item in previous.get("steps") or ()
             if isinstance(item, Mapping) and item.get("status") in (PASS, REUSED)
             and isinstance(item.get("id"), str) and isinstance(item.get("key"), str)}
+
+
+def _reusable(step: Step, key: str, passed: Optional[Mapping[str, Any]], project: Path) -> bool:
+    """A recorded pass is reused only for the same key; a print-gates step
+    also only while the reports it wrote are still the bytes it recorded
+    and its summary passed outright. Anything else runs again."""
+
+    if passed is None or passed.get("key") != key:
+        return False
+    if step.gates_summary is None:
+        return True
+    return (passed.get("reports") == _report_hashes(project, step.reports)
+            and gates_summary_passed(project, step.gates_summary))
 
 
 def run_batch(
@@ -293,7 +376,7 @@ def run_batch(
                 entry.update(status=SKIPPED, reason="layer %s failed" % failed_layer)
                 recorded.append(entry)
                 continue
-            if reusable.get(step.id) == key:
+            if _reusable(step, key, reusable.get(step.id), project):
                 entry.update(status=REUSED, reports=_report_hashes(project, step.reports))
                 recorded.append(entry)
                 continue
@@ -479,7 +562,7 @@ def _shared_allowance(inputs: PlanInputs, layer: str) -> tuple:
 
 
 def _source_inputs(roles: Iterable[str]) -> tuple:
-    return ("params.py", "features", "colours.py", *("part_%s.step.py" % role for role in roles))
+    return ("params.py", "features", "colours.py", *("part_%s.step.py" % role for role in roles), SOURCES)
 
 
 def _common_layers(inputs: PlanInputs, *, design: bool) -> list:
@@ -535,7 +618,7 @@ def run_plan(inputs: PlanInputs, *, run_root: Path, product_root: Path, source: 
         steps.append(Step("component:%s" % role, "components",
                           (py, make_round, project, "--component", "part_%s.step.py" % role,
                            "--nozzle", "%g" % inputs.nozzle, *extra, "--json"),
-                          inputs=("params.py", "features", "part_%s.step.py" % role),
+                          inputs=("params.py", "features", "part_%s.step.py" % role, sources_of(role)),
                           reports=("measure/rounds/%s" % role,), nonce_component=role, deadline_s=deadline))
     for interface in inputs.coupled_interfaces:
         steps.append(Step("interface:%s" % interface, "interfaces",
@@ -578,12 +661,23 @@ def run_plan(inputs: PlanInputs, *, run_root: Path, product_root: Path, source: 
 
 
 DESIGN_REPORT = "measure/design-verification.md"
+# The design plan's cheap final gates, before the print gates
+# (ADR 0098 amendment 2026-11-17).
+PREFLIGHT_REPORT = "measure/design-preflight.md"
+# The layers ``seal_proof.py preflight`` runs: everything before the print
+# gates, which take hours.
+PREFLIGHT_LAYERS = ("project", "shared-helpers", "preflight")
+# What decides a Proof's print gates beyond its sources: the fit table its
+# builds read (Workshop ADR 0105).
+PRINT_GATES_ENV = ("WORKSHOP_FIT_TABLE",)
 
 
-def _final_step(inputs: PlanInputs, report: str, *, design: bool) -> Step:
+def _final_step(inputs: PlanInputs, report: str, *, design: bool, preflight: bool = False) -> Step:
     """Final verification, the same gates in the run and on the Proof. In
     the run it binds the carried signature review; on the Proof
-    (``--design``, refused inside a run) that review does not exist yet."""
+    (``--design``, refused inside a run) that review does not exist yet.
+    ``preflight``: the same command with ``--preflight-only`` and without
+    ``--print-gates``, the design plan's cheap gates layer."""
 
     flags = ["--powered"] if inputs.powered else ["--unpowered"] if inputs.image_derived else []
     reviews = () if design else ("snap/SIGNATURE-REVIEW.json", "snap/MOTION-REVIEW.json")
@@ -592,10 +686,13 @@ def _final_step(inputs: PlanInputs, report: str, *, design: bool) -> Step:
     # gives them the layer's deadline, less time to build and report, and a
     # kit at least what its printed Parts need.
     geometry, deadline = _shared_allowance(inputs, "final")
-    return Step("final-verification", "final",
+    if preflight and deadline is None:
+        deadline = DEFAULT_DEADLINES["preflight"]
+    return Step("preflight" if preflight else "final-verification", "preflight" if preflight else "final",
                 (inputs.python, _tool(inputs, "cad", "scripts", "verify_project"), str(inputs.project),
                  *(("--design", "--contract", str(inputs.contract_path)) if design else ()),
-                 "--geometry-seconds", "%g" % geometry, "--strict-fit", "--print-gates",
+                 "--geometry-seconds", "%g" % geometry, "--strict-fit",
+                 *(("--preflight-only",) if preflight else ("--print-gates",)),
                  "--nozzle", "%g" % inputs.nozzle, "--report", str(inputs.project / report),
                  "--check-motion", "true" if inputs.moving else "false",
                  *(("--image-derived",) if inputs.image_derived else ()), *flags),
@@ -664,13 +761,21 @@ def design_plan(inputs: PlanInputs) -> list:
     make_round = _tool(inputs, "make-round", "scripts", "make_round")
     contract = str(inputs.contract_path)
     steps = _common_layers(inputs, design=True)
-    # One run gates every Component, sharing make_round's one allowance.
+    # The cheap final gates first (2026-11-17): a stale spec, layout, tree or
+    # Manual fails in minutes, before the print gates spend hours.
+    steps.append(_final_step(inputs, PREFLIGHT_REPORT, design=True, preflight=True))
+    # One run gates every Component, sharing make_round's one allowance. A
+    # pass is reused while its key holds: the command, make_round's bytes,
+    # every source a part file reaches (kit modules it loads included), the
+    # contract, the skills' LOCK and the fit table.
     extra, deadline = _kit_allowance(inputs, inputs.roles, "components")
     steps.append(Step("print-gates", "components",
                       (py, make_round, project, "--print-gates-only", "--nozzle", "%g" % inputs.nozzle,
                        "--overhang-angle", "45", "--contract", contract, *extra),
-                      inputs=_source_inputs(inputs.roles), reports=("measure/print-gates/summary.json",),
-                      deadline_s=deadline))
+                      inputs=(*_source_inputs(inputs.roles), contract,
+                              str(inputs.skills_root / "LOCK.json")),
+                      reports=("measure/print-gates/summary.json",), deadline_s=deadline,
+                      env_keys=PRINT_GATES_ENV, gates_summary="measure/print-gates/summary.json"))
     for interface in inputs.coupled_interfaces:
         steps.append(Step("interface:%s" % interface, "interfaces",
                           (py, make_round, project, "--interface", interface, "--contract", contract),

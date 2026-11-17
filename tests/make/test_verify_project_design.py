@@ -164,3 +164,42 @@ class DesignFinalVerificationTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PreflightOnlyTest(DesignFinalVerificationTest):
+    """ADR 0098 amendment 2026-11-17: `--preflight-only` is the seal's
+    fail-fast layer: final mode's cheap gates, in their order and with their
+    thresholds, and nothing else. It never stands in for final verification."""
+
+    def test_it_is_refused_with_quick_or_print_gates(self):
+        cases = {"--quick": "--preflight-only is a final-mode option",
+                 "--print-gates": "--preflight-only runs no print gates"}
+        for flag, words in cases.items():
+            with self.subTest(flag):
+                self.assertEqual(self._run("--design", "--contract", "CONTRACT.md", "--preflight-only", flag), 2)
+                self.assertIn(words, self.stderr)
+                self.assertEqual(self.commands, [])
+
+    def test_its_first_gate_is_the_final_one(self):
+        self.assertEqual(self._run("--design", "--contract", "CONTRACT.md", "--preflight-only"), 1)
+        self.assertEqual(self.commands, ["check_layout"])
+
+    def test_it_stops_after_the_kit_gates(self):
+        final = self.main.__globals__["_final"]
+        calls = []
+        stubs = {name: (lambda name: lambda *a, **k: calls.append(name) or 0)(name)
+                 for name in ("_run_preflight_audits", "_run_kit_tree", "_run_kit_sheets",
+                              "_run_kit_print_layout", "_run_print_sheets", "_run_kit_manual",
+                              "_run_bought_model", "_run_or_stop")}
+        saved = {name: self.main.__globals__[name] for name in stubs}
+        self.addCleanup(self.main.__globals__.update, saved)
+        self.main.__globals__.update(stubs)
+        runner = self.main.__globals__["Runner"](cwd=self.root, dry_run=False, verbose=False)
+        code = final(runner, self.project, self.project / "toy.step.py", [], [], motion_manifest=None,
+                     strict_fit=True, strict_mount=False, print_gates=False, bed=(256, 256, 256), nozzle=0.4,
+                     skip_thickness=False, overhang_angle=45, image_derived=False, skip_gen=True,
+                     preflight_only=True)
+        self.assertEqual(code, 0)
+        self.assertEqual(calls, ["_run_preflight_audits", "_run_kit_tree", "_run_kit_sheets",
+                                 "_run_kit_print_layout", "_run_print_sheets", "_run_kit_manual"])
+        self.assertEqual(self.commands, [], "no mount, power, motion, inspection, views or print gate")
