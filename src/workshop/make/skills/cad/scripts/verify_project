@@ -2,7 +2,10 @@
 """Run a CAD project through a sequential preflight, quick, or final workflow.
 
 The runner removes orchestration overhead, not validation.  It batches explicit
-generation targets, runs inspect JSONL in one process, and disables the warm
+generation targets, runs inspect JSONL one process per entry, several entries
+at once, and the print gates of several targets at once (VERIFY_PROJECT_JOBS,
+default min(8, cores - 2); 1 runs everything one after another), always
+recording and printing in the one-after-another order, and disables the warm
 daemon for every geometry command it launches, as Make Round also does: this
 runner owns those children by process group, and a shared daemon would sit
 outside that group and could survive cancellation.  The daemon stays live on
@@ -59,9 +62,12 @@ from __future__ import annotations
 
 import argparse
 import ast
+from concurrent.futures import ThreadPoolExecutor
+import copy
 from datetime import datetime, timezone
 import errno
 import hashlib
+import io
 import json
 import math
 import os
@@ -1246,8 +1252,39 @@ def _command_label(args: Sequence[str]) -> str:
     return Path(args[0]).name
 
 
+JOBS_ENV = "VERIFY_PROJECT_JOBS"
+# The tools that run side by side get one BLAS/OpenMP thread each unless the
+# caller set otherwise: a CAD process otherwise holds about 180 threads on a
+# 64-core host, and eight at once crowd a cgroup's task limit (pids.max
+# 9830 on the Workshop host), starving whatever else runs there.
+SIDE_BY_SIDE_THREADS = {"OPENBLAS_NUM_THREADS": "1", "OMP_NUM_THREADS": "1"}
+SIDE_BY_SIDE_TOOLS = frozenset({"check_mesh", "check_overhang", "check_thickness"})
+
+
+def verify_jobs() -> int:
+    """How many independent geometry tools run at once: the print gates of
+    separate targets and the inspect batch's entries. ``VERIFY_PROJECT_JOBS=1``
+    runs them one after another. Each CAD process holds tens of threads (an
+    OCCT mesh pool, BLAS unless OPENBLAS_NUM_THREADS/OMP_NUM_THREADS=1), so
+    the default stays at make_round's width, not the core count."""
+
+    value = os.environ.get(JOBS_ENV)
+    if value is not None:
+        try:
+            jobs = int(value)
+        except ValueError:
+            raise ValueError(f"{JOBS_ENV} must be a whole number") from None
+        if jobs < 1:
+            raise ValueError(f"{JOBS_ENV} must be at least 1")
+        return jobs
+    return max(1, min(8, (os.cpu_count() or 1) - 2))
+
+
 class Runner:
     def __init__(self, *, cwd: Path, dry_run: bool, verbose: bool) -> None:
+        # Where this runner's progress goes: None is sys.stdout at the time
+        # of writing; a forked runner buffers it (see fork()).
+        self.out = None
         self.cwd = cwd
         self.dry_run = dry_run
         self.verbose = verbose
@@ -1267,6 +1304,38 @@ class Runner:
         # has an Interfaces section (ADR 0082).
         self.interfaces: list[dict] | None = None
 
+    def _write(self, text: str) -> None:
+        stream = self.out if self.out is not None else sys.stdout
+        stream.write(text)
+        stream.flush()
+
+    def start_geometry_clock(self) -> None:
+        """Start the shared geometry allowance now, as the first analysis
+        command would, so runners forked from this one share one deadline."""
+        if self.geometry_deadline is None and not self.dry_run:
+            budget = float(os.environ.get("WORKSHOP_GEOMETRY_TIMEOUT", "600"))
+            if not 0 < budget <= 86400:
+                raise ValueError("WORKSHOP_GEOMETRY_TIMEOUT must be in (0, 86400]")
+            self.geometry_deadline = time.monotonic() + budget
+
+    def fork(self) -> "Runner":
+        """A runner for one independent job that runs beside others: the same
+        tools, settings and geometry deadline, with its own records and
+        buffered progress, which absorb() hands back in order."""
+        child = copy.copy(self)
+        child.out = io.StringIO()
+        child.records = []
+        child.inspection_checks = []
+        child.last_stdout = ""
+        return child
+
+    def absorb(self, child: "Runner") -> None:
+        """Take a forked runner's progress and records, as if its job had
+        run here at this point."""
+        self._write(child.out.getvalue())
+        self.records.extend(child.records)
+        self.inspection_checks.extend(child.inspection_checks)
+
     def command(
         self,
         argv: Sequence[str | Path],
@@ -1276,7 +1345,7 @@ class Runner:
         replay_success_stdout: bool = False,
     ) -> int:
         args = [str(item) for item in argv]
-        print(f"[verify_project] {shlex.join(args)}", flush=True)
+        self._write(f"[verify_project] {shlex.join(args)}\n")
         if self.dry_run:
             self.records.append({"command": shlex.join(args), "status": "planned", "seconds": 0.0})
             return 0
@@ -1299,6 +1368,9 @@ class Runner:
         # The verifier owns these children. A separate shared daemon would be
         # outside their process group and could survive cancellation.
         env["CADGEN_WARM"] = "0"
+        if _command_label(args) in SIDE_BY_SIDE_TOOLS:
+            for key, value in SIDE_BY_SIDE_THREADS.items():
+                env.setdefault(key, value)
         with tempfile.TemporaryFile() as failures:
             env["WORKSHOP_GEOMETRY_FAILURE_FD"] = str(failures.fileno())
             if budget == 0:
@@ -1325,7 +1397,7 @@ class Runner:
                      "status": "unverified", "reasons": ["geometry analysis cancelled or its time allowance exhausted"], "completed": 0}
             self.inspection_checks.append(check)
             self.records.append({"command": shlex.join(args), "status": "unverified", "seconds": time.perf_counter() - started})
-            print(f"[verify_project] {check['id']}: UNVERIFIED; recorded for final documentation", flush=True)
+            self._write(f"[verify_project] {check['id']}: UNVERIFIED; recorded for final documentation\n")
             return 0
         self.last_stdout = stdout or ""
         completed = subprocess.CompletedProcess(args, return_code, stdout)
@@ -1337,13 +1409,10 @@ class Runner:
         # normally compacted, but advisory-producing gates can explicitly
         # request replay so a passing command cannot hide a caveat.
         if completed.stdout and (self.verbose or return_code != 0 or replay_success_stdout):
-            sys.stdout.write(completed.stdout)
-            if not completed.stdout.endswith("\n"):
-                sys.stdout.write("\n")
-        print(
+            self._write(completed.stdout if completed.stdout.endswith("\n") else completed.stdout + "\n")
+        self._write(
             f"[verify_project] {_command_label(args)}: rc={return_code} "
-            f"in {elapsed:.2f}s",
-            flush=True,
+            f"in {elapsed:.2f}s\n"
         )
         return return_code
 
@@ -1353,14 +1422,14 @@ class Runner:
         A gate that is absent from the report is indistinguishable from a gate
         that passed.  Every conditional check writes a row either way.
         """
-        print(f"[verify_project] skip {label}: {reason}", flush=True)
+        self._write(f"[verify_project] skip {label}: {reason}\n")
         self.records.append(
             {"command": f"{label}  # NOT RUN: {reason}", "status": "skipped", "seconds": 0.0}
         )
 
     def note(self, label: str, detail: str) -> None:
         """Persist a non-failing limitation that changes the handoff claim."""
-        print(f"[verify_project] note {label}: {detail}", flush=True)
+        self._write(f"[verify_project] note {label}: {detail}\n")
         self.records.append(
             {"command": f"{label}  # NOTE: {detail}", "status": "note", "seconds": 0.0}
         )
@@ -1387,28 +1456,40 @@ class Runner:
                 "reasons": ["geometry inspection time allowance exhausted"], "completed": 0} for request in requests)
             self.records.append({"command": "inspect batch", "status": "unverified", "seconds": 0.0})
             return 0
-        payload = "".join(json.dumps(request, separators=(",", ":")) + "\n" for request in requests)
         env = dict(os.environ)
         # Batch owns stdin and is itself the long-lived inspect process.  Do not
         # ask the no-stdin daemon protocol to carry it.
         env.pop("CADGEN_WARM", None)
         env["WORKSHOP_GEOMETRY_TIMEOUT"] = str(remaining)
+        for key, value in SIDE_BY_SIDE_THREADS.items():
+            env.setdefault(key, value)
         started = time.perf_counter()
-        completed = subprocess.run(
-            argv,
-            cwd=self.cwd,
-            env=env,
-            input=payload,
-            text=True,
-            # Keep JSONL responses private until parsed, but let request
-            # progress reach the operator while the batch is still running.
-            stdout=subprocess.PIPE,
-            check=False,
-        )
-        failed = completed.returncode != 0
+
+        def run_group(group: list[dict[str, object]]) -> subprocess.CompletedProcess:
+            payload = "".join(json.dumps(request, separators=(",", ":")) + "\n" for request in group)
+            return subprocess.run(
+                argv,
+                cwd=self.cwd,
+                env=env,
+                input=payload,
+                text=True,
+                # Keep JSONL responses private until parsed, but let request
+                # progress reach the operator while the batch is still running.
+                stdout=subprocess.PIPE,
+                check=False,
+            )
+
+        # One batch process per entry, several at once: an entry's requests
+        # stay together, so its scene is built once, as in one process. The
+        # responses are read in request order, exactly as one process wrote
+        # them.
+        groups = inspect_groups(requests)
+        with ThreadPoolExecutor(max_workers=max(1, min(verify_jobs(), len(groups)))) as pool:
+            completed_groups = list(pool.map(run_group, groups))
+        failed = any(completed.returncode != 0 for completed in completed_groups)
         response_count = 0
         seen = set()
-        for line in completed.stdout.splitlines():
+        for line in "".join(completed.stdout or "" for completed in completed_groups).splitlines():
             if not line.strip():
                 continue
             response_count += 1
@@ -1464,6 +1545,22 @@ class Runner:
             flush=True,
         )
         return 1 if failed else 0
+
+
+def inspect_groups(requests: list[dict[str, object]]) -> list[list[dict[str, object]]]:
+    """The inspect requests in runs of one entry each, in order: a request's
+    entry is the first argument after its command. Concatenated, the runs
+    are the requests as given."""
+    groups: list[list[dict[str, object]]] = []
+    last = object()
+    for request in requests:
+        argv = request.get("argv") if isinstance(request, dict) else None
+        entry = str(argv[1]) if isinstance(argv, list) and len(argv) > 1 else None
+        if not groups or entry is None or entry != last:
+            groups.append([])
+        groups[-1].append(request)
+        last = entry
+    return groups
 
 
 def _step_for_entry(entry: Path) -> Path:
@@ -1758,49 +1855,73 @@ def _gate_entry(
     return int(failures)
 
 
-def _gate_kit_parts(
-    runner: Runner,
-    project: Path,
-    component: Path,
-    role: str,
-    kit: dict,
-    tool,
-    **gates,
-) -> int:
-    """Each printed Part of one kit Component, alone in its print stance
-    (ADR 0092, 2026-10-28); how many failed. A ``print_parts()`` that is not
-    the Component's printed Parts fails, and nothing is gated in its place.
+def _say(runner, line: str) -> None:
+    """One progress line through ``runner`` (buffered on a fork)."""
+    if isinstance(runner, Runner):
+        runner._write(line + "\n")
+    else:
+        print(line, flush=True)
 
-    ``print_parts()`` is built once, by ``describe``, which keeps each Part's
-    B-rep (2026-11-17); each Part's gates read it instead of building the
-    whole Component again. A Part it could not keep is gated from source."""
+
+def _describe_kit_parts(runner: Runner, project: Path, component: Path, role: str, kit: dict, tool):
+    """Build one kit Component's ``print_parts()`` once, by ``describe``,
+    which keeps each Part's B-rep (2026-11-17). ``(refusals, names, kept,
+    unkept)``: what is not the Component's printed Parts, else the Parts to
+    gate, the kept builds their gates read and why any Part was not kept."""
     entries_dir = project / "__cadgen__" / "print-parts" / "final" / role
     keep = project / "__cadgen__" / "round-brep" / "final" / role
     command = [sys.executable, KIT_PRINT_PARTS_SCRIPT, "describe", _path_arg(component, runner.cwd),
                "--keep", keep, "--entries", entries_dir]
     returncode = runner.command(command)
-    kept: dict = {}
     if runner.dry_run:
-        names = tool.printed_parts(kit, role) or []
-    else:
-        described = tool.parse(runner.last_stdout, returncode)
-        refusals = tool.failures(kit, role, described)
-        if refusals:
-            for detail in refusals:
-                print(f"[verify_project] print parts: {detail}", flush=True)
-                runner.records.append({"command": f"print parts  # FAILED: {detail}", "status": "rc=1",
-                                       "seconds": 0.0})
-            return 1
-        names = sorted(described["parts"])
-        kept = {name: identity for name, identity in (described.get("kept") or {}).items()
-                if isinstance(identity, str)}
-        for name, why in sorted((described.get("unkept") or {}).items()):
-            print(f"[verify_project] print parts: {role}/{name} gated from source: {why}", flush=True)
-    entries = tool.write_entries(component, entries_dir, names)
-    return sum(_gate_entry(runner, project, path, f"{role}-{name}", **gates,
-                           env_extra={"WORKSHOP_BREP_BUNDLE": str(keep / name),
-                                      "WORKSHOP_BREP_IDENTITY": kept[name]} if name in kept else None)
-               for name, path in entries.items())
+        return [], tool.printed_parts(kit, role) or [], {}, {}
+    described = tool.parse(runner.last_stdout, returncode)
+    refusals = tool.failures(kit, role, described)
+    if refusals:
+        return refusals, [], {}, {}
+    kept = {name: identity for name, identity in (described.get("kept") or {}).items()
+            if isinstance(identity, str)}
+    return [], sorted(described["parts"]), kept, dict(described.get("unkept") or {})
+
+
+def _kit_part_jobs(runner: Runner, project: Path, component: Path, role: str, tool, described) -> tuple:
+    """``(failures, jobs)`` of one described kit Component: a refused
+    ``print_parts()`` fails, and nothing is gated in its place; otherwise one
+    job per printed Part, alone in its print stance (ADR 0092, 2026-10-28),
+    reading its kept build. A Part that was not kept is gated from source."""
+    refusals, names, kept, unkept = described
+    if refusals:
+        for detail in refusals:
+            _say(runner, f"[verify_project] print parts: {detail}")
+            runner.records.append({"command": f"print parts  # FAILED: {detail}", "status": "rc=1",
+                                   "seconds": 0.0})
+        return 1, []
+    for name, why in sorted(unkept.items()):
+        _say(runner, f"[verify_project] print parts: {role}/{name} gated from source: {why}")
+    keep = project / "__cadgen__" / "round-brep" / "final" / role
+    entries = tool.write_entries(component, project / "__cadgen__" / "print-parts" / "final" / role, names)
+    return 0, [(path, f"{role}-{name}",
+                {"WORKSHOP_BREP_BUNDLE": str(keep / name), "WORKSHOP_BREP_IDENTITY": kept[name]}
+                if name in kept else None)
+               for name, path in entries.items()]
+
+
+def _side_by_side(runner, jobs: list) -> list | None:
+    """Run ``jobs`` (each takes a runner) beside each other, verify_jobs() at
+    once, each on its own fork of ``runner``; ``[(result, fork)]`` in job
+    order, for the caller to absorb in the order the jobs would have run one
+    after another. None when they should run in turn instead: any runner but
+    a real Runner, a dry run, VERIFY_PROJECT_JOBS=1."""
+    width = verify_jobs()
+    if not isinstance(runner, Runner) or runner.dry_run or width == 1:
+        return None
+    runner.start_geometry_clock()
+    forks = [runner.fork() for _ in jobs]
+    if not jobs:
+        return []
+    with ThreadPoolExecutor(max_workers=min(width, len(jobs))) as pool:
+        futures = [pool.submit(job, fork) for job, fork in zip(jobs, forks)]
+        return [(future.result(), fork) for future, fork in zip(futures, forks)]
 
 
 def _run_print_gates(
@@ -1827,6 +1948,12 @@ def _run_print_gates(
     A kit's Components (ADR 0092, owner decision 2026-10-28) are gated Part
     by Part from their ``print_parts()``, whether or not they declare
     PRINTABLE: each kit Part prints alone, in its own stance.
+
+    Each target's gates are independent of every other's, so they run side
+    by side (``_side_by_side``): first every target that is no kit Part and
+    every kit Component's one build, then every kit Part. The record and the
+    output keep the one-after-another order: the targets, then each kit
+    Component's build and its Parts.
     """
     failures = 0
     gates = {"bed": bed, "nozzle": nozzle, "skip_thickness": skip_thickness,
@@ -1839,15 +1966,56 @@ def _run_print_gates(
             if part.name.startswith(PART_PREFIX) and tool.printed_parts(kit, role) is not None:
                 kit_roles[role] = part
 
+    targets = []
     for printable in printables:
         role = printable.name.removesuffix(ENTRY_SUFFIX)
         if role.startswith(PART_PREFIX):
             role = role.removeprefix(PART_PREFIX)
             if role in kit_roles:
                 continue
-        failures += _gate_entry(runner, project, printable, role, **gates)
-    for role, component in sorted(kit_roles.items()):
-        failures += _gate_kit_parts(runner, project, component, role, kit, tool, **gates)
+        targets.append((printable, role))
+    roles = sorted(kit_roles.items())
+
+    def gate(path, label, env_extra=None):
+        return lambda job_runner: _gate_entry(job_runner, project, path, label, **gates, env_extra=env_extra)
+
+    def describe(role, component):
+        def job(job_runner):
+            # A forked runner's last_stdout is its own describe's.
+            return _describe_kit_parts(job_runner, project, component, role, kit, tool)
+        return job
+
+    target_jobs = [gate(path, label) for path, label in targets]
+    first = _side_by_side(runner, target_jobs + [describe(role, component) for role, component in roles])
+    if first is None:
+        # One after another: the targets, then each kit Component's build
+        # and its Parts.
+        failures += sum(job(runner) for job in target_jobs)
+        for role, component in roles:
+            refused, jobs = _kit_part_jobs(runner, project, component, role, tool,
+                                           describe(role, component)(runner))
+            failures += refused + sum(gate(*job)(runner) for job in jobs)
+    else:
+        for result, fork in first[:len(targets)]:
+            failures += result
+            runner.absorb(fork)
+        # Each Component's refusal or kept-build notes, then every kit
+        # Part's gates side by side; absorbed per Component in that order.
+        notes, part_jobs = [], []
+        for (role, component), (described, _fork) in zip(roles, first[len(targets):]):
+            note = runner.fork()
+            refused, jobs = _kit_part_jobs(note, project, component, role, tool, described)
+            failures += refused
+            notes.append(note)
+            part_jobs.append(jobs)
+        gated = _side_by_side(runner, [gate(*job) for jobs in part_jobs for job in jobs])
+        for (_described, describe_fork), note, jobs in zip(first[len(targets):], notes, part_jobs):
+            runner.absorb(describe_fork)
+            runner.absorb(note)
+            for result, fork in gated[:len(jobs)]:
+                failures += result
+                runner.absorb(fork)
+            gated = gated[len(jobs):]
 
     if failures:
         print(
