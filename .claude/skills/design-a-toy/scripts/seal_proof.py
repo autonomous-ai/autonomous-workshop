@@ -562,15 +562,29 @@ def guide_views(images: Path, guide: dict, given: dict) -> list:
 
 
 def _save_as(made: Path, target: Path) -> None:
-    """The render under the contract's file name, in that name's format."""
+    """The render under the contract's file name, in that name's format,
+    with that name in its metadata. Two Components of one shape render to
+    the same pixels at one camera, and a Wish refuses two images of the
+    same bytes; the name keeps each image its own bytes and changes no
+    pixel."""
 
-    if target.suffix.lower() == ".png":
-        shutil.copyfile(made, target)
-        return
     from PIL import Image
+    from PIL.PngImagePlugin import PngInfo
 
-    image = Image.open(made).convert("RGB")
-    image.save(target, format={"jpg": "JPEG", "webp": "WEBP"}[target.suffix.lower().lstrip(".")])
+    suffix = target.suffix.lower().lstrip(".")
+    label = "Approved Proof: %s" % target.name
+    with Image.open(made) as source:
+        source.load()
+        if suffix == "png":
+            info = PngInfo()
+            info.add_text("Title", label)
+            source.save(target, format="PNG", pnginfo=info)
+            return
+        image = source.convert("RGB")
+    if suffix == "webp":
+        image.save(target, format="WEBP", xmp=label.encode("utf-8"))
+    else:
+        image.save(target, format="JPEG", comment=label.encode("utf-8"))
 
 
 def render_contract_images(proof: Path, design_contract: dict, images: Path, given_views: dict,

@@ -110,3 +110,13 @@ CAD itself does it exactly.
   image goes in place, and the earlier one stays in `design-refs/`.
 - Old seals (schema 2, 3) and runs seeded from them are unchanged. Resealing
   an existing toy switches it over.
+
+## Amendment 2026-11-17: each sealed image carries its name
+
+Two Components of one shape render to the same pixels at one camera, and a
+Wish refuses two images of the same bytes (`wish/contracts.py`); the
+Amsterdam kit's two tree crowns sealed identical references and its wish
+was refused. `seal_proof.py` now writes each render with its contract file
+name in its metadata (a PNG `Title` text chunk, a JPEG comment, WebP XMP):
+the pixels are unchanged, the bytes are deterministic and each image's own.
+Seals made before keep their hashes.
