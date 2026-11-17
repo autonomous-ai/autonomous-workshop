@@ -24,6 +24,18 @@ not the Component's printed Parts (:func:`failures`), and gate each Part
 through its own entry (:func:`write_entries`): a ``part_<id>.step.py`` that
 builds the Component's ``print_parts()`` and returns that one Part, so the
 print gates build it from source with the feature tags its build records.
+
+    kit_print_parts.py describe <project>/part_<geometry>.step.py --keep DIR --entries ENTRIES
+
+also keeps each Part's B-rep from this one build (issue #101's bundle,
+``brepbundle.py``) under ``DIR/<Part id>/base``, written for the gate entry
+``ENTRIES/part_<Part id>.step.py`` with every feature tag the build
+recorded, and adds ``"kept": {id: identity read back}`` and ``"unkept":
+{id: why}`` to its line. A gate given a Part's bundle reads it instead of
+building ``print_parts()`` again, once per Part per check (2026-11-17: the
+Amsterdam canal base took about 350 s to build, for each of its 19 Parts'
+three checks). A Part whose bundle could not be written is gated from
+source, as before.
 """
 
 from __future__ import annotations
@@ -206,12 +218,41 @@ def write_entries(component: Path, directory: Path, parts) -> dict[str, Path]:
 # describe
 
 
-def describe(entry: Path) -> dict:
+# A Part id that may name a directory of its kept build.
+PART_DIR = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+
+
+def keep_parts(built: dict, keep: Path, entries: Path, tags) -> tuple[dict, dict]:
+    """Write each built Part's B-rep bundle under ``keep/<Part id>/base`` for
+    its gate entry in ``entries``; ``({id: identity read back}, {id: why
+    not})``. A Part that cannot be kept is gated from source."""
+
+    from brepbundle import BASE, identity, write
+
+    keep = Path(keep).resolve()
+    if keep.is_dir() and not keep.is_symlink():
+        shutil.rmtree(keep)
+    kept, unkept = {}, {}
+    for key, shape in sorted(built.items()):
+        if not PART_DIR.fullmatch(key):
+            unkept[key] = "a Part id that names no directory"
+            continue
+        try:
+            manifest = write(keep / key / BASE, entry_path(Path(entries).resolve(), key), shape,
+                             built_identity=identity(shape), tags=tags, printed=True)
+        except Exception as error:  # noqa: BLE001 - the Part is gated from source instead
+            unkept[key] = "%s: %s" % (type(error).__name__, str(error)[:200])
+            continue
+        kept[key] = manifest["identity"]
+    return kept, unkept
+
+
+def describe(entry: Path, keep: Path | None = None, entries: Path | None = None) -> dict:
     _runtime_paths()
     from build123d import Shape
 
     from brepbundle import identity
-    from printlib import detail_build, load_entry, project_on_path, tight_box
+    from printlib import detail_build, feature_tags, load_entry, project_on_path, tight_box
 
     with project_on_path(entry.parent), contextlib.redirect_stdout(io.StringIO()), detail_build():
         module = load_entry(entry, "kit_print_parts")
@@ -219,6 +260,9 @@ def describe(entry: Path) -> dict:
         if not callable(builder):
             return {"kind": KIND, "parts": None, "error": "%s defines no print_parts()" % entry.name}
         built = builder()
+        # Every tag of this one build, as a gate building it from source
+        # would find them.
+        tags = feature_tags() if keep is not None else []
     if not isinstance(built, dict):
         return {"kind": KIND, "parts": None,
                 "error": "print_parts() returned %s, not a dict of Part id to shape" % type(built).__name__}
@@ -231,20 +275,28 @@ def describe(entry: Path) -> dict:
         bottom = tight_box(shape)[0][2] if solids else None
         parts[key] = {"identity": identity(shape), "bottom_mm": None if bottom is None else round(float(bottom), 6),
                       "solids": solids}
-    return {"kind": KIND, "parts": dict(sorted(parts.items())), "error": None}
+    result = {"kind": KIND, "parts": dict(sorted(parts.items())), "error": None}
+    if keep is not None:
+        result["kept"], result["unkept"] = keep_parts(built, keep, entries, tags)
+    return result
 
 
 def main(argv=None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
+    options = {}
+    if len(args) == 6 and args[2] == "--keep" and args[4] == "--entries":
+        options = {"keep": Path(args[3]), "entries": Path(args[5])}
+        args = args[:2]
     if len(args) != 2 or args[0] != "describe" or not args[1].endswith(".step.py"):
-        print("usage: kit_print_parts.py describe <project>/part_<geometry>.step.py", file=sys.stderr)
+        print("usage: kit_print_parts.py describe <project>/part_<geometry>.step.py [--keep DIR --entries DIR]",
+              file=sys.stderr)
         return 2
     entry = Path(args[1]).resolve()
     if not entry.is_file():
         print("kit_print_parts.py: no such entry: %s" % entry, file=sys.stderr)
         return 2
     try:
-        result = describe(entry)
+        result = describe(entry, **options)
     except Exception as error:  # noqa: BLE001 - the CLI boundary: report, do not traceback
         result = {"kind": KIND, "parts": None,
                   "error": "print_parts() failed: %s: %s" % (type(error).__name__, str(error)[:300])}

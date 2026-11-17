@@ -159,6 +159,63 @@ class PrintGatesOnlyTest(unittest.TestCase):
         self.assertIn("parts PASS cabinet", printed)
         self.assertIn("over  PASS cabinet/B01-cabinet-carcass", printed)
 
+    def test_each_kit_part_is_gated_from_the_one_kept_build(self):
+        """2026-11-17: print_parts() is built once per Component; each Part's
+        three gates read the B-rep that build kept, and a Part it could not
+        keep is gated from source."""
+        contract = self.kit()
+        self.tools.describe = {**described(), "kept": {name: "%064x" % index for index, name in enumerate(CABINET[:2])},
+                               "unkept": {CABINET[2]: "RuntimeError: a node reads back 0.2 mm off"}}
+        summary, _ = self.gates("--contract", str(contract), code=0)
+        keep = self.project / "__cadgen__" / "round-brep" / "print-gates" / "cabinet"
+        (describe,) = [command for command, _ in self.tools.calls if Path(command[1]).name == "kit_print_parts.py"]
+        self.assertEqual(describe[-4:], ["--keep", str(keep), "--entries",
+                                         str(self.project / "__cadgen__" / "print-parts" / "print-gates" / "cabinet")])
+        gates = [(command, kwargs) for command, kwargs in self.tools.calls if Path(command[1]).name in GATES]
+        self.assertEqual(len(gates), 9)
+        for command, kwargs in gates:
+            part = Path(command[2]).name.removeprefix("part_").removesuffix(".step.py")
+            env = kwargs.get("extra_env") or {}
+            if part in CABINET[:2]:
+                self.assertEqual(env["WORKSHOP_BREP_BUNDLE"], str(keep / part))
+                self.assertEqual(env["WORKSHOP_BREP_IDENTITY"], "%064x" % CABINET.index(part))
+            else:
+                self.assertNotIn("WORKSHOP_BREP_BUNDLE", env, "an unkept Part builds from source")
+        self.assertEqual(summary["kept_builds"], {"cabinet": {
+            "kept": CABINET[:2], "unkept": {CABINET[2]: "RuntimeError: a node reads back 0.2 mm off"}}})
+
+    def test_a_describe_that_kept_nothing_gates_every_part_from_source(self):
+        contract = self.kit()
+        summary, _ = self.gates("--contract", str(contract), code=0)
+        gates = [kwargs for command, kwargs in self.tools.calls if Path(command[1]).name in GATES]
+        self.assertTrue(gates)
+        self.assertTrue(all("WORKSHOP_BREP_BUNDLE" not in (kwargs.get("extra_env") or {}) for kwargs in gates))
+        self.assertEqual(summary["kept_builds"], {"cabinet": {"kept": [], "unkept": {}}})
+
+    def test_final_checks_follow_their_own_build_and_a_refused_kit_keeps_none(self):
+        """2026-11-17: a part's final checks start once its build passed,
+        before the other gates; a kit Component whose print_parts() is then
+        refused keeps no final check and no file of one, as before."""
+        contract = self.kit()
+        self.part("cabinet", "def gen_step(): pass\ndef print_parts(): pass\ndef assembly_pose(s, i): return s\n")
+        self.tools.describe = described(CABINET + ["P01-hinge-pin"])
+        summary, _ = self.gates("--contract", str(contract), code=1)
+        out = self.project / "measure" / "print-gates"
+        self.assertNotIn("final", summary["print"]["cabinet"])
+        self.assertFalse((out / "posed-cabinet.log").exists())
+        self.assertFalse((out / "display_pose_cabinet.step.py").exists())
+        self.tools = FakeTools()
+        self.part("plate", "def gen_step(): pass\ndef assembly_pose(s, i): return s\n")
+        with mock.patch.dict("os.environ", {"MAKE_ROUND_JOBS": "1"}):
+            summary, _ = self.gates("--contract", str(contract), code=0)
+        tools = [(Path(command[1]).name, Path(command[-3] if Path(command[1]).name == "inspect" else command[2]).name)
+                 for command, _ in self.tools.calls]
+        first_gate = min(index for index, (tool, _) in enumerate(tools) if tool in GATES)
+        posed = [index for index, (tool, _) in enumerate(tools) if tool == "inspect"]
+        self.assertTrue(posed and max(posed) < first_gate, tools)
+        self.assertEqual(sorted(summary["print"]["plate"]["final"]), ["datum", "posed"])
+        self.assertEqual(sorted(summary["print"]["cabinet"]["final"]), ["posed"])
+
     def test_without_a_contract_the_installed_tree_stands(self):
         self.kit()
         (self.project / "tree").mkdir()

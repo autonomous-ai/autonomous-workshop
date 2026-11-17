@@ -204,6 +204,48 @@ class KitPartSizeTest(unittest.TestCase):
         self.assertIn("print_parts() did not measure it", fails[0])
 
 
+class NearestCopyTest(unittest.TestCase):
+    """2026-11-17: ``to_part`` skips a copy whose enclosing box lies farther
+    than the best distance found, and is still the exact minimum of every
+    pair: the same float, so the same Sheet verdict."""
+
+    def test_the_pruned_nearest_distance_is_the_full_sweep_minimum(self):
+        import random
+
+        from build123d import Box, Cylinder, Pos, Rot, Sphere
+
+        rng = random.Random(1117)
+        for trial in range(4):
+            shapes = []
+            for _ in range(14):
+                kind = rng.choice((Box(rng.uniform(2, 12), rng.uniform(2, 12), rng.uniform(1, 3)),
+                                   Cylinder(rng.uniform(1, 5), rng.uniform(1, 3)),
+                                   Sphere(rng.uniform(1, 4))))
+                shapes.append(Pos(rng.uniform(0, 60), rng.uniform(0, 60), 0)
+                              * Rot(0, 0, rng.uniform(0, 360)) * kind)
+            boxes = [ks.enclosing_box(shape) for shape in shapes]
+            for index, shape in enumerate(shapes):
+                with self.subTest(trial=trial, index=index):
+                    full = min(float(shape.distance_to(other)) for j, other in enumerate(shapes) if j != index)
+                    self.assertEqual(ks.nearest_distance(index, shapes, boxes), full)
+
+    def test_a_lone_copy_is_99_mm_from_any_other(self):
+        from build123d import Box
+
+        shape = Box(2, 2, 2)
+        self.assertEqual(ks.nearest_distance(0, [shape], [ks.enclosing_box(shape)]), 99.0)
+
+    def test_the_box_encloses_a_curved_face(self):
+        from build123d import Cylinder
+
+        shape = Cylinder(5, 2)
+        xmin, ymin, zmin, xmax, ymax, zmax = ks.enclosing_box(shape)
+        self.assertLessEqual(xmin, -5.0)
+        self.assertGreaterEqual(xmax, 5.0)
+        self.assertLessEqual(zmin, -1.0)
+        self.assertGreaterEqual(zmax, 1.0)
+
+
 if __name__ == "__main__":
     unittest.main()
 
@@ -433,6 +475,22 @@ class SheetsRoundTest(unittest.TestCase):
                          self.kit["assembly_tree"]["sheets"])
         self.assertIn("sheets FAIL 1 Sheet(s)", printed)
         self.assertIn("sheet_B1.py is missing", printed)
+
+    def test_print_gates_only_starts_the_sheets_before_anything_else(self):
+        """2026-11-17: the Sheets build what they check, so they start at
+        once; on the Amsterdam kit they took about 15 minutes and waited
+        behind every Part's gates. One at a time, they run first."""
+        import os
+        from unittest import mock
+
+        from tests.make.test_make_round import load_module
+
+        with mock.patch.dict(os.environ, {"MAKE_ROUND_JOBS": "1"}):
+            self.round.main(load_module(), ["--print-gates-only"], 0)
+        tools = [Path(c[1]).name for c in self.round.calls]
+        self.assertEqual(tools[0], "kit_sheets.py", tools)
+        first_gate = min(index for index, tool in enumerate(tools) if tool.startswith("check_"))
+        self.assertLess(tools.index("kit_print_parts.py"), first_gate, "each Part is gated after describe")
 
     def test_final_verification_checks_the_sheets_of_a_kit_that_has_them(self):
         import contextlib

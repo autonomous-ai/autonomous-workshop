@@ -313,11 +313,13 @@ class RecordingRunner:
         self.describe = describe
         self.failing = set(failing)
         self.commands = []
+        self.envs = []
         self.skips = []
 
-    def command(self, argv, **_kwargs):
+    def command(self, argv, **kwargs):
         args = [str(item) for item in argv]
         self.commands.append(args)
+        self.envs.append(kwargs.get("env_extra"))
         tool = Path(args[1]).name
         if tool == "kit_print_parts.py":
             self.last_stdout = json.dumps(self.describe) + "\n"
@@ -363,6 +365,28 @@ class FinalVerificationTest(unittest.TestCase):
         overhang = [c for c in runner.commands if Path(c[1]).name == "check_overhang"]
         self.assertTrue(any(c[c.index("--report") + 1].endswith("measure/overhang-cabinet-D01-inkwell.md")
                             for c in overhang))
+
+    def test_each_kit_part_reads_the_one_kept_build(self):
+        """2026-11-17: describe builds print_parts() once and keeps each
+        Part; its gates read that build, and an unkept Part builds from source."""
+        self.install()
+        describe = {**described(), "kept": {"B01-cabinet-carcass": "a" * 64, "B02-cabinet-door": "b" * 64},
+                    "unkept": {"D01-inkwell": "RuntimeError: two reads disagree"}}
+        runner = RecordingRunner(self.project, describe)
+        code, printed = self.gates(runner, [])
+        self.assertEqual(code, 0)
+        keep = self.project / "__cadgen__" / "round-brep" / "final" / "cabinet"
+        self.assertEqual(runner.commands[0][-4:], ["--keep", str(keep), "--entries",
+                                                   str(self.project / "__cadgen__" / "print-parts" / "final" / "cabinet")])
+        for args, env in zip(runner.commands[1:], runner.envs[1:]):
+            name = Path(args[2]).name.removeprefix("part_").removesuffix(".step.py")
+            if name == "D01-inkwell":
+                self.assertIsNone(env)
+            else:
+                self.assertEqual(env, {"WORKSHOP_BREP_BUNDLE": str(keep / name),
+                                       "WORKSHOP_BREP_IDENTITY": describe["kept"][name]})
+        self.assertEqual(len(runner.gated()), 9)
+        self.assertIn("cabinet/D01-inkwell gated from source: RuntimeError: two reads disagree", printed)
 
     def test_a_failing_part_fails_final_verification(self):
         self.install()
@@ -475,6 +499,120 @@ class RealGeometryTest(unittest.TestCase):
             self.assertEqual(alone.returncode, 0, alone.stdout + alone.stderr)
             self.assertEqual(assembled.returncode, 1, assembled.stdout + assembled.stderr)
             self.assertIn("NEEDS SUPPORT", assembled.stdout)
+
+
+# A kit Component whose Parts pass and fail each gate, with curved faces: a
+# flat plate, a ledge over air, a 0.4 mm fin and a filleted post.
+KEPT_FIXTURE = """\
+from build123d import Box, Compound, Cylinder, Pos, fillet, Axis
+
+def _post():
+    post = Pos(0, 0, 10) * Cylinder(6, 20)
+    return fillet(post.edges().group_by(Axis.Z)[-1], 2)
+
+def print_parts():
+    plate = Pos(0, 0, 1) * Box(30, 20, 2)
+    ledge = Pos(0, 0, 5) * Box(6, 6, 10) + Pos(8, 0, 9) * Box(12, 6, 2)
+    fin = Pos(0, 0, 4) * Box(20, 0.4, 8) + Pos(0, 0, 0.5) * Box(20, 8, 1)
+    return {"A01-plate": plate, "A02-ledge": ledge, "A03-fin": fin, "A04-post": _post()}
+
+def gen_step():
+    parts = print_parts()
+    return Compound(children=[Pos(40 * i, 0, 0) * shape for i, shape in enumerate(parts.values())])
+"""
+
+
+class KeptBuildTest(unittest.TestCase):
+    """2026-11-17: describe --keep builds print_parts() once and keeps each
+    Part's B-rep; a print gate that reads it gives the very verdict, report
+    and output a gate building print_parts() from source gives. The Amsterdam
+    canal base spent about 350 s rebuilding for each of 57 checks."""
+
+    def test_a_gate_reading_the_kept_build_reports_byte_for_byte_as_from_source(self):
+        try:
+            import build123d  # noqa: F401
+        except ImportError:  # pragma: no cover - the CAD runtime is part of the dev environment
+            self.skipTest("build123d is not installed")
+        import os
+        import sys
+        from concurrent.futures import ThreadPoolExecutor
+
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary).resolve()
+            component = project / "part_kit.step.py"
+            component.write_text(KEPT_FIXTURE)
+            entries_dir = project / "__cadgen__" / "print-parts" / "t" / "kit"
+            keep = project / "__cadgen__" / "round-brep" / "t" / "kit"
+            done = subprocess.run([sys.executable, str(TOOL_PATH), "describe", str(component),
+                                   "--keep", str(keep), "--entries", str(entries_dir)],
+                                  capture_output=True, text=True, timeout=600)
+            result = TOOL.parse(done.stdout, done.returncode)
+            self.assertIsNone(result["error"], done.stderr)
+            parts = sorted(result["parts"])
+            self.assertEqual(sorted(result["kept"]), parts, result.get("unkept"))
+            self.assertEqual(result["unkept"], {})
+            entries = TOOL.write_entries(component, entries_dir, parts)
+            scripts = ROOTS["cad"] / "scripts"
+
+            def gate(job):
+                part, tool, kept = job
+                report = project / ("%s-%s.md" % (tool, part))
+                extra = {"check_thickness": ["--nozzle", "0.4", "--report", str(report)],
+                         "check_overhang": ["--angle", "45", "--report", str(report)],
+                         "check_mesh": ["--bed", "256x256x256"]}[tool]
+                env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
+                if kept:
+                    env.update(WORKSHOP_BREP_BUNDLE=str(keep / part), WORKSHOP_BREP_IDENTITY=result["kept"][part])
+                run = subprocess.run([sys.executable, str(scripts / tool), str(entries[part]), *extra],
+                                     capture_output=True, text=True, timeout=600, env=env, cwd=project)
+                written = report.read_bytes() if report.is_file() else None
+                if report.is_file():
+                    report.unlink()
+                return run, written
+
+            tools = ("check_thickness", "check_overhang", "check_mesh")
+            # From source, then from the kept build, at the same report path.
+            pairs = [(part, tool) for part in parts for tool in tools]
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                done_pairs = list(pool.map(lambda pair: (gate((*pair, False)), gate((*pair, True))), pairs))
+            ran = {}
+            for (part, tool), (source, kept) in zip(pairs, done_pairs):
+                ran[part, tool, False], ran[part, tool, True] = source, kept
+            verdicts = set()
+            for part in parts:
+                for tool in tools:
+                    with self.subTest(part=part, tool=tool):
+                        (source, source_report), (kept, kept_report) = ran[part, tool, False], ran[part, tool, True]
+                        self.assertNotIn("[brep]", source.stderr)
+                        self.assertIn("[brep] %s read part_%s.step.py base identity %s"
+                                      % (tool, part, result["kept"][part]), kept.stderr)
+                        self.assertEqual(kept.returncode, source.returncode, kept.stdout + source.stdout)
+                        self.assertEqual(kept.stdout, source.stdout)
+                        self.assertEqual(kept_report, source_report)
+                        verdicts.add((tool, source.returncode))
+            # The fixture exercises a pass and a failure of the wall and overhang gates.
+            self.assertTrue({("check_thickness", 0), ("check_thickness", 1),
+                             ("check_overhang", 0), ("check_overhang", 1)} <= verdicts, verdicts)
+
+    def test_a_part_that_names_no_directory_is_left_to_build_from_source(self):
+        try:
+            import build123d  # noqa: F401
+        except ImportError:  # pragma: no cover
+            self.skipTest("build123d is not installed")
+        import sys
+
+        sys.path[:0] = [str(path) for path in (ROOTS["cad"] / "scripts",
+                                               ROOTS["cad"] / "scripts" / "packages" / "cadgen" / "src")]
+        from build123d import Box
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            kept, unkept = TOOL.keep_parts({"A01-ok": Box(2, 2, 2), "../escape": Box(1, 1, 1)},
+                                           root / "keep", root / "entries", [])
+            self.assertEqual(sorted(kept), ["A01-ok"])
+            self.assertEqual(list(unkept), ["../escape"])
+            self.assertFalse((root / "escape").exists())
+            self.assertTrue((root / "keep" / "A01-ok" / "base" / "manifest.json").is_file())
 
 
 if __name__ == "__main__":
