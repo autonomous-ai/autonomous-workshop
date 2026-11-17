@@ -3058,3 +3058,10 @@ convention, so sealed STEPs and frozen runs keep their colours.
 - **Local patch to upstream `cad`.** `verify_project`'s `_run_kit_manual`
   reads the seeded run's `seed/APPROVAL.json` through make_round's
   `seed_approval` and passes its `kit_manual`. A resync must keep it.
+- **Local patch to upstream `cad`.** `verify_project`'s component preflight
+  (`_component_steps`) skips `measure/kit/print.step` only when
+  `measure/kit/print.json` is a `kit-print-layout` record naming that path
+  with its current sha256 (`_kit_print_step`): final verification writes
+  that layout itself, so a second preflight or seal dry run no longer
+  refuses it. Any other STEP, or changed bytes, is still refused. A resync
+  must keep it.
