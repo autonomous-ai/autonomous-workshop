@@ -1098,4 +1098,8 @@ def self_check() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:  # timed in the Workshop timing ledger (ADR 0106); it only records
+        from workshop.runtime.timing_ledger import script_main
+    except Exception:  # noqa: BLE001 - a bare run copy has no ledger
+        script_main = None
+    sys.exit(main() if script_main is None else script_main('kit_manual', main, modes=("--self-check", "--approved"), default_mode="build"))

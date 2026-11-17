@@ -45,6 +45,7 @@ import signal
 import subprocess
 import sys
 import time
+import uuid
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Optional, Sequence
@@ -379,6 +380,7 @@ def run_batch(
             if _reusable(step, key, reusable.get(step.id), project):
                 entry.update(status=REUSED, reports=_report_hashes(project, step.reports))
                 recorded.append(entry)
+                _timing_reused(step, plan_name, project, key)
                 continue
             argv = list(step.argv)
             if step.nonce_component is not None:
@@ -387,6 +389,7 @@ def run_batch(
                 argv += ["--seed-nonce", issue_nonce(step.nonce_component)]
             deadline = step.deadline_s if step.deadline_s is not None else DEFAULT_DEADLINES[layer]
             started = time.time()
+            timing_parent = _timing_start(step, plan_name, project, key)
             result = runner(argv, project, deadline)
             status, reason = classify(result)
             if status == PASS and step.verdict_report is not None:
@@ -410,6 +413,7 @@ def run_batch(
             if reason is not None:
                 entry["reason"] = reason
             recorded.append(entry)
+            _timing_end(timing_parent, step, plan_name, project, key, started, result, status, reason)
         if failed_layer is None and any(item["layer"] == layer and item["status"] in (CHECK_FAILURE, HARNESS_FAILURE)
                                         for item in recorded):
             failed_layer = layer
@@ -420,6 +424,70 @@ def run_batch(
     if record_path is not None:
         write_record(record_path, record)
     return record
+
+
+# The timing ledger (ADR 0106) records each step's wall time. It only
+# records: no status, reason, reuse or record above reads it, and a ledger
+# that cannot be written changes nothing.
+def _timing_step(step: Step, plan_name: str) -> str:
+    return "seeded-batch/%s/%s" % (plan_name, step.id)
+
+
+def _timing_start(step: Step, plan_name: str, project: Path, key: str) -> Optional[str]:
+    try:
+        from workshop.runtime import timing_ledger
+
+        row_id = uuid.uuid4().hex
+        row = timing_ledger.base_row("start", row_id=row_id, step=_timing_step(step, plan_name),
+                                     tool="seeded_batch", project=str(project.resolve()),
+                                     parent=os.environ.get(timing_ledger.PARENT_ENV) or None)
+        row.update(started_at=timing_ledger.utc_iso(time.time()), argv=list(step.argv)[:24])
+        timing_ledger.append_row(row)
+        return row_id
+    except Exception:  # noqa: BLE001 - the ledger never fails a step
+        return None
+
+
+def _timing_end(row_id: Optional[str], step: Step, plan_name: str, project: Path, key: str, started: float,
+                result: RunResult, status: str, reason: Optional[str]) -> None:
+    if not row_id:
+        return
+    try:
+        from workshop.runtime import timing_ledger
+
+        unverified = bool(reason and "UNVERIFIED" in reason) or bool(
+            reason and "unverified" in reason.lower() and status == HARNESS_FAILURE)
+        outcome, failure_class = timing_ledger.classify(
+            result.returncode, output=result.output[-EXCERPT_BYTES:], timed_out=result.timed_out,
+            unverified=unverified, reason=reason)
+        if status == HARNESS_FAILURE and failure_class == timing_ledger.PRODUCT_DEFECT:
+            # The batch already found this one the harness's.
+            failure_class = timing_ledger.TOOL_ERROR
+        ended = started + result.duration_s
+        project_text = str(project.resolve())
+        timing_ledger.append_row(timing_ledger.end_row(
+            row_id=row_id, step=_timing_step(step, plan_name), tool="seeded_batch", project=project_text,
+            parent=os.environ.get(timing_ledger.PARENT_ENV) or None, started=started, ended=ended,
+            exit_code=result.returncode, outcome=outcome, failure_class=failure_class,
+            reason=None if outcome == timing_ledger.PASS else (reason or result.output[-400:]),
+            inputs_key=key, argv=step.argv, extra={"layer": step.layer, "batch_status": status}))
+        timing_ledger.record_children(row_id, project=project_text, ended=ended, output=result.output)
+    except Exception:  # noqa: BLE001
+        return
+
+
+def _timing_reused(step: Step, plan_name: str, project: Path, key: str) -> None:
+    try:
+        from workshop.runtime import timing_ledger
+
+        now = time.time()
+        timing_ledger.append_row(timing_ledger.end_row(
+            row_id=uuid.uuid4().hex, step=_timing_step(step, plan_name), tool="seeded_batch",
+            project=str(project.resolve()), parent=os.environ.get(timing_ledger.PARENT_ENV) or None,
+            started=now, ended=now, exit_code=0, outcome=timing_ledger.PASS, failure_class=None, cache_hit=True,
+            inputs_key=key, argv=step.argv, extra={"layer": step.layer, "batch_status": REUSED}))
+    except Exception:  # noqa: BLE001
+        return
 
 
 def _report_hashes(project: Path, reports: Iterable[str]) -> dict:

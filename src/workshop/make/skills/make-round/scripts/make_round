@@ -8036,12 +8036,51 @@ def main(argv=None) -> int:
     # (ADR 0105); a caller that imports this module gets its own back.
     saved = os.environ.get("WORKSHOP_FIT_TABLE")
     try:
-        return _main(argv)
+        return _timed_main(argv)
     finally:
         if saved is None:
             os.environ.pop("WORKSHOP_FIT_TABLE", None)
         else:
             os.environ["WORKSHOP_FIT_TABLE"] = saved
+
+
+# make_round's modes, by the flag that selects each, for the timing ledger.
+TIMING_MODES = ("--self-check", "--identities-only", "--carry-assembly-review", "--print-gates-only",
+                "--shared-helpers", "--interface", "--report-blocked", "--clear-blocked", "--blocked-reports",
+                "--propose-amendment", "--record-amendment-review", "--contract-amendments", "--record-review",
+                "--record-visual", "--record-unlock", "--preview-assembly", "--full", "--component")
+
+
+def _timed_main(argv=None) -> int:
+    """``_main`` timed in the Workshop timing ledger (ADR 0106) when a
+    Workshop install is importable. It only records: the exit code and
+    every output are ``_main``'s own."""
+
+    try:
+        from workshop.runtime import timing_ledger
+    except Exception:  # noqa: BLE001 - a bare run copy has no ledger
+        return _main(argv)
+    given = list(sys.argv[1:] if argv is None else argv)
+    mode = timing_ledger.mode_of(given, TIMING_MODES, "assembly")
+    step = "make_round/%s" % mode
+    positional = [item for item in given if not item.startswith("-")]
+    project = Path(positional[0]) if positional and Path(positional[0]).is_dir() else None
+    with timing_ledger.timed(step, tool="make_round", project=project, argv=given,
+                             fingerprint=mode in ("print-gates-only", "full", "component", "assembly",
+                                                  "shared-helpers", "interface")) as span:
+        began = time.time()
+        code = _main(argv)
+        span.exit_code = code if isinstance(code, int) else (0 if code is None else 1)
+        if project is not None and mode == "print-gates-only":
+            summary = project / "measure" / "print-gates" / "summary.json"
+            span.evidence = str(summary)
+            try:
+                # A gate the tool could not finish is no pass (issue #241).
+                span.unverified = (summary.stat().st_mtime >= began
+                                   and '"UNVERIFIED"' in summary.read_text(encoding="utf-8"))
+            except OSError:
+                pass
+        return code
 
 
 def _main(argv=None) -> int:

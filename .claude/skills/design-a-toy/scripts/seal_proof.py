@@ -958,6 +958,34 @@ def verify(args) -> list[str]:
 
 
 def main(argv=None) -> int:
+    """Run one seal_proof command, timed in the Workshop timing ledger
+    (Workshop ADR 0106). The ledger only records; the exit code is
+    ``_main``'s own."""
+
+    given = list(sys.argv[1:] if argv is None else argv)
+    try:
+        from workshop.runtime import timing_ledger
+    except Exception:  # noqa: BLE001 - outside a Workshop install, no ledger
+        return _main(argv)
+    command = given[0] if given and not given[0].startswith("-") else "help"
+    proof = next((Path(item) for item in given[1:] if not item.startswith("-") and Path(item).is_dir()), None)
+    LAST_REFUSAL.clear()
+    with timing_ledger.timed("seal_proof/%s" % command, tool="seal_proof", project=proof, argv=given,
+                             fingerprint=command in ("seal", "preflight")) as span:
+        code = _main(argv)
+        span.exit_code = code
+        if LAST_REFUSAL:
+            span.reason = span.output = LAST_REFUSAL[-1]
+        if proof is not None and command in ("seal", "preflight"):
+            span.evidence = str(proof / (PREFLIGHT_RECORD if command == "preflight" else "measure/seeded-batch.json"))
+        return code
+
+
+# The refusal ``_main`` printed last, for the timing ledger's reason.
+LAST_REFUSAL: list = []
+
+
+def _main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
     p = sub.add_parser("seal")
@@ -1009,6 +1037,7 @@ def main(argv=None) -> int:
             return 0
         problems = verify(args)
     except Refusal as exc:
+        LAST_REFUSAL.append(str(exc))
         print("seal_proof: %s" % exc, file=sys.stderr)
         return 1
     for line in problems:
