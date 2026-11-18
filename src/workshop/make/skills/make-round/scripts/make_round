@@ -3405,6 +3405,37 @@ def refuse_seed_round(component: str, why: str, detail: str | None = None) -> in
     return 2
 
 
+def failed_checks(sections: dict, limit: int = 4) -> str:
+    """The first failures of a round's checks, ``"<check> <role>: <failure>"``,
+    for a seeded refusal: a refused root round's directory is removed, so the
+    refusal itself names what failed (a build two builds disagreed on, a
+    print gate, the tree). Reads only the records the round already made."""
+
+    found: list = []
+
+    def failures(record) -> list:
+        out = []
+        if isinstance(record, dict):
+            if str(record.get("verdict", "PASS")).upper() not in ("PASS", "UNVERIFIED"):
+                out += [f for f in record.get("failures") or () if isinstance(f, str)]
+            for value in record.values():
+                if isinstance(value, (dict, list)):
+                    out += failures(value)
+        elif isinstance(record, list):
+            for value in record:
+                out += failures(value)
+        return out
+
+    for check, records in sections.items():
+        for role, record in (records.items() if isinstance(records, dict) and "verdict" not in records
+                             else [(None, records)]):
+            for failure in failures(record):
+                line = "%s%s: %s" % (check, "" if role is None else " " + role, failure[:200])
+                if line not in found:
+                    found.append(line)
+    return "; ".join(found[:limit]) if found else "no check recorded a failure"
+
+
 def stale_seed_key(project: Path, role: str, approval: dict, refs: list, rulings: list) -> str | None:
     """Why a seeded root round of ``role`` cannot be the Approved Proof's
     Component, known before it builds, or None when it still can be.
@@ -7660,8 +7691,22 @@ def make_round(args) -> int:
                 built_step.write_bytes(earlier_step)
             elif built_step.is_file():
                 built_step.unlink()
-            return refuse_seed_round(component, "it did not pass its checks" if not ok else
-                                     "its B-rep or carry key differs")
+            if not ok:
+                return refuse_seed_round(component, "it did not pass its checks", failed_checks({
+                    "build": build, "print": printing, "envelope": envelopes,
+                    "reference": {item["label"]: {"verdict": "FAIL", "failures": [item["error"]]}
+                                  for item in reference_errors},
+                    "motion": {"motion": {"verdict": motion["verdict"], "failures": [motion.get("detail") or ""]}}
+                    if motion is not None else {},
+                    "full": {"full": {"verdict": "PASS" if full["ok"] else "FAIL",
+                                      "failures": list(full.get("failures") or ["final verification failed"])}}
+                    if full is not None else {},
+                    "tree": tree or {}, "sheets": sheets or {}}))
+            approved_identity = (seed or {}).get("identity")
+            return refuse_seed_round(component, "its B-rep or carry key differs", (
+                "built B-rep %s, approved %s" % (str(round_identity)[:12], str(approved_identity)[:12])
+                if round_identity != approved_identity else
+                "carry key %s, approved %s" % (str(judged_key)[:12], str((seed or {}).get("carry_key"))[:12])))
 
     # 5. Visual inspection is a separate evidence submission, not a model call.
     # A component round that failed its checks is not rendered: nobody reviews
