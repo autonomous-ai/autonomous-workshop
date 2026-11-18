@@ -555,6 +555,40 @@ class SealCheckInputsTest(unittest.TestCase):
         self.assertEqual(self._seal(), 1)
         self.assertIn("neither the earlier seal's render nor archived", self.stderr)
 
+    def test_carry_keys_bind_the_sealed_images(self):
+        """make_round's carry key hashes the reference bytes; the keys an
+        approval records are read over the renders the seal put in place,
+        not over the images they replaced (the Amsterdam kit's seeded run
+        refused every exact Component on a stale key)."""
+        self._image_contract()
+        record = self._record
+
+        def keyed(proof, contract):
+            found = record(proof, contract)
+            found["components"]["body"]["carry_key"] = sha(self.design / "ref-02-body.jpg")
+            return found
+
+        self._record = keyed
+        self.assertEqual(self._seal(), 0, self.stderr)
+        approval = json.loads((self.proof / "APPROVAL.json").read_text())
+        self.assertEqual(approval["components"]["body"]["carry_key"], sha(self.design / "ref-02-body.jpg"))
+        self.assertNotEqual(approval["components"]["body"]["carry_key"],
+                            sha(self.design / "design-refs/ref-02-body.jpg"))
+
+        # A B-rep that moves while the images are sealed is refused.
+        calls = []
+
+        def moving(proof, contract):
+            found = keyed(proof, contract)
+            calls.append(1)
+            if len(calls) > 1:
+                found["components"]["body"]["identity"] = "moved"
+            return found
+
+        self._record = moving
+        self.assertEqual(self._seal(), 1)
+        self.assertIn("identity changed while the contract images were sealed", self.stderr)
+
     def test_guide_views_can_be_given_on_the_command_line(self):
         self._image_contract()
         (self.design / "guide-01-body.views.json").unlink()

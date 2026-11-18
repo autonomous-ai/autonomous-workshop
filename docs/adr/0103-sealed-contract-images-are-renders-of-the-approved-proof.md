@@ -120,3 +120,13 @@ was refused. `seal_proof.py` now writes each render with its contract file
 name in its metadata (a PNG `Title` text chunk, a JPEG comment, WebP XMP):
 the pixels are unchanged, the bytes are deterministic and each image's own.
 Seals made before keep their hashes.
+
+## Amendment 2026-11-18: carry keys are read over the sealed images
+
+A Component's carry key hashes the reference bytes its review saw. The
+seal read the identities before it replaced the references with renders,
+so every key bound the replaced images and a seeded run refused every
+exact Component as a deviation (the Amsterdam kit's first seeded run).
+After it puts the renders in place, `seal_proof.py` now reads the
+identities again and records those carry keys. It refuses a B-rep, STEP
+or contract-rows change in between.

@@ -942,8 +942,28 @@ def _write_approval(args, proof, contract, copied, verdict, record, components, 
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
         previous = {}
     replace_contract_images(images, holder, contract_images, previous)
+    if contract_images:
+        _rekey_after_images(proof, contract, document)
     (proof / APPROVAL).write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return document
+
+
+def _rekey_after_images(proof: Path, contract: Path, document: dict) -> None:
+    """A carry key binds the reference bytes a review saw (make_round's
+    ``carry_key``), and ADR 0103 replaces every reference with a render
+    after the identities were read. So the keys are read again over the
+    sealed images; a seeded run's exact Component then carries. Nothing
+    else may have moved: a B-rep, STEP or contract-rows change refuses."""
+
+    again = identities(proof, contract)
+    if again.get("assembly_identity") != document["assembly_identity"]:
+        raise Refusal("the assembly identity changed while the contract images were sealed")
+    for role, component in document["components"].items():
+        now = (again.get("components") or {}).get(role) or {}
+        for key in ("identity", "step_sha256", "contract_rows"):
+            if now.get(key) != component.get(key):
+                raise Refusal("%s's %s changed while the contract images were sealed" % (role, key))
+        component["carry_key"] = now.get("carry_key")
 
 
 def verify(args) -> list[str]:
