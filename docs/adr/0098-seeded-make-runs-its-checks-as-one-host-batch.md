@@ -484,6 +484,36 @@ live-tested on a real seal. Frozen runs keep their tool bytes. Seals made
 before this amendment have no reusable print-gates key, so their first
 re-seal runs the print gates once.
 
+
+## Amendment 2026-11-18: the seal runs each kit Component's own tree steps
+
+**Why.** The Miami kit's seal passed, then every component round of its
+run failed. A kit's Assembly Tree has two kinds of steps. Steps inside one
+Component (a lounger into its slot, a crank onto its pin) are checked only
+by the run's component rounds, with `kit_tree.py --component`. Steps
+across Components are checked by the assembly round and by final
+verification's `kit_tree.py --final`. The design plan turns component
+rounds into their print gates, so the seal never ran the first kind. Its
+tree report held 4 cross-Component conditions, and the run then found
+press-rib, joint-face and pin failures in steps S20 to S64.
+
+**Decision.** For a kit, the design plan's `preflight` layer gains one
+`tree:<Component>` step per Component, after the preflight final gates. Each
+step runs the run's component-round tree check, using make_round's own
+`tree_job` command (`kit_tree.py PROJECT --component ROLE --nozzle N
+--json`) without the round's manifest file. A test pins the two commands
+together.
+- Its reuse key binds the Component's sources, the installed `tree/`, the
+  tool's bytes and `WORKSHOP_FIT_TABLE`.
+- A failure is a check failure in the cheap layer. `seal_proof.py
+  preflight` refuses, and so does the seal, before the print gates spend
+  hours.
+- No check or threshold changes. A toy that is no kit has no tree steps.
+
+**Status.** Implemented with deterministic-fake tests. On a copy of the
+sealed Miami Proof, the step's command reproduces the run's component-round
+failures.
+
 ## Implementation status
 
 The batch engine, seal and host merged in PR #234. The rest is on branch
