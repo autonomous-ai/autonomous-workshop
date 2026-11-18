@@ -400,12 +400,17 @@ def check_seed_inputs(proof: Path, design_contract: dict) -> dict:
 
     from workshop.errors import ContractError
     from workshop.wish.seed import (SEED_PRODUCT, check_seed_product, describe_check_inputs,
-                                    missing_check_inputs, required_check_inputs)
+                                    missing_check_inputs, presentation_render_problems,
+                                    required_check_inputs)
 
     missing = missing_check_inputs(proof, design_contract)
     if missing:
         raise Refusal("the Proof lacks check inputs a seeded run needs: %s; run seal_proof.py inputs %s "
                       "--contract CONTRACT.md for the list" % (describe_check_inputs(missing), proof))
+    renders = presentation_render_problems(proof)
+    if renders:
+        raise Refusal("the Make finalizer would refuse the Proof's renders, which a seeded run ships "
+                      "unchanged: %s; render them again from the Proof" % "; ".join(renders))
     try:
         product = check_seed_product((proof / SEED_PRODUCT).read_bytes())
     except ContractError as exc:

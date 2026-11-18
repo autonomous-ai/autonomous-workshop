@@ -57,6 +57,13 @@ class SeedValidationTest(unittest.TestCase):
         self.assertEqual(seed.components["body"]["carry_key"], "key")
         self.assertEqual(dict(seed.files), seed_manifest(self.proof))
 
+    def test_a_seed_whose_renders_the_make_finalizer_would_refuse_is_refused(self):
+        # A seal made before the seal checked them still starts no run that
+        # cannot finish (Amsterdam kit, 2026-11-18: 900x900 signature.png).
+        (self.proof / "snap/signature.png").write_bytes(seal_tests.presentation_png(900, 900))
+        self._refused("the Make finalizer would refuse this Proof's renders: snap/signature.png (the "
+                      "signature render) is 900x900")
+
     def test_approval_file_refusals(self):
         with self.assertRaises(ContractError) as caught:
             validate_seed(self.proof, ("body",), "0" * 64)

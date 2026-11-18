@@ -67,6 +67,22 @@ def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def presentation_png(width: int, height: int, shade: int = 0) -> bytes:
+    """A render the Make finalizer accepts: an RGB PNG of this size with
+    colour and tonal variation (a seal refuses one it would refuse)."""
+
+    import io
+
+    from PIL import Image
+
+    image = Image.new("RGB", (width, height))
+    image.putdata([((x * 7 + shade) % 256, (y * 5) % 256, ((x + y) * 3) % 256)
+                   for y in range(height) for x in range(width)])
+    out = io.BytesIO()
+    image.save(out, format="PNG")
+    return out.getvalue()
+
+
 class SealProofTest(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
@@ -102,8 +118,8 @@ class SealProofTest(unittest.TestCase):
     def _check_inputs(self):
         """ADR 0098: what every seed carries for its checks."""
         (self.proof / "snap").mkdir(exist_ok=True)
-        (self.proof / "snap/iso.png").write_bytes(b"iso")
-        (self.proof / "snap/signature.png").write_bytes(b"signature")
+        (self.proof / "snap/iso.png").write_bytes(presentation_png(800, 800))
+        (self.proof / "snap/signature.png").write_bytes(presentation_png(1200, 800))
         (self.proof / "SEED-PRODUCT.json").write_text(json.dumps(SEED_PRODUCT))
 
     def _batch_runner(self, argv, cwd, timeout):
@@ -229,6 +245,28 @@ class SealProofTest(unittest.TestCase):
         # Evidence under measure/ is not part of the seed.
         (self.proof / "measure/notes.txt").write_text("x")
         self.assertEqual(self._verify(), 0, self.stderr)
+
+    def test_seal_refuses_renders_the_make_finalizer_would_refuse(self):
+        # Amsterdam kit, 2026-11-18: a 900x900 snap/signature.png passed the
+        # seal and failed the Make finalizer after a 4.7-hour seeded build.
+        import io
+
+        from PIL import Image
+
+        grey = io.BytesIO()
+        Image.new("L", (1200, 800), 200).save(grey, format="PNG")
+        for name, content, why in (
+                ("snap/signature.png", presentation_png(900, 900), "is 900x900; the Make finalizer needs 1200x800"),
+                ("snap/iso.png", grey.getvalue(), "is L, not RGB/RGBA"),
+                ("snap/iso.png", b"not a png", "snap/iso.png is not a valid PNG")):
+            with self.subTest(name=name, why=why):
+                SealProofTest._check_inputs(self)
+                (self.proof / name).write_bytes(content)
+                self.batch_calls = []
+                self.assertEqual(self._seal(), 1)
+                self.assertIn("the Make finalizer would refuse the Proof's renders", self.stderr)
+                self.assertIn(why, self.stderr)
+                self.assertEqual(self.batch_calls, [], "refused before the seeded batch")
 
     def test_verify_refuses_a_manifest_mismatch(self):
         self.assertEqual(self._seal(), 0, self.stderr)

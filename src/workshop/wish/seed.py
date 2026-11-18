@@ -138,6 +138,54 @@ def missing_check_inputs(directory: Path, design_contract: Mapping[str, Any]) ->
                  if not (directory / item.path).is_file() or (directory / item.path).is_symlink())
 
 
+# The Make finalizer's rule for the two presentation renders a seeded run
+# copies from the Proof unchanged (stage_proposal.py, the snap/ check): a
+# real PNG, RGB or RGBA, at least this size and at most 4096 a side, and a
+# chromatic image. A seal checks it so a Proof the finalizer would refuse is
+# refused before its batch, not after a whole seeded build (Amsterdam kit,
+# 2026-11-18: a 900x900 signature.png failed the finalizer after 4.7 hours).
+PRESENTATION_RENDERS = (
+    ("snap/iso.png", "product render", 800, 800),
+    ("snap/signature.png", "signature render", 1200, 800),
+)
+MAX_RENDER_SIDE = 4096
+
+
+def presentation_render_problems(directory: Path) -> tuple:
+    """Why the Proof's presentation renders would fail the Make finalizer;
+    empty when they pass it. A missing render is left to the check inputs."""
+
+    from PIL import Image
+
+    problems = []
+    for name, label, min_width, min_height in PRESENTATION_RENDERS:
+        path = Path(directory) / name
+        if not path.is_file() or path.is_symlink():
+            continue
+        try:
+            with Image.open(path) as image:
+                image.verify()
+            with Image.open(path) as image:
+                kind, (width, height), mode = image.format, image.size, image.mode
+                sampled = image.convert("RGB").resize((64, 64))
+                pixels = tuple(sampled.get_flattened_data() if hasattr(sampled, "get_flattened_data")
+                               else sampled.getdata())
+        except Exception:  # noqa: BLE001 - any unreadable image is the same refusal
+            problems.append("%s is not a valid PNG" % name)
+            continue
+        if kind != "PNG":
+            problems.append("%s (the %s) is %s, not a PNG" % (name, label, kind))
+        elif not (min_width <= width <= MAX_RENDER_SIDE and min_height <= height <= MAX_RENDER_SIDE):
+            problems.append("%s (the %s) is %dx%d; the Make finalizer needs %dx%d to %dx%d"
+                            % (name, label, width, height, min_width, min_height, MAX_RENDER_SIDE,
+                               MAX_RENDER_SIDE))
+        elif mode not in ("RGB", "RGBA"):
+            problems.append("%s (the %s) is %s, not RGB/RGBA" % (name, label, mode))
+        elif sum(max(pixel) - min(pixel) >= 10 for pixel in pixels) < 32 or len(set(pixels)) < 16:
+            problems.append("%s (the %s) is not a chromatic presentation image" % (name, label))
+    return tuple(problems)
+
+
 def describe_check_inputs(items) -> str:
     return "; ".join("%s (written by %s)" % (item.path, item.written_by) for item in items)
 
@@ -307,6 +355,10 @@ def validate_seed(directory: Path, geometry_ids, contract_sha256: str,
         raise ContractError("seed: %s schema_version %r is not %d, %d or %d"
                             % (APPROVAL_NAME, approval.get("schema_version"), UNRENDERED_APPROVAL_SCHEMA_VERSION,
                                ASSEMBLY_RENDERS_SCHEMA_VERSION, APPROVAL_SCHEMA_VERSION))
+    renders = presentation_render_problems(directory)
+    if renders:
+        raise ContractError("seed: the Make finalizer would refuse this Proof's renders: %s. %s"
+                            % ("; ".join(renders), RESEAL_HINT % directory))
     if approval.get("contract_sha256") != contract_sha256:
         raise ContractError("seed: the Approved Proof was sealed for another contract "
                             "(contract_sha256 differs from the sealed contract's)")

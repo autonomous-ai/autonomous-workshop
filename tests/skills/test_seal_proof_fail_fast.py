@@ -18,7 +18,7 @@ import json
 import unittest
 from unittest import mock
 
-from tests.skills.test_seal_proof import SealProofTest
+from tests.skills.test_seal_proof import SealProofTest, presentation_png
 
 
 class SealFailFastTest(unittest.TestCase):
@@ -143,7 +143,7 @@ class SealFailFastTest(unittest.TestCase):
         self.assertEqual(self._seal(), 0, self.stderr)
         (self.proof / "toy_spec.md").write_text("# spec, reworded\n")
         (self.proof / "measure/notes.txt").write_text("a note")
-        (self.proof / "snap/iso.png").write_bytes(b"another iso")
+        (self.proof / "snap/iso.png").write_bytes(presentation_png(800, 800, shade=40))
         self.batch_calls = []
         self.assertEqual(self._seal(), 0, self.stderr)
         self.assertEqual(self.ran("--print-gates-only"), [])

@@ -711,3 +711,15 @@ seeded build has run with the batch yet.
   `_seeded_batch_before_turn` and the gate are unit-tested with fakes. A
   full `workshop wish --seed-source` through Release has not run with the
   batch. It needs the owner's OK for a pilot toy.
+
+## Amendment 2026-11-18: the seal checks the renders the run ships
+
+A seeded run copies the Proof's `snap/iso.png` and `snap/signature.png`
+unchanged, and the Make finalizer then requires a real chromatic RGB/RGBA
+PNG, at least 800x800 and 1200x800 and at most 4096 a side. The Amsterdam
+kit's seal passed with a 900x900 signature render, and its wish failed at
+the finalizer after a 4.7-hour seeded build. `seal_proof.py seal` now
+refuses such renders before its batch, and `validate_seed` refuses them
+when a wish starts, using the same limits
+(`workshop.wish.seed.presentation_render_problems`). The finalizer is
+unchanged.
