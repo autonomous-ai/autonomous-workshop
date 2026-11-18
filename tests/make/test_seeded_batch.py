@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import runpy
 import sys
 import tempfile
 import unittest
@@ -549,6 +550,78 @@ class PlanTest(unittest.TestCase):
         self.assertEqual(sb.kit_printed_parts({"schema_version": 11, "assembly_tree": tree}), {"base": 2, "lid": 0})
         self.assertEqual(sb.kit_printed_parts({"schema_version": 6, "assembly_tree": tree}), {})
         self.assertEqual(sb.kit_printed_parts({"schema_version": 11}), {})
+
+
+class DesignTreeStepsTest(unittest.TestCase):
+    """The seal and its preflight run each kit Component's own Assembly Tree
+    steps, as the run's component rounds do (the Miami kit sealed, then
+    every component round failed steps S20-S64 the seal never ran)."""
+
+    KIT = {"body": 3, "lid": 1}
+
+    def _inputs(self, **changes):
+        base = dict(project=Path("/proof"), python="/py", skills_root=ROOT / "src/workshop/make/skills",
+                    contract_path=Path("/proof/CONTRACT.md"), roles=("body", "lid"), nozzle=0.4,
+                    coupled_interfaces=(), powered=False, moving=False, printed_parts=self.KIT)
+        base.update(changes)
+        return sb.PlanInputs(**base)
+
+    def test_a_kit_seal_runs_every_components_tree_steps_in_the_cheap_layer(self):
+        steps = sb.design_plan(self._inputs())
+        ids = [step.id for step in steps]
+        self.assertEqual(ids, ["project", "shared-helpers", "preflight", "tree:body", "tree:lid", "print-gates",
+                               "final-verification"])
+        for role in ("body", "lid"):
+            step = steps[ids.index("tree:%s" % role)]
+            self.assertEqual(step.layer, "preflight")
+            self.assertIn(step.layer, sb.PREFLIGHT_LAYERS, "seal_proof preflight runs it too")
+            self.assertEqual(step.argv[2:], ("/proof", "--component", role, "--nozzle", "0.4", "--json"))
+            self.assertIn("part_%s.step.py" % role, step.inputs)
+            self.assertIn(sb.sources_of(role), step.inputs)
+            self.assertIn("tree", step.inputs, "the installed tree joins the reuse key")
+            self.assertEqual(step.env_keys, sb.PRINT_GATES_ENV, "its builds read the fit table")
+
+    def test_a_toy_that_is_no_kit_has_no_tree_steps(self):
+        self.assertEqual(sb.tree_steps(self._inputs(printed_parts={})), [])
+        ids = [step.id for step in sb.design_plan(self._inputs(printed_parts={}))]
+        self.assertFalse([item for item in ids if item.startswith("tree:")])
+
+    def test_the_tree_step_is_make_rounds_own_component_round_command(self):
+        """No second copy of the check: the same script with make_round's
+        tree_job arguments, less the round's manifest file."""
+        make_round = runpy.run_path(str(ROOT / "src/workshop/make/skills/make-round/scripts/make_round"))
+        for role in ("body", "lid"):
+            job = make_round["tree_job"](Path("/proof"), Path("/out"), 0.4, role)
+            command = [str(item) for item in job["command"]]
+            at = command.index("--manifest")
+            del command[at:at + 2]
+            step = next(item for item in sb.tree_steps(self._inputs()) if item.id == "tree:%s" % role)
+            self.assertEqual(Path(step.argv[1]).resolve(), Path(command[1]).resolve())
+            self.assertEqual(list(step.argv[2:]), command[2:])
+
+    def test_a_failing_tree_step_refuses_the_preflight_and_skips_the_print_gates(self):
+        project = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        (project / "params.py").write_text("A = 1\n")
+        (project / "measure").mkdir()
+        for report in (sb.PREFLIGHT_REPORT, sb.DESIGN_REPORT):
+            (project / report).write_text("- Result: **PASS**\n")
+        failing = RunResult(1, "tree: S20-loungers-slots: T11-lounger#1 cannot go in alone along [0, 0, -12]")
+        plan = sb.design_plan(self._inputs(project=project))
+        preflight = sb.run_batch(plan, project, runner=FakeRunner({"body": failing}),
+                                 record_path=project / "measure/seal-preflight.json", layers=sb.PREFLIGHT_LAYERS)
+        by_id = {item["id"]: item for item in preflight["steps"]}
+        self.assertEqual(preflight["status"], sb.CHECK_FAILURE)
+        self.assertEqual(preflight["failed_layer"], "preflight")
+        self.assertEqual(by_id["tree:body"]["status"], sb.CHECK_FAILURE)
+        self.assertIn("cannot go in alone", by_id["tree:body"]["excerpt"])
+        self.assertEqual(by_id["tree:lid"]["status"], sb.PASS)
+        runner = FakeRunner({"body": failing})
+        seal = sb.run_batch(plan, project, runner=runner, record_path=project / sb.RECORD)
+        by_id = {item["id"]: item for item in seal["steps"]}
+        self.assertEqual(seal["status"], sb.CHECK_FAILURE)
+        for later in ("print-gates", "final-verification"):
+            self.assertEqual(by_id[later]["status"], sb.SKIPPED)
+        self.assertFalse(any("--print-gates-only" in call[0] for call in runner.calls))
 
 
 class ComposedSourceTest(unittest.TestCase):

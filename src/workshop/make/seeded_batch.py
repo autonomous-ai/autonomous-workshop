@@ -835,6 +835,24 @@ def coupled_interface_ids(contract: Mapping[str, Any]) -> tuple:
                  if isinstance(item, Mapping) and item.get("kind") == "coupled")
 
 
+def tree_steps(inputs: PlanInputs) -> list:
+    """One step per Component of a kit, in the cheap gates layer: the tree
+    check a run's component round runs, by make_round's own command
+    (``tree_job``: ``kit_tree.py PROJECT --component ROLE --nozzle N
+    --json``) less the round's manifest file. Its builds read the fit
+    table, which joins the reuse key. Nothing for a toy that is no kit."""
+
+    if not inputs.printed_parts:
+        return []
+    kit_tree = _tool(inputs, "make-round", "scripts", "kit_tree.py")
+    return [Step("tree:%s" % role, "preflight",
+                 (inputs.python, kit_tree, str(inputs.project), "--component", role,
+                  "--nozzle", str(inputs.nozzle), "--json"),
+                 inputs=("params.py", "features", "part_%s.step.py" % role, sources_of(role), "tree"),
+                 env_keys=PRINT_GATES_ENV)
+            for role in inputs.roles]
+
+
 def design_plan(inputs: PlanInputs) -> list:
     """The batch ``seal_proof.py seal`` runs on the Proof (owner decision 5):
     the run's whole batch, each check with the same tool, as far as it needs
@@ -853,6 +871,12 @@ def design_plan(inputs: PlanInputs) -> list:
     # The cheap final gates first (2026-11-17): a stale spec, layout, tree or
     # Manual fails in minutes, before the print gates spend hours.
     steps.append(_final_step(inputs, PREFLIGHT_REPORT, design=True, preflight=True))
+    # A kit's Assembly Tree checks wholly inside each Component (ADR 0092),
+    # which the run's component rounds run and final verification's
+    # cross-Component tree does not: the Miami kit sealed, then every
+    # component round failed its own tree steps. Cheap, so preflight runs
+    # them too.
+    steps += tree_steps(inputs)
     # One run gates every Component, sharing make_round's one allowance. A
     # pass is reused while its key holds: the command, make_round's bytes,
     # every source a part file reaches (kit modules it loads included), the
