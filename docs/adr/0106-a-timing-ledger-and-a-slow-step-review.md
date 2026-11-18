@@ -59,8 +59,10 @@ at anything that takes too long.
 
 4. **Failure classes are deterministic.** Killed (a timeout, a signal, a
    kill exit code) beats unverified (a gate not finished), which beats a
-   stale input (the tool's words say an input is stale or changed since it
-   froze), which beats a tool or harness error (a traceback, a usage error,
+   seed mismatch (a seeded root round that is not the Approved Proof's
+   Component, or a seal `workshop wish --seed-source` would refuse), which
+   beats a stale input (the tool's words say an input is stale or changed
+   since it froze), which beats a tool or harness error (a traceback, a usage error,
    an exit code of 2 or more, a batch harness failure); a plain exit 1 is a
    product defect. When an agent later diagnoses a failure differently, it
    records an annotation (`tools/process_review.py annotate`, in

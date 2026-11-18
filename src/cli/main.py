@@ -1138,9 +1138,11 @@ def _load_references(args: argparse.Namespace) -> tuple[LoadedWishReference, ...
     return load_wish_references(list(args.references or ()), guides, prints)
 
 
-def _wish(args: argparse.Namespace) -> int:
-    _reject_conflicting_publication_options(args)
-    workflow = workshop_effort(args.workflow)
+def _admit_wish(args: argparse.Namespace) -> tuple[Wish, tuple[LoadedWishReference, ...]]:
+    """The Wish ``workshop wish`` would start and its loaded images, after
+    every check made before a run starts; WorkshopError or ContractError
+    on the first refusal. It writes nothing."""
+
     loaded_references = _load_references(args)
     context: dict = {"source": "workshop-cli"}
     if args.inventor is not None:
@@ -1175,6 +1177,33 @@ def _wish(args: argparse.Namespace) -> int:
         context=context,
         references=[item.reference for item in loaded_references],
     )
+    wish.assert_valid()
+    return wish, loaded_references
+
+
+def seed_wish_readiness(contract: Path, references: Sequence[Path], guides: Sequence[Path],
+                        print_art: Sequence[Path], seed_source: Path) -> None:
+    """Refuse, as ``workshop wish --contract ... --seed-source`` would, a
+    sealed Approved Proof that no Wish could start from: the same contract,
+    image and seed checks the CLI makes and the host's own seed check at
+    run start. ``seal_proof.py seal`` ends with it, so a seal that passes is
+    one the Wish admits. It starts nothing and writes nothing."""
+
+    from workshop.workflow.native_run import _seed_start_inputs
+
+    args = argparse.Namespace(
+        contract=Path(contract), references=list(references), guides=list(guides),
+        print_art=list(print_art), seed_source=Path(seed_source), workflow="spark",
+        objective=None, inventor=None,
+    )
+    wish, _loaded = _admit_wish(args)
+    _seed_start_inputs(wish, Path(seed_source), workshop_effort("spark"), None)
+
+
+def _wish(args: argparse.Namespace) -> int:
+    _reject_conflicting_publication_options(args)
+    workflow = workshop_effort(args.workflow)
+    wish, loaded_references = _admit_wish(args)
     progress = sys.stderr if args.json else sys.stdout
     runtime = manager_runtime_selection(
         args.agent,

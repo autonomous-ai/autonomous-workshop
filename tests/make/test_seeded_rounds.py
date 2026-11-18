@@ -314,6 +314,61 @@ class SeededComponentRoundTest(unittest.TestCase):
             self.assertIs(summary["seed"]["within"], False)
             self.assertEqual(summary["visual"]["status"], "pending")
 
+    def _refused_before_building(self, approved):
+        from unittest import mock
+
+        from workshop.runtime import timing_ledger
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = self._seeded(approved), []
+            ledger = Path(tmp) / "ledger.jsonl"
+            with mock.patch.dict("os.environ", {"WORKSHOP_TIMING_LEDGER": str(ledger)}):
+                code = self._main(module, project, ["--component", "part_body.step.py", "--seed-nonce",
+                                                    ROOT_NONCE], calls, None)
+            # The timing ledger classes it a seed mismatch (ADR 0106).
+            ended = [row for row in timing_ledger.read_rows(ledger) if row.get("event") == "end"]
+            self.assertEqual([(row["step"], row["failure_class"]) for row in ended],
+                             [("make_round/component", "seed-mismatch")])
+            self.assertIn("refused before building", ended[0]["reason"])
+            self.assertEqual(code, 2)
+            self.assertIn("is not the Approved Proof's Component (its B-rep or carry key differs); a deviation "
+                          "is a component-worker's round", self.stderr)
+            self.assertIn("refused before building", self.stderr)
+            self.assertEqual(calls, [], "nothing is built, gated or rendered")
+            self.assertFalse((project / "measure/component-rounds/body/r0001").exists())
+            self.assertFalse((project / "measure/component-rounds/body/make-round-state.json").exists())
+
+    def test_a_stale_sealed_carry_key_is_refused_before_the_build(self):
+        # The Amsterdam seal kept carry keys made over the references it
+        # then replaced (ADR 0103): every root round built for up to 54
+        # minutes before the same refusal.
+        approved = self._approved()
+        self._refused_before_building({**approved, "carry_key": "0" * 64})
+
+    def test_a_component_the_approval_lacks_is_refused_before_the_build(self):
+        approved = self._approved()
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, calls = make_round_tests.load_module(), []
+            module.seed_approval = lambda project: {"components": {"other": approved}}
+            code = self._main(module, project, ["--component", "part_body.step.py", "--seed-nonce", ROOT_NONCE],
+                              calls, None)
+            self.assertEqual(code, 2)
+            self.assertIn("the Approved Proof has no Component body", self.stderr)
+            self.assertEqual(calls, [])
+
+    def test_a_worker_round_is_not_refused_for_a_stale_seed_key(self):
+        # Only the root's seeded round must be the Approved Proof; a worker's
+        # round builds and is judged as before.
+        approved = {**self._approved(), "carry_key": "0" * 64}
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module = self._seeded(approved)
+            code, summary = self._component(module, project, [], extra=("--worker-nonce", "ab" * 16))
+            self.assertEqual(summary["phase"], "awaiting-review")
+            self.assertIsNone(summary["review"])
+
     def test_a_seed_nonce_outside_a_seeded_run_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = self._contract_root(tmp)

@@ -94,6 +94,16 @@ class ProcessReviewTest(unittest.TestCase):
         ranked = PR.rank_harness_failures(window)
         self.assertEqual(ranked[0]["key"], "seal_proof/seal (tool-error)")
 
+    def test_a_seed_mismatch_is_waste_with_its_own_fix(self):
+        self.write([row("seeded-batch/component/canal-base", 0, 3231, outcome="fail", cls="seed-mismatch"),
+                    row("seeded-batch/component/house-1", 4000, 78, outcome="fail", cls="seed-mismatch")])
+        ranked = PR.rank_harness_failures(self.rows())
+        self.assertEqual([item["key"] for item in ranked], ["seeded-batch/component/canal-base (seed-mismatch)",
+                                                            "seeded-batch/component/house-1 (seed-mismatch)"])
+        advice = PR.suggestion({"category": "harness", "class": "seed-mismatch", "step": ranked[0]["step"]})
+        self.assertIn("Approved Proof disagree", advice)
+        self.assertIn("re-seal", advice)
+
     def test_waits_between_steps_on_one_toy_up_to_two_hours(self):
         self.write([row("seal_proof/seal", 0, 100),
                     row("seal_proof/seal", 1100, 100),           # 1000 s wait

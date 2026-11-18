@@ -3365,6 +3365,67 @@ def sealed_file_error(item: dict) -> dict | None:
     return None
 
 
+def shown_references(project: Path, refs: list, reference_errors: list) -> list:
+    """The references a round can show; each missing one is a reference error."""
+
+    shown = []
+    for label, ref in refs:
+        if resolve_reference(ref, project) is None:
+            reference_errors.append({"label": label, "error": "reference missing: %s" % ref})
+        else:
+            shown.append((label, ref))
+    return shown
+
+
+def component_references(project: Path, role: str, values) -> tuple[list, list, list]:
+    """A component round's shown references, its sealed labels and its
+    reference errors. None of it reads a built shape, so a seeded round
+    knows its carry key's references before it builds."""
+
+    refs, sealed, reference_errors = with_component_reference(project, role, parse_refs(values, []))
+    return shown_references(project, refs, reference_errors), sealed, reference_errors
+
+
+# The seeded-round refusal this process printed, the timing ledger's reason.
+SEED_REFUSALS: list = []
+
+
+def refuse_seed_round(component: str, why: str, detail: str | None = None) -> int:
+    """Workshop ADR 0096: the root runs only a round that is the Approved
+    Proof; any deviation is a component-worker's round. Prints the refusal
+    and returns its exit code."""
+
+    message = ("this round of %s is not the Approved Proof's Component (%s); a deviation is a "
+               "component-worker's round. Spawn one component-worker for it and give it this Component's "
+               "inputs" % (component, why))
+    SEED_REFUSALS.append(message if detail is None else "%s: %s" % (message, detail))
+    print("make_round: %s" % message, file=sys.stderr)
+    if detail is not None:
+        print("make_round: %s" % detail, file=sys.stderr)
+    return 2
+
+
+def stale_seed_key(project: Path, role: str, approval: dict, refs: list, rulings: list) -> str | None:
+    """Why a seeded root round of ``role`` cannot be the Approved Proof's
+    Component, known before it builds, or None when it still can be.
+
+    The round is exact only when its identity is the approved identity and
+    its carry key the approved key (``seed_review``). Every other input of
+    the key (the shown reference bytes at their cameras, the contract rows,
+    the rulings) is read before the build, so the key an exact build would
+    claim is ``carry_key(approved identity, ...)``; when that is not the
+    sealed key, no build of this round can pass."""
+
+    approved = (approval.get("components") or {}).get(role)
+    if not isinstance(approved, dict):
+        return "the Approved Proof has no Component %s" % role
+    expected = carry_key(approved.get("identity"), refs, project, contract_rows(project, role), rulings)
+    if expected is None or expected != approved.get("carry_key"):
+        return ("the Approved Proof's sealed carry key is not the key this run's references, contract rows "
+                "and rulings give its B-rep, so no build of it can match (refused before building)")
+    return None
+
+
 def with_component_reference(project: Path, role: str, refs: list):
     """A component round's references: the sealed image of this Component's
     Unique Geometry, plus whatever it was explicitly given (ADR 0074).
@@ -7237,6 +7298,13 @@ def make_round(args) -> int:
     if getattr(args, "seed_nonce", None) is not None and approval is None:
         print("make_round: a root component round runs only in a seeded run (Workshop ADR 0096)", file=sys.stderr)
         return 2
+    if component is not None and getattr(args, "seed_nonce", None) is not None and policy.get("reviewed") is None:
+        # The refusal below, decided before the build when it is certain:
+        # nothing a build makes enters the carry key but the identity.
+        pre_refs, _sealed, pre_errors = component_references(project, component, args.refs)
+        stale = None if pre_errors else stale_seed_key(project, component, approval, pre_refs, rulings)
+        if stale is not None:
+            return refuse_seed_round(component, "its B-rep or carry key differs", stale)
     round_index = int(state.get("round", 0)) + 1
     out = Path(args.out) if args.out else round_root / ("r%04d" % round_index)
     if component is not None and out.exists():
@@ -7487,21 +7555,15 @@ def make_round(args) -> int:
 
     # 3. the references this round shows its reader, each composed beside the
     # model at the reference's declared camera. Nothing is scored (ADR 0076).
-    refs = parse_refs(args.refs, [] if component is not None else sorted(project.glob("*_spec.md")))
     if component is not None:
-        refs, sealed, reference_errors = with_component_reference(project, component, refs)
+        refs, sealed, reference_errors = component_references(project, component, args.refs)
     else:
         # ADR 0072: the Wish's sealed references are shown whether or not any
         # ledger names them. A component round shows only its own sealed image
         # and what it is explicitly given (ADR 0063, ADR 0074).
-        refs, sealed, reference_errors = with_sealed_references(project, refs, digests)
-    shown = []
-    for label, ref in refs:
-        if resolve_reference(ref, project) is None:
-            reference_errors.append({"label": label, "error": "reference missing: %s" % ref})
-        else:
-            shown.append((label, ref))
-    refs = shown
+        refs, sealed, reference_errors = with_sealed_references(
+            project, parse_refs(args.refs, sorted(project.glob("*_spec.md"))), digests)
+        refs = shown_references(project, refs, reference_errors)
 
     # 4a. Issue #118: the assembled object's part-vs-part interference, the
     # same `inspect interfere <entry>` final verification runs, at its default
@@ -7598,11 +7660,8 @@ def make_round(args) -> int:
                 built_step.write_bytes(earlier_step)
             elif built_step.is_file():
                 built_step.unlink()
-            print("make_round: this round of %s is not the Approved Proof's Component (%s); a deviation "
-                  "is a component-worker's round. Spawn one component-worker for it and give it this "
-                  "Component's inputs" % (component, "it did not pass its checks" if not ok else
-                                          "its B-rep or carry key differs"), file=sys.stderr)
-            return 2
+            return refuse_seed_round(component, "it did not pass its checks" if not ok else
+                                     "its B-rep or carry key differs")
 
     # 5. Visual inspection is a separate evidence submission, not a model call.
     # A component round that failed its checks is not rendered: nobody reviews
@@ -8124,8 +8183,11 @@ def _timed_main(argv=None) -> int:
                              fingerprint=mode in ("print-gates-only", "full", "component", "assembly",
                                                   "shared-helpers", "interface")) as span:
         began = time.time()
+        SEED_REFUSALS.clear()
         code = _main(argv)
         span.exit_code = code if isinstance(code, int) else (0 if code is None else 1)
+        if SEED_REFUSALS:
+            span.reason = SEED_REFUSALS[-1]
         if project is not None and mode == "print-gates-only":
             summary = project / "measure" / "print-gates" / "summary.json"
             span.evidence = str(summary)

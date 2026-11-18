@@ -130,3 +130,26 @@ exact Component as a deviation (the Amsterdam kit's first seeded run).
 After it puts the renders in place, `seal_proof.py` now reads the
 identities again and records those carry keys. It refuses a B-rep, STEP
 or contract-rows change in between.
+
+## Amendment 2026-11-18: the seal ends with the Wish's admission, the round refuses before it builds
+
+Both failures above passed the seal and were found later: one when the Wish
+refused the images, the other after the seeded batch had built every
+Component (about 104 minutes for the Amsterdam kit's 12) before refusing
+each one. Two checks now catch them where they are cheap:
+
+- `seal_proof.py seal` ends by running `workshop wish --seed-source`'s own
+  admission (`cli.main.seed_wish_readiness`: the contract and image loads,
+  `_load_seed` and the host's `_seed_start_inputs`) over the contract, the
+  images it names in the images directory and the Proof. A seal the Wish
+  would refuse exits 1 in the Wish's words; `APPROVAL.json` stays written
+  so a re-seal finds its earlier renders.
+- A seeded root component round (`--seed-nonce`) with no earlier review
+  computes, before it builds, the carry key an exact build would claim:
+  the approved identity with this run's shown references, contract rows and
+  rulings, all read before the build. When that is not the sealed key, or
+  the approval has no such Component, no build can be exact, and make_round
+  refuses at once with the refusal it gave after the build. A worker's round
+  and every verdict are unchanged.
+
+The timing ledger classes both refusals `seed-mismatch` (ADR 0106).
