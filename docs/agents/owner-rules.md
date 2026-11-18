@@ -475,6 +475,12 @@ estimate it:
 - **Judge a fix run by new rounds and the stage reached**, not by
   `tally.py`'s lock count, which counts Components carried from the source
   run as locked.
+- **Let a running build publish** (owner, 2026-11-18): never stop or
+  interrupt a build already running with publication on just to hold its
+  publish for owner review. Ask first only before launching a new toy's
+  `workshop wish` or `workshop fix`, as before. Why: the toys page has no
+  audience yet, so an unreviewed publish costs nothing, and stopping a run
+  wastes it.
 
 ## Approvals
 
@@ -483,7 +489,9 @@ Wait for the owner's explicit OK before any of these:
 - a `workshop wish` or `workshop fix` launch (show the exact command). One
   OK per toy for its unattended `build-a-toy` loop covers every launch in
   that loop;
-- a publish, or any change to a live listing, including a rename;
+- a publish, or any change to a live listing, including a rename. A
+  build already running with publication on publishes without a new OK
+  (see **Let a running build publish**);
 
 Harness fixes, including those made during a build loop, go through a PR;
 never push to `main` and never force-push. **Merge a PR without asking**
