@@ -819,6 +819,9 @@ def seal(args) -> dict:
         raise
     if held is not None:
         shutil.rmtree(held.parent)
+    # The seal ends where the wish starts: the wish's own admission checks.
+    check_wish_readiness(proof, contract, design_contract,
+                         Path(args.images).resolve() if getattr(args, "images", None) else contract.parent)
     return document
 
 
@@ -964,6 +967,34 @@ def _rekey_after_images(proof: Path, contract: Path, document: dict) -> None:
             if now.get(key) != component.get(key):
                 raise Refusal("%s's %s changed while the contract images were sealed" % (role, key))
         component["carry_key"] = now.get("carry_key")
+
+
+def check_wish_readiness(proof: Path, contract: Path, design_contract: dict, images: Path) -> None:
+    """Refuse a seal ``workshop wish --seed-source`` would refuse: the
+    wish's own admission (``cli.main.seed_wish_readiness``) over this
+    contract, the images it names under ``images`` as build-a-toy passes
+    them, and this Proof. A seal that passes it is one a Wish starts from;
+    duplicate image bytes (#355) or an image that is not the sealed render
+    fails here in seconds, not after a run starts."""
+
+    from cli.main import seed_wish_readiness
+    from workshop.errors import WorkshopError
+
+    def files(items):
+        return [images / str(item.get("file")) for item in items or () if isinstance(item, dict)]
+
+    try:
+        seed_wish_readiness(contract, files(design_contract.get("references")),
+                            files(design_contract.get("guides")),
+                            files((design_contract.get("print") or {}).get("art")), proof)
+    except WorkshopError as exc:
+        raise Refusal("%s %s: %s. %s is written; fix the cause and seal again"
+                      % (WISH_WOULD_REFUSE, proof, exc, APPROVAL)) from exc
+
+
+# The words a seal refused by the wish's admission starts with; the timing
+# ledger classes them as a seed mismatch (Workshop ADR 0106).
+WISH_WOULD_REFUSE = "workshop wish --seed-source would refuse"
 
 
 def verify(args) -> list[str]:

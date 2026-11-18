@@ -53,7 +53,10 @@ OUTCOMES = (PASS, FAIL, UNVERIFIED, KILLED)
 PRODUCT_DEFECT = "product-defect"
 TOOL_ERROR = "tool-error"
 STALE_INPUT = "stale-input"
-FAILURE_CLASSES = (PRODUCT_DEFECT, TOOL_ERROR, STALE_INPUT, KILLED)
+# A seeded run's input is not what the Approved Proof sealed: a root round
+# that cannot be the approved Component, or a seal the Wish would refuse.
+SEED_MISMATCH = "seed-mismatch"
+FAILURE_CLASSES = (PRODUCT_DEFECT, TOOL_ERROR, STALE_INPUT, SEED_MISMATCH, KILLED)
 
 # Exit codes a shell gives a process a signal ended: SIGINT, SIGKILL, SIGTERM.
 _SIGNAL_EXITS = (130, 137, 143)
@@ -68,6 +71,13 @@ STALE_PATTERNS = tuple(re.compile(pattern, re.IGNORECASE) for pattern in (
     r"\bout of date\b",
     r"names a CAD entry that does not exist",
     r"foreign or stale",
+))
+# Text make_round and seal_proof print when a seeded run and its Approved
+# Proof disagree on identity: a stale sealed carry key, image bytes the Wish
+# refuses. It beats stale: the fix is a re-seal, not a refreshed input.
+SEED_MISMATCH_PATTERNS = tuple(re.compile(pattern) for pattern in (
+    r"is not the Approved Proof's Component \(its B-rep or carry key differs\)",
+    r"workshop wish --seed-source would refuse",
 ))
 TOOL_ERROR_PATTERNS = tuple(re.compile(pattern, re.IGNORECASE) for pattern in (
     re.escape(_TRACEBACK),
@@ -167,7 +177,8 @@ def classify(exit_code: Optional[int], *, output: str = "", timed_out: bool = Fa
     """``(outcome, failure_class)`` for one finished step.
 
     Deterministic, by exit status and the step's own words. Killed beats
-    unverified, which beats a stale input, which beats a tool error; a plain
+    unverified, which beats a seed mismatch, which beats a stale input,
+    which beats a tool error; a plain
     exit 1 with none of those marks is a product defect: the gate said the
     product fails. An agent that later finds otherwise records an annotation
     (``tools/process_review.py annotate``); the row itself never changes.
@@ -180,6 +191,8 @@ def classify(exit_code: Optional[int], *, output: str = "", timed_out: bool = Fa
         return UNVERIFIED, TOOL_ERROR
     if exit_code == 0:
         return PASS, None
+    if any(pattern.search(text) for pattern in SEED_MISMATCH_PATTERNS):
+        return FAIL, SEED_MISMATCH
     if any(pattern.search(text) for pattern in STALE_PATTERNS):
         return FAIL, STALE_INPUT
     if exit_code is None or exit_code >= 2 or any(pattern.search(text) for pattern in TOOL_ERROR_PATTERNS):

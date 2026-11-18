@@ -61,7 +61,7 @@ MAX_WAIT_S = 2 * 3600.0
 TOP = 5
 HOT_IN_TOP = 2
 REPORT_DIR = REPO / "docs" / "research" / "process-review"
-WASTE_CLASSES = (tl.TOOL_ERROR, tl.STALE_INPUT, tl.KILLED)
+WASTE_CLASSES = (tl.TOOL_ERROR, tl.STALE_INPUT, tl.SEED_MISMATCH, tl.KILLED)
 _CHEAP_REASON = re.compile(r"expensive gates not started|preflight audit group", re.IGNORECASE)
 
 
@@ -329,6 +329,10 @@ def suggestion(item: dict) -> str:
         if cls == tl.STALE_INPUT:
             return ("Check `%s`'s inputs for staleness in a preflight before the long work starts, and say "
                     "which file to refresh." % item["step"])
+        if cls == tl.SEED_MISMATCH:
+            return ("`%s` found the run and its Approved Proof disagree: compare what the seal recorded with "
+                    "what the run reads (carry keys, image bytes) at the seal's end and before any build, then "
+                    "re-seal." % item["step"])
         if cls == tl.KILLED:
             return ("`%s` was killed or timed out: right-size its deadline from the ledger, make it resumable, "
                     "and do not stop a running step for a tool update; preflight first." % item["step"])

@@ -121,6 +121,14 @@ class ClassifyTest(unittest.TestCase):
             ((2,), {"output": "project (exit 2): foreign or stale STEP files: measure/kit/print.step"},
              ("fail", "stale-input")),
             ((2,), {"output": "verify_project: error: bad flag"}, ("fail", "tool-error")),
+            ((2,), {"output": "make_round: this round of canal-base is not the Approved Proof's Component "
+                              "(its B-rep or carry key differs); a deviation is a component-worker's round"},
+             ("fail", "seed-mismatch")),
+            ((1,), {"reason": "workshop wish --seed-source would refuse /p: reference image ref-03.png "
+                              "repeats the bytes of ref-02.png"}, ("fail", "seed-mismatch")),
+            # A root round that failed its own checks is the product's, not the seal's.
+            ((2,), {"output": "make_round: this round of house-1 is not the Approved Proof's Component "
+                              "(it did not pass its checks)"}, ("fail", "tool-error")),
             ((1,), {"output": "Traceback (most recent call last):\n KeyError"}, ("fail", "tool-error")),
             ((None,), {"timed_out": True}, ("killed", "killed")),
             ((-9,), {}, ("killed", "killed")),

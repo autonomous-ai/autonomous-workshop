@@ -141,9 +141,14 @@ class SealProofTest(unittest.TestCase):
     def _seal(self, *extra):
         argv = ["seal", str(self.proof), "--contract", str(self.contract), "--checklist", str(self.checklist),
                 "--nozzle", "0.4", "--approved-by", "owner", "--date", "2026-11-02", "--cost", "3.5", *extra]
+        import importlib
+
+        wish_cli = importlib.import_module("cli.main")
         with mock.patch.object(self.module, "identities", side_effect=self._record), \
                 mock.patch.object(self.module, "read_contract",
                                   side_effect=lambda path: getattr(self, "design_contract", {})), \
+                mock.patch.object(wish_cli, "_load_sealed_contract",
+                                  side_effect=lambda path, refs: SealProofTest._wish_contract(self, path)), \
                 mock.patch.object(self.module, "batch_runner", return_value=lambda *a: SealProofTest._batch_runner(self, *a)), \
                 mock.patch.object(self.module, "render_runner",
                                   return_value=lambda *a: SealProofTest._render_runner(self, *a)), \
@@ -153,6 +158,15 @@ class SealProofTest(unittest.TestCase):
             code = self.module.main(argv)
         self.stderr = err.getvalue()
         return code
+
+    def _wish_contract(self, path):
+        """What the wish's contract check returns for the fixture contract:
+        the design contract the seal read, as a schema 11 contract of the
+        Proof's one Component (the fixture's contract text is no real
+        contract; every check after it is the wish's own)."""
+        design = {"schema_version": 11, "shape": "approved-proof", "geometries": [{"id": "body"}],
+                  **getattr(self, "design_contract", {})}
+        return Path(path).read_text(encoding="utf-8"), design, None
 
     def _render_runner(self, argv, cwd):
         """Stand in for render_review (one PNG per requested camera view) and
@@ -554,6 +568,61 @@ class SealCheckInputsTest(unittest.TestCase):
         (self.design / "ref-01-assembly.png").write_bytes(b"a newer AI drawing")
         self.assertEqual(self._seal(), 1)
         self.assertIn("neither the earlier seal's render nor archived", self.stderr)
+
+    def test_a_passing_seal_is_one_the_wish_admits(self):
+        """The seal ends with the wish's own admission (cli.main's
+        seed_wish_readiness) over the contract's images where build-a-toy
+        passes them from."""
+        import importlib
+
+        wish_cli = importlib.import_module("cli.main")
+        self._image_contract()
+        calls = []
+        real = wish_cli.seed_wish_readiness
+        with mock.patch.object(wish_cli, "seed_wish_readiness",
+                               side_effect=lambda *a: calls.append(a) or real(*a)):
+            self.assertEqual(self._seal(), 0, self.stderr)
+        contract, references, guides, art, seed = calls[0]
+        self.assertEqual((contract, seed), (self.contract.resolve(), self.proof.resolve()))
+        self.assertEqual([p.name for p in references], ["ref-01-assembly.png", "ref-02-body.jpg"])
+        self.assertEqual([p.parent for p in references + guides], [self.design.resolve()] * 3)
+        self.assertEqual((art, [p.name for p in guides]), ([], ["guide-01-body.png"]))
+
+    def test_a_seal_the_wish_would_refuse_fails_at_the_seal(self):
+        """Seal 15 of the Amsterdam kit passed and its wish refused two
+        images of the same bytes (#355); the seal now refuses it, in the
+        wish's words, before any run starts."""
+        self._image_contract()
+        self.design_contract["references"].append(
+            {"file": "ref-03-body.jpg", "shows": "geometry:body", "camera": [-30, 20]})
+        (self.design / "ref-03-body.jpg").write_bytes(b"AI drawing ref-03-body.jpg")
+        plain = lambda made, target: target.write_bytes(made.read_bytes())  # noqa: E731 - the seal before #355
+        self.module._save_as = plain
+        from workshop.runtime import timing_ledger
+
+        ledger = self.root / "ledger.jsonl"
+        with mock.patch.dict("os.environ", {"WORKSHOP_TIMING_LEDGER": str(ledger)}):
+            self.assertEqual(self._seal(), 1)
+        self.assertIn("workshop wish --seed-source would refuse", self.stderr)
+        ended = [row for row in timing_ledger.read_rows(ledger)
+                 if row.get("event") == "end" and row["step"] == "seal_proof/seal"]
+        self.assertEqual([row["failure_class"] for row in ended], ["seed-mismatch"])
+        self.assertIn("ref-03-body.jpg repeats the bytes of ref-02-body.jpg", self.stderr)
+
+    def test_an_image_left_unreplaced_fails_at_the_seal(self):
+        """A contract image that is not the sealed render is refused by the
+        wish (ADR 0103), so the seal refuses it too."""
+        self._image_contract()
+        real = self.module.replace_contract_images
+
+        def keep_one_ai_image(images, holder, records, previous):
+            real(images, holder, records, previous)
+            (images / "ref-02-body.jpg").write_bytes(b"AI drawing ref-02-body.jpg")
+
+        self.module.replace_contract_images = keep_one_ai_image
+        self.assertEqual(self._seal(), 1)
+        self.assertIn("workshop wish --seed-source would refuse", self.stderr)
+        self.assertIn("ref-02-body.jpg", self.stderr)
 
     def test_carry_keys_bind_the_sealed_images(self):
         """make_round's carry key hashes the reference bytes; the keys an
