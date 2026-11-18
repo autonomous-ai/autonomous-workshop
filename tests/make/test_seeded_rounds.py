@@ -235,6 +235,14 @@ if __name__ == "__main__":
     unittest.main()
 
 
+def summary_identity(stderr: str) -> str:
+    """The built B-rep a refusal printed."""
+    import re
+
+    match = re.search(r"built B-rep (\S+), approved", stderr)
+    return match.group(1) if match else "<none>"
+
+
 class SeededComponentRoundTest(unittest.TestCase):
     """A component round in a run whose seed approval make_round reads."""
 
@@ -288,8 +296,34 @@ class SeededComponentRoundTest(unittest.TestCase):
                               [], None)
             self.assertEqual(code, 2)
             self.assertIn("component-worker's round", self.stderr)
+            # The refusal names the two B-reps, since the round leaves nothing.
+            self.assertNotIn(summary_identity(self.stderr), ("<none>", approved["identity"][:12]))
+            self.assertIn("built B-rep %s, approved %s" % (summary_identity(self.stderr), approved["identity"][:12]),
+                          self.stderr)
             self.assertFalse((project / "measure/component-rounds/body/r0001").exists())
             self.assertFalse((project / "measure/component-rounds/body/make-round-state.json").exists())
+
+    def test_a_root_round_that_fails_its_checks_names_the_failure(self):
+        # Amsterdam attempt 3: canal-base was refused "it did not pass its
+        # checks" and its round directory removed, so nothing said which
+        # check failed (two builds of the source disagreed).
+        from unittest import mock
+
+        from workshop.runtime import timing_ledger
+
+        approved = self._approved()
+        with tempfile.TemporaryDirectory() as tmp:
+            project = self._contract_root(tmp)
+            module, ledger = self._seeded(approved), Path(tmp) / "ledger.jsonl"
+            with mock.patch.dict("os.environ", {"WORKSHOP_TIMING_LEDGER": str(ledger)}):
+                code = self._main(module, project, ["--component", "part_body.step.py", "--seed-nonce", ROOT_NONCE],
+                                  [], {"build": True})
+            self.assertEqual(code, 2)
+            self.assertIn("(it did not pass its checks)", self.stderr)
+            self.assertIn("make_round: build body: ValueError: broken", self.stderr)
+            ended = [row for row in timing_ledger.read_rows(ledger) if row.get("event") == "end"]
+            self.assertIn("build body: ValueError: broken", ended[0]["reason"])
+            self.assertFalse((project / "measure/component-rounds/body/r0001").exists())
 
     def test_a_worker_deviation_within_tolerance_is_locked_with_its_diff(self):
         approved = self._approved()
