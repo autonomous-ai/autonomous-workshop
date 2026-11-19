@@ -30,6 +30,33 @@ class BigObstacle:
         raise RuntimeError("boolean")
 
 
+class Piece:
+    """A boolean result with a volume and a validity flag."""
+
+    def __init__(self, volume, valid=True):
+        self.volume, self.is_valid = volume, valid
+
+    def solids(self):
+        return [self]
+
+
+class InvalidCropObstacle(BigObstacle):
+    """Its crop conserves volume but fails validation, as OCC returned for a many-faced drum."""
+
+    volume = 1000.0
+
+    def solids(self):
+        return [self]
+
+    def __and__(self, other):
+        self.booleans.append("&")
+        return Piece(400.0, valid=False)
+
+    def __sub__(self, other):
+        self.booleans.append("-")
+        return Piece(600.0)
+
+
 class CropEarlyOutTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -50,6 +77,11 @@ class CropEarlyOutTest(unittest.TestCase):
         edge = BigObstacle((22, 0, 0))
         self.assertIs(self.tool["crop_to_sweep"](edge, self.sweep), edge)   # the throwing crop keeps the whole
         self.assertEqual(edge.booleans, ["&"])
+
+    def test_an_invalid_crop_keeps_the_whole_obstacle(self):
+        edge = InvalidCropObstacle((22, 0, 0))
+        self.assertIs(self.tool["crop_to_sweep"](edge, self.sweep), edge)
+        self.assertEqual(edge.booleans, ["&", "-"])
 
     def test_touching_the_margin_is_not_a_miss(self):
         lo_edge = BigObstacle((-16.0, 0, 0))      # max x = -11.0 = the window's padded min
