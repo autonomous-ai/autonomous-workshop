@@ -75,7 +75,9 @@ The gates
   every sample point, so it leads into its stop, and the input's sweep is
   clean. A press input (``press_mm``, same amendment) is swept offset
   inward by its declared bite at the same limit; a Part the kernel cannot
-  offset is refused.
+  offset sweeps against its obstacles, cropped to the sweep, offset inward
+  by the same bite (ADR 0104 amendment 2026-11-19, press obstacles), and
+  is refused when neither offset can be made.
   A ``snap`` step (ADR 0104 amendment 2026-11-17) declares one pair, or a
   list of pairs, that may overlap on the way in: each snapping Part against
   its own catch, each overlap no deeper across the direction than that
@@ -821,16 +823,31 @@ def _insert_step(plan, geometry, bodies, item, k, wall, sequence, report) -> Non
             }
             press = entry.get("press_mm")
             swept = moving
+            obstacles = [body for _, body in blocking]
             if press:
                 # A press input (ADR 0104 amendment 2026-11-19): its ribs bite
                 # the declared depth, so it sweeps offset inward by it, at the
-                # unchanged overlap limit. A Part the kernel cannot offset is
-                # refused, never swept as it is.
+                # unchanged overlap limit. When the kernel cannot offset the
+                # Part, its obstacles, cropped to the sweep, are offset inward
+                # by the same depth instead (same amendment, press obstacles):
+                # a bite no deeper than the press clears whichever side
+                # shrinks. Neither offset possible is refused, never swept as
+                # it is.
                 condition["inputs"]["press_mm"] = press
                 condition["description"] += ", offset inward by its %.3g mm press" % press
                 swept, error = geometry.pressed(moving, press)
+                offset_side = "input"
+                if error is not None and blocking:
+                    shrunk, why = geometry.pressed_obstacles(condition, moving, obstacles, press)
+                    if shrunk is None:
+                        error = "%s; nor its obstacles: %s" % (error, why)
+                    else:
+                        swept, obstacles, error, offset_side = moving, shrunk, None, "obstacles"
+                        condition["inputs"]["press_offset"] = "obstacles"
+                        condition["description"] = condition["description"].replace(
+                            ", offset inward by its", ", against its obstacles offset inward by its")
                 report["presses"].append({"id": condition["id"], "step": step, "input": name, "press_mm": press,
-                                          "verdict": "PASS" if error is None else "FAIL"})
+                                          "offset": offset_side, "verdict": "PASS" if error is None else "FAIL"})
                 if error is not None:
                     report["failures"].append(
                         "%s: %s is a press input, but its Part cannot be offset inward by its %.3g mm press "
@@ -838,7 +855,7 @@ def _insert_step(plan, geometry, bodies, item, k, wall, sequence, report) -> Non
             clean = False
             if blocking and swept is not None:
                 sequence["inputs"]["steps"].append(condition)
-                result = geometry.sweep(condition, swept, [body for _, body in blocking])
+                result = geometry.sweep(condition, swept, obstacles)
                 condition["result"] = {key: result.get(key) for key in ("status", "detail", "obstacle", "overlapMm3")
                                        if key in result}
                 clean = result.get("status") == "pass"
@@ -1373,6 +1390,13 @@ def check_assembly(plan: Plan, geometry, nozzle: float, *, reconcile_all: bool =
     return report
 
 
+def _smaller(shape, whole):
+    """``shape`` when it is one valid solid smaller than ``whole``, else None."""
+
+    valid = shape.is_valid() if callable(shape.is_valid) else shape.is_valid
+    return shape if valid and 0 < shape.volume < whole.volume else None
+
+
 class CadGeometry:
     """The build123d backend: builds each Component from its own source,
     placed by its assembly_pose, and sweeps with check_motion's conditions."""
@@ -1572,12 +1596,16 @@ class CadGeometry:
                                   "bounds": ((bb.min.X, bb.min.Y, bb.min.Z), (bb.max.X, bb.max.Y, bb.max.Z))})
         return found
 
-    def pressed(self, moving: list[Body], depth: float):
+    def pressed(self, moving: list[Body], depth: float, sharp: bool = False):
         """``moving`` offset inward by a press input's ``depth`` (ADR 0104
         amendment 2026-11-19): ``(bodies, None)``, or ``(None, reason)`` when
-        the kernel cannot offset a body into one valid, smaller solid."""
+        the kernel cannot offset a body into one valid, smaller solid.
+        ``sharp`` joins an obstacle's offset faces by intersection: an arc
+        join rounds a socket's inner corners and puts material back where
+        the input's corners sit. Where the kernel refuses that join, the arc
+        join is taken: it leaves more material, so it is never looser."""
 
-        from build123d import Location, offset
+        from build123d import Kind, Location, offset
 
         found = []
         for body in moving:
@@ -1585,13 +1613,51 @@ class CadGeometry:
                 # The kernel refuses to offset some placed solids it offsets at
                 # their own origin: offset the unplaced shape, then place it.
                 place = body.shape.location
-                shape = offset(body.shape.located(Location()), amount=-depth).moved(place)
-                valid = shape.is_valid() if callable(shape.is_valid) else shape.is_valid
-                if not valid or not 0 < shape.volume < body.shape.volume:
+                shape = None
+                if sharp:
+                    try:
+                        shape = _smaller(offset(body.shape.located(Location()), amount=-depth,
+                                                kind=Kind.INTERSECTION), body.shape)
+                    except Exception:  # noqa: BLE001 - the stricter arc join below decides
+                        shape = None
+                if shape is None:
+                    shape = _smaller(offset(body.shape.located(Location()), amount=-depth, kind=Kind.ARC),
+                                     body.shape)
+                if shape is None:
                     return None, "the offset of %s is no valid smaller solid" % body.key
+                shape = shape.moved(place)
             except Exception as exc:  # noqa: BLE001 - an offset the kernel refuses is a refusal
                 return None, "the kernel refuses to offset %s: %s" % (body.key, exc)
             found.append(Body(body.label, shape, key=body.key))
+        return found, None
+
+    def pressed_obstacles(self, condition: dict, moving: list[Body], obstacles: list[Body], depth: float):
+        """``obstacles`` cropped to the box round every pose of the
+        condition's sweep and offset inward by a press input's ``depth``,
+        for a Part the kernel cannot offset itself (ADR 0104 amendment
+        2026-11-19, press obstacles): ``(bodies, None)``, or ``(None,
+        reason)``. A crop's own cut faces lie ``crop_to_sweep``'s margin beyond every pose, so their
+        offset reaches no pose; an obstacle with nothing near the path drops
+        out, as it does from the sweep."""
+
+        from build123d import Location, Vector
+
+        inputs = condition["inputs"]
+        steps, move = int(inputs["steps"]), Vector(*inputs["translation"])
+        group = self._group(moving)
+        boxes = [group.moved(Location(move * (step / steps))).bounding_box() for step in range(steps + 1)]
+        found = []
+        for body in obstacles:
+            try:
+                local = self.motion["crop_to_sweep"](body.shape, boxes)
+            except Exception as exc:  # noqa: BLE001 - an obstacle the kernel cannot crop is offset whole
+                local = body.shape
+            if local is None:
+                continue
+            shrunk, error = self.pressed([Body(body.label, local, key=body.key)], depth, sharp=True)
+            if error is not None:
+                return None, error
+            found.extend(shrunk)
         return found, None
 
     def touching(self, a, b, gap: float) -> bool:

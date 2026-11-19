@@ -2,8 +2,10 @@
 
 (d) A moving input of a peg-socket, tab-slot or pin-hinge step may declare
 ``press_mm``: its press ribs' bite a side. Its sweep uses the Part offset
-inward by that depth, at the unchanged 0.001 mm3 limit; a Part the kernel
-cannot offset is refused.
+inward by that depth, at the unchanged 0.001 mm3 limit. A Part the kernel
+cannot offset sweeps against its obstacles offset inward by that depth
+instead (same amendment, press obstacles); neither offset possible is
+refused.
 
 (e) A flat joint face at an angle to the direction, or a round one whose
 axis is off it, is accepted only as a seat face: the input's outward normal
@@ -59,10 +61,12 @@ class Built(kit_tree.CadGeometry):
     def component(self, role, instance):
         return [kit_tree.Body(label, shape, colours=(OAK,)) for label, shape in self.parts]
 
-    def pressed(self, moving, depth):
-        if self.refuse_offset:
+    def pressed(self, moving, depth, sharp=False):
+        # refuse_offset: True refuses every offset; "input" only the moving peg's,
+        # so its obstacles are offset instead (press obstacles)
+        if self.refuse_offset is True or (self.refuse_offset == "input" and moving[0].key.startswith("A02-")):
             return None, "the kernel refuses to offset %s: offset Error" % moving[0].key
-        return super().pressed(moving, depth)
+        return super().pressed(moving, depth, sharp)
 
 
 def check(parts, **options):
@@ -116,6 +120,47 @@ class PressTest(unittest.TestCase):
                             for f in report["failures"]), report["failures"])
         self.assertEqual(report["presses"][0]["verdict"], "FAIL")
         self.assertEqual(report["conditions"], [])
+
+    def test_a_part_the_kernel_cannot_offset_sweeps_against_its_shrunk_obstacles(self):
+        report = check(self.parts(), press=0.06, refuse_offset="input")
+        self.assertEqual(report["failures"], [])
+        (record,) = report["presses"]
+        self.assertEqual((record["offset"], record["verdict"]), ("obstacles", "PASS"))
+        (sequence,) = report["conditions"]
+        (condition,) = sequence["inputs"]["steps"]
+        self.assertEqual(condition["inputs"]["press_offset"], "obstacles")
+        self.assertEqual(condition["thresholds"]["maxOverlapMm3"], kit_tree.OVERLAP_MM3)
+
+    def test_shrunk_obstacles_still_fail_a_shift_and_a_deeper_bite(self):
+        for parts in (self.parts(across=0.3), self.parts(peg=4.4)):
+            report = check(parts, press=0.06, refuse_offset="input")
+            self.assertTrue(any("cannot go in alone" in f for f in report["failures"]), report["failures"])
+            self.assertEqual((report["presses"][0]["offset"], report["presses"][0]["verdict"]), ("obstacles", "FAIL"))
+
+    def test_an_obstacle_the_kernel_cannot_join_sharp_takes_the_stricter_arc_join(self):
+        from unittest import mock
+
+        import build123d
+
+        real = build123d.offset
+
+        def no_sharp(*args, **kwargs):
+            if kwargs.get("kind") == build123d.Kind.INTERSECTION:
+                raise RuntimeError("offset Error")
+            return real(*args, **kwargs)
+
+        with mock.patch.object(build123d, "offset", no_sharp):
+            # the arc join rounds the socket's corners: the 4.1 peg's corners still bite at 0.06
+            report = check(self.parts(), press=0.06, refuse_offset="input")
+            self.assertEqual((report["presses"][0]["offset"], report["presses"][0]["verdict"]), ("obstacles", "FAIL"))
+            # a round peg has no corners to bite: the arc join passes it
+            Box, Pos = self.Box, self.Pos
+            from build123d import Cylinder
+            base = Pos(0, 0, 5) * Box(20, 20, 10) - Pos(0, 0, 7.5) * Cylinder(2.0, 5)
+            report = check([("A01-base", base), ("A02-peg", Pos(0, 0, 10) * Cylinder(2.05, 10))], press=0.06,
+                           refuse_offset="input")
+            self.assertEqual(report["failures"], [])
+            self.assertEqual(report["presses"][0]["offset"], "obstacles")
 
     def test_the_real_offset_shrinks_the_part(self):
         Box = self.Box
