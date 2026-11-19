@@ -992,6 +992,44 @@ def _seat_face(face, unit) -> bool:
     return True
 
 
+ON_FACE_MM = 1e-3
+
+
+def _faces_each_other(face, other) -> bool:
+    """Whether a face of the moving input and a face of what it joins face
+    each other across the gap (ADR 0104 amendment 2026-11-19, rule h): some
+    sample point of ``face``, within JOINT_GAP_MM of ``other``, has its foot
+    on ``other``'s surface inside ``other``, and the two outward normals there
+    are opposed. Two faces facing the same way (one flush surface across a
+    seam) or meeting only along an edge are no joint. A pair the kernel cannot
+    read is judged a joint, as before."""
+
+    try:
+        from OCP.BRep import BRep_Tool
+        from OCP.GeomAPI import GeomAPI_ProjectPointOnSurf
+        from OCP.gp import gp_Pnt
+        from build123d import Vector
+
+        surface = BRep_Tool.Surface_s(other.wrapped)
+        for u in SEAT_SAMPLES:
+            for v in SEAT_SAMPLES:
+                point = face.position_at(u, v)
+                if face.distance_to(point) > ON_FACE_MM or other.distance_to(point) > JOINT_GAP_MM:
+                    continue
+                projection = GeomAPI_ProjectPointOnSurf(gp_Pnt(point.X, point.Y, point.Z), surface)
+                if projection.NbPoints() == 0:
+                    continue
+                near = projection.NearestPoint()
+                foot = Vector(near.X(), near.Y(), near.Z())
+                if other.distance_to(foot) > ON_FACE_MM:
+                    continue
+                if face.normal_at(point).dot(other.normal_at(foot)) < 0:
+                    return True
+    except Exception:  # noqa: BLE001 - an unreadable pair is judged as before
+        return True
+    return False
+
+
 def _at_seat(condition: dict) -> dict:
     """The same condition held at the seat: does the input overlap the
     obstacle where it sits?"""
@@ -1345,7 +1383,10 @@ class CadGeometry:
         collects every flagged face of the input that is a seat face (ADR 0104
         amendment 2026-11-19): its outward normal leads into the stop, n.d > 0
         at every sample point, so it parts from its mate as the input backs
-        out. A seat face is not found."""
+        out. A seat face is not found. Two faces are a pair only when they face
+        each other across the gap (``_faces_each_other``, rule h): faces of
+        neighbouring Parts facing the same way, one flush surface across a
+        seam, or meeting only along an edge, are no pair."""
 
         from build123d import GeomType, Vector
 
@@ -1375,6 +1416,8 @@ class CadGeometry:
                             continue
                     except Exception:  # noqa: BLE001 - an unmeasurable pair is not judged
                         continue
+                    if not _faces_each_other(face, other):
+                        continue   # rule h: a flush surface across a seam, or an edge, is no joint
                     angle = math.acos(min(1.0, abs(_dot(vector, (unit.X, unit.Y, unit.Z)))))
                     if kind == "plane" and limit < angle < math.pi / 2 - limit:
                         message = "a flat joint face at %.0f deg to it near %s" % (

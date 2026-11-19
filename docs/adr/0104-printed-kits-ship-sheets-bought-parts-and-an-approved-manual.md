@@ -488,6 +488,36 @@ round summary records the report as `sheets`.
 
   Frozen runs keep their run-local tool bytes.
 
+## Amendment 2026-11-19 (later): a joint's faces face each other
+
+Owner decision 2026-11-19 (rule h). The non-parallel check paired any two
+parallel faces of one kind within 0.3 mm, judging by `abs(n.m)`. So it also
+paired faces of neighbouring Parts that face the same way: one flush surface
+running across a seam, such as a sloped roof continued by the next plate, a
+riser's face beside the ledge it meets, or a drawer front flush with the
+drum's outer wall. It also paired opposed faces that meet only along an edge.
+Neither is a joint. Nothing slides on such a pair, and a real collision
+between those Parts is the sweep's to find.
+
+A pair is now a joint only when its faces face each other. Some sample point
+of the input's face (5 x 5 over its parameter range) lies on that face and
+within 0.3 mm of the other face, its foot on the other face's surface lies
+inside that face, and the two outward normals there are opposed (n.m < 0). A
+pair the kernel cannot read is judged as before. Nothing else changes: the
+0.001 mm3 sweep, the 2 degree parallel tolerance, seat faces and snap ramps.
+
+Evidence (Miami Deco Build Kit Proof, `kit_tree --component`): a riser, a back
+rest, a roof and a drawer front were flagged only on such pairs. The same Part
+shifted 0.3 mm sideways still fails its sweep, by 0.30, 0.276, 0.247 and
+46.93 mm3. The tests run on real build123d solids
+(`tests/make/test_kit_tree_facing.py`):
+
+- a slope flush across a seam passes;
+- the same Part shifted 0.3 mm into its neighbour fails;
+- a slope facing its mate is still judged;
+- opposed, same-facing and edge-only flat faces, a peg and its bore, and two
+  flush drums are each classified.
+
 ## Not decided here
 
 - The gate and fit constants are the Amsterdam project's, set by the owner
