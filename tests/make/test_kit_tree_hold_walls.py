@@ -1,8 +1,10 @@
 """ADR 0104 amendment 2026-11-19 (rules i and j): the tilt hold and walls
-before the base, on real build123d solids through ``check_component``.
+before the base, on real build123d solids: the tilt hold through
+``check_assembly`` (it needs the whole toy), the wall order through
+``check_component``.
 
 (i) Every input set down from above by a mechanical joint is a unit, held
-against what is already assembled: it stays seated with the tray tilted
+against every other body of the toy: it stays seated with the tray tilted
 45 deg in any direction when it is held down against a lift, or every way
 either tips no sooner than 45 deg or catches within 3 deg and is held
 against a sideways push.
@@ -52,8 +54,10 @@ def step(sid, base, *moving, joint="peg-socket", direction=(0, 0, -1)):
             "inputs": [{"id": base}] + [{"id": item, "direction": list(direction)} for item in moving]}
 
 
-def check(parts, steps):
+def check(parts, steps, assembly=False):
     plan = kit_tree.Plan(kit([label for label, _ in parts], steps))
+    if assembly:
+        return kit_tree.check_assembly(plan, Built(parts), 0.4)
     return kit_tree.check_component(plan, Built(parts), "block", 0.4)
 
 
@@ -85,7 +89,7 @@ class HoldTest(unittest.TestCase):
         return [("A01-base", base), ("A02-unit", unit)]
 
     def run_unit(self, parts):
-        report = check(parts, [step("S01-unit", "A01-base", "A02-unit")])
+        report = check(parts, [step("S01-unit", "A01-base", "A02-unit")], assembly=True)
         (record,) = report["holds"]
         return report, record
 
@@ -121,10 +125,37 @@ class HoldTest(unittest.TestCase):
 
     def test_a_glued_or_sideways_input_is_no_unit(self):
         parts = self.parts(depth=1.0)
-        glued = check(parts, [step("S01-unit", "A01-base", "A02-unit", joint="glue")])
+        glued = check(parts, [step("S01-unit", "A01-base", "A02-unit", joint="glue")], assembly=True)
         self.assertEqual(glued["holds"], [])
-        sideways = check(parts, [step("S01-unit", "A01-base", "A02-unit", direction=(1, 0, 0))])
+        sideways = check(parts, [step("S01-unit", "A01-base", "A02-unit", direction=(1, 0, 0))], assembly=True)
         self.assertEqual(sideways["holds"], [])
+
+    def test_a_part_resting_on_the_table_bears_on_it(self):
+        b = self.b
+        parts = [("A01-base", b.Pos(0, 0, 2.5) * b.Box(60, 60, 5)),
+                 ("A02-unit", b.Pos(50, 0, 2.5) * b.Box(30, 30, 5))]
+        report, record = self.run_unit(parts)
+        self.assertTrue(record["bearing"], record)
+        self.assertEqual(record["z_bear"], 0.0)
+        self.assertEqual(record["verdict"], "PASS")
+        self.assertEqual(held(report), [])
+
+    def test_a_component_round_measures_no_hold(self):
+        report = check(self.parts(depth=1.0), [step("S01-unit", "A01-base", "A02-unit")])
+        self.assertEqual(report["holds"], [])
+        self.assertEqual(held(report), [])
+
+    def test_a_part_a_later_step_clamps_is_held_by_it(self):
+        b = self.b
+        parts = self.parts(depth=1.0)
+        collar = b.Pos(0, 0, 22.5) * b.Box(30, 30, 5) - b.Pos(0, 0, 22.5) * b.Box(10.2, 10.2, 5)
+        parts.append(("A03-collar", collar))
+        steps = [step("S01-unit", "A01-base", "A02-unit"),
+                 step("S02-collar", "S01-unit", "A03-collar", direction=(1, 0, 0))]
+        report = check(parts, steps, assembly=True)
+        (record,) = report["holds"]
+        self.assertEqual((record["input"], record["verdict"]), ("A02-unit#1", "PASS"), record)
+        self.assertEqual(held(report), [])
 
 
 class StaysTest(unittest.TestCase):

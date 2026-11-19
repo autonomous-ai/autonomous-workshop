@@ -524,35 +524,45 @@ Two owner rules in `docs/agents/owner-rules.md` "Assembly kits" were checked
 only by eye. The Amsterdam kit's trees and houses fell over when the owner
 bumped the tray, and its first pen tower order slid a wall between two fixed
 walls. Amsterdam's per-toy `hold_check.py` measured the first by hand. The
-kit tree gate now checks both on every step it already sweeps, in the
-Component or assembly round that owns the step.
+kit tree gate now checks both deterministically. The wall order is checked
+in the Component or assembly round that owns the step. The tilt hold is
+checked where the whole toy is built.
 
 - **(i) Tilt hold.** A unit is each copy of a moving input of a `peg-socket`,
   `tab-slot`, `pin-hinge` or `snap` step whose direction lies within 45
-  degrees of -Z, so the input is set down from above. Its host is what is
-  already assembled when it lands: the step's base and the inputs before it.
+  degrees of -Z, so the input is set down from above. Its host is every
+  other body of the finished toy, so a part that a later step clamps is held
+  by that part. The check covers every step, Component-internal ones
+  included. It runs in assembly rounds and final verification, and never in
+  a component round, which cannot see a clamp from another Component.
   `glue` and `foam-tape` steps hold by adhesive, so they are no unit.
   `CadGeometry.hold` measures, in the assembly frame with +Z up:
   - the bearing level: the highest downward flat face of the unit (normal Z
-    at most -0.5, area at least 0.5 mm2) within 0.06 mm of the host. The
-    footprint is the plan bounds of those faces;
+    at most -0.5, area at least 0.5 mm2) within 0.06 mm of the host, or of
+    the toy's lowest level, the table it stands on. The footprint is the
+    plan bounds of those faces. A unit that rests on no face tips at 0;
   - H, the height above that level, and d, the reach below it;
-  - per way (+X, -X, +Y, -Y), four quantities:
-    - tip: the tilt at which the centre of mass passes the footprint's edge;
-    - catch: the least of 0.5, 1, 2 and 3 degrees, turned about that edge,
-      at which the unit meets the host by more than 0.002 mm3 beyond its
-      seat's own overlap. It is measured only when the way tips below 45
-      degrees;
-    - slide: whether a 0.3 mm push that way meets the host;
-    - lift: whether a 0.3 mm lift does, as a snap or detent would.
+  - per way (+X, -X, +Y, -Y), the tip: the tilt at which the centre of
+    mass passes the footprint's edge;
+  - lift: whether a 0.3 mm lift meets the host by more than 0.002 mm3
+    beyond the seat's own overlap, as a snap or detent would;
+  - per way, slide: whether a 0.3 mm push that way does;
+  - per way, catch: the least of 1, 2 and 3 degrees, turned about that
+    footprint edge with the far side lifting, at which it does.
 
   The unit stays at a 45 degree tray tilt when its lift is held. Otherwise
   every way must either tip at 45 degrees or more, or catch within 3 degrees
-  with its slide held. A unit that rests on no face tips at 0. A unit that
-  does not stay fails the round with its H, d and failing ways, and every
-  unit is recorded in the report's `holds`. The cost is at most 21 rigid
-  moves a unit (a lift, 4 pushes and 4 x 4 turns), each measured only against
-  the host bodies near it.
+  with its slide held. Only what this verdict needs is measured, and the
+  rest is recorded as null:
+  - a unit that tips at 45 degrees or more every way moves nothing;
+  - otherwise the lift is measured, and a held lift ends it;
+  - each way that tips sooner has its slide measured, and its catch only
+    when the slide is held: first at 3 degrees, then down the samples.
+
+  The cost is at most 18 measures a unit. Each measure moves only the
+  unit's bodies within reach of the host, and only against the host bodies
+  within reach of them. A unit that does not stay fails the round with its
+  H, d and failing ways. Every unit is recorded in the report's `holds`.
 - **(j) Walls before the base.** A wall is a printed plate Part: its smallest
   bounding extent is at most 3.5 mm and under a third of the next. It counts
   as set on a base when it is placed as a leaf input of its own, standing
@@ -581,11 +591,14 @@ Component or assembly round that owns the step.
   pressed onto a base one at a time fails, and so do the same walls in one
   step. The same walls joined first and then set on the base pass. A shelf
   slid down between two fixed sides fails, and the same shelf set on their
-  tops passes. On the approved Amsterdam Canal Proof, every assembly round
-  unit and every unit of the pen tower and phone house rounds stays at 45
-  degrees, and no wall order fails. The first draft of rule j flagged the
-  phone house's first floor. That floor spans its six walls and drops 1.9 mm
-  onto their top tabs. The flank test above clears it.
+  tops passes. On the approved Amsterdam Canal Proof, all 58 units stay at
+  45 degrees, measured in 135 s, and no wall order fails. On the Miami Deco
+  Proof, all 51 units stay, in 73 s, counting the plaza that rests on the
+  table. Its hut walls fail rule j: four walls are each set on the deck, the
+  last between fixed ones. That is a real order to fix in its tree. The first
+  draft of rule j flagged the Amsterdam phone house's first floor. That floor
+  spans its six walls and drops 1.9 mm onto their top tabs. The flank test
+  above clears it.
 - **Unchanged.** Every existing sweep, press, seat, snap and joint face rule.
   Backends without `hold` or `touching`, which are only the deterministic
   test fakes, measure nothing. The 45 degree, 3 degree and 0.3 mm values are

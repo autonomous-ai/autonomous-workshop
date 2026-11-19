@@ -11,7 +11,7 @@ from __future__ import annotations
 import unittest
 
 from tests.make.test_kit_tree import kit_tree
-from tests.make.test_kit_tree_press_seat import check, joint_failures
+from tests.make.test_kit_tree_press_seat import check
 
 
 class FlushSurfaceTest(unittest.TestCase):
@@ -35,7 +35,7 @@ class FlushSurfaceTest(unittest.TestCase):
 
     def test_a_flush_slope_across_a_seam_is_no_joint(self):
         report = check(self.parts())
-        self.assertEqual(joint_failures(report), [])
+        self.assertEqual(report["failures"], [])
 
     def test_the_same_part_shifted_0_3_mm_into_its_neighbour_still_fails(self):
         report = check(self.parts(across=-0.3))

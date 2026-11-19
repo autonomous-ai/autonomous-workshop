@@ -65,14 +65,6 @@ class Built(kit_tree.CadGeometry):
         return super().pressed(moving, depth)
 
 
-def joint_failures(report):
-    """The failures of the joint rules these fixtures test. A loose piece
-    resting on a slope or in a cradle also fails the tilt hold (rule i),
-    which tests/make/test_kit_tree_hold_walls.py covers."""
-
-    return [failure for failure in report["failures"] if "does not stay seated" not in failure]
-
-
 def check(parts, **options):
     refuse = options.pop("refuse_offset", False)
     plan = kit_tree.Plan(kit(**options))
@@ -172,7 +164,7 @@ class SeatFaceTest(unittest.TestCase):
 
     def test_the_seat_is_a_flat_joint_face_at_45_degrees(self):
         report = check(self.wedge_parts())
-        self.assertEqual(joint_failures(report), [])
+        self.assertEqual(report["failures"], [])
         self.assertTrue(report["seats"])
         self.assertTrue(all("45 deg" in record["face"] for record in report["seats"]), report["seats"])
 
@@ -207,7 +199,7 @@ class SeatFaceTest(unittest.TestCase):
 
     def test_a_round_seat_across_the_direction_is_accepted(self):
         report = check(self.cradle_parts())
-        self.assertEqual(joint_failures(report), [])
+        self.assertEqual(report["failures"], [])
         self.assertTrue(any("axis is 90 deg off" in record["face"] for record in report["seats"]),
                         report["seats"])
 
