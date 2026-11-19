@@ -518,6 +518,69 @@ shifted 0.3 mm sideways still fails its sweep, by 0.30, 0.276, 0.247 and
 - opposed, same-facing and edge-only flat faces, a peg and its bore, and two
   flush drums are each classified.
 
+## Amendment 2026-11-19 (later): the tilt hold and walls before the base
+
+Two owner rules in `docs/agents/owner-rules.md` "Assembly kits" were checked
+only by eye. The Amsterdam kit's trees and houses fell over when the owner
+bumped the tray, and its first pen tower order slid a wall between two fixed
+walls. Amsterdam's per-toy `hold_check.py` measured the first by hand. The
+kit tree gate now checks both on every step it already sweeps, in the
+Component or assembly round that owns the step.
+
+- **(i) Tilt hold.** A unit is each copy of a moving input of a `peg-socket`,
+  `tab-slot`, `pin-hinge` or `snap` step whose direction lies within 45
+  degrees of -Z, so the input is set down from above. Its host is what is
+  already assembled when it lands: the step's base and the inputs before it.
+  `glue` and `foam-tape` steps hold by adhesive, so they are no unit.
+  `CadGeometry.hold` measures, in the assembly frame with +Z up:
+  - the bearing level: the highest downward flat face of the unit (normal Z
+    at most -0.5, area at least 0.5 mm2) within 0.06 mm of the host. The
+    footprint is the plan bounds of those faces;
+  - H, the height above that level, and d, the reach below it;
+  - per way (+X, -X, +Y, -Y), four quantities:
+    - tip: the tilt at which the centre of mass passes the footprint's edge;
+    - catch: the least of 0.5, 1, 2 and 3 degrees, turned about that edge,
+      at which the unit meets the host by more than 0.002 mm3 beyond its
+      seat's own overlap. It is measured only when the way tips below 45
+      degrees;
+    - slide: whether a 0.3 mm push that way meets the host;
+    - lift: whether a 0.3 mm lift does, as a snap or detent would.
+
+  The unit stays at a 45 degree tray tilt when its lift is held. Otherwise
+  every way must either tip at 45 degrees or more, or catch within 3 degrees
+  with its slide held. A unit that rests on no face tips at 0. A unit that
+  does not stay fails the round with its H, d and failing ways, and every
+  unit is recorded in the report's `holds`. The cost is at most 21 rigid
+  moves a unit (a lift, 4 pushes and 4 x 4 turns), each measured only against
+  the host bodies near it.
+- **(j) Walls before the base.** A wall is a printed plate Part: its smallest
+  bounding extent is at most 3.5 mm and under a third of the next. It counts
+  as set on a base when it is placed as a leaf input of its own, standing
+  across an earlier printed Part (the base's thin axis differs from the
+  wall's) within 0.3 mm. A wall that touches two or more walls set on the
+  same base before it goes in between parts already fixed. The round fails
+  with the steps and the walls that meet it: "join these walls to each other
+  first, then set them on <base>". It is recorded in `wall_orders`. Several
+  wall cases pass:
+  - one wall alone, or two walls meeting in a corner;
+  - walls that do not touch each other;
+  - walls joined as a Sub-assembly and then set on the base, since a
+    Sub-assembly input is no wall.
+- **Evidence.** `tests/make/test_kit_tree_hold_walls.py` runs on real
+  build123d solids. A 40 mm column on a 4 mm peg 0.1 mm loose a side gives
+  three results:
+  - 1 mm deep, it falls: tip 14 degrees, no catch by 3 degrees;
+  - 6 mm deep, it stays: catch at 2 degrees, slide held;
+  - with a ring under the base that a lift meets, it stays.
+
+  A low wide block stays by its 45 degree-plus tip angle. A box of four walls
+  pressed onto a base one at a time fails, and so do the same walls in one
+  step. The same walls joined first and then set on the base pass.
+- **Unchanged.** Every existing sweep, press, seat, snap and joint face rule.
+  Backends without `hold` or `touching`, which are only the deterministic
+  test fakes, measure nothing. The 45 degree, 3 degree and 0.3 mm values are
+  the Amsterdam prototype's. Frozen runs keep their run-local tool bytes.
+
 ## Not decided here
 
 - The gate and fit constants are the Amsterdam project's, set by the owner

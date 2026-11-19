@@ -92,6 +92,28 @@ The gates
   swept on its own against every obstacle, each held to the overlap limit
   divided by the number of solids, so the sum can never pass what the fused
   sweep would refuse; each such fallback is recorded in ``fallbacks``.
+- **Tilt hold** (ADR 0104 amendment 2026-11-19, rule i). Every input of a
+  ``peg-socket``, ``tab-slot``, ``pin-hinge`` or ``snap`` step set down from
+  above (its direction within 45 deg of -Z) is a unit, each copy on its own;
+  its host is what is already assembled when it lands: the step's base and
+  the inputs before it. ``CadGeometry.hold`` measures its height H above its
+  bearing level and its engagement d below it, and per way (+X, -X, +Y, -Y)
+  the tip angle (its centre of mass over the bearing footprint's edge), the
+  catch (the least of 0.5, 1, 2 and 3 deg turned about that edge at which it
+  meets the host beyond its seat's own overlap), slide (a 0.3 mm push that
+  meets the host) and lift (a 0.3 mm lift that does: a snap or detent). It
+  stays at a 45 deg tray tilt when lift is held, or every way either tips no
+  sooner than 45 deg or catches within 3 deg with slide held. A unit that
+  does not is a failure; each is recorded in the report's ``holds``. Glue
+  and tape hold by adhesive and are no unit.
+- **Walls before the base** (same amendment, rule j). A printed plate Part
+  (its smallest bounding extent at most 3.5 mm and under a third of the
+  next) set on its own onto a Part it stands across (whose thin axis is
+  another), within ``JOINT_GAP_MM``, is a wall of that base. A wall that
+  touches two or more walls set on the same base before it goes in between
+  parts already fixed: a failure naming the steps and walls, recorded in
+  ``wall_orders``, telling the author to join the walls to each other first
+  and then set them on the base. A Sub-assembly set on the base is no wall.
 - **Lead routes.** A sphere of the lead's diameter (the lamp's catalogue
   ``lead diameter``) plus ``LEAD_CLEARANCE_MM`` is swept along each declared
   route; any printed body of the step's Sub-assembly in its way closes it.
@@ -160,6 +182,19 @@ SNAP_TOLERANCE_MM = 1e-3
 JOINT_GAP_MM = 0.3           # a face this close to what it joins is a joint face
 PARALLEL_TOLERANCE_DEG = 2.0
 PRINT_LINES = 2              # the thinnest printable wall, in lines
+# The tilt hold (ADR 0104 amendment 2026-11-19, rule i): a unit set down by a
+# mechanical joint stays seated with the tray tilted this far, any way.
+HOLD_TILT_DEG = 45.0
+HELD_JOINTS = ("peg-socket", "tab-slot", "pin-hinge", "snap")   # glue and tape hold by adhesive
+HOLD_CATCH_DEG = 3.0         # a joint that binds by this tilt catches the unit
+HOLD_CATCH_SAMPLES_DEG = (0.5, 1.0, 2.0, 3.0)
+HOLD_PUSH_MM = 0.3           # a sideways push or lift this far that meets the host is held
+HOLD_HIT_MM3 = 0.002         # overlap beyond the seat's own that counts as meeting the host
+BEARING_GAP_MM = 0.06        # a downward face this close to the host bears on it
+BEARING_NZ = -0.5            # a bearing face's normal points down within 60 deg
+WAYS = ("+X", "-X", "+Y", "-Y")
+# Walls before the base (same amendment, rule j): a plate is at most this thick.
+WALL_PLATE_MM = 3.5
 
 DEFECT = "defect"
 FAILURE = "failure"
@@ -689,7 +724,8 @@ def travel_mm(moving_bounds, other_bounds, direction) -> float:
 def _check(scope: str | None, plan: Plan, geometry, bodies: dict[str, Body], nozzle: float) -> dict:
     """Every insertion and lead route of one scope against its bodies."""
 
-    report = {"conditions": [], "failures": [], "routes": [], "snaps": [], "presses": [], "seats": []}
+    report = {"conditions": [], "failures": [], "routes": [], "snaps": [], "presses": [], "seats": [],
+              "holds": [], "wall_orders": [], "_placements": []}
     for item in plan.steps_in(scope):
         step = item["id"]
         involved = sorted(plan.owners(step))
@@ -704,6 +740,7 @@ def _check(scope: str | None, plan: Plan, geometry, bodies: dict[str, Body], noz
                 report["conditions"].append(sequence)
         for index, lead in enumerate(item.get("leads") or ()):
             _route(plan, geometry, bodies, item, copies, index, lead, report)
+    _wall_order(plan, geometry, report.pop("_placements"), report)
     return report
 
 
@@ -808,6 +845,12 @@ def _insert_step(plan, geometry, bodies, item, k, wall, sequence, report) -> Non
                                           % (step, name, list(entry["direction"]), face))
             for face in seats or ():
                 report["seats"].append({"step": step, "input": name, "face": face})
+            host = [body for _, body in assembled]
+            if item.get("joint") in HELD_JOINTS and direction[2] <= -math.cos(math.radians(HOLD_TILT_DEG)):
+                _hold(geometry, step, name, moving, host, report)
+            if entry["id"] in plan.printed and len(moving) == 1:
+                report["_placements"].append({"step": step, "input": name, "body": moving[0],
+                                              "before": [b for b in host if _leaf(b) in plan.printed]})
             for ramp in ramps:
                 for record in report["snaps"]:
                     if (record["step"], record["input"], record["part"], record["catch"]) == (
@@ -815,6 +858,123 @@ def _insert_step(plan, geometry, bodies, item, k, wall, sequence, report) -> Non
                         record.setdefault("ramp_faces", [])
                         record["ramp_faces"] += [f for f in ramp["faces"] if f not in record["ramp_faces"]]
             assembled += [(entry["id"], body) for body in moving]
+
+
+def _hold(geometry, step, name, moving, host, report) -> None:
+    """The tilt hold of one unit set down onto what is already assembled
+    (ADR 0104 amendment 2026-11-19, rule i): it stays seated with the tray
+    tilted 45 deg in any direction. A backend without ``hold`` (a test
+    fake) measures nothing."""
+
+    measure = getattr(geometry, "hold", None)
+    if measure is None:
+        return
+    record = {"step": step, "input": name, **measure([b.shape for b in moving], [b.shape for b in host])}
+    record["stays_45"] = hold_stays(record)
+    record["verdict"] = "PASS" if record["stays_45"] else "FAIL"
+    report["holds"].append(record)
+    if not record["stays_45"]:
+        falls = [way for way in WAYS if not _way_holds(record, way)]
+        report["failures"].append(
+            "%s: %s does not stay seated with the tray tilted %g deg toward %s: H %.1f mm above its bearing "
+            "level, d %.1f mm engaged below it; it tips at %s deg, catches at %s, slides %s, lifts %s. Engage it "
+            "deeper, add a snap or detent, or widen its footprint (owner rule: every freestanding part survives "
+            "a knock)" % (
+                step, name, HOLD_TILT_DEG, ", ".join(falls), record["H"], record["d"],
+                "/".join("%g" % record["tip"][way] for way in falls),
+                "/".join("none by %g deg" % HOLD_CATCH_DEG if record["catch"][way] is None
+                         else "%g deg" % record["catch"][way] for way in falls),
+                "/".join("held" if record["slide"][way] else "free" for way in falls),
+                "held" if record["lift"] else "free"))
+
+
+def hold_stays(record: dict) -> bool:
+    """Whether a measured unit stays at the tilt: held down against a lift
+    (a snap or detent), or every way either tips no sooner than the tilt or
+    catches within HOLD_CATCH_DEG and is held against sliding."""
+
+    return bool(record["lift"]) or all(_way_holds(record, way) for way in WAYS)
+
+
+def _way_holds(record: dict, way: str) -> bool:
+    if record["lift"] or record["tip"][way] >= HOLD_TILT_DEG:
+        return True
+    catch = record["catch"][way]
+    return catch is not None and catch <= HOLD_CATCH_DEG and bool(record["slide"][way])
+
+
+def _plate_axis(geometry, shape) -> int | None:
+    """The thin axis of a plate (its smallest bounding extent at most
+    WALL_PLATE_MM and under a third of the next), else None."""
+
+    lo, hi = geometry.bounds([shape])
+    size = [hi[a] - lo[a] for a in range(3)]
+    order = sorted(range(3), key=lambda a: size[a])
+    if size[order[0]] <= WALL_PLATE_MM and size[order[1]] >= 3 * size[order[0]]:
+        return order[0]
+    return None
+
+
+def _thin_axis(geometry, shape) -> int:
+    lo, hi = geometry.bounds([shape])
+    return min(range(3), key=lambda a: hi[a] - lo[a])
+
+
+def _near(geometry, a, b) -> bool:
+    lo, hi = geometry.bounds([a])
+    other = geometry.bounds([b])
+    return all(lo[x] - JOINT_GAP_MM <= other[1][x] and other[0][x] - JOINT_GAP_MM <= hi[x] for x in range(3))
+
+
+def _wall_order(plan, geometry, placements, report) -> None:
+    """Walls before the base (ADR 0104 amendment 2026-11-19, rule j): a
+    plate Part set on its own onto a base it stands across, touching two or
+    more walls set on that same base before it, goes in between two parts
+    already fixed. The walls that meet each other are joined to each other
+    first, as a Sub-assembly, and then set on the base. A backend without
+    ``touching`` (a test fake) measures nothing."""
+
+    touching = getattr(geometry, "touching", None)
+    if touching is None:
+        return
+    walls: dict[str, list[dict]] = {}
+    anchors: dict[str, Body] = {}
+    for placed in placements:
+        axis = _plate_axis(geometry, placed["body"].shape)
+        if axis is None:
+            continue
+        for anchor in placed["before"]:
+            if _thin_axis(geometry, anchor.shape) == axis or not _near(geometry, placed["body"].shape, anchor.shape):
+                continue
+            if touching(placed["body"].shape, anchor.shape, JOINT_GAP_MM):
+                walls.setdefault(anchor.key, []).append(placed)
+                anchors[anchor.key] = anchor
+    for key, group in walls.items():
+        meets = {}
+        for i, later in enumerate(group):
+            meets[i] = [j for j, earlier in enumerate(group[:i])
+                        if _near(geometry, later["body"].shape, earlier["body"].shape)
+                        and touching(later["body"].shape, earlier["body"].shape, JOINT_GAP_MM)]
+        between = [i for i, earlier in meets.items() if len(earlier) >= 2]
+        if not between:
+            continue
+        # Every wall joined to a wall that goes in between, by contact.
+        chosen, stack = set(), list(between)
+        while stack:
+            i = stack.pop()
+            if i in chosen:
+                continue
+            chosen.add(i)
+            stack += meets[i] + [j for j, earlier in meets.items() if i in earlier]
+        members = [group[i] for i in sorted(chosen)]
+        record = {"base": key, "steps": list(dict.fromkeys(m["step"] for m in members)),
+                  "walls": [m["input"] for m in members],
+                  "between": [group[i]["input"] for i in between], "verdict": "FAIL"}
+        report["wall_orders"].append(record)
+        report["failures"].append(
+            "%s: %s are each set on %s one at a time, and %s goes in between walls already fixed: join these "
+            "walls to each other first, then set them on %s (owner rule: build sub-assemblies first)"
+            % (", ".join(record["steps"]), ", ".join(record["walls"]), key, ", ".join(record["between"]), key))
 
 
 def _blocked(geometry, step, name, entry, base, condition, result, moving, assembled, report) -> None:
@@ -1086,7 +1246,8 @@ def check_component(plan: Plan, geometry, role: str, nozzle: float) -> dict:
     leaves, their colours, and every step and route wholly inside it."""
 
     report = {"scope": "component:%s" % role, "defects": [], "slips": [], "failures": [], "conditions": [],
-              "routes": [], "snaps": [], "presses": [], "seats": []}
+              "routes": [], "snaps": [], "presses": [], "seats": [],
+              "holds": [], "wall_orders": []}
     seen = len(getattr(geometry, "fallbacks", ()))
     expected = plan.expected_labels(role)
     instances = geometry.instances(role)
@@ -1102,7 +1263,7 @@ def check_component(plan: Plan, geometry, role: str, nozzle: float) -> dict:
         if slips:
             continue
         checked = _check(role, plan, geometry, keyed(plan, role, bodies), nozzle)
-        for key in ("conditions", "failures", "routes", "snaps", "presses", "seats"):
+        for key in ("conditions", "failures", "routes", "snaps", "presses", "seats", "holds", "wall_orders"):
             report[key] += checked[key]
     report["failures"] = list(dict.fromkeys(report["failures"]))
     report["fallbacks"] = list(getattr(geometry, "fallbacks", ())[seen:])
@@ -1115,7 +1276,8 @@ def check_assembly(plan: Plan, geometry, nozzle: float, *, reconcile_all: bool =
     also reconciles and colour-checks every Component."""
 
     report = {"scope": "final" if reconcile_all else "assembly", "defects": structure_defects(plan),
-              "slips": [], "failures": [], "conditions": [], "routes": [], "snaps": [], "presses": [], "seats": []}
+              "slips": [], "failures": [], "conditions": [], "routes": [], "snaps": [], "presses": [], "seats": [],
+              "holds": [], "wall_orders": []}
     seen = len(getattr(geometry, "fallbacks", ()))
     bodies: dict[str, Body] = {}
     for role in sorted(plan.component_parts):
@@ -1138,7 +1300,7 @@ def check_assembly(plan: Plan, geometry, nozzle: float, *, reconcile_all: bool =
             bodies.update(keyed(plan, role, built, instance))
     if not report["defects"] and not report["slips"]:
         checked = _check(None, plan, geometry, bodies, nozzle)
-        for key in ("conditions", "failures", "routes", "snaps", "presses", "seats"):
+        for key in ("conditions", "failures", "routes", "snaps", "presses", "seats", "holds", "wall_orders"):
             report[key] += checked[key]
     report["failures"] = list(dict.fromkeys(report["failures"]))
     report["fallbacks"] = list(getattr(geometry, "fallbacks", ())[seen:])
@@ -1366,6 +1528,123 @@ class CadGeometry:
             found.append(Body(body.label, shape, key=body.key))
         return found, None
 
+    def touching(self, a, b, gap: float) -> bool:
+        """Whether two placed shapes come within ``gap`` of each other."""
+
+        try:
+            return a.distance_to(b) <= gap
+        except Exception:  # noqa: BLE001 - an unmeasurable pair is not judged touching
+            return False
+
+    def _overlap(self, a, b) -> float:
+        try:
+            return float(self.motion["overlap_volume"](a, b))
+        except Exception:  # noqa: BLE001 - an unmeasured overlap is no hold
+            return 0.0
+
+    def hold(self, unit: list, host: list) -> dict:
+        """The tilt hold quantities of one unit against its host (ADR 0104
+        amendment 2026-11-19, rule i), in the assembly frame, +Z up:
+
+        - ``z_bear``: the bearing level, the highest of the unit's downward
+          flat faces (normal Z at most BEARING_NZ) within BEARING_GAP_MM of
+          the host; the footprint is their plan bounds. With none, the
+          unit's lowest level and no footprint: it tips at 0.
+        - ``H``: the unit's height above the bearing level; ``d`` how far it
+          reaches below it (pegs, spigots, tabs).
+        - ``tip``: per way, the tilt at which its centre of mass passes the
+          footprint's edge on that side.
+        - ``catch``: per way, the least sampled tilt about that footprint
+          edge (HOLD_CATCH_SAMPLES_DEG) at which the unit, turned rigidly,
+          meets the host by more than HOLD_HIT_MM3 beyond its seat's own
+          overlap; None when it does not by HOLD_CATCH_DEG, or when it is
+          not needed (the way tips no sooner than the tilt, or the unit is
+          held down).
+        - ``slide``: per way, whether a HOLD_PUSH_MM push that way meets the
+          host; ``lift``: whether a HOLD_PUSH_MM lift does (a snap or
+          detent holds it down).
+
+        At most 4 + 1 + 4 x 4 rigid moves per unit, each measured only
+        against the host bodies near it."""
+
+        from build123d import Axis, Location, Vector
+
+        boxes = [shape.bounding_box() for shape in unit]
+        lo = Vector(min(b.min.X for b in boxes), min(b.min.Y for b in boxes), min(b.min.Z for b in boxes))
+        hi = Vector(max(b.max.X for b in boxes), max(b.max.Y for b in boxes), max(b.max.Z for b in boxes))
+        reach = max(1.0, (hi - lo).length * math.radians(HOLD_CATCH_DEG) + HOLD_PUSH_MM)
+        near = [shape for shape in host if not _apart(shape.bounding_box(), _grown_vectors(lo, hi, reach))]
+        levels, plan_points = [], []
+        for shape in unit:
+            for face in shape.faces():
+                try:
+                    if face.geom_type.name != "PLANE" or face.area < 0.5:
+                        continue
+                    if face.normal_at().Z > BEARING_NZ:
+                        continue
+                    box = face.bounding_box()
+                    close = [other for other in near if not _apart(box, _grown(other.bounding_box(), BEARING_GAP_MM))]
+                    if not any(face.distance_to(other) <= BEARING_GAP_MM for other in close):
+                        continue
+                except Exception:  # noqa: BLE001 - an unreadable face bears nothing
+                    continue
+                levels.append(box.min.Z)
+                plan_points += [(box.min.X, box.min.Y), (box.max.X, box.max.Y)]
+        bearing = bool(levels)
+        z = max(levels) if bearing else lo.Z
+        if bearing:
+            x0, x1 = min(p[0] for p in plan_points), max(p[0] for p in plan_points)
+            y0, y1 = min(p[1] for p in plan_points), max(p[1] for p in plan_points)
+        else:
+            x0, x1, y0, y1 = lo.X, hi.X, lo.Y, hi.Y
+        volumes = [max(shape.volume, 1e-9) for shape in unit]
+        centres = [shape.center() for shape in unit]
+        mass = sum(volumes)
+        com = sum((c * v for c, v in zip(centres, volumes)), Vector(0, 0, 0)) * (1.0 / mass)
+        rise = max(com.Z - z, 1e-6)
+
+        def total(shapes, limit=None):
+            found = 0.0
+            for shape in shapes:
+                box = shape.bounding_box()
+                for other in near:
+                    if _apart(box, _grown(other.bounding_box(), 0.0)):
+                        continue
+                    found += self._overlap(shape, other)
+                    if limit is not None and found > limit:
+                        return found
+            return found
+
+        limit = total(unit) + HOLD_HIT_MM3
+
+        def meets(shapes):
+            return total(shapes, limit) > limit
+
+        edges = {"+X": (x1, com.X, 1), "-X": (x0, com.X, -1), "+Y": (y1, com.Y, 1), "-Y": (y0, com.Y, -1)}
+        pushes = {"+X": (1, 0, 0), "-X": (-1, 0, 0), "+Y": (0, 1, 0), "-Y": (0, -1, 0)}
+        record = {"z_bear": round(z, 3), "bearing": bearing, "H": round(hi.Z - z, 3), "d": round(z - lo.Z, 3),
+                  "tip": {}, "catch": {}, "slide": {}}
+        record["lift"] = meets([shape.moved(Location((0, 0, HOLD_PUSH_MM))) for shape in unit])
+        for way in WAYS:
+            edge, centre, sign = edges[way]
+            reachable = (edge - centre) * sign if bearing else 0.0
+            record["tip"][way] = round(math.degrees(math.atan2(max(reachable, 0.0), rise)), 2)
+            shift = tuple(HOLD_PUSH_MM * c for c in pushes[way])
+            record["slide"][way] = meets([shape.moved(Location(shift)) for shape in unit])
+            record["catch"][way] = None
+            if record["lift"] or record["tip"][way] >= HOLD_TILT_DEG:
+                continue
+            # Turn about the footprint's edge on this side, the far side lifting.
+            if way.endswith("X"):
+                axis, turn = Axis((edge, 0, z), (0, 1, 0)), sign
+            else:
+                axis, turn = Axis((0, edge, z), (1, 0, 0)), -sign
+            for angle in HOLD_CATCH_SAMPLES_DEG:
+                if meets([shape.rotate(axis, turn * angle) for shape in unit]):
+                    record["catch"][way] = angle
+                    break
+        return record
+
     def nonparallel(self, moving, obstacles, direction, exempt=(), seats=None) -> list[str]:
         """Every mating face pair at the seat that does not slide along
         ``direction``. A pair is a face of the input and a face of what it
@@ -1490,6 +1769,10 @@ def _face_frame(face, GeomType):
 def _grown(box, margin):
     return ((box.min.X - margin, box.min.Y - margin, box.min.Z - margin),
             (box.max.X + margin, box.max.Y + margin, box.max.Z + margin))
+
+
+def _grown_vectors(lo, hi, margin):
+    return ((lo.X - margin, lo.Y - margin, lo.Z - margin), (hi.X + margin, hi.Y + margin, hi.Z + margin))
 
 
 def _apart(box, grown) -> bool:
