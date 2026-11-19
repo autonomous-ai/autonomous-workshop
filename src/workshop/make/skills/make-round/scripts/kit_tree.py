@@ -1311,12 +1311,15 @@ class CadGeometry:
         amendment 2026-11-19): ``(bodies, None)``, or ``(None, reason)`` when
         the kernel cannot offset a body into one valid, smaller solid."""
 
-        from build123d import offset
+        from build123d import Location, offset
 
         found = []
         for body in moving:
             try:
-                shape = offset(body.shape, amount=-depth)
+                # The kernel refuses to offset some placed solids it offsets at
+                # their own origin: offset the unplaced shape, then place it.
+                place = body.shape.location
+                shape = offset(body.shape.located(Location()), amount=-depth).moved(place)
                 valid = shape.is_valid() if callable(shape.is_valid) else shape.is_valid
                 if not valid or not 0 < shape.volume < body.shape.volume:
                     return None, "the offset of %s is no valid smaller solid" % body.key

@@ -126,6 +126,16 @@ class PressTest(unittest.TestCase):
         self.assertAlmostEqual(size.X, 3.88, places=3)
         self.assertLess(shrunk.shape.volume, body.shape.volume)
 
+    def test_a_placed_part_is_offset_where_it_stands(self):
+        from build123d import Location
+
+        body = kit_tree.Body("A02-peg", self.Box(4, 4, 4).located(Location((62, 39, 8))), key="A02-peg#1")
+        (shrunk,), error = Built([]).pressed([body], 0.06)
+        self.assertIsNone(error)
+        centre = shrunk.shape.bounding_box().center()
+        self.assertAlmostEqual(centre.X, 62, places=3)
+        self.assertAlmostEqual(centre.Z, 8, places=3)
+
 
 class SeatFaceTest(unittest.TestCase):
     """A 45 degree wedge base and a piece resting on its slope, pushed down
