@@ -105,4 +105,4 @@ owner chooses a supplier.
 |---|---|---:|---:|---|---|
 | gear-motor-n20-6v-10rpm (new) | piece | 2.50 | 250 | ozrobotics.com/shop/premium-12mm-dc-n20-gear-motor/ (6 V 1000:1, 10 rpm, price not shown); robotshop.com N20 6 V 300 rpm ($6.95 retail); typical bulk N20 1000:1 well below retail | low |
 | harness-jst-ph-2pin (new) | piece | 0.60 | 60 | pololu.com/category/357 (2-pin JST PH cable, $1.20 at 100+); taydaelectronics.com 2-pin JST PH male with 20 cm wire ($0.20); pcboard.ca JST PH 2-pin set ($0.40). The harness has three plug pairs | low |
-| brass-rod-2x157 (new) | piece | 0.10 | 10 | no listing found; a 2 mm brass rod by the metre cut to 157 mm | low |
+| brass-rod-2x142 (new; was 2x157 until the 2026-11-19 bookcase recess) | piece | 0.10 | 10 | no listing found; a 2 mm brass rod by the metre cut to 142 mm | low |
