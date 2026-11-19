@@ -70,7 +70,12 @@ The gates
   its seat must slide along the direction: each pair of mating faces (two
   parallel flat faces, or two cylinders or cones on parallel axes, within
   ``JOINT_GAP_MM``) faces along or across it, or has its axis along it. A
-  pair at an angle is a non-parallel joint.
+  pair at an angle is a non-parallel joint, unless it is a seat face (ADR
+  0104 amendment 2026-11-19): the input's outward normal has n.d > 0 at
+  every sample point, so it leads into its stop, and the input's sweep is
+  clean. A press input (``press_mm``, same amendment) is swept offset
+  inward by its declared bite at the same limit; a Part the kernel cannot
+  offset is refused.
   A ``snap`` step (ADR 0104 amendment 2026-11-17) declares one pair, or a
   list of pairs, that may overlap on the way in: each snapping Part against
   its own catch, each overlap no deeper across the direction than that
@@ -684,7 +689,7 @@ def travel_mm(moving_bounds, other_bounds, direction) -> float:
 def _check(scope: str | None, plan: Plan, geometry, bodies: dict[str, Body], nozzle: float) -> dict:
     """Every insertion and lead route of one scope against its bodies."""
 
-    report = {"conditions": [], "failures": [], "routes": [], "snaps": []}
+    report = {"conditions": [], "failures": [], "routes": [], "snaps": [], "presses": [], "seats": []}
     for item in plan.steps_in(scope):
         step = item["id"]
         involved = sorted(plan.owners(step))
@@ -763,21 +768,46 @@ def _insert_step(plan, geometry, bodies, item, k, wall, sequence, report) -> Non
                            "steps": steps, "allow_seated_contact": True},
                 "thresholds": {"maxOverlapMm3": OVERLAP_MM3, "maxStepMm": round(wall, 6)},
             }
-            if blocking:
+            press = entry.get("press_mm")
+            swept = moving
+            if press:
+                # A press input (ADR 0104 amendment 2026-11-19): its ribs bite
+                # the declared depth, so it sweeps offset inward by it, at the
+                # unchanged overlap limit. A Part the kernel cannot offset is
+                # refused, never swept as it is.
+                condition["inputs"]["press_mm"] = press
+                condition["description"] += ", offset inward by its %.3g mm press" % press
+                swept, error = geometry.pressed(moving, press)
+                report["presses"].append({"id": condition["id"], "step": step, "input": name, "press_mm": press,
+                                          "verdict": "PASS" if error is None else "FAIL"})
+                if error is not None:
+                    report["failures"].append(
+                        "%s: %s is a press input, but its Part cannot be offset inward by its %.3g mm press "
+                        "(%s): refused" % (step, name, press, error))
+            clean = False
+            if blocking and swept is not None:
                 sequence["inputs"]["steps"].append(condition)
-                result = geometry.sweep(condition, moving, [body for _, body in blocking])
+                result = geometry.sweep(condition, swept, [body for _, body in blocking])
                 condition["result"] = {key: result.get(key) for key in ("status", "detail", "obstacle", "overlapMm3")
                                        if key in result}
-                if result.get("status") != "pass":
-                    _blocked(geometry, step, name, entry, base, condition, result, moving, blocking, report)
+                clean = result.get("status") == "pass"
+                if press:
+                    report["presses"][-1]["verdict"] = "PASS" if clean else "FAIL"
+                if not clean:
+                    _blocked(geometry, step, name, entry, base, condition, result, swept, blocking, report)
             if snaps:
                 _snap_pass(geometry, step, name, entry, snaps, condition, moving, caught, report)
             ramps = _ramps(snaps, moving, caught)
             extra = {"exempt": ramps} if ramps else {}
+            # A seat face (ADR 0104 amendment 2026-11-19) is accepted only
+            # when the sweep is clean.
+            seats = [] if clean else None
             for face in geometry.nonparallel([b.shape for b in moving], [b.shape for _, b in assembled],
-                                             direction, **extra):
+                                             direction, seats=seats, **extra):
                 report["failures"].append("%s: %s engages a joint that is not parallel to its direction %s: %s"
                                           % (step, name, list(entry["direction"]), face))
+            for face in seats or ():
+                report["seats"].append({"step": step, "input": name, "face": face})
             for ramp in ramps:
                 for record in report["snaps"]:
                     if (record["step"], record["input"], record["part"], record["catch"]) == (
@@ -944,6 +974,24 @@ def _inside(lo, hi, region, tolerance=SNAP_TOLERANCE_MM) -> bool:
     return all(region[0][a] - tolerance <= lo[a] and hi[a] <= region[1][a] + tolerance for a in range(3))
 
 
+SEAT_SAMPLES = (0.05, 0.275, 0.5, 0.725, 0.95)
+
+
+def _seat_face(face, unit) -> bool:
+    """Whether a face of the moving input leads into its stop: its outward
+    normal has n.d > 0 at every sample point of its parameter range (ADR
+    0104 amendment 2026-11-19). A point the kernel cannot read is no seat."""
+
+    try:
+        for u in SEAT_SAMPLES:
+            for v in SEAT_SAMPLES:
+                if face.normal_at(face.position_at(u, v)).dot(unit) <= 0:
+                    return False
+    except Exception:  # noqa: BLE001 - an unreadable face is judged as before
+        return False
+    return True
+
+
 def _at_seat(condition: dict) -> dict:
     """The same condition held at the seat: does the input overlap the
     obstacle where it sits?"""
@@ -1000,7 +1048,7 @@ def check_component(plan: Plan, geometry, role: str, nozzle: float) -> dict:
     leaves, their colours, and every step and route wholly inside it."""
 
     report = {"scope": "component:%s" % role, "defects": [], "slips": [], "failures": [], "conditions": [],
-              "routes": [], "snaps": []}
+              "routes": [], "snaps": [], "presses": [], "seats": []}
     seen = len(getattr(geometry, "fallbacks", ()))
     expected = plan.expected_labels(role)
     instances = geometry.instances(role)
@@ -1016,7 +1064,7 @@ def check_component(plan: Plan, geometry, role: str, nozzle: float) -> dict:
         if slips:
             continue
         checked = _check(role, plan, geometry, keyed(plan, role, bodies), nozzle)
-        for key in ("conditions", "failures", "routes", "snaps"):
+        for key in ("conditions", "failures", "routes", "snaps", "presses", "seats"):
             report[key] += checked[key]
     report["failures"] = list(dict.fromkeys(report["failures"]))
     report["fallbacks"] = list(getattr(geometry, "fallbacks", ())[seen:])
@@ -1029,7 +1077,7 @@ def check_assembly(plan: Plan, geometry, nozzle: float, *, reconcile_all: bool =
     also reconciles and colour-checks every Component."""
 
     report = {"scope": "final" if reconcile_all else "assembly", "defects": structure_defects(plan),
-              "slips": [], "failures": [], "conditions": [], "routes": [], "snaps": []}
+              "slips": [], "failures": [], "conditions": [], "routes": [], "snaps": [], "presses": [], "seats": []}
     seen = len(getattr(geometry, "fallbacks", ()))
     bodies: dict[str, Body] = {}
     for role in sorted(plan.component_parts):
@@ -1052,7 +1100,7 @@ def check_assembly(plan: Plan, geometry, nozzle: float, *, reconcile_all: bool =
             bodies.update(keyed(plan, role, built, instance))
     if not report["defects"] and not report["slips"]:
         checked = _check(None, plan, geometry, bodies, nozzle)
-        for key in ("conditions", "failures", "routes", "snaps"):
+        for key in ("conditions", "failures", "routes", "snaps", "presses", "seats"):
             report[key] += checked[key]
     report["failures"] = list(dict.fromkeys(report["failures"]))
     report["fallbacks"] = list(getattr(geometry, "fallbacks", ())[seen:])
@@ -1258,7 +1306,26 @@ class CadGeometry:
                                   "bounds": ((bb.min.X, bb.min.Y, bb.min.Z), (bb.max.X, bb.max.Y, bb.max.Z))})
         return found
 
-    def nonparallel(self, moving, obstacles, direction, exempt=()) -> list[str]:
+    def pressed(self, moving: list[Body], depth: float):
+        """``moving`` offset inward by a press input's ``depth`` (ADR 0104
+        amendment 2026-11-19): ``(bodies, None)``, or ``(None, reason)`` when
+        the kernel cannot offset a body into one valid, smaller solid."""
+
+        from build123d import offset
+
+        found = []
+        for body in moving:
+            try:
+                shape = offset(body.shape, amount=-depth)
+                valid = shape.is_valid() if callable(shape.is_valid) else shape.is_valid
+                if not valid or not 0 < shape.volume < body.shape.volume:
+                    return None, "the offset of %s is no valid smaller solid" % body.key
+            except Exception as exc:  # noqa: BLE001 - an offset the kernel refuses is a refusal
+                return None, "the kernel refuses to offset %s: %s" % (body.key, exc)
+            found.append(Body(body.label, shape, key=body.key))
+        return found, None
+
+    def nonparallel(self, moving, obstacles, direction, exempt=(), seats=None) -> list[str]:
         """Every mating face pair at the seat that does not slide along
         ``direction``. A pair is a face of the input and a face of what it
         joins, of one kind and parallel to each other, within JOINT_GAP_MM:
@@ -1271,7 +1338,11 @@ class CadGeometry:
         pair's snapping Part wholly inside its region, mating a face of that
         pair's catch, is the barb's ramp; it is appended to the entry's
         ``faces`` instead of being found, and the face's other pairs are
-        still judged."""
+        still judged. ``seats``, given only when the input's sweep is clean,
+        collects every flagged face of the input that is a seat face (ADR 0104
+        amendment 2026-11-19): its outward normal leads into the stop, n.d > 0
+        at every sample point, so it parts from its mate as the input backs
+        out. A seat face is not found."""
 
         from build123d import GeomType, Vector
 
@@ -1309,10 +1380,15 @@ class CadGeometry:
                         if ramp is not None:
                             ramp["faces"].append(message)
                             continue
-                        found.append(message)
                     elif kind == "round" and angle > limit:
-                        found.append("a peg, bore or pin whose axis is %.0f deg off it near %s"
-                                     % (math.degrees(angle), _point(face.center())))
+                        message = "a peg, bore or pin whose axis is %.0f deg off it near %s" % (
+                            math.degrees(angle), _point(face.center()))
+                    else:
+                        break
+                    if seats is not None and _seat_face(face, unit):
+                        seats.append(message)
+                    else:
+                        found.append(message)
                     break
         return list(dict.fromkeys(found))
 

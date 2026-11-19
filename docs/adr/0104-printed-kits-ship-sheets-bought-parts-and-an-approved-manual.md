@@ -428,6 +428,66 @@ round summary records the report as `sheets`.
   are checked exactly as before. Frozen runs keep their run-local tool
   bytes. Implemented and tested on deterministic fakes and build123d boxes.
 
+## Amendment 2026-11-19: press inputs and seat faces
+
+- **Problem.** The Miami Deco kit's sealed Proof failed its per-Component
+  tree steps in every Make component round. ADR 0098's 2026-11-18
+  amendment makes the seal run those steps. Two groups of failures were
+  no defects:
+  - Press ribs: lounger tabs, umbrella canopies, palms, shrubs and the
+    dish. Ribs 0.05 mm a side bite their sockets by design. The sweep read
+    them as 0.085 to 1.37 mm3 of collision at the first step out of the
+    seat.
+  - Seat faces: the pen band and eyebrows, phone ledge ribs, front roof,
+    bands and pool bay halves. Each slanted flat face (45 to 75 degrees),
+    or round face whose axis is across the direction, rests on its stop.
+    `nonparallel` judged them as non-parallel joints, though each sweep
+    was clean.
+
+  The owner approved both rules on 2026-11-19.
+- **(d) Press input.** A moving input of a `peg-socket`, `tab-slot` or
+  `pin-hinge` step may declare `press_mm`, above 0 and at most 0.1: its
+  ribs' bite a side.
+  - Its insertion sweep uses the Part offset inward by `press_mm`
+    (`CadGeometry.pressed`, build123d `offset`). The 0.001 mm3 limit is
+    unchanged.
+  - A Part the kernel cannot offset into one valid, smaller solid is
+    refused.
+  - The condition carries `press_mm`, and each press is recorded in the
+    report's `presses`.
+- **(e) Seat face.** A flat joint face at an angle to the direction, or a
+  round face whose axis is off it, is accepted only as a seat face. Both
+  of these must hold:
+  - the input's outward normal has n.d > 0 at each of 5 x 5 sample points
+    over the face's parameter range. The face leads into its stop and parts
+    from it as the input backs out;
+  - the input's sweep is clean.
+
+  A face the kernel cannot read is no seat. Each seat is recorded in the
+  report's `seats`.
+- **Evidence.** On the sealed Miami Proof, each failing case was rerun with
+  the input shifted 0.3 mm sideways. That is a real collision, and every one
+  still fails:
+  - under (d): the shrunk lounger fails at 0.757 mm3, the canopy at 0.879,
+    the palms at 10.5 and the dish at 0.175;
+  - under (e): the pen band fails at 1.84 mm3, the ledge rib at 0.151, the
+    bay half at 0.725 and a band at 0.089.
+
+  The tests (`tests/make/test_kit_tree_press_seat.py`, real build123d
+  solids) cover these cases:
+  - a press and a seat each shifted 0.3 mm sideways fail;
+  - a bite deeper than the declared press fails;
+  - a seat whose sweep is blocked fails;
+  - a face that does not lead into its stop, and a whole rod, fail.
+- **Unchanged.** Every input without `press_mm`, and every parallel joint,
+  is checked exactly as before. The rules do not clear these failures,
+  which the design fixes instead:
+  - overlaps a shrink does not remove;
+  - faces with n.d at or below 0;
+  - simultaneous moves.
+
+  Frozen runs keep their run-local tool bytes.
+
 ## Not decided here
 
 - The gate and fit constants are the Amsterdam project's, set by the owner

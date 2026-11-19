@@ -289,7 +289,18 @@ instances.)
     judged as a non-parallel joint. Without `region_mm` no face is exempt. Each input is `{"id": "<Part, Print Piece or earlier
     step>", "direction": [x, y, z], "count": n}`; `count` (default 1) is how
     many one making of the step takes, and a step's `count` equals its parent
-    step's count times that. The finished toy is made once. `joint` is one
+    step's count times that. The finished toy is made once. A moving input
+    of a `peg-socket`, `tab-slot` or `pin-hinge` step whose press ribs bite
+    its mate adds `"press_mm": <the ribs' bite a side, above 0, at most
+    0.1>` (ADR 0104 amendment 2026-11-19). Its insertion sweep uses the Part
+    offset inward by `press_mm`, at the unchanged 0.001 mm3 limit. A Part
+    the kernel cannot offset is refused. Declare the bite the ribs have,
+    never more: a sideways slip or a deeper bite still fails. No other input
+    takes `press_mm`. A flat joint face at an angle to the direction, or a
+    round one whose axis is off it, passes only as a seat face. That means
+    the input's outward normal has n.d > 0 at every sample point, so the
+    face leads into its stop, and the input's sweep is clean. It needs no
+    field. `joint` is one
     of:
 
     | `joint` | What the step does | Inputs |
