@@ -108,7 +108,7 @@ class ClipGeometry(BoxGeometry):
     def _label(self, shape):
         return next(item[0] for items in self.layout.values() for item in items if item[1] == shape)
 
-    def nonparallel(self, moving, obstacles, direction, exempt=()):
+    def nonparallel(self, moving, obstacles, direction, exempt=(), seats=None):
         found = []
         for mover, holder, face, message in self.faces:
             for shape in moving:

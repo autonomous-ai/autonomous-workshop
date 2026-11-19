@@ -59,6 +59,11 @@ SNAP = "snap"
 # The deepest catch a snap may declare, a side: a barb past it is no snap
 # a printed prong can flex over.
 MAX_SNAP_CATCH_MM = 1.0
+# A press input (ADR 0104 amendment 2026-11-19) declares how deep its press
+# ribs bite, a side: its sweep uses the Part offset inward by that depth.
+# A press past it is no printed press fit. Only these joints may press.
+MAX_PRESS_MM = 0.1
+PRESSES = ("peg-socket", "tab-slot", "pin-hinge")
 # A step that applies a Print Piece to its host.
 PAPER = "paper"
 # One-input steps: the input is reshaped, not joined (ADR 0092 decision 2).
@@ -424,15 +429,28 @@ def _parse_parts(
 
 
 def _parse_input(
-    item: Any, label: str, needs_direction: Optional[bool], errors: List[str]
+    item: Any, label: str, needs_direction: Optional[bool], errors: List[str],
+    joint: Optional[str] = None,
 ) -> Optional[Tuple[str, int]]:
     """One step input: ``(id, count)``. ``needs_direction`` is True for an
     input that moves in, False where a direction is refused, None where it
-    is not checked here."""
+    is not checked here. ``press_mm`` belongs to a moving input of a
+    peg-socket, tab-slot or pin-hinge step (ADR 0104 amendment 2026-11-19)."""
 
-    if not isinstance(item, dict) or not set(item) <= {"id", "direction", "count"}:
-        errors.append("%s must be {id, direction, count} (direction and count optional)" % label)
+    if not isinstance(item, dict) or not set(item) <= {"id", "direction", "count", "press_mm"}:
+        errors.append("%s must be {id, direction, count, press_mm} (direction, count and press_mm optional)"
+                      % label)
         return None
+    if "press_mm" in item:
+        depth = item["press_mm"]
+        if needs_direction is not True or joint not in PRESSES:
+            errors.append("%s.press_mm belongs to an input that moves into a %s step only"
+                          % (label, ", ".join(PRESSES)))
+            return None
+        if isinstance(depth, bool) or not isinstance(depth, (int, float)) or not 0 < depth <= MAX_PRESS_MM:
+            errors.append("%s.press_mm must be its press ribs' bite a side in mm, above 0 and at most %.1f"
+                          % (label, MAX_PRESS_MM))
+            return None
     identifier = item.get("id")
     if not isinstance(identifier, str):
         errors.append("%s.id must name a Part, Print Piece or earlier step" % label)
@@ -553,7 +571,7 @@ def _parse_steps(
                 needs = None
             else:
                 needs = False
-            entry = _parse_input(raw, where, needs, errors)
+            entry = _parse_input(raw, where, needs, errors, joint)
             if entry is None:
                 valid = False
                 continue
@@ -1152,6 +1170,8 @@ __all__ = [
     "JOINTS",
     "LEADS",
     "LEAD_METHODS",
+    "MAX_PRESS_MM",
+    "PRESSES",
     "MAX_SNAP_CATCH_MM",
     "PANEL",
     "PANEL_MM_DEFAULT",

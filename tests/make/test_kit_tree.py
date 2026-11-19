@@ -131,7 +131,7 @@ class BoxGeometry:
                                 "detail": "blocked by %s at step %d/%d" % (other.key, i, steps)}
         return {"status": "pass", "detail": "clear across %d steps" % steps}
 
-    def nonparallel(self, moving, obstacles, direction, exempt=()):
+    def nonparallel(self, moving, obstacles, direction, exempt=(), seats=None):
         found = []
         for shape in moving:
             for (lo, hi), message in self.joints.items():
