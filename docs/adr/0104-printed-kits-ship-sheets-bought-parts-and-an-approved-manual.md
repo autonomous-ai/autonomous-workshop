@@ -557,12 +557,16 @@ Component or assembly round that owns the step.
   bounding extent is at most 3.5 mm and under a third of the next. It counts
   as set on a base when it is placed as a leaf input of its own, standing
   across an earlier printed Part (the base's thin axis differs from the
-  wall's) within 0.3 mm. A wall that touches two or more walls set on the
-  same base before it goes in between parts already fixed. The round fails
-  with the steps and the walls that meet it: "join these walls to each other
+  wall's) within 0.3 mm. A wall goes in between parts already fixed when it
+  touches two walls set on the same base before it that flank it. They
+  stand on opposite sides of it across its direction, each one's centre
+  outside the wall's own extent on that axis, and each runs alongside it for
+  at least half its length along that direction. The round fails with
+  the steps and the walls that meet it: "join these walls to each other
   first, then set them on <base>". It is recorded in `wall_orders`. Several
   wall cases pass:
   - one wall alone, or two walls meeting in a corner;
+  - a plate set on the tops of walls, such as a floor or a lid;
   - walls that do not touch each other;
   - walls joined as a Sub-assembly and then set on the base, since a
     Sub-assembly input is no wall.
@@ -575,7 +579,13 @@ Component or assembly round that owns the step.
 
   A low wide block stays by its 45 degree-plus tip angle. A box of four walls
   pressed onto a base one at a time fails, and so do the same walls in one
-  step. The same walls joined first and then set on the base pass.
+  step. The same walls joined first and then set on the base pass. A shelf
+  slid down between two fixed sides fails, and the same shelf set on their
+  tops passes. On the approved Amsterdam Canal Proof, every assembly round
+  unit and every unit of the pen tower and phone house rounds stays at 45
+  degrees, and no wall order fails. The first draft of rule j flagged the
+  phone house's first floor. That floor spans its six walls and drops 1.9 mm
+  onto their top tabs. The flank test above clears it.
 - **Unchanged.** Every existing sweep, press, seat, snap and joint face rule.
   Backends without `hold` or `touching`, which are only the deterministic
   test fakes, measure nothing. The 45 degree, 3 degree and 0.3 mm values are

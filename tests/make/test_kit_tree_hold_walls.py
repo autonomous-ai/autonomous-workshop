@@ -8,8 +8,8 @@ either tips no sooner than 45 deg or catches within 3 deg and is held
 against a sideways push.
 
 (j) A plate Part set on its own onto a base it stands across, touching two
-or more walls already set on that base, goes in between parts already
-fixed: the walls are joined to each other first."""
+walls already set on that base that flank it, goes in between parts
+already fixed: the walls are joined to each other first."""
 
 from __future__ import annotations
 
@@ -211,6 +211,29 @@ class WallOrderTest(unittest.TestCase):
             base = steps[-1]["id"]
         apart = check(self.parts(apart=True), steps)
         self.assertEqual(self.order(apart), [])
+
+    def shelf_parts(self, inside):
+        """A standing back plate, two sides pushed onto it and a shelf
+        lowered last: on the sides' tops, or slid down between them."""
+        b = self.b
+        back = b.Pos(0, 1.5, 20) * b.Box(40, 3, 40)
+        left = b.Pos(-19, 13, 20) * b.Box(2, 20, 40)
+        right = b.Pos(19, 13, 20) * b.Box(2, 20, 40)
+        shelf = (b.Pos(0, 13, 21) * b.Box(35.8, 20, 2) if inside else b.Pos(0, 11.5, 41) * b.Box(40, 23, 2))
+        return [("A01-base", back), ("A02-front", left), ("A03-left", right), ("A04-back", shelf)]
+
+    def shelf_steps(self):
+        return [step("S01-sides", "A01-base", "A02-front", "A03-left", direction=(0, -1, 0)),
+                step("S02-shelf", "S01-sides", "A04-back")]
+
+    def test_a_plate_set_on_the_tops_of_two_walls_is_not_between_them(self):
+        report = check(self.shelf_parts(inside=False), self.shelf_steps())
+        self.assertEqual(self.order(report), [])
+
+    def test_a_plate_slid_down_between_two_fixed_walls_fails(self):
+        report = check(self.shelf_parts(inside=True), self.shelf_steps())
+        (failure,) = self.order(report)
+        self.assertIn("A04-back#1 goes in between walls already fixed", failure)
 
     def test_two_walls_in_a_corner_pass(self):
         report = check(self.parts()[:3], [step("S01-front", "A01-base", "A02-front"),

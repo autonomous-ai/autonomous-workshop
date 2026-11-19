@@ -110,8 +110,10 @@ The gates
   (its smallest bounding extent at most 3.5 mm and under a third of the
   next) set on its own onto a Part it stands across (whose thin axis is
   another), within ``JOINT_GAP_MM``, is a wall of that base. A wall that
-  touches two or more walls set on the same base before it goes in between
-  parts already fixed: a failure naming the steps and walls, recorded in
+  touches two walls set on the same base before it, standing on opposite
+  sides of it across its direction (each one's centre outside its extent)
+  and each alongside it for at least half its length along the direction,
+  goes in between parts already fixed: a failure naming the steps and walls, recorded in
   ``wall_orders``, telling the author to join the walls to each other first
   and then set them on the base. A Sub-assembly set on the base is no wall.
 - **Lead routes.** A sphere of the lead's diameter (the lamp's catalogue
@@ -850,6 +852,7 @@ def _insert_step(plan, geometry, bodies, item, k, wall, sequence, report) -> Non
                 _hold(geometry, step, name, moving, host, report)
             if entry["id"] in plan.printed and len(moving) == 1:
                 report["_placements"].append({"step": step, "input": name, "body": moving[0],
+                                              "direction": direction,
                                               "before": [b for b in host if _leaf(b) in plan.printed]})
             for ramp in ramps:
                 for record in report["snaps"]:
@@ -926,11 +929,33 @@ def _near(geometry, a, b) -> bool:
     return all(lo[x] - JOINT_GAP_MM <= other[1][x] and other[0][x] - JOINT_GAP_MM <= hi[x] for x in range(3))
 
 
+def _flanked(geometry, wall, earlier) -> bool:
+    """Whether a wall goes in between two walls already fixed: two of the
+    earlier walls it touches stand on opposite sides of it across its
+    direction, each one's centre outside the wall's own extent on that axis,
+    and each runs alongside it for at least half its length along the
+    direction. A plate set over the tops of walls spans them, so it is not
+    between them."""
+
+    lo, hi = geometry.bounds([wall["body"].shape])
+    along = max(range(3), key=lambda a: abs(wall["direction"][a]))
+    length = hi[along] - lo[along]
+    sides = []
+    for other in earlier:
+        olo, ohi = geometry.bounds([other["body"].shape])
+        if min(hi[along], ohi[along]) - max(lo[along], olo[along]) < length / 2:
+            continue
+        centre = [(olo[a] + ohi[a]) / 2 for a in range(3)]
+        sides.append([-1 if centre[a] < lo[a] else 1 if centre[a] > hi[a] else 0 for a in range(3)])
+    return any(a[axis] * b[axis] < 0 for n, a in enumerate(sides) for b in sides[n + 1:]
+               for axis in range(3) if axis != along)
+
+
 def _wall_order(plan, geometry, placements, report) -> None:
     """Walls before the base (ADR 0104 amendment 2026-11-19, rule j): a
-    plate Part set on its own onto a base it stands across, touching two or
-    more walls set on that same base before it, goes in between two parts
-    already fixed. The walls that meet each other are joined to each other
+    plate Part set on its own onto a base it stands across, touching two
+    walls set on that same base before it that flank it (``_flanked``),
+    goes in between two parts already fixed. The walls that meet each other are joined to each other
     first, as a Sub-assembly, and then set on the base. A backend without
     ``touching`` (a test fake) measures nothing."""
 
@@ -955,7 +980,8 @@ def _wall_order(plan, geometry, placements, report) -> None:
             meets[i] = [j for j, earlier in enumerate(group[:i])
                         if _near(geometry, later["body"].shape, earlier["body"].shape)
                         and touching(later["body"].shape, earlier["body"].shape, JOINT_GAP_MM)]
-        between = [i for i, earlier in meets.items() if len(earlier) >= 2]
+        between = [i for i, earlier in meets.items()
+                   if _flanked(geometry, group[i], [group[j] for j in earlier])]
         if not between:
             continue
         # Every wall joined to a wall that goes in between, by contact.
