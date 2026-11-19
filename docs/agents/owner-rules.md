@@ -268,6 +268,16 @@ Tree and Manual.
   engagement depth against its height, and check that it stays seated with
   the tray tilted 45° in any direction. Why: the Amsterdam kit's trees and
   houses fell over when the owner bumped the tray.
+- **The whole tray passes a lift test** (owner, 2026-11-19). Lifting or
+  tilting the assembled tray must carry every plate and part with it: no
+  area without a floor, every plate locked in place, and every pole held by
+  press ribs that still hold with the tray upside down. Why: the Miami
+  tray's floor and parts did not travel with the tray.
+- **Audit the whole Manual before the owner sees it** (owner, 2026-11-19).
+  Check every page for every defect class the owner has already named,
+  including sub-assemblies first, tilt and hold, and no sliding between fixed
+  parts, not only the pages they cited. Why: fixing only the cited pages
+  left the same defects on others for the owner to find again.
 - **Every gate must be cut with nippers.** Put gates on straight,
   outward-facing edges, never in a channel between protrusions. Keep at
   least 6 mm clear for the jaws on both sides of each gate. Never let a
@@ -492,6 +502,14 @@ Wait for the owner's explicit OK before any of these:
 - a publish, or any change to a live listing, including a rename. A
   build already running with publication on publishes without a new OK
   (see **Let a running build publish**);
+
+**Decide obvious choices yourself** (owner, 2026-11-19). When one option
+clearly fixes a defect and the other only tolerates it, or when an owner
+rule already implies the answer, choose, act and report what you chose and
+why. Ask the owner only for a real trade-off of taste or price, or for a
+publish or live-listing change. Why: the owner, on the Miami tray floor:
+"những quyết định kiểu này bạn cứ tự chọn rồi feedback với tôi" (choose
+decisions like this yourself, then report back).
 
 Harness fixes, including those made during a build loop, go through a PR;
 never push to `main` and never force-push. **Merge a PR without asking**
