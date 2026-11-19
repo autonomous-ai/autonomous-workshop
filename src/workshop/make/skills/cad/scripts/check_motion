@@ -639,7 +639,7 @@ def crop_to_sweep(obstacle, boxes, margin: float = 1.0):
     union of the pose boxes, so overlap with the crop equals overlap with the
     whole -- exact, paid once per sweep (two booleans: the crop and its
     complement, whose volumes must add up). Small obstacles, and any crop that
-    throws or loses volume, keep the whole obstacle; None means no material
+    throws, loses volume or fails validation, keep the whole obstacle; None means no material
     within the sweep's box at all.
 
     The obstacle's own box decides first: one wholly outside the window has
@@ -669,6 +669,11 @@ def crop_to_sweep(obstacle, boxes, margin: float = 1.0):
     except Exception:                                  # noqa: BLE001
         return obstacle
     if not conserves_volume(obstacle, local, outside):
+        return obstacle
+    if local is not None and local.solids() and not _is_valid(local):
+        # OCC can also return a common of the right volume that fails BRepCheck: a 345-face kiosk drum, cropped
+        # by any window round a stripe's slide, made every sweep step raise "invalid geometry" while the whole
+        # drum measured cleanly. The whole obstacle is exact, only slower.
         return obstacle
     return local if local is not None and local.solids() else None   # None: nothing near the path
 
