@@ -604,6 +604,41 @@ checked where the whole toy is built.
   test fakes, measure nothing. The 45 degree, 3 degree and 0.3 mm values are
   the Amsterdam prototype's. Frozen runs keep their run-local tool bytes.
 
+## Amendment 2026-11-19 (later): a press Part the kernel cannot offset
+
+- **Problem.** The Miami Deco kit's boardwalk presses its three peg holes'
+  crush ribs, 0.05 mm a side, onto the tray's pegs. Its `press_mm` sweep
+  was refused because build123d's `offset` cannot shrink the 613-face
+  Part, nor even the bare 450-face solid it is built from. The step could
+  not pass at all, however exact the fit.
+- **Rule.** When the kernel cannot offset a press input's Part, each
+  obstacle is shrunk instead. It is cropped to the box round every pose of
+  the sweep (`crop_to_sweep`) and offset inward by the same `press_mm`,
+  joined by intersection (`CadGeometry.pressed_obstacles`). The unchanged
+  Part then sweeps against those obstacles at the unchanged 0.001 mm3
+  limit. Either way, an interference no deeper than the press is cleared,
+  whichever side shrinks:
+  - an arc join would round a socket's inner corners and put material back
+    where the Part's square corners sit, so the join is by intersection;
+    where the kernel refuses that join, the arc join is taken, which leaves
+    more material and so is never looser;
+  - a crop's own cut faces lie the crop's 1 mm margin beyond every pose, so
+    their offset reaches none.
+
+  The condition records `press_offset: "obstacles"`, and its `presses` row
+  records `offset: "obstacles"`, where the Part's own offset records
+  `"input"`. A step where neither offset can be made is still refused.
+- **Evidence.** `tests/make/test_kit_tree_press_seat.py` makes the Part's
+  own offset refuse. The shrunk socket passes the 4.1 mm peg in its 4.0 mm
+  socket at a 0.06 press. The same peg shifted 0.3 mm sideways fails, and a
+  4.4 mm peg fails. Refusing both offsets is still refused. With the
+  intersection join refused, the arc join still fails the square peg and
+  passes a round one. On the Miami tray, cropped to the boardwalk's sweep,
+  the obstacle is 25 faces and offsets cleanly; the whole 386-face tray
+  does not. The boardwalk's step then passes its component round.
+- **Unchanged.** Every Part the kernel can offset is swept exactly as
+  before, and so is every input without `press_mm`.
+
 ## Not decided here
 
 - The gate and fit constants are the Amsterdam project's, set by the owner
