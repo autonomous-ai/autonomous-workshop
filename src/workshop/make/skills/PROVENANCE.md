@@ -3065,3 +3065,26 @@ convention, so sealed STEPs and frozen runs keep their colours.
   that layout itself, so a second preflight or seal dry run no longer
   refuses it. Any other STEP, or changed bytes, is still refused. A resync
   must keep it.
+
+## Workshop-local: one thread per CAD process, jobs from the task headroom (2026-11-19)
+
+- **Local patch to upstream `cad`.** New `scripts/cadthreads.py` (stdlib
+  only). Every CAD entry (`gen`, `inspect`, `cadgen_daemon`, `artifact`,
+  the `check_*` gates, `render_*`, `repair_mesh`, `stdpart`,
+  `verify_project`) pins itself before loading numpy, build123d or OCP:
+  `OMP/OPENBLAS/MKL/NUMEXPR/VECLIB` threads 1 and OCCT's default pool
+  `WORKSHOP_OCC_THREADS` (default 1), each only where the caller set none.
+  Its children inherit the pins. An unpinned gen held 186 threads on the
+  64-core host and a pinned one holds 1. Twenty at once filled the user
+  cgroup's 9830 tasks and killed agents with SIGABRT.
+- `verify_project`'s `verify_jobs`, `cadcache.default_jobs` and cadgen's
+  component worker count default to `cadthreads.default_jobs()`: the
+  tightest cgroup's `pids.max - pids.current` over 16 tasks per job, from
+  1 to 8. `VERIFY_PROJECT_JOBS`, `CADCACHE_JOBS` and
+  `CADGEN_COMPONENT_WORKERS` still override it. cadgen's spawned workers
+  size their pool too. A resync must keep all of this.
+- **`make-round`**: `make_round`, `kit_tree.py` and `kit_sheets.py` pin
+  themselves the same way, and `round_jobs` uses the same default up to
+  `DEFAULT_ROUND_JOBS`, with `MAKE_ROUND_JOBS` still overriding it. The
+  seeded batch and `seal_proof.py` run their steps pinned.
+  `print-details` is unchanged, because projects copy and seal its bytes.

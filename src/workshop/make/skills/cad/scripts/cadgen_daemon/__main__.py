@@ -1,4 +1,7 @@
 from __future__ import annotations
+import os as _cadthreads_os, runpy as _cadthreads_runpy  # noqa: E401,E402
+# Before numpy, build123d or OCP load: one BLAS/OpenMP/OCCT thread unless the caller set one.
+_cadthreads_runpy.run_path(_cadthreads_os.path.join(_cadthreads_os.path.dirname(_cadthreads_os.path.abspath(__file__)), "..", "cadthreads.py"))["pin"]()
 
 import sys
 from pathlib import Path

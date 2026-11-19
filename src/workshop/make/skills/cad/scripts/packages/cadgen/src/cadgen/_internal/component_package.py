@@ -329,6 +329,10 @@ def _build_component_glb_worker(
     are flattened so one failed component reports cleanly instead of poisoning
     the pool. A payload the worker cannot deserialize reports the
     ``PAYLOAD_UNREADABLE`` marker so the parent retries in-process."""
+    limits = _cadthreads()
+    if limits is not None:
+        # A spawned worker sizes OCCT's pool before it meshes (Workshop).
+        limits["pin"]()
     payload, cid, out_glb, linear_deflection, angular_deflection = args
     try:
         try:
@@ -362,7 +366,21 @@ def _component_build_worker_count(missing_count: int) -> int:
         return max(1, min(requested, missing_count)) if requested > 1 else 1
     if missing_count < 6:
         return 1
+    limits = _cadthreads()
+    if limits is not None:
+        # Workshop: the free task headroom of this cgroup, 1 to 8.
+        return max(1, min(limits["default_jobs"](), missing_count))
     return max(1, min((os.cpu_count() or 2) - 2, missing_count, 8))
+
+
+def _cadthreads():
+    """Workshop's cad/scripts/cadthreads.py beside this vendored package, or
+    None where cadgen is installed on its own."""
+    import runpy
+    from pathlib import Path as _Path
+
+    path = _Path(__file__).resolve().parents[5] / "cadthreads.py"
+    return runpy.run_path(str(path)) if path.is_file() else None
 
 
 def _write_component_glb_atomic(
