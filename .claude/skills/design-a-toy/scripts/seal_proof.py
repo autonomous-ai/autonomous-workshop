@@ -1033,6 +1033,11 @@ def main(argv=None) -> int:
     ``_main``'s own."""
 
     given = list(sys.argv[1:] if argv is None else argv)
+    # Every tool the seal starts gets one BLAS/OpenMP/OCCT thread unless the
+    # caller set one (cad/scripts/cadthreads.py).
+    import runpy
+
+    runpy.run_path(str(CAD_SCRIPTS / "cadthreads.py"))["pin"](occ=False)
     try:
         from workshop.runtime import timing_ledger
     except Exception:  # noqa: BLE001 - outside a Workshop install, no ledger

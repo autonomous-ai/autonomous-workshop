@@ -173,6 +173,16 @@ def subprocess_runner(argv: Sequence[str], cwd: Path, timeout: Optional[float]) 
     return _run_process(argv, cwd, timeout, None)
 
 
+def thread_pinned(environment: Mapping[str, str]) -> dict:
+    """``environment`` with one BLAS/OpenMP/OCCT thread wherever it sets
+    none (cad/scripts/cadthreads.py): every step is a CAD tool."""
+
+    import runpy
+
+    pinned = runpy.run_path(str(Path(__file__).with_name("skills") / "cad" / "scripts" / "cadthreads.py"))
+    return pinned["child_env"](environment)
+
+
 def _run_process(argv: Sequence[str], cwd: Path, timeout: Optional[float],
                  environment: Optional[Mapping[str, str]]) -> RunResult:
     """Run one step in its own process group; a timeout kills the group."""
@@ -181,7 +191,7 @@ def _run_process(argv: Sequence[str], cwd: Path, timeout: Optional[float],
     try:
         process = subprocess.Popen(list(argv), cwd=str(cwd), stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT, start_new_session=True,
-                                   env=None if environment is None else dict(environment))
+                                   env=thread_pinned(os.environ if environment is None else environment))
     except OSError as exc:
         return RunResult(None, "", start_error="%s: %s" % (type(exc).__name__, exc),
                          duration_s=time.monotonic() - started)

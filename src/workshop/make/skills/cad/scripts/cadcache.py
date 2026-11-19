@@ -60,7 +60,18 @@ from typing import Callable, Iterable
 
 
 def default_jobs() -> int:
-    return int(os.environ.get("CADCACHE_JOBS", max(1, (os.cpu_count() or 2) - 2)))
+    """CADCACHE_JOBS, else the free task headroom of this cgroup over what
+    one CAD job holds, 1 to 8 (cadthreads.py; once the core count less two,
+    which on a 64-core host started 62 builds at once)."""
+
+    if "CADCACHE_JOBS" in os.environ:
+        return int(os.environ["CADCACHE_JOBS"])
+    import runpy
+
+    limits = Path(__file__).resolve().with_name("cadthreads.py")
+    if not limits.is_file():
+        return max(1, (os.cpu_count() or 2) - 2)
+    return runpy.run_path(str(limits))["default_jobs"]()
 
 
 def _module_file(func: str, root: Path) -> Path:

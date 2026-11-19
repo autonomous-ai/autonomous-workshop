@@ -58,6 +58,14 @@ Part, as its ``spares`` (2026-11-16).
 """
 
 from __future__ import annotations
+import os as _cadthreads_os, runpy as _cadthreads_runpy  # noqa: E401,E402
+# Before numpy, build123d or OCP load: this process and every tool it starts get one
+# BLAS/OpenMP/OCCT thread unless the caller set one (cad/scripts/cadthreads.py).
+_cadthreads_path = _cadthreads_os.path.join(_cadthreads_os.path.dirname(_cadthreads_os.path.abspath(__file__)), "..", "..", "cad", "scripts", "cadthreads.py")
+# A copy made without its helper runs as before, unpinned.
+_cadthreads = _cadthreads_runpy.run_path(_cadthreads_path) if _cadthreads_os.path.isfile(_cadthreads_path) else None
+if _cadthreads is not None:
+    _cadthreads["pin"](occ=True)
 
 import contextlib
 import importlib.util
