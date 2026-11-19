@@ -68,7 +68,10 @@ def default_jobs() -> int:
         return int(os.environ["CADCACHE_JOBS"])
     import runpy
 
-    return runpy.run_path(str(Path(__file__).resolve().with_name("cadthreads.py")))["default_jobs"]()
+    limits = Path(__file__).resolve().with_name("cadthreads.py")
+    if not limits.is_file():
+        return max(1, (os.cpu_count() or 2) - 2)
+    return runpy.run_path(str(limits))["default_jobs"]()
 
 
 def _module_file(func: str, root: Path) -> Path:

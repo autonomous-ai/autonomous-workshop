@@ -1,9 +1,11 @@
 from __future__ import annotations
 import os as _cadthreads_os, runpy as _cadthreads_runpy  # noqa: E401,E402
 # Before numpy, build123d or OCP load: one BLAS/OpenMP/OCCT thread unless the caller set one.
-_cadthreads = _cadthreads_runpy.run_path(_cadthreads_os.path.join(
-    _cadthreads_os.path.dirname(_cadthreads_os.path.abspath(__file__)), "..", "cadthreads.py"))
-_cadthreads["pin"](occ=False)  # the warm-daemon client below loads no OCP
+_cadthreads_path = _cadthreads_os.path.join(_cadthreads_os.path.dirname(_cadthreads_os.path.abspath(__file__)), "..", "cadthreads.py")
+# A copy made without its helper runs as before, unpinned.
+_cadthreads = _cadthreads_runpy.run_path(_cadthreads_path) if _cadthreads_os.path.isfile(_cadthreads_path) else None
+if _cadthreads is not None:
+    _cadthreads["pin"](occ=False)
 
 import os
 import sys
@@ -23,7 +25,8 @@ if os.environ.get("CADGEN_WARM") == "1" and not os.environ.get("CADGEN_DAEMON_CH
         raise SystemExit(warm_exit)
 
 # The cold path builds here: size OCCT's thread pool before cadgen first uses it.
-_cadthreads["pin_occ"]()
+if _cadthreads is not None:
+    _cadthreads["pin_occ"]()
 
 # Prefer the skill's bundled cadgen over any pip-installed copy, exactly like
 # the other CLI entries: the vendored scripts/packages/cadgen is the version this

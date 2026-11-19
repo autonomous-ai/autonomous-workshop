@@ -90,6 +90,64 @@ class PinTest(unittest.TestCase):
         self.assertGreaterEqual(self._probe(unpinned_env(WORKSHOP_OCC_THREADS="3")), 3)
 
 
+GENERATOR = r"""
+import json, os
+from pathlib import Path
+import build123d as bd
+
+
+def gen_step():
+    status = [line for line in open("/proc/self/status") if line.startswith("Threads")]
+    record = {key: os.environ.get(key) for key in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
+                                                   "NUMEXPR_NUM_THREADS", "WORKSHOP_OCC_THREADS")}
+    record["threads"] = int(status[0].split()[1])
+    with open(Path(__file__).resolve().with_name("probe.jsonl"), "a") as out:
+        out.write(json.dumps(record) + "\n")
+    box = bd.Pos(0, 0, 5) * bd.Box(20, 20, 10)
+    box.label = "box"
+    return box
+"""
+
+
+class SpawnedGenTest(unittest.TestCase):
+    """The Kyoto kit's sheet check ran 8 make_round --print-gates-only at
+    once, each with its own pool of gen processes: about 48 gens of about
+    180 threads filled the cgroup. The caps must reach every gen a
+    make_round starts, from a caller that set none."""
+
+    def test_the_caps_reach_every_spawned_gen(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            (project / "part_box.step.py").write_text(GENERATOR)
+            done = subprocess.run([sys.executable, str(SKILLS / "make-round/scripts/make_round"), str(project),
+                                   "--print-gates-only", "--nozzle", "0.4"],
+                                  env=unpinned_env(), capture_output=True, text=True, timeout=900)
+            probe = project / "probe.jsonl"
+            self.assertTrue(probe.is_file(), done.stdout + done.stderr)
+            import json
+
+            records = [json.loads(line) for line in probe.read_text().splitlines()]
+        self.assertGreaterEqual(len(records), 1)
+        for record in records:
+            # Unpinned, each held 127 on the 64-core host before it built anything.
+            self.assertEqual(record.pop("threads"), 1)
+            self.assertEqual(set(record.values()), {"1"}, record)
+
+    def test_a_callers_value_reaches_the_spawned_gen(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            (project / "part_box.step.py").write_text(GENERATOR)
+            subprocess.run([sys.executable, str(SKILLS / "make-round/scripts/make_round"), str(project),
+                            "--print-gates-only", "--nozzle", "0.4"],
+                           env=unpinned_env(OMP_NUM_THREADS="2"), capture_output=True, text=True, timeout=900)
+            import json
+
+            records = [json.loads(line) for line in (project / "probe.jsonl").read_text().splitlines()]
+        self.assertTrue(records)
+        self.assertEqual({record["OMP_NUM_THREADS"] for record in records}, {"2"})
+        self.assertEqual({record["OPENBLAS_NUM_THREADS"] for record in records}, {"1"})
+
+
 class JobsTest(unittest.TestCase):
     def _cgroups(self, root, limits):
         dirs = []
@@ -166,6 +224,21 @@ class WiringTest(unittest.TestCase):
             self.assertEqual(module.round_jobs(), min(expected, module.DEFAULT_ROUND_JOBS))
             os.environ.update(MAKE_ROUND_JOBS="3", VERIFY_PROJECT_JOBS="5", CADCACHE_JOBS="6")
             self.assertEqual((module.round_jobs(), verify["verify_jobs"](), cache["default_jobs"]()), (3, 5, 6))
+
+    def test_a_copy_without_the_helper_runs_as_before(self):
+        # Fixtures and isolated verifiers copy a tool with an explicit helper
+        # list; without cadthreads.py it runs unpinned with the old defaults.
+        import shutil
+
+        with tempfile.TemporaryDirectory() as tmp:
+            scripts = Path(tmp) / "cad/scripts"
+            scripts.mkdir(parents=True)
+            shutil.copy2(CAD / "verify_project", scripts / "verify_project")
+            with mock.patch.dict(os.environ):
+                os.environ.pop("VERIFY_PROJECT_JOBS", None)
+                verify = runpy.run_path(str(scripts / "verify_project"), run_name="verify_project_copy")
+                self.assertIsNone(verify["_cadthreads"])
+                self.assertEqual(verify["verify_jobs"](), max(1, min(8, (os.cpu_count() or 1) - 2)))
 
     def test_the_seeded_batch_runs_its_steps_pinned(self):
         from workshop.make import seeded_batch
