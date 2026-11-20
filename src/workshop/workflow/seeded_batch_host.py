@@ -44,8 +44,10 @@ from workshop.workflow.agent_run import frozen_seed_batch
 
 ATTEMPTS = "seeded-batch"
 NONCE_ISSUER = "host-batch"
+# What seals the product tree after the checks: packaging and the finalizer.
+SEAL_LAYERS = ("product", "parts", "finalize")
 CHECK_LAYERS = tuple(layer for layer in seeded_batch.LAYERS
-                     if layer not in ("seed", "product", "parts", "finalize"))
+                     if layer not in ("seed", *SEAL_LAYERS))
 FINALIZER = ".agents/skills/autonomous-workshop/scripts/stage_proposal.py"
 SOURCE = "work/seeded/spark-source.json"
 # The run's batch record sits beside the source, outside the product tree:
@@ -60,6 +62,14 @@ AGENT_OUTCOME = "agent-outcome.json"
 class SeededBatchHarnessFailure(WorkshopError):
     """A batch step failed as a harness, not as a check: the run stops for
     the operator."""
+
+
+class SeededBatchProposalResealed(WorkshopError):
+    """The gate's checks passed but rewrote the product tree the native
+    proposal sealed (the Make project lives inside it, so a rerun component
+    round or final verification rebuilds its STEPs and reports). The host
+    resealed the tree with the batch's own packaging and finalizer; the
+    caller reads the fresh proposal, which the gate then accepts unrun."""
 
 
 def _sha256(content: bytes) -> str:
@@ -259,6 +269,31 @@ def run_for_checkpoint(run_root: Path, host_state_root: Path, checkpoint_sha256:
     return attempt
 
 
+def _tree_digest(root: Path) -> str:
+    """Every regular file under ``root``, by path and bytes."""
+
+    digest = hashlib.sha256()
+    for path in sorted(Path(root).rglob("*")):
+        if path.is_file() and not path.is_symlink():
+            digest.update(path.relative_to(root).as_posix().encode("utf-8") + b"\0")
+            digest.update(_sha256(path.read_bytes()).encode("ascii"))
+    return digest.hexdigest()
+
+
+def _reseal(steps, project: Path, record: dict, record_path: Path, runner, nonce) -> dict:
+    """Run the batch's packaging and finalizer after a passing gate rerun
+    rewrote the tree, exactly as a batch pass does, and record both parts.
+    The finalizer always runs: a reused one would leave the stale proposal."""
+
+    previous = dict(record, steps=[item for item in record["steps"] if item["layer"] != "finalize"])
+    sealing = seeded_batch.run_batch(steps, project, runner=runner, previous=previous, issue_nonce=nonce,
+                                     layers=SEAL_LAYERS)
+    combined = dict(record, status=sealing["status"], failed_layer=sealing["failed_layer"],
+                    steps=[*record["steps"], *sealing["steps"]])
+    seeded_batch.write_record(record_path, combined)
+    return combined
+
+
 # How the accepted Make's checks ran, for the Make record (ADR 0098): the
 # batch passed and finalized with no native turn, or a native repair turn
 # proposed Make and the host reran the batch's check layers as the gate.
@@ -286,18 +321,32 @@ def gate_proposal(run_root: Path, host_state_root: Path, checkpoint_sha256: str,
     outcome = Path(run_root) / AGENT_OUTCOME
     if (attempt is not None and attempt.get("status") == seeded_batch.PASS and outcome.is_file()
             and attempt.get("proposal_sha256") == _sha256(outcome.read_bytes())):
-        return _gate_summary(FINALIZED_BY_BATCH, attempt["record_sha256"])
+        return _gate_summary(attempt.get("gate", FINALIZED_BY_BATCH), attempt["record_sha256"])
     check_tool(run_root)
     steps, project = plan(run_root, round_index)
+    product_root = Path(run_root) / ("artifacts/make/r%04d/product" % round_index)
+    sealed = _tree_digest(product_root)
     record_path = Path(run_root) / RUN_RECORD
+    batch_runner = runner or seeded_batch.environment_runner(environment(run_root))
+    nonce = lambda component: issue_seed_nonce(host_state_root, component)  # noqa: E731
     record = seeded_batch.run_batch(
-        steps, project, runner=runner or seeded_batch.environment_runner(environment(run_root)),
-        previous=_previous(run_root, project), issue_nonce=lambda component: issue_seed_nonce(host_state_root, component),
+        steps, project, runner=batch_runner, previous=_previous(run_root, project), issue_nonce=nonce,
         record_path=record_path, layers=CHECK_LAYERS)
+    if record["status"] == seeded_batch.PASS and _tree_digest(product_root) != sealed:
+        record = _reseal(steps, project, record, record_path, batch_runner, nonce)
     if record["status"] == seeded_batch.HARNESS_FAILURE:
         raise _stop(record)
     record_sha256 = _sha256(record_path.read_bytes())
     if record["status"] == seeded_batch.PASS:
+        if any(item["layer"] == "finalize" for item in record["steps"]):
+            if not outcome.is_file():
+                raise SeededBatchHarnessFailure("seeded batch: the finalizer passed but wrote no %s" % AGENT_OUTCOME)
+            _write(_attempt_path(host_state_root, checkpoint_sha256),
+                   {"schema_version": 1, "checkpoint_sha256": checkpoint_sha256, "status": seeded_batch.PASS,
+                    "record_sha256": record_sha256, "executor": "host-batch", "gate": GATED_BY_BATCH,
+                    "proposal_sha256": _sha256(outcome.read_bytes())})
+            raise SeededBatchProposalResealed(
+                "the seeded batch's checks rewrote the product tree; the host resealed it")
         return _gate_summary(GATED_BY_BATCH, record_sha256)
     packet = seeded_batch.failure_packet(record, record_sha256, record_path=RUN_RECORD)
     _write(_attempt_path(host_state_root, checkpoint_sha256),
