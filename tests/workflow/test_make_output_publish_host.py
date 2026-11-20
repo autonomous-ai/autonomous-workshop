@@ -179,6 +179,23 @@ class MakeOutputPublishHostTest(unittest.TestCase):
             "print_settings": "Workshop prints in PETG.",
             "assembly": "1. Press the cork in.",
         })
+        self.assertNotIn("print_overrides", release.product)
+
+    def test_a_new_publication_carrier_seals_the_contracts_infill(self):
+        self.run.host_state_root = self.fixture.run_root / "private-state"
+        self.run.host_state_root.mkdir()
+        self.checkpoint.stage_artifacts = {}
+        self.checkpoint.status = "active"
+        self.contract_path.unlink()
+        contract = {"schema_version": 8, "prose": [
+            {"heading": "Print stances and details", "text": (
+                "Workshop prints with a 0.4 mm nozzle in PETG.\n"
+                "Print settings (owner's cost choice): 8% infill in every part."
+            )},
+        ]}
+        self.seal_wish({"design_contract": contract})
+        release = native_run._prepare_spark_publication(self.run, self.checkpoint, self.fixture.made)
+        self.assertEqual(release.product["print_overrides"], {"infill_percent": 8})
 
     def test_partial_contract_with_any_factory_intent_cannot_be_replaced(self):
         self.run.host_state_root = self.fixture.run_root / "private-state"

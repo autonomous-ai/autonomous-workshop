@@ -40,6 +40,12 @@ only the sealed page's words, including the optional `design_notes` of a Spark
 page. Factory's `print_specs.materials` is its own slicing default: no import
 field sets it.
 
+`project.json` also carries the sealed page's optional `print_overrides`
+object (`{"infill_percent": 8}`): the Design Contract's infill, which Factory
+measures, prices and prints the design at instead of its default 15%.
+Factory reads it as a setting, not as words for its drafter. See ADR 0093's
+2026-11-05 amendment.
+
 Multipart occurrence transport remains optional. When the complete Factory
 sidecar, or the exact hash-bound native CAD descriptor and product inventory
 from which it is derived, validates, the adapter additionally writes Factory's

@@ -181,3 +181,26 @@ or the steps in `project.json`, the design notes the drafter reads in full.
   unchanged.
 - This informs Factory's drafter; it does not set a field. Whether a page shows
   the material or steps stays Factory's, and no Workshop gate claims it.
+
+## Amendment: the contract's infill is a Factory print override (2026-11-05)
+
+Factory measured, priced and printed every design at its shop process's 15%
+infill. The Beaver Coaster Keeper's contract says "8% infill in every part",
+so its price paid for filament nobody extrudes. Factory now accepts a
+per-design override in `project.json`'s `print_overrides` object, measures
+the design at it and shows it to the print side as `print_settings`.
+
+- A new Spark page may seal an optional `print_overrides` object, which the
+  Factory adapter copies into `project.json` under that key, beside the
+  design notes. Its `infill_percent` is the one `N% infill` that the
+  contract's `Print` prose sections state, with owner amendments applied.
+- A contract that states no infill sends no override, and Factory keeps 15%.
+  A contract that states two different infills, or one that is not a whole
+  percent from 5 to 100, is refused at Release: Factory prints a design at
+  one infill and refuses anything else.
+- Like the notes, the override lives in the sealed page, so a Release already
+  sealed keeps its exact bytes. `tools/publish_direct.py` has no contract and
+  sends none.
+- Workshop states the override; it does not claim that the shop printed at
+  it. Whether an order is printed at the design's infill is Factory's and
+  the operator's.
