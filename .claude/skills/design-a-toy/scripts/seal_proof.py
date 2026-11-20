@@ -1022,8 +1022,13 @@ def verify(args) -> list[str]:
     problems += ["missing: %s" % path for path in sorted(set(sealed) - set(current))]
     problems += ["extra: %s" % path for path in sorted(set(current) - set(sealed))]
     problems += ["changed: %s" % path for path in sorted(set(sealed) & set(current)) if sealed[path] != current[path]]
-    if args.contract and sha256(Path(args.contract)) != document.get("contract_sha256"):
-        problems.append("the contract's sha256 is not the sealed contract_sha256")
+    if args.contract:
+        # The seal binds seed_contract_sha256 (no build name line, no Bought
+        # Parts block), the hash `workshop wish --seed-source` checks.
+        from workshop.wish.seed import seed_contract_sha256
+        text = Path(args.contract).read_text(encoding="utf-8")
+        if seed_contract_sha256(text) != document.get("contract_sha256"):
+            problems.append("the contract's sha256 is not the sealed contract_sha256")
     return problems
 
 
