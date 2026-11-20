@@ -125,6 +125,33 @@ class ProofDiffPartTest(unittest.TestCase):
         self.assertEqual(part["boolean"], "failed")
         self.assertTrue(part["passed"])
 
+    def test_cut_that_calls_coincident_copies_disjoint_counts_as_failed(self) -> None:
+        # Miami kit T21 kiosk ceiling, 2026-11-20: both cuts of two imported
+        # copies of one valid solid returned each operand whole (OCCT read
+        # them as disjoint), which keeps A - B = only_A - only_B. Their fuse
+        # is one copy's volume, not the sum, so the cut was wrong.
+        def disjoint(a, b):
+            return a.volume, b.volume
+
+        a, b = self._pair(_cube(), _cube())
+        (part,) = compare(a, b, boolean=disjoint)["parts"]
+        self.assertEqual(part["boolean"], "failed")
+        self.assertIsNone(part["two_way"])
+        self.assertTrue(part["passed"])
+
+    def test_disjoint_cut_that_the_fuse_confirms_still_fails_on_two_way(self) -> None:
+        def disjoint(a, b):
+            return a.volume, b.volume
+
+        def apart(a, b):
+            return a.volume + b.volume
+
+        a, b = self._pair(_cube(), _cube())
+        (part,) = compare(a, b, boolean=disjoint, union=apart)["parts"]
+        self.assertEqual(part["boolean"], "ok")
+        self.assertAlmostEqual(part["two_way"], 2.0, places=6)
+        self.assertFalse(part["passed"])
+
     def test_surface_deviation_is_reported_but_fails_only_with_a_limit(self) -> None:
         dent = bd.Pos(4, 4, 9.7) * bd.Solid.make_box(2, 2, 0.3)  # 1.2 mm3, 0.3 mm deep
         a, b = self._pair(_cube(), _cube() - dent)

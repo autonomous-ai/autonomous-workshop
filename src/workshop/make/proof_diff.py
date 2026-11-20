@@ -23,7 +23,9 @@ decision; on the K4 keycap set the three criteria above pass the v01 face
 drift (Grumpy two-way 0.77%) that the surface deviation shows as 0.6 mm.
 
 When the Boolean cannot be computed (an exception, a non-finite or
-impossible volume, or a result that breaks ``A - B = only_A - only_B``), the Part reports ``boolean: "failed"`` and is judged on
+impossible volume, a result that breaks ``A - B = only_A - only_B``, or
+a cut that calls the Parts disjoint while their fuse is smaller than
+``A + B``), the Part reports ``boolean: "failed"`` and is judged on
 volume and bounding box alone; the report says so. This is a byte
 comparison with a fixed tolerance, not an engineering judgement: it never
 renders, never scores likeness, and never asks a model anything.
@@ -226,6 +228,10 @@ def _default_boolean(a, b) -> tuple[float, float]:
     return only_a, only_b
 
 
+def _default_union(a, b) -> float:
+    return a.fuse(b).volume
+
+
 def diff_part(
     name: str,
     a,
@@ -235,6 +241,7 @@ def diff_part(
     tolerance: Tolerance = Tolerance(),
     boolean: Callable[[Any, Any], tuple[float, float]] = _default_boolean,
     surface: Callable[[Any, Any], float] = surface_deviation,
+    union: Callable[[Any, Any], float] = _default_union,
 ) -> PartDiff:
     if align not in ALIGN_MODES:
         raise ProofDiffError(f"align must be one of {ALIGN_MODES}, not {align!r}")
@@ -286,6 +293,15 @@ def diff_part(
         )
         if bad:
             raise ArithmeticError("impossible Boolean volume")
+        slack = _IDENTITY_SLACK * max(volume_a, volume_b) + _VOLUME_EPS
+        if only_a > volume_a - slack and only_b > volume_b - slack:
+            # Both cuts returned their operand whole, so the kernel read the
+            # Parts as disjoint; the identity above still holds. Their fuse
+            # is then A + B. Coincident copies of one solid can come back
+            # this way (Miami kit T21, 2026-11-20) with a fuse of A alone.
+            together = float(union(a, b_aligned))
+            if not math.isfinite(together) or together < volume_a + volume_b - slack:
+                raise ArithmeticError("the cut calls the Parts disjoint; their fuse does not")
     except Exception:
         only_a = only_b = two_way = None
         status = "failed"
@@ -359,6 +375,7 @@ def compare(
     tolerance: Tolerance = Tolerance(),
     boolean: Callable[[Any, Any], tuple[float, float]] = _default_boolean,
     surface: Callable[[Any, Any], float] = surface_deviation,
+    union: Callable[[Any, Any], float] = _default_union,
 ) -> dict[str, Any]:
     """Compare an approved STEP (or directory) with a built one; return the report."""
 
@@ -388,6 +405,7 @@ def compare(
                 align=align,
                 tolerance=tolerance,
                 boolean=boolean,
+                union=union,
                 surface=surface,
             )
             parts.append(asdict(result))
