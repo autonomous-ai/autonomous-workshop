@@ -282,6 +282,15 @@ class SealProofTest(unittest.TestCase):
         self.assertEqual(self._verify("--contract", str(other)), 1)
         self.assertIn("not the sealed contract_sha256", self.stderr)
 
+    def test_verify_compares_the_contract_by_the_hash_the_seal_binds(self):
+        # Miami kit, 2026-11-20: the seal binds seed_contract_sha256, which
+        # leaves out a build-a-toy name line and the Bought Parts block, so
+        # verify --contract refused the very contract it had just sealed.
+        self.assertEqual(self._seal(), 0, self.stderr)
+        named = self.design / "NAMED.md"
+        named.write_text("Name this toy exactly: Body (V1).\n\n" + self.contract.read_text())
+        self.assertEqual(self._verify("--contract", str(named)), 0, self.stderr)
+
     def test_verify_refuses_a_tampered_manifest_and_a_symlink(self):
         self.assertEqual(self._seal(), 0, self.stderr)
         approval = json.loads((self.proof / "APPROVAL.json").read_text())
