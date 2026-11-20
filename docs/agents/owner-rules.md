@@ -383,7 +383,10 @@ Tree and Manual.
 - **Every manual step states each part's orientation.** Say in the text
   and show in the picture whether a part stands on its long edge or lies
   flat, and which face points where. A sub-assembly built lying down gets
-  a small "Finished" inset of it standing. Label plates by role ("B03
+  a small "When done" inset of it standing, once per sub-assembly in the
+  whole manual, at its first lying-down step: never again when it is
+  turned over or joined later (owner, 2026-11-20: a repeated inset for the
+  same ledges read as a puzzle). Label plates by role ("B03
   front", "B11 floor") where a lying plate could read as a base. Why: the
   owner could not tell whether the Amsterdam back-rests stand or lie, and
   read the pen tower's face-down front wall as its base (2026-11-15).
