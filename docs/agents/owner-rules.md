@@ -410,6 +410,15 @@ Tree and Manual.
   footprints and gates, not print physics: also run the print gates on
   every finished sheet cell, because a tab can print in air while
   `kit_sheets.py check` passes (Miami parapet ring, 2026-11-15).
+- **Run the full print gates on every Component before the seal.** The
+  seal's preflight (`seal_proof.py preflight`) runs only the cheap gates and
+  no print gates; `check_mesh`, `check_overhang` and `check_thickness` first
+  run inside the seal itself and again in the build's final verification,
+  each pass over an hour. Run them on each Component's `.step.py` yourself
+  (minutes each) and fix every wall, taper and overhang first. Why: the
+  Miami kit passed preflight, then the seal refused a 0.13 mm tooth and a
+  0.55 mm rim wall in the kiosk drum, costing another seal chain (owner,
+  2026-11-21).
 - **The play feature is the hero.** Size the scene so the mechanism reads
   first, for example by widening the canal so the drawbridge is large.
 - **A mechanism concept is not proven by a clash check.** Before
