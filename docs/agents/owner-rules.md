@@ -255,6 +255,15 @@ Tree and Manual.
   a part between two parts that are already fixed, and never ask for a
   blind insertion. Why: the first pen tower order made the user wedge a
   wall between two fixed walls.
+- **No part of another colour shows through the outside of the case.**
+  A tab into an outer wall, roof, base or back goes into a blind pocket
+  cut from the inside face, leaving at least 0.8 mm of skin outside, at
+  the same fixed fit. Hidden LEDs, their leads and lead holes do not show
+  either: from outside, a lit part reads as an even glowing shell. Check
+  close renders of every outer face, hollows and lit parts before showing
+  the owner. Why: the Orrery nook showed the floor's light tabs through
+  the walls, a hollow behind the globe niche and an open lamp chimney
+  (owner, 2026-11-21).
 - **Glue is the last resort.** Join with tabs and slots, pegs, half-laps,
   cross-laps or snaps at the fits above. List any remaining glue joint with
   its reason. Why: the owner counts glue as a design failure; Amsterdam
