@@ -25,7 +25,9 @@ Three findings, from one voxel sampling of the closed surface:
 Thickness is measured by marching inward along each sample's own normal until
 the ray leaves the material, so it is wall thickness in the direction the wall
 is actually crossed -- not distance to the medial axis, which halves it, and not
-a bounding measure. It is quantised to half the grid pitch, which is printed.
+a bounding measure. It is quantised to half the grid pitch, which is printed; a reading within
+two pitches of the minimum is re-measured exactly against the mesh triangles
+(`exact_exit`) and judged against the minimum itself.
 
 The mesh must be closed: inside and outside are meaningless otherwise. When
 the default tessellation is open, the B-rep decides what to say (`printlib.
@@ -237,6 +239,115 @@ def march(inside, origin, pitch, points, directions, limit):
     return travel, entered
 
 
+# A wall within this much of the limit is re-measured against the mesh itself.
+# The march can read low or high by one voxel at each face plus one step, so a
+# band of two pitches catches every reading the grid could have moved across it.
+EXACT_BAND_PITCHES = 2.0
+EXACT_CELL = 1.0        # mm; triangle bins for the exact re-measure
+EXACT_CHUNK = 20000     # rays per batch, to bound the ray-triangle pairs held
+
+
+def exact_exit(verts, faces, points, directions, reach, eps=1e-5):
+    """Exact distance along each ray to the first surface it crosses, or inf.
+
+    The march reads a wall on the voxel grid: each face lands on a cell
+    boundary up to half a pitch from where it is, and the exit is found one
+    half-pitch step late or early. Together that is more than the half pitch
+    the limit allows for, so a plane slab exactly at the minimum failed at some
+    grid offsets (0.80 mm read 0.667 at the default 0.133 pitch and 0.69 at
+    0.197) while a 0.75 mm one passed at 0.277. Rays near the limit are
+    therefore re-measured against the triangles themselves, which needs no
+    instrument margin. Only triangles binned within each ray's reach are tested.
+    """
+    tri = verts[faces]
+    lo = verts.min(axis=0) - EXACT_CELL
+    dims = np.ceil((verts.max(axis=0) + EXACT_CELL - lo) / EXACT_CELL).astype(np.int64) + 1
+
+    def key(c):
+        return (c[..., 0] * dims[1] + c[..., 1]) * dims[2] + c[..., 2]
+
+    tlo = np.floor((tri.min(axis=1) - lo) / EXACT_CELL).astype(np.int64)
+    thi = np.floor((tri.max(axis=1) - lo) / EXACT_CELL).astype(np.int64)
+    span = thi - tlo + 1
+    count = span.prod(axis=1)
+    owner = np.repeat(np.arange(len(tri)), count)
+    rank = np.arange(int(count.sum())) - np.repeat(np.cumsum(count) - count, count)
+    sy, sz = span[owner, 1], span[owner, 2]
+    cells = tlo[owner] + np.stack([rank // (sy * sz), (rank // sz) % sy, rank % sz], axis=1)
+    keys = key(cells)
+    order = np.argsort(keys, kind="stable")
+    keys, owner = keys[order], owner[order]
+
+    e1, e2 = tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0]
+    out = np.full(len(points), np.inf)
+    for start in range(0, len(points), EXACT_CHUNK):
+        sl = slice(start, start + EXACT_CHUNK)
+        P, D, R = points[sl], directions[sl], reach[sl]
+        a, b = P + D * eps, P + D * R[:, None]
+        clo = np.floor((np.minimum(a, b) - lo) / EXACT_CELL).astype(np.int64)
+        chi = np.floor((np.maximum(a, b) - lo) / EXACT_CELL).astype(np.int64)
+        rs = chi - clo + 1
+        rc = rs.prod(axis=1)
+        ray = np.repeat(np.arange(len(P)), rc)
+        rr = np.arange(int(rc.sum())) - np.repeat(np.cumsum(rc) - rc, rc)
+        ry, rz = rs[ray, 1], rs[ray, 2]
+        rk = key(clo[ray] + np.stack([rr // (ry * rz), (rr // rz) % ry, rr % rz], axis=1))
+        first = np.searchsorted(keys, rk, side="left")
+        last = np.searchsorted(keys, rk, side="right")
+        n = last - first
+        pr = np.repeat(ray, n)
+        pt = owner[np.repeat(first, n) + (np.arange(int(n.sum())) - np.repeat(np.cumsum(n) - n, n))]
+        if len(pr) == 0:
+            continue
+        # Moller-Trumbore on every (ray, triangle) pair
+        d = D[pr]
+        h = np.cross(d, e2[pt])
+        det = np.einsum("ij,ij->i", e1[pt], h)
+        ok = np.abs(det) > 1e-12
+        inv = np.where(ok, 1.0 / np.where(ok, det, 1.0), 0.0)
+        s = P[pr] - tri[pt, 0]
+        u = inv * np.einsum("ij,ij->i", s, h)
+        q = np.cross(s, e1[pt])
+        v = inv * np.einsum("ij,ij->i", d, q)
+        t = inv * np.einsum("ij,ij->i", e2[pt], q)
+        hit = ok & (u >= 0) & (v >= 0) & (u + v <= 1) & (t > eps) & (t <= R[pr])
+        best = np.full(len(P), np.inf)
+        np.minimum.at(best, pr[hit], t[hit])
+        out[sl] = best
+    return out
+
+
+def refine_exact(verts, faces, points, directions, thickness, min_wall, pitch):
+    """Replace the march's reading with the exact one wherever it decides the gate.
+
+    Returns the thickness array and a mask of the samples it re-measured. A ray
+    whose exact exit is not found within its reach keeps its grid reading.
+    """
+    thickness = thickness.copy()
+    band = min_wall + EXACT_BAND_PITCHES * pitch
+    near = np.flatnonzero(thickness < band)
+    exact = np.zeros(len(thickness), dtype=bool)
+    if near.size:
+        reach = np.maximum(thickness[near], min_wall) + EXACT_BAND_PITCHES * pitch
+        got = exact_exit(verts, faces, points[near], directions[near], reach)
+        found = np.isfinite(got)
+        thickness[near[found]] = got[found]
+        exact[near[found]] = True
+    return thickness, exact
+
+
+# The report states a thickness to 0.01 mm. An exact reading fails when it is
+# under the minimum at that resolution: a 0.80 mm shell's chords read 0.7998,
+# which prints as 0.80 and is the minimum; 0.79 is not.
+EXACT_RESOLUTION = 0.005
+
+
+def thin_mask(thickness, exact, min_wall, pitch):
+    """Samples under the minimum: exact readings against the minimum at the
+    report's resolution, grid readings against the instrument's limit."""
+    return np.where(exact, thickness < min_wall - EXACT_RESOLUTION, thickness < thin_limit(min_wall, pitch))
+
+
 def thin_regions(points, weights, thickness, thin, link, limit=6,
                  min_wall=None, pitch=None):
     """Group the sub-minimum samples into distinct regions, worst first.
@@ -379,8 +490,11 @@ def _measure(tris, min_wall, wall, pitch):
     span = float(np.linalg.norm(verts.max(axis=0) - verts.min(axis=0)))
     thickness, entered = march(inside, origin, pitch, points, directions, span)
     good = entered & np.isfinite(thickness)
+    tk, exact = refine_exact(verts, faces, points[good], directions[good], thickness[good], min_wall, pitch)
+    thickness = thickness.copy()
+    thickness[good] = tk
     reach = distance_transform_edt(inside, sampling=pitch)
-    thin = thickness[good] < thin_limit(min_wall, pitch)
+    thin = thin_mask(tk, exact, min_wall, pitch)
     regions, found = ([], 0)
     if thin.any():
         regions, found = thin_regions(points[good], weights[good], thickness[good], thin,
@@ -389,8 +503,8 @@ def _measure(tris, min_wall, wall, pitch):
     return {
         "median": float(np.median(thickness[good])),
         "regions": regions,
-        "thin_share": float(weights[good][thickness[good] < thin_limit(min_wall, pitch)].sum()
-                            / weights[good].sum()),
+        "thin_share": float(weights[good][thin].sum() / weights[good].sum()),
+        "exact": int(exact.sum()),
         "hollow": float((reach > wall + pitch / 2).sum()) * pitch ** 3,
         "solid": float(inside.sum()) * pitch ** 3,
     }
@@ -583,6 +697,7 @@ def main():
     thickness, entered = march(inside, origin, pitch, points, directions, span)
     good = entered & np.isfinite(thickness)
     thickness, weights, points = thickness[good], weights[good], points[good]
+    thickness, exact = refine_exact(verts, faces, points, directions[good], thickness, min_wall, pitch)
     total_area = float(weights.sum())
 
     from scipy.ndimage import distance_transform_edt, label
@@ -615,9 +730,9 @@ def main():
     # instrument, not the geometry. Fail on what is below the limit by more
     # than the instrument can explain, and say so in the label.
     step = pitch / 2
-    thin = thickness < thin_limit(min_wall, pitch)
+    thin = thin_mask(thickness, exact, min_wall, pitch)
     thin_area = float(weights[thin].sum())
-    marginal = int(((thickness >= thin_limit(min_wall, pitch)) & (thickness < min_wall)).sum())
+    marginal = int((~exact & (thickness >= thin_limit(min_wall, pitch)) & (thickness < min_wall)).sum())
     regions, region_count = ([], 0)
     if thin.any():
         regions, region_count = thin_regions(points, weights, thickness, thin,
@@ -677,7 +792,8 @@ def main():
 
     head = (f"{entry.name}: {solid_volume / 1000:.2f} cm3 solid, grid {pitch:.3f} mm "
             f"({inside.shape[0]}x{inside.shape[1]}x{inside.shape[2]}), "
-            f"{len(thickness)} surface samples, thickness resolved to {pitch / 2:.3f} mm")
+            f"{len(thickness)} surface samples, thickness resolved to {pitch / 2:.3f} mm, "
+            f"{int(exact.sum())} near the limit measured exactly on the mesh")
     print(head)
     failed = False
     for status, name, detail in checks:
