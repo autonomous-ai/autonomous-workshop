@@ -107,6 +107,18 @@ class PrintSheetLayoutTest(unittest.TestCase):
         with Image.open(out / "sheet-paper-1.png") as preview:
             self.assertEqual(preview.size, (827, 1170))  # A4 at 100 dpi, rounded up
 
+    def test_only_a_sheet_with_a_fold_tells_the_reader_to_fold(self):
+        contract = _contract()
+        self.write_art(contract)
+        sheets, _ = self.tool["layout"](contract)
+        lines = {sheet["sheet"]: self.tool["sheet_instruction"](sheet) for sheet in sheets}
+        folded = {sheet["sheet"] for sheet in sheets
+                  if any(place["shape"]["folds"] for place in sheet["pieces"])}
+        self.assertTrue(folded and folded != set(lines))
+        for name, line in lines.items():
+            self.assertEqual("fold on dashed lines" in line, name in folded, name)
+            self.assertTrue(line.startswith("Print at 100% (actual size). Cut on solid lines"))
+
     def test_the_same_inputs_give_the_same_bytes(self):
         contract = _contract()
         self.write_art(contract)

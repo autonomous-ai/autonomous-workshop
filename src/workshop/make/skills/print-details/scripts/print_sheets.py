@@ -331,6 +331,15 @@ def _to_page(px, py, rotated, place):
     return place["x"] + place["placed_w"] - py, place["y"] + px
 
 
+def sheet_instruction(sheet: dict) -> str:
+    """The sheet's printing line; it names fold lines only on a sheet that has one."""
+
+    line = "Print at 100% (actual size). Cut on solid lines"
+    if any(place["shape"]["folds"] for place in sheet["pieces"]):
+        return line + ", fold on dashed lines."
+    return line + "."
+
+
 def draw(contract: dict, art_dir: Path, sheets: list, pdf_path: Path) -> None:
     from reportlab.lib.utils import ImageReader
     from reportlab.pdfgen import canvas as pdf_canvas
@@ -347,8 +356,7 @@ def draw(contract: dict, art_dir: Path, sheets: list, pdf_path: Path) -> None:
         canvas.drawString(_mm(MARGIN_MM), _mm(top - 4), "%s  -  sheet %s  -  %s" % (
             contract.get("title", ""), sheet["sheet"], stocks[sheet["stock"]]["name"]))
         canvas.setFont("Helvetica", 6.5)
-        canvas.drawString(_mm(MARGIN_MM), _mm(top - 8),
-                          "Print at 100% (actual size). Cut on solid lines, fold on dashed lines.")
+        canvas.drawString(_mm(MARGIN_MM), _mm(top - 8), sheet_instruction(sheet))
         bar_x = PAGE_MM[0] - MARGIN_MM - SCALE_BAR_MM
         canvas.setLineWidth(_mm(0.3))
         canvas.line(_mm(bar_x), _mm(top - 6), _mm(bar_x + SCALE_BAR_MM), _mm(top - 6))
