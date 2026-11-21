@@ -10416,6 +10416,17 @@ def _process_agent_outcome_inner(
                     subject_sha256=subject_sha256,
                     context=context,
                 )
+        except seeded_batch_host.SeededBatchProposalResealed:
+            # The gate's checks passed and the host resealed the tree they
+            # rewrote: evaluate the fresh proposal, which it accepts unrun.
+            return _process_agent_outcome_inner(
+                run,
+                checkpoint,
+                subject_sha256=subject_sha256,
+                context=context,
+                pending_proposal=None,
+                timing_observer=timing_observer,
+            )
         except NativeCadGateError as rejection:
             persisted = _persist_cad_gate_rejection(
                 run, checkpoint, proposal, rejection

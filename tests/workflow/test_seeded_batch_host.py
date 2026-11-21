@@ -20,6 +20,7 @@ import json
 import tempfile
 import types
 import unittest
+from unittest import mock
 from pathlib import Path, PurePosixPath
 
 from tests.skills.test_seal_proof import SEED_PRODUCT
@@ -73,6 +74,15 @@ class FakeRunner:
             report = Path(argv[argv.index("--report") + 1])
             report.parent.mkdir(parents=True, exist_ok=True)
             report.write_text("- Result: **%s** (exit 0)\n" % self.verdict)
+        return RunResult(0, "ok")
+
+
+class QuietRunner(FakeRunner):
+    """Every step passes and writes nothing: the report the last batch
+    wrote still holds."""
+
+    def __call__(self, argv, cwd, timeout):
+        self.calls.append(list(argv))
         return RunResult(0, "ok")
 
 
@@ -287,17 +297,75 @@ class SeededBatchHostTest(unittest.TestCase):
         self._run({"part_lid.step.py": RunResult(1, "lid fails")})
         (self.run_root / host.AGENT_OUTCOME).write_text('{"proposal": "repaired"}\n')
         runner = FakeRunner(self.run_root)
-        summary = host.gate_proposal(self.run_root, self.host_state, CHECKPOINT, 1, runner=runner)
+        with self.assertRaises(host.SeededBatchProposalResealed):
+            host.gate_proposal(self.run_root, self.host_state, CHECKPOINT, 1, runner=runner)
+        ran = [" ".join(argv) for argv in runner.calls]
+        self.assertTrue(any("part_lid.step.py" in line for line in ran))
+        self.assertFalse(any("part_body.step.py" in line for line in ran), "an unchanged pass is reused")
+        self.assertFalse(any("prepare" in argv for argv in runner.calls), "the gate never re-copies the seed")
+        # The rerun final verification rewrote its report inside the tree the
+        # native proposal sealed (Miami Deco, 2026-11-20: every proposal was
+        # refused as a changed product tree), so the host resealed it.
+        self.assertTrue(any("stage_proposal.py" in line for line in ran))
+        self.assertEqual(product_tree(self.run_root), runner.sealed_tree)
+        self.assertEqual((self.run_root / host.AGENT_OUTCOME).read_text(), '{"proposal": 1}\n')
+        # Read again, the fresh proposal is the gate's own: it passes unrun,
+        # and the Make record still shows a native turn proposed this Make.
+        again = FakeRunner(self.run_root)
+        summary = host.gate_proposal(self.run_root, self.host_state, CHECKPOINT, 1, runner=again)
+        self.assertEqual(again.calls, [])
         self.assertEqual((summary["executor"], summary["proposed_by"], summary["gate"]),
                          ("host-batch", "native-turn", host.GATED_BY_BATCH))
         record = self.run_root / host.RUN_RECORD
         self.assertEqual(summary["record_sha256"], host._sha256(record.read_bytes()))
-        ran = [" ".join(argv) for argv in runner.calls]
-        self.assertTrue(any("part_lid.step.py" in line for line in ran))
-        self.assertFalse(any("part_body.step.py" in line for line in ran), "an unchanged pass is reused")
-        for absent in ("seeded_package", "stage_proposal.py"):
-            self.assertFalse(any(absent in line for line in ran), "the gate never re-copies the seed or "
-                                                                   "re-finalizes: %s" % absent)
+        self.assertEqual([item["layer"] for item in json.loads(record.read_bytes())["steps"]][-1], "finalize")
+
+    def test_a_gate_rerun_that_leaves_the_tree_alone_does_not_reseal(self):
+        self._run({"part_lid.step.py": RunResult(1, "lid fails")})
+        (self.run_root / host.AGENT_OUTCOME).write_text('{"proposal": "repaired"}\n')
+        # The native turn's own final verification wrote the report the gate's rerun reads.
+        report = self.run_root / "artifacts/make/r0001/product/cad/measure/verification-pipeline.md"
+        report.parent.mkdir(parents=True, exist_ok=True)
+        report.write_text("- Result: **PASS** (exit 0)\n")
+        before = product_tree(self.run_root)
+        runner = QuietRunner(self.run_root)
+        summary = host.gate_proposal(self.run_root, self.host_state, CHECKPOINT, 1, runner=runner)
+        self.assertEqual(summary["gate"], host.GATED_BY_BATCH)
+        self.assertTrue(runner.calls, "the failed check reran")
+        self.assertFalse(any("stage_proposal.py" in item for argv in runner.calls for item in argv))
+        self.assertEqual(product_tree(self.run_root), before)
+        self.assertEqual((self.run_root / host.AGENT_OUTCOME).read_text(), '{"proposal": "repaired"}\n')
+
+    def test_a_resealing_failure_is_a_rejection_or_a_harness_stop(self):
+        self._run({"part_lid.step.py": RunResult(1, "lid fails")})
+        (self.run_root / host.AGENT_OUTCOME).write_text('{"proposal": "repaired"}\n')
+        runner = FakeRunner(self.run_root, {"stage_proposal.py": RunResult(-9, "")})
+        with self.assertRaises(host.SeededBatchHarnessFailure):
+            host.gate_proposal(self.run_root, self.host_state, CHECKPOINT, 1, runner=runner)
+        self.assertEqual((self.run_root / host.AGENT_OUTCOME).read_text(), '{"proposal": "repaired"}\n')
+
+    def test_a_resealed_proposal_is_read_again_and_evaluated(self):
+        class Done(Exception):
+            pass
+
+        proposals = iter([types.SimpleNamespace(tag=tag, outcome=types.SimpleNamespace(status="ready"))
+                          for tag in ("native", "resealed")])
+        seen = []
+
+        def evaluate(proposal, **_):
+            seen.append(proposal.tag)
+            if len(seen) == 1:
+                raise host.SeededBatchProposalResealed("resealed")
+            raise Done()
+
+        run = types.SimpleNamespace(run_root=self.run_root, validate_outcome=lambda outcome: None)
+        checkpoint = types.SimpleNamespace(stage="make", checkpoint_sha256=CHECKPOINT, product_id="p")
+        with mock.patch.object(native_run, "read_agent_outcome_proposal", lambda *a, **k: next(proposals)), \
+                mock.patch.object(native_run, "_evaluate_make_stage", evaluate):
+            with self.assertRaises(Done):
+                native_run._process_agent_outcome_inner(run, checkpoint, subject_sha256="s", context={},
+                                                        pending_proposal=None, timing_observer=None)
+        self.assertEqual(seen, ["native", "resealed"])
 
     def test_the_make_receipt_reads_how_the_batch_ran(self):
         """The accepted Make's gate seals the summary among its checks; the
