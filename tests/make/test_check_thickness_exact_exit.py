@@ -66,6 +66,15 @@ class ExactExitTest(unittest.TestCase):
         # nothing within reach reads inf, so the grid reading stands
         self.assertTrue(np.isinf(GATE.exact_exit(verts, faces, pts, dirs, np.array([0.5, 0.5]))).all())
 
+    def test_overlapping_solids_read_their_union(self):
+        # a kit sheet cell: a copy (Z 0.998 to 3.0) sitting on a 1.0 gate bar as a separate solid, 0.002 into
+        # it. A ray down from the bar's buried top crosses the copy's bottom first; the union is what prints.
+        plate = GATE._slab(0, 0, 0.998, 20, 10, 3.0)
+        bar = GATE._slab(5, 2, 0, 15, 8, 1.0)
+        for pitch in (0.1333, 0.197):
+            walls, _ = _walls(plate + bar, pitch)
+            self.assertEqual(walls, [], pitch)
+
     def test_curved_shell_at_the_minimum_passes(self):
         shell = Pos(0, 0, 0) * Cylinder(10.0, 12.0).cut(Cylinder(9.2, 12.0))
         verts, faces = shell.tessellate(0.02, 0.1)

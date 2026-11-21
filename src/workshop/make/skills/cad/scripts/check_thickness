@@ -247,8 +247,16 @@ EXACT_CELL = 1.0        # mm; triangle bins for the exact re-measure
 EXACT_CHUNK = 20000     # rays per batch, to bound the ray-triangle pairs held
 
 
-def exact_exit(verts, faces, points, directions, reach, eps=1e-5):
-    """Exact distance along each ray to the first surface it crosses, or inf.
+def exact_exit(verts, faces, points, directions, reach, begin=None, near=None, eps=1e-5):
+    """Exact distance along each ray to the surface it leaves the material by, or inf.
+
+    Only crossings that leave a solid count (the ray runs along the face's
+    outward normal), between `begin` and `reach`. Without `near` the first one
+    is taken; with it, the one nearest `near`, the grid's own exit. An entry
+    may hold solids that overlap (a kit sheet cell: a copy and the gate bar
+    pressed 0.2 into it), and the first face a ray crosses can then be one
+    buried inside the other solid; the grid fills the union, so its exit says
+    which crossing is the surface.
 
     The march reads a wall on the voxel grid: each face lands on a cell
     boundary up to half a pitch from where it is, and the exit is found one
@@ -283,7 +291,8 @@ def exact_exit(verts, faces, points, directions, reach, eps=1e-5):
     for start in range(0, len(points), EXACT_CHUNK):
         sl = slice(start, start + EXACT_CHUNK)
         P, D, R = points[sl], directions[sl], reach[sl]
-        a, b = P + D * eps, P + D * R[:, None]
+        S = np.full(len(P), eps) if begin is None else np.maximum(begin[sl], eps)
+        a, b = P + D * S[:, None], P + D * R[:, None]
         clo = np.floor((np.minimum(a, b) - lo) / EXACT_CELL).astype(np.int64)
         chi = np.floor((np.maximum(a, b) - lo) / EXACT_CELL).astype(np.int64)
         rs = chi - clo + 1
@@ -310,9 +319,14 @@ def exact_exit(verts, faces, points, directions, reach, eps=1e-5):
         q = np.cross(s, e1[pt])
         v = inv * np.einsum("ij,ij->i", d, q)
         t = inv * np.einsum("ij,ij->i", e2[pt], q)
-        hit = ok & (u >= 0) & (v >= 0) & (u + v <= 1) & (t > eps) & (t <= R[pr])
+        leaving = np.einsum("ij,ij->i", d, np.cross(e1[pt], e2[pt])) > 0
+        hit = ok & leaving & (u >= 0) & (v >= 0) & (u + v <= 1) & (t >= S[pr]) & (t <= R[pr])
+        hr, ht = pr[hit], t[hit]
+        score = ht if near is None else np.abs(ht - near[sl][hr])
+        order = np.lexsort((score, hr))
+        rays, first_hit = np.unique(hr[order], return_index=True)
         best = np.full(len(P), np.inf)
-        np.minimum.at(best, pr[hit], t[hit])
+        best[rays] = ht[order][first_hit]
         out[sl] = best
     return out
 
@@ -328,8 +342,10 @@ def refine_exact(verts, faces, points, directions, thickness, min_wall, pitch):
     near = np.flatnonzero(thickness < band)
     exact = np.zeros(len(thickness), dtype=bool)
     if near.size:
-        reach = np.maximum(thickness[near], min_wall) + EXACT_BAND_PITCHES * pitch
-        got = exact_exit(verts, faces, points[near], directions[near], reach)
+        grid = thickness[near]
+        reach = grid + EXACT_BAND_PITCHES * pitch
+        got = exact_exit(verts, faces, points[near], directions[near], reach,
+                         begin=grid - EXACT_BAND_PITCHES * pitch, near=grid)
         found = np.isfinite(got)
         thickness[near[found]] = got[found]
         exact[near[found]] = True
