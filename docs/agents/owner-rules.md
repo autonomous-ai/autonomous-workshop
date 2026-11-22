@@ -373,6 +373,22 @@ Tree and Manual.
   weak and harder to build. Why: the owner asked for the Amsterdam pen
   tower's floor and side walls to join as one frame first, and its four
   crown parapets to join at the corners (2026-11-16).
+
+  A joint means **both** plates are cut so they lock into each other: a
+  half-lap or cross-lap (each plate slotted half its height), a finger
+  joint (each end cut into fingers that interleave), or a tab that passes
+  through a slot in the other plate. These are not joints: a plate end
+  pushed into a corner groove or rebate of the other plate, or a tab on
+  one plate pressed against the other plate's plain face. Every manual
+  step must also hold the part it adds: a part let go of right after it
+  goes in stays where it is, held by its joint, without waiting for a
+  later step or a hand. Stacked parts (shelves and the rows they carry)
+  build from the bottom up, each layer locking into the one below. Why:
+  in the Kyoto manual review the owner found plate ends set into corner
+  grooves again (the shrine hall, the storehouse skirts, the tea deck
+  walls), after asking for real joints several times, a barrel rack whose
+  rows were only laid in, and stone lanterns whose post frame did not
+  join their hat (2026-11-22).
 - **Keep a part loose only after trying to build it from plates.** Boxes,
   trays, cups, rings and drums can be built from flat sheet plates, as
   Rolife does. For every loose part, record the plate build you tried and
