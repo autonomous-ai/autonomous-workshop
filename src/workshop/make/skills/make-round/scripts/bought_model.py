@@ -1490,13 +1490,22 @@ def _below(nodes, start: int, depth: int):
         yield node
 
 
+def _only_removed(nodes, start: int, is_removed) -> bool:
+    """Whether the assembly at ``start`` holds leaves and every one is
+    removed: it is cut whole, or the writer would keep it as an empty body."""
+
+    leaves = [node for node in _below(nodes, start, nodes[start][5]) if not node[4]]
+    return bool(leaves) and all(is_removed(node[3]) for node in leaves)
+
+
 def write_printed_only(scene: Path, out: Path, removed_name=None) -> list[str]:
     """Write ``scene`` without its bought group and bought leaves to ``out``;
     return the bought leaf names it removed, in file order.
 
     ``removed_name`` replaces the bought-name test: a kit's printed-only
     scene (Workshop ADR 0104, 2026-11-23) removes the leaves its
-    ``not-printed.json`` names instead."""
+    ``not-printed.json`` names instead. A group whose every leaf is removed
+    goes with them, never left behind as an empty body."""
 
     is_removed = _is_bought if removed_name is None else removed_name
 
@@ -1508,7 +1517,7 @@ def write_printed_only(scene: Path, out: Path, removed_name=None) -> list[str]:
     index = 0
     while index < len(nodes):
         label, parent, referred, name, assembly, depth = nodes[index]
-        if is_removed(name):
+        if is_removed(name) or (assembly and _only_removed(nodes, index, is_removed)):
             removed += _leaf_names(nodes, index)
             cut.append((label, parent, referred))
             below = list(_below(nodes, index, depth))

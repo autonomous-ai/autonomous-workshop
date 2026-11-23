@@ -665,7 +665,8 @@ checked where the whole toy is built.
     leaves `measure/not-printed.json` lists (`bought_model.py
     write_printed_only` with a name predicate). A Part the scene holds
     once may be listed with its `#1`; a listed body that is not exactly
-    one leaf fails the layout. `print.json` records it under
+    one leaf fails the layout. A group whose every leaf is listed goes
+    with them, so no empty group is left as a body. `print.json` records it under
     `printed_scene` (`step`, `sha256`, `scene`, `scene_sha256`,
     `removed`). Final verification does not count it as a stray STEP while
     `print.json` names its exact bytes.
