@@ -109,6 +109,37 @@ class PrintedSceneTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "missing"):
             check_printed_scene(alone, self.scene, self.listed)
 
+    def test_a_group_holding_only_listed_bodies_is_removed_with_them(self):
+        """The Amsterdam Proof keeps its steel pins in a ``drawbridge-pins``
+        group: cutting every pin must not leave the empty group behind as a
+        stray body."""
+
+        from build123d import Compound
+
+        pins = Compound(children=[pin("P01-pin-long#1", (60, 0, 0)), pin("P01-pin-long#2", (70, 0, 0))],
+                        label="drawbridge-pins")
+        self.scene = write_scene(self.project / "toy.step", [*self.parts, pins])
+        self.listed = ["P01-pin-long#1", "P01-pin-long#2"]
+        self.write_listed(self.listed)
+        record = kit_print.printed_scene(self.project)
+        self.assertEqual(record["removed"], sorted(self.listed))
+        printed = (self.project / "measure/kit/scene.step").read_bytes()
+        self.assertEqual(len(scene_bodies(printed)), 2)
+        self.assertNotIn(b"drawbridge-pins", printed)
+        self.assertNotIn(b"P01-pin-long", printed)
+        self.assertEqual(check_printed_scene(printed, self.scene, self.listed), 2)
+
+    def test_a_group_keeping_a_printed_body_stays(self):
+        from build123d import Compound
+
+        group = Compound(children=[pin("P01-pin-long", (60, 0, 0)), printed_box("T03-rail", at=(0.0, 40.0, 0.0))],
+                         label="drawbridge")
+        self.scene = write_scene(self.project / "toy.step", [*self.parts, group])
+        self.write_listed(["P01-pin-long#1"])
+        self.assertEqual(kit_print.printed_scene(self.project)["removed"], ["P01-pin-long#1"])
+        printed = (self.project / "measure/kit/scene.step").read_bytes()
+        self.assertEqual(check_printed_scene(printed, self.scene, ["P01-pin-long#1"]), 3)
+
     def test_the_predicate_removes_named_leaves_and_still_refuses_an_empty_cut(self):
         removed = bought_tool.write_printed_only(
             self.project / "toy.step", self.project / "out.step",

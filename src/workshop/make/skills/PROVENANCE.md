@@ -3073,7 +3073,9 @@ convention, so sealed STEPs and frozen runs keep their colours.
   `measure/not-printed.json` lists, through `bought_model.py
   write_printed_only`, which now takes an optional `removed_name`
   predicate (default: the `bought_` bodies, as before). `print.json`
-  records it under `printed_scene`.
+  records it under `printed_scene`. An assembly group whose every leaf is
+  removed (the Amsterdam Proof's `drawbridge-pins`) is cut whole, so the
+  written scene holds no empty group the read-back would count as a body.
 - **Local patch to upstream `cad`.** `verify_project`'s `_kit_print_step`
   also skips `measure/kit/scene.step` when `print.json`'s `printed_scene`
   names it with its current sha256. A resync must keep it.
