@@ -659,6 +659,34 @@ class PlanTest(unittest.TestCase):
             ListingUpdatePlan(reason="reprice", predicted_weight_g=-1.0,
                               predicted_weight_source="x", **base)
 
+    def test_a_kit_piece_count_is_checked_bound_and_requested(self):
+        from workshop.integrations.factory_listing import (
+            FactoryListingUpdate,
+            ListingState,
+            ListingUpdateBindings,
+            SliceState,
+        )
+
+        base = dict(reason="fix", slug=SLUG, source_primary_path="assembled.step",
+                    source_primary_sha256="0" * 64, kept_bodies=(), stripped_bodies=(),
+                    extra_materials=(), predicted_weight_g=320.4, predicted_weight_source="layout")
+        for bad in (0, "119", True):
+            with self.subTest(piece_count=bad), self.assertRaisesRegex(Exception, "piece count"):
+                ListingUpdatePlan(piece_count=bad, **base)
+        state = ListingState(
+            design={"slug": SLUG, "id": "d1", "current_history_id": "h1", "listing": {"price_cents": 3600}},
+            slice=SliceState("h1", "done", False, 320.4, None), live_primary_sha256=None)
+        plain, counted = ListingUpdatePlan(**base), ListingUpdatePlan(piece_count=119, **base)
+        # An update without a count keeps the code it always had.
+        self.assertNotIn("piece_count", plain.confirmation_document(state))
+        self.assertEqual(counted.confirmation_document(state)["piece_count"], 119)
+        self.assertNotEqual(plain.confirmation_code(state), counted.confirmation_code(state))
+        bindings = ListingUpdateBindings(b"zip", *(["1" * 64] * 8))
+        request = FactoryListingUpdate._request(counted, state, bindings, "lu-x", "owner")
+        self.assertEqual(request["listing_update"]["piece_count"], 119)
+        request = FactoryListingUpdate._request(plain, state, bindings, "lu-x", "owner")
+        self.assertNotIn("piece_count", request["listing_update"])
+
     def test_a_schema_1_record_gains_versions_once(self):
         record = {"schema_version": 1, "publication": {"slug": SLUG, "listing": {"price_cents": 4100}}}
         version = {"history_id": "h2", "price_after_cents": 2700}

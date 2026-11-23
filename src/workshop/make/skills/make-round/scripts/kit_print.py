@@ -22,8 +22,14 @@ priced and arranged as loose Parts; fused, it is one flat plate on one bed
 fails: some copy or gate touches nothing. ``measure/kit/print.json``
 records the file's sha256, the tree it was laid out for and the copies it
 holds. The host checks both against the sealed tree before Make is
-accepted, and Release ships the file as the Factory primary. A failure
-prints one ``FAIL`` line and exits 1.
+accepted, and Release ships the file under ``parts/``, the one set Factory
+prices. A failure prints one ``FAIL`` line and exits 1.
+
+It also writes ``measure/kit/scene.step`` (2026-11-23): the toy's assembly
+STEP without the Bought Part bodies ``measure/not-printed.json`` lists, every
+printed body exactly as the scene holds it. Release ships it as the root
+``assembled.step`` the shop's 3D viewer shows. ``print.json`` records it
+under ``printed_scene`` with the scene it was cut from and what it removed.
 """
 
 from __future__ import annotations
@@ -38,6 +44,8 @@ KIND = "kit-print-layout"
 SCHEMA_VERSION = 2
 STEP_PATH = "measure/kit/print.step"
 REPORT_PATH = "measure/kit/print.json"
+SCENE_STEP_PATH = "measure/kit/scene.step"
+NOT_PRINTED_PATH = "measure/not-printed.json"
 LOOSE = "loose"
 GAP_MM = 10.0
 ROW_MM = 600.0
@@ -122,6 +130,52 @@ def outer_shells(solid) -> int:
     return _sibling("kit_sheets").outer_shells(solid)
 
 
+def removed_names(requested: list, scene_names: list) -> dict:
+    """``{scene leaf name: not-printed body}``: each not-printed body
+    ``<Part>#<n>`` matched to exactly one scene leaf. A Part the scene holds
+    once may be written without its ``#1``."""
+
+    counts = {}
+    for name in scene_names:
+        counts[name] = counts.get(name, 0) + 1
+    found, errors = {}, []
+    for body in requested:
+        match = body
+        if body not in counts and body.endswith("#1"):
+            match = body[: -len("#1")]
+        if counts.get(match, 0) != 1 or match in found:
+            errors.append("%s is %d leaf bodies of the scene, not one" % (body, counts.get(match, 0)))
+            continue
+        found[match] = body
+    if errors:
+        raise ValueError("the not-printed bodies do not match the assembly STEP: " + "; ".join(errors))
+    return found
+
+
+def printed_scene(project: Path) -> dict:
+    """Write ``measure/kit/scene.step``: the assembly STEP without the
+    bodies ``measure/not-printed.json`` lists. Return its record."""
+
+    bought = _sibling("bought_model")
+    scene = bought._entry_scene(project)
+    listed = json.loads((project / NOT_PRINTED_PATH).read_text(encoding="utf-8"))
+    requested = [str(item["body"]) for item in listed.get("bodies") or []]
+    out = project / SCENE_STEP_PATH
+    out.parent.mkdir(parents=True, exist_ok=True)
+    if requested:
+        _tool, nodes = bought._walk(bought._read_xcaf(scene))
+        names = removed_names(requested, [node[3] for node in nodes if not node[4]])
+        removed = bought.write_printed_only(scene, out, removed_name=lambda name: name in names)
+        if sorted(removed) != sorted(names):
+            raise ValueError("the printed-only scene removed %s, not exactly the not-printed bodies %s"
+                             % (sorted(removed), sorted(names)))
+    else:
+        out.write_bytes(scene.read_bytes())
+    return {"step": SCENE_STEP_PATH, "sha256": hashlib.sha256(out.read_bytes()).hexdigest(),
+            "scene": scene.name, "scene_sha256": hashlib.sha256(scene.read_bytes()).hexdigest(),
+            "removed": sorted(requested)}
+
+
 def layout(project: Path) -> dict:
     sheets_tool = _sibling("kit_sheets")
     sheets_tool._runtime_paths()
@@ -188,7 +242,7 @@ def layout(project: Path) -> dict:
     report = {"kind": KIND, "schema_version": SCHEMA_VERSION, "tree_sha256": tree_tool.tree_digest(kit),
               "step": STEP_PATH, "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
               "sheets": sheets, "loose": loose, "copies": dict(sorted(copies.items())),
-              "bodies": sorted(names)}
+              "bodies": sorted(names), "printed_scene": printed_scene(project)}
     (project / REPORT_PATH).write_text(json.dumps(report, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return report
 
@@ -203,8 +257,8 @@ def main(argv=None) -> int:
     except Exception as error:  # noqa: BLE001 - the CLI boundary
         print("FAIL kit print layout: %s: %s" % (type(error).__name__, str(error)[:400]))
         return 1
-    print("kit print layout: %d bodies, %d Sheet(s), %d loose Part(s) -> %s"
-          % (len(report["bodies"]), len(report["sheets"]), len(report["loose"]), STEP_PATH))
+    print("kit print layout: %d bodies, %d Sheet(s), %d loose Part(s) -> %s; printed-only scene -> %s"
+          % (len(report["bodies"]), len(report["sheets"]), len(report["loose"]), STEP_PATH, SCENE_STEP_PATH))
     return 0
 
 

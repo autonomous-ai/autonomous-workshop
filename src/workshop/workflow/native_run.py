@@ -12556,6 +12556,7 @@ def update_native_run_listing(
             predicted_weight_source=predicted_grams_source,
             recorded_source_primary_sha256=latest.get("source_primary_sha256"),
             recorded_history_id=latest.get("history_id"),
+            piece_count=handoff.get("piece_count"),
         )
         try:
             credentials = _factory_credentials(verified.inventor_id)
@@ -12595,6 +12596,7 @@ def update_native_run_listing(
                 "source_path": printed.get("source_path") or primary["path"],
             },
             "stripped_bodies": list(plan.stripped_bodies),
+            "piece_count": plan.piece_count,
             "extra_materials": list(plan.extra_materials),
             "extras_cents": plan.extras_cents,
             "predicted_weight_g": plan.predicted_weight_g,

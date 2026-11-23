@@ -26,6 +26,10 @@
     byte): implemented, deterministic tests only. No Proof has sealed a
     Manual yet. `kit_manual` is an optional APPROVAL field and the schema
     stays 4, as with ADR 0105's `fit_table`.
+  - The 2026-11-23 amendment (the printed-only scene is the viewer model,
+    the layout ships under `parts/`, and the printed piece count is sent):
+    implemented, deterministic tests only, until the Amsterdam Listing
+    Update below records its live result.
 - **Date:** 2026-11-14
 - **Amends:** ADR 0092 (what a kit prints, which Manual ships, a kit's
   Bought Parts block), ADR 0095's 2026-11-07 amendment (the Bought Parts
@@ -638,6 +642,64 @@ checked where the whole toy is built.
   does not. The boardwalk's step then passes its component round.
 - **Unchanged.** Every Part the kernel can offset is swept exactly as
   before, and so is every input without `press_mm`.
+
+## Amendment 2026-11-23: the viewer shows the assembled kit; the layout is priced under `parts/`
+
+- **Problem.** Decision 4 shipped the print layout as the root
+  `assembled.step`, the only STEP. The shop's 3D viewer loads the design's
+  primary STEP, so the Amsterdam listing showed nine flat Sheets and the
+  loose Parts laid out in rows, not the canal it builds. The joinery house
+  listing shows its assembled model with a pieces file beside it: a root
+  scene and one STEP under a parts directory.
+- **Factory's rules this relies on** (panda-social-backend origin/main
+  `2a00b3d`, read 2026-11-23). The slicer (`internal/slicer/tree.go`)
+  prices only the shallowest `parts/` or `*_parts/` directory when one
+  exists and drops the `assembled.*` roll-up. The importer
+  (`services/import_extract.go`, `detectPrimaryByExt`) ranks any file
+  stemmed `assembled` or `asm` first as the primary, wherever it sits, so
+  no `parts/` file may be named so. A version import without
+  `piece_count` drops an earlier declared count (`services/import_version.go`).
+- **Rule.**
+  - Final verification's `kit_print.py layout` also writes
+    `measure/kit/scene.step`: the toy's assembly STEP without exactly the
+    leaves `measure/not-printed.json` lists (`bought_model.py
+    write_printed_only` with a name predicate). A Part the scene holds
+    once may be listed with its `#1`; a listed body that is not exactly
+    one leaf fails the layout. `print.json` records it under
+    `printed_scene` (`step`, `sha256`, `scene`, `scene_sha256`,
+    `removed`). Final verification does not count it as a stray STEP while
+    `print.json` names its exact bytes.
+  - The STEP is sealed by Make and checked by the host, not derived at
+    Release. Open CASCADE writes a scene's colour entities in a
+    pointer-dependent order, so a host-side cut gives other bytes on every
+    run, and the Listing Update's preview and confirm must bind the same
+    primary.
+  - Before Make acceptance the host (`workshop.make.kit_print`) checks that
+    the record was cut from the sealed `assembled.step`, removed exactly
+    the sealed tree's not-printed bodies, and is sealed with its hash. It
+    also checks that the file holds exactly every other scene leaf, each
+    with the scene's volume and area (`check_printed_scene`). The Make
+    record then adds `printed_scene_path`, `printed_scene_sha256` and
+    `pieces`: every printed Part as many times as the toy uses it, spares
+    left out.
+  - The Factory adapter ships that scene as the root `assembled.step`, the
+    primary the viewer shows, and the print layout byte for byte as
+    `parts/kit-print.step`, the one set Factory prices. The handoff check
+    requires exactly those two STEPs, with the layout bound by hash in the
+    product facts' `print_layout`. The magenta and `bought_` scans read
+    both files. The manual is unchanged. The first import and every
+    Listing Update send `piece_count`, bound in the ledger intent and the
+    Listing Update's confirmation code. The receipt records what Factory
+    reads back; no gate depends on it.
+- **Not in Workshop.** The listing's hero pill ("153 Pieces | Advanced
+  Level | Building Instructions" on the joinery house) is hand-written in
+  the design's `landing_page_ref` HTML (`lp-kit-1117`). It is not drawn
+  from `piece_count` or `manual_ref`, so a kit gains it only when that
+  page is edited.
+- **Unchanged.** A kit record without `printed_scene` (every run made
+  before this amendment) keeps decision 4's single layout primary, and so
+  does every non-kit. No gate is relaxed: the layout is still the exact
+  sealed file and still the only thing Factory weighs.
 
 ## Not decided here
 

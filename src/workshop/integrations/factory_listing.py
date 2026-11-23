@@ -267,8 +267,15 @@ class ListingUpdatePlan:
     predicted_weight_source: Optional[str] = None
     recorded_source_primary_sha256: Optional[str] = None
     recorded_history_id: Optional[str] = None
+    #: A kit's printed pieces (ADR 0104, 2026-11-23), sent with the version
+    #: so Factory keeps the count the buyer assembles; None sends none.
+    piece_count: Optional[int] = None
 
     def __post_init__(self) -> None:
+        if self.piece_count is not None and (
+            type(self.piece_count) is not int or self.piece_count < 1
+        ):
+            raise ContractError("a Listing Update piece count must be a positive whole number")
         if self.reason not in LISTING_UPDATE_REASONS:
             raise ContractError("--reason must be one of %s" % ", ".join(LISTING_UPDATE_REASONS))
         require_sha256(self.source_primary_sha256, "source primary sha256")
@@ -337,7 +344,7 @@ class ListingUpdatePlan:
         return found
 
     def confirmation_document(self, state: ListingState) -> dict[str, Any]:
-        return {
+        document = {
             "kind": "workshop.factory-listing-update-confirmation",
             "slug": state.slug,
             "design_id": state.design_id,
@@ -353,6 +360,9 @@ class ListingUpdatePlan:
             "predicted_weight_g": self.predicted_weight_g,
             "predicted_price_cents": self.predicted_price_cents,
         }
+        if self.piece_count is not None:
+            document["piece_count"] = self.piece_count
+        return document
 
     def confirmation_code(self, state: ListingState) -> Optional[str]:
         """A short code for exactly this update against exactly this state."""
@@ -515,6 +525,7 @@ class FactoryListingUpdate:
                 "predicted_weight_g": plan.predicted_weight_g,
                 "predicted_weight_source": plan.predicted_weight_source,
                 "predicted_price_cents": plan.predicted_price_cents,
+                **({} if plan.piece_count is None else {"piece_count": plan.piece_count}),
             },
         }
 
@@ -525,7 +536,8 @@ class FactoryListingUpdate:
         slug = sending.request["slug"]
         try:
             response = client.import_model_version(
-                slug, content=bindings.content, idempotency_key=sending.idempotency_key
+                slug, content=bindings.content, idempotency_key=sending.idempotency_key,
+                piece_count=sending.request["listing_update"].get("piece_count"),
             )
         except Exception:  # noqa: BLE001 - any loss leaves the outcome unknown
             unknown = self.ledger.mark_unknown(
@@ -655,6 +667,11 @@ class FactoryListingUpdate:
             "predicted_weight_g": update["predicted_weight_g"],
             **anchor,
         }
+        if update.get("piece_count") is not None:
+            # Recorded, not gated: Factory's answer is the evidence.
+            details["piece_count"] = update["piece_count"]
+            observed = design.get("piece_count")
+            details["piece_count_read_back"] = observed if type(observed) is int else None
         receipt = _factory_receipt(design, intent, details)
         receipt.assert_owner(owner_id)
         if not receipt.is_verified_public:

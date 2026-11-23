@@ -1749,6 +1749,28 @@ class FactoryReleaseTest(unittest.TestCase):
                         usage=usage,
                     )
 
+    def test_a_version_import_sends_a_kit_piece_count_only_when_given(self):
+        sealed = FactoryTransport()
+        self.writer(sealed)(self.context, self.release, self.manifest)
+        import_call = next(call for call in sealed.calls if call[1].endswith("/designs/import"))
+        handoff = multipart_parts(import_call[2], import_call[3])["file"][0]
+        sent = []
+
+        def transport(method, url, headers, body, timeout):
+            sent.append(multipart_parts(headers, body))
+            return HttpResponse(200, {}, b"{}")
+
+        client = FactoryClient(transport)
+        client.import_model_version("verified-toy", content=handoff, idempotency_key="k1", piece_count=119)
+        client.import_model_version("verified-toy", content=handoff, idempotency_key="k2")
+        self.assertEqual(sent[0]["piece_count"], [b"119"])
+        self.assertNotIn("piece_count", sent[1])
+        for bad in (0, -1, "119", 1.5, True):
+            with self.subTest(piece_count=bad), self.assertRaisesRegex(ContractError, "piece_count"):
+                client.import_model_version("verified-toy", content=handoff, idempotency_key="k3",
+                                            piece_count=bad)
+        self.assertEqual(len(sent), 2)
+
     def test_the_usage_field_name_is_not_one_factory_rejects(self):
         self.assertNotIn(FACTORY_USAGE_FIELD, FACTORY_USAGE_RESERVED_FIELDS)
 
@@ -2548,6 +2570,119 @@ class FactoryReleaseTest(unittest.TestCase):
             self.seal_kit_layout(**changes)
             self.assert_refused_before_any_effect(message)
             shutil.rmtree(self.root / "resealed-product")
+
+    # ADR 0104 (2026-11-23): a kit that sealed its printed-only scene ships
+    # it as the root primary and the layout under parts/.
+
+    PRINTED_SCENE = "cad/measure/kit/scene.step"
+
+    def seal_kit_scene(self, scene_bytes=None, **changes):
+        printed = scene_bytes or step_solid_document([("workshop", "#4c859e"), ("T01-tray", "#d8dee9")])
+        scene = step_solid_document([("workshop", "#4c859e"), ("T01-tray", "#d8dee9"),
+                                     ("P01-steel-pin#1", "#ff00ff")])
+        listed = canonical_json({"kind": "kit-not-printed",
+                                 "bodies": [{"body": "P01-steel-pin#1", "part": "P01-steel-pin"}]})
+        layout_record = canonical_json({"kind": "kit-print-layout"})
+        self.reseal_made({"assembled.step": scene, self.LAYOUT: TETRA_STEP, self.PRINTED_SCENE: printed,
+                          self.LAYOUT_RECORD: layout_record, "cad/measure/not-printed.json": listed})
+        record = {
+            "path": self.LAYOUT, "sha256": hashlib.sha256(TETRA_STEP).hexdigest(),
+            "scene_path": "assembled.step", "scene_sha256": hashlib.sha256(scene).hexdigest(),
+            "removed": ["P01-steel-pin#1"], "printed_bodies": 1, "removed_bodies": 1,
+            "layout_path": self.LAYOUT_RECORD, "layout_sha256": hashlib.sha256(layout_record).hexdigest(),
+            "printed_scene_path": self.PRINTED_SCENE,
+            "printed_scene_sha256": hashlib.sha256(printed).hexdigest(), "pieces": 119,
+        }
+        record.update(changes)
+        self.context = ReleaseContext(self.made, printed_primary=record)
+        return printed
+
+    def kit_scene_handoff(self, transport):
+        call = next(call for call in transport.calls if call[1].endswith("/designs/import"))
+        parts = multipart_parts(call[2], call[3])
+        return parts, parts["file"][0]
+
+    def test_a_kit_printed_scene_is_the_primary_and_its_layout_crosses_under_parts(self):
+        printed = self.seal_kit_scene()
+        transport = FactoryTransport()
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertTrue(receipt.is_verified_draft)
+        parts, content = self.kit_scene_handoff(transport)
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            steps = sorted(name for name in archive.namelist()
+                           if PurePosixPath(name).suffix.casefold() in {".step", ".stp"})
+            self.assertEqual(steps, ["assembled.step", "parts/kit-print.step"])
+            self.assertEqual(archive.read("assembled.step"), printed)
+            self.assertEqual(archive.read("parts/kit-print.step"), TETRA_STEP)
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+        self.assertNotIn("assembled", PurePosixPath(factory_module.FACTORY_KIT_LAYOUT_PATH).stem)
+        self.assertEqual(facts["primary_model"]["sha256"], hashlib.sha256(printed).hexdigest())
+        self.assertEqual(facts["printed_primary"]["source_path"], self.PRINTED_SCENE)
+        self.assertEqual(facts["print_layout"], {
+            "path": "parts/kit-print.step", "sha256": hashlib.sha256(TETRA_STEP).hexdigest(),
+            "source_path": self.LAYOUT, "pieces": 119})
+        self.assertEqual(parts["piece_count"], [b"119"])
+        self.assertEqual(self.ledger.latest("verified-toy", "factory-import").request["piece_count"], 119)
+
+    def test_a_kit_layout_without_a_scene_sends_no_piece_count(self):
+        self.seal_kit_layout()
+        transport = FactoryTransport()
+        self.writer(transport)(self.context, self.release, self.manifest)
+        parts, _content = self.kit_scene_handoff(transport)
+        self.assertNotIn("piece_count", parts)
+        self.assertNotIn("piece_count", self.ledger.latest("verified-toy", "factory-import").request)
+
+    def test_a_kit_scene_record_that_is_not_sealed_or_counted_is_refused(self):
+        for changes, message in (
+            ({"printed_scene_sha256": "0" * 64}, "printed-only scene is not sealed"),
+            ({"printed_scene_path": "cad/measure/kit/missing.step"}, "printed-only scene is not sealed"),
+            ({"pieces": 0}, "piece count is malformed"),
+            ({"pieces": "119"}, "piece count is malformed"),
+            ({"pieces": None, "extra": 1}, "printed-only primary is malformed"),
+        ):
+            self.seal_kit_scene(**changes)
+            self.assert_refused_before_any_effect(message)
+            shutil.rmtree(self.root / "resealed-product")
+
+    def test_a_kit_printed_scene_with_a_magenta_body_is_refused(self):
+        self.seal_kit_scene(step_solid_document([("workshop", "#4c859e"), ("pin", "#ff00ff")]))
+        self.assert_refused_before_any_effect("not-printed magenta")
+
+    def test_the_handoff_check_binds_the_kit_layout(self):
+        self.seal_kit_scene()
+        transport = FactoryTransport()
+        self.writer(transport)(self.context, self.release, self.manifest)
+        _parts, content = self.kit_scene_handoff(transport)
+
+        def rewritten(change):
+            buffer = io.BytesIO()
+            with zipfile.ZipFile(io.BytesIO(content)) as source, zipfile.ZipFile(buffer, "w") as target:
+                for info in source.infolist():
+                    data = source.read(info.filename)
+                    name, data = change(info.filename, data)
+                    if name is not None:
+                        target.writestr(name, data)
+            return buffer.getvalue()
+
+        def facts(edit):
+            def change(name, data):
+                if name != "workshop-product-facts.json":
+                    return name, data
+                value = json.loads(data)
+                edit(value)
+                return name, json.dumps(value).encode()
+            return change
+
+        cases = (
+            (lambda n, d: (n, b"other" if n == "parts/kit-print.step" else d), "kit print layout hash differs"),
+            (lambda n, d: (None if n == "parts/kit-print.step" else n, d), "kit print layout is missing"),
+            (facts(lambda v: v["print_layout"].update(path="parts/assembled.step")), "kit print layout is malformed"),
+            (facts(lambda v: v["print_layout"].update(pieces=0)), "kit print layout is malformed"),
+            (facts(lambda v: v.pop("print_layout")), "exactly the primary STEP"),
+        )
+        for change, message in cases:
+            with self.subTest(message=message), self.assertRaisesRegex(ContractError, message):
+                factory_module._assert_factory_handoff(rewritten(change))
 
     def sealed_lamp_context(self, board_price=400, glue_price=32):
         contract = {

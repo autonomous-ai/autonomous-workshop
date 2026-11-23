@@ -349,6 +349,15 @@ def _is_factory_handoff_path(
     )
 
 
+def _piece_count_field(piece_count: Any) -> str:
+    """Factory's ``piece_count`` form value: the printed pieces a kit's buyer
+    assembles (POST /designs/import and /designs/:slug/import)."""
+
+    if type(piece_count) is not int or not 1 <= piece_count <= 100000:
+        raise ContractError("Factory piece_count must be a positive whole number")
+    return str(piece_count)
+
+
 def _read_json_file(path: Path, label: str) -> Mapping[str, Any]:
     if path.is_symlink() or not path.is_file():
         raise ContractError("%s must be a sealed regular file" % label)
@@ -432,6 +441,15 @@ _PRINTED_PRIMARY_FIELDS = frozenset(
 )
 # ADR 0104 decision 4: a kit's print layout adds the record it was laid out by.
 _KIT_LAYOUT_FIELDS = _PRINTED_PRIMARY_FIELDS | {"layout_path", "layout_sha256"}
+# ADR 0104 (2026-11-23): a kit that sealed its printed-only scene ships that
+# scene as the root primary the viewer shows and its print layout under
+# ``parts/``, the one set Factory's slicer prices (internal/slicer/tree.go).
+_KIT_SCENE_FIELDS = _KIT_LAYOUT_FIELDS | {"printed_scene_path", "printed_scene_sha256", "pieces"}
+#: Where a kit's print layout crosses beside its printed-only scene. Factory
+#: ranks any file stemmed ``assembled`` or ``asm`` as the primary wherever it
+#: sits (services/import_extract.go), so the layout is never named so.
+FACTORY_KIT_LAYOUT_PATH = "parts/kit-print.step"
+_KIT_LAYOUT_FACT_FIELDS = frozenset({"path", "sha256", "source_path", "pieces"})
 
 
 def _printed_primary(context: Any, manifest: ArtifactManifest) -> Optional[Mapping[str, Any]]:
@@ -442,8 +460,24 @@ def _printed_primary(context: Any, manifest: ArtifactManifest) -> Optional[Mappi
     record = getattr(context, "printed_primary", None)
     if record is None:
         return None
-    if not isinstance(record, Mapping) or set(record) not in (_PRINTED_PRIMARY_FIELDS, _KIT_LAYOUT_FIELDS):
+    if not isinstance(record, Mapping) or set(record) not in (
+        _PRINTED_PRIMARY_FIELDS, _KIT_LAYOUT_FIELDS, _KIT_SCENE_FIELDS
+    ):
         raise ContractError("the Make record's printed-only primary is malformed")
+    if "printed_scene_path" in record:
+        scene_path = record.get("printed_scene_path")
+        printed_scene = _manifest_entry(manifest, scene_path) if isinstance(scene_path, str) else None
+        if (
+            printed_scene is None
+            or PurePosixPath(scene_path).suffix.casefold() != ".step"
+            or printed_scene.sha256 != require_sha256(
+                record.get("printed_scene_sha256"), "kit printed-only scene sha256"
+            )
+        ):
+            raise ContractError("the kit's printed-only scene is not sealed in Made")
+        pieces = record.get("pieces")
+        if type(pieces) is not int or pieces < 1:
+            raise ContractError("the kit's printed piece count is malformed")
     if "layout_path" in record:
         layout = _manifest_entry(manifest, record.get("layout_path"))
         if layout is None or layout.sha256 != record.get("layout_sha256"):
@@ -997,10 +1031,32 @@ def _assert_factory_handoff(content: bytes) -> None:
                 if PurePosixPath(name).suffix.casefold() in FACTORY_STEP_SUFFIXES
             )
             expected_steps = [primary_path] if primary_kind == "solid" else []
+            layout = facts.get("print_layout")
+            if layout is not None:
+                # ADR 0104 (2026-11-23): a kit's print layout, under parts/.
+                if (
+                    primary_kind != "solid"
+                    or not isinstance(layout, Mapping)
+                    or set(layout) != _KIT_LAYOUT_FACT_FIELDS
+                    or layout.get("path") != FACTORY_KIT_LAYOUT_PATH
+                    or type(layout.get("pieces")) is not int
+                    or layout["pieces"] < 1
+                ):
+                    raise ContractError("Factory handoff kit print layout is malformed")
+                try:
+                    layout_content = archive.read(FACTORY_KIT_LAYOUT_PATH)
+                except KeyError as exc:
+                    raise ContractError("Factory handoff kit print layout is missing") from exc
+                if hashlib.sha256(layout_content).hexdigest() != require_sha256(
+                    layout.get("sha256"), "Factory handoff kit print layout sha256"
+                ):
+                    raise ContractError("Factory handoff kit print layout hash differs")
+                expected_steps = sorted([*expected_steps, FACTORY_KIT_LAYOUT_PATH])
             if steps != expected_steps:
                 raise ContractError(
-                    "Factory model handoff must carry exactly the primary STEP; found %s"
-                    % (", ".join(steps) or "none")
+                    "Factory model handoff must carry exactly the primary STEP%s; found %s"
+                    % (" and the kit print layout" if layout is not None else "",
+                       ", ".join(steps) or "none")
                 )
             if "product.json" in names:
                 try:
@@ -1247,7 +1303,16 @@ def _build_model_handoff(
     # root name, and no other STEP; the scene stays in Made.
     printed = _printed_primary(context, manifest) if sealed_primary["kind"] == "solid" else None
     printed_content = None
-    if printed is not None:
+    layout_content = None
+    if printed is not None and "printed_scene_path" in printed:
+        # ADR 0104 (2026-11-23): the printed-only scene is the primary the
+        # viewer shows; the layout crosses under parts/, where Factory prices.
+        primary_source = printed["printed_scene_path"]
+        primary_sha256 = printed["printed_scene_sha256"]
+        printed_content = _read_bound_file(root, manifest, primary_source)
+        layout_content = _read_bound_file(root, manifest, printed["path"])
+        _assert_printed_bodies_only(layout_content, root, manifest, scene=False)
+    elif printed is not None:
         primary_source = printed["path"]
         primary_sha256 = printed["sha256"]
         printed_content = _read_bound_file(root, manifest, primary_source)
@@ -1313,6 +1378,14 @@ def _build_model_handoff(
             "scene_path": printed["scene_path"],
             "scene_sha256": printed["scene_sha256"],
             "removed": list(printed["removed"]),
+        }
+    if layout_content is not None:
+        transport_facts["printed_primary"]["source_path"] = printed["printed_scene_path"]
+        transport_facts["print_layout"] = {
+            "path": FACTORY_KIT_LAYOUT_PATH,
+            "sha256": printed["sha256"],
+            "source_path": printed["path"],
+            "pieces": printed["pieces"],
         }
     if make_artifacts:
         transport_facts["make_artifacts"] = {
@@ -1382,6 +1455,13 @@ def _build_model_handoff(
                 raise ContractError("Made contains another file at the printed-only primary's path")
             target.write_bytes(printed_content)
             target.chmod(0o644)
+        if layout_content is not None:
+            target = staging.joinpath(*PurePosixPath(FACTORY_KIT_LAYOUT_PATH).parts)
+            if target.exists():
+                raise ContractError("Made contains another file at the kit print layout's path")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(layout_content)
+            target.chmod(0o644)
         if any(
             staging.joinpath(*PurePosixPath(path).parts).exists()
             for path in FACTORY_HOST_HANDOFF_PATHS
@@ -1436,6 +1516,7 @@ def _build_model_handoff(
                 else None
             ),
             "cover_render_source_path": cover_render_source_path,
+            "piece_count": printed["pieces"] if layout_content is not None else None,
         }
     )
     return result
@@ -1803,6 +1884,7 @@ class FactoryClient:
         idempotency_key: str,
         usage: Any = None,
         extra_materials: Sequence[Mapping[str, Any]] = (),
+        piece_count: Optional[int] = None,
     ) -> HttpResponse:
         filename = _safe_filename(filename)
         if not isinstance(content, bytes) or not content:
@@ -1824,6 +1906,8 @@ class FactoryClient:
                     sort_keys=True, separators=(",", ":"),
                 ),
             ))
+        if piece_count is not None:
+            fields.append(("piece_count", _piece_count_field(piece_count)))
         usage_field = _usage_field(usage)
         if usage_field is not None:
             fields.append(usage_field)
@@ -1847,16 +1931,25 @@ class FactoryClient:
         )
 
     def import_model_version(
-        self, slug: str, *, content: bytes, idempotency_key: str, usage: Any = None
+        self, slug: str, *, content: bytes, idempotency_key: str, usage: Any = None,
+        piece_count: Optional[int] = None,
     ) -> HttpResponse:
-        """Append content to an existing owner draft, never create a design."""
+        """Append content to an existing owner draft, never create a design.
+
+        ``piece_count`` is the printed pieces the buyer assembles; Factory
+        drops an earlier declared count from a version that omits it."""
 
         if not isinstance(slug, str) or not slug:
             raise ContractError("Factory design slug is required")
         _assert_factory_handoff(content)
+        fields = []
+        if piece_count is not None:
+            fields.append(("piece_count", _piece_count_field(piece_count)))
         usage_field = _usage_field(usage)
+        if usage_field is not None:
+            fields.append(usage_field)
         body, content_type = _multipart(
-            () if usage_field is None else (usage_field,),
+            fields,
             (("file", "model-handoff.zip", "application/zip", content),),
         )
         return self._request(
@@ -3815,6 +3908,10 @@ class FactoryReleaseWriter:
             # What each line bills and where its price came from, the board's
             # estimate and its source among them.
             request["bought_parts"] = bought_lines
+        piece_count = handoff.get("piece_count")
+        if piece_count is not None:
+            # A kit's printed pieces (ADR 0104, 2026-11-23), bound like extras.
+            request["piece_count"] = piece_count
         if make_output:
             request.pop("manual_sha256")
             request.update(publication_mode=MAKE_OUTPUT_PUBLICATION_MODE,
@@ -3903,6 +4000,7 @@ class FactoryReleaseWriter:
                 idempotency_key=sending.idempotency_key,
                 usage=_reportable_usage(context.token_usage),
                 extra_materials=intent.request.get("extra_materials") or (),
+                piece_count=intent.request.get("piece_count"),
             )
         except Exception as exc:
             self.ledger.mark_unknown(

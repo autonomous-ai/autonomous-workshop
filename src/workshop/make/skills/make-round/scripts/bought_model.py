@@ -1490,9 +1490,15 @@ def _below(nodes, start: int, depth: int):
         yield node
 
 
-def write_printed_only(scene: Path, out: Path) -> list[str]:
+def write_printed_only(scene: Path, out: Path, removed_name=None) -> list[str]:
     """Write ``scene`` without its bought group and bought leaves to ``out``;
-    return the bought leaf names it removed, in file order."""
+    return the bought leaf names it removed, in file order.
+
+    ``removed_name`` replaces the bought-name test: a kit's printed-only
+    scene (Workshop ADR 0104, 2026-11-23) removes the leaves its
+    ``not-printed.json`` names instead."""
+
+    is_removed = _is_bought if removed_name is None else removed_name
 
     x = _xcaf()
     shape_tool = x["XCAFDoc_ShapeTool"]
@@ -1502,7 +1508,7 @@ def write_printed_only(scene: Path, out: Path) -> list[str]:
     index = 0
     while index < len(nodes):
         label, parent, referred, name, assembly, depth = nodes[index]
-        if _is_bought(name):
+        if is_removed(name):
             removed += _leaf_names(nodes, index)
             cut.append((label, parent, referred))
             below = list(_below(nodes, index, depth))
@@ -1532,7 +1538,7 @@ def write_printed_only(scene: Path, out: Path) -> list[str]:
     _write_xcaf(document, out)
     _tool, after = _walk(_read_xcaf(out))
     left = [node[3] for node in after if not node[4]]
-    if any(_is_bought(node[3]) for node in after) or len(left) != kept:
+    if any(is_removed(node[3]) for node in after) or len(left) != kept:
         raise Refused(["the printed-only STEP does not hold exactly the printed bodies of %s" % scene.name])
     return removed
 

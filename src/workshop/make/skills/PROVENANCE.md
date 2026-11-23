@@ -3066,6 +3066,18 @@ convention, so sealed STEPs and frozen runs keep their colours.
   refuses it. Any other STEP, or changed bytes, is still refused. A resync
   must keep it.
 
+## Workshop-local: a kit's printed-only scene (2026-11-23, ADR 0104 amendment)
+
+- `make-round/scripts/kit_print.py layout` also writes
+  `measure/kit/scene.step`, the assembly STEP without the leaves
+  `measure/not-printed.json` lists, through `bought_model.py
+  write_printed_only`, which now takes an optional `removed_name`
+  predicate (default: the `bought_` bodies, as before). `print.json`
+  records it under `printed_scene`.
+- **Local patch to upstream `cad`.** `verify_project`'s `_kit_print_step`
+  also skips `measure/kit/scene.step` when `print.json`'s `printed_scene`
+  names it with its current sha256. A resync must keep it.
+
 ## Workshop-local: one thread per CAD process, jobs from the task headroom (2026-11-19)
 
 - **Local patch to upstream `cad`.** New `scripts/cadthreads.py` (stdlib
