@@ -6,7 +6,12 @@ connected solid, and one leaf per loose copy of every printed Part the toy
 uses, ``loose/<Part>#n``, each its own solid; no Bought Part.
 ``measure/kit/print.json`` (schema 2) records its hash, the tree it was
 laid out for and the copies. A Sheet that does not hold its contract copies,
-or does not fuse into one connected solid, fails and writes nothing."""
+or does not fuse into one connected solid, fails and writes nothing.
+
+Since 2026-11-23 it also writes ``measure/kit/scene.step``, the assembly
+STEP final verification wrote less the bodies ``measure/not-printed.json``
+lists, and records it under ``printed_scene``; a project with no assembly
+STEP fails."""
 
 from __future__ import annotations
 
@@ -24,10 +29,34 @@ from workshop.release.printed_primary import scene_bodies
 SCRIPT = Path(__file__).resolve().parents[2] / "src/workshop/make/skills/make-round/scripts/kit_print.py"
 
 
+def write_assembly_scene(project: Path) -> bytes:
+    """The assembly STEP final verification writes before the layout: two
+    printed bodies and one magenta Bought Part pin, listed not printed."""
+
+    from build123d import Box, Color, Compound, Pos, export_step
+
+    bodies = []
+    for index, (name, colour) in enumerate((("A01-case-shell", (0.1, 0.1, 0.4)),
+                                            ("C01-desk-body", (0.8, 0.6, 0.4)),
+                                            ("P01-hinge-pin#1", (1.0, 0.0, 1.0)))):
+        body = Pos(index * 30.0, 0, 0) * Box(10, 8, 4 + index)
+        body.label, body.color = name, Color(*colour)
+        bodies.append(body)
+    (project / "toy.step.py").write_text("def gen_step(): pass\n")
+    export_step(Compound(children=bodies, label="toy"), str(project / "toy.step"))
+    (project / "measure").mkdir(exist_ok=True)
+    (project / "measure/not-printed.json").write_text(json.dumps(
+        {"kind": "kit-not-printed", "bodies": [{"body": "P01-hinge-pin#1", "part": "P01-hinge-pin"}]}))
+    return (project / "toy.step").read_bytes()
+
+
 class KitPrintLayoutTest(unittest.TestCase):
     PANEL = KitSheetsProjectTest.PANEL
-    setUp = KitSheetsProjectTest.setUp
     install = KitSheetsProjectTest.install
+
+    def setUp(self):
+        KitSheetsProjectTest.setUp(self)
+        self.scene = write_assembly_scene(self.project)
     write_parts = KitSheetsProjectTest.write_parts
 
     def layout(self):
@@ -57,6 +86,19 @@ class KitPrintLayoutTest(unittest.TestCase):
         # Fused, a Sheet weighs its frame, gates and copies: B1 holds two panels.
         volume = {b.name: b.total[0] for b in bodies}
         self.assertGreater(volume["B1"], 2 * 20 * 12 * 2)
+        # The printed-only scene: the assembly less its listed pin.
+        printed = (self.project / "measure/kit/scene.step").read_bytes()
+        self.assertEqual(report["printed_scene"], {
+            "step": "measure/kit/scene.step", "sha256": __import__("hashlib").sha256(printed).hexdigest(),
+            "scene": "toy.step", "scene_sha256": __import__("hashlib").sha256(self.scene).hexdigest(),
+            "removed": ["P01-hinge-pin#1"]})
+        self.assertEqual(sorted(b.name for b in scene_bodies(printed)), ["A01-case-shell", "C01-desk-body"])
+
+    def test_a_kit_without_its_assembly_step_fails(self):
+        (self.project / "toy.step").unlink()
+        done = self.layout()
+        self.assertEqual(done.returncode, 1)
+        self.assertIn("no assembly STEP", done.stdout)
 
     def test_a_loose_part_without_spares_prints_once_per_use(self):
         del next(p for p in self.kit["assembly_tree"]["parts"] if p["id"] == "D01-inkwell")["spares"]

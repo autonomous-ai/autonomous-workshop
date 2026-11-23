@@ -1111,6 +1111,7 @@ def _printed_step(project: Path) -> set[Path]:
 
 KIT_PRINT_REPORT = "measure/kit/print.json"
 KIT_PRINT_STEP = "measure/kit/print.step"
+KIT_SCENE_STEP = "measure/kit/scene.step"
 
 
 def _kit_print_step(project: Path) -> set[Path]:
@@ -1128,10 +1129,17 @@ def _kit_print_step(project: Path) -> set[Path]:
         return set()
     if report.get("step") != KIT_PRINT_STEP:
         return set()
+    found = set()
     path = project / KIT_PRINT_STEP
     if path.is_file() and not path.is_symlink() and _sha256_file(path) == report.get("sha256"):
-        return {path.resolve()}
-    return set()
+        found.add(path.resolve())
+    # 2026-11-23: the printed-only scene the same tool writes beside it.
+    scene = report.get("printed_scene")
+    if isinstance(scene, dict) and scene.get("step") == KIT_SCENE_STEP:
+        path = project / KIT_SCENE_STEP
+        if path.is_file() and not path.is_symlink() and _sha256_file(path) == scene.get("sha256"):
+            found.add(path.resolve())
+    return found
 
 
 def _component_steps(project: Path) -> tuple[list[Path], list[Path]]:
@@ -1150,8 +1158,8 @@ def _component_steps(project: Path) -> tuple[list[Path], list[Path]]:
     The exceptions are a bought body ``measure/bought-bodies.json`` lists
     with its exact bytes (``_bought_steps``), the printed-only primary
     ``electrical.json`` names with its exact bytes (``_printed_step``) and
-    the kit print layout ``measure/kit/print.json`` names with its exact
-    bytes (``_kit_print_step``).
+    the kit print layout and printed-only scene ``measure/kit/print.json``
+    names with their exact bytes (``_kit_print_step``).
     """
     reference_dir = project / "ref"
     carried = _carried_steps(project)

@@ -21,9 +21,14 @@ its own, so a fused Sheet is weighed and placed as the one plate it prints
 as (schema 2, 2026-11-14). Only schema 2 is accepted: no kit run ever wrote
 the unfused schema 1, and accepting it would let a run ship unfused Sheets.
 
-The accepted record names the file Release ships as the Factory primary in
-place of the assembled scene, so Factory weighs the filament the maker
-prints, frames included. A kit with Sheets must have one; a kit without
+The accepted record names the file Release ships under ``parts/``, the one
+set Factory prices, so Factory weighs the filament the maker prints, frames
+included. Since 2026-11-23 the record may also name
+``measure/kit/scene.step``, the scene without the Bought Part bodies
+``not-printed.json`` lists: the host checks that it holds exactly every
+other leaf of the sealed scene with its volume and area, and Release ships
+it as the root ``assembled.step`` the shop's viewer shows. A record without
+it keeps the earlier primary, the layout itself. A kit with Sheets must have one; a kit without
 Sheets is checked when final verification wrote one (current tools always
 do) and otherwise keeps its scene.
 """
@@ -43,6 +48,7 @@ KIND = "kit-print-layout"
 SCHEMA_VERSION = 2
 STEP_PATH = "measure/kit/print.step"
 REPORT_PATH = "measure/kit/print.json"
+SCENE_STEP_PATH = "measure/kit/scene.step"
 SCENE_PATH = "assembled.step"
 LOOSE = "loose"
 _TOLERANCE = 1e-5
@@ -118,6 +124,60 @@ def check_layout_step(content: bytes, names: list[str]) -> int:
     return len(bodies)
 
 
+def _removed_leaves(requested: list[str], names: list[str]) -> set[str]:
+    """The scene leaves the not-printed bodies name, each exactly one leaf;
+    a Part the scene holds once may be written without its ``#1``."""
+
+    counts: dict[str, int] = defaultdict(int)
+    for name in names:
+        counts[name] += 1
+    found: set[str] = set()
+    for body in requested:
+        match = body if body in counts or not body.endswith("#1") else body[: -len("#1")]
+        if counts.get(match, 0) != 1 or match in found:
+            raise ContractError(
+                "%s names %s, which is %d leaf bodies of the sealed scene, not one"
+                % (REPORT_PATH, body, counts.get(match, 0))
+            )
+        found.add(match)
+    return found
+
+
+def check_printed_scene(printed: bytes, scene: bytes, removed: list[str]) -> int:
+    """Refuse a printed-only scene that is not exactly the sealed scene's
+    leaves less the not-printed bodies, each with its volume and area;
+    return how many leaves it holds."""
+
+    from workshop.release.printed_primary import scene_bodies
+
+    whole = scene_bodies(scene)
+    cut = _removed_leaves(removed, [body.name for body in whole])
+    expected = sorted((body.name, body.total) for body in whole if body.name not in cut)
+    found = sorted((body.name, body.total) for body in scene_bodies(printed))
+    if [name for name, _ in found] != [name for name, _ in expected]:
+        missing = sorted({n for n, _ in expected} - {n for n, _ in found})
+        extra = sorted({n for n, _ in found} - {n for n, _ in expected})
+        raise ContractError(
+            "%s does not hold exactly the sealed scene less its not-printed bodies: missing %s; extra %s"
+            % (SCENE_STEP_PATH, ", ".join(missing[:6]) or "none", ", ".join(extra[:6]) or "none")
+        )
+    for (name, a), (_name, b) in zip(found, expected):
+        if not (_close(a[0], b[0]) and _close(a[1], b[1])):
+            raise ContractError("%s body %s is not the scene's body" % (SCENE_STEP_PATH, name))
+    if not found:
+        raise ContractError("%s holds no printed body" % SCENE_STEP_PATH)
+    return len(found)
+
+
+def printed_pieces(contract: Mapping[str, Any]) -> int:
+    """How many printed pieces the buyer assembles: every printed Part as
+    many times as the toy uses it, spares left out."""
+
+    tree = contract["assembly_tree"]
+    totals = tree_totals(tree)
+    return sum(int(totals.get(item["id"], 0)) for item in tree["parts"] if "filament" in item)
+
+
 def verify_made_print_layout(
     run_root: Path,
     made: Any,
@@ -185,9 +245,35 @@ def verify_made_print_layout(
     if report.get("sha256") != step_sha256:
         raise ContractError("%s is not the layout %s names" % (STEP_PATH, REPORT_PATH))
     leaves = check_layout_step(content, names)
-    _scene, scene_sha256 = sealed(SCENE_PATH, "the Made product lacks %s" % SCENE_PATH)
+    scene, scene_sha256 = sealed(SCENE_PATH, "the Made product lacks %s" % SCENE_PATH)
     removed = [item["body"] for item in not_printed(contract, catalogue)]
+    extra: dict[str, Any] = {}
+    if "printed_scene" in report:
+        record = report["printed_scene"]
+        if not isinstance(record, Mapping) or set(record) != {
+            "step", "sha256", "scene", "scene_sha256", "removed"
+        } or record.get("step") != SCENE_STEP_PATH:
+            raise ContractError("%s printed_scene is malformed" % REPORT_PATH)
+        if record.get("scene_sha256") != scene_sha256:
+            raise ContractError(
+                "%s was cut from another scene than the sealed %s" % (SCENE_STEP_PATH, SCENE_PATH)
+            )
+        if record.get("removed") != sorted(removed):
+            raise ContractError(
+                "%s removed other bodies than the sealed tree's not-printed ones" % SCENE_STEP_PATH
+            )
+        printed_path = (prefix / SCENE_STEP_PATH).as_posix()
+        printed, printed_sha256 = sealed(printed_path, "the Made CAD project lacks %s" % SCENE_STEP_PATH)
+        if record.get("sha256") != printed_sha256:
+            raise ContractError("%s is not the scene %s names" % (SCENE_STEP_PATH, REPORT_PATH))
+        check_printed_scene(printed, scene, removed)
+        extra = {
+            "printed_scene_path": printed_path,
+            "printed_scene_sha256": printed_sha256,
+            "pieces": printed_pieces(contract),
+        }
     return {
+        **extra,
         "path": step_path,
         "sha256": step_sha256,
         "scene_path": SCENE_PATH,
@@ -200,5 +286,6 @@ def verify_made_print_layout(
     }
 
 
-__all__ = ["REPORT_PATH", "STEP_PATH", "check_layout_step", "expected_bodies", "expected_copies",
+__all__ = ["REPORT_PATH", "SCENE_STEP_PATH", "STEP_PATH", "check_layout_step", "check_printed_scene",
+           "printed_pieces", "expected_bodies", "expected_copies",
            "verify_made_print_layout"]

@@ -21,7 +21,12 @@ import unittest
 from pathlib import Path
 
 from workshop.errors import ContractError
-from workshop.make.kit_print import expected_bodies, expected_copies, verify_made_print_layout
+from workshop.make.kit_print import (
+    expected_bodies,
+    expected_copies,
+    printed_pieces,
+    verify_made_print_layout,
+)
 from workshop.make.kit_tree import install_document, tree_digest
 from tests.make import test_made_kit_tree as tree_tests
 
@@ -251,6 +256,78 @@ class MadeKitPrintTest(unittest.TestCase):
                     step = layout_step(step_names)
                 self.seal(step=step, **changes)
                 self.assertIn(words, self.refused())
+
+    # ADR 0104 (2026-11-23): the printed-only scene the viewer shows.
+
+    PRINTED = ["A01-case-shell", "B01-cabinet-carcass", "C01-desk-body"]
+
+    def seal_scene(self, *, printed_names=None, scene_names=None, **changes):
+        removed = sorted(item["body"] for item in self.listed["bodies"])
+        report = self.seal()
+        scene = layout_step(scene_names if scene_names is not None else self.PRINTED + removed)
+        printed = layout_step(self.PRINTED if printed_names is None else printed_names)
+        (self.run_root / PRODUCT / "assembled.step").write_bytes(scene)
+        (self.cad / "measure/kit/scene.step").write_bytes(printed)
+        record = {"step": "measure/kit/scene.step", "sha256": hashlib.sha256(printed).hexdigest(),
+                  "scene": "assembled.step", "scene_sha256": hashlib.sha256(scene).hexdigest(),
+                  "removed": removed}
+        record.update(changes)
+        report["printed_scene"] = record
+        self.write("measure/kit/print.json", report)
+        return printed
+
+    def test_a_printed_scene_is_checked_and_recorded_with_the_piece_count(self):
+        printed = self.seal_scene()
+        record = self.check()
+        self.assertEqual(record["printed_scene_path"], "cad/measure/kit/scene.step")
+        self.assertEqual(record["printed_scene_sha256"], hashlib.sha256(printed).hexdigest())
+        self.assertEqual(record["pieces"], printed_pieces(self.contract))
+        self.assertGreater(record["pieces"], 0)
+        # The layout keeps its own fields.
+        self.assertEqual(record["path"], "cad/measure/kit/print.step")
+
+    def test_a_scene_leaf_held_once_may_drop_its_first_copy_number(self):
+        removed = sorted(item["body"] for item in self.listed["bodies"])
+        self.assertTrue(any(name.endswith("#1") for name in removed))
+        bare = [name[: -len("#1")] if name.endswith("#1") else name for name in removed]
+        self.seal_scene(scene_names=self.PRINTED + bare)
+        self.assertIn("printed_scene_path", self.check())
+
+    def test_a_layout_without_a_printed_scene_records_none(self):
+        self.seal()
+        self.assertNotIn("printed_scene_path", self.check())
+
+    def test_each_wrong_printed_scene_is_refused(self):
+        removed = sorted(item["body"] for item in self.listed["bodies"])
+        cases = {
+            "another scene": ({"scene_sha256": "0" * 64}, {}, "was cut from another scene"),
+            "other bodies removed": ({"removed": removed[1:]}, {}, "removed other bodies"),
+            "another file": ({"sha256": "0" * 64}, {}, "is not the scene"),
+            "another path": ({"step": "measure/kit/other.step"}, {}, "printed_scene is malformed"),
+            "an extra key": ({"pieces": 3}, {}, "printed_scene is malformed"),
+            "a bought body kept": ({}, {"printed_names": self.PRINTED + removed[:1]}, "extra"),
+            "a printed body lost": ({}, {"printed_names": self.PRINTED[1:]}, "missing A01-case-shell"),
+            "a body changed": ({}, {"printed_names": self.PRINTED[:-1] + ["C01-desk-bodyX"]}, "missing"),
+            "a listed body absent": ({}, {"scene_names": self.PRINTED}, "not one"),
+            "a listed body twice": ({}, {"scene_names": self.PRINTED + removed + removed[:1]}, "not one"),
+        }
+        for label, (changes, names, words) in cases.items():
+            with self.subTest(label):
+                self.seal_scene(**names, **changes)
+                self.assertIn(words, self.refused())
+
+    def test_a_printed_scene_body_of_another_size_is_refused(self):
+        from build123d import Box
+
+        removed = sorted(item["body"] for item in self.listed["bodies"])
+        self.seal_scene()
+        report = json.loads((self.cad / "measure/kit/print.json").read_text())
+        printed = layout_step(self.PRINTED, shapes={"A01-case-shell": lambda: Box(9, 9, 9)})
+        (self.cad / "measure/kit/scene.step").write_bytes(printed)
+        report["printed_scene"]["sha256"] = hashlib.sha256(printed).hexdigest()
+        self.write("measure/kit/print.json", report)
+        self.assertIn("body A01-case-shell is not the scene's body", self.refused())
+        self.assertTrue(removed)
 
 
 if __name__ == "__main__":

@@ -128,6 +128,7 @@ class RealLayoutTwiceTest(unittest.TestCase):
             strays = [p.relative_to(self.project).as_posix()
                       for p in verifier["_component_steps"](self.project)[1]]
             self.assertNotIn("measure/kit/print.step", strays, "attempt %d" % attempt)
+            self.assertNotIn("measure/kit/scene.step", strays, "attempt %d" % attempt)
         with (self.project / "measure/kit/print.step").open("ab") as handle:
             handle.write(b"\n")
         strays = [p.relative_to(self.project).as_posix() for p in verifier["_component_steps"](self.project)[1]]
