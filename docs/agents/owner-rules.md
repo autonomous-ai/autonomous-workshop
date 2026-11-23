@@ -152,6 +152,16 @@ rule, this file only points to it; that source stays the authority.
   outline, a measured photo) in the notes. Never enlarge a small building
   to make it the focus. Why: the Kyoto Tatsumi shrine, drawn to lead the
   basin, came out far too big beside the machiya and teahouse.
+- **One tray or nook, one common scale** (owner, 2026-11-23). Every
+  object in it is sized at one scale taken from real objects. Before
+  showing the owner, write a scale audit table: each object's real size,
+  its correct model size at that scale, its current size and the percent
+  off. Fix anything more than 25% off unless a print gate forces it, and
+  name that gate. Everything must make sense for a tiny person living
+  there: they can walk around, go through doors, climb steps and reach
+  the yard. No puzzling object nobody can name. No two solids share a
+  face or overlap, because coincident faces flicker in CAD. Why: owner
+  review of the New York mini-city organizer.
 - **Model a named real object from real photos** (owner, 2026-11-16).
   Before modelling a recognisable real object (a lifeguard tower, a
   basin, a shrine), find 3-5 real photographs, list the cues that make it
