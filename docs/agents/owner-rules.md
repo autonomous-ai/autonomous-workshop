@@ -174,6 +174,8 @@ rule, this file only points to it; that source stays the authority.
   barrels got solid navy and red labels across 140 degrees of each front;
   the real walls read as white straw with black calligraphy and small red
   accents, and the model read as rows of coloured spools or cans.
+  A shrine bell (suzu) hangs high under the beam, and its rope hangs from
+  the bell (owner, 2026-11-25).
 - **Stone reads as stone at a glance** (owner, 2026-11-16). A stone
   vessel or rock is rough-hewn: chiselled faceted sides, no rounded box
   corners, in a grey stone colour, with the props that name it (a bamboo
@@ -196,6 +198,9 @@ rule, this file only points to it; that source stays the authority.
   as "unchanged". Review in the owner's viewer lighting too (flat shading
   with a headlight, as in CAD Assistant). Why: the v5 knot's wedge flaps
   were reported as "kept from v5", and the owner saw them as extra plastic.
+  Where parts should meet (a stair's last step and the floor above),
+  measure contact at both ends; a render is not evidence (owner,
+  2026-11-25). Why: a part can look joined in a render and still end short.
 - **A seat reads as its scene object, filled or empty** (owner,
   2026-11-16). Where a real item stands in for a scene object (an earbud
   case as a dry garden's big stone), the seat's own surface carries the
@@ -265,6 +270,14 @@ Tree and Manual.
   a part between two parts that are already fixed, and never ask for a
   blind insertion. Why: the first pen tower order made the user wedge a
   wall between two fixed walls.
+  In a manual review, ask of every step whether an easier assembly exists
+  (a sub-assembly built off the model, gears paired before closing). Finish
+  everything on a floor before the walls around it go up, unless a check
+  shows a wall must go earlier (owner, 2026-11-25). Why: hands need access.
+- **Every pushed-in part has a stop** (owner, 2026-11-25), so it cannot go
+  too deep and be trapped. Something holds loose paper in place. Prove every
+  bar and part insertable along its own path. Why: a part that fits where it
+  ends up may still be impossible to put in or take out.
 - **No part of another colour shows through the outside of the case.**
   A tab into an outer wall, roof, base or back goes into a blind pocket
   cut from the inside face, leaving at least 0.8 mm of skin outside, at
@@ -415,6 +428,15 @@ Tree and Manual.
   pictured in its colour with its ID, name, count and spares. Every step
   that uses one shows its ID bubble. Why: the Amsterdam manual showed only
   the sheets, so the loose parts had no place in it (owner, 2026-11-16).
+- **Bought parts get one picture page** (owner, 2026-11-25), each with its
+  ID and count like the printed parts, with no long detail. Say plainly
+  which bought items ship and which the buyer supplies.
+- **Every listed ID is used in a step**, printed or bought (owner,
+  2026-11-25). A kit with LEDs has steps to mount them, route and hold the
+  wires, test the light before closing, and reach the battery. Why: an
+  unused ID or a missing wiring step leaves the buyer guessing.
+- **Kit manuals look alike** (owner, 2026-11-25). Legend, callouts and
+  wording are the same across kits; Amsterdam's manual is the model.
 - **Every manual step states each part's orientation.** Say in the text
   and show in the picture whether a part stands on its long edge or lies
   flat, and which face points where. A sub-assembly built lying down gets
