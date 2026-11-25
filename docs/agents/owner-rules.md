@@ -446,6 +446,16 @@ Tree and Manual.
   front", "B11 floor") where a lying plate could read as a base. Why: the
   owner could not tell whether the Amsterdam back-rests stand or lie, and
   read the pen tower's face-down front wall as its base (2026-11-15).
+- **No "After step N" or "Finished" inset in any manual step** (owner,
+  2026-11-25). Keep each phase's opening picture, cut views and the final
+  Finished page. Why: in the Orrery manual the insets cluttered the steps
+  more than they helped.
+- **A simple object is one phase** (owner, 2026-11-25). Why: the Orrery
+  chair was split into several tiny phases, though it is simple to build.
+- **Keep a city kit's details; never join items with a visible bar to cut
+  the part count** (owner, 2026-11-25). Why: the owner wants the New York
+  kit to keep the details of the approved model, so a smaller count is no
+  reason to merge bins, fruit or stepping stones on a strip.
 - **Check every manual page for clipping before the owner sees it.** A
   figure, sheet map or text running off the page is a defect even when
   every gate passes. Look at every page at full size, and check
