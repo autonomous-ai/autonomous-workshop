@@ -51,6 +51,16 @@ def _leaves(contract: Mapping[str, Any]) -> list[str]:
     return sorted([item["id"] for item in tree["parts"]] + [item["id"] for item in pieces or ()])
 
 
+def fit_tests(tree: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Each Sheet's declared fit test as the run-local Manual reports it:
+    ``{sheet, pieces: [{id, name}], text}``, in Sheet order."""
+
+    return [{"sheet": sheet["id"], "pieces": [{"id": piece["id"], "name": piece["name"]}
+                                             for piece in sheet["fit_test"]["pieces"]],
+             "text": sheet["fit_test"]["text"]}
+            for sheet in tree.get("sheets") or () if isinstance(sheet.get("fit_test"), Mapping)]
+
+
 def verify_made_manual(
     run_root: Path,
     made: Any,
@@ -134,6 +144,13 @@ def verify_made_manual(
         raise ContractError(
             "the kit Manual %s" % ("does not say the kit ships no spares, as its sealed tree declares"
                                    if no_spares else "says the kit ships no spares, which its sealed tree does not declare")
+        )
+    # ADR 0092 amendment 2026-11-26: the Manual's prep lists every declared
+    # fit test, exactly as the sealed tree states it, and nothing else.
+    tests = fit_tests(tree)
+    if report.get("fit_tests", []) != tests or ("fit_tests" in report) != bool(tests):
+        raise ContractError(
+            "the kit Manual does not list the sealed tree's fit-test pieces on its prep page exactly as declared"
         )
     pdf = read(PDF_PATH)
     pdf_sha256 = hashlib.sha256(pdf).hexdigest()

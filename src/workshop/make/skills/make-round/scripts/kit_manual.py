@@ -37,7 +37,10 @@ What the Manual holds, in order
    for each power source. The company's warnings (small parts always,
    batteries with a power source) and "check all Parts first", then, for a
    kit whose tree declares ``"spares": "none"``, a line saying it holds no
-   spare part (the report's ``"spares": "none"``). Printed jigs
+   spare part (the report's ``"spares": "none"``). Each Sheet's declared
+   fit test (ADR 0092 amendment 2026-11-26), its pieces (``T1``, ``T2``)
+   and their one-line instruction, before any step (the report's
+   ``fit_tests``); they are no Part of the toy. Printed jigs
    are not in the tree's schema yet, so none is listed. Every Bought Part
    under "Bought, not printed" with its count and catalogue name (owner
    decision Q29): the STEP models them, in the reserved magenta, only for
@@ -110,6 +113,7 @@ COMPANY_FILE = SCRIPTS.parent / "company.json"
 
 KIND = "kit-manual"
 SCHEMA_VERSION = 1
+FIT_TEST = "Fit test first: these pieces are not part of the model"
 COMPANY_KIND = "workshop-company"
 MANUAL_DIR = "manual"
 PDF_NAME = "manual.pdf"
@@ -244,6 +248,17 @@ def piece_mark(piece: dict) -> str:
     """A sticker is peeled; every other piece shows which side is printed."""
 
     return PEEL if piece.get("stock") == "sticker" or piece.get("way") == "sticker" else PRINTED_SIDE
+
+
+def fit_tests(tree: dict) -> list[dict]:
+    """The prep page's fit tests (ADR 0092 amendment 2026-11-26): each
+    Sheet's declared ``fit_test`` as ``{sheet, pieces: [{id, name}], text}``,
+    in Sheet order. The pieces are no Part and no step uses them."""
+
+    return [{"sheet": sheet["id"], "pieces": [{"id": piece["id"], "name": piece["name"]}
+                                             for piece in sheet["fit_test"]["pieces"]],
+             "text": sheet["fit_test"]["text"]}
+            for sheet in tree.get("sheets") or () if isinstance(sheet.get("fit_test"), dict)]
 
 
 def plan_manual(kit: dict, company: dict) -> dict:
@@ -405,6 +420,7 @@ def plan_manual(kit: dict, company: dict) -> dict:
                                                     int(plan.totals.get(part, 1))) for part in sorted(plan.bought)]},
         "not_printed": [{"body": item["body"], "bought": item["bought"]} for item in tool.not_printed(plan)],
         **({"spares": "none"} if tree.get("spares") == "none" else {}),
+        **({"fit_tests": fit_tests(tree)} if fit_tests(tree) else {}),
         "checks": checks,
         "sections": [sections[key] for key in order],
         "completion": plan.root,
@@ -822,6 +838,12 @@ def draw_pdf(document: dict, plan, images: dict, path: Path) -> int:
                  for line in _lines(row, "Helvetica", 10, width)]
         top = pages.need(8 + LINE_MM * len(lines))
         _text(c, left, top - 5, [NOT_PRINTED], "Helvetica-Bold", 11, ACCENT)
+        _text(c, left, top - 10, lines, "Helvetica", 10)
+    for test in document.get("fit_tests") or ():
+        rows = ["%s  %s (Sheet %s)" % (piece["id"], piece["name"], test["sheet"]) for piece in test["pieces"]]
+        lines = [line for row in rows + [test["text"]] for line in _lines(row, "Helvetica", 10, width)]
+        top = pages.need(8 + LINE_MM * len(lines))
+        _text(c, left, top - 5, [FIT_TEST], "Helvetica-Bold", 11, ACCENT)
         _text(c, left, top - 10, lines, "Helvetica", 10)
     top = pages.need(12)
     _text(c, left, top - 7, [front["check_first"]], "Helvetica-Bold", 11)

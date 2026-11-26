@@ -3080,6 +3080,20 @@ convention, so sealed STEPs and frozen runs keep their colours.
   also skips `measure/kit/scene.step` when `print.json`'s `printed_scene`
   names it with its current sha256. A resync must keep it.
 
+## Workshop-local: fit-test pieces on a Sheet (2026-11-26, ADR 0092 amendment)
+
+- `make-round/scripts/kit_sheets.py check` reads a Sheet's optional
+  `fit_test` (`{pieces: [{id, name}], text}`, ids `T1`-`T99`): each piece
+  is one copy on that Sheet under its own id, holds every Sheet rule (one
+  connected solid, on the bed, flat, one bed, separable, nipper access,
+  fragile tips) and MIN-PART-SIZE R1 with no `small_reason`, and has no
+  `print_parts()` shape to match. A copy the Sheet does not declare fails
+  as before. No spare rule counts a piece. `kit_print.py layout` fuses the
+  pieces with their Sheet and records them as the Sheet's `fit_tests`, not
+  as Part copies; `kit_manual.py` lists them on the front page and in
+  `manual.json`'s `fit_tests`. A tree without a fit test is unchanged byte
+  for byte.
+
 ## Workshop-local: a kit may ship no spares (2026-11-26, ADR 0104 amendment)
 
 - `make-round/scripts/kit_sheets.py check` asks no spare of a kit whose

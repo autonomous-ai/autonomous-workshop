@@ -767,6 +767,60 @@ def _check_no_spares(value: Mapping[str, Any], errors: List[str]) -> bool:
 
 
 SHEET_ID = re.compile(r"([A-Z])([1-9][0-9]?)")
+# ADR 0092 amendment 2026-11-26: a Sheet may carry a fit-test pair, pieces
+# the buyer presses together before building. Their ids are T and one or two
+# digits with no leading zero and no mnemonic (T1, T2): no Part (two digits
+# and a mnemonic), Print Piece or step id has that form. They are no Part of
+# the toy: no step uses them, no spare counts them.
+FIT_TEST_ID = re.compile(r"T([1-9][0-9]?)")
+MAX_FIT_TEST_PIECES = 8
+
+
+def fit_test_pieces(tree: Any) -> Dict[str, str]:
+    """Every declared fit-test piece of a tree: piece id -> its Sheet id."""
+
+    found: Dict[str, str] = {}
+    for sheet in (tree.get("sheets") or ()) if isinstance(tree, Mapping) else ():
+        test = sheet.get("fit_test") if isinstance(sheet, Mapping) else None
+        for piece in (test.get("pieces") or ()) if isinstance(test, Mapping) else ():
+            if isinstance(piece, Mapping) and isinstance(piece.get("id"), str):
+                found.setdefault(piece["id"], str(sheet.get("id")))
+    return found
+
+
+def _check_fit_test(value: Any, label: str, sheet_ids: Set[str], seen: Dict[str, str],
+                    errors: List[str]) -> None:
+    """A Sheet's ``fit_test``: ``{pieces: [{id, name}], text}``, each piece
+    id T1-T99 and declared once in the kit, the text the Manual's prep line."""
+
+    if not isinstance(value, dict) or set(value) != {"pieces", "text"}:
+        errors.append("%s.fit_test must be exactly {pieces, text}" % label)
+        return
+    if not _text(value.get("text"), MAX_TEXT_CHARS):
+        errors.append("%s.fit_test.text must be one short English instruction of at most %d characters, "
+                      "such as \"Press T2 into T1.\"" % (label, MAX_TEXT_CHARS))
+    pieces = value.get("pieces")
+    if not isinstance(pieces, list) or not 1 <= len(pieces) <= MAX_FIT_TEST_PIECES:
+        errors.append("%s.fit_test.pieces must list 1 to %d fit-test pieces" % (label, MAX_FIT_TEST_PIECES))
+        return
+    for number, piece in enumerate(pieces):
+        where = "%s.fit_test.pieces[%d]" % (label, number)
+        if not isinstance(piece, dict) or set(piece) != {"id", "name"}:
+            errors.append("%s must be exactly {id, name}" % where)
+            continue
+        identifier = piece["id"]
+        if not isinstance(identifier, str) or FIT_TEST_ID.fullmatch(identifier) is None:
+            errors.append("%s.id must be T and a number, T1 to T99, with no mnemonic" % where)
+            continue
+        if not _text(piece["name"], MAX_NAME_CHARS):
+            errors.append("%s.name must name it in at most %d characters" % (where, MAX_NAME_CHARS))
+        if identifier in seen:
+            errors.append("%s: fit-test piece %s is already declared on Sheet %s" % (where, identifier, seen[identifier]))
+            continue
+        if identifier in sheet_ids:
+            errors.append("%s: %s is also a Sheet id: number the fit-test pieces apart from the Sheets"
+                          % (where, identifier))
+        seen[identifier] = label
 
 
 def _check_sheets(
@@ -785,11 +839,16 @@ def _check_sheets(
     letter_of = {key: PART_ID.fullmatch(key).group(1) for key in printed}
     on_sheets: Dict[str, int] = {}
     seen: Set[str] = set()
+    sheet_ids = {sheet["id"] for sheet in value if isinstance(sheet, dict) and isinstance(sheet.get("id"), str)}
+    tests: Dict[str, str] = {}
     for index, sheet in enumerate(value):
         label = "assembly_tree.sheets[%d]" % index
-        if not isinstance(sheet, dict) or set(sheet) != {"id", "filament", "parts"}:
-            errors.append("%s must be exactly {id, filament, parts}" % label)
+        if not isinstance(sheet, dict) or not {"id", "filament", "parts"} <= set(sheet) <= {
+                "id", "filament", "parts", "fit_test"}:
+            errors.append("%s must be exactly {id, filament, parts}, with an optional fit_test" % label)
             continue
+        if "fit_test" in sheet:
+            _check_fit_test(sheet["fit_test"], label, sheet_ids, tests, errors)
         identifier = sheet["id"]
         match = SHEET_ID.fullmatch(identifier) if isinstance(identifier, str) else None
         if match is None:
@@ -1250,6 +1309,8 @@ __all__ = [
     "SOLID",
     "STEP_ID",
     "step_number",
+    "FIT_TEST_ID",
+    "fit_test_pieces",
     "bought_totals",
     "parse_assembly_tree",
     "ships_no_spares",

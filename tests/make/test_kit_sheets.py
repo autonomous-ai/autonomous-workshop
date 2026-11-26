@@ -148,6 +148,81 @@ class KitSheetCheckTest(unittest.TestCase):
         self.assertIn("sheet() returning", fails[0])
 
 
+# The good Sheet widened for a fit-test pair (ADR 0092 amendment
+# 2026-11-26): the two panels, then T1 and T2 on their own gates.
+FIT_SHEET = '''
+from build123d import Align, Box, Pos
+A = (Align.MIN, Align.MIN, Align.MIN)
+
+
+def plate(x, y, w, h, t):
+    return Pos(x, y, 0) * Box(w, h, t, align=A)
+
+
+T2 = dict(w=18, h=10, t=2.0)
+
+
+def sheet():
+    frame = plate(0, 0, 112, 2.4, 1.6) + plate(0, 27.6, 112, 2.4, 1.6)
+    parts = []
+    for x, name, size in ((8, "A01-panel", dict(w=18, h=10, t=2.0)), (34, "A01-panel", dict(w=18, h=10, t=2.0)),
+                          (60, "T1", dict(w=18, h=10, t=2.0)), (86, "T2", T2)):
+        part = plate(x, 10.0, size["w"], size["h"], size["t"])
+        middle = x + size["w"] / 2
+        gate = plate(middle - 0.8, 2.4, 1.6, 7.6, 1.2)
+        parts.append({"id": name, "shape": part, "gates": [{"shape": gate, "x": middle, "y": 10.0, "d": 1}]})
+    return {"frame": frame, "parts": parts}
+'''
+
+FIT_SPEC = {**SPEC, "fit_test": {"pieces": [{"id": "T1", "name": "Fit slots"}, {"id": "T2", "name": "Fit tab"}],
+                                 "text": "Press T2 into T1: it goes in firmly and holds."}}
+
+
+class FitTestPieceTest(unittest.TestCase):
+    """ADR 0092 amendment 2026-11-26: a Sheet's declared fit-test pieces
+    are printed on it and pass every Sheet rule, but are no Part."""
+
+    def _check(self, spec=FIT_SPEC, **overrides):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = FIT_SHEET + "".join("\n%s = %r\n" % item for item in overrides.items())
+            entry = Path(tmp) / "sheet_A1.py"
+            entry.write_text(textwrap.dedent(source))
+            done = subprocess.run([sys.executable, str(SCRIPT), "describe", str(entry)],
+                                  capture_output=True, text=True, timeout=300)
+        described = ks.parse(done.stdout, done.returncode)
+        self.assertIsNone(described["error"])
+        return ks.check(described, spec, {"A01-panel": PANEL})
+
+    def test_a_declared_fit_test_pair_passes(self):
+        self.assertEqual(self._check(), [])
+        self.assertEqual(ks.fit_test_ids(FIT_SPEC), ["T1", "T2"])
+
+    def test_a_fit_test_piece_the_sheet_does_not_declare_is_refused(self):
+        spec = {**FIT_SPEC, "fit_test": {**FIT_SPEC["fit_test"], "pieces": [{"id": "T1", "name": "Fit slots"}]}}
+        self.assertEqual(self._check(spec), ["sheet_A1.py: holds 1 x T2, but the contract's Sheet A1 lists 0"])
+        fails = self._check(SPEC)
+        self.assertIn("sheet_A1.py: holds 1 x T1, but the contract's Sheet A1 lists 0", fails)
+        self.assertIn("sheet_A1.py: holds 1 x T2, but the contract's Sheet A1 lists 0", fails)
+
+    def test_a_fit_test_piece_under_the_minimum_size_is_refused(self):
+        fails = self._check(T2={"w": 6, "h": 3, "t": 1.2})
+        self.assertTrue(any("fit-test piece T2 is under the minimum loose-part size (thickness 1.2 < 1.6"
+                            in line for line in fails), fails)
+
+    def test_a_fit_test_piece_breaks_the_sheet_rules_like_a_part(self):
+        fails = self._check(T2={"w": 18, "h": 10, "t": 3.5})
+        self.assertTrue(any("a copy of T2 is 3.5 mm tall; a Sheet is a flat plate" in line for line in fails), fails)
+        fails = self._check(T2={"w": 18, "h": 16.5, "t": 2.0})
+        self.assertTrue(any("a copy of T2 is" in line and "from the frame" in line for line in fails), fails)
+
+    def test_fit_test_pieces_are_no_part_and_no_spare(self):
+        # part_failures reads printed Parts only: a fit-test piece is never one,
+        # so "spares": "none" neither counts nor refuses it.
+        fails, small = ks.part_failures([FIT_SPEC], {"A01-panel": {"id": "A01-panel"}}, {"A01-panel": 2},
+                                        {"A01-panel": {**PANEL, "pieces": 1}}, no_spares=True)
+        self.assertEqual((fails, small), ([], []))
+
+
 class KitPartSizeTest(unittest.TestCase):
     SHEETS = [{"id": "A1", "filament": "oak", "parts": [{"id": "A01-panel", "count": 2}]}]
 

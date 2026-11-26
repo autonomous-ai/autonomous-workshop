@@ -270,6 +270,19 @@ instances.)
     Each Sheet is the project file `sheet_<id>.py` defining `sheet()`;
     `make_round` checks every Sheet in assembly rounds,
     `--print-gates-only` and final verification (`kit_sheets.py check`).
+    A Sheet may also carry a **fit test** (ADR 0092 amendment 2026-11-26):
+    pieces the buyer presses together before building, such as a slot
+    block and a tab. Declare them on that Sheet, never under `parts`:
+    `"fit_test": {"pieces": [{"id": "T1", "name": "Fit slots"}, {"id":
+    "T2", "name": "Fit tab"}], "text": "Before you start, press T2 into
+    T1: it goes in firmly and holds."}`. Ids are `T1` to `T99` (no leading
+    zero, no mnemonic), each once in the kit and none equal to a Sheet id;
+    1 to 8 pieces a Sheet, each name at most 80 characters, and one `text`
+    of at most 200, which the Manual prints on its prep page. A piece is
+    no Part: no step uses it and no count, spare or `"spares": "none"`
+    counts it. `sheet()` places each piece once under its id, and it passes
+    every Sheet rule and MIN-PART-SIZE R1 like a Part copy, with no
+    `small_reason`.
   - `steps[]`, in Manual order with rising numbers (`S01` to `S99`, then
     `S100` to `S999`: two digits below 100, three from 100, never a leading
     zero on three digits; numbers compare as numbers, so `S100` follows

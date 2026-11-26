@@ -73,7 +73,13 @@ def expected_copies(contract: Mapping[str, Any]) -> tuple[list[dict[str, Any]], 
         for entry in sheet["parts"]:
             copies[entry["id"]] = copies.get(entry["id"], 0) + int(entry["count"])
             on_sheet.add(entry["id"])
-        sheets.append({"id": sheet["id"], "filament": sheet["filament"], "copies": copies})
+        record = {"id": sheet["id"], "filament": sheet["filament"], "copies": copies}
+        tests = [piece["id"] for piece in (sheet.get("fit_test") or {}).get("pieces") or ()]
+        if tests:
+            # ADR 0092 amendment 2026-11-26: fit-test pieces, fused with their
+            # Sheet, are no Part copy and no spare.
+            record["fit_tests"] = tests
+        sheets.append(record)
     spares = {item["id"]: int(item.get("spares", 0)) for item in tree["parts"] if "filament" in item}
     loose = {part: totals.get(part, 0) + spares[part] for part in sorted(spares)
              if part not in on_sheet and totals.get(part, 0) > 0}

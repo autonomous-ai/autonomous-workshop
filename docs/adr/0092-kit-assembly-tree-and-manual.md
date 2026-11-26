@@ -22,8 +22,9 @@
   stance, from the Component's `print_parts()`. It is implemented in
   `make_round` and final verification and tested on deterministic fakes and
   a small real build123d cabinet.
-  Amendment of 2026-11-26 (owner): step ids run past S99 to S999, and a
-  Design Contract may be 150,000 characters (see the amendment below).
+  Amendment of 2026-11-26 (owner): step ids run past S99 to S999, a
+  Design Contract may be 150,000 characters, and a Sheet may declare
+  fit-test pieces (see the amendment below).
 - Date: 2026-10-23
 - Amends: ADR 0091 (what a Print Piece lands on; its id form), ADR 0082
   (Components are subtrees of the Assembly Tree), ADR 0088 (insertion paths
@@ -361,11 +362,12 @@ both are decided together. Six 2026 Rolife manuals were read page by page
       review renders still read the assembled Component.
     - Non-kit Components and frozen runs are gated as before.
 
-## Amendment 2026-11-26: step ids past S99 and a 150,000-character contract
+## Amendment 2026-11-26: step ids past S99, a 150,000-character contract and fit-test pieces
 
 The Kyoto Gion Canal Build Kit could not be sealed. Its approved Manual has
 156 steps and its contract, with an Assembly Tree of 153 Part types and every
-step's required sentence, is about 75,000 characters. Two limits stopped it.
+step's required sentence, is about 75,000 characters, and one of its Sheets
+carries a fit-test pair. Three limits stopped it.
 
 1. **Step ids.** Decision 6 wrote step ids as `S07-teacher-desk-items`, and
    the parser accepted exactly two digits (`S01`-`S99`) while `MAX_STEPS`
@@ -403,6 +405,50 @@ step's required sentence, is about 75,000 characters. Two limits stopped it.
    contract costs the root Manager's context, not every worker's.
    `CONTRACT-FORMAT.md`'s unchecked authoring target rises from 40,000 to
    140,000 characters, leaving room for owner amendments under the limit.
+
+3. **Fit-test pieces on a Sheet (owner, 2026-11-26).** Kyoto's Sheet
+   carries a fit-test pair, T1 (slots) and T2 (a tab), and its approved
+   Manual v17 has the buyer "press T2 into T1" on a prep page before any
+   step. The tree had no place for them: every Sheet copy had to be a tree
+   Part some step uses, Check Steps take only lamps and power, and Part
+   ids need two digits and a mnemonic. Amsterdam and Miami had the same
+   coupon (`fit_coupon()`, pieces `fit-slots` and `fit-tab`) in their own
+   sheet scripts but never printed or declared it, so no sealed contract
+   sets a precedent to follow. A Sheet may now declare:
+
+   ```json
+   {"id": "W1", "filament": "cream", "parts": [...],
+    "fit_test": {"pieces": [{"id": "T1", "name": "Fit slots"},
+                            {"id": "T2", "name": "Fit tab"}],
+                 "text": "Before you start, press T2 into T1: it goes in firmly and holds."}}
+   ```
+
+   - **Ids.** `T` and a number, `T1` to `T99`, no leading zero and no
+     mnemonic (`^T([1-9][0-9]?)$`), each declared once in the kit. A Part,
+     Print Piece or step id has two or three digits and a mnemonic, so none
+     can collide; a fit-test id may not equal a Sheet id either. 1 to 8
+     pieces per Sheet, each `{id, name}` (name at most 80 characters), and
+     one `text` of at most 200 characters, the Manual's prep line.
+   - **Not a Part.** A piece is no tree Part: no step uses it, no Component
+     holds it, no count or spare counts it, and `"spares": "none"` neither
+     counts nor refuses it. Listing it under a Sheet's `parts` is refused.
+   - **Sealed like other Sheet content.** It lives inside the Sheet entry,
+     so the contract hash, the tree digest (`tree_digest`) and the install
+     document bind it with the rest of the tree.
+   - **Every print gate.** `kit_sheets.py check` builds it on its Sheet
+     like a Part copy: one connected solid, on the bed, at most 3 mm tall,
+     on the one bed, 2 mm from frame and copies, a reachable gate with
+     nipper access, fragile tips clear, and MIN-PART-SIZE R1 with no
+     `small_reason`. A piece the Sheet builds but does not declare, or
+     declares but does not build, fails. There is no `print_parts()` shape
+     to compare it with.
+   - **Print layout and Manual.** `kit_print.py` fuses the pieces into
+     their Sheet's one solid and records them as that Sheet's `fit_tests`,
+     not as Part copies; the host refuses a layout record that leaves them
+     out. `kit_manual.py` lists each fit test on the front page and in
+     `manual.json`'s `fit_tests`, and the host refuses a Manual report that
+     does not list exactly the sealed tree's fit tests. A tree without a
+     fit test is unchanged byte for byte.
 
 ## Not decided here
 

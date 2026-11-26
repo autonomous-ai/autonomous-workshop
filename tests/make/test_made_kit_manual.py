@@ -86,6 +86,30 @@ class MadeKitManualTest(unittest.TestCase):
         self.rewrite(report)
         self.assertIn("which its sealed tree does not declare", self.refused())
 
+    # ADR 0092 amendment 2026-11-26: the prep page lists each fit test.
+
+    def test_the_manual_lists_each_declared_fit_test_on_its_prep_page(self):
+        self.assertNotIn("fit_tests", self.report)
+        contract = json.loads(json.dumps(self.contract))
+        tree = contract["assembly_tree"]
+        printed = next(p for p in tree["parts"] if p["id"] == "B01-cabinet-carcass")
+        tree["sheets"] = [{"id": "B1", "filament": printed["filament"],
+                           "parts": [{"id": "B01-cabinet-carcass", "count": 1}],
+                           "fit_test": {"pieces": [{"id": "T1", "name": "Fit slots"},
+                                                   {"id": "T2", "name": "Fit tab"}],
+                                        "text": "Press T2 into T1."}}]
+        kit = install_document(contract, self.catalogue)
+        _document, code = kit_manual.write_manual(self.cad, kit, COMPANY, meshes_for(kit))
+        self.assertEqual(code, 0)
+        report = json.loads(self.report_path.read_text())
+        self.assertEqual(report["fit_tests"], [{"sheet": "B1", "pieces": [{"id": "T1", "name": "Fit slots"},
+                                                                         {"id": "T2", "name": "Fit tab"}],
+                                                "text": "Press T2 into T1."}])
+        self.check(contract)
+        del report["fit_tests"]
+        self.rewrite(report)
+        self.assertIn("does not list the sealed tree's fit-test pieces", self.refused(contract=contract))
+
     # ADR 0104 decision 5: a seeded kit ships the Manual its Approved Proof sealed.
 
     APPROVED = b"%PDF-1.7\nthe owner-approved manual\n%%EOF\n"

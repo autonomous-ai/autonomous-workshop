@@ -87,3 +87,85 @@ class KitSheetsContractTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+FIT_TEST = {"pieces": [{"id": "T1", "name": "Fit slots"}, {"id": "T2", "name": "Fit tab"}],
+            "text": "Before you start, press T2 into T1: it goes in firmly and holds."}
+
+
+def _fit_sheets(fit_test=FIT_TEST, on=0):
+    import copy
+
+    sheets = copy.deepcopy(SHEETS)
+    sheets[on]["fit_test"] = copy.deepcopy(fit_test)
+    return sheets
+
+
+class FitTestContractTest(unittest.TestCase):
+    """ADR 0092 amendment 2026-11-26: a Sheet may declare fit-test pieces
+    T1-T99 outside the tree's Parts; no step uses them and no spare counts
+    them; they seal and hash with the tree."""
+
+    def _parse(self, block):
+        return parse_design_contract(_contract_text(block), catalogues=_catalogues())
+
+    def _refused(self, block):
+        with self.assertRaises(ContractError) as caught:
+            self._parse(block)
+        return str(caught.exception)
+
+    def test_a_fit_test_pair_seals_with_its_sheet(self):
+        from workshop.make.kit_tree import tree_digest
+        from workshop.wish.assembly_tree import fit_test_pieces
+
+        contract = self._parse(_block(_fit_sheets()))
+        tree = contract.to_dict()["assembly_tree"]
+        self.assertEqual(tree["sheets"][0]["fit_test"], FIT_TEST)
+        self.assertEqual(fit_test_pieces(tree), {"T1": "A1", "T2": "A1"})
+        # Hash-bound: the fit test is in the tree's digest like other Sheet content.
+        plain = self._parse(_block()).to_dict()["assembly_tree"]
+        self.assertNotEqual(tree_digest({"assembly_tree": tree}), tree_digest({"assembly_tree": plain}))
+
+    def test_a_kit_that_ships_no_spares_takes_a_fit_test(self):
+        sheets = _fit_sheets()
+        sheets[1]["parts"][1]["count"] = 1   # the fixture's spare door
+        block = _block(sheets)
+        block["assembly_tree"]["spares"] = "none"
+        self._parse(block)
+
+    def test_fit_test_ids_cannot_be_part_or_sheet_ids(self):
+        for pieces, fragment in (
+            ([{"id": "T01-slots", "name": "Slots"}], "must be T and a number, T1 to T99, with no mnemonic"),
+            ([{"id": "T0", "name": "Slots"}], "T1 to T99"),
+            ([{"id": "T01", "name": "Slots"}], "T1 to T99"),
+            ([{"id": "T100", "name": "Slots"}], "T1 to T99"),
+            ([{"id": "A1", "name": "Slots"}], "T1 to T99"),
+            ([{"id": "T1", "name": "Slots"}, {"id": "T1", "name": "Tab"}], "T1 is already declared"),
+            ([{"id": "T1"}], "must be exactly {id, name}"),
+            ([], "must list 1 to 8 fit-test pieces"),
+        ):
+            message = self._refused(_block(_fit_sheets({**FIT_TEST, "pieces": pieces})))
+            self.assertIn(fragment, message, pieces)
+
+    def test_a_fit_test_needs_its_instruction(self):
+        self.assertIn("fit_test.text must be one short English instruction",
+                      self._refused(_block(_fit_sheets({**FIT_TEST, "text": ""}))))
+        self.assertIn("fit_test must be exactly {pieces, text}",
+                      self._refused(_block(_fit_sheets({"pieces": FIT_TEST["pieces"]}))))
+
+    def test_one_piece_is_declared_on_one_sheet(self):
+        sheets = _fit_sheets()
+        sheets[1]["fit_test"] = {"pieces": [{"id": "T2", "name": "Tab"}], "text": "Press it in."}
+        self.assertIn("fit-test piece T2 is already declared on Sheet", self._refused(_block(sheets)))
+
+    def test_a_fit_test_piece_is_no_part_of_a_sheets_parts(self):
+        sheets = _fit_sheets()
+        sheets[0]["parts"].append({"id": "T1", "count": 1})
+        self.assertIn("'T1' is no printed Part of the tree", self._refused(_block(sheets)))
+
+    def test_no_step_needs_a_fit_test_piece(self):
+        # The tree's steps are unchanged: T1 and T2 are in no step, and the
+        # contract still seals.
+        tree = self._parse(_block(_fit_sheets())).to_dict()["assembly_tree"]
+        used = {entry["id"] for step in tree["steps"] for entry in step["inputs"]}
+        self.assertFalse({"T1", "T2"} & used)

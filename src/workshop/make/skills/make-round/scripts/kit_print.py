@@ -11,7 +11,9 @@ spares the Part declares (``spares``, 2026-11-16), laid apart on the
 plane. No Bought Part is in it. Its leaves are named
 
 - ``<Sheet id>``: the whole Sheet, its frame, runners, tags, gate bars and
-  every copy fused into one connected solid, as it leaves the printer;
+  every copy fused into one connected solid, as it leaves the printer,
+  with its declared fit-test pieces (``fit_tests`` in its record; ADR 0092
+  amendment 2026-11-26), which are no Part copy;
 - ``loose/<Part id>#<n>``: the n-th loose copy of a Part, one connected
   solid (2026-11-16: a loose Part of several pieces fails the layout),
 
@@ -79,7 +81,13 @@ def expected_copies(kit: dict) -> tuple[list[dict], dict]:
         for entry in sheet["parts"]:
             copies[entry["id"]] = copies.get(entry["id"], 0) + int(entry["count"])
             on_sheet.add(entry["id"])
-        sheets.append({"id": sheet["id"], "filament": sheet["filament"], "copies": copies})
+        record = {"id": sheet["id"], "filament": sheet["filament"], "copies": copies}
+        tests = [piece["id"] for piece in (sheet.get("fit_test") or {}).get("pieces") or ()]
+        if tests:
+            # ADR 0092 amendment 2026-11-26: fit-test pieces print on their
+            # Sheet, fused with it, and are no Part copy.
+            record["fit_tests"] = tests
+        sheets.append(record)
     loose = {part: plan.totals.get(part, 0) + int(plan.parts[part].get("spares", 0)) for part in sorted(plan.printed)
              if part not in on_sheet and plan.totals.get(part, 0) > 0}
     return sheets, loose
@@ -201,9 +209,10 @@ def layout(project: Path) -> dict:
         seen = {}
         for item in built["parts"]:
             seen[item["id"]] = seen.get(item["id"], 0) + 1
-        if seen != sheet["copies"]:
+        wanted = {**sheet["copies"], **{piece: 1 for piece in sheet.get("fit_tests") or ()}}
+        if seen != wanted:
             raise ValueError("sheet_%s.py holds %s, not its contract copies %s: run kit_sheets.py check"
-                             % (sheet["id"], seen, sheet["copies"]))
+                             % (sheet["id"], seen, wanted))
         pieces = [*_solids(built["frame"]),
                   *[solid for item in built["parts"]
                     for shape in (item["shape"], *(g["shape"] for g in item["gates"])) for solid in _solids(shape)]]

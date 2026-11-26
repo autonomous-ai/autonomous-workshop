@@ -59,6 +59,14 @@ Part, as its ``spares`` (2026-11-16). A kit whose tree declares
 no spare, and fails any Part that declares ``spares`` or that its Sheets
 carry more often than the toy uses it; its report adds ``"spares":
 "none"``. Every other rule is unchanged.
+
+A Sheet may declare a ``fit_test`` (ADR 0092 amendment 2026-11-26):
+pieces ``T1``, ``T2``... the buyer presses together before building. Each
+is one copy on its Sheet under its own id and passes every rule above that
+reads the Sheet (one connected solid, on the bed, flat, one bed, separable,
+nipper access, fragile tips) and the minimum size, with no
+``small_reason``. It is no Part: it has no ``print_parts()`` shape to
+match, and no spare rule counts it.
 """
 
 from __future__ import annotations
@@ -402,11 +410,18 @@ def check(described: dict, spec: dict, measures: dict) -> list[str]:
     for item in parts:
         counted[item["id"]] = counted.get(item["id"], 0) + 1
     wanted = {entry["id"]: entry["count"] for entry in spec["parts"]}
+    tests = fit_test_ids(spec)
+    wanted.update({piece: 1 for piece in tests})
     for part in sorted(set(counted) | set(wanted)):
         if counted.get(part, 0) != wanted.get(part, 0):
             fails.append("%s: holds %d x %s, but the contract's Sheet %s lists %d"
                          % (name, counted.get(part, 0), part, spec["id"], wanted.get(part, 0)))
     for item in parts:
+        if item["id"] in tests:
+            under = size_shortfall(item)
+            if under:
+                fails.append("%s: fit-test piece %s is under the minimum loose-part size (%s): enlarge it"
+                             % (name, item["id"], "; ".join(under)))
         reference = measures.get(item["id"])
         if reference and not (_same(item["volume"], reference["volume"]) and _same(item["area"], reference["area"])):
             fails.append("%s: a copy of %s is %.1f mm3 / %.1f mm2, but print_parts() builds it at %.1f mm3 / "
@@ -471,6 +486,27 @@ def check(described: dict, spec: dict, measures: dict) -> list[str]:
     return fails
 
 
+def fit_test_ids(sheet: dict) -> list[str]:
+    """The fit-test piece ids a Sheet's contract entry declares, in order."""
+
+    test = sheet.get("fit_test") if isinstance(sheet, dict) else None
+    return [piece["id"] for piece in (test or {}).get("pieces") or ()]
+
+
+def size_shortfall(measure: dict) -> list[str]:
+    """Each way a measured shape is under MIN-PART-SIZE R1 (sorted size,
+    volume); empty when it passes."""
+
+    thick, short, long_ = measure["size"]
+    return [what for what, ok in (
+        ("thickness %.1f < %.1f" % (thick, MIN_THICK), thick >= MIN_THICK - 1e-6),
+        ("short side %.1f < %.1f" % (short, MIN_SHORT), short >= MIN_SHORT - 1e-6),
+        ("long side %.1f < %.1f" % (long_, MIN_LONG), long_ >= MIN_LONG - 1e-6),
+        ("footprint %.0f < %.0f mm2" % (short * long_, MIN_FOOT), short * long_ >= MIN_FOOT - 1e-6),
+        ("volume %.0f < %.0f mm3" % (measure["volume"], MIN_VOLUME), measure["volume"] >= MIN_VOLUME - 1e-6),
+    ) if not ok]
+
+
 def bed_failures(name: str, plan) -> list[str]:
     """The One bed rule on a whole Sheet's plan geometry (shapely)."""
 
@@ -507,14 +543,8 @@ def part_failures(sheets: list, printed: dict, totals: dict, measures: dict,
         if measure.get("pieces", 1) != 1:
             fails.append("%s is %d solids, not one connected solid: join its pieces into one body, or Factory "
                          "splits them apart and prints the strays" % (part, measure["pieces"]))
-        thick, short, long_ = measure["size"]
-        under = [what for what, ok in (
-            ("thickness %.1f < %.1f" % (thick, MIN_THICK), thick >= MIN_THICK - 1e-6),
-            ("short side %.1f < %.1f" % (short, MIN_SHORT), short >= MIN_SHORT - 1e-6),
-            ("long side %.1f < %.1f" % (long_, MIN_LONG), long_ >= MIN_LONG - 1e-6),
-            ("footprint %.0f < %.0f mm2" % (short * long_, MIN_FOOT), short * long_ >= MIN_FOOT - 1e-6),
-            ("volume %.0f < %.0f mm3" % (measure["volume"], MIN_VOLUME), measure["volume"] >= MIN_VOLUME - 1e-6),
-        ) if not ok]
+        long_ = measure["size"][2]
+        under = size_shortfall(measure)
         if under and printed[part].get("small_reason"):
             small.append(part)
         elif under:
