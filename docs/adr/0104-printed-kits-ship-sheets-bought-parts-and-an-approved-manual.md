@@ -739,6 +739,66 @@ checked where the whole toy is built.
   amendment concerns printed pieces only. Frozen runs keep their run-local
   tool bytes.
 
+## Amendment 2026-11-26 (later): a press offset round its overlaps
+
+- **Problem.** The Kyoto Gion Canal kit declares `press_mm: 0.1` on 63
+  inputs. In its component round every one was refused: build123d's
+  `offset` returns a null shape or an offset error for the Part (an
+  abutment of 74 faces, a cherry trunk of 278, a roof, a gravel bed) and
+  also for its obstacles cropped to the sweep (the path, the tray). Miami's
+  simpler Parts passed. The fits themselves are sound: on the bridge
+  abutment the deepest rib bites about 0.035 mm.
+- **Rule.** When neither the Part nor its obstacles can be offset whole,
+  the Part is offset only round where it can bite
+  (`CadGeometry.pressed_local`):
+  1. At every pose the sweep samples (the same `steps` and `translation`),
+     the Part's overlap with each obstacle is measured by a boolean common.
+  2. Each overlap's box, taken back into the Part's own frame, is a window.
+     A box inside another drops. A box longer than 8 mm on a side is split
+     into tiles that cover it.
+  3. Each window is grown by a margin M > `press_mm` (`press_mm` + 0.3 mm,
+     else + 0.15, else + 0.6). The Part is cut to it, and each cut solid is
+     offset inward by `press_mm`.
+  4. The rest of the Part, outside every window, is kept unshrunk.
+  5. The shrunk windows and the unshrunk rest sweep together against the
+     unchanged obstacles at the unchanged 0.001 mm3 limit.
+
+  Why this is the same gate. A point of an overlap lies at least M from
+  its window's cut faces. So it is deeper than `press_mm` inside the cut
+  exactly when it is deeper than `press_mm` inside the whole Part. The
+  windows' offsets therefore overlap the obstacles exactly where the whole
+  Part's offset would, at every sampled pose, and hold nothing the whole
+  offset does not. The rest sweeps unshrunk: it overlaps nothing, and were
+  an overlap missed it would fail there rather than pass.
+
+  A bite deeper than `press_mm`, a sideways slip, or a collision anywhere
+  else on the Part fails exactly as before. The rule is the input offset's
+  own: an overlap no deeper than `press_mm` passes wherever it lies, as it
+  always has. Seated contact at the seat is judged as before. An overlap
+  the kernel cannot measure, a window it cannot cut or offset at any
+  margin, or a rest it cannot cut is a refusal, never a pass. The
+  condition records `press_offset: "local"` and `press_windows`, and its
+  `presses` row records `offset: "local"`.
+- **Order.** The input's own offset first, then the obstacles' (2026-11-19,
+  press obstacles), then the windows. A Part the kernel can offset whole is
+  swept exactly as before and never reaches the windows.
+- **Evidence.** `tests/make/test_kit_tree_press_seat.py`:
+  - A peg with a name embossed on its top, which the kernel itself cannot
+    offset (a null shape, as in Kyoto), passes a 0.05 mm rib bite in a
+    4.0 mm socket at `press_mm` 0.06.
+  - Fails: a 0.3 mm bite a side, a 0.3 mm sideways shift, and an arm 5 mm
+    off the socket that ploughs 1 mm into the base.
+  - Refused: no offset anywhere.
+  - A plain peg never reaches the windows.
+  - Where the whole offset can be made, the windows give the same verdict
+    and overlap at depths 0.03, 0.06 and 0.12.
+
+  On the Kyoto bridge abutment, at depths 0.01 to 0.04, the whole offset and
+  the windows gave identical verdicts and overlaps (0.007218, 0.004124 and
+  0.001869 mm3, then clear). KYOTO_RESULT
+- **Unchanged.** Every input without `press_mm`, and every Part or
+  obstacle set the kernel can offset whole.
+
 ## Not decided here
 
 - The gate and fit constants are the Amsterdam project's, set by the owner

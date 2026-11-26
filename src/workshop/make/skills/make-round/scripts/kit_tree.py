@@ -76,8 +76,11 @@ The gates
   clean. A press input (``press_mm``, same amendment) is swept offset
   inward by its declared bite at the same limit; a Part the kernel cannot
   offset sweeps against its obstacles, cropped to the sweep, offset inward
-  by the same bite (ADR 0104 amendment 2026-11-19, press obstacles), and
-  is refused when neither offset can be made.
+  by the same bite (ADR 0104 amendment 2026-11-19, press obstacles); where
+  neither offsets whole, the Part is offset only in windows round where it
+  overlaps them, each reaching past every overlap by more than the bite,
+  which is exactly the whole offset there (ADR 0104 amendment 2026-11-26,
+  press local offset). An offset that cannot be made at all is refused.
   A ``snap`` step (ADR 0104 amendment 2026-11-17) declares one pair, or a
   list of pairs, that may overlap on the way in: each snapping Part against
   its own catch, each overlap no deeper across the direction than that
@@ -196,6 +199,15 @@ LEAD_CLEARANCE_MM = 0.4      # 0.2 mm all round the lead: a cadfits slip fit
 # (an OCCT bounding box's float noise, not a design allowance).
 SNAP_TOLERANCE_MM = 1e-3
 JOINT_GAP_MM = 0.3           # a face this close to what it joins is a joint face
+# Press local offset (ADR 0104 amendment 2026-11-26): where the kernel can
+# offset neither a press input nor its obstacles whole, the input is offset
+# only inside windows round where it overlaps them. A window reaches past
+# every overlap by more than the press, so the offset of its cut faces can
+# never reach an overlap: the window's offset is exactly the whole Part's
+# offset there. These are the margins tried beyond the press, in order, and
+# the longest side of one window before it is split into tiles.
+PRESS_LOCAL_MARGINS_MM = (0.3, 0.15, 0.6)
+PRESS_LOCAL_TILE_MM = 8.0
 PARALLEL_TOLERANCE_DEG = 2.0
 PRINT_LINES = 2              # the thinnest printable wall, in lines
 # The tilt hold (ADR 0104 amendment 2026-11-19, rule i): a unit set down by a
@@ -846,6 +858,18 @@ def _insert_step(plan, geometry, bodies, item, k, wall, sequence, report) -> Non
                         condition["inputs"]["press_offset"] = "obstacles"
                         condition["description"] = condition["description"].replace(
                             ", offset inward by its", ", against its obstacles offset inward by its")
+                if error is not None and blocking and hasattr(geometry, "pressed_local"):
+                    # Neither side offsets whole: offset the Part only in
+                    # windows round its overlaps (amendment 2026-11-26),
+                    # exactly the whole offset there.
+                    local, why = geometry.pressed_local(condition, moving, obstacles, press)
+                    if local is None:
+                        error = "%s; nor in windows round its overlaps: %s" % (error, why)
+                    else:
+                        swept, error, offset_side = local, None, "local"
+                        condition["inputs"]["press_offset"] = "local"
+                        condition["description"] = condition["description"].replace(
+                            ", offset inward by its", ", offset inward round its overlaps by its")
                 report["presses"].append({"id": condition["id"], "step": step, "input": name, "press_mm": press,
                                           "offset": offset_side, "verdict": "PASS" if error is None else "FAIL"})
                 if error is not None:
@@ -1660,6 +1684,114 @@ class CadGeometry:
             found.extend(shrunk)
         return found, None
 
+    def pressed_local(self, condition: dict, moving: list[Body], obstacles: list[Body], depth: float):
+        """``moving`` offset inward by a press input's ``depth`` only where
+        it can bite, for a Part the kernel offsets neither whole nor by its
+        obstacles (ADR 0104 amendment 2026-11-26, press local offset):
+        ``(bodies, None)`` or ``(None, reason)``.
+
+        At every pose of the condition's sweep the Part's overlap with each
+        obstacle is measured; each overlap's box, in the Part's own frame,
+        grown by a margin M > ``depth`` (and split into tiles no longer than
+        PRESS_LOCAL_TILE_MM) is a window. The Part is cut to each window and
+        each cut solid is offset inward by ``depth``. A point of an overlap
+        lies at least M from its window's cut faces, so it is deeper than
+        ``depth`` in the cut exactly when it is deeper than ``depth`` in the
+        whole Part: the windows' offsets overlap the obstacles exactly where
+        the whole Part's offset would, at the same sampled poses, and hold
+        nothing the whole offset does not. Swept at the same overlap limit,
+        the gate is the input offset's, unchanged. With no overlap at any
+        pose the Part itself is returned, unshrunk. Any overlap the kernel
+        cannot measure, cut or offset is a refusal, never a pass."""
+
+        from build123d import Box, Location, Vector
+
+        inputs = condition["inputs"]
+        steps, move = int(inputs["steps"]), Vector(*inputs["translation"])
+        group = self._group(moving)
+        boxes = [group.moved(Location(move * (step / steps))).bounding_box() for step in range(steps + 1)]
+        near = []
+        for body in obstacles:
+            try:
+                local = self.motion["crop_to_sweep"](body.shape, boxes)
+            except Exception:  # noqa: BLE001 - an obstacle the kernel cannot crop is measured whole
+                local = body.shape
+            if local is not None:
+                near.append((body.key, local))
+        found = []
+        for step in range(steps + 1):
+            shift = move * (step / steps)
+            moved = group.moved(Location(shift))
+            box = moved.bounding_box()
+            for key, shape in near:
+                if _apart(box, _grown(shape.bounding_box(), 0.0)):
+                    continue
+                try:
+                    common = moved.intersect(shape)
+                except Exception as exc:  # noqa: BLE001 - an unmeasured overlap is a refusal
+                    return None, "the overlap with %s at step %d/%d cannot be measured: %s" % (key, step, steps, exc)
+                for solid in (common.solids() if common is not None else ()):
+                    if solid.volume <= 0:
+                        continue
+                    bb = solid.bounding_box()
+                    found.append(((bb.min.X - shift.X, bb.min.Y - shift.Y, bb.min.Z - shift.Z),
+                                  (bb.max.X - shift.X, bb.max.Y - shift.Y, bb.max.Z - shift.Z)))
+        if not found:
+            return moving, None
+        windows = _press_windows(found)
+        solids = list(group.solids())
+        shrunk, why, used = [], None, []
+        for index, (lo, hi) in enumerate(windows, 1):
+            piece = None
+            for margin in PRESS_LOCAL_MARGINS_MM:
+                piece, why = self._press_window(solids, lo, hi, margin + depth, depth, Box, Location)
+                if piece is not None:
+                    used.append((lo, hi, margin + depth))
+                    break
+            if piece is None:
+                return None, "its window %d of %d round its overlaps cannot be offset: %s" % (index, len(windows), why)
+            shrunk += [Body(moving[0].label, shape, key="%s@press%d" % (moving[0].key, index)) for shape in piece]
+        # The rest of the Part, outside every window, sweeps as it is: it
+        # overlaps nothing, and were an overlap missed it would still fail.
+        try:
+            rest = group
+            for lo, hi, margin in used:
+                low = [v - margin for v in lo]
+                high = [v + margin for v in hi]
+                rest = rest - (Location(tuple((a + b) / 2 for a, b in zip(low, high)))
+                               * Box(*(b - a for a, b in zip(low, high))))
+        except Exception as exc:  # noqa: BLE001 - a Part the kernel cannot cut is a refusal
+            return None, "the kernel cannot cut the windows from the rest of the Part: %s" % exc
+        shrunk += [Body(moving[0].label, part, key="%s@rest" % moving[0].key)
+                   for part in (rest.solids() if rest is not None else ()) if part.volume > 0]
+        condition["inputs"]["press_windows"] = len(windows)
+        return shrunk, None
+
+    def _press_window(self, solids, lo, hi, margin, depth, Box, Location):
+        """Each solid of the Part cut to the box ``lo``-``hi`` grown by
+        ``margin``, offset inward by ``depth``: ``(shapes, None)`` or
+        ``(None, reason)``."""
+
+        low = [v - margin for v in lo]
+        high = [v + margin for v in hi]
+        window = Location(tuple((a + b) / 2 for a, b in zip(low, high))) * Box(*(b - a for a, b in zip(low, high)))
+        shapes = []
+        for solid in solids:
+            if _apart(solid.bounding_box(), (tuple(low), tuple(high))):
+                continue
+            try:
+                cut = solid & window
+            except Exception as exc:  # noqa: BLE001 - a window the kernel cannot cut is a refusal
+                return None, "the kernel cannot cut the Part to it: %s" % exc
+            for part in (cut.solids() if cut is not None else ()):
+                if part.volume <= 0:
+                    continue
+                pressed, error = self.pressed([Body(None, part, key="window")], depth)
+                if error is not None:
+                    return None, error
+                shapes.append(pressed[0].shape)
+        return shapes, None
+
     def touching(self, a, b, gap: float) -> bool:
         """Whether two placed shapes come within ``gap`` of each other."""
 
@@ -1949,6 +2081,29 @@ def _face_frame(face, GeomType):
     except Exception:  # noqa: BLE001 - an unreadable face is not judged
         return None
     return None
+
+
+def _press_windows(boxes, tile: float = PRESS_LOCAL_TILE_MM) -> list:
+    """The overlap boxes of a press sweep, ``(lo, hi)`` in the Part's frame,
+    as windows: a box inside another drops, and a box longer than ``tile`` on
+    a side is split into tiles no longer than it, which together cover it."""
+
+    kept = []
+    for lo, hi in sorted(boxes, key=lambda b: -math.prod(max(h - l, 1e-9) for l, h in zip(*b))):
+        if any(all(a <= l and h <= b for l, h, a, b in zip(lo, hi, klo, khi)) for klo, khi in kept):
+            continue
+        kept.append((tuple(lo), tuple(hi)))
+    windows = []
+    for lo, hi in kept:
+        counts = [max(1, math.ceil((h - l) / tile - 1e-9)) for l, h in zip(lo, hi)]
+        spans = [(h - l) / n for l, h, n in zip(lo, hi, counts)]
+        for i in range(counts[0]):
+            for j in range(counts[1]):
+                for k in range(counts[2]):
+                    index = (i, j, k)
+                    windows.append((tuple(l + s * n for l, s, n in zip(lo, spans, index)),
+                                    tuple(l + s * (n + 1) for l, s, n in zip(lo, spans, index))))
+    return windows
 
 
 def _grown(box, margin):

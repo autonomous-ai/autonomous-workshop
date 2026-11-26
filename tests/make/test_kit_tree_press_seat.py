@@ -4,8 +4,10 @@
 ``press_mm``: its press ribs' bite a side. Its sweep uses the Part offset
 inward by that depth, at the unchanged 0.001 mm3 limit. A Part the kernel
 cannot offset sweeps against its obstacles offset inward by that depth
-instead (same amendment, press obstacles); neither offset possible is
-refused.
+instead (same amendment, press obstacles). Where neither offsets whole,
+the Part is offset only in windows round its overlaps (amendment
+2026-11-26, press local offset), exactly the whole offset there; an offset
+that cannot be made anywhere is refused.
 
 (e) A flat joint face at an angle to the direction, or a round one whose
 axis is off it, is accepted only as a seat face: the input's outward normal
@@ -64,7 +66,9 @@ class Built(kit_tree.CadGeometry):
     def pressed(self, moving, depth, sharp=False):
         # refuse_offset: True refuses every offset; "input" only the moving peg's,
         # so its obstacles are offset instead (press obstacles)
-        if self.refuse_offset is True or (self.refuse_offset == "input" and moving[0].key.startswith("A02-")):
+        # "whole": both whole Parts refuse, as Kyoto's do; a window's cut is offset
+        if self.refuse_offset is True or (self.refuse_offset == "input" and moving[0].key.startswith("A02-")) or (
+                self.refuse_offset == "whole" and moving[0].key != "window"):
             return None, "the kernel refuses to offset %s: offset Error" % moving[0].key
         return super().pressed(moving, depth, sharp)
 
@@ -283,6 +287,136 @@ class ContractSyntaxTest(unittest.TestCase):
         self.assertTrue(any("press_mm belongs to" in e for e in self.errors(on_base=True)))
         for bad in (0, -0.05, 0.11, True, "0.06"):
             self.assertTrue(any("press_mm must be" in e for e in self.errors(press=bad)), bad)
+
+
+
+class PressLocalOffsetTest(unittest.TestCase):
+    """ADR 0104 amendment 2026-11-26, press local offset: a peg with a name
+    embossed on its top, which the kernel cannot offset whole (it returns a
+    null shape, as Kyoto's Parts do), pressed into a 4 mm socket whose base
+    the kernel cannot offset either."""
+
+    def setUp(self):
+        try:
+            from build123d import Box, Pos, Rot, Text, extrude
+        except ImportError:                                   # pragma: no cover
+            self.skipTest("build123d")
+        self.Box, self.Pos, self.Rot, self.Text, self.extrude = Box, Pos, Rot, Text, extrude
+
+    def peg(self, size=4.1, lug=None):
+        Box, Pos, Rot = self.Box, self.Pos, self.Rot
+        name = Pos(0, size / 2, 17) * Rot(-90, 0, 0) * self.extrude(self.Text("KYOTO", 1.5), 0.12)
+        peg = Pos(0, 0, 12.5) * Box(size, size, 15) + name
+        if lug is not None:
+            # an arm out to x = 7, its foot ``lug`` mm into the base's top at the seat
+            peg = peg + Pos(4.5, 0, 12.5 - lug) * Box(5, 2, 5)
+        return peg
+
+    def parts(self, **peg):
+        Box, Pos = self.Box, self.Pos
+        base = Pos(0, 0, 5) * Box(20, 20, 10) - Pos(0, 0, 7.5) * Box(4, 4, 5)
+        return [("A01-base", base), ("A02-peg", self.peg(**peg))]
+
+    def test_the_kernel_cannot_offset_the_named_peg_whole(self):
+        body = kit_tree.Body("A02-peg", self.peg(), key="A02-peg#1")
+        shrunk, error = Built([]).pressed([body], 0.06)
+        self.assertIsNone(shrunk)
+        self.assertIn("A02-peg#1", error)
+
+    def test_a_part_offset_round_its_overlaps_passes_a_rib_bite(self):
+        report = check(self.parts(), press=0.06, refuse_offset="whole")
+        self.assertEqual(report["failures"], [])
+        (record,) = report["presses"]
+        self.assertEqual((record["offset"], record["verdict"]), ("local", "PASS"))
+        (sequence,) = report["conditions"]
+        (condition,) = sequence["inputs"]["steps"]
+        self.assertEqual(condition["inputs"]["press_offset"], "local")
+        self.assertGreater(condition["inputs"]["press_windows"], 0)
+        self.assertEqual(condition["thresholds"]["maxOverlapMm3"], kit_tree.OVERLAP_MM3)
+
+    def test_the_real_kernel_failure_takes_the_local_offset(self):
+        # Only the base's offset is refused here: the peg's whole offset fails in the kernel itself.
+        class BaseRefused(Built):
+            def pressed(self, moving, depth, sharp=False):
+                if moving[0].key.startswith("A01-"):
+                    return None, "the kernel refuses to offset %s: offset Error" % moving[0].key
+                return kit_tree.CadGeometry.pressed(self, moving, depth, sharp)
+
+        plan = kit_tree.Plan(kit(press=0.06))
+        report = kit_tree.check_component(plan, BaseRefused(self.parts()), "block", 0.4)
+        self.assertEqual(report["failures"], [])
+        self.assertEqual(report["presses"][0]["offset"], "local")
+
+    def test_a_bite_of_0_3_mm_still_fails(self):
+        report = check(self.parts(size=4.6), press=0.06, refuse_offset="whole")
+        self.assertTrue(any("cannot go in alone" in f for f in report["failures"]), report["failures"])
+        self.assertEqual((report["presses"][0]["offset"], report["presses"][0]["verdict"]), ("local", "FAIL"))
+
+    def test_a_press_shifted_0_3_mm_sideways_still_fails(self):
+        Box, Pos = self.Box, self.Pos
+        base = Pos(0, 0, 5) * Box(20, 20, 10) - Pos(0, 0, 7.5) * Box(4, 4, 5)
+        report = check([("A01-base", base), ("A02-peg", Pos(0.3, 0, 0) * self.peg())], press=0.06,
+                       refuse_offset="whole")
+        self.assertTrue(any("cannot go in alone" in f for f in report["failures"]), report["failures"])
+
+    def test_interference_away_from_the_joint_still_fails(self):
+        # An arm 5 mm off the socket whose foot ploughs 1 mm into the base's top: it
+        # still overlaps after the first step out (the seat itself is seated contact).
+        report = check(self.parts(lug=1.0), press=0.06, refuse_offset="whole")
+        self.assertTrue(any("cannot go in alone" in f for f in report["failures"]), report["failures"])
+        self.assertEqual((report["presses"][0]["offset"], report["presses"][0]["verdict"]), ("local", "FAIL"))
+
+    def test_an_offset_no_window_can_take_is_refused_never_passed(self):
+        report = check(self.parts(), press=0.06, refuse_offset=True)
+        (failure,) = [f for f in report["failures"] if "press input" in f]
+        self.assertIn("cannot be offset inward by its 0.06 mm press", failure)
+        self.assertIn("nor in windows round its overlaps", failure)
+        self.assertEqual(report["presses"][0]["verdict"], "FAIL")
+        self.assertEqual(report["conditions"], [])
+
+    def test_a_simple_part_takes_the_whole_offset_and_never_the_windows(self):
+        from unittest import mock
+
+        Box, Pos = self.Box, self.Pos
+        base = Pos(0, 0, 5) * Box(20, 20, 10) - Pos(0, 0, 7.5) * Box(4, 4, 5)
+        parts = [("A01-base", base), ("A02-peg", Pos(0, 0, 10) * Box(4.1, 4.1, 10))]
+        with mock.patch.object(kit_tree.CadGeometry, "pressed_local", side_effect=AssertionError("not used")):
+            report = check(parts, press=0.06)
+        self.assertEqual(report["failures"], [])
+        self.assertEqual(report["presses"][0]["offset"], "input")
+
+    def test_the_windows_measure_what_the_whole_offset_measures(self):
+        # Where the kernel can offset the Part whole, both give the same overlap at every depth.
+        Box, Pos = self.Box, self.Pos
+        base = Pos(0, 0, 5) * Box(20, 20, 10) - Pos(0, 0, 7.5) * Box(4, 4, 5)
+        geometry = Built([])
+        moving = [kit_tree.Body("A02-peg", Pos(0, 0, 10) * Box(4.2, 4.2, 10), key="A02-peg#1")]
+        obstacles = [kit_tree.Body("A01-base", base, key="A01-base#1")]
+        for depth in (0.03, 0.06, 0.12):
+            condition = {"id": "c", "check": "linear_motion_collision", "expect": "clear",
+                         "inputs": {"moving_part": "A02-peg#1", "obstacle_parts": ["A01-base#1"],
+                                    "translation": [0, 0, 11.0], "steps": 14, "allow_seated_contact": True},
+                         "thresholds": {"maxOverlapMm3": kit_tree.OVERLAP_MM3, "maxStepMm": 0.8}}
+            whole, _ = geometry.pressed(moving, depth)
+            local, error = geometry.pressed_local(dict(condition, inputs=dict(condition["inputs"])), moving,
+                                                  obstacles, depth)
+            self.assertIsNone(error)
+            a, b = geometry.sweep(condition, whole, obstacles), geometry.sweep(condition, local, obstacles)
+            self.assertEqual(a.get("status"), b.get("status"), depth)
+            self.assertAlmostEqual(float(a.get("overlapMm3") or 0), float(b.get("overlapMm3") or 0), places=6)
+
+    def test_windows_cover_every_overlap_and_split_long_ones(self):
+        boxes = [((0, 0, 0), (1, 1, 1)), ((0.2, 0.2, 0.2), (0.8, 0.8, 0.8)), ((0, 0, 0), (20, 1, 1))]
+        windows = kit_tree._press_windows(boxes, tile=8.0)
+        # the inner box drops; the 20 mm one is three tiles; the unit box lies inside the first tile
+        self.assertEqual(len(windows), 3)
+        self.assertEqual(windows[0][0], (0, 0, 0))
+        self.assertAlmostEqual(windows[-1][1][0], 20)
+        for lo, hi in boxes:
+            # every point of every overlap box lies in some window: its corners do, per tile
+            for corner in (lo, hi):
+                self.assertTrue(any(all(a - 1e-9 <= c <= b + 1e-9 for a, c, b in zip(wlo, corner, whi))
+                                    for wlo, whi in windows), corner)
 
 
 if __name__ == "__main__":

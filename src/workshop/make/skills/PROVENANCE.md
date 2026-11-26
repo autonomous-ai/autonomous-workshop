@@ -3136,3 +3136,14 @@ convention, so sealed STEPs and frozen runs keep their colours.
   (volume, area and sorted size, within the measures' rounding), and the
   spare rule and the `"spares": "none"` count take the code once over all
   its Parts. Messages for Parts without a code are unchanged.
+
+## Workshop-local: press offset round its overlaps (2026-11-26, ADR 0104 amendment)
+
+- `make-round/scripts/kit_tree.py`: when the kernel can offset neither a
+  press input's Part nor its obstacles whole, `CadGeometry.pressed_local`
+  measures the Part's overlaps at every pose of the sweep and offsets the
+  Part only inside windows round them, each window reaching more than
+  `press_mm` past every overlap (so its offset equals the whole offset
+  there), with the rest of the Part swept unshrunk. The condition records
+  `press_offset: "local"` and `press_windows`. Every other path, and every
+  Part the kernel can offset whole, is unchanged.
