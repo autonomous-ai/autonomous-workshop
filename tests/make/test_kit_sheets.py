@@ -347,9 +347,6 @@ class NearestCopyTest(unittest.TestCase):
         self.assertGreaterEqual(zmax, 1.0)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 PART_FILE = '''
 from build123d import Align, Box, Compound, Pos
@@ -634,3 +631,64 @@ class SheetsRoundTest(unittest.TestCase):
         runner = verifier["Runner"](cwd=self.project, dry_run=True, verbose=False)
         self.assertEqual(verifier["_run_kit_sheets"](runner, self.project), 0)
         self.assertEqual(runner.records, [])
+
+
+class PrintCodeSpareTest(unittest.TestCase):
+    """ADR 0092 amendment 2026-11-26: Parts sharing a ``print`` code are one
+    print; each must measure the same, and the spare rule counts the code
+    once over all its Parts."""
+
+    CAP = {"size": [2.0, 5.0, 12.0], "volume": 120.0, "area": 180.0}
+    TOTALS = {"L37-cap-a": 3, "L38-cap-b": 5}
+
+    def sheets(self, a, b):
+        return [{"id": "L1", "filament": "black", "parts": [{"id": "L37-cap-a", "count": a},
+                                                          {"id": "L38-cap-b", "count": b}]}]
+
+    def printed(self, code="L37"):
+        return {part: ({"print": code} if code else {}) for part in self.TOTALS}
+
+    def measures(self, b=None):
+        return {"L37-cap-a": dict(self.CAP), "L38-cap-b": dict(b or self.CAP)}
+
+    def test_a_shared_code_with_matching_geometry_counts_one_spare(self):
+        self.assertEqual(ks.part_failures(self.sheets(4, 5), self.printed(), self.TOTALS, self.measures())[0], [])
+        # Without the code each Part asks its own spare, as before.
+        fails = ks.part_failures(self.sheets(4, 5), self.printed(None), self.TOTALS, self.measures())[0]
+        self.assertEqual(fails, ["L38-cap-b is 12.0 mm long, under 15: its Sheets carry 5, the toy uses 5; "
+                                 "add one spare"])
+        # Under one code the print still needs its one spare.
+        self.assertEqual(ks.part_failures(self.sheets(3, 5), self.printed(), self.TOTALS, self.measures())[0],
+                         ["L37 is 12.0 mm long, under 15: its Sheets carry 8, the toy uses 8; add one spare"])
+
+    def test_mismatched_geometry_under_one_code_is_refused(self):
+        for other in ({**self.CAP, "volume": 130.0}, {**self.CAP, "area": 190.0},
+                      {**self.CAP, "size": [2.0, 5.0, 12.5]}):
+            fails = ks.part_failures(self.sheets(4, 5), self.printed(), self.TOTALS, self.measures(other))[0]
+            self.assertIn("L37-cap-a and L38-cap-b share print code L37 but are not the same print", fails[0])
+        # Rounding noise is no mismatch.
+        close = {**self.CAP, "volume": 120.0004, "size": [2.0, 5.0, 12.001]}
+        self.assertEqual(ks.part_failures(self.sheets(4, 5), self.printed(), self.TOTALS, self.measures(close))[0],
+                         [])
+
+    def test_a_kit_that_ships_no_spares_carries_a_shared_print_exactly(self):
+        self.assertEqual(ks.part_failures(self.sheets(3, 5), self.printed(), self.TOTALS, self.measures(),
+                                          no_spares=True)[0], [])
+        self.assertEqual(ks.part_failures(self.sheets(4, 5), self.printed(), self.TOTALS, self.measures(),
+                                          no_spares=True)[0],
+                         ['L37: its Sheets carry 9, the toy uses 8, but the kit declares spares "none": '
+                          'carry exactly 8'])
+
+    def test_a_loose_shared_print_takes_one_spare_on_any_of_its_parts(self):
+        printed = {part: {"print": "T37", "loose_reason": "round"} for part in ("T37-pin-a", "T38-pin-b")}
+        totals = {"T37-pin-a": 2, "T38-pin-b": 2}
+        measures = {part: dict(self.CAP) for part in printed}
+        self.assertEqual(ks.part_failures([], printed, totals, measures)[0],
+                         ['T37 is 12.0 mm long, under 15, and prints loose with no spare: state "spares": 1 '
+                          'or more on its tree entry'])
+        printed["T38-pin-b"]["spares"] = 1
+        self.assertEqual(ks.part_failures([], printed, totals, measures)[0], [])
+
+
+if __name__ == "__main__":
+    unittest.main()

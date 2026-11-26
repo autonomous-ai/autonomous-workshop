@@ -32,7 +32,7 @@ from typing import Iterable, List, Mapping, Optional, Sequence, Tuple
 from workshop.errors import ContractError
 
 
-__all__ = ["PrintedPrimary", "SceneBody", "printed_only_primary", "scene_bodies"]
+__all__ = ["PrintedPrimary", "SceneBody", "printed_only_primary", "scene_bodies", "scene_prints"]
 
 
 # Relative tolerance on volume and area. A STEP round trip keeps both to
@@ -243,6 +243,26 @@ def scene_bodies(content: bytes) -> Tuple[SceneBody, ...]:
     """Every leaf body in ``content``, in file order."""
 
     return tuple(body for _, _, body in _leaves(_read_document(content)))
+
+
+def scene_prints(content: bytes) -> Tuple[Tuple[str, Tuple[float, ...]], ...]:
+    """Every leaf body of ``content`` with a fingerprint that does not change
+    when the body is moved or turned: its volume, area and the sorted
+    principal moments of inertia of its volume. Two leaves of one print
+    placed in different poses give the same fingerprint, within float noise."""
+
+    ocp = _ocp()
+    document = _read_document(content)  # held: its labels die with it
+    found = []
+    for label, _parent, body in _leaves(document):
+        shape = ocp["XCAFDoc_ShapeTool"].GetShape_s(label)
+        volume = ocp["GProp_GProps"]()
+        ocp["BRepGProp"].VolumeProperties_s(shape, volume)
+        principal = volume.PrincipalProperties()
+        moments = principal.Moments()
+        found.append((body.name, (body.total[0], body.total[1], *sorted(abs(m) for m in moments))))
+    del document
+    return tuple(found)
 
 
 def _close(a: float, b: float) -> bool:

@@ -445,6 +445,7 @@ _KIT_LAYOUT_FIELDS = _PRINTED_PRIMARY_FIELDS | {"layout_path", "layout_sha256"}
 # scene as the root primary the viewer shows and its print layout under
 # ``parts/``, the one set Factory's slicer prices (internal/slicer/tree.go).
 _KIT_SCENE_FIELDS = _KIT_LAYOUT_FIELDS | {"printed_scene_path", "printed_scene_sha256", "pieces"}
+_KIT_LAYOUT_EXTRAS = frozenset({"spares", "shared_prints"})
 #: Where a kit's print layout crosses beside its printed-only scene. Factory
 #: ranks any file stemmed ``assembled`` or ``asm`` as the primary wherever it
 #: sits (services/import_extract.go), so the layout is never named so.
@@ -460,8 +461,21 @@ def _printed_primary(context: Any, manifest: ArtifactManifest) -> Optional[Mappi
     record = getattr(context, "printed_primary", None)
     if record is None:
         return None
-    if not isinstance(record, Mapping) or set(record) not in (
+    if not isinstance(record, Mapping):
+        raise ContractError("the Make record's printed-only primary is malformed")
+    # A kit's accepted layout check may also say it ships no spares (ADR 0104
+    # amendment 2026-11-26) and list its shared print codes (ADR 0092
+    # amendment 2026-11-26); neither changes what crosses to Factory.
+    optional = set(record) & _KIT_LAYOUT_EXTRAS if "layout_path" in record else set()
+    if set(record) - optional not in (
         _PRINTED_PRIMARY_FIELDS, _KIT_LAYOUT_FIELDS, _KIT_SCENE_FIELDS
+    ) or ("spares" in optional and record["spares"] != "none") or (
+        "shared_prints" in optional and not (
+            isinstance(record["shared_prints"], Mapping)
+            and all(isinstance(code, str) and isinstance(parts, list) and parts
+                    and all(isinstance(part, str) for part in parts)
+                    for code, parts in record["shared_prints"].items())
+        )
     ):
         raise ContractError("the Make record's printed-only primary is malformed")
     if "printed_scene_path" in record:

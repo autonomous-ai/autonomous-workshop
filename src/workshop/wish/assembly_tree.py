@@ -47,6 +47,14 @@ decision 3). With the owner's approval a kit may declare
 2026-11-26): it then ships no spare piece at all, so no printed Part may
 declare ``spares`` and no Sheet may carry more copies of a Part than the toy
 uses. A tree without the field is read exactly as before.
+
+Identical prints used in several places (ADR 0092 amendment 2026-11-26)
+may share one print code: each such printed Part adds ``"print": "L37"``,
+its letter and two or three digits. Parts sharing a code are one print, so
+they share filament, form, thickness and looseness, and the host refuses a
+Made kit whose Parts under one code differ in geometry. The spare rule and
+the ``"spares": "none"`` count are per print code; a Part without the field
+is its own print, exactly as before.
 """
 
 from __future__ import annotations
@@ -120,6 +128,10 @@ CHECK_POWER = ("power", "cell")
 # ``step_number``, never as strings ("S100" sorts before "S11").
 STEP_ID = re.compile(r"^S([0-9]{2}|[1-9][0-9]{2})-(%s)$" % _SLUG)
 PIECE_ID = re.compile(r"^([MN])([0-9]{2})-(%s)$" % _SLUG)
+# A shared print code (ADR 0092 amendment 2026-11-26): the letter of the
+# Parts that share it and two or three digits, such as L37. It names no
+# node of the tree, and no Part, step or Print Piece id has its form.
+PRINT_CODE = re.compile(r"^([A-LO-RT-Z])([0-9]{2,3})$")
 # ADR 0104 amendment 2026-11-26: the one value of a tree's ``spares``, the
 # owner-approved declaration that the kit ships no spare piece.
 NO_SPARES = "none"
@@ -390,14 +402,21 @@ def _parse_parts(
             continue
         if not {"id", "name", "filament", "form"} <= set(item) <= {
             "id", "name", "filament", "form", "thickness_mm", "thickness_reason", "loose_reason", "small_reason",
-            "spares",
+            "spares", "print",
         }:
             errors.append(
                 "%s: a printed Part is {id, name, filament, form}, a panel may add "
-                "thickness_mm and thickness_reason, a loose Part adds loose_reason and may add spares, and a "
-                "Part under the minimum loose-part size adds small_reason" % label
+                "thickness_mm and thickness_reason, a loose Part adds loose_reason and may add spares, a "
+                "Part under the minimum loose-part size adds small_reason, and a Part that is the same "
+                "print as others adds their shared print code" % label
             )
             continue
+        if "print" in item:
+            code = PRINT_CODE.fullmatch(item["print"]) if isinstance(item["print"], str) else None
+            if code is None or code.group(1) != match.group(1):
+                errors.append("%s.print must be a print code: the Part's letter %s and two or three digits, "
+                              "such as %s37" % (label, match.group(1), match.group(1)))
+                continue
         if "small_reason" in item and not _text(item["small_reason"], MAX_REASON_CHARS):
             errors.append("%s.small_reason must say in at most %d characters why the Part may be under the "
                           "minimum loose-part size" % (label, MAX_REASON_CHARS))
@@ -460,7 +479,53 @@ def _parse_parts(
         letters.setdefault(letter, (filament.id, identifier))
         colours.setdefault(filament.id, (letter, identifier))
         printed[identifier] = item
+    _check_prints(printed, errors)
     return printed, bought
+
+
+# What every Part sharing one print code must agree on: the same print is
+# one filament, one form and thickness, and prints on a Sheet or loose.
+_SAME_PRINT = ("filament", "form", "thickness_mm")
+
+
+def print_code(part: str, item: Mapping[str, Any]) -> str:
+    """A printed Part's print: its shared ``print`` code, else its own id."""
+
+    code = item.get("print") if isinstance(item, Mapping) else None
+    return code if isinstance(code, str) else part
+
+
+def print_groups(tree: Any) -> Dict[str, List[str]]:
+    """Every shared print code of a tree: code -> its Parts, in tree order.
+    A Part without ``print`` is in no group."""
+
+    groups: Dict[str, List[str]] = {}
+    for item in (tree.get("parts") or ()) if isinstance(tree, Mapping) else ():
+        if isinstance(item, Mapping) and isinstance(item.get("print"), str) and isinstance(item.get("id"), str):
+            groups.setdefault(item["print"], []).append(item["id"])
+    return groups
+
+
+def _check_prints(printed: Mapping[str, Mapping[str, Any]], errors: List[str]) -> None:
+    """Parts sharing a print code are one print: same filament, form and
+    thickness, and all loose or all on Sheets; a code is no Part's id."""
+
+    groups: Dict[str, List[str]] = {}
+    for part, item in printed.items():
+        if "print" in item:
+            groups.setdefault(item["print"], []).append(part)
+    for code, parts in sorted(groups.items()):
+        first = printed[parts[0]]
+        for part in parts[1:]:
+            item = printed[part]
+            differ = [key for key in _SAME_PRINT if item.get(key) != first.get(key)]
+            if ("loose_reason" in item) != ("loose_reason" in first):
+                differ.append("loose_reason")
+            if differ:
+                errors.append(
+                    "%s and %s share print code %s but differ in %s: Parts sharing a print code are one "
+                    "print, so give %s its own code or none" % (parts[0], part, code, ", ".join(differ), part)
+                )
 
 
 def _parse_input(
@@ -888,6 +953,11 @@ def _check_sheets(
                 continue
             listed.add(part)
             on_sheets[part] = on_sheets.get(part, 0) + entry["count"]
+    for code in sorted({item["print"] for item in printed.values() if "print" in item}):
+        if code in sheet_ids or code in tests:
+            errors.append("print code %s is also a %s id: number the print codes apart from the Sheets and "
+                          "fit-test pieces" % (code, "Sheet" if code in sheet_ids else "fit-test piece"))
+    carried: Dict[str, List[int]] = {}
     for part, item in printed.items():
         if "loose_reason" in item:
             continue
@@ -897,10 +967,16 @@ def _check_sheets(
         elif on_sheets[part] < totals.get(part, 0):
             errors.append("the Sheets carry %d x %s, but the toy uses %d: a Sheet count is the tree's total "
                           "plus its spares" % (on_sheets[part], part, totals.get(part, 0)))
-        elif no_spares and on_sheets[part] > totals.get(part, 0):
+        else:
+            # A shared print code counts its Parts together (amendment
+            # 2026-11-26): the same print, so its spares are the print's.
+            count = carried.setdefault(print_code(part, item), [0, 0])
+            count[0] += on_sheets[part]
+            count[1] += totals.get(part, 0)
+    for code, (on, used) in sorted(carried.items()):
+        if no_spares and on > used:
             errors.append("the Sheets carry %d x %s, but the toy uses %d and the kit declares spares \"none\": "
-                          "a kit that ships no spares carries exactly the tree's total"
-                          % (on_sheets[part], part, totals.get(part, 0)))
+                          "a kit that ships no spares carries exactly the tree's total" % (on, code, used))
 
 
 def snap_pairs(step: Mapping[str, Any]) -> List[Mapping[str, Any]]:
@@ -1314,4 +1390,7 @@ __all__ = [
     "bought_totals",
     "parse_assembly_tree",
     "ships_no_spares",
+    "print_code",
+    "print_groups",
+    "PRINT_CODE",
 ]

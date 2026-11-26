@@ -67,6 +67,12 @@ reads the Sheet (one connected solid, on the bed, flat, one bed, separable,
 nipper access, fragile tips) and the minimum size, with no
 ``small_reason``. It is no Part: it has no ``print_parts()`` shape to
 match, and no spare rule counts it.
+
+Parts that declare one ``print`` code (ADR 0092 amendment 2026-11-26) are
+one print used in several places: each must measure the same (volume, area
+and sorted size), and the spare rule and the ``"spares": "none"`` count
+take the code once, over all its Parts, its longest side deciding whether
+it is under 15 mm. A Part without the field is its own print, as before.
 """
 
 from __future__ import annotations
@@ -528,14 +534,18 @@ def part_failures(sheets: list, printed: dict, totals: dict, measures: dict,
     ``print_parts()`` measures (``size`` sorted, ``volume``). ``small`` lists
     the Parts that pass under R1 by their ``small_reason``. ``no_spares``:
     the tree declares ``"spares": "none"``, so no spare is asked and any
-    spare carried is a failure."""
+    spare carried is a failure. Parts sharing a ``print`` code (ADR 0092
+    amendment 2026-11-26) are one print: each must measure the same, and the
+    spare rule counts the code once, over all its Parts."""
 
     on_sheets = {}
     for sheet in sheets:
         for entry in sheet["parts"]:
             on_sheets[entry["id"]] = on_sheets.get(entry["id"], 0) + entry["count"]
     fails, small = [], []
+    groups: dict = {}
     for part in sorted(printed):
+        groups.setdefault(print_code(part, printed[part]), []).append(part)
         measure = measures.get(part)
         if not measure:
             fails.append("%s: print_parts() did not measure it" % part)
@@ -543,27 +553,59 @@ def part_failures(sheets: list, printed: dict, totals: dict, measures: dict,
         if measure.get("pieces", 1) != 1:
             fails.append("%s is %d solids, not one connected solid: join its pieces into one body, or Factory "
                          "splits them apart and prints the strays" % (part, measure["pieces"]))
-        long_ = measure["size"][2]
         under = size_shortfall(measure)
         if under and printed[part].get("small_reason"):
             small.append(part)
         elif under:
             fails.append("%s is under the minimum loose-part size (%s): merge, enlarge or carry it, or state its "
                          "small_reason" % (part, "; ".join(under)))
+        if no_spares and "spares" in printed[part]:
+            fails.append("%s declares spares, but the kit declares spares \"none\": remove its spares" % part)
+    for code, parts in sorted(groups.items()):
+        measured = [part for part in parts if measures.get(part)]
+        if len(measured) != len(parts):
+            continue
+        first = measures[parts[0]]
+        for part in parts[1:]:
+            if not same_print(first, measures[part]):
+                fails.append("%s and %s share print code %s but are not the same print (volume, area or size "
+                             "differ): build them from one shape, or give %s its own code"
+                             % (parts[0], part, code, part))
+        long_ = max(measures[part]["size"][2] for part in parts)
+        sheet_parts = [part for part in parts if part in on_sheets]
+        on = sum(on_sheets[part] for part in sheet_parts)
+        used = sum(totals.get(part, 0) for part in sheet_parts)
+        loose_spares = sum(int(printed[part].get("spares", 0)) for part in parts if part not in on_sheets)
         if no_spares:
-            if "spares" in printed[part]:
-                fails.append("%s declares spares, but the kit declares spares \"none\": remove its spares"
-                             % part)
-            if part in on_sheets and on_sheets[part] > totals.get(part, 0):
+            if sheet_parts and on > used:
                 fails.append("%s: its Sheets carry %d, the toy uses %d, but the kit declares spares \"none\": "
-                             "carry exactly %d" % (part, on_sheets[part], totals.get(part, 0), totals.get(part, 0)))
-        elif long_ < SPARE_BELOW_MM and part in on_sheets and on_sheets[part] < totals.get(part, 0) + 1:
+                             "carry exactly %d" % (code, on, used, used))
+        elif long_ < SPARE_BELOW_MM and sheet_parts and on < used + 1:
             fails.append("%s is %.1f mm long, under %.0f: its Sheets carry %d, the toy uses %d; add one spare"
-                         % (part, long_, SPARE_BELOW_MM, on_sheets[part], totals.get(part, 0)))
-        elif long_ < SPARE_BELOW_MM and part not in on_sheets and int(printed[part].get("spares", 0)) < 1:
+                         % (code, long_, SPARE_BELOW_MM, on, used))
+        elif long_ < SPARE_BELOW_MM and not sheet_parts and loose_spares < 1:
             fails.append("%s is %.1f mm long, under %.0f, and prints loose with no spare: state \"spares\": 1 "
-                         "or more on its tree entry" % (part, long_, SPARE_BELOW_MM))
+                         "or more on its tree entry" % (code, long_, SPARE_BELOW_MM))
     return fails, small
+
+
+def print_code(part: str, item: dict) -> str:
+    """A printed Part's print: its shared ``print`` code, else its own id."""
+
+    code = item.get("print") if isinstance(item, dict) else None
+    return code if isinstance(code, str) else part
+
+
+def same_print(a: dict, b: dict) -> bool:
+    """Two Parts' ``print_parts()`` measures are one print: the same volume,
+    area and sorted size, each within float noise."""
+
+    def close(x: float, y: float, floor: float) -> bool:
+        return abs(x - y) <= max(floor, 1e-5 * max(abs(x), abs(y)))
+
+    # The measures are rounded (4 places for volume and area, 3 for size).
+    return close(a["volume"], b["volume"], 1e-3) and close(a.get("area", 0.0), b.get("area", 0.0), 1e-3) and all(
+        close(x, y, 2e-3) for x, y in zip(a["size"], b["size"]))
 
 
 # ---------------------------------------------------------------------------

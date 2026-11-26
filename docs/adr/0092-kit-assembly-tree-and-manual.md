@@ -23,8 +23,9 @@
   `make_round` and final verification and tested on deterministic fakes and
   a small real build123d cabinet.
   Amendment of 2026-11-26 (owner): step ids run past S99 to S999, a
-  Design Contract may be 150,000 characters, and a Sheet may declare
-  fit-test pieces (see the amendment below).
+  Design Contract may be 150,000 characters, a Sheet may declare
+  fit-test pieces, and Parts that are one print may share a print code
+  whose spares count once (see the amendment below).
 - Date: 2026-10-23
 - Amends: ADR 0091 (what a Print Piece lands on; its id form), ADR 0082
   (Components are subtrees of the Assembly Tree), ADR 0088 (insertion paths
@@ -362,7 +363,7 @@ both are decided together. Six 2026 Rolife manuals were read page by page
       review renders still read the assembled Component.
     - Non-kit Components and frozen runs are gated as before.
 
-## Amendment 2026-11-26: step ids past S99, a 150,000-character contract and fit-test pieces
+## Amendment 2026-11-26: step ids past S99, a 150,000-character contract, fit-test pieces and shared print codes
 
 The Kyoto Gion Canal Build Kit could not be sealed. Its approved Manual has
 156 steps and its contract, with an Assembly Tree of 153 Part types and every
@@ -449,6 +450,45 @@ carries a fit-test pair. Three limits stopped it.
      `manual.json`'s `fit_tests`, and the host refuses a Manual report that
      does not list exactly the sealed tree's fit tests. A tree without a
      fit test is unchanged byte for byte.
+
+4. **Shared print codes (owner, 2026-11-26).** Kyoto uses one print in
+   several places: the L37 black lamp cap, 8 copies in 6 places across 4
+   sub-assemblies. A Part id may be a step input only once, so the tree
+   splits the cap into several Part ids, and the spare rule (a Part under
+   15 mm ships one spare) asked one spare per id: 6 spares where the
+   approved Manual lists 2. A printed Part may now name the print it is:
+
+   ```json
+   {"id": "L37-lamp-cap-gate", "name": "Lamp cap", "filament": "black", "form": "solid", "print": "L37"},
+   {"id": "L38-lamp-cap-bridge", "name": "Lamp cap", "filament": "black", "form": "solid", "print": "L37"}
+   ```
+
+   - **Code.** The Parts' own letter and two or three digits,
+     `^<letter>[0-9]{2,3}$` (`L37`), letters as for printed Parts. It names
+     no node: every Part keeps its id, its step inputs and its Sheet
+     entries. A code may not equal a Sheet id or a fit-test id.
+   - **One print.** The contract refuses Parts under one code that differ
+     in filament, form, `thickness_mm` or looseness. Make's
+     `kit_sheets.py check` fails them unless their `print_parts()` shapes
+     measure the same (volume, area and sorted size). Before Make is
+     accepted the host reads the sealed `assembled.step` and refuses the kit
+     unless every leaf of every Part under the code has the same volume,
+     area and principal moments of inertia, a fingerprint no move or turn
+     changes, and the tree gives them one filament; loose copies in the
+     print layout are compared by code too. A byte hash cannot be used: the
+     same print sits in a different pose in each place. These checks cannot
+     tell a print from its mirror image, which has the same measures; a
+     left and right hand must still not share a code.
+   - **Spares per code.** The spare rule counts the code once: over all
+     its Parts its Sheets carry the toy's total plus one when its longest
+     side is under 15 mm, or, loose, any of its Parts declares `spares`.
+     `"spares": "none"` compares the code's Sheet copies with its total.
+     Each Part's Sheet count still covers its own uses.
+   - **Factory.** The accepted layout check lists the codes as
+     `shared_prints`; Release's Factory check now accepts that field and
+     the `"spares": "none"` field the earlier amendment added (which it had
+     refused as a malformed record), and nothing else crosses.
+   - A contract without `print` is unchanged byte for byte.
 
 ## Not decided here
 

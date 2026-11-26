@@ -3127,3 +3127,12 @@ convention, so sealed STEPs and frozen runs keep their colours.
   `DEFAULT_ROUND_JOBS`, with `MAKE_ROUND_JOBS` still overriding it. The
   seeded batch and `seal_proof.py` run their steps pinned.
   `print-details` is unchanged, because projects copy and seal its bytes.
+
+## Workshop-local: shared print codes (2026-11-26, ADR 0092 amendment)
+
+- `make-round/scripts/kit_sheets.py` `part_failures` groups printed Parts
+  by their optional `print` code (a Part without one is its own print).
+  Parts under one code fail unless their `print_parts()` measures match
+  (volume, area and sorted size, within the measures' rounding), and the
+  spare rule and the `"spares": "none"` count take the code once over all
+  its Parts. Messages for Parts without a code are unchanged.

@@ -21,6 +21,13 @@ rebuilding geometry (ADR 0061), that
   ``"spares": "none"``; a record says so only for such a tree. The
   accepted check carries ``"spares": "none"`` too, so the Make receipt
   shows the kit ships no spares.
+- Parts that share a ``print`` code (ADR 0092 amendment 2026-11-26) are one
+  print: the tree gives them one filament, and every leaf of each of them
+  in the sealed ``assembled.step`` has the same volume, area and principal
+  moments of inertia, a fingerprint no pose changes; every loose copy under
+  one code matches too. A mismatch is refused, so the spare a shared code
+  counts once is a spare of every place it is used. The accepted check
+  lists the codes as ``shared_prints``.
 
 Factory splits the STEP into its solids and arranges and slices each one on
 its own, so a fused Sheet is weighed and placed as the one plate it prints
@@ -49,7 +56,7 @@ from typing import Any, Mapping
 
 from workshop.errors import ContractError
 from workshop.make.kit_tree import has_assembly_tree, install_document, not_printed, tree_digest, tree_totals
-from workshop.wish.assembly_tree import NO_SPARES, ships_no_spares
+from workshop.wish.assembly_tree import NO_SPARES, print_groups, ships_no_spares
 
 KIND = "kit-print-layout"
 SCHEMA_VERSION = 2
@@ -97,7 +104,7 @@ def _close(a: float, b: float) -> bool:
     return abs(a - b) <= max(1e-6, _TOLERANCE * max(abs(a), abs(b)))
 
 
-def check_layout_step(content: bytes, names: list[str]) -> int:
+def check_layout_step(content: bytes, names: list[str], codes: Mapping[str, str] | None = None) -> int:
     """Refuse a layout STEP whose leaves are not exactly ``names``, hold no
     solid, whose fused Sheet is not one connected solid, or whose copies of
     one Part differ; return its leaf count."""
@@ -129,12 +136,52 @@ def check_layout_step(content: bytes, names: list[str]) -> int:
             )
         if "/" not in body.name:
             continue
-        by_part[body.name.split("/", 1)[1].rsplit("#", 1)[0]].append(body)
+        part = body.name.split("/", 1)[1].rsplit("#", 1)[0]
+        by_part[(codes or {}).get(part, part)].append(body)
     for part, copies in by_part.items():
         first = copies[0].total
         if any(not (_close(c.total[0], first[0]) and _close(c.total[1], first[1])) for c in copies[1:]):
             raise ContractError("%s copies of %s differ in volume or area" % (STEP_PATH, part))
     return len(bodies)
+
+
+_PRINT_TOLERANCE = 1e-4
+
+
+def check_shared_prints(scene: bytes, tree: Mapping[str, Any]) -> dict[str, list[str]]:
+    """Refuse a sealed scene in which Parts sharing a print code are not one
+    print: every leaf of each of them (``<Part>`` or ``<Part>#n``) must give
+    the same pose-free fingerprint, and the tree must give them one
+    filament. Return the shared codes and their Parts."""
+
+    groups = print_groups(tree)
+    if not groups:
+        return {}
+    from workshop.release.printed_primary import scene_prints
+
+    filament = {item["id"]: item.get("filament") for item in tree["parts"]}
+    leaves: dict[str, list[tuple[str, tuple[float, ...]]]] = defaultdict(list)
+    for name, fingerprint in scene_prints(scene):
+        leaves[name.rsplit("#", 1)[0] if "#" in name else name].append((name, fingerprint))
+    for code, parts in sorted(groups.items()):
+        if len({filament.get(part) for part in parts}) != 1:
+            raise ContractError("the Parts sharing print code %s are not one filament: %s"
+                                % (code, ", ".join(parts)))
+        found = [(name, fingerprint) for part in parts for name, fingerprint in leaves.get(part, ())]
+        missing = [part for part in parts if part not in leaves]
+        if missing:
+            raise ContractError("%s holds no body of %s, so print code %s cannot be checked"
+                                % (SCENE_PATH, ", ".join(missing), code))
+        first_name, first = found[0]
+        for name, fingerprint in found[1:]:
+            if len(fingerprint) != len(first) or any(
+                abs(a - b) > max(1e-6, _PRINT_TOLERANCE * max(abs(a), abs(b))) for a, b in zip(fingerprint, first)
+            ):
+                raise ContractError(
+                    "%s and %s share print code %s but are not the same print: their volume, area or "
+                    "moments of inertia differ in %s" % (first_name, name, code, SCENE_PATH)
+                )
+    return {code: list(parts) for code, parts in sorted(groups.items())}
 
 
 def _removed_leaves(requested: list[str], names: list[str]) -> set[str]:
@@ -271,8 +318,10 @@ def verify_made_print_layout(
     content, step_sha256 = sealed(step_path, "the Made CAD project lacks %s" % STEP_PATH)
     if report.get("sha256") != step_sha256:
         raise ContractError("%s is not the layout %s names" % (STEP_PATH, REPORT_PATH))
-    leaves = check_layout_step(content, names)
+    codes = {part: code for code, parts in print_groups(contract["assembly_tree"]).items() for part in parts}
+    leaves = check_layout_step(content, names, codes)
     scene, scene_sha256 = sealed(SCENE_PATH, "the Made product lacks %s" % SCENE_PATH)
+    shared = check_shared_prints(scene, contract["assembly_tree"])
     removed = [item["body"] for item in not_printed(contract, catalogue)]
     extra: dict[str, Any] = {}
     if "printed_scene" in report:
@@ -301,6 +350,8 @@ def verify_made_print_layout(
         }
     if no_spares:
         extra["spares"] = NO_SPARES
+    if shared:
+        extra["shared_prints"] = shared
     return {
         **extra,
         "path": step_path,
@@ -316,5 +367,6 @@ def verify_made_print_layout(
 
 
 __all__ = ["REPORT_PATH", "SCENE_STEP_PATH", "STEP_PATH", "check_layout_step", "check_printed_scene",
+           "check_shared_prints",
            "printed_pieces", "expected_bodies", "expected_copies",
            "verify_made_print_layout"]

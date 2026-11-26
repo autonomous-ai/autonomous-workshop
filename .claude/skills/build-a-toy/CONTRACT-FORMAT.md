@@ -243,7 +243,18 @@ instances.)
     (MIN-PART-SIZE R1: thickness 1.6 mm, short side 4 mm, long side 8 mm,
     footprint 35 mm², volume 50 mm³) in a kit with Sheets adds
     `"small_reason"` (at most 300 characters); the Sheet gate lists it and
-    holds it to every other rule. A Bought Part is
+    holds it to every other rule. Parts that are the **same print** used in
+    several places (one cap mould on four sub-assemblies) may share a
+    **print code** (ADR 0092 amendment 2026-11-26): each adds
+    `"print": "L37"`, the Parts' own letter and two or three digits
+    (`^<letter>[0-9]{2,3}$`), never equal to a Sheet or fit-test id. Parts
+    under one code must have the same filament, form, `thickness_mm` and
+    looseness; Make fails them unless they measure the same, and the host
+    refuses a Made kit whose sealed `assembled.step` holds them with
+    different geometry. Each Part keeps its own id, step inputs and Sheet
+    entries; the spare rule and `"spares": "none"` count the code once,
+    over all its Parts (one spare for the whole code, not one per Part).
+    A Part without `print` is its own print. A Bought Part is
     `{"id": "P02-steel-pin", "bought": "<Bought Part id>"}`. Both ids come
     from the owner's catalogues, `src/workshop/wish/catalogues/filaments.json`
     and `bought-parts.json`. A colour or Bought Part outside them is refused:
