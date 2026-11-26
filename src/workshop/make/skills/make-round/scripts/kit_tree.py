@@ -76,8 +76,11 @@ The gates
   clean. A press input (``press_mm``, same amendment) is swept offset
   inward by its declared bite at the same limit; a Part the kernel cannot
   offset sweeps against its obstacles, cropped to the sweep, offset inward
-  by the same bite (ADR 0104 amendment 2026-11-19, press obstacles), and
-  is refused when neither offset can be made.
+  by the same bite (ADR 0104 amendment 2026-11-19, press obstacles); where
+  neither offsets whole, the Part is offset only in windows round where it
+  overlaps them, each reaching past every overlap by more than the bite,
+  which is exactly the whole offset there (ADR 0104 amendment 2026-11-26,
+  press local offset). An offset that cannot be made at all is refused.
   A ``snap`` step (ADR 0104 amendment 2026-11-17) declares one pair, or a
   list of pairs, that may overlap on the way in: each snapping Part against
   its own catch, each overlap no deeper across the direction than that
@@ -196,6 +199,23 @@ LEAD_CLEARANCE_MM = 0.4      # 0.2 mm all round the lead: a cadfits slip fit
 # (an OCCT bounding box's float noise, not a design allowance).
 SNAP_TOLERANCE_MM = 1e-3
 JOINT_GAP_MM = 0.3           # a face this close to what it joins is a joint face
+# Press local offset (ADR 0104 amendment 2026-11-26): where the kernel can
+# offset neither a press input nor its obstacles whole, the input is offset
+# only inside windows round where it overlaps them. A window reaches past
+# every overlap by more than the press, so the offset of its cut faces can
+# never reach an overlap: the window's offset is exactly the whole Part's
+# offset there. These are the margins tried beyond the press, in order, and
+# the longest side of one window before it is split into tiles.
+PRESS_LOCAL_MARGINS_MM = (0.3, 0.15, 0.6)
+PRESS_LOCAL_TILE_MM = 8.0
+# Where the kernel cannot offset a window's cut either, it is shrunk by
+# booleans (CadGeometry.eroded), checked on this many grid points a side.
+PRESS_ERODE_SAMPLES = 6
+# Directions within these cosines of one already taken are skipped: flat
+# faces' normals all count; a curved face's sampled normals within 10 deg
+# of one taken add nothing but booleans. Fewer directions only keep more.
+PRESS_ERODE_SAME = 1.0 - 1e-9
+PRESS_ERODE_CURVED = math.cos(math.radians(10.0))
 PARALLEL_TOLERANCE_DEG = 2.0
 PRINT_LINES = 2              # the thinnest printable wall, in lines
 # The tilt hold (ADR 0104 amendment 2026-11-19, rule i): a unit set down by a
@@ -846,6 +866,18 @@ def _insert_step(plan, geometry, bodies, item, k, wall, sequence, report) -> Non
                         condition["inputs"]["press_offset"] = "obstacles"
                         condition["description"] = condition["description"].replace(
                             ", offset inward by its", ", against its obstacles offset inward by its")
+                if error is not None and blocking and hasattr(geometry, "pressed_local"):
+                    # Neither side offsets whole: offset the Part only in
+                    # windows round its overlaps (amendment 2026-11-26),
+                    # exactly the whole offset there.
+                    local, why = geometry.pressed_local(condition, moving, obstacles, press)
+                    if local is None:
+                        error = "%s; nor in windows round its overlaps: %s" % (error, why)
+                    else:
+                        swept, error, offset_side = local, None, "local"
+                        condition["inputs"]["press_offset"] = "local"
+                        condition["description"] = condition["description"].replace(
+                            ", offset inward by its", ", offset inward round its overlaps by its")
                 report["presses"].append({"id": condition["id"], "step": step, "input": name, "press_mm": press,
                                           "offset": offset_side, "verdict": "PASS" if error is None else "FAIL"})
                 if error is not None:
@@ -1409,6 +1441,7 @@ class CadGeometry:
         scripts = Path(__file__).resolve().parents[2] / "cad" / "scripts"
         self.motion = runpy.run_path(str(scripts / "check_motion"), run_name="kit_tree_check_motion")
         self.fallbacks: list[dict] = []
+        self.press_eroded = 0
         if str(self.project) not in sys.path:
             sys.path.insert(0, str(self.project))
         try:
@@ -1529,9 +1562,15 @@ class CadGeometry:
                 return self._sweep_each(condition, solids, obstacles, exc)
         parts = {condition["inputs"]["moving_part"]: group}
         parts.update({body.key: body.shape for body in obstacles})
-        condition = json.loads(json.dumps({key: value for key, value in condition.items() if key != "result"}))
-        condition["inputs"]["obstacle_parts"] = [body.key for body in obstacles]
-        return self.motion["run_condition"](condition, parts, 0)
+        swept = json.loads(json.dumps({key: value for key, value in condition.items() if key != "result"}))
+        swept["inputs"]["obstacle_parts"] = [body.key for body in obstacles]
+        result = self.motion["run_condition"](swept, parts, 0)
+        if (len(solids) > 1 and result.get("status") not in ("pass", "fail")
+                and condition["inputs"].get("press_offset") == "local"):
+            # A press local offset's windows and rest the kernel cannot
+            # sweep as one: solid by solid, never looser (``_sweep_each``).
+            return self._sweep_each(condition, solids, obstacles, ValueError(result.get("detail")))
+        return result
 
     def _sweep_each(self, condition: dict, solids: list, obstacles: list[Body], error: Exception) -> dict:
         """The moving group's union failed: sweep each solid on its own
@@ -1659,6 +1698,191 @@ class CadGeometry:
                 return None, error
             found.extend(shrunk)
         return found, None
+
+    def pressed_local(self, condition: dict, moving: list[Body], obstacles: list[Body], depth: float):
+        """``moving`` offset inward by a press input's ``depth`` only where
+        it can bite, for a Part the kernel offsets neither whole nor by its
+        obstacles (ADR 0104 amendment 2026-11-26, press local offset):
+        ``(bodies, None)`` or ``(None, reason)``.
+
+        At every pose of the condition's sweep the Part's overlap with each
+        obstacle is measured; each overlap's box, in the Part's own frame,
+        grown by a margin M > ``depth`` (and split into tiles no longer than
+        PRESS_LOCAL_TILE_MM) is a window. The Part is cut to each window and
+        each cut solid is offset inward by ``depth``. A point of an overlap
+        lies at least M from its window's cut faces, so it is deeper than
+        ``depth`` in the cut exactly when it is deeper than ``depth`` in the
+        whole Part: the windows' offsets overlap the obstacles exactly where
+        the whole Part's offset would, at the same sampled poses, and hold
+        nothing the whole offset does not. Swept at the same overlap limit,
+        the gate is the input offset's, unchanged. With no overlap at any
+        pose the Part itself is returned, unshrunk. Any overlap the kernel
+        cannot measure, cut or offset is a refusal, never a pass."""
+
+        from build123d import Box, Location, Vector
+
+        inputs = condition["inputs"]
+        steps, move = int(inputs["steps"]), Vector(*inputs["translation"])
+        group = self._group(moving)
+        boxes = [group.moved(Location(move * (step / steps))).bounding_box() for step in range(steps + 1)]
+        self.press_eroded = 0
+        near = []
+        for body in obstacles:
+            try:
+                local = self.motion["crop_to_sweep"](body.shape, boxes)
+            except Exception:  # noqa: BLE001 - an obstacle the kernel cannot crop is measured whole
+                local = body.shape
+            if local is not None:
+                near.append((body.key, local))
+        found = []
+        for step in range(steps + 1):
+            shift = move * (step / steps)
+            moved = group.moved(Location(shift))
+            box = moved.bounding_box()
+            for key, shape in near:
+                if _apart(box, _grown(shape.bounding_box(), 0.0)):
+                    continue
+                try:
+                    common = moved.intersect(shape)
+                except Exception as exc:  # noqa: BLE001 - an unmeasured overlap is a refusal
+                    return None, "the overlap with %s at step %d/%d cannot be measured: %s" % (key, step, steps, exc)
+                for solid in (common.solids() if common is not None else ()):
+                    if solid.volume <= 0:
+                        continue
+                    bb = solid.bounding_box()
+                    found.append(((bb.min.X - shift.X, bb.min.Y - shift.Y, bb.min.Z - shift.Z),
+                                  (bb.max.X - shift.X, bb.max.Y - shift.Y, bb.max.Z - shift.Z)))
+        if not found:
+            return moving, None
+        windows = _press_windows(found)
+        solids = list(group.solids())
+        shrunk, why, used = [], None, []
+        for index, (lo, hi) in enumerate(windows, 1):
+            piece = None
+            for margin in PRESS_LOCAL_MARGINS_MM:
+                piece, why = self._press_window(solids, lo, hi, margin + depth, depth, Box, Location)
+                if piece is not None:
+                    used.append((lo, hi, margin + depth))
+                    break
+            if piece is None:
+                return None, "its window %d of %d round its overlaps cannot be offset: %s" % (index, len(windows), why)
+            shrunk += [Body(moving[0].label, shape, key="%s@press%d" % (moving[0].key, index)) for shape in piece]
+        # The rest of the Part, outside every window, sweeps as it is: it
+        # overlaps nothing, and were an overlap missed it would still fail.
+        try:
+            rest = group
+            for lo, hi, margin in used:
+                low = [v - margin for v in lo]
+                high = [v + margin for v in hi]
+                rest = rest - (Location(tuple((a + b) / 2 for a, b in zip(low, high)))
+                               * Box(*(b - a for a, b in zip(low, high))))
+        except Exception as exc:  # noqa: BLE001 - a Part the kernel cannot cut is a refusal
+            return None, "the kernel cannot cut the windows from the rest of the Part: %s" % exc
+        shrunk += [Body(moving[0].label, part, key="%s@rest" % moving[0].key)
+                   for part in (rest.solids() if rest is not None else ()) if part.volume > 0]
+        condition["inputs"]["press_windows"] = len(windows)
+        if self.press_eroded:
+            condition["inputs"]["press_eroded"] = self.press_eroded
+        return shrunk, None
+
+    def _press_window(self, solids, lo, hi, margin, depth, Box, Location):
+        """Each solid of the Part cut to the box ``lo``-``hi`` grown by
+        ``margin``, offset inward by ``depth``: ``(shapes, None)`` or
+        ``(None, reason)``."""
+
+        low = [v - margin for v in lo]
+        high = [v + margin for v in hi]
+        window = Location(tuple((a + b) / 2 for a, b in zip(low, high))) * Box(*(b - a for a, b in zip(low, high)))
+        shapes = []
+        for solid in solids:
+            if _apart(solid.bounding_box(), (tuple(low), tuple(high))):
+                continue
+            try:
+                cut = solid & window
+            except Exception as exc:  # noqa: BLE001 - a window the kernel cannot cut is a refusal
+                return None, "the kernel cannot cut the Part to it: %s" % exc
+            for part in (cut.solids() if cut is not None else ()):
+                if part.volume <= 0:
+                    continue
+                pressed, error = self.pressed([Body(None, part, key="window")], depth)
+                if error is None:
+                    shapes.append(pressed[0].shape)
+                    continue
+                eroded, why = self.eroded(part, depth)
+                if eroded is None:
+                    return None, "%s; nor by booleans: %s" % (error, why)
+                self.press_eroded += 1
+                shapes.extend(eroded)
+        return shapes, None
+
+    def eroded(self, shape, depth: float):
+        """``shape`` shrunk by booleans alone, for a window cut the kernel
+        cannot offset (ADR 0104 amendment 2026-11-26, press local offset):
+        the common of ``shape`` with copies of itself moved ``depth`` along
+        each of its face normals, both ways (three by three points of each
+        curved face, one per PRESS_ERODE_CURVED cone): ``(solids, None)``
+        or ``(None, reason)``.
+
+        A point is kept only if every point ``depth`` from it along those
+        directions is in ``shape``; the arc offset keeps it only if every
+        point within ``depth`` is. So this keeps all the arc offset keeps,
+        and more only beside concave edges and curved faces: it is never
+        looser, and it is the same on a flat face. Unlike the offset it
+        takes a face the press removes whole. A boolean the kernel reports
+        as failed, or a result missing a sampled point deeper than
+        ``depth`` in ``shape``, is a refusal."""
+
+        from build123d import GeomType, Location, Solid, Vector
+        from OCP.BRepAlgoAPI import BRepAlgoAPI_Common
+        from OCP.ShapeUpgrade import ShapeUpgrade_UnifySameDomain
+        from OCP.TopAbs import TopAbs_SOLID
+        from OCP.TopExp import TopExp_Explorer
+        from OCP.TopoDS import TopoDS
+
+        directions = []
+        try:
+            faces = sorted(shape.faces(), key=lambda face: face.geom_type != GeomType.PLANE)
+            for face in faces:
+                flat = face.geom_type == GeomType.PLANE
+                samples = ((0.5, 0.5),) if flat else tuple(
+                    (u, v) for u in (0.1, 0.5, 0.9) for v in (0.1, 0.5, 0.9))
+                for u, v in samples:
+                    normal = face.normal_at(u, v)
+                    if normal.length <= 0:
+                        continue
+                    for sign in (1.0, -1.0):
+                        direction = (normal * sign).normalized()
+                        near = PRESS_ERODE_SAME if flat else PRESS_ERODE_CURVED
+                        if all(direction.dot(other) < near for other in directions):
+                            directions.append(direction)
+            kept = shape.wrapped
+            for direction in directions:
+                moved = shape.moved(Location(direction * depth)).wrapped
+                common = BRepAlgoAPI_Common(kept, moved)
+                if not common.IsDone():
+                    return None, "the kernel's boolean fails"
+                kept = common.Shape()
+            # Merge the faces the chain split, as build123d's own booleans
+            # do: the same geometry, which later booleans handle better.
+            unify = ShapeUpgrade_UnifySameDomain(kept, True, True, True)
+            unify.AllowInternalEdges(False)
+            unify.Build()
+            kept = unify.Shape()
+            solids = []
+            explorer = TopExp_Explorer(kept, TopAbs_SOLID)
+            while explorer.More():
+                solid = Solid(TopoDS.Solid_s(explorer.Current()))
+                if solid.volume > 0:
+                    if not solid.is_valid or solid.volume > shape.volume:
+                        return None, "the kernel's boolean gives no valid smaller solid"
+                    solids.append(solid)
+                explorer.Next()
+        except Exception as exc:  # noqa: BLE001 - a shrink the kernel cannot make is a refusal
+            return None, "the kernel's boolean fails: %s" % exc
+        missing = _deep_point_missing(shape, solids, depth)
+        if missing is not None:
+            return None, "its shrink drops a point %.3f mm deep at %s" % missing
+        return solids, None
 
     def touching(self, a, b, gap: float) -> bool:
         """Whether two placed shapes come within ``gap`` of each other."""
@@ -1949,6 +2173,61 @@ def _face_frame(face, GeomType):
     except Exception:  # noqa: BLE001 - an unreadable face is not judged
         return None
     return None
+
+
+def _deep_point_missing(shape, solids, depth: float, per_axis: int = PRESS_ERODE_SAMPLES):
+    """The first point of a grid over ``shape``'s box lying deeper than
+    ``depth`` (plus 1e-3) inside ``shape`` but in none of ``solids``, as
+    ``(depth, point)``, or None. Every such point belongs in any inward
+    shrink by ``depth``: a guard against a boolean that silently drops
+    material, which would loosen the gate."""
+
+    from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeVertex
+    from OCP.BRepClass3d import BRepClass3d_SolidClassifier
+    from OCP.BRepExtrema import BRepExtrema_DistShapeShape
+    from OCP.gp import gp_Pnt
+    from OCP.TopAbs import TopAbs_IN
+
+    box = shape.bounding_box()
+    lo, hi = (box.min.X, box.min.Y, box.min.Z), (box.max.X, box.max.Y, box.max.Z)
+    skin = shape.shells()
+    for i in range(per_axis):
+        for j in range(per_axis):
+            for k in range(per_axis):
+                point = gp_Pnt(*(a + (b - a) * (n + 0.5) / per_axis for a, b, n in zip(lo, hi, (i, j, k))))
+                if BRepClass3d_SolidClassifier(shape.wrapped, point, 1e-7).State() != TopAbs_IN:
+                    continue
+                vertex = BRepBuilderAPI_MakeVertex(point).Vertex()
+                deep = min(BRepExtrema_DistShapeShape(vertex, shell.wrapped).Value() for shell in skin)
+                if deep <= depth + 1e-3:
+                    continue
+                if not any(BRepClass3d_SolidClassifier(solid.wrapped, point, 1e-7).State() == TopAbs_IN
+                           for solid in solids):
+                    return deep, "(%.3f, %.3f, %.3f)" % (point.X(), point.Y(), point.Z())
+    return None
+
+
+def _press_windows(boxes, tile: float = PRESS_LOCAL_TILE_MM) -> list:
+    """The overlap boxes of a press sweep, ``(lo, hi)`` in the Part's frame,
+    as windows: a box inside another drops, and a box longer than ``tile`` on
+    a side is split into tiles no longer than it, which together cover it."""
+
+    kept = []
+    for lo, hi in sorted(boxes, key=lambda b: -math.prod(max(h - l, 1e-9) for l, h in zip(*b))):
+        if any(all(a <= l and h <= b for l, h, a, b in zip(lo, hi, klo, khi)) for klo, khi in kept):
+            continue
+        kept.append((tuple(lo), tuple(hi)))
+    windows = []
+    for lo, hi in kept:
+        counts = [max(1, math.ceil((h - l) / tile - 1e-9)) for l, h in zip(lo, hi)]
+        spans = [(h - l) / n for l, h, n in zip(lo, hi, counts)]
+        for i in range(counts[0]):
+            for j in range(counts[1]):
+                for k in range(counts[2]):
+                    index = (i, j, k)
+                    windows.append((tuple(l + s * n for l, s, n in zip(lo, spans, index)),
+                                    tuple(l + s * (n + 1) for l, s, n in zip(lo, spans, index))))
+    return windows
 
 
 def _grown(box, margin):
