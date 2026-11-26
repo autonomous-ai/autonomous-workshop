@@ -662,3 +662,141 @@ class SchemaEightKitTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def _renamed(block, mapping):
+    """The block with every step id in ``mapping`` respelled, wherever it
+    appears."""
+
+    text = json.dumps(block)
+    for old, new in mapping.items():
+        text = text.replace('"%s"' % old, '"%s"' % new)
+    return json.loads(text)
+
+
+def _large_kit_block(extra_steps=157):
+    """The kit with ``extra_steps`` more printed Parts, each set into the case
+    by its own peg step, so the tree runs past S99 the way Kyoto's does."""
+
+    block = _tree_block()
+    tree = block["assembly_tree"]
+    names = ["D%02d-bead-%02d" % (n, n) for n in range(2, 100)]
+    names += ["A%02d-tile-%02d" % (n, n) for n in range(2, 100)]
+    names = names[:extra_steps]
+    for name in names:
+        filament = "dark-blue" if name.startswith("D") else "navy"
+        tree["parts"].append({"id": name, "name": name[4:].replace("-", " ").title(),
+                              "filament": filament, "form": "solid"})
+    _component(block, "case")["parts"].extend(names)
+    steps = {item["id"]: item for item in tree["steps"]}
+    chain = []
+    previous = "S06-case-battery"
+    for offset, name in enumerate(names):
+        identifier = "S%02d-set-%s" % (7 + offset, name[4:])
+        chain.append({"id": identifier, "output": "Case with %s" % name[4:], "count": 1,
+                      "joint": "peg-socket",
+                      "text": ("Press the %s onto its two pegs on the case wall until it sits flat and "
+                               "square, with its printed face out and its notch to the left." % name[4:]),
+                      "inputs": [{"id": previous}, {"id": name, "direction": [0, 0, -1]}]})
+        previous = identifier
+    furniture = "S%02d-furniture" % (7 + len(names))
+    wiring = "S%02d-wiring" % (8 + len(names))
+    steps["S07-furniture"]["inputs"][0]["id"] = previous
+    tree["steps"] = [steps[key] for key in ("S01-cabinet-shelf", "S02-cabinet-spines", "S03-hang-door",
+                                            "S04-dress-desk", "S05-case-lamp", "S06-case-battery")]
+    tree["steps"] += chain + [steps["S07-furniture"], steps["S08-wiring"]]
+    return _renamed(block, {"S07-furniture": furniture, "S08-wiring": wiring})
+
+
+class StepIdTest(unittest.TestCase):
+    """ADR 0092 amendment 2026-11-26: step ids run S01-S99, then S100-S999."""
+
+    def _parse(self, block):
+        return parse_design_contract(_contract_text(block), catalogues=_catalogues())
+
+    def _refused(self, block):
+        with self.assertRaises(ContractError) as caught:
+            self._parse(block)
+        return str(caught.exception)
+
+    def test_the_id_form_and_its_number(self):
+        from workshop.wish.assembly_tree import MAX_STEPS, STEP_ID, step_number
+
+        for good, number in (("S01-a", 1), ("S09-a", 9), ("S99-a", 99), ("S100-a", 100),
+                             ("S156-gate", 156), ("S999-a", MAX_STEPS)):
+            self.assertIsNotNone(STEP_ID.fullmatch(good), good)
+            self.assertEqual(step_number(good), number)
+        for bad in ("S1-a", "S001-a", "S099-a", "S1000-a", "S9999-a", "S-a", "S100", "S100-", "s100-a",
+                    "S10a-a", "S100-A", "S100_a", "T100-a"):
+            self.assertIsNone(STEP_ID.fullmatch(bad), bad)
+            with self.assertRaises(ValueError):
+                step_number(bad)
+
+    def test_two_digit_contracts_are_unchanged(self):
+        block = _tree_block()
+        self.assertEqual(self._parse(block).to_dict()["assembly_tree"], block["assembly_tree"])
+
+    def test_a_three_digit_step_passes(self):
+        block = _renamed(_tree_block(), {"S07-furniture": "S100-furniture", "S08-wiring": "S156-wiring"})
+        tree = self._parse(block).to_dict()["assembly_tree"]
+        self.assertEqual([item["id"] for item in tree["steps"]][-2:], ["S100-furniture", "S156-wiring"])
+
+    def test_a_tree_past_s99_passes_in_numeric_order(self):
+        block = _large_kit_block()
+        ids = [item["id"] for item in block["assembly_tree"]["steps"]]
+        self.assertEqual(len(ids), 165)
+        self.assertIn("S99-set-bead-94", ids)
+        self.assertEqual(ids[ids.index("S99-set-bead-94") + 1], "S100-set-bead-95")
+        self.assertEqual(ids[-1], "S165-wiring")
+        self.assertEqual(self._parse(block).to_dict()["assembly_tree"], block["assembly_tree"])
+
+    def test_s1000_or_a_malformed_id_is_refused(self):
+        for bad in ("S1000-wiring", "S099-wiring", "S9-wiring", "S100-Wiring"):
+            message = self._refused(_renamed(_tree_block(), {"S08-wiring": bad}))
+            self.assertIn("steps[7].id must look like S01-<kebab-case mnemonic>, numbered S01 to S99 "
+                          "then S100 to S999", message)
+
+    def test_numbers_rise_numerically_not_as_strings(self):
+        # As strings "S11" sorts after "S100"; as numbers it comes before.
+        block = _renamed(_tree_block(), {"S07-furniture": "S100-furniture", "S08-wiring": "S11-wiring"})
+        self.assertIn("steps[7]: step numbers rise in Manual order, and S11-wiring follows S100",
+                      self._refused(block))
+
+
+class KitContractSizeTest(unittest.TestCase):
+    """ADR 0092 amendment 2026-11-26: a Wish objective, and so a whole
+    Design Contract, is at most 150,000 characters."""
+
+    def _kit_text(self, total):
+        """A kit contract of exactly ``total`` characters: the 165-step tree
+        (indented, about 117,000 characters) after prose padded to fit."""
+
+        bare = _contract_text(_large_kit_block(), prose="")
+        self.assertLessEqual(len(bare), total)
+        sentence = "The case holds a cabinet and two desks. "
+        prose = (sentence * (total // len(sentence) + 1))[:total - len(bare)]
+        text = _contract_text(_large_kit_block(), prose=prose)
+        self.assertEqual(len(text), total)
+        return text
+
+    def test_a_kit_contract_larger_than_kyoto_seals(self):
+        from workshop.wish.contracts import MAX_OBJECTIVE_CHARS, Wish
+
+        self.assertEqual(MAX_OBJECTIVE_CHARS, 150_000)
+        text = self._kit_text(120_000)
+        parse_design_contract(text, catalogues=_catalogues())
+        self.assertEqual(Wish.create("kit-nook", text).objective, text)
+        largest = self._kit_text(MAX_OBJECTIVE_CHARS)
+        parse_design_contract(largest, catalogues=_catalogues())
+        self.assertEqual(Wish.create("kit-nook", largest).objective, largest)
+
+    def test_a_contract_over_the_limit_is_still_refused(self):
+        from workshop.wish.contracts import MAX_OBJECTIVE_CHARS, Wish
+
+        text = self._kit_text(MAX_OBJECTIVE_CHARS + 1)
+        parse_design_contract(text, catalogues=_catalogues())
+        with self.assertRaises(ContractError) as caught:
+            Wish.create("kit-nook", text)
+        self.assertIn("wish objective must be bounded", str(caught.exception))
+        with self.assertRaises(ContractError):
+            Wish.create("plain", "x" * (MAX_OBJECTIVE_CHARS + 1))

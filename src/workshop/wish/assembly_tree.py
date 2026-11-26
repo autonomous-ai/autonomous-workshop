@@ -47,6 +47,14 @@ decision 3). With the owner's approval a kit may declare
 2026-11-26): it then ships no spare piece at all, so no printed Part may
 declare ``spares`` and no Sheet may carry more copies of a Part than the toy
 uses. A tree without the field is read exactly as before.
+
+Identical prints used in several places (ADR 0092 amendment 2026-11-26)
+may share one print code: each such printed Part adds ``"print": "L37"``,
+its letter and two or three digits. Parts sharing a code are one print, so
+they share filament, form, thickness and looseness, and the host refuses a
+Made kit whose Parts under one code differ in geometry. The spare rule and
+the ``"spares": "none"`` count are per print code; a Part without the field
+is its own print, exactly as before.
 """
 
 from __future__ import annotations
@@ -115,11 +123,28 @@ CHECK_ID = re.compile(r"^%s$" % _SLUG)
 # wire between them.
 CHECK_CATEGORIES = ("lamp", "power", "cell", "contact", "switch", "wire", "other")
 CHECK_POWER = ("power", "cell")
-STEP_ID = re.compile(r"^S([0-9]{2})-(%s)$" % _SLUG)
+# Step numbers run S01-S99, then S100-S999 (ADR 0092 amendment 2026-11-26),
+# so every number up to MAX_STEPS has exactly one spelling; compare them by
+# ``step_number``, never as strings ("S100" sorts before "S11").
+STEP_ID = re.compile(r"^S([0-9]{2}|[1-9][0-9]{2})-(%s)$" % _SLUG)
 PIECE_ID = re.compile(r"^([MN])([0-9]{2})-(%s)$" % _SLUG)
+# A shared print code (ADR 0092 amendment 2026-11-26): the letter of the
+# Parts that share it and two or three digits, such as L37. It names no
+# node of the tree, and no Part, step or Print Piece id has its form.
+PRINT_CODE = re.compile(r"^([A-LO-RT-Z])([0-9]{2,3})$")
 # ADR 0104 amendment 2026-11-26: the one value of a tree's ``spares``, the
 # owner-approved declaration that the kit ships no spare piece.
 NO_SPARES = "none"
+
+
+def step_number(identifier: str) -> int:
+    """The number of an Assembly Step id, for numeric order. Raises
+    ValueError for anything that is no step id."""
+
+    match = STEP_ID.fullmatch(identifier) if isinstance(identifier, str) else None
+    if match is None:
+        raise ValueError("%r is no Assembly Step id" % (identifier,))
+    return int(match.group(1))
 
 
 @dataclass(frozen=True)
@@ -377,14 +402,21 @@ def _parse_parts(
             continue
         if not {"id", "name", "filament", "form"} <= set(item) <= {
             "id", "name", "filament", "form", "thickness_mm", "thickness_reason", "loose_reason", "small_reason",
-            "spares",
+            "spares", "print",
         }:
             errors.append(
                 "%s: a printed Part is {id, name, filament, form}, a panel may add "
-                "thickness_mm and thickness_reason, a loose Part adds loose_reason and may add spares, and a "
-                "Part under the minimum loose-part size adds small_reason" % label
+                "thickness_mm and thickness_reason, a loose Part adds loose_reason and may add spares, a "
+                "Part under the minimum loose-part size adds small_reason, and a Part that is the same "
+                "print as others adds their shared print code" % label
             )
             continue
+        if "print" in item:
+            code = PRINT_CODE.fullmatch(item["print"]) if isinstance(item["print"], str) else None
+            if code is None or code.group(1) != match.group(1):
+                errors.append("%s.print must be a print code: the Part's letter %s and two or three digits, "
+                              "such as %s37" % (label, match.group(1), match.group(1)))
+                continue
         if "small_reason" in item and not _text(item["small_reason"], MAX_REASON_CHARS):
             errors.append("%s.small_reason must say in at most %d characters why the Part may be under the "
                           "minimum loose-part size" % (label, MAX_REASON_CHARS))
@@ -447,7 +479,53 @@ def _parse_parts(
         letters.setdefault(letter, (filament.id, identifier))
         colours.setdefault(filament.id, (letter, identifier))
         printed[identifier] = item
+    _check_prints(printed, errors)
     return printed, bought
+
+
+# What every Part sharing one print code must agree on: the same print is
+# one filament, one form and thickness, and prints on a Sheet or loose.
+_SAME_PRINT = ("filament", "form", "thickness_mm")
+
+
+def print_code(part: str, item: Mapping[str, Any]) -> str:
+    """A printed Part's print: its shared ``print`` code, else its own id."""
+
+    code = item.get("print") if isinstance(item, Mapping) else None
+    return code if isinstance(code, str) else part
+
+
+def print_groups(tree: Any) -> Dict[str, List[str]]:
+    """Every shared print code of a tree: code -> its Parts, in tree order.
+    A Part without ``print`` is in no group."""
+
+    groups: Dict[str, List[str]] = {}
+    for item in (tree.get("parts") or ()) if isinstance(tree, Mapping) else ():
+        if isinstance(item, Mapping) and isinstance(item.get("print"), str) and isinstance(item.get("id"), str):
+            groups.setdefault(item["print"], []).append(item["id"])
+    return groups
+
+
+def _check_prints(printed: Mapping[str, Mapping[str, Any]], errors: List[str]) -> None:
+    """Parts sharing a print code are one print: same filament, form and
+    thickness, and all loose or all on Sheets; a code is no Part's id."""
+
+    groups: Dict[str, List[str]] = {}
+    for part, item in printed.items():
+        if "print" in item:
+            groups.setdefault(item["print"], []).append(part)
+    for code, parts in sorted(groups.items()):
+        first = printed[parts[0]]
+        for part in parts[1:]:
+            item = printed[part]
+            differ = [key for key in _SAME_PRINT if item.get(key) != first.get(key)]
+            if ("loose_reason" in item) != ("loose_reason" in first):
+                differ.append("loose_reason")
+            if differ:
+                errors.append(
+                    "%s and %s share print code %s but differ in %s: Parts sharing a print code are one "
+                    "print, so give %s its own code or none" % (parts[0], part, code, ", ".join(differ), part)
+                )
 
 
 def _parse_input(
@@ -516,12 +594,14 @@ def _parse_steps(
         identifier = item.get("id")
         match = STEP_ID.fullmatch(identifier) if isinstance(identifier, str) else None
         if match is None:
-            errors.append("%s.id must look like S01-<kebab-case mnemonic>" % label)
+            errors.append("%s.id must look like S01-<kebab-case mnemonic>, numbered S01 to S99 then S100 to S%d"
+                          % (label, MAX_STEPS))
             continue
         if not ids.add(identifier, label):
             continue
         number = int(match.group(1))
         if number <= last_number:
+            # "S%02d" spells S01-S99 and S100-S999 alike.
             errors.append("%s: step numbers rise in Manual order, and %s follows S%02d" % (label, identifier, last_number))
         last_number = max(last_number, number)
         unknown = sorted(set(item) - allowed)
@@ -752,6 +832,60 @@ def _check_no_spares(value: Mapping[str, Any], errors: List[str]) -> bool:
 
 
 SHEET_ID = re.compile(r"([A-Z])([1-9][0-9]?)")
+# ADR 0092 amendment 2026-11-26: a Sheet may carry a fit-test pair, pieces
+# the buyer presses together before building. Their ids are T and one or two
+# digits with no leading zero and no mnemonic (T1, T2): no Part (two digits
+# and a mnemonic), Print Piece or step id has that form. They are no Part of
+# the toy: no step uses them, no spare counts them.
+FIT_TEST_ID = re.compile(r"T([1-9][0-9]?)")
+MAX_FIT_TEST_PIECES = 8
+
+
+def fit_test_pieces(tree: Any) -> Dict[str, str]:
+    """Every declared fit-test piece of a tree: piece id -> its Sheet id."""
+
+    found: Dict[str, str] = {}
+    for sheet in (tree.get("sheets") or ()) if isinstance(tree, Mapping) else ():
+        test = sheet.get("fit_test") if isinstance(sheet, Mapping) else None
+        for piece in (test.get("pieces") or ()) if isinstance(test, Mapping) else ():
+            if isinstance(piece, Mapping) and isinstance(piece.get("id"), str):
+                found.setdefault(piece["id"], str(sheet.get("id")))
+    return found
+
+
+def _check_fit_test(value: Any, label: str, sheet_ids: Set[str], seen: Dict[str, str],
+                    errors: List[str]) -> None:
+    """A Sheet's ``fit_test``: ``{pieces: [{id, name}], text}``, each piece
+    id T1-T99 and declared once in the kit, the text the Manual's prep line."""
+
+    if not isinstance(value, dict) or set(value) != {"pieces", "text"}:
+        errors.append("%s.fit_test must be exactly {pieces, text}" % label)
+        return
+    if not _text(value.get("text"), MAX_TEXT_CHARS):
+        errors.append("%s.fit_test.text must be one short English instruction of at most %d characters, "
+                      "such as \"Press T2 into T1.\"" % (label, MAX_TEXT_CHARS))
+    pieces = value.get("pieces")
+    if not isinstance(pieces, list) or not 1 <= len(pieces) <= MAX_FIT_TEST_PIECES:
+        errors.append("%s.fit_test.pieces must list 1 to %d fit-test pieces" % (label, MAX_FIT_TEST_PIECES))
+        return
+    for number, piece in enumerate(pieces):
+        where = "%s.fit_test.pieces[%d]" % (label, number)
+        if not isinstance(piece, dict) or set(piece) != {"id", "name"}:
+            errors.append("%s must be exactly {id, name}" % where)
+            continue
+        identifier = piece["id"]
+        if not isinstance(identifier, str) or FIT_TEST_ID.fullmatch(identifier) is None:
+            errors.append("%s.id must be T and a number, T1 to T99, with no mnemonic" % where)
+            continue
+        if not _text(piece["name"], MAX_NAME_CHARS):
+            errors.append("%s.name must name it in at most %d characters" % (where, MAX_NAME_CHARS))
+        if identifier in seen:
+            errors.append("%s: fit-test piece %s is already declared on Sheet %s" % (where, identifier, seen[identifier]))
+            continue
+        if identifier in sheet_ids:
+            errors.append("%s: %s is also a Sheet id: number the fit-test pieces apart from the Sheets"
+                          % (where, identifier))
+        seen[identifier] = label
 
 
 def _check_sheets(
@@ -770,11 +904,16 @@ def _check_sheets(
     letter_of = {key: PART_ID.fullmatch(key).group(1) for key in printed}
     on_sheets: Dict[str, int] = {}
     seen: Set[str] = set()
+    sheet_ids = {sheet["id"] for sheet in value if isinstance(sheet, dict) and isinstance(sheet.get("id"), str)}
+    tests: Dict[str, str] = {}
     for index, sheet in enumerate(value):
         label = "assembly_tree.sheets[%d]" % index
-        if not isinstance(sheet, dict) or set(sheet) != {"id", "filament", "parts"}:
-            errors.append("%s must be exactly {id, filament, parts}" % label)
+        if not isinstance(sheet, dict) or not {"id", "filament", "parts"} <= set(sheet) <= {
+                "id", "filament", "parts", "fit_test"}:
+            errors.append("%s must be exactly {id, filament, parts}, with an optional fit_test" % label)
             continue
+        if "fit_test" in sheet:
+            _check_fit_test(sheet["fit_test"], label, sheet_ids, tests, errors)
         identifier = sheet["id"]
         match = SHEET_ID.fullmatch(identifier) if isinstance(identifier, str) else None
         if match is None:
@@ -814,6 +953,11 @@ def _check_sheets(
                 continue
             listed.add(part)
             on_sheets[part] = on_sheets.get(part, 0) + entry["count"]
+    for code in sorted({item["print"] for item in printed.values() if "print" in item}):
+        if code in sheet_ids or code in tests:
+            errors.append("print code %s is also a %s id: number the print codes apart from the Sheets and "
+                          "fit-test pieces" % (code, "Sheet" if code in sheet_ids else "fit-test piece"))
+    carried: Dict[str, List[int]] = {}
     for part, item in printed.items():
         if "loose_reason" in item:
             continue
@@ -823,10 +967,16 @@ def _check_sheets(
         elif on_sheets[part] < totals.get(part, 0):
             errors.append("the Sheets carry %d x %s, but the toy uses %d: a Sheet count is the tree's total "
                           "plus its spares" % (on_sheets[part], part, totals.get(part, 0)))
-        elif no_spares and on_sheets[part] > totals.get(part, 0):
+        else:
+            # A shared print code counts its Parts together (amendment
+            # 2026-11-26): the same print, so its spares are the print's.
+            count = carried.setdefault(print_code(part, item), [0, 0])
+            count[0] += on_sheets[part]
+            count[1] += totals.get(part, 0)
+    for code, (on, used) in sorted(carried.items()):
+        if no_spares and on > used:
             errors.append("the Sheets carry %d x %s, but the toy uses %d and the kit declares spares \"none\": "
-                          "a kit that ships no spares carries exactly the tree's total"
-                          % (on_sheets[part], part, totals.get(part, 0)))
+                          "a kit that ships no spares carries exactly the tree's total" % (on, code, used))
 
 
 def snap_pairs(step: Mapping[str, Any]) -> List[Mapping[str, Any]]:
@@ -1234,7 +1384,13 @@ __all__ = [
     "SNAP",
     "SOLID",
     "STEP_ID",
+    "step_number",
+    "FIT_TEST_ID",
+    "fit_test_pieces",
     "bought_totals",
     "parse_assembly_tree",
     "ships_no_spares",
+    "print_code",
+    "print_groups",
+    "PRINT_CODE",
 ]

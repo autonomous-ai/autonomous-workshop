@@ -147,6 +147,58 @@ class KitPrintLayoutTest(unittest.TestCase):
         self.assertFalse((self.project / "measure/kit/print.json").exists())
 
 
+    def fit_test_sheet(self, t2=(18.0, 10.0, 2.0)):
+        """Sheet A1 with a declared fit-test pair (ADR 0092 amendment
+        2026-11-26): the case shell, then T1 and T2 as plain plates."""
+
+        from tests.make.test_kit_sheets import SHEET_FILE
+
+        source = SHEET_FILE.format(copies=[("case", "A01-case-shell")]).replace(
+            "    for role, part in COPIES:\n        shape = _printed(role)[part]\n",
+            "    for role, part in COPIES + TESTS:\n"
+            "        shape = Box(*role, align=A) if isinstance(role, tuple) else _printed(role)[part]\n")
+        source += "\nTESTS = %r\n" % [((18.0, 10.0, 2.0), "T1"), (t2, "T2")]
+        (self.project / "sheet_A1.py").write_text(source)
+        self.kit["assembly_tree"]["sheets"][0]["fit_test"] = {
+            "pieces": [{"id": "T1", "name": "Fit slots"}, {"id": "T2", "name": "Fit tab"}],
+            "text": "Press T2 into T1."}
+        self.install()
+
+    def test_fit_test_pieces_print_fused_on_their_sheet(self):
+        from tests.make.test_kit_sheets import ks
+
+        self.fit_test_sheet()
+        self.assertEqual(ks.check_project(self.project)["failures"], [])
+        done = self.layout()
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        report = json.loads((self.project / "measure/kit/print.json").read_text())
+        self.assertEqual(report["sheets"][0], {"id": "A1", "filament": "navy", "copies": {"A01-case-shell": 1},
+                                               "fit_tests": ["T1", "T2"]})
+        self.assertNotIn("T1", report["copies"])
+        step = (self.project / "measure/kit/print.step").read_bytes()
+        bodies = scene_bodies(step)
+        self.assertEqual(sorted(b.name for b in bodies), ["A1", "B1", "C1", "loose/D01-inkwell#1",
+                                                          "loose/D01-inkwell#2"])
+        # Fused with A1: its volume holds both 18 x 10 x 2 plates.
+        self.assertGreater({b.name: b.total[0] for b in bodies}["A1"], 20 * 12 * 2 + 2 * 18 * 10 * 2)
+
+    def test_an_undeclared_or_undersized_fit_test_piece_fails(self):
+        from tests.make.test_kit_sheets import ks
+
+        self.fit_test_sheet(t2=(6.0, 3.0, 1.2))
+        fails = ks.check_project(self.project)["failures"]
+        self.assertTrue(any("fit-test piece T2 is under the minimum loose-part size" in line for line in fails),
+                        fails)
+        self.fit_test_sheet()
+        self.kit["assembly_tree"]["sheets"][0]["fit_test"]["pieces"].pop()
+        self.install()
+        self.assertIn("sheet_A1.py: holds 1 x T2, but the contract's Sheet A1 lists 0",
+                      ks.check_project(self.project)["failures"])
+        done = self.layout()
+        self.assertEqual(done.returncode, 1)
+        self.assertIn("sheet_A1.py holds", done.stdout)
+        self.assertFalse((self.project / "measure/kit/print.json").exists())
+
     def test_final_verification_lays_out_every_kit_and_nothing_else(self):
         import contextlib
         import io

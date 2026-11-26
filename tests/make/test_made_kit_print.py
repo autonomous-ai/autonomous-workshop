@@ -197,6 +197,36 @@ class MadeKitPrintTest(unittest.TestCase):
         # The record must be for the tree in effect.
         self.assertIn("another Assembly Tree", self.refused())
 
+    # ADR 0092 amendment 2026-11-26: fit-test pieces on a Sheet.
+
+    def fit_tested(self, no_spares=False):
+        contract = self.sheeted()
+        contract["assembly_tree"]["sheets"][0]["fit_test"] = {
+            "pieces": [{"id": "T1", "name": "Fit slots"}, {"id": "T2", "name": "Fit tab"}],
+            "text": "Press T2 into T1."}
+        if no_spares:
+            contract["assembly_tree"]["spares"] = "none"
+        return contract
+
+    def test_fit_test_pieces_fuse_with_their_sheet_and_are_no_part_copy(self):
+        contract = self.fit_tested()
+        sheets, _loose = expected_copies(contract)
+        self.assertEqual(sheets[0]["fit_tests"], ["T1", "T2"])
+        self.assertNotIn("T1", sheets[0]["copies"])
+        names = expected_bodies(*expected_copies(contract))
+        self.assertFalse(any("T1" in name or "T2" in name for name in names))
+        self.seal(contract)
+        record = self.check(contract)
+        self.assertEqual(record["printed_bodies"], len(names))
+        # A record that leaves the fit test out was laid out for another tree.
+        self.seal(contract, sheets=expected_copies(self.sheeted())[0])
+        self.assertIn("does not lay out the sealed tree's Sheets", self.refused(contract))
+
+    def test_a_kit_that_ships_no_spares_does_not_count_fit_tests_as_spares(self):
+        contract = self.fit_tested(no_spares=True)
+        self.seal(contract, spares="none")
+        self.assertEqual(self.check(contract)["spares"], "none")
+
     def test_a_loose_copy_of_two_solids_is_refused_and_one_passes(self):
         from build123d import Box, Compound, Pos
 
@@ -360,6 +390,75 @@ class MadeKitPrintTest(unittest.TestCase):
         self.write("measure/kit/print.json", report)
         self.assertIn("body A01-case-shell is not the scene's body", self.refused())
         self.assertTrue(removed)
+
+
+class SharedPrintTest(unittest.TestCase):
+    """ADR 0092 amendment 2026-11-26: the host refuses a Made kit whose
+    Parts sharing a ``print`` code are not one print, read from the sealed
+    ``assembled.step`` by a fingerprint no pose changes."""
+
+    setUp = MadeKitPrintTest.setUp
+    write = MadeKitPrintTest.write
+    made = MadeKitPrintTest.made
+    setUpClass = MadeKitPrintTest.setUpClass
+    seal = MadeKitPrintTest.seal
+    check = MadeKitPrintTest.check
+    refused = MadeKitPrintTest.refused
+
+    SHARED = ("B01-cabinet-carcass", "B02-cabinet-door")
+
+    def shared(self):
+        contract = copy.deepcopy(self.contract)
+        for part in contract["assembly_tree"]["parts"]:
+            if part["id"] in self.SHARED:
+                part["print"] = "B37"
+        return contract
+
+    def seal_shared(self, door=None, contract=None):
+        from build123d import Box, Rot
+
+        contract = contract or self.shared()
+        same = lambda: Box(5, 6, 2)  # noqa: E731 - one print
+        names = expected_bodies(*expected_copies(contract))
+        self.seal(contract, step=layout_step(names, shapes={
+            name: same for name in names if any(part in name for part in self.SHARED)}))
+        removed = sorted(item["body"] for item in self.listed["bodies"])
+        scene = layout_step(["A01-case-shell", *self.SHARED, "C01-desk-body", *removed], shapes={
+            "B01-cabinet-carcass": same,
+            # The same print in another pose: turned and tipped in the toy.
+            "B02-cabinet-door": door or (lambda: Rot(30, 0, 90) * Box(5, 6, 2)),
+        })
+        (self.run_root / PRODUCT / "assembled.step").write_bytes(scene)
+        return contract
+
+    def test_a_shared_code_whose_parts_are_one_print_is_accepted(self):
+        contract = self.seal_shared()
+        record = self.check(contract)
+        self.assertEqual(record["shared_prints"], {"B37": list(self.SHARED)})
+
+    def test_mismatched_geometry_under_one_code_is_refused(self):
+        from build123d import Box
+
+        contract = self.seal_shared(door=lambda: Box(5, 6, 2.4))
+        self.assertIn("share print code B37 but are not the same print", self.refused(contract))
+
+    def test_a_shared_code_across_filaments_is_refused(self):
+        contract = self.shared()
+        door = next(p for p in contract["assembly_tree"]["parts"] if p["id"] == "B02-cabinet-door")
+        door["filament"] = "navy" if door["filament"] != "navy" else "oak"
+        self.seal_shared(contract=contract)
+        self.assertIn("sharing print code B37 are not one filament", self.refused(contract))
+
+    def test_loose_copies_under_one_code_must_match(self):
+        contract = self.shared()
+        names = expected_bodies(*expected_copies(contract))
+        # layout_step sizes each Part by its name, so B01 and B02 differ.
+        self.seal(contract, step=layout_step(names))
+        self.assertIn("copies of B37 differ in volume or area", self.refused(contract))
+
+    def test_a_contract_without_print_codes_records_none(self):
+        self.seal_shared(contract=copy.deepcopy(self.contract))
+        self.assertNotIn("shared_prints", self.check())
 
 
 if __name__ == "__main__":

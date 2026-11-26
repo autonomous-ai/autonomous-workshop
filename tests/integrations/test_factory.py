@@ -2571,6 +2571,20 @@ class FactoryReleaseTest(unittest.TestCase):
             self.assert_refused_before_any_effect(message)
             shutil.rmtree(self.root / "resealed-product")
 
+    def test_a_kit_layout_may_say_it_ships_no_spares_and_list_shared_prints(self):
+        # ADR 0104 amendment and ADR 0092 amendment 2026-11-26: the accepted
+        # check carries "spares": "none" and its shared print codes; neither
+        # is a malformed record, and a wrong value still is.
+        self.seal_kit_layout(spares="none", shared_prints={"L37": ["L37-cap-a", "L38-cap-b"]})
+        receipt = self.writer(FactoryTransport())(self.context, self.release, self.manifest)
+        self.assertTrue(receipt.is_verified_draft)
+
+    def test_a_kit_layouts_optional_fields_are_still_checked(self):
+        for changes in ({"spares": "some"}, {"shared_prints": {"L37": []}}, {"shared_prints": ["L37"]}):
+            self.seal_kit_layout(**changes)
+            self.assert_refused_before_any_effect("printed-only primary is malformed")
+            shutil.rmtree(self.root / "resealed-product")
+
     # ADR 0104 (2026-11-23): a kit that sealed its printed-only scene ships
     # it as the root primary and the layout under parts/.
 

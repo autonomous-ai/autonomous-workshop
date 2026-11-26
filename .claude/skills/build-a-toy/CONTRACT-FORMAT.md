@@ -13,8 +13,8 @@ directory as its reference images. It has two parts:
 
 This is the exact format `workshop wish --contract` and `workshop fix
 --contract` seal: the whole file becomes the Wish objective, byte for byte
-(ADR 0072). Keep the whole file under **40,000 characters**. A correction
-brief is itself a Wish objective, which is limited to 50,000 characters, and
+(ADR 0072). Keep the whole file under **140,000 characters**. A correction
+brief is itself a Wish objective, which is limited to 150,000 characters, and
 does not need to repeat the contract, since `fix --contract` seals it
 separately from the brief.
 
@@ -243,7 +243,18 @@ instances.)
     (MIN-PART-SIZE R1: thickness 1.6 mm, short side 4 mm, long side 8 mm,
     footprint 35 mm², volume 50 mm³) in a kit with Sheets adds
     `"small_reason"` (at most 300 characters); the Sheet gate lists it and
-    holds it to every other rule. A Bought Part is
+    holds it to every other rule. Parts that are the **same print** used in
+    several places (one cap mould on four sub-assemblies) may share a
+    **print code** (ADR 0092 amendment 2026-11-26): each adds
+    `"print": "L37"`, the Parts' own letter and two or three digits
+    (`^<letter>[0-9]{2,3}$`), never equal to a Sheet or fit-test id. Parts
+    under one code must have the same filament, form, `thickness_mm` and
+    looseness; Make fails them unless they measure the same, and the host
+    refuses a Made kit whose sealed `assembled.step` holds them with
+    different geometry. Each Part keeps its own id, step inputs and Sheet
+    entries; the spare rule and `"spares": "none"` count the code once,
+    over all its Parts (one spare for the whole code, not one per Part).
+    A Part without `print` is its own print. A Bought Part is
     `{"id": "P02-steel-pin", "bought": "<Bought Part id>"}`. Both ids come
     from the owner's catalogues, `src/workshop/wish/catalogues/filaments.json`
     and `bought-parts.json`. A colour or Bought Part outside them is refused:
@@ -270,7 +281,23 @@ instances.)
     Each Sheet is the project file `sheet_<id>.py` defining `sheet()`;
     `make_round` checks every Sheet in assembly rounds,
     `--print-gates-only` and final verification (`kit_sheets.py check`).
-  - `steps[]`, in Manual order with rising numbers, each `{"id":
+    A Sheet may also carry a **fit test** (ADR 0092 amendment 2026-11-26):
+    pieces the buyer presses together before building, such as a slot
+    block and a tab. Declare them on that Sheet, never under `parts`:
+    `"fit_test": {"pieces": [{"id": "T1", "name": "Fit slots"}, {"id":
+    "T2", "name": "Fit tab"}], "text": "Before you start, press T2 into
+    T1: it goes in firmly and holds."}`. Ids are `T1` to `T99` (no leading
+    zero, no mnemonic), each once in the kit and none equal to a Sheet id;
+    1 to 8 pieces a Sheet, each name at most 80 characters, and one `text`
+    of at most 200, which the Manual prints on its prep page. A piece is
+    no Part: no step uses it and no count, spare or `"spares": "none"`
+    counts it. `sheet()` places each piece once under its id, and it passes
+    every Sheet rule and MIN-PART-SIZE R1 like a Part copy, with no
+    `small_reason`.
+  - `steps[]`, in Manual order with rising numbers (`S01` to `S99`, then
+    `S100` to `S999`: two digits below 100, three from 100, never a leading
+    zero on three digits; numbers compare as numbers, so `S100` follows
+    `S99`), each `{"id":
     "S07-teacher-desk-items", "output": "<the Sub-assembly's name, at most 80
     characters>", "count": <how many times it is made per toy>, "joint":
     "<kind>", "inputs": [...], "text": "<one short English instruction, at
@@ -655,6 +682,10 @@ A contract is ready only when all of these hold. Report every failure at once.
   `design-a-toy` writes every new contract as schema 11.
 - No row count is limited: ADR 0093 removed ADR 0072's guards of 16
   assembly-scoped rows and 4 per Unique Geometry.
-- The whole file is at most 40,000 characters. Nothing in the host checks
-  this number; it leaves room under the 50,000-character Wish objective
-  limit, which `wish --contract` enforces on the whole file.
+- The whole file is at most 140,000 characters. Nothing in the host checks
+  this number; it leaves room for owner amendments under the
+  150,000-character Wish objective limit (ADR 0092 amendment 2026-11-26),
+  which `wish --contract`, `seal_proof.py` and `resume --amend-contract`
+  enforce on the whole file. A kit's Assembly Tree, its steps and their
+  sentences included, counts toward it like the rest of the file: there is
+  no sidecar.

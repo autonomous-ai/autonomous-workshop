@@ -34,9 +34,9 @@ from typing import List, Optional, Tuple
 from workshop.errors import ContractError
 from workshop.wish.design_contract import parse_design_contract
 
-# ADR 0072, "A correction brief is itself a Wish objective, which is limited
-# to 50,000 characters" -- the contract itself is kept lower, at 40,000, per
-# CONTRACT-FORMAT.md.
+# A trend contest draft is a compact motion-toy contract, kept at 40,000
+# characters, well under the 150,000-character Wish objective limit (ADR 0092
+# amendment 2026-11-26), which exists for kits with large Assembly Trees.
 MAX_CONTRACT_CHARACTERS = 40_000
 
 REQUIRED_SECTIONS = ("Trend Hook", "Signature Motion", "Palette")

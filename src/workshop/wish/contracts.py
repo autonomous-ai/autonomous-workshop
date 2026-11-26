@@ -15,7 +15,13 @@ from workshop._validation import require_json_mapping
 
 
 MAX_PRODUCT_ID_CHARS = 256
-MAX_OBJECTIVE_CHARS = 50_000
+# The Wish objective is the whole Design Contract, byte for byte (ADR 0072).
+# It reaches the native agent only through WISH.json, never inline in a
+# prompt, and the host bounds that file at MAX_AGENT_INPUT_BYTES (6 MiB), so
+# this limit bounds what a Manager reads, not a prompt. ADR 0092 amendment
+# 2026-11-26 (owner): 150,000 characters, room for kits with an Assembly
+# Tree of 150+ Parts and steps (Kyoto, about 75,000) and larger ones.
+MAX_OBJECTIVE_CHARS = 150_000
 
 # Reference images ride the Wish as immutable run inputs under this directory.
 WISH_REFERENCES_DIRECTORY = "wish-references"
