@@ -331,8 +331,9 @@ instances.)
     the kernel cannot offset whole is checked against its obstacles offset
     inward instead, and failing that is offset only in windows round where it
     overlaps them (ADR 0104 amendments 2026-11-19 and 2026-11-26), with the
-    same result as the whole offset. One that cannot be offset at all is
-    refused. Declare the bite the ribs have,
+    same result as the whole offset; a window the kernel cannot offset
+    either is shrunk by booleans, never looser than the offset. One that
+    cannot be shrunk at all is refused. Declare the bite the ribs have,
     never more: a sideways slip or a deeper bite still fails. No other input
     takes `press_mm`. A flat joint face at an angle to the direction, or a
     round one whose axis is off it, passes only as a seat face. That means

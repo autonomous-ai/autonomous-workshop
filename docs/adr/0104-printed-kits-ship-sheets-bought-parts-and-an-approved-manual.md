@@ -758,10 +758,32 @@ checked where the whole toy is built.
      into tiles that cover it.
   3. Each window is grown by a margin M > `press_mm` (`press_mm` + 0.3 mm,
      else + 0.15, else + 0.6). The Part is cut to it, and each cut solid is
-     offset inward by `press_mm`.
+     offset inward by `press_mm`. Where the kernel cannot offset a cut
+     either (Kyoto's crops are small flat solids with features 0.05 to
+     0.1 mm thin, which the press removes whole and the offset cannot), the
+     cut is shrunk by booleans instead (`CadGeometry.eroded`): its common
+     with copies of itself moved `press_mm` along each of its face normals,
+     both ways, plus nine sampled normals of each curved face, one per
+     10 degree cone. A point survives only if every point `press_mm` from
+     it along those directions is in the cut; the arc offset keeps it only
+     if every point within `press_mm` is. So this keeps everything the
+     offset keeps: on a flat face it is the offset, and beside a concave
+     edge or a curved face it keeps a little more, which can only fail
+     more. A common the kernel reports as not done, a result that is not a
+     valid solid no larger than the cut, or a result missing any point of
+     a 6 x 6 x 6 grid that lies deeper than `press_mm` + 0.001 in the cut
+     (a boolean silently dropping material, which would loosen the gate)
+     is a refusal. The result's split faces are merged
+     (`ShapeUpgrade_UnifySameDomain`, as build123d's own booleans do)
+     before that check.
   4. The rest of the Part, outside every window, is kept unshrunk.
   5. The shrunk windows and the unshrunk rest sweep together against the
-     unchanged obstacles at the unchanged 0.001 mm3 limit.
+     unchanged obstacles at the unchanged 0.001 mm3 limit. Where the
+     kernel cannot sweep them as one (its common returns invalid
+     geometry), they sweep solid by solid, each held to the limit over the
+     number of solids, as a group whose union fails already does
+     (`_sweep_each`): a union's overlap is at most the sum of its solids',
+     so this is never looser, and it is recorded in `fallbacks`.
 
   Why this is the same gate. A point of an overlap lies at least M from
   its window's cut faces. So it is deeper than `press_mm` inside the cut
@@ -776,8 +798,10 @@ checked where the whole toy is built.
   own: an overlap no deeper than `press_mm` passes wherever it lies, as it
   always has. Seated contact at the seat is judged as before. An overlap
   the kernel cannot measure, a window it cannot cut or offset at any
-  margin, or a rest it cannot cut is a refusal, never a pass. The
-  condition records `press_offset: "local"` and `press_windows`, and its
+  margin, by offset or by booleans, or a rest it cannot cut is a refusal,
+  never a pass. The condition records `press_offset: "local"`,
+  `press_windows` and, when booleans shrank a cut, `press_eroded` (how
+  many cuts), and its
   `presses` row records `offset: "local"`.
 - **Order.** The input's own offset first, then the obstacles' (2026-11-19,
   press obstacles), then the windows. A Part the kernel can offset whole is
@@ -788,14 +812,32 @@ checked where the whole toy is built.
     4.0 mm socket at `press_mm` 0.06.
   - Fails: a 0.3 mm bite a side, a 0.3 mm sideways shift, and an arm 5 mm
     off the socket that ploughs 1 mm into the base.
-  - Refused: no offset anywhere.
+  - With every offset refused, the same peg passes by booleans; the
+    0.3 mm bite, the sideways shift and the arm still fail by booleans.
+  - The boolean shrink of a box equals the arc offset; for an L-shape, a
+    cylinder and a filleted box nothing of the arc offset is missing.
+  - Refused: no shrink anywhere, a boolean the kernel reports not done, and
+    a boolean that silently returns nothing (caught by the grid check).
+  - Windows the kernel cannot sweep as one pass solid by solid at half
+    the limit each, a biting piece still fails, and no other group takes
+    that path.
   - A plain peg never reaches the windows.
   - Where the whole offset can be made, the windows give the same verdict
     and overlap at depths 0.03, 0.06 and 0.12.
 
   On the Kyoto bridge abutment, at depths 0.01 to 0.04, the whole offset and
   the windows gave identical verdicts and overlaps (0.007218, 0.004124 and
-  0.001869 mm3, then clear). KYOTO_RESULT
+  0.001869 mm3, then clear). On the whole Kyoto component round, the
+  windows alone left 42 press inputs refused: the kernel could not offset
+  their small flat cuts either. Rerun on the 38 steps holding them, with
+  the boolean shrink and the solid-by-solid sweep, 52 of their 53 press
+  inputs pass (41 by windows, 40 of which needed the boolean shrink on at
+  least one cut; 2 by obstacles; 8 by the whole offset, which the kernel
+  makes on some runs and not others; and S103's second lantern hat once
+  its pieces swept one by one). The one left, S131 in S145, offsets whole
+  and still collides 0.549 mm3 with the annex end wall at step 47 of 244:
+  a real collision, not a press. Kyoto's other blocked inputs and its
+  non-parallel joints are outside this amendment.
 - **Unchanged.** Every input without `press_mm`, and every Part or
   obstacle set the kernel can offset whole.
 

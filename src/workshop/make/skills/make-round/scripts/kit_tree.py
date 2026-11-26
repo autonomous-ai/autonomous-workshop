@@ -208,6 +208,14 @@ JOINT_GAP_MM = 0.3           # a face this close to what it joins is a joint fac
 # the longest side of one window before it is split into tiles.
 PRESS_LOCAL_MARGINS_MM = (0.3, 0.15, 0.6)
 PRESS_LOCAL_TILE_MM = 8.0
+# Where the kernel cannot offset a window's cut either, it is shrunk by
+# booleans (CadGeometry.eroded), checked on this many grid points a side.
+PRESS_ERODE_SAMPLES = 6
+# Directions within these cosines of one already taken are skipped: flat
+# faces' normals all count; a curved face's sampled normals within 10 deg
+# of one taken add nothing but booleans. Fewer directions only keep more.
+PRESS_ERODE_SAME = 1.0 - 1e-9
+PRESS_ERODE_CURVED = math.cos(math.radians(10.0))
 PARALLEL_TOLERANCE_DEG = 2.0
 PRINT_LINES = 2              # the thinnest printable wall, in lines
 # The tilt hold (ADR 0104 amendment 2026-11-19, rule i): a unit set down by a
@@ -1433,6 +1441,7 @@ class CadGeometry:
         scripts = Path(__file__).resolve().parents[2] / "cad" / "scripts"
         self.motion = runpy.run_path(str(scripts / "check_motion"), run_name="kit_tree_check_motion")
         self.fallbacks: list[dict] = []
+        self.press_eroded = 0
         if str(self.project) not in sys.path:
             sys.path.insert(0, str(self.project))
         try:
@@ -1553,9 +1562,15 @@ class CadGeometry:
                 return self._sweep_each(condition, solids, obstacles, exc)
         parts = {condition["inputs"]["moving_part"]: group}
         parts.update({body.key: body.shape for body in obstacles})
-        condition = json.loads(json.dumps({key: value for key, value in condition.items() if key != "result"}))
-        condition["inputs"]["obstacle_parts"] = [body.key for body in obstacles]
-        return self.motion["run_condition"](condition, parts, 0)
+        swept = json.loads(json.dumps({key: value for key, value in condition.items() if key != "result"}))
+        swept["inputs"]["obstacle_parts"] = [body.key for body in obstacles]
+        result = self.motion["run_condition"](swept, parts, 0)
+        if (len(solids) > 1 and result.get("status") not in ("pass", "fail")
+                and condition["inputs"].get("press_offset") == "local"):
+            # A press local offset's windows and rest the kernel cannot
+            # sweep as one: solid by solid, never looser (``_sweep_each``).
+            return self._sweep_each(condition, solids, obstacles, ValueError(result.get("detail")))
+        return result
 
     def _sweep_each(self, condition: dict, solids: list, obstacles: list[Body], error: Exception) -> dict:
         """The moving group's union failed: sweep each solid on its own
@@ -1710,6 +1725,7 @@ class CadGeometry:
         steps, move = int(inputs["steps"]), Vector(*inputs["translation"])
         group = self._group(moving)
         boxes = [group.moved(Location(move * (step / steps))).bounding_box() for step in range(steps + 1)]
+        self.press_eroded = 0
         near = []
         for body in obstacles:
             try:
@@ -1765,6 +1781,8 @@ class CadGeometry:
         shrunk += [Body(moving[0].label, part, key="%s@rest" % moving[0].key)
                    for part in (rest.solids() if rest is not None else ()) if part.volume > 0]
         condition["inputs"]["press_windows"] = len(windows)
+        if self.press_eroded:
+            condition["inputs"]["press_eroded"] = self.press_eroded
         return shrunk, None
 
     def _press_window(self, solids, lo, hi, margin, depth, Box, Location):
@@ -1787,10 +1805,84 @@ class CadGeometry:
                 if part.volume <= 0:
                     continue
                 pressed, error = self.pressed([Body(None, part, key="window")], depth)
-                if error is not None:
-                    return None, error
-                shapes.append(pressed[0].shape)
+                if error is None:
+                    shapes.append(pressed[0].shape)
+                    continue
+                eroded, why = self.eroded(part, depth)
+                if eroded is None:
+                    return None, "%s; nor by booleans: %s" % (error, why)
+                self.press_eroded += 1
+                shapes.extend(eroded)
         return shapes, None
+
+    def eroded(self, shape, depth: float):
+        """``shape`` shrunk by booleans alone, for a window cut the kernel
+        cannot offset (ADR 0104 amendment 2026-11-26, press local offset):
+        the common of ``shape`` with copies of itself moved ``depth`` along
+        each of its face normals, both ways (three by three points of each
+        curved face, one per PRESS_ERODE_CURVED cone): ``(solids, None)``
+        or ``(None, reason)``.
+
+        A point is kept only if every point ``depth`` from it along those
+        directions is in ``shape``; the arc offset keeps it only if every
+        point within ``depth`` is. So this keeps all the arc offset keeps,
+        and more only beside concave edges and curved faces: it is never
+        looser, and it is the same on a flat face. Unlike the offset it
+        takes a face the press removes whole. A boolean the kernel reports
+        as failed, or a result missing a sampled point deeper than
+        ``depth`` in ``shape``, is a refusal."""
+
+        from build123d import GeomType, Location, Solid, Vector
+        from OCP.BRepAlgoAPI import BRepAlgoAPI_Common
+        from OCP.ShapeUpgrade import ShapeUpgrade_UnifySameDomain
+        from OCP.TopAbs import TopAbs_SOLID
+        from OCP.TopExp import TopExp_Explorer
+        from OCP.TopoDS import TopoDS
+
+        directions = []
+        try:
+            faces = sorted(shape.faces(), key=lambda face: face.geom_type != GeomType.PLANE)
+            for face in faces:
+                flat = face.geom_type == GeomType.PLANE
+                samples = ((0.5, 0.5),) if flat else tuple(
+                    (u, v) for u in (0.1, 0.5, 0.9) for v in (0.1, 0.5, 0.9))
+                for u, v in samples:
+                    normal = face.normal_at(u, v)
+                    if normal.length <= 0:
+                        continue
+                    for sign in (1.0, -1.0):
+                        direction = (normal * sign).normalized()
+                        near = PRESS_ERODE_SAME if flat else PRESS_ERODE_CURVED
+                        if all(direction.dot(other) < near for other in directions):
+                            directions.append(direction)
+            kept = shape.wrapped
+            for direction in directions:
+                moved = shape.moved(Location(direction * depth)).wrapped
+                common = BRepAlgoAPI_Common(kept, moved)
+                if not common.IsDone():
+                    return None, "the kernel's boolean fails"
+                kept = common.Shape()
+            # Merge the faces the chain split, as build123d's own booleans
+            # do: the same geometry, which later booleans handle better.
+            unify = ShapeUpgrade_UnifySameDomain(kept, True, True, True)
+            unify.AllowInternalEdges(False)
+            unify.Build()
+            kept = unify.Shape()
+            solids = []
+            explorer = TopExp_Explorer(kept, TopAbs_SOLID)
+            while explorer.More():
+                solid = Solid(TopoDS.Solid_s(explorer.Current()))
+                if solid.volume > 0:
+                    if not solid.is_valid or solid.volume > shape.volume:
+                        return None, "the kernel's boolean gives no valid smaller solid"
+                    solids.append(solid)
+                explorer.Next()
+        except Exception as exc:  # noqa: BLE001 - a shrink the kernel cannot make is a refusal
+            return None, "the kernel's boolean fails: %s" % exc
+        missing = _deep_point_missing(shape, solids, depth)
+        if missing is not None:
+            return None, "its shrink drops a point %.3f mm deep at %s" % missing
+        return solids, None
 
     def touching(self, a, b, gap: float) -> bool:
         """Whether two placed shapes come within ``gap`` of each other."""
@@ -2080,6 +2172,38 @@ def _face_frame(face, GeomType):
             return "round", (axis.X(), axis.Y(), axis.Z())
     except Exception:  # noqa: BLE001 - an unreadable face is not judged
         return None
+    return None
+
+
+def _deep_point_missing(shape, solids, depth: float, per_axis: int = PRESS_ERODE_SAMPLES):
+    """The first point of a grid over ``shape``'s box lying deeper than
+    ``depth`` (plus 1e-3) inside ``shape`` but in none of ``solids``, as
+    ``(depth, point)``, or None. Every such point belongs in any inward
+    shrink by ``depth``: a guard against a boolean that silently drops
+    material, which would loosen the gate."""
+
+    from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeVertex
+    from OCP.BRepClass3d import BRepClass3d_SolidClassifier
+    from OCP.BRepExtrema import BRepExtrema_DistShapeShape
+    from OCP.gp import gp_Pnt
+    from OCP.TopAbs import TopAbs_IN
+
+    box = shape.bounding_box()
+    lo, hi = (box.min.X, box.min.Y, box.min.Z), (box.max.X, box.max.Y, box.max.Z)
+    skin = shape.shells()
+    for i in range(per_axis):
+        for j in range(per_axis):
+            for k in range(per_axis):
+                point = gp_Pnt(*(a + (b - a) * (n + 0.5) / per_axis for a, b, n in zip(lo, hi, (i, j, k))))
+                if BRepClass3d_SolidClassifier(shape.wrapped, point, 1e-7).State() != TopAbs_IN:
+                    continue
+                vertex = BRepBuilderAPI_MakeVertex(point).Vertex()
+                deep = min(BRepExtrema_DistShapeShape(vertex, shell.wrapped).Value() for shell in skin)
+                if deep <= depth + 1e-3:
+                    continue
+                if not any(BRepClass3d_SolidClassifier(solid.wrapped, point, 1e-7).State() == TopAbs_IN
+                           for solid in solids):
+                    return deep, "(%.3f, %.3f, %.3f)" % (point.X(), point.Y(), point.Z())
     return None
 
 

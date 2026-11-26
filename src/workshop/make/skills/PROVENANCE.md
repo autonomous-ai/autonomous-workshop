@@ -3144,6 +3144,11 @@ convention, so sealed STEPs and frozen runs keep their colours.
   measures the Part's overlaps at every pose of the sweep and offsets the
   Part only inside windows round them, each window reaching more than
   `press_mm` past every overlap (so its offset equals the whole offset
-  there), with the rest of the Part swept unshrunk. The condition records
-  `press_offset: "local"` and `press_windows`. Every other path, and every
+  there), with the rest of the Part swept unshrunk. A window cut the
+  kernel cannot offset is shrunk by booleans (`CadGeometry.eroded`: the
+  common of the cut with itself moved `press_mm` along each face normal,
+  which keeps everything the arc offset keeps), checked against a grid of
+  points deeper than `press_mm`. Windows and rest the kernel cannot sweep
+  as one sweep solid by solid (`_sweep_each`, never looser). The condition
+  records `press_offset: "local"`, `press_windows` and `press_eroded`. Every other path, and every
   Part the kernel can offset whole, is unchanged.
