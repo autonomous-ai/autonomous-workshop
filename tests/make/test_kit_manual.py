@@ -160,6 +160,20 @@ class KitManualTest(unittest.TestCase):
                        "S01 (Cabinet with jar and inkwell)", "Completion", "help@example.invalid"):
             self.assertIn(needle, text)
 
+    def test_a_kit_that_ships_no_spares_says_so_on_its_front_page(self):
+        # ADR 0104 amendment 2026-11-26.
+        project, document, code = self.write(name="default")
+        self.assertEqual(code, 0, document["failures"])
+        self.assertNotIn("spares", document)
+        self.assertNotIn("no spare parts", pdf_text(project / "manual" / "manual.pdf"))
+        kit = manual_kit()
+        kit["assembly_tree"]["spares"] = "none"
+        project, document, code = self.write(kit, name="none")
+        self.assertEqual(code, 0, document["failures"])
+        self.assertEqual(document["spares"], "none")
+        self.assertEqual(json.loads((project / "manual" / "manual.json").read_text())["spares"], "none")
+        self.assertIn("This kit has no spare parts", pdf_text(project / "manual" / "manual.pdf"))
+
     def test_every_leaf_is_in_exactly_one_material_list(self):
         _project, document, _code = self.write()
         listed = [row["id"] for section in document["sections"]

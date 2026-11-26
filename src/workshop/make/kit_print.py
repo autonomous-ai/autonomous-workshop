@@ -15,6 +15,12 @@ rebuilding geometry (ADR 0061), that
   each Sheet and, since 2026-11-16, each loose copy is one connected solid
   (one solid, one outer shell), and every loose copy of one Part has the
   same volume and area.
+- a tree that declares ``"spares": "none"`` (amendment 2026-11-26, the
+  owner-approved kit that ships no spare piece) has no Part with
+  ``spares`` and no Sheet copy beyond the toy's count, and its record says
+  ``"spares": "none"``; a record says so only for such a tree. The
+  accepted check carries ``"spares": "none"`` too, so the Make receipt
+  shows the kit ships no spares.
 
 Factory splits the STEP into its solids and arranges and slices each one on
 its own, so a fused Sheet is weighed and placed as the one plate it prints
@@ -43,6 +49,7 @@ from typing import Any, Mapping
 
 from workshop.errors import ContractError
 from workshop.make.kit_tree import has_assembly_tree, install_document, not_printed, tree_digest, tree_totals
+from workshop.wish.assembly_tree import NO_SPARES, ships_no_spares
 
 KIND = "kit-print-layout"
 SCHEMA_VERSION = 2
@@ -231,6 +238,20 @@ def verify_made_print_layout(
             copies[part] += count
     for part, count in loose.items():
         copies[part] += count
+    no_spares = ships_no_spares(contract["assembly_tree"])
+    if no_spares:
+        totals = tree_totals(contract["assembly_tree"])
+        spare = sorted(part for part, count in copies.items() if count > totals.get(part, 0))
+        if spare:
+            raise ContractError(
+                "the sealed tree declares spares \"none\", but it carries spare copies of %s: a kit that "
+                "ships no spares prints each Part exactly as often as the toy uses it" % ", ".join(spare[:6])
+            )
+    if ("spares" in report) != no_spares or (no_spares and report.get("spares") != NO_SPARES):
+        raise ContractError(
+            "%s %s: it records spares \"none\" exactly when the sealed tree declares the kit ships no spares"
+            % (REPORT_PATH, "does not record spares \"none\"" if no_spares else "records spares the tree does not declare")
+        )
     if report.get("sheets") != sheets or report.get("loose") != loose or report.get("copies") != dict(
         sorted(copies.items())
     ) or report.get("bodies") != names:
@@ -272,6 +293,8 @@ def verify_made_print_layout(
             "printed_scene_sha256": printed_sha256,
             "pieces": printed_pieces(contract),
         }
+    if no_spares:
+        extra["spares"] = NO_SPARES
     return {
         **extra,
         "path": step_path,

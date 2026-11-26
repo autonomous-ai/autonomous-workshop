@@ -35,6 +35,7 @@ from typing import Any, Mapping
 
 from workshop.errors import ContractError
 from workshop.make.kit_tree import has_assembly_tree, install_document, not_printed, tree_digest
+from workshop.wish.assembly_tree import NO_SPARES, ships_no_spares
 
 MANUAL_DIRECTORY = "manual"
 PDF_PATH = "manual/manual.pdf"
@@ -126,6 +127,14 @@ def verify_made_manual(
     bodies = [{"body": item["body"], "bought": item["bought"]} for item in not_printed(contract, catalogue)]
     if report.get("not_printed") != bodies:
         raise ContractError("the kit Manual does not list every Bought Part body as bought, not printed")
+    # ADR 0104 amendment 2026-11-26: the Manual of a kit that ships no
+    # spares says so, and only such a Manual does.
+    no_spares = ships_no_spares(tree)
+    if ("spares" in report) != no_spares or (no_spares and report.get("spares") != NO_SPARES):
+        raise ContractError(
+            "the kit Manual %s" % ("does not say the kit ships no spares, as its sealed tree declares"
+                                   if no_spares else "says the kit ships no spares, which its sealed tree does not declare")
+        )
     pdf = read(PDF_PATH)
     pdf_sha256 = hashlib.sha256(pdf).hexdigest()
     named = report.get("pdf") if isinstance(report.get("pdf"), Mapping) else {}
@@ -150,6 +159,7 @@ def verify_made_manual(
         "not_printed": len(bodies),
         "after_sales_confirmed": company.get("confirmed") is True,
         "source": source,
+        **({"spares": NO_SPARES} if no_spares else {}),
     }
 
 

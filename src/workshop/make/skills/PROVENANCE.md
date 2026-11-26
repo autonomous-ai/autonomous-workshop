@@ -3080,6 +3080,17 @@ convention, so sealed STEPs and frozen runs keep their colours.
   also skips `measure/kit/scene.step` when `print.json`'s `printed_scene`
   names it with its current sha256. A resync must keep it.
 
+## Workshop-local: a kit may ship no spares (2026-11-26, ADR 0104 amendment)
+
+- `make-round/scripts/kit_sheets.py check` asks no spare of a kit whose
+  `assembly_tree` declares `"spares": "none"`, fails a Part that still
+  declares `spares` or that its Sheets carry beyond the toy's count, and
+  adds `"spares": "none"` to its report. `kit_print.py layout` and
+  `kit_manual.py` write the same field into `print.json` and
+  `manual.json`, and the Manual's front page says the kit has no spare
+  parts. A tree without the field is unchanged byte for byte; `make_round`
+  only prints one more line for it.
+
 ## Workshop-local: one thread per CAD process, jobs from the task headroom (2026-11-19)
 
 - **Local patch to upstream `cad`.** New `scripts/cadthreads.py` (stdlib

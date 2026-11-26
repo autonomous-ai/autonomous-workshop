@@ -21,7 +21,8 @@ priced and arranged as loose Parts; fused, it is one flat plate on one bed
 (schema 2, 2026-11-14). A Sheet that does not fuse into one connected solid
 fails: some copy or gate touches nothing. ``measure/kit/print.json``
 records the file's sha256, the tree it was laid out for and the copies it
-holds. The host checks both against the sealed tree before Make is
+holds, and ``"spares": "none"`` when the tree declares the kit ships no
+spare piece (2026-11-26). The host checks both against the sealed tree before Make is
 accepted, and Release ships the file under ``parts/``, the one set Factory
 prices. A failure prints one ``FAIL`` line and exits 1.
 
@@ -243,6 +244,9 @@ def layout(project: Path) -> dict:
               "step": STEP_PATH, "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
               "sheets": sheets, "loose": loose, "copies": dict(sorted(copies.items())),
               "bodies": sorted(names), "printed_scene": printed_scene(project)}
+    if _sibling("kit_sheets").ships_no_spares(kit):
+        # ADR 0104 amendment 2026-11-26: the owner-approved kit that ships no spare piece.
+        report["spares"] = "none"
     (project / REPORT_PATH).write_text(json.dumps(report, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return report
 

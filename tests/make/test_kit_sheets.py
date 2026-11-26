@@ -179,6 +179,32 @@ class KitPartSizeTest(unittest.TestCase):
         self.assertEqual(ks.part_failures(self.SHEETS, {"T01-pin": {"loose_reason": "round"}}, {"T01-pin": 2},
                                           {"T01-pin": long_})[0], [])
 
+    def test_a_kit_that_ships_no_spares_asks_none(self):
+        # ADR 0104 amendment 2026-11-26: the owner-approved opt-out.
+        short = {"size": [2.0, 5.0, 12.0], "volume": 120.0}
+        sheets = [{"id": "A1", "filament": "oak", "parts": [{"id": "A01-panel", "count": 2}]}]
+        self.assertEqual(ks.part_failures(sheets, {"A01-panel": {}}, {"A01-panel": 2}, {"A01-panel": short},
+                                          no_spares=True)[0], [])
+        loose = {"T01-pin": {"loose_reason": "round"}}
+        self.assertEqual(ks.part_failures(sheets, loose, {"T01-pin": 2}, {"T01-pin": short}, no_spares=True)[0],
+                         [])
+        # A spare it still carries is inconsistent with the declaration.
+        loose["T01-pin"]["spares"] = 1
+        self.assertEqual(ks.part_failures(sheets, loose, {"T01-pin": 2}, {"T01-pin": short}, no_spares=True)[0],
+                         ['T01-pin declares spares, but the kit declares spares "none": remove its spares'])
+        self.assertEqual(ks.part_failures(sheets, {"A01-panel": {}}, {"A01-panel": 1}, {"A01-panel": short},
+                                          no_spares=True)[0],
+                         ['A01-panel: its Sheets carry 2, the toy uses 1, but the kit declares spares "none": '
+                          'carry exactly 1'])
+
+    def test_the_opt_out_loosens_no_size_rule(self):
+        tiny = {"size": [0.8, 5.0, 12.0], "volume": 80.0, "pieces": 2}
+        fails, _ = ks.part_failures(self.SHEETS, {"A01-panel": {}}, {"A01-panel": 2}, {"A01-panel": tiny},
+                                    no_spares=True)
+        self.assertEqual(len(fails), 2)
+        self.assertIn("is 2 solids", fails[0])
+        self.assertIn("thickness 0.8 < 1.6", fails[1])
+
     def test_a_part_is_one_connected_solid(self):
         one = {"size": [2.0, 10.0, 20.0], "volume": 400.0, "pieces": 1}
         self.assertEqual(ks.part_failures(self.SHEETS, {"A01-panel": {}}, {"A01-panel": 1}, {"A01-panel": one})[0], [])
@@ -376,6 +402,30 @@ class KitSheetsProjectTest(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertEqual(report["failures"], ['D01-inkwell is 8.0 mm long, under 15, and prints loose with no '
                                               'spare: state "spares": 1 or more on its tree entry'])
+
+    def test_a_kit_that_ships_no_spares_passes_without_them_and_says_so(self):
+        tree = self.kit["assembly_tree"]
+        inkwell = next(p for p in tree["parts"] if p["id"] == "D01-inkwell")
+        del inkwell["spares"]
+        tree["spares"] = "none"
+        self.install()
+        code, report = self.run_check()
+        self.assertEqual((code, report["failures"], report["spares"]), (0, [], "none"))
+        # The default kit's report carries no spares field.
+        del tree["spares"]
+        inkwell["spares"] = 1
+        self.install()
+        code, report = self.run_check()
+        self.assertEqual(code, 0)
+        self.assertNotIn("spares", report)
+
+    def test_a_kit_that_ships_no_spares_refuses_a_declared_spare(self):
+        self.kit["assembly_tree"]["spares"] = "none"
+        self.install()
+        code, report = self.run_check()
+        self.assertEqual(code, 1)
+        self.assertEqual(report["failures"], ['D01-inkwell declares spares, but the kit declares spares "none": '
+                                              'remove its spares'])
 
     def test_a_loose_part_of_two_solids_fails(self):
         self.write_parts(inkwell=(8.0, 8.0, 8.0), split={"D01-inkwell"})

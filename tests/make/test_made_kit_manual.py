@@ -63,6 +63,29 @@ class MadeKitManualTest(unittest.TestCase):
         self.assertTrue(account["after_sales_confirmed"])
         json.dumps(account)
 
+    # ADR 0104 amendment 2026-11-26: a kit that ships no spares.
+
+    def test_a_kit_that_ships_no_spares_is_in_the_manual_account(self):
+        self.assertNotIn("spares", self.check())
+        contract = json.loads(json.dumps(self.contract))
+        contract["assembly_tree"]["spares"] = "none"
+        # A Manual written for the default tree is for another tree.
+        with self.assertRaises(ContractError):
+            self.check(contract)
+        kit = install_document(contract, self.catalogue)
+        _document, code = kit_manual.write_manual(self.cad, kit, COMPANY, meshes_for(kit))
+        self.assertEqual(code, 0)
+        self.assertEqual(self.check(contract)["spares"], "none")
+        report = json.loads(self.report_path.read_text())
+        del report["spares"]
+        self.rewrite(report)
+        self.assertIn("does not say the kit ships no spares", self.refused(contract=contract))
+
+    def test_a_manual_may_not_claim_no_spares_the_tree_does_not_declare(self):
+        report = dict(self.report, spares="none")
+        self.rewrite(report)
+        self.assertIn("which its sealed tree does not declare", self.refused())
+
     # ADR 0104 decision 5: a seeded kit ships the Manual its Approved Proof sealed.
 
     APPROVED = b"%PDF-1.7\nthe owner-approved manual\n%%EOF\n"

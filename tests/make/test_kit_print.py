@@ -108,6 +108,18 @@ class KitPrintLayoutTest(unittest.TestCase):
         report = json.loads((self.project / "measure/kit/print.json").read_text())
         self.assertEqual(report["loose"], {"D01-inkwell": 1})
         self.assertEqual([b for b in report["bodies"] if b.startswith("loose/")], ["loose/D01-inkwell#1"])
+        self.assertNotIn("spares", report)
+
+    def test_a_kit_that_ships_no_spares_records_it(self):
+        # ADR 0104 amendment 2026-11-26.
+        tree = self.kit["assembly_tree"]
+        del next(p for p in tree["parts"] if p["id"] == "D01-inkwell")["spares"]
+        tree["spares"] = "none"
+        self.install()
+        done = self.layout()
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        report = json.loads((self.project / "measure/kit/print.json").read_text())
+        self.assertEqual((report["spares"], report["loose"]), ("none", {"D01-inkwell": 1}))
 
     def test_a_loose_part_of_two_solids_fails_and_writes_nothing(self):
         self.write_parts(inkwell=(8.0, 8.0, 8.0), split={"D01-inkwell"})

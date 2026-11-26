@@ -214,6 +214,10 @@ instances.)
   - `panel_mm` (optional, default 2.0, from 0.8 to 10): the toy's one
     standard panel thickness, five 0.4 mm lines by default (owner decision
     Q34, 2026-10-26).
+  - `spares` (optional, ADR 0104 2026-11-26 amendment): only `"none"`, set
+    only with the owner's approval, for a kit that ships no spare piece
+    (the New York mini-city kit). Omit it for the default, one spare of each
+    Part under 15 mm.
   - `parts[]`: a printed Part is `{"id": "A03-hat", "name": "<at most 80
     characters>", "filament": "<filament id>", "form": "panel" | "solid"}`
     (owner decision Q33, 2026-10-26). Furniture, boxes, the shell and frames
@@ -256,7 +260,10 @@ instances.)
     filament. Over all Sheets a Part's count is at least the toy's total
     (more are spares), and every printed Part is on a Sheet or states
     `loose_reason`. A Part whose longest side is under 15 mm needs a spare:
-    on its Sheets, or, for a loose Part, as `"spares"`. Every printed Part,
+    on its Sheets, or, for a loose Part, as `"spares"`, unless the tree
+    declares `"spares": "none"` (ADR 0104, 2026-11-26 amendment): a kit
+    the owner approved to ship no spare piece, where no Part may declare
+    `spares` and no Sheet may carry more than the toy's total. Every printed Part,
     loose or on a Sheet, is one connected solid: Factory splits the print
     STEP by solid, so a detail cut free of its Part prints as a stray piece
     (ADR 0104, 2026-11-16).

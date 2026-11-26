@@ -35,7 +35,9 @@ What the Manual holds, in order
    screw (a fastener with a ``thread`` size) or a power source. The
    self-prepared items: scissors when there are Print Pieces, and batteries
    for each power source. The company's warnings (small parts always,
-   batteries with a power source) and "check all Parts first". Printed jigs
+   batteries with a power source) and "check all Parts first", then, for a
+   kit whose tree declares ``"spares": "none"``, a line saying it holds no
+   spare part (the report's ``"spares": "none"``). Printed jigs
    are not in the tree's schema yet, so none is listed. Every Bought Part
    under "Bought, not printed" with its count and catalogue name (owner
    decision Q29): the STEP models them, in the reserved magenta, only for
@@ -145,6 +147,9 @@ LEAD_METHOD_LABELS = {"twist": "Twist the leads together", "solder": "Solder the
                       "connector": "Plug the leads together"}
 SOLDERING_TOOLS = ("Soldering iron", "Solder")
 CHECK_PARTS_FIRST = "Check all Parts against the material lists before you start."
+# ADR 0104 amendment 2026-11-26: a kit whose tree declares ``"spares": "none"``
+# says on its front page that it holds no spare piece.
+NO_SPARES_NOTE = "This kit has no spare parts: it holds each part exactly as many times as the toy uses it."
 # Q29: Bought Parts are bought, never printed; the Manual says so.
 NOT_PRINTED = "Bought, not printed"
 NOT_PRINTED_NOTE = "These come bought. Do not print them: the models show them only for fit."
@@ -399,6 +404,7 @@ def plan_manual(kit: dict, company: dict) -> dict:
                   "not_printed": ["%s  %s  x%d" % (part, _bought_entry(plan, part).get("name", part),
                                                     int(plan.totals.get(part, 1))) for part in sorted(plan.bought)]},
         "not_printed": [{"body": item["body"], "bought": item["bought"]} for item in tool.not_printed(plan)],
+        **({"spares": "none"} if tree.get("spares") == "none" else {}),
         "checks": checks,
         "sections": [sections[key] for key in order],
         "completion": plan.root,
@@ -819,6 +825,10 @@ def draw_pdf(document: dict, plan, images: dict, path: Path) -> int:
         _text(c, left, top - 10, lines, "Helvetica", 10)
     top = pages.need(12)
     _text(c, left, top - 7, [front["check_first"]], "Helvetica-Bold", 11)
+    if document.get("spares") == "none":
+        lines = _lines(NO_SPARES_NOTE, "Helvetica", 10, width)
+        top = pages.need(4 + LINE_MM * len(lines))
+        _text(c, left, top - 4, lines, "Helvetica", 10)
     legend = ["! = watch this step: compare it with the correct and incorrect pictures",
               "[%s] = peel the backing   [%s] = the printed side faces out" % (PEEL, PRINTED_SIDE),
               "S01, S02 ... = the part you made in that step"]
