@@ -2146,6 +2146,9 @@ def render_summary(summary: dict) -> str:
         lines.append("  sheets %-4s %d Sheet(s)%s" % (
             sheets["verdict"], len(sheets.get("sheets") or ()),
             ", under the minimum by small_reason: %s" % ", ".join(sheets["small"]) if sheets.get("small") else ""))
+        if sheets.get("spares") == "none":
+            # ADR 0104 amendment 2026-11-26: the owner-approved no-spares kit.
+            lines.append("  sheets the kit declares spares \"none\": it ships no spare piece")
         for item in (sheets.get("failures") or [])[:12]:
             lines.append("    %s" % item)
     unchecked = [r for r in summary["parts"] if r not in summary["checked"] and r not in regated]
@@ -7079,7 +7082,8 @@ def _print_gates_only(project: Path, args, cad: Path, parts: list, kit: dict | N
                 lines.append(("  %-5s %s %s  %s" % (check, item["verdict"], role,
                                                       "; ".join(item["failures"])[:300])).rstrip())
         if sheets is not None:
-            lines.append("  sheets %s %d Sheet(s)" % (sheets["verdict"], len(sheets.get("sheets") or ())))
+            lines.append("  sheets %s %d Sheet(s)%s" % (sheets["verdict"], len(sheets.get("sheets") or ()),
+                                                    ", ships no spares" if sheets.get("spares") == "none" else ""))
             lines += ["    %s" % item for item in (sheets.get("failures") or [])[:12]]
         if interference is not None:
             lines.append("  clash %-4s %s" % (interference["verdict"].upper()[:4], interference["detail"][:300]))

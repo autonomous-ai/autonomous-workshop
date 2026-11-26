@@ -151,6 +151,38 @@ class MadeKitPrintTest(unittest.TestCase):
         self.seal(contract, step=layout_step(names))
         self.assertIn("missing loose/D01-inkwell#", self.refused(contract))
 
+    # ADR 0104 amendment 2026-11-26: a kit that ships no spares.
+
+    def no_spares(self):
+        contract = copy.deepcopy(self.contract)
+        contract["assembly_tree"]["spares"] = "none"
+        return contract
+
+    def test_a_kit_that_ships_no_spares_is_recorded_in_the_receipt(self):
+        contract = self.no_spares()
+        self.seal(contract, spares="none")
+        record = self.check(contract)
+        self.assertEqual(record["spares"], "none")
+        # The default kit's receipt is unchanged: no spares field.
+        self.seal()
+        self.assertNotIn("spares", self.check())
+
+    def test_the_layout_record_states_the_opt_out_exactly_when_the_tree_does(self):
+        contract = self.no_spares()
+        self.seal(contract)
+        self.assertIn('does not record spares "none"', self.refused(contract))
+        self.seal(spares="none")
+        self.assertIn("records spares the tree does not declare", self.refused())
+        self.seal(contract, spares="some")
+        self.assertIn('does not record spares "none"', self.refused(contract))
+
+    def test_a_kit_that_ships_no_spares_carries_no_spare_copy(self):
+        contract = self.with_spares("D01-inkwell", 1)
+        contract["assembly_tree"]["spares"] = "none"
+        self.seal(contract, spares="none")
+        self.assertIn('declares spares "none", but it carries spare copies of D01-inkwell',
+                      self.refused(contract))
+
     def test_a_sheet_is_one_fused_leaf_and_loose_parts_stay_apart(self):
         contract = self.sheeted()
         self.seal(contract)

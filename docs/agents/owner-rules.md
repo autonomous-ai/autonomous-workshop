@@ -320,6 +320,10 @@ Tree and Manual.
 - **Minimum loose part size:** at least 1.6 mm thick, a short side of at
   least 4 mm, and at least 35 mm² to grip. Add one spare, marked "+", for
   each part under 15 mm. Why: Rolife cuts nothing smaller than about 4 mm.
+  Spares are the default. A kit with very many tiny parts may ship none
+  when the owner approves, declared with `"spares": "none"` on its
+  `assembly_tree`; then no part carries a spare (owner, 2026-11-26, New
+  York kit: spares would nearly double it).
 - **Every printed part is one connected solid** (2026-11-16). Check each
   loose part and each sheet part for its solid count before a manual or
   price is shown. Factory splits a STEP by solid, so a sliver cut free by

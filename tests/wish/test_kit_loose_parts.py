@@ -93,6 +93,30 @@ class LoosePartTest(unittest.TestCase):
         next(item for item in block["assembly_tree"]["parts"] if item["id"] == "D01-inkwell")["spares"] = 1
         self.assertIn("spares is only for a loose Part", self._refused(block))
 
+    # ADR 0104 amendment 2026-11-26: a kit may declare it ships no spares.
+
+    def test_a_kit_may_declare_it_ships_no_spares(self):
+        block = _with_loose(_tree_block(), "D01-inkwell")
+        block["assembly_tree"]["spares"] = "none"
+        tree = self._parse(block).assembly_tree
+        self.assertEqual(tree.to_dict()["spares"], "none")
+        self.assertTrue(tree.ships_no_spares)
+        # Without it the kit ships the default spares, read as before.
+        del block["assembly_tree"]["spares"]
+        self.assertFalse(self._parse(block).assembly_tree.ships_no_spares)
+
+    def test_spares_none_is_the_only_tree_value(self):
+        block = _tree_block()
+        for bad in ("None", "no", 0, False, None, 1, ["none"]):
+            block["assembly_tree"]["spares"] = bad
+            self.assertIn('assembly_tree.spares must be "none"', self._refused(block))
+
+    def test_a_kit_that_ships_no_spares_refuses_a_parts_spares(self):
+        block = _with_loose(_tree_block(), "D01-inkwell")
+        block["assembly_tree"]["spares"] = "none"
+        self._inkwell(block)["spares"] = 1
+        self.assertIn('(T01-inkwell) declares spares, but the kit declares spares "none"', self._refused(block))
+
     def test_a_loose_reason_is_short_text(self):
         block = _with_loose(_tree_block(), "D01-inkwell")
         part = next(item for item in block["assembly_tree"]["parts"] if item["id"] == "T01-inkwell")

@@ -54,7 +54,11 @@ print-stance size: thickness 1.6, short side 4, long side 8, footprint
 short x long 35 mm2, volume 50 mm3) unless it states ``small_reason``, and
 holds each to one connected solid (2026-11-16), and asks a spare of each
 Part under 15 mm long: on its Sheets, or, for a loose
-Part, as its ``spares`` (2026-11-16).
+Part, as its ``spares`` (2026-11-16). A kit whose tree declares
+``"spares": "none"`` (ADR 0104 amendment 2026-11-26, owner-approved) asks
+no spare, and fails any Part that declares ``spares`` or that its Sheets
+carry more often than the toy uses it; its report adds ``"spares":
+"none"``. Every other rule is unchanged.
 """
 
 from __future__ import annotations
@@ -94,6 +98,7 @@ AREA_EPS = 0.01
 # MIN-PART-SIZE R1 and the spare rule.
 MIN_THICK, MIN_SHORT, MIN_LONG, MIN_FOOT, MIN_VOLUME = 1.6, 4.0, 8.0, 35.0, 50.0
 SPARE_BELOW_MM = 15.0
+NO_SPARES = "none"               # a tree's owner-approved declaration that the kit ships no spare piece
 
 RULE = ("a Sheet file defines sheet() returning {frame: shape, parts: [{id, shape, gates: [{shape, x, y, d}]}]}: "
         "the frame of runners and tags, every Part copy in its print stance on the bed, and each copy's gate "
@@ -478,13 +483,16 @@ def bed_failures(name: str, plan) -> list[str]:
             % (name, width, depth, SHEET_MAX_MM, SHEET_MAX_MM, BED_MM, BED_MARGIN_MM)]
 
 
-def part_failures(sheets: list, printed: dict, totals: dict, measures: dict) -> tuple[list[str], list[str]]:
+def part_failures(sheets: list, printed: dict, totals: dict, measures: dict,
+                  no_spares: bool = False) -> tuple[list[str], list[str]]:
     """``(failures, small)`` over every printed Part of a kit with Sheets.
 
     ``printed`` maps each printed Part id to its tree entry (``small_reason``
     read there), ``totals`` to its count per toy, ``measures`` to its
     ``print_parts()`` measures (``size`` sorted, ``volume``). ``small`` lists
-    the Parts that pass under R1 by their ``small_reason``."""
+    the Parts that pass under R1 by their ``small_reason``. ``no_spares``:
+    the tree declares ``"spares": "none"``, so no spare is asked and any
+    spare carried is a failure."""
 
     on_sheets = {}
     for sheet in sheets:
@@ -512,7 +520,14 @@ def part_failures(sheets: list, printed: dict, totals: dict, measures: dict) -> 
         elif under:
             fails.append("%s is under the minimum loose-part size (%s): merge, enlarge or carry it, or state its "
                          "small_reason" % (part, "; ".join(under)))
-        if long_ < SPARE_BELOW_MM and part in on_sheets and on_sheets[part] < totals.get(part, 0) + 1:
+        if no_spares:
+            if "spares" in printed[part]:
+                fails.append("%s declares spares, but the kit declares spares \"none\": remove its spares"
+                             % part)
+            if part in on_sheets and on_sheets[part] > totals.get(part, 0):
+                fails.append("%s: its Sheets carry %d, the toy uses %d, but the kit declares spares \"none\": "
+                             "carry exactly %d" % (part, on_sheets[part], totals.get(part, 0), totals.get(part, 0)))
+        elif long_ < SPARE_BELOW_MM and part in on_sheets and on_sheets[part] < totals.get(part, 0) + 1:
             fails.append("%s is %.1f mm long, under %.0f: its Sheets carry %d, the toy uses %d; add one spare"
                          % (part, long_, SPARE_BELOW_MM, on_sheets[part], totals.get(part, 0)))
         elif long_ < SPARE_BELOW_MM and part not in on_sheets and int(printed[part].get("spares", 0)) < 1:
@@ -600,10 +615,22 @@ def check_project(project: Path, kit: dict | None = None) -> dict:
             described = {"kind": KIND, "error": "sheet() failed: %s: %s" % (type(error).__name__, str(error)[:300])}
         fails += check(described, sheet, measures)
     printed = {part: plan.parts[part] for part in plan.printed}
-    size_fails, small = part_failures(sheets, printed, plan.totals, measures)
+    no_spares = ships_no_spares(kit)
+    size_fails, small = part_failures(sheets, printed, plan.totals, measures, no_spares)
     fails += size_fails
-    return {"kind": REPORT, "verdict": "FAIL" if fails else "PASS", "sheets": [s["id"] for s in sheets],
-            "small": small, "failures": fails}
+    report = {"kind": REPORT, "verdict": "FAIL" if fails else "PASS", "sheets": [s["id"] for s in sheets],
+              "small": small, "failures": fails}
+    if no_spares:
+        report["spares"] = NO_SPARES
+    return report
+
+
+def ships_no_spares(kit) -> bool:
+    """Whether the kit's tree declares ``"spares": "none"`` (ADR 0104
+    amendment 2026-11-26)."""
+
+    tree = kit.get("assembly_tree") if isinstance(kit, dict) else None
+    return isinstance(tree, dict) and tree.get("spares") == NO_SPARES
 
 
 def parse_report(stdout: str, returncode: int) -> dict:
@@ -636,6 +663,8 @@ def main(argv=None) -> int:
             print("FAIL %s" % line)
         if report["small"]:
             print("small Parts passed by small_reason: %s" % ", ".join(report["small"]))
+        if report.get("spares") == NO_SPARES:
+            print("the kit declares spares \"none\": it ships no spare piece")
         print(json.dumps(report, sort_keys=True))
         return 0 if report["verdict"] == "PASS" else 1
     if len(args) != 2 or args[0] != "describe" or not Path(args[1]).name.startswith("sheet_") or not args[1].endswith(".py"):

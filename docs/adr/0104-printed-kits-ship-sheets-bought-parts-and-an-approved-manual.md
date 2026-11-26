@@ -30,6 +30,9 @@
     the layout ships under `parts/`, and the printed piece count is sent):
     implemented, deterministic tests only, until the Amsterdam Listing
     Update below records its live result.
+  - The 2026-11-26 amendment (a kit may declare it ships no spares,
+    `"spares": "none"`): implemented, deterministic tests only. Its first
+    user, the New York mini-city kit, has not sealed it yet.
 - **Date:** 2026-11-14
 - **Amends:** ADR 0092 (what a kit prints, which Manual ships, a kit's
   Bought Parts block), ADR 0095's 2026-11-07 amendment (the Bought Parts
@@ -701,6 +704,40 @@ checked where the whole toy is built.
   before this amendment) keeps decision 4's single layout primary, and so
   does every non-kit. No gate is relaxed: the layout is still the exact
   sealed file and still the only thing Factory weighs.
+
+## Amendment 2026-11-26: a kit may ship no spares
+
+- **Problem.** Decision 3 and the 2026-11-16 amendment ask one spare of
+  every printed Part under 15 mm. The New York mini-city kit has hundreds of
+  tiny Parts: spares would nearly double the kit, its plates and its price.
+  The owner decided (2026-11-26) that such a kit may ship none.
+- **Contract.** `assembly_tree` may add `"spares": "none"`, its only
+  value, meaning the kit ships no spare piece. It is set only with the
+  owner's approval (owner rule "Minimum loose part size"). With it, no
+  printed Part may declare `spares` and no Sheet may carry more copies of a
+  Part than the toy uses: either is refused as inconsistent, so the kit
+  truly ships none. Any other value is refused.
+- **Gate.** `kit_sheets.py check` asks no spare of a kit that declares it,
+  and fails a Part that still declares `spares` or that its Sheets carry
+  beyond the toy's count. Its report adds `"spares": "none"`. The size,
+  one-solid, flat-plate, bed, separation, nipper and fragile-tip rules are
+  unchanged and still apply to every Part.
+- **Record and receipt.** `kit_print.py layout` writes `"spares": "none"`
+  into `measure/kit/print.json`; the host's `workshop.make.kit_print`
+  refuses a record that states it when the sealed tree does not, or omits
+  it when the tree does, refuses a declared-none tree with any spare copy,
+  and carries `"spares": "none"` into the Make receipt's `kit_print` check.
+  `kit_manual.py` writes `"spares": "none"` into `manual/manual.json` and
+  prints "This kit has no spare parts" on the front page; the host's
+  Manual check holds the report to the tree the same way and carries the
+  field into the receipt's `kit_manual` check. The generated Manual never
+  drew spare marks, so there is no `+` legend to drop. An owner-approved
+  Manual (decision 5) ships its own bytes as before.
+- **Unchanged.** A tree without `spares` parses, gates, lays out, writes
+  its Manual and passes the host checks byte for byte as before. The Bought
+  Parts block may still list more Bought Parts than the tree holds; this
+  amendment concerns printed pieces only. Frozen runs keep their run-local
+  tool bytes.
 
 ## Not decided here
 

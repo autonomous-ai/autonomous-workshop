@@ -40,6 +40,13 @@ the toy's one standard thickness ``panel_mm`` (default 2.0 mm) unless it
 carries a ``thickness_mm`` with its ``thickness_reason``; a ``solid`` is a
 small round or 3D prop printed whole and takes neither. Only what the
 contract states is checked here; the built thickness is Make's to match.
+
+A kit ships one spare of each small printed Part by default (ADR 0104
+decision 3). With the owner's approval a kit may declare
+``"spares": "none"`` at the tree's top level (ADR 0104 amendment
+2026-11-26): it then ships no spare piece at all, so no printed Part may
+declare ``spares`` and no Sheet may carry more copies of a Part than the toy
+uses. A tree without the field is read exactly as before.
 """
 
 from __future__ import annotations
@@ -110,6 +117,9 @@ CHECK_CATEGORIES = ("lamp", "power", "cell", "contact", "switch", "wire", "other
 CHECK_POWER = ("power", "cell")
 STEP_ID = re.compile(r"^S([0-9]{2})-(%s)$" % _SLUG)
 PIECE_ID = re.compile(r"^([MN])([0-9]{2})-(%s)$" % _SLUG)
+# ADR 0104 amendment 2026-11-26: the one value of a tree's ``spares``, the
+# owner-approved declaration that the kit ships no spare piece.
+NO_SPARES = "none"
 
 
 @dataclass(frozen=True)
@@ -131,6 +141,12 @@ class ContractAssemblyTree:
         """The toy's one standard panel thickness (owner decision Q34)."""
 
         return float(self.section.get("panel_mm", PANEL_MM_DEFAULT))
+
+    @property
+    def ships_no_spares(self) -> bool:
+        """The kit declares it ships no spare piece (ADR 0104 amendment 2026-11-26)."""
+
+        return ships_no_spares(self.section)
 
     @property
     def root(self) -> str:
@@ -165,6 +181,12 @@ def _snapshot(
         entry = catalogues.parts[name]
         parts[entry.id] = entry.snapshot()
     return {"filaments": dict(sorted(filaments.items())), "bought_parts": dict(sorted(parts.items()))}
+
+
+def ships_no_spares(section: Any) -> bool:
+    """Whether an ``assembly_tree`` section declares ``"spares": "none"``."""
+
+    return isinstance(section, Mapping) and section.get("spares") == NO_SPARES
 
 
 def bought_totals(section: Mapping[str, Any]) -> Dict[str, int]:
@@ -630,12 +652,14 @@ def parse_assembly_tree(
         errors.append("assembly_tree must be an object with parts, steps and components (schema_version 7)")
         return None
     before = len(errors)
-    unknown = sorted(set(value) - {"parts", "steps", "components", "materials", "checks", "panel_mm", "sheets"})
+    unknown = sorted(set(value) - {"parts", "steps", "components", "materials", "checks", "panel_mm", "sheets",
+                                    "spares"})
     if unknown:
         errors.append("assembly_tree has unknown field(s): %s" % ", ".join(unknown))
     ids = _Ids(errors)
     unconfirmed: Set[str] = set()
     panel_mm = _panel_mm(value, errors)
+    no_spares = _check_no_spares(value, errors)
     printed, bought = _parse_parts(value.get("parts"), catalogues, ids, unconfirmed, errors, panel_mm)
     leaves: Dict[str, str] = {key: "printed" for key in printed}
     leaves.update({key: "bought" for key in bought})
@@ -697,7 +721,7 @@ def parse_assembly_tree(
     _check_materials(value.get("materials"), catalogues, unconfirmed, errors)
     _check_checks(value, bought, catalogues, ids, errors)
     if "sheets" in value:
-        _check_sheets(value["sheets"], printed, totals, errors)
+        _check_sheets(value["sheets"], printed, totals, errors, no_spares)
     if len(errors) != before:
         return None
     return ContractAssemblyTree(
@@ -706,16 +730,39 @@ def parse_assembly_tree(
     )
 
 
+def _check_no_spares(value: Mapping[str, Any], errors: List[str]) -> bool:
+    """ADR 0104 amendment 2026-11-26: a tree's ``spares`` is ``"none"`` or
+    absent; with it no printed Part declares ``spares``."""
+
+    if "spares" not in value:
+        return False
+    if value["spares"] != NO_SPARES:
+        errors.append(
+            "assembly_tree.spares must be \"none\", the owner-approved declaration that the kit ships "
+            "no spare piece; omit it for the default, one spare of each Part under 15 mm"
+        )
+        return False
+    for index, item in enumerate(value.get("parts") or ()):
+        if isinstance(item, dict) and "spares" in item:
+            errors.append(
+                "assembly_tree.parts[%d] (%s) declares spares, but the kit declares spares \"none\": a kit "
+                "that ships no spares carries none" % (index, item.get("id"))
+            )
+    return True
+
+
 SHEET_ID = re.compile(r"([A-Z])([1-9][0-9]?)")
 
 
 def _check_sheets(
     value: Any, printed: Mapping[str, Mapping[str, Any]], totals: Mapping[str, int], errors: List[str],
+    no_spares: bool = False,
 ) -> None:
     """ADR 0104 decision 1: a kit's FDM Sheets. Each is one filament's plate,
     named by that filament's Part letter and a number, listing the Part
     copies it carries. Over all Sheets a Part's count covers the toy, and
-    every printed Part is on a Sheet or states ``loose_reason``."""
+    every printed Part is on a Sheet or states ``loose_reason``. A kit that
+    ships no spares (``no_spares``) carries exactly the toy's count."""
 
     if not isinstance(value, list) or not value:
         errors.append("assembly_tree.sheets must be a non-empty list of {id, filament, parts}")
@@ -776,6 +823,10 @@ def _check_sheets(
         elif on_sheets[part] < totals.get(part, 0):
             errors.append("the Sheets carry %d x %s, but the toy uses %d: a Sheet count is the tree's total "
                           "plus its spares" % (on_sheets[part], part, totals.get(part, 0)))
+        elif no_spares and on_sheets[part] > totals.get(part, 0):
+            errors.append("the Sheets carry %d x %s, but the toy uses %d and the kit declares spares \"none\": "
+                          "a kit that ships no spares carries exactly the tree's total"
+                          % (on_sheets[part], part, totals.get(part, 0)))
 
 
 def snap_pairs(step: Mapping[str, Any]) -> List[Mapping[str, Any]]:
@@ -1171,6 +1222,7 @@ __all__ = [
     "LEADS",
     "LEAD_METHODS",
     "MAX_PRESS_MM",
+    "NO_SPARES",
     "PRESSES",
     "MAX_SNAP_CATCH_MM",
     "PANEL",
@@ -1184,4 +1236,5 @@ __all__ = [
     "STEP_ID",
     "bought_totals",
     "parse_assembly_tree",
+    "ships_no_spares",
 ]
