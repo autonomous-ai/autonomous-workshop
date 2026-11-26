@@ -22,6 +22,8 @@
   stance, from the Component's `print_parts()`. It is implemented in
   `make_round` and final verification and tested on deterministic fakes and
   a small real build123d cabinet.
+  Amendment of 2026-11-26 (owner): step ids run past S99 to S999, and a
+  Design Contract may be 150,000 characters (see the amendment below).
 - Date: 2026-10-23
 - Amends: ADR 0091 (what a Print Piece lands on; its id form), ADR 0082
   (Components are subtrees of the Assembly Tree), ADR 0088 (insertion paths
@@ -358,6 +360,49 @@ both are decided together. Six 2026 Rolife manuals were read page by page
     - The tree, Interface, Keep-out Envelope, motion and paper gates and the
       review renders still read the assembled Component.
     - Non-kit Components and frozen runs are gated as before.
+
+## Amendment 2026-11-26: step ids past S99 and a 150,000-character contract
+
+The Kyoto Gion Canal Build Kit could not be sealed. Its approved Manual has
+156 steps and its contract, with an Assembly Tree of 153 Part types and every
+step's required sentence, is about 75,000 characters. Two limits stopped it.
+
+1. **Step ids.** Decision 6 wrote step ids as `S07-teacher-desk-items`, and
+   the parser accepted exactly two digits (`S01`-`S99`) while `MAX_STEPS`
+   allowed 999 steps. Step ids now match
+   `^S([0-9]{2}|[1-9][0-9]{2})-<kebab-case mnemonic>$`: `S01`-`S99`, then
+   `S100`-`S999`, the same form as requirement ids and sealed image names
+   (ADR 0091). Every number has exactly one spelling, so `S1`, `S001` and
+   `S099` are refused, and so is `S1000`. Two-digit ids keep their meaning,
+   order and messages. Step numbers still rise in Manual order, compared as
+   numbers: `S11` after `S100` is refused. The host's snap check walks steps
+   in numeric order (`step_number`). Make's kit tools already follow the
+   tree's own list order and only split the code off the id, so their bytes
+   do not change.
+2. **Contract length (owner decision, 2026-11-26).** `MAX_OBJECTIVE_CHARS`,
+   the Wish objective limit that `workshop wish|fix --contract`,
+   `seal_proof.py` and `workshop resume --amend-contract` apply to the whole
+   contract, rises from 50,000 to 150,000 characters. The owner chose to
+   raise the one limit rather than move the tree into a sidecar or count it
+   separately: a sidecar would add a second sealed, hashed and amended input
+   to every seal, replay and amendment path, for no gain the owner needs.
+   150,000 is twice Kyoto, with room for the larger kits that are coming;
+   Miami (97 parts, 82 steps) was already 49,700.
+
+   What the limit protects. The objective never enters a prompt:
+   `native_stage_prompt` passes only a pointer to `STAGE.json`, and the
+   native agent reads the contract from `WISH.json` with its own tools. The
+   host bounds that file at `MAX_AGENT_INPUT_BYTES` (6 MiB). No stage
+   packet, checkpoint, amendment packet or correction record copies the
+   objective; only an owner amendment's `CONTRACT-AMENDMENTS.json` holds an
+   amended copy, a run input under the same bound. No hard downstream limit
+   rules out 150,000. The limit still
+   bounds what a Manager reads and what every hash, amendment and archive
+   carries; a contract above it is refused exactly as before. Component
+   Workers still read only their own rows and prose, so a longer kit
+   contract costs the root Manager's context, not every worker's.
+   `CONTRACT-FORMAT.md`'s unchecked authoring target rises from 40,000 to
+   140,000 characters, leaving room for owner amendments under the limit.
 
 ## Not decided here
 

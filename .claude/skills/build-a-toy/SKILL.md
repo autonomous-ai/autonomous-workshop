@@ -213,7 +213,7 @@ Write `build-a-toy/r<NN>/brief.md`:
 `fix --contract` seals `CONTRACT.md` into the correction separately from the
 brief (it does not replace `--prompt-file`), so the brief itself only needs
 the findings, not a second copy of the whole contract. The brief becomes part
-of the correction run's Wish objective, which is limited to 50,000
+of the correction run's Wish objective, which is limited to 150,000
 characters; if it is over the limit, shorten the findings and show the
 person, rather than cutting anything the run is judged against.
 

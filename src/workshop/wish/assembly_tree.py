@@ -115,11 +115,24 @@ CHECK_ID = re.compile(r"^%s$" % _SLUG)
 # wire between them.
 CHECK_CATEGORIES = ("lamp", "power", "cell", "contact", "switch", "wire", "other")
 CHECK_POWER = ("power", "cell")
-STEP_ID = re.compile(r"^S([0-9]{2})-(%s)$" % _SLUG)
+# Step numbers run S01-S99, then S100-S999 (ADR 0092 amendment 2026-11-26),
+# so every number up to MAX_STEPS has exactly one spelling; compare them by
+# ``step_number``, never as strings ("S100" sorts before "S11").
+STEP_ID = re.compile(r"^S([0-9]{2}|[1-9][0-9]{2})-(%s)$" % _SLUG)
 PIECE_ID = re.compile(r"^([MN])([0-9]{2})-(%s)$" % _SLUG)
 # ADR 0104 amendment 2026-11-26: the one value of a tree's ``spares``, the
 # owner-approved declaration that the kit ships no spare piece.
 NO_SPARES = "none"
+
+
+def step_number(identifier: str) -> int:
+    """The number of an Assembly Step id, for numeric order. Raises
+    ValueError for anything that is no step id."""
+
+    match = STEP_ID.fullmatch(identifier) if isinstance(identifier, str) else None
+    if match is None:
+        raise ValueError("%r is no Assembly Step id" % (identifier,))
+    return int(match.group(1))
 
 
 @dataclass(frozen=True)
@@ -516,12 +529,14 @@ def _parse_steps(
         identifier = item.get("id")
         match = STEP_ID.fullmatch(identifier) if isinstance(identifier, str) else None
         if match is None:
-            errors.append("%s.id must look like S01-<kebab-case mnemonic>" % label)
+            errors.append("%s.id must look like S01-<kebab-case mnemonic>, numbered S01 to S99 then S100 to S%d"
+                          % (label, MAX_STEPS))
             continue
         if not ids.add(identifier, label):
             continue
         number = int(match.group(1))
         if number <= last_number:
+            # "S%02d" spells S01-S99 and S100-S999 alike.
             errors.append("%s: step numbers rise in Manual order, and %s follows S%02d" % (label, identifier, last_number))
         last_number = max(last_number, number)
         unknown = sorted(set(item) - allowed)
@@ -1234,6 +1249,7 @@ __all__ = [
     "SNAP",
     "SOLID",
     "STEP_ID",
+    "step_number",
     "bought_totals",
     "parse_assembly_tree",
     "ships_no_spares",

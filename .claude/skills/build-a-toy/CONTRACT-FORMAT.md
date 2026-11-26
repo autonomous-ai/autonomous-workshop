@@ -13,8 +13,8 @@ directory as its reference images. It has two parts:
 
 This is the exact format `workshop wish --contract` and `workshop fix
 --contract` seal: the whole file becomes the Wish objective, byte for byte
-(ADR 0072). Keep the whole file under **40,000 characters**. A correction
-brief is itself a Wish objective, which is limited to 50,000 characters, and
+(ADR 0072). Keep the whole file under **140,000 characters**. A correction
+brief is itself a Wish objective, which is limited to 150,000 characters, and
 does not need to repeat the contract, since `fix --contract` seals it
 separately from the brief.
 
@@ -270,7 +270,10 @@ instances.)
     Each Sheet is the project file `sheet_<id>.py` defining `sheet()`;
     `make_round` checks every Sheet in assembly rounds,
     `--print-gates-only` and final verification (`kit_sheets.py check`).
-  - `steps[]`, in Manual order with rising numbers, each `{"id":
+  - `steps[]`, in Manual order with rising numbers (`S01` to `S99`, then
+    `S100` to `S999`: two digits below 100, three from 100, never a leading
+    zero on three digits; numbers compare as numbers, so `S100` follows
+    `S99`), each `{"id":
     "S07-teacher-desk-items", "output": "<the Sub-assembly's name, at most 80
     characters>", "count": <how many times it is made per toy>, "joint":
     "<kind>", "inputs": [...], "text": "<one short English instruction, at
@@ -655,6 +658,10 @@ A contract is ready only when all of these hold. Report every failure at once.
   `design-a-toy` writes every new contract as schema 11.
 - No row count is limited: ADR 0093 removed ADR 0072's guards of 16
   assembly-scoped rows and 4 per Unique Geometry.
-- The whole file is at most 40,000 characters. Nothing in the host checks
-  this number; it leaves room under the 50,000-character Wish objective
-  limit, which `wish --contract` enforces on the whole file.
+- The whole file is at most 140,000 characters. Nothing in the host checks
+  this number; it leaves room for owner amendments under the
+  150,000-character Wish objective limit (ADR 0092 amendment 2026-11-26),
+  which `wish --contract`, `seal_proof.py` and `resume --amend-contract`
+  enforce on the whole file. A kit's Assembly Tree, its steps and their
+  sentences included, counts toward it like the rest of the file: there is
+  no sidecar.

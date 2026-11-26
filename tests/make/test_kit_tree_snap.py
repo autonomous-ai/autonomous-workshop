@@ -444,3 +444,21 @@ class FusedFallbackTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SnapStepOrderTest(unittest.TestCase):
+    """ADR 0092 amendment 2026-11-26: the host walks snap steps in numeric
+    Manual order, so S11 comes before S100."""
+
+    def test_snap_steps_are_checked_in_numeric_order(self):
+        from unittest import mock
+
+        spans = {"S100-roof": [({"part": "A01-x", "catch": "A02-y"}, "A01-x")],
+                 "S11-door": [({"part": "A03-x", "catch": "A04-y"}, "A03-x")],
+                 "S99-wall": [({"part": "A05-x", "catch": "A06-y"}, "A05-x")]}
+        seen = []
+        with mock.patch.object(host_kit_tree, "_snap_spans", return_value=spans), \
+                mock.patch.object(host_kit_tree, "tree_totals", return_value={}), \
+                mock.patch.object(host_kit_tree, "_check_pair", side_effect=lambda step, *rest: seen.append(step)):
+            host_kit_tree.check_snaps({}, [])
+        self.assertEqual(seen, ["S11-door", "S99-wall", "S100-roof"])

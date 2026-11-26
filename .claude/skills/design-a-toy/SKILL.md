@@ -415,7 +415,7 @@ sections to its Component Worker with its rows. Rows still win: where a
 section and a row disagree, the worker follows the row, and the Component
 Reviewer judges by the rows and the reference alone.
 
-Keep the whole file (prose plus block) under 40,000 characters.
+Keep the whole file (prose plus block) under 140,000 characters (CONTRACT-FORMAT.md; the Wish objective limit is 150,000).
 
 Do not show the block to the human and do not wait for approval. For a kit,
 go to Stage 2b; otherwise go straight to Stage 3.
@@ -1469,7 +1469,7 @@ before the owner has approved that exact PDF.
 
 It also refuses, in the later stage's own words, what a seeded run would
 refuse after the seal. It runs the code that refuses each one:
-- `workshop wish`'s Wish objective limit (50,000 characters) on the
+- `workshop wish`'s Wish objective limit (150,000 characters) on the
   contract text;
 - the Make finalizer's concept checks and byte limit on
   `SEED-PRODUCT.json`'s concept (one signature component, no hedged

@@ -36,7 +36,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Mapping
 
 from workshop.errors import ContractError
-from workshop.wish.assembly_tree import snap_pairs
+from workshop.wish.assembly_tree import snap_pairs, step_number
 from workshop.wish.catalogues import BOUGHT_PART_HEX
 
 TREE_SCHEMA_VERSION = 7
@@ -163,7 +163,8 @@ def check_snaps(tree: Mapping[str, Any], records: Any) -> None:
                 (snap["part"], snap["catch"]) for snap, _ in spans[record["step"]]}:
             raise ContractError("%s lets %s overlap %s in %s, a pair the sealed tree does not declare"
                                 % (REPORT_PATH, record.get("part"), record.get("catch"), record.get("step")))
-    for step, pairs in sorted(spans.items()):
+    # Manual order, numeric: a string sort puts S100 before S11.
+    for step, pairs in sorted(spans.items(), key=lambda item: step_number(item[0])):
         for snap, moving in pairs:
             _check_pair(step, snap, moving, totals, records)
 
