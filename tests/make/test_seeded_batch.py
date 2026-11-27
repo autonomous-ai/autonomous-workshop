@@ -438,11 +438,12 @@ class PlanTest(unittest.TestCase):
         run = {step.id: step for step in self._run_plan(printed_parts={"body": 20, "lid": 1})}
         body, lid = run["component:body"], run["component:lid"]
         self.assertEqual(self._flag(body), 20 * sb.KIT_PART_GEOMETRY_S)
-        self.assertEqual(body.deadline_s, 20 * sb.KIT_PART_GEOMETRY_S + sb.FINAL_REPORT_MARGIN_S)
+        # and its tree check's time (#392 follow-up), here an empty tree's
+        self.assertEqual(body.deadline_s, 20 * sb.KIT_PART_GEOMETRY_S + sb.FINAL_REPORT_MARGIN_S + sb.TREE_MIN_S)
         self.assertEqual(body.argv[-1], "--json")
         # A one-Part Component never gets less than a toy that is no kit.
         self.assertEqual(self._flag(lid), sb.DEFAULT_GEOMETRY_S)
-        self.assertEqual(lid.deadline_s, sb.DEFAULT_DEADLINES["components"])
+        self.assertEqual(lid.deadline_s, sb.DEFAULT_DEADLINES["components"] + sb.TREE_MIN_S)
 
     def test_the_design_print_gates_share_one_allowance_for_every_kit_part(self):
         gates = next(step for step in sb.design_plan(self._inputs(printed_parts={"body": 20, "lid": 30}))
@@ -484,7 +485,7 @@ class PlanTest(unittest.TestCase):
         steps = self._run_plan(printed_parts={"body": 20}, deadlines={"components": 100.0})
         body = next(step for step in steps if step.id == "component:body")
         lid = next(step for step in steps if step.id == "component:lid")
-        self.assertEqual(body.deadline_s, 20 * sb.KIT_PART_GEOMETRY_S + sb.FINAL_REPORT_MARGIN_S)
+        self.assertEqual(body.deadline_s, 20 * sb.KIT_PART_GEOMETRY_S + sb.FINAL_REPORT_MARGIN_S + sb.TREE_MIN_S)
         self.assertEqual(lid.deadline_s, 100.0)
 
     def test_final_verification_gets_time_for_every_component_of_a_toy_that_is_no_kit(self):
@@ -580,6 +581,88 @@ class DesignTreeStepsTest(unittest.TestCase):
             self.assertIn(sb.sources_of(role), step.inputs)
             self.assertIn("tree", step.inputs, "the installed tree joins the reuse key")
             self.assertEqual(step.env_keys, sb.PRINT_GATES_ENV, "its builds read the fit table")
+
+    TREE = {
+        "kind": "workshop-kit-tree", "schema_version": 11, "pieces": [],
+        "geometries": [{"id": "body", "count": 2, "wall_min_mm": 1.2}, {"id": "lid", "count": 1, "wall_min_mm": 1.2}],
+        "catalogue": {"filaments": {"oak": {"hex": "#b5834f"}}, "bought_parts": {}},
+        "assembly_tree": {
+            "parts": [{"id": "A01-base", "name": "Base", "filament": "oak"},
+                      {"id": "A02-peg", "name": "Peg", "filament": "oak"},
+                      {"id": "A03-cap", "name": "Cap", "filament": "oak"},
+                      {"id": "B01-lid", "name": "Lid", "filament": "oak"}],
+            "steps": [
+                {"id": "S01-pegs", "output": "Pegged", "count": 1, "joint": "peg-socket", "text": "Pegs in.",
+                 "inputs": [{"id": "A01-base"}, {"id": "A02-peg", "count": 2, "direction": [0, 0, -1],
+                                                 "press_mm": 0.1}]},
+                {"id": "S02-cap", "output": "Body", "count": 2, "joint": "glue", "text": "Cap on.",
+                 "inputs": [{"id": "S01-pegs"}, {"id": "A03-cap", "direction": [0, 0, -1]}]},
+                {"id": "S03-lid", "output": "Box", "count": 1, "joint": "peg-socket", "text": "Lid on.",
+                 "inputs": [{"id": "S02-cap", "count": 2}, {"id": "B01-lid", "direction": [0, 0, -1],
+                                                             "press_mm": 0.1}]}],
+            "components": [{"geometry": "body", "parts": ["A01-base", "A02-peg", "A03-cap"]},
+                           {"geometry": "lid", "parts": ["B01-lid"]}],
+        },
+    }
+
+    def test_the_host_counts_each_components_tree_as_kit_tree_does(self):
+        """The batch's deadline is the run-local tool's own: the same
+        insertions and press insertions, the same seconds."""
+        tool = runpy.run_path(str(ROOT / "src/workshop/make/skills/make-round/scripts/kit_tree.py"))
+        loads = sb.kit_tree_loads(self.TREE)
+        plan = tool["Plan"](self.TREE)
+        self.assertEqual(loads, {role: tool["tree_load"](plan, role) for role in ("body", "lid")})
+        # two bodies, each two pressed pegs and a cap; the lid's step spans Components
+        self.assertEqual(loads, {"body": {"insertions": 6, "presses": 4}, "lid": {"insertions": 0, "presses": 0}})
+        self.assertEqual(tool["tree_load"](plan, None), {"insertions": 1, "presses": 1})
+        for name in ("TREE_MIN_S", "TREE_INSERTION_S", "TREE_PRESS_S"):
+            self.assertEqual(getattr(sb, name), tool[name], name)
+        inputs = self._inputs(tree_loads=loads)
+        self.assertEqual(sb.tree_seconds(inputs, "body"), tool["tree_seconds"](loads["body"]))
+        self.assertEqual(sb.kit_tree_loads({"schema_version": 6, "assembly_tree": self.TREE["assembly_tree"]}), {})
+
+    def test_a_tree_steps_deadline_grows_with_its_insertions_and_presses(self):
+        """Kyoto's tree, 188 insertions of which 128 press, took about
+        13,900 s: past the preflight layer's flat hour."""
+        kyoto = {"body": {"insertions": 188, "presses": 128}, "lid": {"insertions": 0, "presses": 0}}
+        steps = {step.id: step for step in sb.tree_steps(self._inputs(tree_loads=kyoto))}
+        need = sb.TREE_MIN_S + 188 * sb.TREE_INSERTION_S + 128 * sb.TREE_PRESS_S + sb.FINAL_REPORT_MARGIN_S
+        self.assertEqual(steps["tree:body"].deadline_s, need)
+        self.assertGreater(need, 2 * 13900.0, "headroom over Kyoto's measured time")
+        self.assertEqual(steps["tree:lid"].deadline_s, sb.TREE_MIN_S + sb.FINAL_REPORT_MARGIN_S)
+        self.assertGreaterEqual(steps["tree:lid"].deadline_s, sb.DEFAULT_DEADLINES["preflight"])
+        # the seal and its preflight run these very steps
+        design = {step.id: step for step in sb.design_plan(self._inputs(tree_loads=kyoto))}
+        self.assertEqual(design["tree:body"].deadline_s, need)
+
+    def test_a_kit_component_rounds_deadline_holds_its_tree_check(self):
+        kyoto = {"body": {"insertions": 188, "presses": 128}, "lid": {"insertions": 2, "presses": 0}}
+        inputs = dict(project=Path("/run/artifacts/make/r0001/product/cad"), python="/py",
+                      skills_root=Path("/run/.agents/skills"), contract_path=Path("/run/WISH.json"),
+                      roles=("body", "lid"), nozzle=0.4, concept_sha256="c" * 64,
+                      finalizer=("/py", "stage_proposal.py", "make"), printed_parts=self.KIT, tree_loads=kyoto)
+        steps = {step.id: step for step in sb.run_plan(sb.PlanInputs(**inputs), run_root=Path("/run"),
+                                                        product_root=Path("/run/artifacts/make/r0001/product"),
+                                                        source=Path("/run/work/seeded/spark-source.json"))}
+        tree = sb.TREE_MIN_S + 188 * sb.TREE_INSERTION_S + 128 * sb.TREE_PRESS_S
+        gates = max(sb.DEFAULT_DEADLINES["components"],
+                    max(sb.DEFAULT_GEOMETRY_S, 3 * sb.KIT_PART_GEOMETRY_S) + sb.FINAL_REPORT_MARGIN_S)
+        self.assertEqual(steps["component:body"].deadline_s, gates + tree)
+        self.assertEqual(steps["component:lid"].deadline_s,
+                         sb.DEFAULT_DEADLINES["components"] + sb.TREE_MIN_S + 2 * sb.TREE_INSERTION_S)
+
+    def test_make_rounds_tree_job_takes_kit_trees_allowance(self):
+        make_round = runpy.run_path(str(ROOT / "src/workshop/make/skills/make-round/scripts/make_round"))
+        tool = runpy.run_path(str(ROOT / "src/workshop/make/skills/make-round/scripts/kit_tree.py"))
+        plan = tool["Plan"](self.TREE)
+        job = make_round["tree_job"](Path("/proof"), Path("/out"), 0.4, "body", self.TREE)
+        self.assertEqual(job["timeout"], max(make_round["FULL_TIMEOUT_SECONDS"],
+                                             tool["tree_seconds"](tool["tree_load"](plan, "body"))))
+        across = make_round["tree_job"](Path("/proof"), Path("/out"), 0.4, None, self.TREE)
+        self.assertEqual(across["timeout"], tool["tree_seconds"](tool["tree_load"](plan, None)))
+        # a tree it cannot plan keeps the round's own timeout; kit_tree says why
+        self.assertEqual(make_round["tree_job"](Path("/proof"), Path("/out"), 0.4, "body")["timeout"],
+                         make_round["FULL_TIMEOUT_SECONDS"])
 
     def test_a_toy_that_is_no_kit_has_no_tree_steps(self):
         self.assertEqual(sb.tree_steps(self._inputs(printed_parts={})), [])

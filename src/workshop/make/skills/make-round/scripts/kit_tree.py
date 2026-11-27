@@ -212,6 +212,17 @@ PRESS_LOCAL_MARGINS_MM = (0.3, 0.15, 0.6)
 PRESS_LOCAL_TILE_MM = 8.0
 PRESS_OFFSET_SECONDS = 120   # a sharp join still running after this is refused (#392)
 PRESS_INSIDE_MM3 = 1e-5     # a shrink holding more outside its body is not taken (#392)
+# How long one tree check may take: a Component's tree, an assembly's or
+# the final one. Its time grows with its insertions, each a sweep, and a
+# press input's more, held on both sides by shrunk solids (#392): Kyoto's
+# 188 insertions, 128 of them presses, took 13,900 s at one thread on
+# main. TREE_MIN_S for any scope, plus these for each insertion and each
+# press insertion, give it 32,280 s, about 2.3 times that. Miami's
+# heaviest tree (44, 38 presses: 792 s) gets 11,760 s. The host's batch
+# deadlines (``seeded_batch``) mirror them.
+TREE_MIN_S = 3600.0
+TREE_INSERTION_S = 30.0
+TREE_PRESS_S = 180.0
 # Where the kernel cannot offset a window's cut either, it is shrunk by
 # booleans (CadGeometry.eroded), checked on this many grid points a side.
 PRESS_ERODE_SAMPLES = 6
@@ -1384,6 +1395,34 @@ def keyed(plan: Plan, geometry: str, bodies: list[Body], instance: int = 1) -> d
     return found
 
 
+def tree_load(plan: Plan, scope: str | None) -> dict:
+    """``{"insertions": n, "presses": m}``: how many inputs the tree check
+    of ``scope`` (a Component, or None across Components) inserts, and how
+    many of them press, from the tree alone. A Component counts every
+    instance, as a Component that builds its instances apart is checked."""
+
+    copies_of = (lambda step: plan.totals[step]) if scope is None else (
+        lambda step: plan.totals[step] // int(plan.geometries[scope]["count"]))
+    instances = 1 if scope is None else int(plan.geometries[scope]["count"])
+    insertions = presses = 0
+    for item in plan.steps_in(scope):
+        if item.get("joint") not in SWEPT:
+            continue
+        copies = copies_of(item["id"]) * (instances if scope is not None else 1)
+        for entry in plan.inputs[item["id"]][1:]:
+            many = copies * int(entry.get("count", 1))
+            insertions += many
+            if entry.get("press_mm"):
+                presses += many
+    return {"insertions": insertions, "presses": presses}
+
+
+def tree_seconds(load: dict) -> float:
+    """The time one tree check of ``load`` (``tree_load``) is allowed."""
+
+    return TREE_MIN_S + TREE_INSERTION_S * load["insertions"] + TREE_PRESS_S * load["presses"]
+
+
 def check_component(plan: Plan, geometry, role: str, nozzle: float) -> dict:
     """Everything one Component's round checks: its bodies against its
     leaves, their colours, and every step and route wholly inside it."""
@@ -1487,6 +1526,31 @@ def _isolated_offset(shape, depth: float, kind):
         return import_brep(path)
     finally:
         os.unlink(path)
+
+
+def _offset_key(base, depth: float, sharp: bool):
+    """The key ``pressed`` keeps an unplaced shape's offset under, or None
+    for a shape the kernel cannot write: that one is offset uncached."""
+
+    try:
+        return (_brep_digest(base), float(depth), bool(sharp))
+    except Exception:  # noqa: BLE001 - a shape without bytes is offset uncached
+        return None
+
+
+def _brep_digest(shape) -> str:
+    """The SHA-256 of a shape's exact BREP bytes: the key under which its
+    offsets are kept."""
+
+    import hashlib
+    import io
+
+    from build123d import export_brep
+
+    stream = io.BytesIO()
+    if export_brep(shape, stream) is False:
+        raise RuntimeError("the kernel cannot write the shape")
+    return hashlib.sha256(stream.getvalue()).hexdigest()
 
 
 def _smaller(shape, whole):
@@ -1726,27 +1790,51 @@ class CadGeometry:
         from build123d import Kind, Location, offset
 
         found = []
+        cache = self.__dict__.setdefault("_offsets", {})
         for body in moving:
             try:
                 # The kernel refuses to offset some placed solids it offsets at
                 # their own origin: offset the unplaced shape, then place it.
                 place = body.shape.location
                 base = body.shape.located(Location())
-                shape = None
-                if sharp:
-                    try:
-                        shape = _smaller(_isolated_offset(base, depth, Kind.INTERSECTION), base)
-                    except Exception:  # noqa: BLE001 - the stricter arc join below decides
-                        shape = None
+                # The same unplaced bytes shrink the same way (#394): an
+                # obstacle shrunk again for a later input reuses the first
+                # outcome, refusal included, instead of offsetting (or
+                # stalling) again. Other bytes are offset anew.
+                key = _offset_key(base, depth, sharp)
+                outcome = cache.get(key) if key is not None else None
+                if outcome is None:
+                    outcome = self._offset(base, depth, sharp, Kind, offset)
+                    if key is not None:
+                        cache[key] = outcome
+                shape, refusal = outcome
                 if shape is None:
-                    shape = _smaller(offset(base, amount=-depth, kind=Kind.ARC), base)
-                if shape is None:
-                    return None, "the offset of %s is no valid smaller solid" % body.key
+                    return None, refusal % body.key
                 shape = shape.moved(place)
             except Exception as exc:  # noqa: BLE001 - an offset the kernel refuses is a refusal
                 return None, "the kernel refuses to offset %s: %s" % (body.key, exc)
             found.append(Body(body.label, shape, key=body.key))
         return found, None
+
+    @staticmethod
+    def _offset(base, depth, sharp, Kind, offset):
+        """``base`` offset inward by ``depth``: ``(shape, None)`` or ``(None,
+        reason)`` whose ``%s`` takes the body's key."""
+
+        try:
+            shape = None
+            if sharp:
+                try:
+                    shape = _smaller(_isolated_offset(base, depth, Kind.INTERSECTION), base)
+                except Exception:  # noqa: BLE001 - the stricter arc join below decides
+                    shape = None
+            if shape is None:
+                shape = _smaller(offset(base, amount=-depth, kind=Kind.ARC), base)
+        except Exception as exc:  # noqa: BLE001 - an offset the kernel refuses is a refusal
+            return None, "the kernel refuses to offset %%s: %s" % str(exc).replace("%", "%%")
+        if shape is None:
+            return None, "the offset of %s is no valid smaller solid"
+        return shape, None
 
     def shrunk_obstacles(self, condition: dict, moving: list[Body], obstacles: list[Body], depth: float):
         """The other side of a press (ADR 0104 amendment 2026-11-27,

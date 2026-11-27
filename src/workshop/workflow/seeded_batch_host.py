@@ -189,7 +189,8 @@ def plan(run_root: Path, round_index: int, *, python: str = sys.executable) -> t
         powered=contract_is_powered(contract), moving=contract_is_moving(contract),
         image_derived=bool(wish.get("references")),
         concept_sha256=seeded_batch.concept_sha256(product["concept"]), finalizer=finalizer,
-        printed_parts=seeded_batch.kit_printed_parts(contract))
+        printed_parts=seeded_batch.kit_printed_parts(contract),
+        tree_loads=seeded_batch.kit_tree_loads(contract))
     return seeded_batch.run_plan(inputs, run_root=run_root, product_root=product_root, source=source), project
 
 

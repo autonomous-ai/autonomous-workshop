@@ -572,6 +572,9 @@ class PlanInputs:
     # A kit Component's printed Part count (ADR 0092), from
     # kit_printed_parts(); empty for a toy that is no kit.
     printed_parts: Mapping[str, int] = field(default_factory=dict)
+    # A kit Component's tree check load, from kit_tree_loads(): its
+    # insertions and press insertions; empty for a toy that is no kit.
+    tree_loads: Mapping[str, Mapping[str, int]] = field(default_factory=dict)
 
 
 def _tool(inputs: PlanInputs, *parts: str) -> str:
@@ -602,6 +605,67 @@ def kit_printed_parts(contract: Any) -> dict:
     printed = {item["id"] for item in tree.get("parts") or () if isinstance(item, Mapping) and "filament" in item}
     return {item["geometry"]: sum(1 for part in item.get("parts") or () if part in printed)
             for item in tree.get("components") or () if isinstance(item, Mapping) and "geometry" in item}
+
+
+# A tree check sweeps every insertion of its Component, and a press input
+# twice against solids shrunk on both sides (#392): Kyoto's Gion Canal
+# tree, 188 insertions of which 128 press, took about 13,900 s at one
+# thread, so the layer's flat hour could not hold it. The run-local
+# kit_tree.py's TREE_MIN_S, TREE_INSERTION_S and TREE_PRESS_S, which its
+# make_round tree job takes as its timeout.
+TREE_MIN_S = 3600.0
+TREE_INSERTION_S = 30.0
+TREE_PRESS_S = 180.0
+SWEPT_JOINTS = ("peg-socket", "tab-slot", "pin-hinge", "foam-tape", "glue", "snap", "paper")
+
+
+def kit_tree_loads(contract: Any) -> dict:
+    """``{Component: {"insertions": n, "presses": m}}`` of a kit contract's
+    Assembly Tree, as the run-local ``kit_tree.tree_load`` counts each
+    Component's tree check; ``{}`` for a contract without one."""
+
+    from workshop.make.kit_tree import has_assembly_tree, tree_totals
+
+    if not has_assembly_tree(contract):
+        return {}
+    tree = contract["assembly_tree"]
+    totals = tree_totals(tree)
+    counts = {item["id"]: int(item.get("count", 1)) for item in contract.get("geometries") or ()
+              if isinstance(item, Mapping) and "id" in item}
+    component_of = {part: item["geometry"] for item in tree.get("components") or () for part in item.get("parts") or ()}
+    inputs = {item["id"]: list(item["inputs"]) for item in tree["steps"]}
+    owners: dict = {}
+
+    def owned(node: str) -> frozenset:
+        if node not in owners:
+            if node in inputs:
+                owners[node] = frozenset().union(*(owned(entry["id"]) for entry in inputs[node]))
+            else:
+                owners[node] = frozenset((component_of[node],)) if node in component_of else frozenset()
+        return owners[node]
+
+    loads = {role: {"insertions": 0, "presses": 0} for role in counts}
+    for item in tree["steps"]:
+        mine = owned(item["id"])
+        if item.get("joint") not in SWEPT_JOINTS or len(mine) != 1:
+            continue
+        (role,) = mine
+        if role not in loads:
+            continue
+        copies = (totals[item["id"]] // counts[role]) * counts[role]
+        for entry in inputs[item["id"]][1:]:
+            many = copies * int(entry.get("count", 1))
+            loads[role]["insertions"] += many
+            if entry.get("press_mm"):
+                loads[role]["presses"] += many
+    return {role: load for role, load in loads.items() if role in set(component_of.values())}
+
+
+def tree_seconds(inputs: PlanInputs, role: str) -> float:
+    """The time ``role``'s tree check is allowed, as its make_round job is."""
+
+    load = inputs.tree_loads.get(role) or {"insertions": 0, "presses": 0}
+    return TREE_MIN_S + TREE_INSERTION_S * load["insertions"] + TREE_PRESS_S * load["presses"]
 
 
 def _kit_geometry(inputs: PlanInputs, roles: Iterable[str]) -> float:
@@ -710,6 +774,10 @@ def run_plan(inputs: PlanInputs, *, run_root: Path, product_root: Path, source: 
     steps += _common_layers(inputs, design=False)
     for role in inputs.roles:
         extra, deadline = _kit_allowance(inputs, (role,), "components")
+        if role in inputs.printed_parts:
+            # A kit Component's round runs its tree check beside its print
+            # gates, or after them on one job: its deadline holds both.
+            deadline = (deadline or DEFAULT_DEADLINES["components"]) + tree_seconds(inputs, role)
         steps.append(Step("component:%s" % role, "components",
                           (py, make_round, project, "--component", "part_%s.step.py" % role,
                            "--nozzle", "%g" % inputs.nozzle, *extra, "--json"),
@@ -859,7 +927,8 @@ def tree_steps(inputs: PlanInputs) -> list:
                  (inputs.python, kit_tree, str(inputs.project), "--component", role,
                   "--nozzle", str(inputs.nozzle), "--json"),
                  inputs=("params.py", "features", "part_%s.step.py" % role, sources_of(role), "tree"),
-                 env_keys=PRINT_GATES_ENV)
+                 env_keys=PRINT_GATES_ENV,
+                 deadline_s=max(DEFAULT_DEADLINES["preflight"], tree_seconds(inputs, role) + FINAL_REPORT_MARGIN_S))
             for role in inputs.roles]
 
 
@@ -972,7 +1041,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                         contract_path=args.contract.resolve(), roles=contract_geometry_ids(contract),
                         nozzle=args.nozzle, coupled_interfaces=coupled_interface_ids(contract),
                         powered=contract_is_powered(contract), moving=contract_is_moving(contract),
-                        image_derived=bool(contract.get("references")), printed_parts=kit_printed_parts(contract))
+                        image_derived=bool(contract.get("references")), printed_parts=kit_printed_parts(contract),
+                        tree_loads=kit_tree_loads(contract))
     record = run_batch(design_plan(inputs), project, record_path=args.record or project / RECORD, plan_name="design")
     for item in record["steps"]:
         print("seeded_batch: %-14s %-24s %s%s" % (item["layer"], item["id"], item["status"],

@@ -443,7 +443,8 @@ def dry_run_batch(proof: Path, contract: Path, design_contract: dict, nozzle: fl
         coupled_interfaces=seeded_batch.coupled_interface_ids(design_contract),
         powered=contract_is_powered(design_contract), moving=contract_is_moving(design_contract),
         image_derived=bool(design_contract.get("references")),
-        printed_parts=seeded_batch.kit_printed_parts(design_contract))
+        printed_parts=seeded_batch.kit_printed_parts(design_contract),
+        tree_loads=seeded_batch.kit_tree_loads(design_contract))
     plan = seeded_batch.design_plan(inputs)
     if preflight:
         path = proof / PREFLIGHT_RECORD

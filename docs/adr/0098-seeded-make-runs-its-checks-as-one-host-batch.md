@@ -514,6 +514,12 @@ together.
 sealed Miami Proof, the step's command reproduces the run's component-round
 failures.
 
+**Later (2026-11-27, #394).** A `tree:<Component>` step's deadline follows
+its Component's tree load, not the preflight layer's flat hour, and a kit
+Component's seeded component step adds the same time to its own deadline
+(`seeded_batch.kit_tree_loads`, `tree_seconds`; ADR 0104's amendment of
+that date). Kyoto's Gion Canal tree check takes hours at one thread.
+
 ## Implementation status
 
 The batch engine, seal and host merged in PR #234. The rest is on branch
