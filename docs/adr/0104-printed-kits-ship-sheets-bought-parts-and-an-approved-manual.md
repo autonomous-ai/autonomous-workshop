@@ -613,6 +613,9 @@ checked where the whole toy is built.
 
 ## Amendment 2026-11-19 (later): a press Part the kernel cannot offset
 
+Superseded by the 2026-11-27 amendment (#392): both sides are now always
+checked, and the obstacles never stand in for the Part.
+
 - **Problem.** The Miami Deco kit's boardwalk presses its three peg holes'
   crush ribs, 0.05 mm a side, onto the tray's pegs. Its `press_mm` sweep
   was refused because build123d's `offset` cannot shrink the 613-face
@@ -804,7 +807,7 @@ checked where the whole toy is built.
   many cuts), and its
   `presses` row records `offset: "local"`.
 - **Order.** The input's own offset first, then the obstacles' (2026-11-19,
-  press obstacles), then the windows. A Part the kernel can offset whole is
+  press obstacles; superseded 2026-11-27, below), then the windows. A Part the kernel can offset whole is
   swept exactly as before and never reaches the windows.
 - **Evidence.** `tests/make/test_kit_tree_press_seat.py`:
   - A peg with a name embossed on its top, which the kernel itself cannot
@@ -840,6 +843,115 @@ checked where the whole toy is built.
   non-parallel joints are outside this amendment.
 - **Unchanged.** Every input without `press_mm`, and every Part or
   obstacle set the kernel can offset whole.
+
+## Amendment 2026-11-27: a press is held on both sides (#392)
+
+- **Problem.** Shrinking a Part inward by `press_mm` removes every feature
+  thinner than 2 x `press_mm`. A crush rib that narrow vanished before the
+  sweep and passed however deep it bit: a 0.19 mm rib biting 1.0 mm into a
+  socket passed at `press_mm` 0.1. Its overlap reached 0.917 mm into the
+  socket but only 0.079 mm into the Part. A thin socket rib vanished the
+  same way on the obstacles path. The rule meant "a bite no deeper than
+  `press_mm` passes"; the gate checked only one side of it.
+- **Rule.** A press passes only if both sweeps clear the unchanged
+  0.001 mm3 limit:
+  1. the Part shrunk by `press_mm` against its real obstacles: the whole
+     offset, else the windows round its overlaps (2026-11-26);
+  2. the real Part against its obstacles, each cropped to the sweep
+     (`crop_to_sweep`) and shrunk by `press_mm`
+     (`CadGeometry.shrunk_obstacles`). Each obstacle takes the intersection
+     join, else the windows round its overlaps with the motion reversed,
+     whose cuts shrink by the same sharp join, else by booleans.
+
+  The second sweep runs only when the first passes, as its own condition
+  `<id>.obstacles-pressed` with `press_offset: "obstacles"` or
+  `"obstacles-local"`, appended to the sequence with its own result. The
+  `presses` row records `obstacles: "offset"`, `"local"` or null. A side
+  the kernel cannot shrink is a refusal. A thin rib on the Part now bites
+  deeper than `press_mm` into the shrunk obstacle and fails the second
+  sweep; a thin socket rib fails the first.
+- **Why the sharp join on the obstacle side.** An honest square peg a
+  little oversize bites a square socket's inner corners by about 1.41
+  times its face bite. An arc join, or an exact ball erosion, rounds those
+  corners and fails it. The intersection join keeps them square, so a fit
+  that bites each face no deeper than `press_mm` passes, as it did before.
+  The arc join of the 2026-11-19 substitute is gone with it.
+- **The boolean shrink grows.** Besides each flat face normal, it now moves
+  the cut along the bisector of every two non-parallel flat faces that
+  share an edge, both ways. Face normals alone kept a `press_mm` square
+  along a concave edge, which put a socket's corner back. The shrink still
+  keeps everything the arc offset keeps, so it can only fail more.
+- **A shrink must lie inside its body.** On Kyoto's S11 the kernel's
+  sharp offset of the kerb, cropped to the cherry trunk's sweep, was a
+  valid solid smaller than the kerb, yet 106.7 mm3 of it lay outside the
+  kerb: it filled the hole the trunk goes into. The trunk then "bit"
+  55.9 mm3 into a shrunk kerb while it overlaps the real kerb by only
+  0.088 mm3. An offset is now taken only when it is one valid solid,
+  smaller than its body and with at most `PRESS_INSIDE_MM3` (1e-5 mm3)
+  outside it; otherwise the next shrink is tried (the arc join, then the
+  windows, then booleans). This applies to every press offset, the Part's
+  and its obstacles', and can only refuse a shrink, never loosen one.
+- **A kernel crash is a refused offset.** The intersection join crashed
+  the whole process (a segfault inside OCCT's offset) on one of Kyoto
+  S13's obstacles, which no exception handler can catch. That join now
+  runs in a forked child (`_isolated_offset`), returning its solid as
+  BREP. A child that crashes or fails, or is still running after
+  `PRESS_OFFSET_SECONDS` (120 s; on one of Kyoto S61's obstacles the
+  join ran for half an hour), is a refused offset, and the stricter arc
+  join is taken. The parent waits on the child, so a round
+  still computes on one thread at a time.
+- **A group the kernel cannot sweep as one.** The second sweep takes the
+  same solid-by-solid fallback as the windows' (`_sweep_each`, each solid
+  held to the limit over the number of solids, never looser), when its
+  moving group has several solids and the kernel returns invalid
+  geometry (Kyoto S103's second lantern hat). A second sweep that is
+  neither a pass nor a fail is reported as a press that cannot be
+  checked and is refused, never as a bite.
+- **Superseded.** The 2026-11-19 (later) rule, which swept the unshrunk
+  Part against shrunk obstacles *instead of* shrinking the Part, is
+  replaced: both sides are now always checked, and
+  `CadGeometry.pressed_obstacles` is gone. The order is now the Part's
+  whole offset, then its windows. `press_offset: "obstacles"` names only
+  the second condition.
+- **Remaining gap.** A thin rib biting a thin fin, both narrower than
+  2 x `press_mm`, vanishes on both sides. Catching it needs a direct
+  depth measurement, which this amendment does not add.
+- **Evidence.** `tests/make/test_kit_tree_press_seat.py`
+  (`PressTwoSidedTest`): a 4.0 mm peg in a 4.0 mm socket with four ribs
+  5 mm long, `press_mm` 0.1. Ribs 0.19 x 1.0, 0.15 x 0.3 and 0.19 x 0.3
+  now fail on the second sweep; 0.25 x 0.3 still fails on the first;
+  0.5 x 0.1, 0.5 x 0.08, 0.19 x 0.1 and 0.3 x 0.05 still pass. A 0.19 mm
+  socket rib biting 1.0 fails and one biting 0.1 passes. An obstacle side
+  that cannot be shrunk is refused. The square 4.1 mm peg at 0.06 still
+  passes, a 0.3 mm shift and a 4.4 mm peg still fail, and the boolean
+  shrink clears a socket's inner corner. A sharp join that fills the
+  socket, crashes or never finishes falls back to the arc join, where an
+  honest peg still passes and the 0.19 x 1.0 rib still fails. A group
+  against its obstacles' shrink sweeps solid by solid where the kernel
+  cannot sweep it as one, and an obstacle sweep the kernel cannot run is
+  refused, never reported as a bite.
+- **Kits.** Each kit's component round was run in full, with this rule,
+  on a copy of its Proof (`kit_tree --component`, 1 thread):
+  - **Miami Deco:** 58 of 58 press insertions pass, as before (57 by the
+    Part's whole offset and 1 by windows; the obstacle side shrunk whole
+    on 52 and by windows on 6).
+  - **Kyoto Gion Canal:** 128 press insertions (39 by the Part's whole
+    offset, 89 by windows; the obstacle side shrunk whole on 33 and by
+    windows on 95). No press that passes on main fails. S103's second
+    lantern hat first stopped on the kernel's invalid geometry and passes
+    with the solid-by-solid fallback above.
+  - **S28 (S24-back-wall), which fails on main, now passes.** On main the
+    Part could not be offset, so its obstacles were shrunk instead, and
+    the kernel's intersection join of the L29 plinth left 85.3 mm3
+    outside the real plinth. The wall overlaps the real plinth by 0.89,
+    0.44 and 0.09 mm3 at steps 0 to 2, but the false shrink by 65.8, 39.9
+    and 14.0 mm3. So that was a false failure of the gate, not a bad
+    joint.
+  - S145's S131, the collision recorded on 2026-11-26, passes on main too
+    on the current Proof, which has changed since.
+- **Unchanged.** Every input without `press_mm`, the 0.001 mm3 limit,
+  seated contact at the seat, and the refusal of anything the kernel
+  cannot shrink.
 
 ## Not decided here
 

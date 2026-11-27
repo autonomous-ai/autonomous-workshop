@@ -8,7 +8,10 @@ instead (same amendment, press obstacles). Where neither offsets whole,
 the Part is offset only in windows round its overlaps (amendment
 2026-11-26, press local offset), exactly the whole offset there; a window
 the kernel cannot offset either is shrunk by booleans, never looser than
-the offset; a shrink that cannot be made anywhere is refused.
+the offset; a shrink that cannot be made anywhere is refused. Both sides
+are held to the press (amendment 2026-11-27, #392): the real Part must
+also clear its obstacles offset inward by it, so a rib thinner than twice
+the press cannot vanish from the check.
 
 (e) A flat joint face at an angle to the direction, or a round one whose
 axis is off it, is accepted only as a seat face: the input's outward normal
@@ -105,10 +108,16 @@ class PressTest(unittest.TestCase):
         self.assertEqual(report["failures"], [])
         (record,) = report["presses"]
         self.assertEqual((record["input"], record["press_mm"], record["verdict"]), ("A02-peg#1", 0.06, "PASS"))
+        self.assertEqual((record["offset"], record["obstacles"]), ("input", "offset"))
         (sequence,) = report["conditions"]
-        (condition,) = sequence["inputs"]["steps"]
+        # both sides of the press (#392): the shrunk Part, then the real Part against shrunk obstacles
+        (condition, other) = sequence["inputs"]["steps"]
         self.assertEqual(condition["inputs"]["press_mm"], 0.06)
         self.assertEqual(condition["thresholds"]["maxOverlapMm3"], kit_tree.OVERLAP_MM3)
+        self.assertEqual(other["id"], condition["id"] + ".obstacles-pressed")
+        self.assertEqual(other["inputs"]["press_offset"], "obstacles")
+        self.assertEqual(other["thresholds"]["maxOverlapMm3"], kit_tree.OVERLAP_MM3)
+        self.assertEqual(other["result"]["status"], "pass")
 
     def test_a_press_shifted_0_3_mm_sideways_still_fails(self):
         report = check(self.parts(across=0.3), press=0.06)
@@ -129,21 +138,22 @@ class PressTest(unittest.TestCase):
         self.assertEqual(report["presses"][0]["verdict"], "FAIL")
         self.assertEqual(report["conditions"], [])
 
-    def test_a_part_the_kernel_cannot_offset_sweeps_against_its_shrunk_obstacles(self):
+    def test_a_part_the_kernel_cannot_offset_whole_takes_windows_and_its_obstacles_still_shrink(self):
         report = check(self.parts(), press=0.06, refuse_offset="input")
         self.assertEqual(report["failures"], [])
         (record,) = report["presses"]
-        self.assertEqual((record["offset"], record["verdict"]), ("obstacles", "PASS"))
+        self.assertEqual((record["offset"], record["obstacles"], record["verdict"]), ("local", "offset", "PASS"))
         (sequence,) = report["conditions"]
-        (condition,) = sequence["inputs"]["steps"]
-        self.assertEqual(condition["inputs"]["press_offset"], "obstacles")
+        (condition, other) = sequence["inputs"]["steps"]
+        self.assertEqual(condition["inputs"]["press_offset"], "local")
+        self.assertEqual(other["inputs"]["press_offset"], "obstacles")
         self.assertEqual(condition["thresholds"]["maxOverlapMm3"], kit_tree.OVERLAP_MM3)
 
     def test_shrunk_obstacles_still_fail_a_shift_and_a_deeper_bite(self):
         for parts in (self.parts(across=0.3), self.parts(peg=4.4)):
             report = check(parts, press=0.06, refuse_offset="input")
             self.assertTrue(any("cannot go in alone" in f for f in report["failures"]), report["failures"])
-            self.assertEqual((report["presses"][0]["offset"], report["presses"][0]["verdict"]), ("obstacles", "FAIL"))
+            self.assertEqual(report["presses"][0]["verdict"], "FAIL")
 
     def test_an_obstacle_the_kernel_cannot_join_sharp_takes_the_stricter_arc_join(self):
         from unittest import mock
@@ -160,7 +170,9 @@ class PressTest(unittest.TestCase):
         with mock.patch.object(build123d, "offset", no_sharp):
             # the arc join rounds the socket's corners: the 4.1 peg's corners still bite at 0.06
             report = check(self.parts(), press=0.06, refuse_offset="input")
-            self.assertEqual((report["presses"][0]["offset"], report["presses"][0]["verdict"]), ("obstacles", "FAIL"))
+            self.assertEqual((report["presses"][0]["obstacles"], report["presses"][0]["verdict"]), ("offset", "FAIL"))
+            self.assertTrue(any("deeper than its press into them" in f for f in report["failures"]),
+                            report["failures"])
             # a round peg has no corners to bite: the arc join passes it
             Box, Pos = self.Box, self.Pos
             from build123d import Cylinder
@@ -168,7 +180,7 @@ class PressTest(unittest.TestCase):
             report = check([("A01-base", base), ("A02-peg", Pos(0, 0, 10) * Cylinder(2.05, 10))], press=0.06,
                            refuse_offset="input")
             self.assertEqual(report["failures"], [])
-            self.assertEqual(report["presses"][0]["offset"], "obstacles")
+            self.assertEqual(report["presses"][0]["obstacles"], "offset")
 
     def test_the_real_offset_shrinks_the_part(self):
         Box = self.Box
@@ -331,12 +343,15 @@ class PressLocalOffsetTest(unittest.TestCase):
         report = check(self.parts(), press=0.06, refuse_offset="whole")
         self.assertEqual(report["failures"], [])
         (record,) = report["presses"]
-        self.assertEqual((record["offset"], record["verdict"]), ("local", "PASS"))
+        self.assertEqual((record["offset"], record["obstacles"], record["verdict"]), ("local", "local", "PASS"))
         (sequence,) = report["conditions"]
-        (condition,) = sequence["inputs"]["steps"]
+        (condition, other) = sequence["inputs"]["steps"]
         self.assertEqual(condition["inputs"]["press_offset"], "local")
         self.assertGreater(condition["inputs"]["press_windows"], 0)
         self.assertEqual(condition["thresholds"]["maxOverlapMm3"], kit_tree.OVERLAP_MM3)
+        # the base, which the kernel cannot offset whole either, is offset in windows round the peg
+        self.assertEqual(other["inputs"]["press_offset"], "obstacles-local")
+        self.assertNotIn("press_windows", other["inputs"])
 
     def test_the_real_kernel_failure_takes_the_local_offset(self):
         # Only the base's offset is refused here: the peg's whole offset fails in the kernel itself.
@@ -445,12 +460,14 @@ class PressErodeTest(unittest.TestCase):
         self.local.setUp()
 
     def test_a_rib_bite_passes_by_booleans_where_no_offset_can_be_made(self):
-        report = check(self.local.parts(), press=0.06, refuse_offset=True)
+        # 0.03 a side: the boolean shrink of the socket keeps its inner corners
+        # as a ball would, so the peg's corners bite 0.042 there, under the press
+        report = check(self.local.parts(size=4.06), press=0.06, refuse_offset=True)
         self.assertEqual(report["failures"], [])
         (record,) = report["presses"]
-        self.assertEqual((record["offset"], record["verdict"]), ("local", "PASS"))
+        self.assertEqual((record["offset"], record["obstacles"], record["verdict"]), ("local", "local", "PASS"))
         (sequence,) = report["conditions"]
-        (condition,) = sequence["inputs"]["steps"]
+        (condition, other) = sequence["inputs"]["steps"]
         self.assertGreater(condition["inputs"]["press_eroded"], 0)
         self.assertEqual(condition["thresholds"]["maxOverlapMm3"], kit_tree.OVERLAP_MM3)
 
@@ -494,6 +511,24 @@ class PressErodeTest(unittest.TestCase):
         kept, _ = geometry.eroded(shapes["box"], 0.1)
         self.assertAlmostEqual(sum(s.volume for s in kept), 3.8 ** 3, places=6)
 
+    def test_the_boolean_shrink_clears_a_socket_s_inner_corner(self):
+        # Face normals alone keep a press-deep square along a concave edge;
+        # the bisector of its two faces clears it, as the arc offset does.
+        from build123d import Compound
+        from OCP.BRepClass3d import BRepClass3d_SolidClassifier
+        from OCP.gp import gp_Pnt
+        from OCP.TopAbs import TopAbs_IN
+
+        Box = self.Box
+        socket = Box(10, 10, 4) - Box(4, 4, 5)
+        kept, error = Built([]).eroded(socket, 0.06)
+        self.assertIsNone(error)
+        corner = gp_Pnt(2.03, 2.03, 0)    # 0.042 from the socket's inner corner edge
+        self.assertFalse(any(BRepClass3d_SolidClassifier(k.wrapped, corner, 1e-7).State() == TopAbs_IN
+                             for k in kept))
+        arc = self.offset(socket, amount=-0.06, kind=self.Kind.ARC)
+        self.assertLess(sum(x.volume for x in (arc - Compound(kept)).solids()), 1e-6)
+
     def test_a_boolean_that_silently_drops_material_is_refused(self):
         from unittest import mock
 
@@ -536,7 +571,7 @@ class PressErodeTest(unittest.TestCase):
         base = Pos(0, 0, 5) * Box(20, 20, 10) - Pos(0, 0, 7.5) * Box(4, 4, 5)
         obstacles = [kit_tree.Body("A01-base", base, key="A01-base#1")]
 
-        def sweep(pieces, local=True):
+        def sweep(pieces, local="local"):
             geometry = Built([])
             run = geometry.motion["run_condition"]
 
@@ -551,27 +586,201 @@ class PressErodeTest(unittest.TestCase):
                                     "translation": [0, 0, 11.0], "steps": 14, "allow_seated_contact": True},
                          "thresholds": {"maxOverlapMm3": kit_tree.OVERLAP_MM3, "maxStepMm": 0.8}}
             if local:
-                condition["inputs"]["press_offset"] = "local"
+                condition["inputs"]["press_offset"] = local
             moving = [kit_tree.Body("A02-peg", piece, key="A02-peg#1@%d" % i) for i, piece in enumerate(pieces)]
             return geometry.sweep(condition, moving, obstacles), geometry.fallbacks
 
         clear = [Pos(0, 0, 7.5) * Box(3.9, 3.9, 5), Pos(0, 0, 12.5) * Box(3.9, 3.9, 5)]
-        result, fallbacks = sweep(clear)
-        self.assertEqual(result["status"], "pass")
-        (record,) = fallbacks
-        self.assertEqual(record["solids"], 2)
-        self.assertAlmostEqual(record["max_overlap_mm3_each"], kit_tree.OVERLAP_MM3 / 2)
+        # the Part's windows, and a group against its obstacles' shrink (#392)
+        for kind in ("local", "obstacles", "obstacles-local"):
+            result, fallbacks = sweep(clear, kind)
+            self.assertEqual(result["status"], "pass", kind)
+            (record,) = fallbacks
+            self.assertEqual(record["solids"], 2)
+            self.assertAlmostEqual(record["max_overlap_mm3_each"], kit_tree.OVERLAP_MM3 / 2)
         # a piece that bites still fails solid by solid
         result, _ = sweep([Pos(0, 0, 7.5) * Box(4.4, 4.4, 5), clear[1]])
         self.assertEqual(result["status"], "fail")
-        # only a press local offset's group takes this path
-        result, fallbacks = sweep(clear, local=False)
+        # only a press offset's group takes this path
+        result, fallbacks = sweep(clear, local=None)
         self.assertEqual((result["status"], fallbacks), ("inconclusive", []))
 
     def test_a_thin_part_has_no_deep_point_to_miss(self):
         # a 0.15 mm sheet is wholly within 0.1 of its faces: an empty shrink is right
         self.assertIsNone(kit_tree._deep_point_missing(self.Box(4, 4, 0.15), [], 0.1))
         self.assertIsNotNone(kit_tree._deep_point_missing(self.Box(4, 4, 4), [], 0.1))
+
+
+class PressTwoSidedTest(unittest.TestCase):
+    """ADR 0104 amendment 2026-11-27 (#392): a 4.0 mm peg in a 4.0 mm socket
+    with four ribs 5 mm long, at ``press_mm`` 0.1. A rib thinner than twice
+    the press vanishes when the Part is offset; the real Part against the
+    socket offset by the press still measures its bite."""
+
+    def setUp(self):
+        try:
+            from build123d import Box, Pos
+        except ImportError:                                   # pragma: no cover
+            self.skipTest("build123d")
+        self.Box, self.Pos = Box, Pos
+
+    def base(self, rib=None):
+        Box, Pos = self.Box, self.Pos
+        base = Pos(0, 0, 5) * Box(20, 20, 10) - Pos(0, 0, 7.5) * Box(4, 4, 5)
+        if rib is not None:
+            # a rib on the socket's wall, into the cavity
+            width, bite = rib
+            base = base + Pos(2 - bite / 2, 0, 7.5) * Box(bite, width, 5)
+        return base
+
+    def peg(self, width=None, bite=None):
+        Box, Pos = self.Box, self.Pos
+        peg = Pos(0, 0, 10) * Box(4, 4, 10)
+        if width is not None:
+            for sx, sy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                size = (bite, width) if sx else (width, bite)
+                peg = peg + Pos(sx * (2 + bite / 2), sy * (2 + bite / 2), 7.5) * Box(size[0], size[1], 5)
+        return peg
+
+    def verdict(self, peg, base=None):
+        report = check([("A01-base", base or self.base()), ("A02-peg", peg)], press=0.1)
+        return report["presses"][0]["verdict"], report
+
+    def test_a_rib_0_19_wide_biting_1_mm_now_fails(self):
+        verdict, report = self.verdict(self.peg(0.19, 1.0))
+        self.assertEqual(verdict, "FAIL")
+        (failure,) = report["failures"]
+        self.assertIn("against its obstacles offset inward by its 0.1 mm press", failure)
+        self.assertIn("deeper than its press into them", failure)
+        (sequence,) = report["conditions"]
+        (condition, other) = sequence["inputs"]["steps"]
+        self.assertEqual((condition["result"]["status"], other["result"]["status"]), ("pass", "fail"))
+
+    def test_thin_ribs_biting_deeper_than_the_press_fail(self):
+        for width, bite in ((0.15, 0.3), (0.19, 0.3)):
+            self.assertEqual(self.verdict(self.peg(width, bite))[0], "FAIL", (width, bite))
+
+    def test_a_rib_0_25_wide_biting_0_3_still_fails(self):
+        verdict, report = self.verdict(self.peg(0.25, 0.3))
+        self.assertEqual(verdict, "FAIL")
+        # the shrunk Part already fails: the other side is not swept
+        (sequence,) = report["conditions"]
+        (condition,) = sequence["inputs"]["steps"]
+        self.assertEqual(condition["result"]["status"], "fail")
+
+    def test_ribs_biting_at_most_the_press_still_pass(self):
+        for width, bite in ((0.5, 0.1), (0.5, 0.08), (0.19, 0.1), (0.3, 0.05)):
+            verdict, report = self.verdict(self.peg(width, bite))
+            self.assertEqual(verdict, "PASS", (width, bite, report["failures"]))
+
+    def test_a_thin_rib_on_the_socket_biting_deeper_than_the_press_fails(self):
+        self.assertEqual(self.verdict(self.peg(), self.base(rib=(0.19, 1.0)))[0], "FAIL")
+        self.assertEqual(self.verdict(self.peg(), self.base(rib=(0.19, 0.1)))[0], "PASS")
+
+    def test_an_obstacle_side_that_cannot_be_shrunk_is_refused(self):
+        from unittest import mock
+
+        with mock.patch.object(kit_tree.CadGeometry, "shrunk_obstacles",
+                               return_value=(None, None, "the kernel refuses to offset A01-base#1")):
+            report = check([("A01-base", self.base()), ("A02-peg", self.peg(0.5, 0.1))], press=0.1)
+        (failure,) = report["failures"]
+        self.assertIn("its obstacles cannot be offset inward by it either", failure)
+        self.assertIn("refused", failure)
+        self.assertEqual(report["presses"][0]["verdict"], "FAIL")
+        self.assertEqual(report["conditions"], [])
+
+    def test_an_offset_that_fills_the_socket_is_not_taken(self):
+        # Kyoto S11 (#392): the kernel's sharp offset of a cropped kerb was a
+        # valid, smaller solid that filled the hole the trunk goes into. A
+        # shrink holding material outside its body is not taken: the arc
+        # join is, and an honest peg still passes.
+        from unittest import mock
+
+        import build123d
+
+        Box, Pos = self.Box, self.Pos
+        real = build123d.offset
+
+        def filled(shape, *args, **kwargs):
+            result = real(shape, *args, **kwargs)
+            if kwargs.get("kind") == build123d.Kind.INTERSECTION:
+                result = result + Pos(0, 0, 7.5) * Box(1, 1, 1)
+            return result
+
+        with mock.patch.object(build123d, "offset", side_effect=filled):
+            verdict, report = self.verdict(self.peg(0.5, 0.1))
+            self.assertEqual(verdict, "PASS", report["failures"])
+            shrunk, error = Built([]).pressed([kit_tree.Body(None, self.base(), key="A01-base#1")], 0.1,
+                                              sharp=True)
+        self.assertIsNone(error)
+        self.assertEqual(len((shrunk[0].shape & (Pos(0, 0, 7.5) * Box(1, 1, 1))).solids()), 0)
+
+    def test_a_kernel_crash_in_the_sharp_offset_takes_the_arc_join(self):
+        # Kyoto S13 (#392): the intersection join crashed the process. It
+        # runs in a child, so the crash is a refused offset and the
+        # stricter arc join decides; the round goes on.
+        import os
+        from unittest import mock
+
+        import build123d
+
+        real = build123d.offset
+
+        def crashing(shape, *args, **kwargs):
+            if kwargs.get("kind") == build123d.Kind.INTERSECTION:
+                os.abort()
+            return real(shape, *args, **kwargs)
+
+        with mock.patch.object(build123d, "offset", side_effect=crashing):
+            verdict, report = self.verdict(self.peg(0.5, 0.1))
+            self.assertEqual(verdict, "PASS", report["failures"])
+            self.assertEqual(report["presses"][0]["obstacles"], "offset")
+            self.assertEqual(self.verdict(self.peg(0.19, 1.0))[0], "FAIL")
+
+    def test_a_sharp_offset_that_never_finishes_takes_the_arc_join(self):
+        # Kyoto S61 (#392): the intersection join ran for half an hour. A
+        # child still running after PRESS_OFFSET_SECONDS is refused.
+        import time
+        from unittest import mock
+
+        import build123d
+
+        real = build123d.offset
+
+        def stalling(shape, *args, **kwargs):
+            if kwargs.get("kind") == build123d.Kind.INTERSECTION:
+                time.sleep(60)
+            return real(shape, *args, **kwargs)
+
+        started = time.monotonic()
+        with mock.patch.object(build123d, "offset", side_effect=stalling), \
+                mock.patch.dict(kit_tree._isolated_offset.__globals__, {"PRESS_OFFSET_SECONDS": 1}):
+            verdict, report = self.verdict(self.peg(0.5, 0.1))
+        self.assertEqual(verdict, "PASS", report["failures"])
+        self.assertLess(time.monotonic() - started, 30)
+
+    def test_an_obstacle_sweep_the_kernel_cannot_run_is_refused_not_a_bite(self):
+        from unittest import mock
+
+        real = kit_tree.CadGeometry.sweep
+
+        def broken(self, condition, moving, obstacles):
+            if condition["id"].endswith(".obstacles-pressed"):
+                return {"status": "inconclusive", "detail": "motion Boolean operation returned invalid geometry"}
+            return real(self, condition, moving, obstacles)
+
+        with mock.patch.object(kit_tree.CadGeometry, "sweep", broken):
+            verdict, report = self.verdict(self.peg(0.5, 0.1))
+        self.assertEqual(verdict, "FAIL")
+        (failure,) = report["failures"]
+        self.assertIn("cannot be checked: motion Boolean operation returned invalid geometry: refused", failure)
+        self.assertNotIn("bites deeper", failure)
+
+    def test_a_shrink_outside_its_body_is_not_smaller(self):
+        Box, Pos = self.Box, self.Pos
+        whole = Box(10, 10, 10)
+        self.assertIsNotNone(kit_tree._smaller(Box(9, 9, 9), whole))
+        self.assertIsNone(kit_tree._smaller(Pos(1, 0, 0) * Box(9, 9, 9), whole))
 
 
 if __name__ == "__main__":

@@ -3152,3 +3152,29 @@ convention, so sealed STEPs and frozen runs keep their colours.
   as one sweep solid by solid (`_sweep_each`, never looser). The condition
   records `press_offset: "local"`, `press_windows` and `press_eroded`. Every other path, and every
   Part the kernel can offset whole, is unchanged.
+
+## Workshop-local: a press is held on both sides (2026-11-27, ADR 0104 amendment, #392)
+
+- `make-round/scripts/kit_tree.py`: a press input passes only if two
+  sweeps clear the 0.001 mm3 limit: the Part shrunk by `press_mm` (whole
+  offset, else `pressed_local` windows) against its real obstacles, then
+  the real Part against its obstacles cropped to the sweep and shrunk by
+  `press_mm` (`CadGeometry.shrunk_obstacles`: the intersection join, else
+  `pressed_local` with the motion reversed and `sharp=True`). The second
+  runs as its own condition `<id>.obstacles-pressed`, appended to the
+  sequence, and the `presses` row records `obstacles`. A side that cannot
+  be shrunk is refused. `CadGeometry.pressed_obstacles`, the earlier
+  obstacles-instead-of-Part substitute, is removed. `CadGeometry.eroded`
+  also moves a cut along the bisector of every two non-parallel flat faces
+  sharing an edge, so a concave corner is cleared as the arc offset clears
+  it. Every input without `press_mm` is unchanged.
+  `_smaller` also refuses an offset holding more than `PRESS_INSIDE_MM3`
+  outside its body (a kernel offset that filled a socket, Kyoto S11), so
+  the next shrink is tried.
+  The intersection-join offset runs in a forked child
+  (`_isolated_offset`): a kernel crash there (Kyoto S13), or a join still
+  running after `PRESS_OFFSET_SECONDS` (Kyoto S61), is a refused offset,
+  and the arc join is taken.
+  The second sweep takes `_sweep_each` when the kernel cannot sweep its
+  group as one (`press_offset` `obstacles` or `obstacles-local`), and a
+  second sweep that neither passes nor fails is refused as unchecked.

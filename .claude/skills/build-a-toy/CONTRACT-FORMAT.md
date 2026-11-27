@@ -326,14 +326,16 @@ instances.)
     step's count times that. The finished toy is made once. A moving input
     of a `peg-socket`, `tab-slot` or `pin-hinge` step whose press ribs bite
     its mate adds `"press_mm": <the ribs' bite a side, above 0, at most
-    0.1>` (ADR 0104 amendment 2026-11-19). Its insertion sweep uses the Part
-    offset inward by `press_mm`, at the unchanged 0.001 mm3 limit. A Part
-    the kernel cannot offset whole is checked against its obstacles offset
-    inward instead, and failing that is offset only in windows round where it
-    overlaps them (ADR 0104 amendments 2026-11-19 and 2026-11-26), with the
-    same result as the whole offset; a window the kernel cannot offset
-    either is shrunk by booleans, never looser than the offset. One that
-    cannot be shrunk at all is refused. Declare the bite the ribs have,
+    0.1>` (ADR 0104 amendment 2026-11-19). Its insertion is swept twice at
+    the unchanged 0.001 mm3 limit, and both must pass (ADR 0104 amendment
+    2026-11-27): the Part offset inward by `press_mm` against its real
+    obstacles, then the real Part against its obstacles offset inward by
+    `press_mm`, so a rib thinner than 2 x `press_mm` that bites deeper
+    still fails. A side the kernel cannot offset whole is offset only in
+    windows round where the two overlap (ADR 0104 amendment 2026-11-26),
+    with the same result as the whole offset; a window the kernel cannot
+    offset either is shrunk by booleans, never looser than the offset. A
+    side that cannot be shrunk at all is refused. Declare the bite the ribs have,
     never more: a sideways slip or a deeper bite still fails. No other input
     takes `press_mm`. A flat joint face at an angle to the direction, or a
     round one whose axis is off it, passes only as a seat face. That means
