@@ -1938,11 +1938,25 @@ def parse_tree(stdout: str, returncode: int) -> dict:
             "tree_sha256": report.get("tree_sha256"), "scope": report.get("scope")}
 
 
-def tree_job(project: Path, out: Path, nozzle: float, component: str | None) -> dict:
+def tree_timeout(kit: dict | None, component: str | None) -> float:
+    """The tree check's time (#392 follow-up): kit_tree's own allowance for
+    the insertions and press insertions of its scope, never less than the
+    round's full timeout. A tree that cannot be planned keeps that timeout:
+    the check itself reports why."""
+
+    tool = kit_tree()
+    try:
+        load = tool.tree_load(tool.Plan(kit), component)
+    except Exception:  # noqa: BLE001 - kit_tree reports a tree it cannot read
+        return float(FULL_TIMEOUT_SECONDS)
+    return max(float(FULL_TIMEOUT_SECONDS), tool.tree_seconds(load))
+
+
+def tree_job(project: Path, out: Path, nozzle: float, component: str | None, kit: dict | None = None) -> dict:
     scope = ["--component", component] if component is not None else ["--assembly"]
     return {"command": [sys.executable, str(KIT_TREE_SCRIPT), str(project), *scope, "--nozzle", str(nozzle),
                         "--json", "--manifest", str(out / "tree-conditions.json")],
-            "cwd": project, "log": out / "tree.log", "timeout": FULL_TIMEOUT_SECONDS}
+            "cwd": project, "log": out / "tree.log", "timeout": tree_timeout(kit, component)}
 
 
 def finish_tree(project: Path, tree: dict, error: str | None = None) -> dict:
@@ -7561,7 +7575,7 @@ def make_round(args) -> int:
         elif kit_error is not None:
             tree = finish_tree(project, {}, kit_error)
         else:
-            tree_jobs.append(tree_job(project, out, args.nozzle, component))
+            tree_jobs.append(tree_job(project, out, args.nozzle, component, kit))
     # 2e. ADR 0104: a kit's FDM Sheets, which span Components, in assembly
     # rounds only.
     sheets, sheet_jobs = None, []

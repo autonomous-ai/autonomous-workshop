@@ -3178,3 +3178,22 @@ convention, so sealed STEPs and frozen runs keep their colours.
   The second sweep takes `_sweep_each` when the kernel cannot sweep its
   group as one (`press_offset` `obstacles` or `obstacles-local`), and a
   second sweep that neither passes nor fails is refused as unchecked.
+
+## Workshop-local: a kit's tree check is timed by its load, and an offset is made once (2026-11-27, ADR 0104 amendment, #394)
+
+- `make-round/scripts/kit_tree.py`: `tree_load(plan, scope)` counts the
+  insertions and press insertions a tree check sweeps, and
+  `tree_seconds(load)` is its time: `TREE_MIN_S` plus `TREE_INSERTION_S`
+  per insertion and `TREE_PRESS_S` per press insertion. The host's
+  `workshop.make.seeded_batch.kit_tree_loads` counts the same from the
+  contract.
+- `make-round/scripts/make_round`: the tree job's timeout is
+  `tree_seconds` of its scope, never below `FULL_TIMEOUT_SECONDS`.
+- `cad/scripts/verify_project`: final verification's `kit_tree --final`
+  runs with `WORKSHOP_GEOMETRY_TIMEOUT` raised to its tree's
+  `tree_seconds`, never below the geometry budget.
+- `make-round/scripts/kit_tree.py`: `CadGeometry.pressed` keeps each
+  offset outcome (`_offset`), refusal included, under the SHA-256 of the
+  unplaced shape's exact BREP bytes, the press and the join
+  (`_offset_key`). A shape the kernel cannot write is offset uncached.
+  No verdict changes.

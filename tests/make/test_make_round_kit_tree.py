@@ -258,6 +258,33 @@ class FinalVerificationTreeTest(unittest.TestCase):
             self.assertEqual(verifier["_run_kit_tree"](runner, project, 0.4), 0)
             self.assertEqual(runner.records, [])
 
+    def test_final_verifications_tree_gets_kit_trees_own_allowance(self):
+        """#392 follow-up: the tree across Components is held to kit_tree's
+        allowance for its insertions, never less than the geometry budget."""
+        verifier = runpy.run_path(str(VERIFIER))
+        with tempfile.TemporaryDirectory() as temporary:
+            run_root = Path(temporary)
+            project = run_root / "cad"
+            project.mkdir()
+            parsed = parse_design_contract(_contract_text(sealed_block()), catalogues=_catalogues())
+            (run_root / "WISH.json").write_text(json.dumps({"references": [], "context": {
+                "design_contract": parsed.to_dict(), "kit_catalogue": parsed.kit_catalogue()}}))
+            TOOL.install(project, run_root / "WISH.json")
+            seen = []
+
+            class Capturing(verifier["Runner"]):
+                def command(self, argv, **kwargs):
+                    seen.append(kwargs.get("env_extra"))
+                    return 0
+
+            runner = Capturing(cwd=project, dry_run=True, verbose=False)
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(verifier["_run_kit_tree"](runner, project, 0.4), 0)
+            kit, _ = runpy.run_path(str(ROOTS["make-round"] / "scripts" / "make_round"))[
+                "kit_state"](project)
+            allowance = TOOL.tree_seconds(TOOL.tree_load(TOOL.Plan(kit), None))
+            self.assertEqual(seen, [{"WORKSHOP_GEOMETRY_TIMEOUT": "%g" % max(600.0, allowance)}])
+
 
 if __name__ == "__main__":
     unittest.main()

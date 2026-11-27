@@ -1687,9 +1687,18 @@ def _run_kit_tree(runner: Runner, project: Path, nozzle: float) -> int:
         print(f"[verify_project] kit tree: {error}", flush=True)
         runner.records.append({"command": f"kit tree  # FAILED: {error}", "status": "rc=1", "seconds": 0.0})
         return 1
+    # Its time grows with the insertions across Components (#392 follow-up):
+    # kit_tree's own allowance, never less than the geometry budget.
+    budget = float(os.environ.get("WORKSHOP_GEOMETRY_TIMEOUT", "600"))
+    try:
+        tree_tool = runpy.run_path(str(KIT_TREE_SCRIPT))
+        allowance = tree_tool["tree_seconds"](tree_tool["tree_load"](tree_tool["Plan"](kit), None))
+    except Exception:  # noqa: BLE001 - kit_tree reports a tree it cannot read
+        allowance = budget
     return 1 if runner.command(
         [sys.executable, KIT_TREE_SCRIPT, _path_arg(project, runner.cwd), "--final", "--nozzle", f"{nozzle:g}"],
         replay_success_stdout=True,
+        env_extra={"WORKSHOP_GEOMETRY_TIMEOUT": "%g" % min(86400.0, max(budget, allowance))},
     ) != 0 else 0
 
 

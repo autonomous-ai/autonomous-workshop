@@ -953,6 +953,81 @@ checked, and the obstacles never stand in for the Part.
   seated contact at the seat, and the refusal of anything the kernel
   cannot shrink.
 
+## Amendment 2026-11-27 (later): a tree check's time follows its kit, and an offset is made once (#394)
+
+- **Problem.** A kit Component's tree check had a flat time limit:
+  - one hour as a seal `tree:<Component>` step;
+  - `FULL_TIMEOUT_SECONDS` (1800 s) as a component round's tree job;
+  - the 600 s geometry budget under final verification.
+
+  The two-sided press (#392) sweeps every press insertion twice, against
+  solids shrunk on both sides. Kyoto's Gion Canal tree has 188 insertions,
+  128 of them presses. Its check then took about 13,800 s at one thread
+  (about 6,600 s before). A tree that passes would therefore time out in
+  the preflight, the seal and the run's component round.
+- **Rule: the time follows the load.** `kit_tree.tree_load` counts:
+  - the insertions a check sweeps: each copy of each swept step's moving
+    inputs, in its scope;
+  - the press insertions among them.
+
+  Its time is `tree_seconds` = `TREE_MIN_S` + `TREE_INSERTION_S` per
+  insertion + `TREE_PRESS_S` per press insertion: 3600 s + 30 s + 180 s. Where it
+  applies:
+  - **The seal's `tree:<Component>` step:** that time plus the report
+    margin, never less than the preflight layer's hour.
+  - **A kit Component's seeded component step:** adds it to its own
+    deadline.
+  - **make_round's tree job:** takes it, never less than
+    `FULL_TIMEOUT_SECONDS`.
+  - **Final verification's `kit_tree --final`:** takes it for the tree
+    across Components, never less than the geometry budget.
+
+  The host counts the same load from the contract
+  (`seeded_batch.kit_tree_loads`), and a test pins the two counts
+  together. The constants give at least twice the slowest measured
+  time. Kyoto's tree took 13,900 s on main at one thread and is allowed
+  32,280 s. Miami's heaviest, beach-base (44 insertions, 38 presses), took
+  792 s and is allowed 11,760 s.
+- **An offset is made once per exact shape.** `pressed` keeps each
+  outcome, refusal included. The key is the SHA-256 of the unplaced
+  shape's exact BREP bytes, plus the press and the join. An obstacle
+  shrunk again for a later input or step reuses that outcome. It is not
+  offset again, and a second `PRESS_OFFSET_SECONDS` stall is not waited
+  out. build123d writes a shape's placement history into its BREP, so a
+  copy of the same Part placed elsewhere has other bytes and is offset
+  anew. The same bytes give the same offset, so no verdict can change.
+- **Not taken: skipping the second sweep when the first is clear.** It
+  would loosen the gate. The first sweep shrinks the Part, so a rib
+  thinner than 2 x `press_mm` vanishes from it. The first sweep is then
+  clear however deep the rib bites, and only the second catches it
+  (#392).
+- **Tried and dropped: leaving out obstacles the real Part never meets.**
+  This is a sound version of that skip. Each shrunk obstacle O' lies inside
+  its obstacle O, to within `PRESS_INSIDE_MM3`, so at every pose
+  overlap(P, O') <= overlap(P, O) + `PRESS_INSIDE_MM3`. An obstacle the
+  real Part P meets by no more than the limit (over its solids, as in
+  `_sweep_each`) less `PRESS_INSIDE_MM3`, at every pose the sweep samples,
+  therefore cannot fail the second sweep. It could be skipped, neither
+  shrunk nor swept. Measuring that clearance with check_motion's own
+  `overlap_volume` cost more than it saved: Miami gained nothing over the
+  cache, and Kyoto's first 15 rows took 13% longer. So it is not shipped.
+- **Evidence.** `tests/make/test_kit_tree_press_speedups.py` runs every
+  press fixture of `test_kit_tree_press_seat.py` with and without the
+  cache. The verdicts, failures and condition statuses match. In a base
+  with two sockets, the base is shrunk once for both pegs, with the same
+  verdicts. A refusal is kept under each body's own name. A shape the
+  kernel cannot write is offset every time. On copies of the Proofs, each
+  kit's component round was run on main and with this change
+  (`kit_tree --component`, 1 thread). Verdicts, failures and every
+  condition's status match:
+  - **Miami Deco:** 58 of 58 presses pass on both, across 178 conditions.
+    The five Components took 1,171 s on main and 967 s with the cache.
+  - **Kyoto Gion Canal:** 128 of 128 presses pass on both, with no
+    failure across 316 conditions. It took 13,900 s on main and 11,178 s
+    with the cache (20% less; 32,280 s allowed).
+- **Unchanged.** Every verdict, the 0.001 mm3 limit, both sides of a press
+  and every refusal.
+
 ## Not decided here
 
 - The gate and fit constants are the Amsterdam project's, set by the owner
