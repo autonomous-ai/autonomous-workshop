@@ -707,7 +707,7 @@ class DesignTreeStepsTest(unittest.TestCase):
         self.assertFalse(any("--print-gates-only" in call[0] for call in runner.calls))
 
     def test_a_failing_tree_steps_whole_output_is_kept_beside_its_record(self):
-        # Kyoto (#PRNUM): the seal kept the last 2,000 characters of a kit
+        # Kyoto (#396): the seal kept the last 2,000 characters of a kit
         # tree's JSON report, and the failures it printed first were lost.
         project = Path(self.enterContext(tempfile.TemporaryDirectory()))
         (project / "params.py").write_text("A = 1\n")
@@ -760,7 +760,7 @@ class DesignTreeStepsTest(unittest.TestCase):
         self.assertFalse((project / "measure").exists())
 
     def test_an_unverified_kit_tree_is_a_rerun_not_a_check_failure(self):
-        # kit_tree exit 4 (#PRNUM): a press offset ran out of time; no
+        # kit_tree exit 4 (#396): a press offset ran out of time; no
         # geometry failed, so no model repair turn may be sent.
         unverified = RunResult(4, "kit tree component:body: UNVERIFIED, 0 defect(s), 0 failure(s), 1 unverified\n"
                                   "UNVERIFIED S01: ... (not decided ...; rerun)\n")

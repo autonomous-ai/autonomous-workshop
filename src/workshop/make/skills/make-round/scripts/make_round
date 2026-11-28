@@ -1932,7 +1932,7 @@ def parse_tree(stdout: str, returncode: int) -> dict:
             break
     if not isinstance(report, dict) or report.get("kind") != "kit-tree-report":
         if returncode == 124:
-            # Its time allowance ran out (#PRNUM): no verdict, a rerun, never
+            # Its time allowance ran out (#396): no verdict, a rerun, never
             # a geometric failure a repair could answer.
             return {"verdict": "UNVERIFIED", "defects": [], "failures": [],
                     "unverified": ["kit_tree ran out of its time allowance before it decided; rerun"]}
@@ -2134,7 +2134,7 @@ def tree_lines(tree: dict) -> list[str]:
         lines.append("    UNVERIFIED %s" % item)
     if tree.get("verdict") == "UNVERIFIED":
         lines.append("  tree  UNVERIFIED: no check failed, but the tree was not decided in its time; this is no "
-                     "geometry to repair: rerun the round (#PRNUM)")
+                     "geometry to repair: rerun the round (#396)")
     if tree.get("need"):
         lines.append("  TREE DEFECT: stop now. The sealed tree does not hold together; do not change the model "
                      "to hide it; report it to the Workshop Manager, who stops the run with this need "

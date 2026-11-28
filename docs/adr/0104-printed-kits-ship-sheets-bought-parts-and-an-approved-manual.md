@@ -1028,7 +1028,7 @@ checked, and the obstacles never stand in for the Part.
 - **Unchanged.** Every verdict, the 0.001 mm3 limit, both sides of a press
   and every refusal.
 
-## Amendment 2026-11-28: the wall clock picks no tree verdict (#PRNUM)
+## Amendment 2026-11-28: the wall clock picks no tree verdict (#396)
 
 - **Problem.** Kyoto's Gion Canal tree check gave PASS, FAIL, PASS on the
   same Proof, the same tree (`00b06682…`) and the same command: the

@@ -1,4 +1,4 @@
-"""#PRNUM: the wall clock never picks a kit tree verdict.
+"""#396: the wall clock never picks a kit tree verdict.
 
 An obstacle's sharp join that runs out of ``PRESS_OFFSET_SECONDS`` is
 replaced by the arc join, which holds more material. A press that passes

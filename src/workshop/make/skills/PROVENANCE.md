@@ -3198,7 +3198,7 @@ convention, so sealed STEPs and frozen runs keep their colours.
   (`_offset_key`). A shape the kernel cannot write is offset uncached.
   No verdict changes.
 
-## Workshop-local: the wall clock picks no kit tree verdict (2026-11-28, ADR 0104 amendment, #PRNUM)
+## Workshop-local: the wall clock picks no kit tree verdict (2026-11-28, ADR 0104 amendment, #396)
 
 - `make-round/scripts/kit_tree.py`: `_isolated_offset` raises
   `OffsetInterrupted` when its child ends by its alarm or a kill from

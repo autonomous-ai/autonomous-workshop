@@ -99,7 +99,7 @@ MAKE_ROUND_SCRIPT = SCRIPTS_DIR.parents[1] / "make-round" / "scripts" / "make_ro
 PRINT_DETAILS_SCRIPTS = SCRIPTS_DIR.parents[1] / "print-details" / "scripts"
 # ADR 0092: the Assembly Tree gates of a schema 7 Design Contract.
 KIT_TREE_SCRIPT = MAKE_ROUND_SCRIPT.with_name("kit_tree.py")
-KIT_TREE_UNVERIFIED_EXIT = 4  # kit_tree.py's EXIT_UNVERIFIED (#PRNUM)
+KIT_TREE_UNVERIFIED_EXIT = 4  # kit_tree.py's EXIT_UNVERIFIED (#396)
 # ADR 0092 decision 9: the kit's Manual, written from the tree and the build.
 KIT_MANUAL_SCRIPT = MAKE_ROUND_SCRIPT.with_name("kit_manual.py")
 # Workshop ADR 0104: a kit's FDM Sheets and its loose-part size rules.
@@ -1704,7 +1704,7 @@ def _run_kit_tree(runner: Runner, project: Path, nozzle: float) -> int:
     except Exception:  # noqa: BLE001 - kit_tree reports a tree it cannot read
         allowance = budget
     # Exit 4, a press offset that ran out of time with nothing failed, or
-    # the tree's own allowance spent, decides no verdict (#PRNUM): UNVERIFIED,
+    # the tree's own allowance spent, decides no verdict (#396): UNVERIFIED,
     # never a pass and never a FAIL.
     return 1 if runner.command(
         [sys.executable, KIT_TREE_SCRIPT, _path_arg(project, runner.cwd), "--final", "--nozzle", f"{nozzle:g}"],

@@ -455,7 +455,7 @@ def dry_run_batch(proof: Path, contract: Path, design_contract: dict, nozzle: fl
         record = seeded_batch.run_batch(plan, proof, runner=batch_runner(), record_path=path, plan_name="design",
                                         previous=reusable_print_gates(path))
     if record["status"] != seeded_batch.PASS:
-        # Each failing step's whole output is kept beside the record (#PRNUM):
+        # Each failing step's whole output is kept beside the record (#396):
         # the quote is its end, the file every failure it printed.
         failing = ["%s (%s): %s%s" % (item["id"], item.get("reason") or "exit %s" % item.get("exit_code"),
                                       (item.get("excerpt") or "").strip()[-400:],

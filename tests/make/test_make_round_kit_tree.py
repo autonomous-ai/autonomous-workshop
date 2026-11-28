@@ -111,7 +111,7 @@ class KitStateTest(unittest.TestCase):
         self.assertIn("kit_tree exit 2", parse("Traceback\n", 2)["failures"][0])
 
     def test_an_undecided_tree_is_unverified_never_a_failure(self):
-        # #PRNUM: kit_tree exit 4 (a press offset ran out of time) and the tree
+        # #396: kit_tree exit 4 (a press offset ran out of time) and the tree
         # job's own timeout are reruns, never a FAIL a repair could answer.
         parse = self.module.parse_tree
         line = json.loads(report_line("UNVERIFIED"))
@@ -304,7 +304,7 @@ class FinalVerificationTreeTest(unittest.TestCase):
             self.assertEqual(seen, [{"WORKSHOP_GEOMETRY_TIMEOUT": "%g" % max(600.0, allowance)}])
 
     def test_an_undecided_final_tree_is_unverified_never_a_pass_or_a_failure(self):
-        """#PRNUM: kit_tree exit 4 (a press offset ran out of time, nothing
+        """#396: kit_tree exit 4 (a press offset ran out of time, nothing
         failed) or its allowance spent records UNVERIFIED; exit 1 fails."""
         verifier = runpy.run_path(str(VERIFIER))
         with tempfile.TemporaryDirectory() as temporary:

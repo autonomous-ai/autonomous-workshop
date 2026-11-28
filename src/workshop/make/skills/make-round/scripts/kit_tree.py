@@ -83,7 +83,7 @@ The gates
   reaching past every overlap by more than the bite, which is exactly the
   whole offset there (ADR 0104 amendment 2026-11-26, press local offset).
   A side that cannot be shrunk at all is refused. The wall clock picks no
-  verdict (#PRNUM): an obstacle's sharp join that runs out of
+  verdict (#396): an obstacle's sharp join that runs out of
   ``PRESS_OFFSET_SECONDS`` is replaced by the arc join, which holds more
   material, so a press that passes through it passes; a press that fails
   through it is listed in ``unverified``, not ``failures``. With no
@@ -217,7 +217,7 @@ JOINT_GAP_MM = 0.3           # a face this close to what it joins is a joint fac
 PRESS_LOCAL_MARGINS_MM = (0.3, 0.15, 0.6)
 PRESS_LOCAL_TILE_MM = 8.0
 # A sharp join still running after this many seconds is given up (#392).
-# The wall clock never picks a verdict (#PRNUM): the stricter arc join is
+# The wall clock never picks a verdict (#396): the stricter arc join is
 # taken instead, and a press that then passes passes (the sharp join holds
 # less material, so it passes too); one that then fails is UNVERIFIED, a
 # rerun, never a geometric failure.
@@ -263,7 +263,7 @@ FAILURE = "failure"
 PART_LABEL = re.compile(r"^([A-LO-RT-Z][0-9]{2}-[a-z0-9]+(?:-[a-z0-9]+)*)(?:#([1-9][0-9]*))?$")
 EXIT_PASS, EXIT_FAIL, EXIT_USAGE, EXIT_DEFECT = 0, 1, 2, 3
 # Every deterministic check passed, but a press could not be decided in
-# its time (#PRNUM): no verdict, a rerun. Never a pass and never a FAIL.
+# its time (#396): no verdict, a rerun. Never a pass and never a FAIL.
 EXIT_UNVERIFIED = 4
 
 
@@ -846,7 +846,7 @@ def _insert_step(plan, geometry, bodies, item, k, wall, sequence, report) -> Non
             name = "%s#%d" % (entry["id"], j)
             failed_before = len(report["failures"])
             # Set when a failure of this input follows from an obstacle
-            # offset whose sharp join ran out of time (#PRNUM).
+            # offset whose sharp join ran out of time (#396).
             undecided = 0
             others = [body for body in whole if body not in moving]
             if not assembled or not others:
@@ -988,7 +988,7 @@ def _insert_step(plan, geometry, bodies, item, k, wall, sequence, report) -> Non
 
 def _undecided(report, failed_before, condition_id, name, press, timeouts) -> None:
     """A press input whose obstacles' offset could not be made, or bit
-    deeper than its press, where a sharp join ran out of time (#PRNUM). The
+    deeper than its press, where a sharp join ran out of time (#396). The
     arc join or windows that stood in hold more material than the sharp
     join, so a pass through them stands; a failure does not, as the sharp
     join may have passed. This input's failures, the joint faces judged
@@ -1548,7 +1548,7 @@ def _isolated_offset(shape, depth: float, kind):
     stricter arc join, instead of ending the round. A join still running
     after PRESS_OFFSET_SECONDS, or a child killed from outside, raises
     OffsetInterrupted: the caller takes the arc join too, but marks the
-    outcome as decided by the wall clock (#PRNUM)."""
+    outcome as decided by the wall clock (#396)."""
 
     import os
     import signal
@@ -1575,7 +1575,7 @@ def _isolated_offset(shape, depth: float, kind):
         _pid, status = os.waitpid(child, 0)
         if os.WIFSIGNALED(status) and os.WTERMSIG(status) in _INTERRUPTING_SIGNALS:
             # Its alarm, or a kill from outside: the wall clock or the
-            # machine ended it, not the kernel (#PRNUM).
+            # machine ended it, not the kernel (#396).
             raise OffsetInterrupted("the kernel's offset did not finish (signal %d)" % os.WTERMSIG(status))
         if not os.WIFEXITED(status) or os.WEXITSTATUS(status) != 0:
             raise RuntimeError("the kernel's offset failed (child status %d)" % status)
@@ -1586,7 +1586,7 @@ def _isolated_offset(shape, depth: float, kind):
 
 class OffsetInterrupted(RuntimeError):
     """A sharp join that did not finish in PRESS_OFFSET_SECONDS, or whose
-    child was killed from outside: no fact about the shape (#PRNUM)."""
+    child was killed from outside: no fact about the shape (#396)."""
 
 
 def _interrupting_signals() -> frozenset:
@@ -1655,7 +1655,7 @@ class CadGeometry:
         self.motion = runpy.run_path(str(scripts / "check_motion"), run_name="kit_tree_check_motion")
         self.fallbacks: list[dict] = []
         self.press_eroded = 0
-        # Each use of an offset whose sharp join ran out of time (#PRNUM).
+        # Each use of an offset whose sharp join ran out of time (#396).
         self.offset_timeouts = 0
         if str(self.project) not in sys.path:
             sys.path.insert(0, str(self.project))
@@ -1884,7 +1884,7 @@ class CadGeometry:
                 if timed:
                     # Kept, and counted at every use: an outcome reached
                     # because a sharp join ran out of time decides no
-                    # failure (#PRNUM).
+                    # failure (#396).
                     self.offset_timeouts = getattr(self, "offset_timeouts", 0) + 1
                 if shape is None:
                     return None, refusal % body.key
@@ -1900,7 +1900,7 @@ class CadGeometry:
         ``(None, reason, timed)`` whose ``%s`` takes the body's key.
         ``timed`` is True when the sharp join ran out of time and the arc
         join (or its refusal) stands in for it: then the outcome depends on
-        the wall clock, so no failure it leads to is a verdict (#PRNUM)."""
+        the wall clock, so no failure it leads to is a verdict (#396)."""
 
         timed = False
         try:
@@ -2556,7 +2556,7 @@ def summarise(report: dict) -> dict:
     report.setdefault("slips", [])
     report.setdefault("unverified", [])
     # A failure stands whatever an undecided press would have shown; with
-    # none, an undecided press leaves the tree UNVERIFIED (#PRNUM).
+    # none, an undecided press leaves the tree UNVERIFIED (#396).
     report["verdict"] = ("DEFECT" if report["defects"] else "FAIL" if report["failures"]
                          else "UNVERIFIED" if report["unverified"] else "PASS")
     return report

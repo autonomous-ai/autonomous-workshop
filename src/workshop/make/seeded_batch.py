@@ -77,11 +77,11 @@ HARNESS_FAILURE = "harness-failure"
 SKIPPED = "skipped"
 TRACEBACK = "Traceback (most recent call last)"
 EXCERPT_BYTES = 2000
-# A failing step's whole output is kept beside the record (#PRNUM): the
+# A failing step's whole output is kept beside the record (#396): the
 # excerpt is its end, and a kit tree's report puts its failures first.
 OUTPUT_DIR_SUFFIX = "-output"
 # kit_tree.py's exit when every deterministic check passed but a press was
-# not decided in its time (#PRNUM): no verdict, a rerun.
+# not decided in its time (#396): no verdict, a rerun.
 KIT_TREE_UNVERIFIED_EXIT = 4
 KIT_TREE_UNVERIFIED = re.compile(r"^kit tree \S+: UNVERIFIED,", re.MULTILINE)
 PACKET_EXCERPT_BYTES = 1200
@@ -356,7 +356,7 @@ def _output_name(step_id: str) -> str:
 
 def _keep_output(record_path: Optional[Path], project: Path, step_id: str, status: str,
                  output: str) -> Optional[dict]:
-    """A failing step's whole output, written beside the record (#PRNUM), and
+    """A failing step's whole output, written beside the record (#396), and
     the entry that names it; a passing step's earlier file is removed, so
     no stale failure stays beside a pass. Nothing without a record path."""
 
