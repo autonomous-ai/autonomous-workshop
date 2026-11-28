@@ -77,6 +77,13 @@ HARNESS_FAILURE = "harness-failure"
 SKIPPED = "skipped"
 TRACEBACK = "Traceback (most recent call last)"
 EXCERPT_BYTES = 2000
+# A failing step's whole output is kept beside the record (#PRNUM): the
+# excerpt is its end, and a kit tree's report puts its failures first.
+OUTPUT_DIR_SUFFIX = "-output"
+# kit_tree.py's exit when every deterministic check passed but a press was
+# not decided in its time (#PRNUM): no verdict, a rerun.
+KIT_TREE_UNVERIFIED_EXIT = 4
+KIT_TREE_UNVERIFIED = re.compile(r"^kit tree \S+: UNVERIFIED,", re.MULTILINE)
 PACKET_EXCERPT_BYTES = 1200
 MAX_PACKET_FAILURES = 32
 # Each check keeps its own deadline, so one sweep cannot spend another's
@@ -229,6 +236,10 @@ def classify(result: RunResult) -> tuple:
         if TRACEBACK in result.output:
             return HARNESS_FAILURE, "the tool raised an uncaught exception"
         return CHECK_FAILURE, None
+    if code == KIT_TREE_UNVERIFIED_EXIT and KIT_TREE_UNVERIFIED.search(result.output or ""):
+        # No model repair decides a press the machine ran out of time on.
+        return HARNESS_FAILURE, ("kit tree UNVERIFIED: every decided check passed, but a press offset ran out "
+                                 "of time, so its verdict is not decided; rerun the step (no geometry failed)")
     return HARNESS_FAILURE, "exit %s" % code
 
 
@@ -331,6 +342,45 @@ def _excerpt(output: str, limit: int = EXCERPT_BYTES) -> str:
     return "..." + encoded[-limit:].decode("utf-8", "ignore")
 
 
+def output_dir(record_path: Path) -> Path:
+    """Where a record keeps its failing steps' whole output: beside it, in
+    ``<record stem>-output/``, so the seal and its preflight keep their own."""
+
+    record_path = Path(record_path)
+    return record_path.with_name(record_path.stem + OUTPUT_DIR_SUFFIX)
+
+
+def _output_name(step_id: str) -> str:
+    return re.sub(r"[^A-Za-z0-9._-]+", "_", step_id) + ".log"
+
+
+def _keep_output(record_path: Optional[Path], project: Path, step_id: str, status: str,
+                 output: str) -> Optional[dict]:
+    """A failing step's whole output, written beside the record (#PRNUM), and
+    the entry that names it; a passing step's earlier file is removed, so
+    no stale failure stays beside a pass. Nothing without a record path."""
+
+    if record_path is None:
+        return None
+    path = output_dir(record_path) / _output_name(step_id)
+    if status not in (CHECK_FAILURE, HARNESS_FAILURE):
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            pass
+        return None
+    content = (output or "").encode("utf-8")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_bytes(content)
+    os.replace(temporary, path)
+    try:
+        shown = path.resolve().relative_to(Path(project).resolve()).as_posix()
+    except ValueError:
+        shown = str(path.resolve())
+    return {"path": shown, "sha256": _sha256_bytes(content), "bytes": len(content)}
+
+
 def _previous_passes(previous: Optional[Mapping[str, Any]]) -> dict:
     if not isinstance(previous, Mapping) or previous.get("kind") != RECORD_KIND:
         return {}
@@ -422,6 +472,9 @@ def run_batch(
                          reports=_report_hashes(project, step.reports), excerpt=_excerpt(result.output))
             if reason is not None:
                 entry["reason"] = reason
+            kept = _keep_output(record_path, project, step.id, status, result.output)
+            if kept is not None:
+                entry["output"] = kept
             recorded.append(entry)
             _timing_end(timing_parent, step, plan_name, project, key, started, result, status, reason)
         if failed_layer is None and any(item["layer"] == layer and item["status"] in (CHECK_FAILURE, HARNESS_FAILURE)
@@ -528,7 +581,8 @@ def failure_packet(record: Mapping[str, Any], record_sha256: str, *, record_path
         raise ValueError("only a check failure goes to a native repair turn")
     failing = [
         {"id": item["id"], "layer": item["layer"], "argv": item["argv"], "exit_code": item.get("exit_code"),
-         "reports": item.get("reports") or {}, "excerpt": _excerpt(item.get("excerpt") or "", PACKET_EXCERPT_BYTES)}
+         "reports": item.get("reports") or {}, "excerpt": _excerpt(item.get("excerpt") or "", PACKET_EXCERPT_BYTES),
+         **({"output": item["output"]} if item.get("output") else {})}
         for item in record["steps"] if item["status"] == CHECK_FAILURE
     ][:MAX_PACKET_FAILURES]
     return {
@@ -548,7 +602,8 @@ def harness_failures(record: Mapping[str, Any]) -> list:
     """The harness failures of a record, for the operator's need."""
 
     return [{"id": item["id"], "argv": item["argv"], "exit_code": item.get("exit_code"),
-             "reason": item.get("reason"), "excerpt": _excerpt(item.get("excerpt") or "", PACKET_EXCERPT_BYTES)}
+             "reason": item.get("reason"), "excerpt": _excerpt(item.get("excerpt") or "", PACKET_EXCERPT_BYTES),
+             **({"output": item["output"]} if item.get("output") else {})}
             for item in record.get("steps") or () if item.get("status") == HARNESS_FAILURE]
 
 

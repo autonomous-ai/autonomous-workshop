@@ -9,6 +9,7 @@ import io
 import json
 import runpy
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -108,6 +109,23 @@ class KitStateTest(unittest.TestCase):
         self.assertEqual((tree["verdict"], tree["conditions"], tree["routes"]), ("PASS", 1, 0))
         self.assertEqual(parse("Traceback\n", 2)["verdict"], "FAIL")
         self.assertIn("kit_tree exit 2", parse("Traceback\n", 2)["failures"][0])
+
+    def test_an_undecided_tree_is_unverified_never_a_failure(self):
+        # #PRNUM: kit_tree exit 4 (a press offset ran out of time) and the tree
+        # job's own timeout are reruns, never a FAIL a repair could answer.
+        parse = self.module.parse_tree
+        line = json.loads(report_line("UNVERIFIED"))
+        line["unverified"] = ["S01: A02-peg#1 ... (not decided ...; rerun)"]
+        tree = parse("kit tree assembly: UNVERIFIED\n" + json.dumps(line) + "\n", 4)
+        self.assertEqual((tree["verdict"], tree["failures"]), ("UNVERIFIED", []))
+        self.assertEqual(tree["unverified"], line["unverified"])
+        timed = parse("", 124)
+        self.assertEqual((timed["verdict"], timed["failures"]), ("UNVERIFIED", []))
+        self.assertIn("rerun", timed["unverified"][0])
+        self.assertEqual(parse("kit tree assembly: PASS\n" + report_line() + "\n", 0)["unverified"], [])
+        shown = "\n".join(self.module.tree_lines(tree))
+        self.assertIn("UNVERIFIED S01: A02-peg#1", shown)
+        self.assertIn("rerun the round", shown)
 
 
 class CheckPrintPiecesTreeTest(unittest.TestCase):
@@ -284,6 +302,55 @@ class FinalVerificationTreeTest(unittest.TestCase):
                 "kit_state"](project)
             allowance = TOOL.tree_seconds(TOOL.tree_load(TOOL.Plan(kit), None))
             self.assertEqual(seen, [{"WORKSHOP_GEOMETRY_TIMEOUT": "%g" % max(600.0, allowance)}])
+
+    def test_an_undecided_final_tree_is_unverified_never_a_pass_or_a_failure(self):
+        """#PRNUM: kit_tree exit 4 (a press offset ran out of time, nothing
+        failed) or its allowance spent records UNVERIFIED; exit 1 fails."""
+        verifier = runpy.run_path(str(VERIFIER))
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            for code, expected in ((4, 0), (1, 1)):
+                with self.subTest(code=code):
+                    tool = project / ("kit_tree_%d.py" % code)
+                    tool.write_text("import sys\nprint('kit tree final: %s, 0 defect(s)')\n"
+                                    "print('UNVERIFIED S01: A02-peg#1 not decided; rerun')\nsys.exit(%d)\n"
+                                    % ("UNVERIFIED" if code == 4 else "FAIL", code))
+                    runner = verifier["Runner"](cwd=project, dry_run=False, verbose=False)
+                    with contextlib.redirect_stdout(io.StringIO()) as out:
+                        rc = runner.command([sys.executable, str(tool), str(project)],
+                                            unverified_codes=(verifier["KIT_TREE_UNVERIFIED_EXIT"], 124),
+                                            unverified_reason="kit tree not decided in its time; rerun")
+                    self.assertEqual(rc, expected)
+                    if code == 4:
+                        self.assertEqual(runner.records[-1]["status"], "unverified")
+                        (check,) = runner.inspection_checks
+                        self.assertEqual((check["status"], check["reasons"]),
+                                         ("unverified", ["kit tree not decided in its time; rerun"]))
+                        self.assertIn("UNVERIFIED S01: A02-peg#1", out.getvalue())
+                    else:
+                        self.assertEqual(runner.records[-1]["status"], "rc=1")
+                        self.assertEqual(runner.inspection_checks, [])
+
+    def test_final_verification_passes_the_trees_unverified_exits(self):
+        verifier = runpy.run_path(str(VERIFIER))
+        with tempfile.TemporaryDirectory() as temporary:
+            run_root = Path(temporary)
+            project = run_root / "cad"
+            project.mkdir()
+            parsed = parse_design_contract(_contract_text(sealed_block()), catalogues=_catalogues())
+            (run_root / "WISH.json").write_text(json.dumps({"references": [], "context": {
+                "design_contract": parsed.to_dict(), "kit_catalogue": parsed.kit_catalogue()}}))
+            TOOL.install(project, run_root / "WISH.json")
+            seen = []
+
+            class Capturing(verifier["Runner"]):
+                def command(self, argv, **kwargs):
+                    seen.append(kwargs.get("unverified_codes"))
+                    return 0
+
+            with contextlib.redirect_stdout(io.StringIO()):
+                verifier["_run_kit_tree"](Capturing(cwd=project, dry_run=True, verbose=False), project, 0.4)
+            self.assertEqual(seen, [(TOOL.EXIT_UNVERIFIED, 124)])
 
 
 if __name__ == "__main__":

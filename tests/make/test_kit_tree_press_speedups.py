@@ -141,7 +141,7 @@ class OffsetCacheTest(unittest.TestCase):
         geometry = kit_tree.CadGeometry.__new__(kit_tree.CadGeometry)
         box = self.Pos(9, 0, 0) * self.Box(4, 4, 4)
         with mock.patch.object(kit_tree.CadGeometry, "_offset",
-                               return_value=(None, "the offset of %s is no valid smaller solid")) as offset:
+                               return_value=(None, "the offset of %s is no valid smaller solid", False)) as offset:
             self.assertEqual(geometry.pressed([kit_tree.Body("A", box, key="A#1")], 0.1),
                              (None, "the offset of A#1 is no valid smaller solid"))
             self.assertEqual(geometry.pressed([kit_tree.Body("A", box, key="A#2")], 0.1),
