@@ -82,7 +82,13 @@ The gates
   is offset only in windows round where it overlaps the other, each
   reaching past every overlap by more than the bite, which is exactly the
   whole offset there (ADR 0104 amendment 2026-11-26, press local offset).
-  A side that cannot be shrunk at all is refused.
+  A side that cannot be shrunk at all is refused. The wall clock picks no
+  verdict (#396): an obstacle's sharp join that runs out of
+  ``PRESS_OFFSET_SECONDS`` is replaced by the arc join, which holds more
+  material, so a press that passes through it passes; a press that fails
+  through it is listed in ``unverified``, not ``failures``. With no
+  failure and any such entry the verdict is UNVERIFIED (exit 4): no
+  verdict, a rerun.
   A ``snap`` step (ADR 0104 amendment 2026-11-17) declares one pair, or a
   list of pairs, that may overlap on the way in: each snapping Part against
   its own catch, each overlap no deeper across the direction than that
@@ -210,7 +216,12 @@ JOINT_GAP_MM = 0.3           # a face this close to what it joins is a joint fac
 # order, and the longest side of one window before it is split into tiles.
 PRESS_LOCAL_MARGINS_MM = (0.3, 0.15, 0.6)
 PRESS_LOCAL_TILE_MM = 8.0
-PRESS_OFFSET_SECONDS = 120   # a sharp join still running after this is refused (#392)
+# A sharp join still running after this many seconds is given up (#392).
+# The wall clock never picks a verdict (#396): the stricter arc join is
+# taken instead, and a press that then passes passes (the sharp join holds
+# less material, so it passes too); one that then fails is UNVERIFIED, a
+# rerun, never a geometric failure.
+PRESS_OFFSET_SECONDS = 120
 PRESS_INSIDE_MM3 = 1e-5     # a shrink holding more outside its body is not taken (#392)
 # How long one tree check may take: a Component's tree, an assembly's or
 # the final one. Its time grows with its insertions, each a sweep, and a
@@ -251,6 +262,9 @@ DEFECT = "defect"
 FAILURE = "failure"
 PART_LABEL = re.compile(r"^([A-LO-RT-Z][0-9]{2}-[a-z0-9]+(?:-[a-z0-9]+)*)(?:#([1-9][0-9]*))?$")
 EXIT_PASS, EXIT_FAIL, EXIT_USAGE, EXIT_DEFECT = 0, 1, 2, 3
+# Every deterministic check passed, but a press could not be decided in
+# its time (#396): no verdict, a rerun. Never a pass and never a FAIL.
+EXIT_UNVERIFIED = 4
 
 
 # ---------------------------------------------------------------------------
@@ -775,8 +789,8 @@ def travel_mm(moving_bounds, other_bounds, direction) -> float:
 def _check(scope: str | None, plan: Plan, geometry, bodies: dict[str, Body], nozzle: float) -> dict:
     """Every insertion and lead route of one scope against its bodies."""
 
-    report = {"conditions": [], "failures": [], "routes": [], "snaps": [], "presses": [], "seats": [],
-              "holds": [], "wall_orders": [], "_placements": []}
+    report = {"conditions": [], "failures": [], "unverified": [], "routes": [], "snaps": [], "presses": [],
+              "seats": [], "holds": [], "wall_orders": [], "_placements": []}
     for item in plan.steps_in(scope):
         step = item["id"]
         involved = sorted(plan.owners(step))
@@ -830,6 +844,10 @@ def _insert_step(plan, geometry, bodies, item, k, wall, sequence, report) -> Non
             if not moving:
                 continue   # paper: the paper gate checks where it lands
             name = "%s#%d" % (entry["id"], j)
+            failed_before = len(report["failures"])
+            # Set when a failure of this input follows from an obstacle
+            # offset whose sharp join ran out of time (#396).
+            undecided = 0
             others = [body for body in whole if body not in moving]
             if not assembled or not others:
                 for snap in snaps:
@@ -887,11 +905,15 @@ def _insert_step(plan, geometry, bodies, item, k, wall, sequence, report) -> Non
                         condition["description"] = condition["description"].replace(
                             ", offset inward by its", ", offset inward round its overlaps by its")
                 obstacle_side = None
+                obstacle_timeouts = 0
                 if error is None and blocking and hasattr(geometry, "shrunk_obstacles"):
+                    timeouts_before = getattr(geometry, "offset_timeouts", 0)
                     other_obstacles, obstacle_side, why = geometry.shrunk_obstacles(
                         condition, moving, obstacles, press)
+                    obstacle_timeouts = getattr(geometry, "offset_timeouts", 0) - timeouts_before
                     if other_obstacles is None:
                         swept, error = None, "its obstacles cannot be offset inward by it either: %s" % why
+                        undecided = obstacle_timeouts
                 report["presses"].append({"id": condition["id"], "step": step, "input": name, "press_mm": press,
                                           "offset": offset_side, "obstacles": obstacle_side,
                                           "verdict": "PASS" if error is None else "FAIL"})
@@ -926,6 +948,7 @@ def _insert_step(plan, geometry, bodies, item, k, wall, sequence, report) -> Non
                                        if key in second}
                     clean = second.get("status") == "pass"
                     if not clean:
+                        undecided = obstacle_timeouts
                         report["failures"].append(
                             ("%s: %s cannot go in alone along %s against its obstacles offset inward by its "
                              "%.3g mm press: it bites deeper than its press into them: %s"
@@ -958,7 +981,30 @@ def _insert_step(plan, geometry, bodies, item, k, wall, sequence, report) -> Non
                             step, name, ramp["pair"]["part"], ramp["pair"]["catch"]):
                         record.setdefault("ramp_faces", [])
                         record["ramp_faces"] += [f for f in ramp["faces"] if f not in record["ramp_faces"]]
+            if undecided:
+                _undecided(report, failed_before, condition["id"], name, press, undecided)
             assembled += [(entry["id"], body) for body in moving]
+
+
+def _undecided(report, failed_before, condition_id, name, press, timeouts) -> None:
+    """A press input whose obstacles' offset could not be made, or bit
+    deeper than its press, where a sharp join ran out of time (#396). The
+    arc join or windows that stood in hold more material than the sharp
+    join, so a pass through them stands; a failure does not, as the sharp
+    join may have passed. This input's failures, the joint faces judged
+    because its sweep was not clean among them, move to ``unverified``:
+    never a FAIL, and its press record says UNVERIFIED. A failure of the
+    Part's own offset or of its first sweep against the real obstacles
+    reads no obstacle offset, so it is never undecided."""
+
+    record = report["presses"][-1] if report["presses"] and report["presses"][-1]["id"] == condition_id else None
+    moved = report["failures"][failed_before:]
+    del report["failures"][failed_before:]
+    if record is not None:
+        record.update(verdict="UNVERIFIED", offset_timeouts=timeouts)
+    report["unverified"] += [
+        "%s (not decided: %d sharp offset(s) for %s's %.3g mm press ran out of %ds; rerun)"
+        % (failure, timeouts, name, press, PRESS_OFFSET_SECONDS) for failure in moved]
 
 
 def _holds(plan: Plan, geometry, bodies: dict[str, Body], report: dict) -> None:
@@ -1427,8 +1473,8 @@ def check_component(plan: Plan, geometry, role: str, nozzle: float) -> dict:
     """Everything one Component's round checks: its bodies against its
     leaves, their colours, and every step and route wholly inside it."""
 
-    report = {"scope": "component:%s" % role, "defects": [], "slips": [], "failures": [], "conditions": [],
-              "routes": [], "snaps": [], "presses": [], "seats": [],
+    report = {"scope": "component:%s" % role, "defects": [], "slips": [], "failures": [], "unverified": [],
+              "conditions": [], "routes": [], "snaps": [], "presses": [], "seats": [],
               "holds": [], "wall_orders": []}
     seen = len(getattr(geometry, "fallbacks", ()))
     expected = plan.expected_labels(role)
@@ -1445,9 +1491,11 @@ def check_component(plan: Plan, geometry, role: str, nozzle: float) -> dict:
         if slips:
             continue
         checked = _check(role, plan, geometry, keyed(plan, role, bodies), nozzle)
-        for key in ("conditions", "failures", "routes", "snaps", "presses", "seats", "holds", "wall_orders"):
+        for key in ("conditions", "failures", "unverified", "routes", "snaps", "presses", "seats", "holds",
+                    "wall_orders"):
             report[key] += checked[key]
     report["failures"] = list(dict.fromkeys(report["failures"]))
+    report["unverified"] = list(dict.fromkeys(report["unverified"]))
     report["fallbacks"] = list(getattr(geometry, "fallbacks", ())[seen:])
     return report
 
@@ -1458,8 +1506,8 @@ def check_assembly(plan: Plan, geometry, nozzle: float, *, reconcile_all: bool =
     also reconciles and colour-checks every Component."""
 
     report = {"scope": "final" if reconcile_all else "assembly", "defects": structure_defects(plan),
-              "slips": [], "failures": [], "conditions": [], "routes": [], "snaps": [], "presses": [], "seats": [],
-              "holds": [], "wall_orders": []}
+              "slips": [], "failures": [], "unverified": [], "conditions": [], "routes": [], "snaps": [],
+              "presses": [], "seats": [], "holds": [], "wall_orders": []}
     seen = len(getattr(geometry, "fallbacks", ()))
     bodies: dict[str, Body] = {}
     for role in sorted(plan.component_parts):
@@ -1482,10 +1530,12 @@ def check_assembly(plan: Plan, geometry, nozzle: float, *, reconcile_all: bool =
             bodies.update(keyed(plan, role, built, instance))
     if not report["defects"] and not report["slips"]:
         checked = _check(None, plan, geometry, bodies, nozzle)
-        for key in ("conditions", "failures", "routes", "snaps", "presses", "seats", "holds", "wall_orders"):
+        for key in ("conditions", "failures", "unverified", "routes", "snaps", "presses", "seats", "holds",
+                    "wall_orders"):
             report[key] += checked[key]
         _holds(plan, geometry, bodies, report)
     report["failures"] = list(dict.fromkeys(report["failures"]))
+    report["unverified"] = list(dict.fromkeys(report["unverified"]))
     report["fallbacks"] = list(getattr(geometry, "fallbacks", ())[seen:])
     return report
 
@@ -1494,9 +1544,11 @@ def _isolated_offset(shape, depth: float, kind):
     """``shape`` offset inward by ``depth`` in a forked child (#392). The
     kernel's intersection join crashes the process on some solids (Kyoto
     S13's obstacles) and never finishes on others (Kyoto S61's); in a
-    child that crash, or a join still running after PRESS_OFFSET_SECONDS,
-    is a refused offset, and the caller takes the stricter arc join,
-    instead of ending or stalling the round."""
+    child that crash is a refused offset, and the caller takes the
+    stricter arc join, instead of ending the round. A join still running
+    after PRESS_OFFSET_SECONDS, or a child killed from outside, raises
+    OffsetInterrupted: the caller takes the arc join too, but marks the
+    outcome as decided by the wall clock (#396)."""
 
     import os
     import signal
@@ -1521,11 +1573,30 @@ def _isolated_offset(shape, depth: float, kind):
                 code = 1
             os._exit(code)
         _pid, status = os.waitpid(child, 0)
+        if os.WIFSIGNALED(status) and os.WTERMSIG(status) in _INTERRUPTING_SIGNALS:
+            # Its alarm, or a kill from outside: the wall clock or the
+            # machine ended it, not the kernel (#396).
+            raise OffsetInterrupted("the kernel's offset did not finish (signal %d)" % os.WTERMSIG(status))
         if not os.WIFEXITED(status) or os.WEXITSTATUS(status) != 0:
             raise RuntimeError("the kernel's offset failed (child status %d)" % status)
         return import_brep(path)
     finally:
         os.unlink(path)
+
+
+class OffsetInterrupted(RuntimeError):
+    """A sharp join that did not finish in PRESS_OFFSET_SECONDS, or whose
+    child was killed from outside: no fact about the shape (#396)."""
+
+
+def _interrupting_signals() -> frozenset:
+    import signal
+
+    return frozenset(getattr(signal, name) for name in ("SIGALRM", "SIGKILL", "SIGTERM", "SIGINT", "SIGHUP")
+                     if hasattr(signal, name))
+
+
+_INTERRUPTING_SIGNALS = _interrupting_signals()
 
 
 def _offset_key(base, depth: float, sharp: bool):
@@ -1584,6 +1655,8 @@ class CadGeometry:
         self.motion = runpy.run_path(str(scripts / "check_motion"), run_name="kit_tree_check_motion")
         self.fallbacks: list[dict] = []
         self.press_eroded = 0
+        # Each use of an offset whose sharp join ran out of time (#396).
+        self.offset_timeouts = 0
         if str(self.project) not in sys.path:
             sys.path.insert(0, str(self.project))
         try:
@@ -1807,7 +1880,12 @@ class CadGeometry:
                     outcome = self._offset(base, depth, sharp, Kind, offset)
                     if key is not None:
                         cache[key] = outcome
-                shape, refusal = outcome
+                shape, refusal, timed = outcome
+                if timed:
+                    # Kept, and counted at every use: an outcome reached
+                    # because a sharp join ran out of time decides no
+                    # failure (#396).
+                    self.offset_timeouts = getattr(self, "offset_timeouts", 0) + 1
                 if shape is None:
                     return None, refusal % body.key
                 shape = shape.moved(place)
@@ -1818,23 +1896,29 @@ class CadGeometry:
 
     @staticmethod
     def _offset(base, depth, sharp, Kind, offset):
-        """``base`` offset inward by ``depth``: ``(shape, None)`` or ``(None,
-        reason)`` whose ``%s`` takes the body's key."""
+        """``base`` offset inward by ``depth``: ``(shape, None, timed)`` or
+        ``(None, reason, timed)`` whose ``%s`` takes the body's key.
+        ``timed`` is True when the sharp join ran out of time and the arc
+        join (or its refusal) stands in for it: then the outcome depends on
+        the wall clock, so no failure it leads to is a verdict (#396)."""
 
+        timed = False
         try:
             shape = None
             if sharp:
                 try:
                     shape = _smaller(_isolated_offset(base, depth, Kind.INTERSECTION), base)
+                except OffsetInterrupted:
+                    shape, timed = None, True
                 except Exception:  # noqa: BLE001 - the stricter arc join below decides
                     shape = None
             if shape is None:
                 shape = _smaller(offset(base, amount=-depth, kind=Kind.ARC), base)
         except Exception as exc:  # noqa: BLE001 - an offset the kernel refuses is a refusal
-            return None, "the kernel refuses to offset %%s: %s" % str(exc).replace("%", "%%")
+            return None, "the kernel refuses to offset %%s: %s" % str(exc).replace("%", "%%"), timed
         if shape is None:
-            return None, "the offset of %s is no valid smaller solid"
-        return shape, None
+            return None, "the offset of %s is no valid smaller solid", timed
+        return shape, None, timed
 
     def shrunk_obstacles(self, condition: dict, moving: list[Body], obstacles: list[Body], depth: float):
         """The other side of a press (ADR 0104 amendment 2026-11-27,
@@ -2470,7 +2554,11 @@ def _apart(box, grown) -> bool:
 
 def summarise(report: dict) -> dict:
     report.setdefault("slips", [])
-    report["verdict"] = "DEFECT" if report["defects"] else "FAIL" if report["failures"] else "PASS"
+    report.setdefault("unverified", [])
+    # A failure stands whatever an undecided press would have shown; with
+    # none, an undecided press leaves the tree UNVERIFIED (#396).
+    report["verdict"] = ("DEFECT" if report["defects"] else "FAIL" if report["failures"]
+                         else "UNVERIFIED" if report["unverified"] else "PASS")
     return report
 
 
@@ -2539,11 +2627,13 @@ def open_defects(project: Path, digest: str | None) -> dict | None:
 
 
 def render(report: dict) -> str:
-    lines = ["kit tree %s: %s, %d defect(s), %d failure(s), %d insertion sequence(s), %d lead route(s)"
+    lines = ["kit tree %s: %s, %d defect(s), %d failure(s), %d unverified, %d insertion sequence(s), "
+             "%d lead route(s)"
              % (report["scope"], report["verdict"], len(report["defects"]), len(report["failures"]),
-                len(report["conditions"]), len(report["routes"]))]
+                len(report.get("unverified") or ()), len(report["conditions"]), len(report["routes"]))]
     lines += ["DEFECT %s %s: %s" % (item["kind"], item["part"], item["detail"]) for item in report["defects"]]
     lines += ["FAIL %s" % item for item in report["failures"]]
+    lines += ["UNVERIFIED %s" % item for item in report.get("unverified") or ()]
     if report["defects"]:
         lines.append("TREE DEFECT: stop. The sealed contract's tree does not hold together; do not change the "
                      "model to hide it; the Workshop Manager stops the run with this need: %s"
@@ -2636,7 +2726,8 @@ def main(argv=None) -> int:
     print(render(report))
     if args.json:
         print(json.dumps(report, sort_keys=True))
-    return EXIT_DEFECT if report["defects"] else EXIT_FAIL if report["failures"] else EXIT_PASS
+    return (EXIT_DEFECT if report["defects"] else EXIT_FAIL if report["failures"]
+            else EXIT_UNVERIFIED if report["unverified"] else EXIT_PASS)
 
 
 # ---------------------------------------------------------------------------

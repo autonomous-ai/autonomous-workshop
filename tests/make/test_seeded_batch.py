@@ -706,6 +706,72 @@ class DesignTreeStepsTest(unittest.TestCase):
             self.assertEqual(by_id[later]["status"], sb.SKIPPED)
         self.assertFalse(any("--print-gates-only" in call[0] for call in runner.calls))
 
+    def test_a_failing_tree_steps_whole_output_is_kept_beside_its_record(self):
+        # Kyoto (#396): the seal kept the last 2,000 characters of a kit
+        # tree's JSON report, and the failures it printed first were lost.
+        project = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        (project / "params.py").write_text("A = 1\n")
+        failures = ["FAIL S%03d: T%02d-part#1 cannot go in alone" % (n, n % 90) for n in range(40)]
+        output = ("kit tree component:body: FAIL, 0 defect(s), 40 failure(s), 0 unverified, 1 insertion "
+                  "sequence(s), 0 lead route(s)\n" + "\n".join(failures) + "\n"
+                  + json.dumps({"verdict": "FAIL", "seats": ["s" * 80] * 60}) + "\n")
+        self.assertGreater(len(output), 3 * sb.EXCERPT_BYTES)
+        plan = sb.design_plan(self._inputs(project=project))
+        record_path = project / "measure/seal-preflight.json"
+        record = sb.run_batch(plan, project, runner=FakeRunner({"body": RunResult(1, output)}),
+                              record_path=record_path, layers=sb.PREFLIGHT_LAYERS)
+        entry = {item["id"]: item for item in record["steps"]}["tree:body"]
+        self.assertNotIn("S000", entry["excerpt"])
+        kept = entry["output"]
+        self.assertEqual(kept["path"], "measure/seal-preflight-output/tree_body.log")
+        content = (project / kept["path"]).read_bytes()
+        self.assertEqual(content.decode(), output)
+        self.assertEqual((kept["sha256"], kept["bytes"]), (sb._sha256_bytes(content), len(content)))
+        for failure in failures:
+            self.assertIn(failure, content.decode())
+        # the seal keeps its own, beside its own record; a pass removes it
+        sb.run_batch(plan, project, runner=FakeRunner({"body": RunResult(1, output)}),
+                     record_path=project / sb.RECORD)
+        self.assertTrue((project / "measure/seeded-batch-output/tree_body.log").is_file())
+        again = sb.run_batch(plan, project, runner=FakeRunner(), record_path=record_path, layers=sb.PREFLIGHT_LAYERS)
+        self.assertNotIn("output", {item["id"]: item for item in again["steps"]}["tree:body"])
+        self.assertFalse((project / kept["path"]).exists())
+        self.assertTrue((project / "measure/seeded-batch-output/tree_body.log").is_file())
+
+    def test_the_repair_packet_and_the_harness_need_name_the_whole_output(self):
+        project = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        steps = [Step("tree:body", "preflight", ("tree", "body")), Step("tree:lid", "preflight", ("tree", "lid"))]
+        record_path = project / sb.RECORD
+        record = sb.run_batch(steps, project, record_path=record_path, runner=FakeRunner(
+            {"body": RunResult(1, "kit tree component:body: FAIL\n")}))
+        (failing,) = sb.failure_packet(record, "0" * 64)["failing"]
+        self.assertEqual(failing["output"]["path"], "measure/seeded-batch-output/tree_body.log")
+        record = sb.run_batch(steps, project, record_path=record_path, runner=FakeRunner(
+            {"lid": RunResult(4, "kit tree component:lid: UNVERIFIED, 0 defect(s)\n")}))
+        (harness,) = sb.harness_failures(record)
+        self.assertEqual(harness["output"]["path"], "measure/seeded-batch-output/tree_lid.log")
+        self.assertIn("rerun", harness["reason"])
+
+    def test_without_a_record_path_no_output_file_is_written(self):
+        project = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        record = sb.run_batch([Step("tree:body", "preflight", ("tree", "body"))], project,
+                              runner=FakeRunner({"body": RunResult(1, "x")}))
+        self.assertNotIn("output", record["steps"][0])
+        self.assertFalse((project / "measure").exists())
+
+    def test_an_unverified_kit_tree_is_a_rerun_not_a_check_failure(self):
+        # kit_tree exit 4 (#396): a press offset ran out of time; no
+        # geometry failed, so no model repair turn may be sent.
+        unverified = RunResult(4, "kit tree component:body: UNVERIFIED, 0 defect(s), 0 failure(s), 1 unverified\n"
+                                  "UNVERIFIED S01: ... (not decided ...; rerun)\n")
+        status, reason = sb.classify(unverified)
+        self.assertEqual(status, sb.HARNESS_FAILURE)
+        self.assertIn("UNVERIFIED", reason)
+        self.assertIn("rerun", reason)
+        self.assertIn("no geometry failed", reason)
+        # another tool's exit 4 keeps the plain reason
+        self.assertEqual(sb.classify(RunResult(4, "something else")), (sb.HARNESS_FAILURE, "exit 4"))
+
 
 class ComposedSourceTest(unittest.TestCase):
     def test_the_concept_hash_is_the_finalizers(self):

@@ -1931,9 +1931,14 @@ def parse_tree(stdout: str, returncode: int) -> dict:
                 report = None
             break
     if not isinstance(report, dict) or report.get("kind") != "kit-tree-report":
+        if returncode == 124:
+            # Its time allowance ran out (#396): no verdict, a rerun, never
+            # a geometric failure a repair could answer.
+            return {"verdict": "UNVERIFIED", "defects": [], "failures": [],
+                    "unverified": ["kit_tree ran out of its time allowance before it decided; rerun"]}
         return {"verdict": "FAIL", "defects": [], "failures": ["kit_tree exit %d: %s" % (returncode, tail(stdout)[:200])]}
     return {"verdict": report["verdict"], "defects": report["defects"], "slips": report.get("slips") or [],
-            "failures": report["failures"],
+            "failures": report["failures"], "unverified": report.get("unverified") or [],
             "conditions": len(report["conditions"]), "routes": len(report["routes"]),
             "tree_sha256": report.get("tree_sha256"), "scope": report.get("scope")}
 
@@ -2115,6 +2120,31 @@ def print_lines(role: str, gates: dict) -> list[str]:
     return lines
 
 
+def tree_lines(tree: dict) -> list[str]:
+    """The round report's lines for its Assembly Tree gates (ADR 0092)."""
+
+    lines = []
+    lines.append("  tree  %-4s %d insertion sequence(s), %d lead route(s)"
+                 % (tree["verdict"], tree.get("conditions", 0), tree.get("routes", 0)))
+    for item in (tree.get("defects") or [])[:6]:
+        lines.append("    DEFECT %s %s: %s" % (item.get("kind"), item.get("part"), item.get("detail")))
+    for item in (tree.get("failures") or [])[:8]:
+        lines.append("    %s" % item)
+    for item in (tree.get("unverified") or [])[:8]:
+        lines.append("    UNVERIFIED %s" % item)
+    if tree.get("verdict") == "UNVERIFIED":
+        lines.append("  tree  UNVERIFIED: no check failed, but the tree was not decided in its time; this is no "
+                     "geometry to repair: rerun the round (#396)")
+    if tree.get("need"):
+        lines.append("  TREE DEFECT: stop now. The sealed tree does not hold together; do not change the model "
+                     "to hide it; report it to the Workshop Manager, who stops the run with this need "
+                     "(ADR 0092 decision 10): %s" % tree["need"])
+    elif tree.get("slips"):
+        lines.append("  tree  labelling slip: the bodies do not match the tree; repair them in the next round "
+                     "like any failing gate (Q28)")
+    return lines
+
+
 def render_summary(summary: dict) -> str:
     lines = [
         "make_round r%04d  %s  %s  changed %d/%d part(s)"
@@ -2141,19 +2171,7 @@ def render_summary(summary: dict) -> str:
     tree = summary.get("tree")
     if tree is not None:
         # ADR 0092: the Assembly Tree gates.
-        lines.append("  tree  %-4s %d insertion sequence(s), %d lead route(s)"
-                     % (tree["verdict"], tree.get("conditions", 0), tree.get("routes", 0)))
-        for item in (tree.get("defects") or [])[:6]:
-            lines.append("    DEFECT %s %s: %s" % (item.get("kind"), item.get("part"), item.get("detail")))
-        for item in (tree.get("failures") or [])[:8]:
-            lines.append("    %s" % item)
-        if tree.get("need"):
-            lines.append("  TREE DEFECT: stop now. The sealed tree does not hold together; do not change the model "
-                         "to hide it; report it to the Workshop Manager, who stops the run with this need "
-                         "(ADR 0092 decision 10): %s" % tree["need"])
-        elif tree.get("slips"):
-            lines.append("  tree  labelling slip: the bodies do not match the tree; repair them in the next round "
-                         "like any failing gate (Q28)")
+        lines += tree_lines(tree)
     sheets = summary.get("sheets")
     if sheets is not None:
         # ADR 0104: the kit's FDM Sheets and its loose-part rules.
@@ -7902,7 +7920,8 @@ def make_round(args) -> int:
             if woken:
                 summary["wakes_blocked"] = woken
     if (any(item["verdict"] == "UNVERIFIED" for item in printing.values()) or (motion and motion["verdict"] == "unverified")
-            or (interference and interference["verdict"] == "unverified")):
+            or (interference and interference["verdict"] == "unverified")
+            or (tree is not None and tree.get("verdict") == "UNVERIFIED")):
         summary["geometry_status"] = "unverified"
         summary["print_ready_claim"] = False
     if component is None and visual.get("status") == "carried":

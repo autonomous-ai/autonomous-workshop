@@ -497,6 +497,10 @@ class SealCheckInputsTest(unittest.TestCase):
         self.assertIn("draws 40 mA over 20", self.stderr)
         self.assertIn("lead hole clashes with switch wire", self.stderr)
         self.assertFalse((self.proof / "APPROVAL.json").exists())
+        # Each failing step's whole output is kept and named (#396).
+        whole = self.proof / "measure" / "seeded-batch-output"
+        self.assertIn("whole output: %s" % whole, self.stderr)
+        self.assertTrue(any("draws 40 mA over 20" in path.read_text() for path in whole.glob("*.log")))
 
     def _strays_fail_the_project_step(self):
         """The batch's first step refuses STEP files no Component builds, as

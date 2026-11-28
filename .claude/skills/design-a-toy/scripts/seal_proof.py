@@ -455,12 +455,16 @@ def dry_run_batch(proof: Path, contract: Path, design_contract: dict, nozzle: fl
         record = seeded_batch.run_batch(plan, proof, runner=batch_runner(), record_path=path, plan_name="design",
                                         previous=reusable_print_gates(path))
     if record["status"] != seeded_batch.PASS:
-        failing = ["%s (%s): %s" % (item["id"], item.get("reason") or "exit %s" % item.get("exit_code"),
-                                    (item.get("excerpt") or "").strip()[-400:])
+        # Each failing step's whole output is kept beside the record (#396):
+        # the quote is its end, the file every failure it printed.
+        failing = ["%s (%s): %s%s" % (item["id"], item.get("reason") or "exit %s" % item.get("exit_code"),
+                                      (item.get("excerpt") or "").strip()[-400:],
+                                      "\n  whole output: %s" % (proof / item["output"]["path"])
+                                      if item.get("output") else "")
                    for item in record["steps"]
                    if item["status"] in (seeded_batch.CHECK_FAILURE, seeded_batch.HARNESS_FAILURE)]
         raise Refusal("the seeded batch fails on the Proof (%s); see %s:\n%s"
-                      % (record["status"], seeded_batch.RECORD, "\n".join(failing)))
+                      % (record["status"], path.relative_to(proof).as_posix(), "\n".join(failing)))
     return {"ok": True, "plan": "design", "record_sha256": sha256(path),
             "tool_sha256": seeded_batch.module_sha256()}
 

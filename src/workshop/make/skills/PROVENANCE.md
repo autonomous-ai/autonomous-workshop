@@ -3197,3 +3197,25 @@ convention, so sealed STEPs and frozen runs keep their colours.
   unplaced shape's exact BREP bytes, the press and the join
   (`_offset_key`). A shape the kernel cannot write is offset uncached.
   No verdict changes.
+
+## Workshop-local: the wall clock picks no kit tree verdict (2026-11-28, ADR 0104 amendment, #396)
+
+- `make-round/scripts/kit_tree.py`: `_isolated_offset` raises
+  `OffsetInterrupted` when its child ends by its alarm or a kill from
+  outside, and a crash or nonzero exit stays a `RuntimeError`.
+  `CadGeometry._offset` returns `(shape, refusal, timed)`, and
+  `pressed` counts each use of a timed outcome, cached ones included, in
+  `offset_timeouts`. `_insert_step` moves an input's failures to the
+  report's `unverified` list when its obstacle side failed after a
+  timeout (`_undecided`). `summarise` gives UNVERIFIED when nothing
+  failed and something is unverified, and `main` exits
+  `EXIT_UNVERIFIED` (4).
+- `make-round/scripts/make_round`: `parse_tree` carries `unverified`
+  and reads the tree job's timeout (124) as UNVERIFIED. `tree_lines`
+  prints it. A tree UNVERIFIED sets the round's `geometry_status` to
+  `unverified`.
+- `cad/scripts/verify_project`: `Runner.command` takes
+  `unverified_codes` and `unverified_reason`. `_run_kit_tree` passes
+  (4, 124), so an undecided final tree check is recorded UNVERIFIED and
+  its output is printed.
+

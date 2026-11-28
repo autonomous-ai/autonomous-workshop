@@ -1028,6 +1028,88 @@ checked, and the obstacles never stand in for the Part.
 - **Unchanged.** Every verdict, the 0.001 mm3 limit, both sides of a press
   and every refusal.
 
+## Amendment 2026-11-28: the wall clock picks no tree verdict (#396)
+
+- **Problem.** Kyoto's Gion Canal tree check gave PASS, FAIL, PASS on the
+  same Proof, the same tree (`00b06682…`) and the same command: the
+  preflight passed, the seal failed after 11,204 s, and a rerun by hand
+  passed with no failure. An obstacle's sharp (intersection) join runs in
+  a child that is stopped after `PRESS_OFFSET_SECONDS` (120 s), and the
+  arc join was then taken. The arc join rounds a socket's inner corners,
+  so it holds more material: a 4.1 mm square peg pressed 0.05 mm into a
+  4 mm socket passes with the sharp join and fails with the arc one. An
+  offset finishing near 120 s on a loaded machine therefore chose the
+  verdict, and since #394 that outcome was kept for every later Part
+  sharing the obstacle. The seal's record kept only the last 2,000
+  characters of the check's output, which held no failure line, so the
+  failing insertion is not known.
+- **Rule: a timed-out join decides no failure.** A child stopped by its
+  alarm, or killed from outside (SIGALRM, SIGKILL, SIGTERM, SIGINT,
+  SIGHUP), raises `OffsetInterrupted`; a crash or a nonzero exit is still
+  a refusal of the shape, as before. On an interruption the arc join is
+  taken as before, but the outcome is marked, the mark is kept with it in
+  the #394 cache, and every use of it is counted.
+  - A press that passes through a marked outcome passes. Every stand-in
+    (the arc join, the windows, the boolean shrink) holds at least the
+    sharp join's material, so the sharp join would pass too.
+  - A press whose obstacle side fails through a marked outcome is not a
+    failure. The obstacles cannot be shrunk, or the second sweep bites.
+    Its failures, including the joint faces judged because its sweep was
+    not clean, move to the report's `unverified` list. Its press record
+    says `UNVERIFIED` with `offset_timeouts`.
+  - A failure that reads no obstacle offset stays a failure. These are
+    the Part's own offset and its first sweep against the real obstacles.
+  - Verdict: DEFECT, else FAIL when any failure stands, else UNVERIFIED
+    when anything is unverified, else PASS. UNVERIFIED exits 4. It is no
+    verdict but a rerun.
+- **Where UNVERIFIED goes.** It is never a pass and never a geometric
+  failure:
+  - `seeded_batch.classify` makes a kit tree's exit 4 a harness failure,
+    named as a rerun, so no repair turn is sent;
+  - make_round's tree job reads it, or its own timeout (124), as tree
+    `UNVERIFIED`, and the round's `geometry_status` is `unverified`;
+  - `verify_project` records `kit_tree --final` exit 4 or 124 as an
+    unverified check, so its Result is UNVERIFIED;
+  - the host still accepts only a `PASS` tree report.
+- **A failing step keeps its whole output.** `seeded_batch.run_batch`
+  writes a failing step's full output to `<record stem>-output/<step>.log`
+  beside its record (`measure/seal-preflight-output/`,
+  `measure/seeded-batch-output/`, the run's `work/seeded/seeded-batch-output/`).
+  The entry's `output` names its path, SHA-256 and size, and so do the
+  repair packet and the harness need. A passing step's old file is removed.
+  `seal_proof.py` names that file in its refusal, and the record it read.
+- **Unchanged.** Both sides of a press, `PRESS_INSIDE_MM3`, the 0.001 mm3
+  limit, `PRESS_OFFSET_SECONDS`, the cache and every refusal of a shape.
+  A pass is reached exactly as before. The only change is that a failure
+  reached because a join ran out of time is reported as undecided.
+- **Evidence.** `tests/make/test_kit_tree_offset_timeout.py`
+  covers the fixture: the sharp join PASSes, a crash takes the arc join
+  and FAILs, and a timeout is UNVERIFIED. It also covers a stand-in that
+  passes, a first-sweep failure that stays a FAIL, and a timeout kept in
+  the cache that marks a later Part. The real forked child is tested too:
+  its alarm is an interruption and an abort is a refusal. The exit codes
+  are tested. `test_seeded_batch.py`, `test_make_round_kit_tree.py` and
+  `test_seal_proof.py` cover the kept output, the exit-4 reason, the tree
+  job's UNVERIFIED and final verification's unverified record.
+- **What the Kyoto flip was (measured, 2026-11-27/28).** Two copies of the
+  Proof were run with every sharp join timed, on main's code at one
+  thread: run A at 120 s, run B at 600 s. They made 789 sharp joins. The
+  slowest that finished took 19 s (S97 B02-kurin#1). Two never finished,
+  S62 H09-rope-3 and S67 D42-rack-post-left: they ran out of both 120 s
+  and 600 s, so they are refused the same way every run, and their
+  presses pass through the stand-ins. No join came near 120 s, so the
+  cutoff did not decide Kyoto's verdict. Run A nevertheless FAILed and
+  run B PASSed. A's only failure was S74-roof-tabs L11-roof-1#1, whose
+  first sweep was inconclusive ("motion geometry has nonfinite or
+  negative volume") and was refused. B's first sweep there was clear.
+  The 189 built bodies have the same BREP bytes in every process. The
+  in-process arc offset of L11-roof-1#1, however, gave three outcomes in
+  three processes with the same bytes, the same `PYTHONHASHSEED` and ASLR
+  off: "Null TopoDS_Shape", "no valid smaller solid", and a solid. About
+  a third of the sharp joins' inputs also had other bytes from run to
+  run. The kernel's offset is not deterministic between processes. That
+  is a separate open defect, #395, not decided here. This amendment removes only the wall clock from the verdict.
+
 ## Not decided here
 
 - The gate and fit constants are the Amsterdam project's, set by the owner
